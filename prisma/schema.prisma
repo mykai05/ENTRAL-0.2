@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         String       @default("USER")
+  lastDashboardSeenAt DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  TeamMember[]
+  tasksCreated Task[]       @relation("TaskCreatedBy")
+  tasksAssigned Task[]      @relation("TaskAssignedTo")
+  conversations Conversation[]
+  automationJobs AutomationJob[]
+  agents      Agent[]
+  agentTasks  AgentTask[]
+  agentSchedules AgentSchedule[]
+  policiesCreated Policy[]      @relation("PolicyCreatedBy")
+  auditLogs   AuditLog[]
+
+  @@index([email])
+}
+
+model Agent {
+  id               String         @id @default(cuid())
+  userId           String
+  name             String
+  role             String
+  capabilitiesJson String
+  webhookUrl       String?
+  status           String         @default("idle")
+  isPaused         Boolean        @default(false)
+  runInBackground  Boolean        @default(true)
+  lastActivitySeenAt DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks            AgentTask[]
+  logs             AgentLog[]
+  messages         AgentMessage[]
+  schedules        AgentSchedule[]
+
+  @@index([userId, status])
+}
+
+model AgentTask {
+  id          String         @id @default(cuid())
+  userId      String
+  agentId     String
+  title       String
+  action      String
+  status      String         @default("queued")
+  payloadJson String
+  resultJson  String?
+  error       String?
+  scheduleId  String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent       Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  logs        AgentLog[]
+  messages    AgentMessage[]
+  schedule    AgentSchedule?  @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([agentId, status])
+  @@index([scheduleId])
+}
+
+model AgentSchedule {
+  id              String      @id @default(cuid())
+  userId          String
+  agentId         String
+  title           String
+  action          String
+  payloadJson     String
+  status          String      @default("active")
+  intervalMinutes Int
+  nextRunAt       DateTime
+  lastRunAt       DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent           Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  tasks           AgentTask[]
+
+  @@index([userId, status])
+  @@index([agentId, status])
+  @@index([status, nextRunAt])
+}
+
+model Policy {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  enabled     Boolean   @default(true)
+  effect      String    @default("block")
+  severity    String    @default("medium")
+  ruleJson    String
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   User?     @relation("PolicyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([enabled, severity])
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  actorUserId String?
+  action      String
+  targetType  String
+  targetId    String?
+  outcome     String
+  severity    String    @default("info")
+  entryJson   String
+  entryHash   String
+  createdAt   DateTime  @default(now())
+  actor       User?     @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
+}
+
+model AgentLog {
+  id        String     @id @default(cuid())
+  agentId   String
+  taskId    String?
+  level     String     @default("info")
+  message   String
+  createdAt DateTime   @default(now())
+  agent     Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  task      AgentTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([agentId, createdAt])
+  @@index([taskId, createdAt])
+}
+
+model AgentMessage {
+  id          String     @id @default(cuid())
+  agentId     String
+  taskId      String?
+  type        String
+  action      String
+  payloadJson String
+  createdAt   DateTime   @default(now())
+  agent       Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  task        AgentTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([agentId, createdAt])
+  @@index([taskId, createdAt])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  title     String?
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model AutomationJob {
+  id          String          @id @default(cuid())
+  userId      String
+  type        String
+  status      String          @default("pending")
+  payloadJson String
+  resultJson  String?
+  error       String?
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs        AutomationLog[]
+
+  @@index([userId, createdAt])
+  @@index([status, scheduledAt])
+}
+
+model AutomationLog {
+  id        String        @id @default(cuid())
+  jobId     String
+  level     String        @default("info")
+  message   String
+  createdAt DateTime      @default(now())
+  job       AutomationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
+}
+
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  members   TeamMember[]
+  tasks     Task[]
+}
+
+model TeamMember {
+  userId   String
+  teamId   String
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId])
+  @@index([teamId])
+}
+
+model Task {
+  id           String     @id @default(cuid())
+  title        String
+  description  String?
+  status       String     @default("TODO")
+  dueDate      DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  teamId       String
+  createdById  String
+  assignedToId String?
+  team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy    User       @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedTo   User?      @relation("TaskAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([teamId, status])
+  @@index([createdById])
+  @@index([assignedToId])
+}
