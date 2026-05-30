@@ -1,6 +1,5 @@
 import React from "react";
 import { AuthCard } from "../../components/AuthCard";
-import { CurlSnippet } from "../../components/CurlSnippet";
 import { SignupForm } from "../../components/SignupForm";
 
 export default function SignupPage() {
@@ -13,17 +12,6 @@ export default function SignupPage() {
       footerHref="/login"
     >
       <SignupForm />
-      <CurlSnippet
-        authenticated={false}
-        body={{
-          name: "Ada Lovelace",
-          email: "ada@example.com",
-          password: "correct-horse-battery-staple"
-        }}
-        method="POST"
-        path="/signup"
-        title="Signup"
-      />
     </AuthCard>
   );
 }

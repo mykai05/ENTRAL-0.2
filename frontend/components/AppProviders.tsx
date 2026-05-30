@@ -11,21 +11,21 @@ import { VoiceProvider } from "./VoiceProvider";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isAuthScreen = pathname === "/login" || pathname === "/signup";
+  const isPublicEntry = pathname === "/" || pathname?.startsWith("/login") || pathname?.startsWith("/signup");
+
+  const appChrome = isPublicEntry ? children : (
+    <OnboardingProvider>
+      {children}
+      <CommandPalette />
+      <SettingsPanel />
+    </OnboardingProvider>
+  );
 
   return (
     <ThemeProvider>
       <ToastProvider>
         <VoiceProvider>
-          <OnboardingProvider>
-            {children}
-            {isAuthScreen ? null : (
-              <>
-                <CommandPalette />
-                <SettingsPanel />
-              </>
-            )}
-          </OnboardingProvider>
+          {appChrome}
         </VoiceProvider>
       </ToastProvider>
     </ThemeProvider>

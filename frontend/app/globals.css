@@ -384,8 +384,8 @@ textarea:focus-visible {
 .auth-shell {
   align-items: center;
   display: grid;
-  min-height: 100vh;
-  padding: 1rem;
+  min-height: 100dvh;
+  padding: clamp(0.75rem, 3vw, 1rem);
 }
 
 .auth-panel {
@@ -397,14 +397,14 @@ textarea:focus-visible {
   gap: 1.5rem;
   margin: 0 auto;
   max-width: 30rem;
-  padding: 1.25rem;
+  padding: clamp(1rem, 4vw, 2rem);
   width: 100%;
 }
 
 .auth-panel h1 {
-  font-size: 2rem;
+  font-size: clamp(1.7rem, 7vw, 2rem);
   line-height: 1.1;
-  margin: 1.5rem 0 0.5rem;
+  margin: 1rem 0 0.5rem;
 }
 
 .auth-panel p {
@@ -1915,25 +1915,6 @@ kbd {
   border-left-color: var(--danger);
 }
 
-.need-help-button {
-  align-items: center;
-  background: var(--brand);
-  border: 1px solid var(--brand);
-  border-radius: 999px;
-  bottom: 1rem;
-  box-shadow: var(--glow);
-  color: var(--bg);
-  display: inline-flex;
-  font-weight: 900;
-  gap: 0.45rem;
-  min-height: 2.85rem;
-  padding: 0.65rem 0.9rem;
-  position: fixed;
-  right: 8.9rem;
-  text-decoration: none;
-  z-index: 30;
-}
-
 .onboarding-panel {
   display: grid;
   gap: 0.75rem;
@@ -1998,8 +1979,7 @@ kbd {
 .agent-item:hover,
 .template-card:hover,
 .curl-card:hover,
-.console-line button:hover,
-.need-help-button:hover {
+.console-line button:hover {
   box-shadow: var(--glow);
 }
 
@@ -2172,12 +2152,6 @@ kbd {
 
   .screen-share-actions .button {
     flex: 1;
-  }
-
-  .need-help-button {
-    bottom: 4.35rem;
-    left: 1rem;
-    right: auto;
   }
 
   .palette-trigger {
@@ -3423,7 +3397,6 @@ body:has(.command-center-page) {
 }
 
 body:has(.command-center-page) .settings-trigger,
-body:has(.command-center-page) .need-help-button,
 body:has(.command-center-page) .palette-trigger {
   display: none;
 }
@@ -3545,6 +3518,96 @@ body:has(.command-center-page) .palette-trigger {
   gap: 0.55rem;
   right: clamp(1rem, 2vw, 1.5rem);
   top: clamp(1rem, 2vw, 1.5rem);
+}
+
+.command-mobile-nav {
+  display: none;
+}
+
+.command-mobile-nav summary {
+  align-items: center;
+  backdrop-filter: blur(18px);
+  background: rgba(3, 6, 10, 0.78);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.28);
+  border-radius: 999px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 900;
+  gap: 0.42rem;
+  list-style: none;
+  min-height: 2.4rem;
+  padding: 0.48rem 0.72rem;
+}
+
+.command-mobile-nav summary::-webkit-details-marker {
+  display: none;
+}
+
+.command-mobile-nav[open] {
+  backdrop-filter: blur(24px);
+  background: linear-gradient(180deg, rgba(var(--neon-accent-rgb), 0.08), rgba(5, 5, 5, 0.86));
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.18);
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  padding: 0.62rem;
+}
+
+.command-mobile-nav[open] summary {
+  margin-bottom: 0.55rem;
+}
+
+.command-mobile-nav nav,
+.command-mobile-nav-actions {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.command-mobile-nav-actions {
+  border-top: 1px solid rgba(var(--neon-accent-rgb), 0.12);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.2rem;
+  padding-top: 0.55rem;
+}
+
+.command-mobile-nav button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 240, 0.08);
+  border-radius: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.8rem;
+  font-weight: 850;
+  gap: 0.45rem;
+  min-height: 2.2rem;
+  padding: 0.44rem 0.58rem;
+  text-align: left;
+  width: 100%;
+}
+
+.command-mobile-nav button span {
+  background: var(--group-color);
+  border-radius: 999px;
+  box-shadow: 0 0 14px var(--group-color);
+  flex: 0 0 auto;
+  height: 0.62rem;
+  width: 0.62rem;
+}
+
+.command-mobile-nav button.child {
+  color: rgba(255, 255, 240, 0.58);
+  font-size: 0.74rem;
+}
+
+.command-mobile-nav button:hover,
+.command-mobile-nav button.active,
+.command-mobile-nav summary:hover {
+  border-color: rgba(var(--neon-accent-rgb), 0.42);
+  box-shadow: 0 0 18px rgba(var(--neon-accent-rgb), 0.12);
+  color: var(--ink);
 }
 
 .command-icon-button,
@@ -5543,7 +5606,9 @@ body:has(.command-center-page) .palette-trigger {
   }
 
   .command-center-brand {
-    max-width: calc(100vw - 8rem);
+    left: 0.75rem;
+    max-width: calc(100vw - 7rem);
+    top: 0.75rem;
   }
 
   .command-center-brand .logo-mark {
@@ -5561,7 +5626,11 @@ body:has(.command-center-page) .palette-trigger {
   }
 
   .command-center-top-actions {
+    display: grid;
     gap: 0.35rem;
+    grid-template-columns: repeat(2, 2.4rem);
+    right: 0.75rem;
+    top: 0.75rem;
   }
 
   .command-icon-button {
@@ -5573,16 +5642,27 @@ body:has(.command-center-page) .palette-trigger {
     display: none;
   }
 
+  .command-mobile-nav {
+    display: block;
+    left: 0.75rem;
+    max-height: min(40dvh, 22rem);
+    overflow: auto;
+    position: absolute;
+    right: 0.75rem;
+    top: 4.35rem;
+    z-index: 4;
+  }
+
   .command-center-orbit-help {
     display: none;
   }
 
   .command-side-panel {
-    bottom: calc(45dvh + 1.5rem);
+    bottom: calc(43dvh + 1.35rem);
     left: 0.75rem;
     max-height: none;
     right: 0.75rem;
-    top: 4.75rem;
+    top: 8.45rem;
     width: auto;
   }
 
@@ -5605,7 +5685,7 @@ body:has(.command-center-page) .palette-trigger {
     border-radius: 22px;
     bottom: 0.75rem;
     left: 0.75rem;
-    max-height: 45dvh;
+    max-height: 43dvh;
     padding: 0.75rem;
     right: 0.75rem;
     top: auto;
@@ -5616,14 +5696,35 @@ body:has(.command-center-page) .palette-trigger {
     max-height: 18dvh;
   }
 
+  .command-console-controls[open] {
+    max-height: min(28dvh, 16rem);
+  }
+
   .command-chat-heading span,
   .command-chat-suggestions {
+    display: none;
+  }
+
+  .command-chat-heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .command-chat-orb {
     display: none;
   }
 
   .command-chat-status {
     font-size: 0.78rem;
     padding: 0.55rem;
+  }
+
+  .voice-command-status {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .voice-command-status button {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .command-chat-input-row {

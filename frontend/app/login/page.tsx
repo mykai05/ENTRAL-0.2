@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import React from "react";
 import { AuthCard } from "../../components/AuthCard";
-import { CurlSnippet } from "../../components/CurlSnippet";
 import { LoginForm } from "../../components/LoginForm";
 
 export default function LoginPage() {
@@ -16,16 +15,6 @@ export default function LoginPage() {
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>
-      <CurlSnippet
-        authenticated={false}
-        body={{
-          email: "ada@example.com",
-          password: "correct-horse-battery-staple"
-        }}
-        method="POST"
-        path="/login"
-        title="Login"
-      />
     </AuthCard>
   );
 }

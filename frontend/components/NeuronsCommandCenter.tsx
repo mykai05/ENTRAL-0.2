@@ -3864,6 +3864,44 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </button>
       </div>
 
+      <details className="command-mobile-nav" data-academy="command-nav">
+        <summary>
+          <Menu aria-hidden="true" size={16} />
+          Navigate
+        </summary>
+        <nav aria-label="Mobile Command OS navigation">
+          <button className={selectedNodeId === "entral" ? "active" : ""} type="button" onClick={() => {
+            const entral = graphRef.current.nodes.find((node) => node.id === "entral");
+            if (entral) focusCommandNode(entral);
+          }}>
+            ENTRAL overview
+          </button>
+          <button type="button" onClick={() => setStatusHighlight(["working", "thinking"], "Highlighted active working and thinking hierarchy nodes.")}>
+            Active nodes
+          </button>
+          <button type="button" onClick={() => setStatusHighlight(["error", "waiting", "offline"], "Highlighted error, waiting, and offline nodes.")}>
+            Alerts
+          </button>
+          {marshalNodes.map((node) => (
+            <button className={selectedNodeId === node.id ? "active" : ""} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
+              <span style={{ "--group-color": groupMap.get(node.groupId)?.color ?? settings.accentColor } as React.CSSProperties} />
+              {node.name}
+            </button>
+          ))}
+          {generalNodes.slice(0, 6).map((node) => (
+            <button className={selectedNodeId === node.id ? "active child" : "child"} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
+              {node.name} / General
+            </button>
+          ))}
+          <div className="command-mobile-nav-actions">
+            <button type="button" onClick={openAtomControls}>Controls</button>
+            <button type="button" onClick={() => openSettings()}>Settings</button>
+            <button type="button" onClick={() => createHierarchyNode("marshal")}>Add Marshal</button>
+            <button type="button" onClick={() => createHierarchyNode("general")}>Add General</button>
+          </div>
+        </nav>
+      </details>
+
       <nav className="command-os-nav" data-academy="command-nav" aria-label="Command OS navigation">
         <div className="command-os-nav-header">
           <p className="eyebrow">Command OS</p>
