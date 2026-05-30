@@ -54,6 +54,7 @@ import {
   buildBusinessTemplateAuthorizationSummary,
   buildCreateNodeAuthorizationSummary,
   buildMoveAuthorizationSummary,
+  buildRemoveAuthorizationImpact,
   buildWorkflowAuthorizationSummary,
   commandTitleFor
 } from "../lib/command-authorization";
@@ -5175,6 +5176,34 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const pendingRemovalNode = pendingRemovalId ? nodeMap.get(pendingRemovalId) ?? null : null;
   const pendingRemovalChildren = pendingRemovalNode ? descendantIdsFor(pendingRemovalNode.id, graph.nodes) : [];
   const pendingRemovalParent = pendingRemovalNode?.parentId ? nodeMap.get(pendingRemovalNode.parentId) : null;
+  const pendingRemovalScopeIds = new Set(pendingRemovalNode ? [pendingRemovalNode.id, ...pendingRemovalChildren] : []);
+  const pendingRemovalTaskCount = pendingRemovalNode
+    ? graph.tasks.filter((task) => {
+      const assignedInScope = task.assignedEntityId ? pendingRemovalScopeIds.has(task.assignedEntityId) : false;
+      return assignedInScope || task.delegationPath.some((id) => pendingRemovalScopeIds.has(id));
+    }).length
+    : 0;
+  const pendingRemovalReportCount = pendingRemovalNode
+    ? graph.nodes
+      .filter((node) => pendingRemovalScopeIds.has(node.id))
+      .reduce((total, node) => total + (node.reportHistory?.length ?? 0), 0)
+      + graph.tasks
+        .filter((task) => {
+          const assignedInScope = task.assignedEntityId ? pendingRemovalScopeIds.has(task.assignedEntityId) : false;
+          return assignedInScope || task.delegationPath.some((id) => pendingRemovalScopeIds.has(id));
+        })
+        .reduce((total, task) => total + (task.reportHistory?.length ?? 0), 0)
+    : 0;
+  const pendingRemovalImpact = pendingRemovalNode
+    ? buildRemoveAuthorizationImpact({
+      descendantCount: pendingRemovalChildren.length,
+      entityName: pendingRemovalNode.name,
+      entityTitle: pendingRemovalNode.title,
+      parentName: pendingRemovalParent?.name ?? "ENTRAL",
+      reportCount: pendingRemovalReportCount,
+      taskCount: pendingRemovalTaskCount
+    })
+    : null;
   const selectedCapabilityCards = selectedNode?.type === "core"
     ? businessCapabilityBlueprints
     : (selectedNode?.capabilities ?? ["tool-orchestration"])
@@ -6052,23 +6081,22 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </div>
             <div>
               <p className="eyebrow">Confirm removal</p>
-              <h2 id="command-remove-title">Remove {pendingRemovalNode.title}?</h2>
-              <p>
-                Are you sure you want to remove {pendingRemovalNode.name}? It reports to {pendingRemovalParent?.name ?? "ENTRAL"}.
-              </p>
+              <h2 id="command-remove-title">{pendingRemovalImpact?.title ?? `Remove ${pendingRemovalNode.title}?`}</h2>
+              <p>{pendingRemovalImpact?.body}</p>
               <dl>
                 <div>
                   <dt>Name</dt>
                   <dd>{pendingRemovalNode.name}</dd>
                 </div>
-                <div>
-                  <dt>Parent</dt>
-                  <dd>{pendingRemovalParent?.name ?? "ENTRAL"}</dd>
-                </div>
-                <div>
-                  <dt>Child impact</dt>
-                  <dd>Removing {pendingRemovalNode.name} will also affect {pendingRemovalChildren.length} descendant{pendingRemovalChildren.length === 1 ? "" : "s"}.</dd>
-                </div>
+                {pendingRemovalImpact?.impact.map((line) => {
+                  const [label, ...rest] = line.split(": ");
+                  return (
+                    <div key={line}>
+                      <dt>{label}</dt>
+                      <dd>{rest.join(": ")}</dd>
+                    </div>
+                  );
+                })}
               </dl>
             </div>
             <div className="command-confirm-actions">

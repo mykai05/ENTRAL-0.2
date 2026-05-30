@@ -82,6 +82,26 @@ export function buildArchiveAuthorizationSummary(input: {
   ].join("\n");
 }
 
+export function buildRemoveAuthorizationImpact(input: {
+  descendantCount: number;
+  entityName: string;
+  entityTitle: string;
+  parentName: string;
+  reportCount: number;
+  taskCount: number;
+}) {
+  return {
+    body: `Are you sure you want to remove ${input.entityName}? It reports to ${input.parentName}.`,
+    impact: [
+      `Parent: ${input.parentName}`,
+      `Child impact: ${pluralize(input.descendantCount, "descendant")} will be removed with ${input.entityName}.`,
+      `Task impact: ${pluralize(input.taskCount, "task")} will be reassigned, failed, or detached by Command OS cleanup rules.`,
+      `Report impact: ${pluralize(input.reportCount, "report")} will remain in preserved history where possible.`
+    ],
+    title: `Remove ${input.entityTitle}?`
+  };
+}
+
 export function buildWorkflowAuthorizationSummary(input: {
   assignedSoldierCount: number;
   missingLanes: string[];

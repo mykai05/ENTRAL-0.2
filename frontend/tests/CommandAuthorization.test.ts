@@ -4,6 +4,7 @@ import {
   buildBusinessTemplateAuthorizationSummary,
   buildCreateNodeAuthorizationSummary,
   buildMoveAuthorizationSummary,
+  buildRemoveAuthorizationImpact,
   buildWorkflowAuthorizationSummary,
   commandTitleFor
 } from "../lib/command-authorization";
@@ -57,6 +58,26 @@ describe("command authorization summaries", () => {
       entityTitle: "Marshal",
       parentName: "ENTRAL"
     })).toContain("Child impact: 3 descendants will remain preserved but inactive under this archived entity.");
+  });
+
+  it("builds destructive removal impact summaries with task and report counts", () => {
+    expect(buildRemoveAuthorizationImpact({
+      descendantCount: 12,
+      entityName: "Design Commander",
+      entityTitle: "Commander",
+      parentName: "Iron House Gym General",
+      reportCount: 2,
+      taskCount: 4
+    })).toEqual({
+      body: "Are you sure you want to remove Design Commander? It reports to Iron House Gym General.",
+      impact: [
+        "Parent: Iron House Gym General",
+        "Child impact: 12 descendants will be removed with Design Commander.",
+        "Task impact: 4 tasks will be reassigned, failed, or detached by Command OS cleanup rules.",
+        "Report impact: 2 reports will remain in preserved history where possible."
+      ],
+      title: "Remove Commander?"
+    });
   });
 
   it("builds workflow previews with missing lane detail", () => {

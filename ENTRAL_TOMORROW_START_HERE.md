@@ -37,6 +37,7 @@ Implemented in the current v0.3 work session:
 - Updated ENTRAL Academy lessons for v0.3 and improved spotlight preparation.
 - Added tests for command intent, command action planning, command creation, command reports, command suggestions, Command OS defaults/store behavior, onboarding, and Merch workflow fixtures.
 - Step checkpoint after resume: wired the shared authorization summary helper into the dashboard and added focused authorization summary tests.
+- Step 2 checkpoint after resume: hardened destructive removal confirmations with shared impact summaries for parent, descendant, task, and report impact.
 
 Changed files at checkpoint:
 
@@ -97,7 +98,7 @@ Incomplete work at checkpoint:
 - Mobile tabs and Academy spotlights need live device/browser QA.
 - Command OS reports and guided business context are still local-state based, not database-backed.
 - Recovery queue UI for unrepairable local hierarchy state is not complete.
-- Delete/archive impact summaries should be hardened before real business data is trusted.
+- Archive confirmation and recovery queue UX still need deeper production-hardening before real business data is trusted.
 - Merch/POD readiness exists as a simulation layer, but external publishing/integration remains intentionally out of scope for v0.3.
 
 Remaining v0.3 work in priority order:
@@ -105,7 +106,7 @@ Remaining v0.3 work in priority order:
 1. Real-device QA for mobile Command, Hierarchy, Tasks, Reports, More tabs, graph gestures, and chat fit.
 2. Continue extracting command execution from `NeuronsCommandCenter.tsx` into tested handlers.
 3. Add approval-path tests for creation, move, archive, and workflow execution.
-4. Harden delete/archive impact summaries and recovery queue UX.
+4. Harden archive/recovery queue UX and add additional destructive-action validation tests.
 5. Add editable Modify flows for move/archive/workflow previews if needed.
 6. Persist Command OS reports/business setup context to backend records when ready.
 7. Finish terminology cleanup and remove remaining internal/user-visible `Atom` wording where inappropriate.
