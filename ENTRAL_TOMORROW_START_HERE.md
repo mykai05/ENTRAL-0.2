@@ -36,6 +36,7 @@ Implemented in the current v0.3 work session:
 - Added mobile hierarchy, task, report, and action panels.
 - Updated ENTRAL Academy lessons for v0.3 and improved spotlight preparation.
 - Added tests for command intent, command action planning, command creation, command reports, command suggestions, Command OS defaults/store behavior, onboarding, and Merch workflow fixtures.
+- Step checkpoint after resume: wired the shared authorization summary helper into the dashboard and added focused authorization summary tests.
 
 Changed files at checkpoint:
 
@@ -64,11 +65,13 @@ Created files at checkpoint:
 - `ENTRAL_V0_3_SIMPLIFICATION_AUDIT.md`
 - `MOBILE_UX_AUDIT.md`
 - `frontend/lib/command-action-plan.ts`
+- `frontend/lib/command-authorization.ts`
 - `frontend/lib/command-creation.ts`
 - `frontend/lib/command-intent.ts`
 - `frontend/lib/command-reports.ts`
 - `frontend/lib/command-suggestions.ts`
 - `frontend/tests/CommandActionPlan.test.ts`
+- `frontend/tests/CommandAuthorization.test.ts`
 - `frontend/tests/CommandCreation.test.ts`
 - `frontend/tests/CommandIntent.test.ts`
 - `frontend/tests/CommandReports.test.ts`
@@ -77,6 +80,7 @@ Created files at checkpoint:
 Checks passed before checkpoint:
 
 - Frontend typecheck/lint: passed.
+- Focused authorization tests: 1 file, 4 tests passed.
 - Frontend tests: 15 files, 58 tests passed.
 - Frontend production build: passed.
 - Backend typecheck/lint: passed.

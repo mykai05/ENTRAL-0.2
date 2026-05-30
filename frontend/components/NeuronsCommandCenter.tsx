@@ -49,6 +49,14 @@ import { createMerchLaunchWorkflowTasks, merchLaunchWorkflowSteps } from "../lib
 import { type ClientMerchStore, type PodProduct, type ProductBatchGeneratorResponse } from "../lib/merch-store";
 import { collectTranscript, getSpeechRecognitionConstructor, normalizeWakeWordCommand, type SpeechRecognitionLike } from "../lib/voice-command";
 import { planCommandAction } from "../lib/command-action-plan";
+import {
+  buildArchiveAuthorizationSummary,
+  buildBusinessTemplateAuthorizationSummary,
+  buildCreateNodeAuthorizationSummary,
+  buildMoveAuthorizationSummary,
+  buildWorkflowAuthorizationSummary,
+  commandTitleFor
+} from "../lib/command-authorization";
 import { buildCommandOSReport, buildCommandOSReportRecord } from "../lib/command-reports";
 import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../lib/command-suggestions";
 import { creationBlockedTransmission, hierarchyNameFromCommandText, nextCommandPlaceholderName } from "../lib/command-creation";
@@ -3122,7 +3130,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
   function requestNodeAuthorization(type: Exclude<NodeType, "emperor">, requestedName?: string) {
     const nodeName = requestedName?.trim() || nextPlaceholderName(type);
-    const title = type === "marshal" ? "Marshal" : type === "general" ? "General" : type === "commander" ? "Commander" : "Soldier";
+    const title = commandTitleFor(type);
     const parentId = parentIdForNewNode(type);
     const parent = parentId ? graphRef.current.nodes.find((node) => node.id === parentId) : null;
 
@@ -3131,13 +3139,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       return;
     }
 
-    const summary = [
-      `Objective interpreted: Create ${title}.`,
-      `Name: ${nodeName}`,
-      `Parent: ${parent.name}`,
-      `Command path impact: 1 new ${title} will be added under ${parent.name}.`,
-      "Authorize creation?"
-    ].join("\n");
+    const summary = buildCreateNodeAuthorizationSummary({
+      nodeName,
+      nodeType: type,
+      parentName: parent.name
+    });
 
     setPendingAuthorization({
       createdAt: new Date().toISOString(),
@@ -3173,17 +3179,14 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       form.brandStyle.trim() ? `Brand style: ${form.brandStyle.trim()}` : "",
       form.initialProducts.trim() ? `Initial services/products: ${form.initialProducts.trim()}` : ""
     ].filter(Boolean);
-    const summary = [
-      "Objective interpreted: Create business command structure.",
-      `Template: ${template.label}`,
-      `Marshal: ${marshalName}`,
-      `Business General: ${businessName} General`,
-      `Commanders: ${template.commanders.length}`,
-      `Soldiers: ${soldierCount}`,
-      contextLines.length ? `Context: ${contextLines.join(" | ")}` : "Context: no optional business context entered.",
-      "Initial setup: first intake task assigned for review.",
-      "Authorize creation?"
-    ].join("\n");
+    const summary = buildBusinessTemplateAuthorizationSummary({
+      businessName,
+      commanderCount: template.commanders.length,
+      contextLines,
+      marshalName,
+      soldierCount,
+      templateLabel: template.label
+    });
 
     setPendingAuthorization({
       createdAt: new Date().toISOString(),
@@ -3209,14 +3212,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     }
 
     const descendants = descendantIdsFor(node.id).length;
-    const summary = [
-      "Objective interpreted: Move command entity.",
-      `Entity: ${node.name}`,
-      `Current parent: ${node.parentId ? graphRef.current.nodes.find((candidate) => candidate.id === node.parentId)?.name ?? "Unknown" : "ENTRAL"}`,
-      `New parent: ${parent.name}`,
-      `Child impact: ${descendants} descendant${descendants === 1 ? "" : "s"} will keep reporting through ${node.name}.`,
-      "Authorize reassignment?"
-    ].join("\n");
+    const summary = buildMoveAuthorizationSummary({
+      currentParentName: node.parentId ? graphRef.current.nodes.find((candidate) => candidate.id === node.parentId)?.name ?? "Unknown" : "ENTRAL",
+      descendantCount: descendants,
+      entityName: node.name,
+      newParentName: parent.name
+    });
 
     setPendingAuthorization({
       createdAt: new Date().toISOString(),
@@ -3232,14 +3233,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
   function requestArchiveAuthorization(node: GraphNode3D) {
     const descendants = descendantIdsFor(node.id).length;
-    const summary = [
-      "Objective interpreted: Archive command entity.",
-      `Entity: ${node.name}`,
-      `Type: ${node.title}`,
-      `Parent: ${node.parentId ? graphRef.current.nodes.find((candidate) => candidate.id === node.parentId)?.name ?? "Unknown" : "ENTRAL"}`,
-      `Child impact: ${descendants} descendant${descendants === 1 ? "" : "s"} will remain preserved but inactive under this archived entity.`,
-      "Authorize archive?"
-    ].join("\n");
+    const summary = buildArchiveAuthorizationSummary({
+      descendantCount: descendants,
+      entityName: node.name,
+      entityTitle: node.title,
+      parentName: node.parentId ? graphRef.current.nodes.find((candidate) => candidate.id === node.parentId)?.name ?? "Unknown" : "ENTRAL"
+    });
 
     setPendingAuthorization({
       createdAt: new Date().toISOString(),
@@ -3259,15 +3258,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       workflowName
     });
     const uniqueSoldiers = new Set(preview.tasks.map((task) => task.assignedEntityId).filter(Boolean)).size;
-    const summary = [
-      "Objective interpreted: Generate Merch/POD workflow.",
-      `Workflow: ${workflowName}`,
-      `Planned tasks: ${preview.tasks.length}`,
-      `Assigned Soldiers: ${uniqueSoldiers}`,
-      preview.missingSteps.length ? `Missing lanes: ${preview.missingSteps.map((step) => step.name).join(", ")}` : "Missing lanes: none detected.",
-      "This will create task records and update entity memory/status in local Command OS state.",
-      "Authorize workflow generation?"
-    ].join("\n");
+    const summary = buildWorkflowAuthorizationSummary({
+      assignedSoldierCount: uniqueSoldiers,
+      missingLanes: preview.missingSteps.map((step) => step.name),
+      taskCount: preview.tasks.length,
+      workflowName
+    });
 
     setPendingAuthorization({
       createdAt: new Date().toISOString(),
