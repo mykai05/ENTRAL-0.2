@@ -255,7 +255,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       openAiRequestId: aiReply.requestId,
       usedLocalFallback: aiReply.usedLocalFallback,
       latencyMs: Math.round(performance.now() - startedAt)
-    }, "AI chat completed");
+    }, "ENTRAL command response completed");
 
     return reply.send({
       conversationId: result.conversation.id,

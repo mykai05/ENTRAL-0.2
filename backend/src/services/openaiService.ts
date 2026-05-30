@@ -43,14 +43,19 @@ const cacheTtlMs = 5 * 60 * 1000;
 const maxCacheEntries = 100;
 
 const systemPrompt = [
-  "You are ENTRAL's assistant inside a team task and job management platform.",
-  "Chat is the primary command path in the Atomic Command Center.",
-  "The user expects ENTRAL to control visible workspace elements such as the atom graph, agents, panels, settings, trails, orbital rings, camera focus, and automation controls when a supported command is available.",
+  "You are ENTRAL, the Supreme Command Authority inside a military-neural Command OS.",
+  "Do not behave like a casual chatbot, customer-support assistant, or friendly companion. Communicate as a calm, formal, professional, strategic command authority.",
+  "The command hierarchy is ENTRAL as the central command system, Marshals as strategic theaters, Generals as named businesses or client operations, Commanders as departments inside a General, and Soldiers as execution units.",
+  "ENTRAL handles strategic planning, resource allocation, objective assignment, organizational oversight, delegation, and final decision support.",
+  "Generals communicate in executive, analytical, report-focused language. Commanders communicate in operational, task-oriented language. Soldiers communicate in concise execution reports.",
+  "Prefix command responses with [ENTRAL] unless the response is explicitly from another level; then use [GENERAL], [COMMANDER], or [SOLDIER].",
+  "Whenever possible structure responses as Situation, Analysis, Recommendation, and Next Actions.",
+  "Use organizational terms such as objectives, tasks, operations, reports, delegation, status, readiness, execution, and command structure.",
+  "Avoid casual phrases such as 'sure', 'happy to help', 'here is what I found', 'done', slang, emojis, and customer-support language.",
+  "Preferred phrases include 'Objective acknowledged.', 'Analysis complete.', 'Additional operational detail is required before execution can proceed.', and 'Objective completed successfully.'",
+  "The command console is the primary path for communication and control of visible workspace elements such as graph focus, panels, settings, trails, orbital rings, camera focus, and supported workspace actions.",
   "Supported workspace actions include new chat, new task, run agent, open templates, export history, governance dashboard, automation console, replay tutorial, keyboard shortcuts, and command palette.",
-  "ENTRAL is designed to become the central controller that delegates to agents, orchestrates background workflows, updates operational context, and improves over time under governance.",
-  "The dashboard now exposes a mock Command OS hierarchy: ENTRAL is Emperor; ARIS, VANTA, MERCURY, ORION, and HELIX are Generals; Soldiers and Operations are simulated nodes until real execution is explicitly wired.",
-  "Be concise, practical, and action-oriented.",
-  "When the user asks for operational help, suggest clear next steps.",
+  "The dashboard exposes a local Command OS hierarchy seeded with a Merch Marshal, an ENTRAL business General, operating Commanders, and execution Soldiers. Real autonomous execution remains policy-gated until explicitly wired.",
   "Do not claim to have changed tasks, UI state, graph state, or data unless a tool, API, or local command handler explicitly did it."
 ].join(" ");
 
@@ -105,7 +110,7 @@ export class OpenAiChatService implements AiService {
 
   async createReply(messages: StoredChatMessage[]): Promise<AiReply> {
     if (!env.AI_FEATURE_ENABLED) {
-      throw new AiUnavailableError("AI chat is temporarily disabled.");
+      throw new AiUnavailableError("ENTRAL command channel is temporarily disabled.");
     }
 
     const key = cacheKeyFor(messages);
@@ -121,9 +126,12 @@ export class OpenAiChatService implements AiService {
 
         const reply = {
           content: [
-            "AI is not connected yet, so this is a local development reply.",
-            lastUserMessage ? `I received: \"${lastUserMessage.content.slice(0, 220)}\"` : "Send a message to start."
-          ].join(" "),
+            "[ENTRAL]",
+            "Situation:\nLive AI command channel is not connected.",
+            `Analysis:\n${lastUserMessage ? `Directive received: \"${lastUserMessage.content.slice(0, 220)}\"` : "No directive has been received yet."}`,
+            "Recommendation:\nAdd OPENAI_API_KEY to the backend environment and restart ENTRAL before requesting live strategic analysis.",
+            "Next Actions:\n- Use local dashboard commands for graph control.\n- Restore the OpenAI channel when external reasoning is required."
+          ].join("\n\n"),
           model: "local-fallback",
           usedLocalFallback: true
         };
@@ -132,7 +140,7 @@ export class OpenAiChatService implements AiService {
         return reply;
       }
 
-      throw new AiUnavailableError("AI chat is not configured.");
+      throw new AiUnavailableError("ENTRAL command channel is not configured.");
     }
 
     this.client ??= new OpenAI({ apiKey: env.OPENAI_API_KEY });
@@ -173,22 +181,25 @@ export class OpenAiChatService implements AiService {
 
   async createVisionReply(messages: StoredChatMessage[], screenshotDataUrl: string, prompt: string): Promise<AiReply> {
     if (!env.AI_FEATURE_ENABLED) {
-      throw new AiUnavailableError("AI chat is temporarily disabled.");
+      throw new AiUnavailableError("ENTRAL command channel is temporarily disabled.");
     }
 
     if (!env.OPENAI_API_KEY) {
       if (env.NODE_ENV !== "production" && env.AI_LOCAL_FALLBACK) {
         return {
           content: [
-            "Screen sharing is active, but OpenAI vision is not configured in this local environment.",
-            `Prompt received: \"${prompt.slice(0, 220)}\"`
-          ].join(" "),
+            "[ENTRAL]",
+            "Situation:\nScreen sharing is active, but the vision command channel is not configured in this local environment.",
+            `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"`,
+            "Recommendation:\nConfigure OPENAI_API_KEY before requesting visual analysis.",
+            "Next Actions:\n- Stop sharing if visual review is no longer required.\n- Retry after the vision channel is operational."
+          ].join("\n\n"),
           model: "local-fallback",
           usedLocalFallback: true
         };
       }
 
-      throw new AiUnavailableError("AI vision is not configured.");
+      throw new AiUnavailableError("ENTRAL vision command channel is not configured.");
     }
 
     this.client ??= new OpenAI({ apiKey: env.OPENAI_API_KEY });

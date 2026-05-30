@@ -35,7 +35,14 @@ export function DashboardClient() {
     try {
       setError("");
       const dashboard = await apiFetch<DashboardResponse>("/dashboard", { timeoutMs: 8000 });
-      setUser({ ...dashboard.user, name: displayName(dashboard.user.name) });
+      const nextUser = { ...dashboard.user, name: displayName(dashboard.user.name) };
+      setUser(nextUser);
+      window.dispatchEvent(new CustomEvent("entral:user-authenticated", {
+        detail: {
+          email: nextUser.email,
+          userId: nextUser.id
+        }
+      }));
     } catch (loadError) {
       if (loadError instanceof ApiError && loadError.status === 401) {
         router.push("/login?next=/dashboard");
@@ -54,6 +61,7 @@ export function DashboardClient() {
 
   async function handleLogout() {
     await apiFetch("/logout", { method: "POST" }).catch(() => null);
+    window.dispatchEvent(new Event("entral:user-signed-out"));
     router.push("/login");
     router.refresh();
   }

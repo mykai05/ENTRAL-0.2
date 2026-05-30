@@ -54,15 +54,16 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
 
   const actions = useMemo<PaletteAction[]>(() => [
-    { description: "Start a fresh assistant thread", href: "/chat", id: "new-chat", keywords: "ai assistant conversation", label: "New chat" },
+    { description: "Start a fresh ENTRAL command thread", href: "/chat", id: "new-chat", keywords: "ai command conversation directive", label: "New command thread" },
     { description: "Open the automation task composer", href: "/automations", id: "new-task", keywords: "task job todo automation", label: "New task" },
     { description: "Assign work to a specialized agent", href: "/agents", id: "run-agent", keywords: "agent run assign orchestration", label: "Run agent" },
     { description: "Open the agent preset gallery", href: "/agents#templates", id: "templates", keywords: "presets templates scraper research linkedin", label: "Open templates" },
     { description: "Open chat export controls", href: "/chat#export", id: "export-history", keywords: "export json csv history", label: "Export history" },
     { description: "Review policies and audit logs", href: "/admin", id: "governance", keywords: "policy audit admin governance", label: "Governance dashboard" },
     { description: "Run browser automation jobs", href: "/automations", id: "automation", keywords: "scrape browser job", label: "Automation console" },
-    { description: "Tune neon color, brightness, and onboarding", id: "settings", keywords: "theme customizer accent color settings tutorial", label: "Open settings", run: () => window.dispatchEvent(new Event("entral:open-settings")) },
-    { description: "Replay the guided first-run tour", id: "tutorial", keywords: "help onboarding guide tutorial beginner", label: "Replay tutorial", run: () => window.dispatchEvent(new Event("entral:open-tutorial")) },
+    { description: "Tune neon color, brightness, and onboarding", id: "settings", keywords: "theme customizer accent color settings tutorial academy", label: "Open settings", run: () => window.dispatchEvent(new Event("entral:open-settings")) },
+    { description: "Open lessons, guided tasks, and progress tracking", id: "academy", keywords: "help onboarding guide tutorial beginner advanced academy training", label: "ENTRAL Academy", run: () => window.dispatchEvent(new Event("entral:open-academy")) },
+    { description: "Replay the guided first-run walkthrough", id: "tutorial", keywords: "help onboarding guide tutorial beginner academy", label: "Replay walkthrough", run: () => window.dispatchEvent(new Event("entral:open-tutorial")) },
     { description: "Show every keyboard shortcut", id: "shortcuts", keywords: "keyboard help hotkeys commands", label: "Keyboard shortcuts", run: () => setShowHelp(true) }
   ], []);
 
@@ -156,7 +157,7 @@ export function CommandPalette() {
 
   return (
     <>
-      <button className="palette-trigger" type="button" onClick={() => setIsOpen(true)} aria-label="Open command palette">
+      <button className="palette-trigger" data-academy="command-palette" type="button" onClick={() => setIsOpen(true)} aria-label="Open command palette">
         <Command aria-hidden="true" size={18} />
         <span>Command</span>
         <kbd>Ctrl K</kbd>

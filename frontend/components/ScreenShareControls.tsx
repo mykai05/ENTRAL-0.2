@@ -143,7 +143,7 @@ export const ScreenShareControls = forwardRef<ScreenShareControlsHandle, ScreenS
     }
 
     return (
-      <section className="screen-share-panel" aria-label="Screen sharing">
+      <section className="screen-share-panel" data-academy="screen-share" aria-label="Screen sharing">
         <div>
           <strong>{isSharing ? "Screen sharing active" : "Screen view"}</strong>
           <span>{isSharing ? `Latest frame ${latestCapturedAt ?? "pending"}` : "Optional. Nothing is shared until you approve it."}</span>

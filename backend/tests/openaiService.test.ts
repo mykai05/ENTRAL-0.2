@@ -33,6 +33,6 @@ describe("OpenAiChatService", () => {
     ], "data:image/jpeg;base64,aGVsbG8=", "What do you see?");
 
     expect(reply.usedLocalFallback).toBe(true);
-    expect(reply.content).toContain("OpenAI vision is not configured");
+    expect(reply.content).toContain("vision command channel is not configured");
   });
 });

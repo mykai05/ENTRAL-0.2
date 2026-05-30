@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: "Entral",
     template: "%s | Entral"
   },
-  description: "A clean autonomous workspace for AI chat, tasks, agents, and governance.",
+  description: "A clean autonomous command workspace for directives, tasks, agents, and governance.",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Entral",
-    description: "AI chat, automation tasks, multi-agent orchestration, and governance in one launch-ready workspace.",
-    images: [{ url: "/icon.svg", width: 512, height: 512, alt: "Entral geometric E network logo" }],
+    description: "Command directives, automation tasks, multi-agent orchestration, and governance in one launch-ready workspace.",
+    images: [{ url: "/icon.svg", width: 512, height: 512, alt: "Entral command atom emblem logo" }],
     siteName: "Entral",
     type: "website"
   },
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "Entral",
-    description: "AI chat, automation tasks, multi-agent orchestration, and governance.",
+    description: "Command directives, automation tasks, multi-agent orchestration, and governance.",
     images: ["/icon.svg"]
   }
 };

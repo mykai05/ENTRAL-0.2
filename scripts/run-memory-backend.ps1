@@ -9,6 +9,7 @@ if (-not (Test-Path $NodeExe)) {
 }
 
 Set-Location $BackendDir
+$env:API_HOST = "0.0.0.0"
 
 if (Test-Path "dist\dev-memory-server.js") {
   & $NodeExe "dist\dev-memory-server.js"

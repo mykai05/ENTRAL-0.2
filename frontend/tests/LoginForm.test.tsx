@@ -21,4 +21,12 @@ describe("LoginForm", () => {
 
     expect(await screen.findByText(/enter a valid email address/i)).toBeInTheDocument();
   });
+
+  it("shows a forgot password recovery option", async () => {
+    render(<LoginForm />);
+
+    await userEvent.click(screen.getByRole("button", { name: /forgot password/i }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(/enter your email first/i);
+  });
 });

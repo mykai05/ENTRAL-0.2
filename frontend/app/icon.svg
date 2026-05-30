@@ -1,10 +1,74 @@
-<svg fill="none" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="14" fill="#0A0A0A"/>
-  <rect x="1" y="1" width="62" height="62" rx="13" stroke="#00F0FF" stroke-opacity=".55"/>
-  <path d="M20 18h23M20 32h18M20 46h24M20 18v28" stroke="#F0F0F0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M42 18l8 9-9 5 8 14" stroke="#00BFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="42" cy="18" r="3" fill="#00F0FF"/>
-  <circle cx="50" cy="27" r="3" fill="#00F0FF"/>
-  <circle cx="41" cy="32" r="3" fill="#00BFFF"/>
-  <circle cx="49" cy="46" r="3" fill="#00F0FF"/>
+<svg fill="none" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="metal" x1="20" x2="76" y1="13" y2="83" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.25" stop-color="#9FAAB0"/>
+      <stop offset="0.52" stop-color="#F8FFFF"/>
+      <stop offset="0.78" stop-color="#657176"/>
+      <stop offset="1" stop-color="#EAF9FF"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="15" x2="81" y1="78" y2="18" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00F0FF"/>
+      <stop offset="0.55" stop-color="#B9FBFF"/>
+      <stop offset="1" stop-color="#00BFFF"/>
+    </linearGradient>
+    <radialGradient id="core" cx="0" cy="0" r="1" gradientTransform="matrix(0 28 -28 0 48 48)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FFFF"/>
+      <stop offset="0.34" stop-color="#00F0FF"/>
+      <stop offset="1" stop-color="#05242C"/>
+    </radialGradient>
+    <filter id="glow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0 0 0 0 0 0.94 0 0 0 0 1 0 0 0 0.92 0" result="cyanBlur"/>
+      <feMerge>
+        <feMergeNode in="cyanBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <rect width="96" height="96" rx="22" fill="#050505"/>
+  <circle cx="48" cy="48" r="34" fill="#00F0FF" opacity="0.18" filter="url(#softGlow)"/>
+  <circle cx="48" cy="48" r="35.5" fill="rgba(5, 5, 5, 0.72)" stroke="#00F0FF" stroke-opacity="0.34" stroke-width="1.3"/>
+
+  <g stroke="url(#metal)" stroke-linejoin="round" stroke-width="2.2">
+    <path d="M48 5.8 54.6 30 48 37.6 41.4 30 48 5.8Z"/>
+    <path d="M48 90.2 41.4 66 48 58.4 54.6 66 48 90.2Z"/>
+    <path d="M5.8 48 30 41.4 37.6 48 30 54.6 5.8 48Z"/>
+    <path d="M90.2 48 66 54.6 58.4 48 66 41.4 90.2 48Z"/>
+  </g>
+
+  <g stroke="url(#metal)" stroke-linecap="round" stroke-width="2" opacity="0.78">
+    <path d="M23.4 25.8A35.5 35.5 0 0 1 42.2 13.1"/>
+    <path d="M53.8 13.1a35.5 35.5 0 0 1 18.8 12.7"/>
+    <path d="M82.9 42.2a35.5 35.5 0 0 1-4.8 22.6"/>
+    <path d="M64.8 78.1a35.5 35.5 0 0 1-22.6 4.8"/>
+    <path d="M31.2 78.1a35.5 35.5 0 0 1-18.1-18.6"/>
+    <path d="M13.1 42.2a35.5 35.5 0 0 1 4.8-16.4"/>
+    <path d="M30.4 21.2a29.3 29.3 0 0 1 11.4-4.5"/>
+    <path d="M54.2 16.7a29.3 29.3 0 0 1 11.4 4.5"/>
+    <path d="M74.8 37.6a29.3 29.3 0 0 1 0 20.8"/>
+    <path d="M65.6 74.8a29.3 29.3 0 0 1-11.4 4.5"/>
+    <path d="M41.8 79.3a29.3 29.3 0 0 1-11.4-4.5"/>
+    <path d="M21.2 65.6a29.3 29.3 0 0 1-4.5-11.4"/>
+  </g>
+
+  <g stroke="url(#cyan)" stroke-linecap="round" stroke-width="2.25" filter="url(#glow)">
+    <ellipse cx="48" cy="48" rx="30.5" ry="10.8" transform="rotate(-18 48 48)"/>
+    <ellipse cx="48" cy="48" rx="30.5" ry="10.8" transform="rotate(57 48 48)"/>
+    <ellipse cx="48" cy="48" rx="30.5" ry="10.8" transform="rotate(123 48 48)"/>
+  </g>
+
+  <circle cx="48" cy="48" r="17.2" fill="url(#core)" stroke="#EAF9FF" stroke-opacity="0.54" stroke-width="1"/>
+  <path d="M39 38.2h19.2M39 48h16.4M39 57.8h19.2M39 38.2v19.6" stroke="url(#metal)" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g fill="#00F0FF" filter="url(#glow)">
+    <circle cx="48" cy="28.1" r="3.4"/>
+    <circle cx="67.7" cy="48" r="3.4"/>
+    <circle cx="48" cy="67.9" r="3.4"/>
+    <circle cx="28.3" cy="48" r="3.4"/>
+  </g>
 </svg>

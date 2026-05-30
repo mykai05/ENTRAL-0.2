@@ -24,10 +24,144 @@ model User {
   agents      Agent[]
   agentTasks  AgentTask[]
   agentSchedules AgentSchedule[]
+  merchStores ClientMerchStore[]
   policiesCreated Policy[]      @relation("PolicyCreatedBy")
   auditLogs   AuditLog[]
 
   @@index([email])
+}
+
+enum MerchStorePlatform {
+  ETSY    @map("Etsy")
+  SHOPIFY @map("Shopify")
+  OTHER   @map("Other")
+}
+
+enum MerchPodProvider {
+  PRINTIFY @map("Printify")
+  PRINTFUL @map("Printful")
+  OTHER    @map("Other")
+}
+
+enum MerchApprovalStatus {
+  NOT_STARTED       @map("Not Started")
+  RESEARCH_APPROVED @map("Research Approved")
+  DESIGNS_PENDING   @map("Designs Pending")
+  DESIGNS_APPROVED  @map("Designs Approved")
+  LISTINGS_APPROVED @map("Listings Approved")
+  LAUNCH_APPROVED   @map("Launch Approved")
+}
+
+enum MerchLaunchStatus {
+  LEAD              @map("Lead")
+  DISCOVERY         @map("Discovery")
+  RESEARCHING       @map("Researching")
+  DESIGNING         @map("Designing")
+  AWAITING_APPROVAL @map("Awaiting Approval")
+  BUILDING_STORE    @map("Building Store")
+  LAUNCHED          @map("Launched")
+  OPTIMIZING        @map("Optimizing")
+  PAUSED            @map("Paused")
+  ARCHIVED          @map("Archived")
+}
+
+model ClientMerchStore {
+  id              String               @id @default(cuid())
+  userId          String
+  clientName      String
+  businessName    String
+  contactName     String
+  email           String
+  phone           String?
+  industry        String
+  audience        String
+  brandStyle      String
+  storePlatform   MerchStorePlatform   @default(ETSY)
+  podProvider     MerchPodProvider     @default(PRINTIFY)
+  productTypes    String[]             @default([])
+  designCount     Int                  @default(0)
+  setupFee        Decimal              @default(0) @db.Decimal(12, 2)
+  monthlyFee      Decimal              @default(0) @db.Decimal(12, 2)
+  profitShare     Decimal              @default(0) @db.Decimal(5, 2)
+  approvalStatus  MerchApprovalStatus  @default(NOT_STARTED)
+  launchStatus    MerchLaunchStatus    @default(LEAD)
+  revenue         Decimal              @default(0) @db.Decimal(12, 2)
+  estimatedProfit Decimal              @default(0) @db.Decimal(12, 2)
+  notes           String?
+  commandMarshalId   String?
+  commandMarshalName String?
+  commandGeneralId   String?
+  commandGeneralName String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products        PodProduct[]
+
+  @@index([userId, launchStatus])
+  @@index([userId, approvalStatus])
+  @@index([userId, createdAt])
+  @@index([userId, commandMarshalId])
+  @@index([userId, commandGeneralId])
+  @@index([email])
+}
+
+enum PodProductStatus {
+  IDEA              @map("Idea")
+  PROMPT_READY      @map("Prompt Ready")
+  DESIGNED          @map("Designed")
+  MOCKUP_CREATED    @map("Mockup Created")
+  LISTING_DRAFTED   @map("Listing Drafted")
+  COMPLIANCE_REVIEW @map("Compliance Review")
+  AWAITING_APPROVAL @map("Awaiting Approval")
+  APPROVED          @map("Approved")
+  PUBLISHED         @map("Published")
+  NEEDS_REVISION    @map("Needs Revision")
+  REJECTED          @map("Rejected")
+  ARCHIVED          @map("Archived")
+}
+
+model PodProduct {
+  id                                  String           @id @default(cuid())
+  storeId                             String
+  productName                         String
+  productType                         String
+  targetAudience                      String
+  designTheme                         String
+  designConcept                       String
+  designPrompt                        String
+  typographyDirection                 String
+  colorDirection                      String
+  mockupNotes                         String?
+  supplierCost                        Decimal          @default(0) @db.Decimal(12, 2)
+  shippingCost                        Decimal          @default(0) @db.Decimal(12, 2)
+  retailPrice                         Decimal          @default(0) @db.Decimal(12, 2)
+  estimatedPlatformFees               Decimal          @default(0) @db.Decimal(12, 2)
+  estimatedProfit                     Decimal          @default(0) @db.Decimal(12, 2)
+  profitMargin                        Decimal          @default(0) @db.Decimal(7, 2)
+  listingTitle                        String?
+  listingDescription                  String?
+  tags                                String[]         @default([])
+  complianceNotes                     String?
+  aiDisclosureNeeded                  Boolean          @default(false)
+  productionPartnerDisclosureNeeded   Boolean          @default(false)
+  status                              PodProductStatus @default(IDEA)
+  commandMarshalId                    String?
+  commandMarshalName                  String?
+  commandGeneralId                    String?
+  commandGeneralName                  String?
+  commandCommanderId                  String?
+  commandCommanderName                String?
+  commandSoldierId                    String?
+  commandSoldierName                  String?
+  createdAt                           DateTime         @default(now())
+  updatedAt                           DateTime         @updatedAt
+  store                               ClientMerchStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, status])
+  @@index([storeId, createdAt])
+  @@index([commandMarshalId])
+  @@index([commandGeneralId])
+  @@index([productType])
 }
 
 model Agent {

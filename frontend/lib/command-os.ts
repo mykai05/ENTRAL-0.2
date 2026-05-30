@@ -1,82 +1,165 @@
-export type NodeType = "emperor" | "general" | "soldier" | "operation";
+export type NodeType = "emperor" | "marshal" | "general" | "commander" | "soldier";
 
-export type CommandStatus = "idle" | "running" | "success" | "warning" | "error" | "awaiting_approval" | "paused";
+export type CommandStatus = "idle" | "working" | "thinking" | "waiting" | "error" | "offline";
+
+export type CommandTaskStatus = "pending" | "assigned" | "running" | "completed" | "failed";
+
+export type CommandMemory = {
+  instructions: string;
+  notes: string[];
+  recentTasks: string[];
+  role: string;
+  taskResults: string[];
+};
+
+export type CommandTask = {
+  assignedEntityId: string | null;
+  assignedEntityType?: NodeType | null;
+  completedAt?: string | null;
+  commanderId?: string | null;
+  commanderName?: string | null;
+  createdAt: string;
+  delegationPath: string[];
+  description: string;
+  generalId?: string | null;
+  generalName?: string | null;
+  history: string[];
+  id: string;
+  marshalId?: string | null;
+  marshalName?: string | null;
+  name: string;
+  reportHistory?: CommandReportRecord[];
+  soldierId?: string | null;
+  soldierName?: string | null;
+  status: CommandTaskStatus;
+  updatedAt: string;
+};
+
+export type CommandReportRecord = {
+  analysis: string;
+  commanderId?: string | null;
+  createdAt: string;
+  destinationEntityId: string;
+  destinationEntityType: NodeType;
+  generalId?: string | null;
+  id: string;
+  marshalId?: string | null;
+  nextActions: string[];
+  recommendation: string;
+  situation: string;
+  soldierId?: string | null;
+  sourceEntityId: string;
+  sourceEntityType: NodeType;
+};
 
 export type CommandNode = {
-  children?: string[];
-  createdAt?: string;
+  children: string[];
+  createdAt: string;
+  currentTask: string | null;
+  activeCommanders?: number;
+  activeGenerals?: number;
+  activeProjects?: string[];
+  activeSoldiers?: number;
+  activeStores?: string[];
+  businessName?: string;
   description?: string;
+  executionRole?: string;
+  generalType?: "Internal Business" | "Client Business" | "POD Store" | "Brand" | "Agency Client" | "Test Business" | "Other";
   health: number;
   id: string;
   logs?: string[];
+  marshalType?: "Merch Theater" | "Website Theater" | "Voice Operations Theater" | "Marketing Theater" | "Automation Theater" | "Client Operations Theater" | "Internal Operations Theater" | "Test Theater" | "Other";
+  memory: CommandMemory;
   metrics?: Record<string, number | string>;
   name: string;
+  operationalArea?: string;
   parentId: string | null;
+  parentCommanderId?: string | null;
+  parentCommanderName?: string | null;
+  parentGeneralId?: string | null;
+  parentGeneralName?: string | null;
+  parentMarshalId?: string | null;
+  parentMarshalName?: string | null;
   permissions?: string[];
   progress?: number;
+  reports?: CommandReportRecord[];
+  reportHistory?: CommandReportRecord[];
   role: string;
   status: CommandStatus;
+  taskHistory: string[];
   title: string;
   tools?: string[];
   type: NodeType;
+  updatedAt?: string;
 };
 
-export type CommandGeneral = {
+export type CommandMarshal = {
   color: string;
   id: string;
   name: string;
   role: string;
-  soldiers: string[];
+  type: NonNullable<CommandNode["marshalType"]>;
 };
 
-export const commandGenerals: CommandGeneral[] = [
-  {
-    color: "#00F0FF",
-    id: "aris",
-    name: "ARIS",
-    role: "Operations & Business Execution",
-    soldiers: ["Website Builder", "Deployment Manager", "SOP Architect", "Automation Runner", "Client Delivery"]
-  },
-  {
-    color: "#8A5CFF",
-    id: "vanta",
-    name: "VANTA",
-    role: "Security & Monitoring",
-    soldiers: ["Server Monitor", "Auth Watch", "Audit Log", "Threat Detection", "Permission Guard"]
-  },
-  {
-    color: "#FF00FF",
-    id: "mercury",
-    name: "MERCURY",
-    role: "Marketing & Growth",
-    soldiers: ["SEO Analyst", "Trend Scanner", "Ad Strategist", "Social Publisher", "Conversion Tracker"]
-  },
-  {
-    color: "#39FF14",
-    id: "orion",
-    name: "ORION",
-    role: "Research & Intelligence",
-    soldiers: ["Market Scanner", "Competitor Analyst", "Product Validator", "Pricing Research", "Report Builder"]
-  },
-  {
-    color: "#00BFFF",
-    id: "helix",
-    name: "HELIX",
-    role: "Development & Debugging",
-    soldiers: ["Bug Tracker", "Code Review", "Patch Planner", "Repo Scanner", "Test Runner"]
-  }
+export type CommandGeneral = {
+  businessName: string;
+  id: string;
+  marshalId: string;
+  name: string;
+  role: string;
+  type: NonNullable<CommandNode["generalType"]>;
+};
+
+export const commandMarshals: CommandMarshal[] = [
+  { color: "#00F0FF", id: "merch-marshal", name: "Merch Marshal", role: "Merchandising, POD stores, client merch operations, launch packaging, and reporting theater", type: "Merch Theater" }
 ];
 
-const defaultOperationByGeneral: Record<string, string> = {
-  aris: "Generate landing page wireframe",
-  helix: "Review deployment logs",
-  mercury: "Run SEO keyword scan",
-  orion: "Build market intelligence brief",
-  vanta: "Monitor failed auth events"
-};
+export const commandGenerals: CommandGeneral[] = [
+  { businessName: "ENTRAL", id: "entral-general", marshalId: "merch-marshal", name: "ENTRAL General", role: "Internal POD merch operating command for ENTRAL-owned and client-prep workflows", type: "Internal Business" }
+];
 
-const defaultPermissions = ["read_project_context", "write_mock_plan", "request_approval"];
-const defaultTools = ["mock_command_bus", "mock_operation_log", "mock_status_reporter"];
+const defaultPermissions = ["read_command_context", "request_approval", "report_status"];
+const defaultTools = ["command_bus", "status_reporter"];
+const bootTime = "2026-05-28T00:00:00.000Z";
+
+const merchCommanders = [
+  {
+    name: "Client Intake Commander",
+    soldiers: ["Business Profile Soldier", "Audience Soldier", "Offer Soldier", "Notes Soldier"]
+  },
+  {
+    name: "Niche Research Commander",
+    soldiers: ["Niche Scanner Soldier", "Competitor Research Soldier", "Buyer Emotion Soldier", "Product Opportunity Soldier"]
+  },
+  {
+    name: "Brand Commander",
+    soldiers: ["Brand Voice Soldier", "Color Direction Soldier", "Style Direction Soldier", "Collection Theme Soldier"]
+  },
+  {
+    name: "Design Commander",
+    soldiers: ["Design Concept Soldier", "Prompt Soldier", "Typography Soldier", "Mockup Soldier", "Variation Soldier"]
+  },
+  {
+    name: "Listing Commander",
+    soldiers: ["Title Soldier", "Description Soldier", "Tags Soldier", "SEO Soldier", "Materials Soldier"]
+  },
+  {
+    name: "Compliance Commander",
+    soldiers: ["Trademark Risk Soldier", "Copyright Risk Soldier", "AI Disclosure Soldier", "Production Partner Soldier", "Prohibited Content Soldier"]
+  },
+  {
+    name: "Store Launch Commander",
+    soldiers: ["Etsy Setup Soldier", "Printify Setup Soldier", "Shopify Setup Soldier", "Product Publish Checklist Soldier", "Launch QA Soldier"]
+  },
+  {
+    name: "Marketing Commander",
+    soldiers: ["Instagram Caption Soldier", "TikTok Script Soldier", "Email Launch Soldier", "QR Flyer Soldier", "Promo Calendar Soldier"]
+  },
+  {
+    name: "Reporting Commander",
+    soldiers: ["Weekly Report Soldier", "Sales Report Soldier", "Product Performance Soldier", "Opportunity Report Soldier"]
+  }
+] as const;
 
 function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -84,90 +167,206 @@ function slugify(value: string) {
 
 function healthFor(id: string) {
   const base = Array.from(id).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return 86 + (base % 14);
+  return 88 + (base % 12);
+}
+
+function createMemory(role: string, instructions: string): CommandMemory {
+  return {
+    instructions,
+    notes: ["Local memory is persisted in browser storage until database-backed memory is connected."],
+    recentTasks: [],
+    role,
+    taskResults: []
+  };
 }
 
 export function createDefaultCommandHierarchy(): CommandNode[] {
+  const merchMarshal = commandMarshals[0];
+  const merchGeneral = commandGenerals[0];
+  const commanderIds = merchCommanders.map((commander) => createCommandId(commander.name, "commander"));
   const nodes: CommandNode[] = [
     {
-      children: commandGenerals.map((general) => general.id),
-      description: "Supreme command layer overseeing all Generals, Soldiers, Operations, approvals, memory, and system health.",
+      activeCommanders: merchCommanders.length,
+      activeGenerals: 1,
+      activeProjects: ["ENTRAL Merch Operations"],
+      activeSoldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0),
+      children: [merchMarshal.id],
+      createdAt: bootTime,
+      currentTask: "Supervising the Merch theater and routing command-console directives.",
+      description: "Stationary supreme command layer overseeing Marshals, business Generals, Commanders, Soldiers, approvals, memory, and system health.",
       health: 100,
       id: "entral",
-      logs: ["Command OS online.", "Emperor layer supervising Generals.", "Mock execution mode active."],
-      metrics: { approvals: 4, generals: commandGenerals.length, operations: commandGenerals.length },
+      logs: ["Command OS online.", "ENTRAL core stable.", "Marshal layer initialized.", "Merch theater initialized."],
+      memory: createMemory("Strategic Command Core", "Receive user intent, maintain Marshal hierarchy state, delegate tasks, and preserve operational memory."),
+      metrics: {
+        commanders: merchCommanders.length,
+        generals: 1,
+        marshals: 1,
+        soldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0)
+      },
       name: "ENTRAL",
       parentId: null,
-      permissions: ["govern_all_generals", "approve_operations", "read_system_memory", "route_commands"],
-      role: "Strategic Command",
-      status: "running",
-      title: "Emperor",
-      tools: ["command_console", "neural_graph", "policy_gate", "memory_layer"],
+      permissions: ["govern_hierarchy", "route_commands", "manage_visual_structure"],
+      role: "Strategic Command Core",
+      status: "thinking",
+      taskHistory: ["Booted Merch Command OS hierarchy."],
+      title: "Central Command",
+      tools: ["command_console", "neural_graph", "local_hierarchy_store"],
       type: "emperor"
     }
   ];
 
-  for (const general of commandGenerals) {
-    const soldierIds = general.soldiers.map((soldier) => `${general.id}-${slugify(soldier)}`);
+  nodes.push({
+    activeCommanders: merchCommanders.length,
+    activeGenerals: 1,
+    activeProjects: ["Client Merch Store Launch"],
+    activeSoldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0),
+    children: [merchGeneral.id],
+    createdAt: bootTime,
+    currentTask: "Maintaining Merch theater readiness and routing business Generals.",
+    description: "Merch Marshal is the strategic theater authority for POD stores, launch packages, product batches, compliance review, and client merch operations.",
+    health: healthFor(merchMarshal.id),
+    id: merchMarshal.id,
+    logs: ["Merch Marshal initialized.", "ENTRAL General assigned."],
+    marshalType: merchMarshal.type,
+    memory: {
+      ...createMemory(merchMarshal.role, "Oversee all Merch business Generals, enforce approval rules, track theater health, and report strategic readiness to ENTRAL."),
+      notes: [
+        "Strategic Purpose: operate the POD merch service through business Generals.",
+        "Business Category: client merch stores and POD launch operations.",
+        "Approval Rules: no publishing, client contact, deletion, or launch-status changes without user approval.",
+        "Compliance Notes: risk warnings are operational signals only and are not legal advice."
+      ]
+    },
+    metrics: {
+      activeBusinesses: 1,
+      activeGenerals: 1,
+      commanders: merchCommanders.length,
+      riskLevel: "low",
+      soldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0),
+      successRate: 100
+    },
+    name: merchMarshal.name,
+    parentId: "entral",
+    permissions: ["create_generals", "archive_generals", "inspect_businesses", "route_merch_operations"],
+    reports: [],
+    reportHistory: [],
+    role: merchMarshal.role,
+    status: "idle",
+    taskHistory: [],
+    title: "Marshal",
+    tools: ["merch_theater_router", "approval_gate", ...defaultTools],
+    type: "marshal",
+    updatedAt: bootTime
+  });
+
+  nodes.push({
+    children: commanderIds,
+    createdAt: bootTime,
+    currentTask: "Standing by as the default internal business General for Merch Command workflows.",
+    businessName: merchGeneral.businessName,
+    description: "ENTRAL General represents the internal business operation used to stage POD workflows until a client/business General is created.",
+    generalType: merchGeneral.type,
+    health: healthFor(merchGeneral.id),
+    id: merchGeneral.id,
+    logs: ["ENTRAL General initialized.", `${commanderIds.length} operating Commanders assigned.`],
+    memory: {
+      ...createMemory(merchGeneral.role, "Represent the named business or client being operated, coordinate department Commanders, and report business status to Merch Marshal."),
+      notes: [
+        "Business Name: ENTRAL.",
+        "Industry: AI command systems and merch operations.",
+        "Audience: ENTRAL operators and client merch workflows.",
+        "Approval Rules: user approval required before publishing or external client contact."
+      ]
+    },
+    metrics: {
+      activeProjects: 1,
+      businessHealth: "healthy",
+      commanders: commanderIds.length,
+      soldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0)
+    },
+    name: merchGeneral.name,
+    parentId: merchMarshal.id,
+    parentMarshalId: merchMarshal.id,
+    parentMarshalName: merchMarshal.name,
+    permissions: ["create_commanders", "remove_commanders", "inspect_soldiers", "route_merch_operations"],
+    reports: [],
+    reportHistory: [],
+    role: merchGeneral.role,
+    status: "idle",
+    taskHistory: [],
+    title: "General",
+    tools: ["merch_command_router", ...defaultTools],
+    type: "general",
+    updatedAt: bootTime
+  });
+
+  for (const commander of merchCommanders) {
+    const commanderId = createCommandId(commander.name, "commander");
+    const soldierIds = commander.soldiers.map((soldier) => `${commanderId}-${createCommandId(soldier, "soldier")}`);
 
     nodes.push({
       children: soldierIds,
-      description: `${general.name} coordinates ${general.role.toLowerCase()} through specialized Soldiers and mock Operations.`,
-      health: 96,
-      id: general.id,
-      logs: [`${general.name} General online.`, `${general.soldiers.length} Soldiers standing by.`],
-      metrics: { soldiers: soldierIds.length, active: 1, alerts: general.id === "vanta" ? 1 : 0 },
-      name: general.name,
-      parentId: "entral",
-      permissions: ["assign_soldiers", "create_mock_operations", "report_status"],
-      role: general.role,
-      status: general.id === "vanta" ? "warning" : "running",
-      title: "General",
-      tools: ["mock_dispatcher", "mock_activity_feed", "mock_health_monitor"],
-      type: "general"
+      createdAt: bootTime,
+      currentTask: null,
+      description: `${commander.name} manages ${commander.soldiers.length} Merch Soldiers and reports execution status to ENTRAL General.`,
+      health: healthFor(commanderId),
+      id: commanderId,
+      logs: [`${commander.name} initialized.`, `${commander.soldiers.length} Soldiers assigned.`],
+      memory: createMemory(`${commander.name} operations`, "Break Merch theater work into Soldier-level execution and update the business General with progress."),
+      metrics: { soldiers: soldierIds.length },
+      name: commander.name,
+      parentId: merchGeneral.id,
+      parentGeneralId: merchGeneral.id,
+      parentGeneralName: merchGeneral.name,
+      parentMarshalId: merchMarshal.id,
+      parentMarshalName: merchMarshal.name,
+      permissions: ["create_soldiers", "remove_soldiers", "report_readiness", "assign_merch_work"],
+      operationalArea: commander.name.replace(/\s+Commander$/i, ""),
+      reports: [],
+      reportHistory: [],
+      role: `${commander.name} operations`,
+      status: "idle",
+      taskHistory: [],
+      title: "Commander",
+      tools: ["merch_status_reporter", ...defaultTools],
+      type: "commander",
+      updatedAt: bootTime
     });
 
-    for (const [index, soldier] of general.soldiers.entries()) {
-      const soldierId = `${general.id}-${slugify(soldier)}`;
-      const shouldSeedOperation = index === 0;
-      const operationId = `${soldierId}-operation-1`;
+    for (const soldierName of commander.soldiers) {
+      const soldierId = `${commanderId}-${createCommandId(soldierName, "soldier")}`;
 
       nodes.push({
-        children: shouldSeedOperation ? [operationId] : [],
-        description: `${soldier} supports ${general.name}'s ${general.role.toLowerCase()} lane.`,
+        children: [],
+        createdAt: bootTime,
+        currentTask: null,
+        description: `${soldierName} executes ${commander.name.toLowerCase()} work for the Merch theater.`,
         health: healthFor(soldierId),
         id: soldierId,
-        logs: [`${soldier} Soldier initialized.`, "Awaiting Command OS instructions."],
-        metrics: { operations: shouldSeedOperation ? 1 : 0, successRate: `${88 + (index % 9)}%` },
-        name: soldier,
-        parentId: general.id,
+        logs: [`${soldierName} initialized.`, "Awaiting Merch theater directives."],
+        memory: createMemory(`${soldierName} execution`, `Execute assigned ${commander.name.toLowerCase()} tasks and return concise results to ${commander.name}.`),
+        metrics: { readiness: "ready" },
+        name: soldierName,
+        parentId: commanderId,
+        parentCommanderId: commanderId,
+        parentCommanderName: commander.name,
+        parentGeneralId: merchGeneral.id,
+        parentGeneralName: merchGeneral.name,
+        parentMarshalId: merchMarshal.id,
+        parentMarshalName: merchMarshal.name,
         permissions: defaultPermissions,
-        role: `${general.role} specialist`,
-        status: shouldSeedOperation ? "running" : "idle",
+        executionRole: `${soldierName} execution`,
+        reports: [],
+        reportHistory: [],
+        role: `${soldierName} execution`,
+        status: "idle",
+        taskHistory: [],
         title: "Soldier",
         tools: defaultTools,
-        type: "soldier"
+        type: "soldier",
+        updatedAt: bootTime
       });
-
-      if (shouldSeedOperation) {
-        nodes.push({
-          createdAt: new Date().toISOString(),
-          description: "Simulated live task. No external execution is connected yet.",
-          health: 92,
-          id: operationId,
-          logs: ["Mock Operation created.", "Progress simulation ready."],
-          metrics: { progress: 42, mode: "mock" },
-          name: defaultOperationByGeneral[general.id],
-          parentId: soldierId,
-          permissions: ["read_parent_context"],
-          progress: 42,
-          role: "Mock live process",
-          status: general.id === "vanta" ? "warning" : "running",
-          title: "Operation",
-          tools: ["mock_progress_engine"],
-          type: "operation"
-        });
-      }
     }
   }
 
@@ -175,45 +374,35 @@ export function createDefaultCommandHierarchy(): CommandNode[] {
 }
 
 export function commandStatusLabel(status: CommandStatus) {
-  if (status === "awaiting_approval") return "Awaiting approval";
-  if (status === "running") return "Running";
-  if (status === "success") return "Complete";
-  if (status === "warning") return "Warning";
-  if (status === "error") return "Failed";
-  if (status === "paused") return "Paused";
+  if (status === "working") return "Working";
+  if (status === "thinking") return "Thinking";
+  if (status === "waiting") return "Waiting";
+  if (status === "error") return "Error";
+  if (status === "offline") return "Offline";
   return "Idle";
 }
 
-export function inferSoldierBlueprint(name: string, generalId: string) {
-  const lowerName = name.toLowerCase();
+export function commandStatusColor(status: CommandStatus) {
+  if (status === "working") return "#39FF14";
+  if (status === "thinking") return "#00BFFF";
+  if (status === "waiting") return "#FFCC00";
+  if (status === "error") return "#FF4D6D";
+  if (status === "offline") return "#8A8F98";
+  return "#00F0FF";
+}
 
-  if (lowerName.includes("shopify")) {
-    return {
-      permissions: ["read_project_context", "generate_copy", "generate_page_structure", "suggest_integrations"],
-      role: "Shopify storefront and landing page support",
-      tools: ["mock_shopify_tool", "mock_landing_page_builder"]
-    };
-  }
+export function commandTaskStatusLabel(status: CommandTaskStatus) {
+  if (status === "assigned") return "Assigned";
+  if (status === "running") return "Running";
+  if (status === "completed") return "Completed";
+  if (status === "failed") return "Failed";
+  return "Pending";
+}
 
-  if (lowerName.includes("seo")) {
-    return {
-      permissions: ["read_project_context", "analyze_keywords", "draft_growth_plan"],
-      role: "SEO research, content structure, and growth support",
-      tools: ["mock_keyword_scanner", "mock_serp_reporter"]
-    };
-  }
-
-  if (generalId === "helix") {
-    return {
-      permissions: ["read_repo_context", "create_patch_plan", "summarize_test_output"],
-      role: "Development support and debugging",
-      tools: ["mock_repo_scanner", "mock_test_runner"]
-    };
-  }
-
+export function inferSoldierBlueprint(name: string) {
   return {
     permissions: defaultPermissions,
-    role: "Specialized Command OS support",
+    role: `${name} execution Soldier`,
     tools: defaultTools
   };
 }

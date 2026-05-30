@@ -10,7 +10,7 @@ export function BrandMark({ href = "/" }: BrandMarkProps) {
   return (
     <Link href={href} className="brand-mark" aria-label="Entral home">
       <Logo />
-      <span>Entral</span>
+      <span>ENTRAL</span>
     </Link>
   );
 }

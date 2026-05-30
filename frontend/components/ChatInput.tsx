@@ -109,16 +109,16 @@ export function ChatInput({ disabled = false, error, initialText = "", onSend }:
 
   return (
     <form className="chat-input" onSubmit={handleSubmit} noValidate>
-      <label htmlFor="chat-message">Type your message</label>
+      <label htmlFor="chat-message">Enter directive</label>
       <div>
         <textarea
-          aria-label="Type a message"
+          aria-label="Enter command directive"
           aria-describedby={error ? "chat-message-error" : undefined}
           disabled={disabled}
           id="chat-message"
           name="message"
           onChange={(event) => setText(event.target.value)}
-          placeholder="Ask me anything..."
+          placeholder="Issue a directive or request a report..."
           rows={2}
           value={text}
         />
@@ -126,7 +126,7 @@ export function ChatInput({ disabled = false, error, initialText = "", onSend }:
           {isListening ? <MicOff aria-hidden="true" size={20} /> : <Mic aria-hidden="true" size={20} />}
           Voice
         </Button>
-        <Button type="submit" disabled={disabled} aria-label="Send message">
+        <Button type="submit" disabled={disabled} aria-label="Send directive">
           <Send aria-hidden="true" size={20} />
           Send
         </Button>

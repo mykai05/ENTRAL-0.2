@@ -5,6 +5,10 @@ import cors from "@fastify/cors";
 import { config } from "dotenv";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { generateProductBatch, type ProductBatchInput } from "./services/productBatchGenerator.js";
+import { analyzeCompliance, formatComplianceNotes } from "./services/complianceGuardrails.js";
+import { buildLaunchPackage, buildMerchReport, type MerchReportType } from "./services/merchReports.js";
+import { calculatePricing, pricingPlatformPresets, type PricingPlatformPreset } from "./services/pricingCalculator.js";
 
 config({ path: resolve(process.cwd(), ".env") });
 config({ path: resolve(process.cwd(), "../.env") });
@@ -141,6 +145,62 @@ type Policy = {
   severity: string;
 };
 
+type ClientMerchStore = {
+  audience: string;
+  approvalStatus: "Not Started" | "Research Approved" | "Designs Pending" | "Designs Approved" | "Listings Approved" | "Launch Approved";
+  brandStyle: string;
+  businessName: string;
+  clientName: string;
+  contactName: string;
+  createdAt: string;
+  designCount: number;
+  email: string;
+  estimatedProfit: number;
+  id: string;
+  industry: string;
+  launchStatus: "Lead" | "Discovery" | "Researching" | "Designing" | "Awaiting Approval" | "Building Store" | "Launched" | "Optimizing" | "Paused" | "Archived";
+  monthlyFee: number;
+  notes?: string | null;
+  phone?: string | null;
+  podProvider: "Printify" | "Printful" | "Other";
+  productTypes: string[];
+  profitShare: number;
+  revenue: number;
+  setupFee: number;
+  storePlatform: "Etsy" | "Shopify" | "Other";
+  updatedAt: string;
+  userId: string;
+};
+
+type PodProduct = {
+  aiDisclosureNeeded: boolean;
+  colorDirection: string;
+  complianceNotes?: string | null;
+  createdAt: string;
+  designConcept: string;
+  designPrompt: string;
+  designTheme: string;
+  estimatedPlatformFees: number;
+  estimatedProfit: number;
+  id: string;
+  listingDescription?: string | null;
+  listingTitle?: string | null;
+  mockupNotes?: string | null;
+  productName: string;
+  productType: string;
+  productionPartnerDisclosureNeeded: boolean;
+  profitMargin: number;
+  retailPrice: number;
+  shippingCost: number;
+  status: "Idea" | "Prompt Ready" | "Designed" | "Mockup Created" | "Listing Drafted" | "Compliance Review" | "Awaiting Approval" | "Approved" | "Published" | "Needs Revision" | "Rejected" | "Archived";
+  storeId: string;
+  supplierCost: number;
+  tags: string[];
+  targetAudience: string;
+  typographyDirection: string;
+  updatedAt: string;
+};
+
 const app = Fastify({
   logger: {
     level: "info"
@@ -166,6 +226,8 @@ const state = {
   }>,
   automationJobs: [] as AutomationJob[],
   conversations: new Map<string, Conversation>(),
+  merchStores: [] as ClientMerchStore[],
+  podProducts: [] as PodProduct[],
   policies: new Map<string, Policy>(),
   sessions: new Map<string, string>(),
   tasks: [] as Task[],
@@ -178,14 +240,19 @@ const openAiApiKey = process.env.OPENAI_API_KEY?.trim();
 let openAiClient: OpenAI | null = null;
 
 const memorySystemPrompt = [
-  "You are ENTRAL, a concise autonomous business command-center assistant.",
-  "Chat is the primary command path in the Atomic Command Center.",
-  "The user expects ENTRAL to control visible workspace elements such as the atom graph, agents, panels, settings, trails, orbital rings, camera focus, and automation controls when a supported command is available.",
+  "You are ENTRAL, the Supreme Command Authority inside a military-neural Command OS.",
+  "Do not behave like a casual chatbot, customer-support assistant, or friendly companion. Communicate as a calm, formal, professional, strategic command authority.",
+  "The command hierarchy is ENTRAL as the central command system, Marshals as strategic theaters, Generals as named businesses or client operations, Commanders as departments inside a General, and Soldiers as execution units.",
+  "ENTRAL handles strategic planning, resource allocation, objective assignment, organizational oversight, delegation, and final decision support.",
+  "Generals communicate in executive, analytical, report-focused language. Commanders communicate in operational, task-oriented language. Soldiers communicate in concise execution reports.",
+  "Prefix command responses with [ENTRAL] unless the response is explicitly from another level; then use [GENERAL], [COMMANDER], or [SOLDIER].",
+  "Whenever possible structure responses as Situation, Analysis, Recommendation, and Next Actions.",
+  "Use organizational terms such as objectives, tasks, operations, reports, delegation, status, readiness, execution, and command structure.",
+  "Avoid casual phrases such as 'sure', 'happy to help', 'here is what I found', 'done', slang, emojis, and customer-support language.",
+  "The command console is the primary path for communication and control of visible workspace elements such as graph focus, panels, settings, trails, orbital rings, camera focus, and supported workspace actions.",
   "Supported workspace actions include new chat, new task, run agent, open templates, export history, governance dashboard, automation console, replay tutorial, keyboard shortcuts, and command palette.",
-  "ENTRAL is designed to become the central controller that delegates to agents, orchestrates background workflows, updates operational context, and improves over time under governance.",
-  "The dashboard now exposes a mock Command OS hierarchy: ENTRAL is Emperor; ARIS, VANTA, MERCURY, ORION, and HELIX are Generals; Soldiers and Operations are simulated nodes until real execution is explicitly wired.",
-  "Help the user plan, delegate, debug, and operate agents across chat, tasks, automations, and the neuron graph.",
-  "Be practical and direct. Do not claim you executed real-world actions unless a tool or API actually did it.",
+  "The dashboard exposes a structural local Command OS hierarchy: ENTRAL is the central command system; Marshals orbit ENTRAL; business Generals orbit Marshals; Commanders orbit Generals; Soldiers orbit Commanders. Live Operations are intentionally excluded until real execution is explicitly wired.",
+  "Do not claim you executed real-world actions unless a tool, API, or local command handler actually did it.",
   "For restricted or sensitive actions, explain the safe governed next step."
 ].join(" ");
 
@@ -209,7 +276,13 @@ async function createAssistantContent(conversation: Conversation, prompt: string
   const client = getOpenAiClient();
 
   if (!client) {
-    return `Local ENTRAL reply: I received "${prompt}". Add OPENAI_API_KEY to .env and restart ENTRAL to enable live GPT-4o responses.`;
+    return [
+      "[ENTRAL]",
+      "Situation:\nLive AI command channel is not connected.",
+      `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"`,
+      "Recommendation:\nAdd OPENAI_API_KEY to .env and restart ENTRAL to enable live GPT-4o strategic command responses.",
+      "Next Actions:\n- Use local dashboard commands for graph control.\n- Restore the OpenAI channel when strategic analysis is required."
+    ].join("\n\n");
   }
 
   const messages: ChatCompletionMessageParam[] = [
@@ -243,10 +316,20 @@ async function createAssistantContent(conversation: Conversation, prompt: string
       temperature: screenshot ? 0.2 : 0.4
     });
 
-    return response.choices[0]?.message?.content?.trim() || "ENTRAL did not return a message. Try again in a moment.";
+    return response.choices[0]?.message?.content?.trim() || [
+      "[ENTRAL]",
+      "Situation:\nNo command response was returned.",
+      "Recommendation:\nReissue the directive in a moment."
+    ].join("\n\n");
   } catch (error) {
     app.log.warn({ err: error }, "OpenAI request failed in memory backend");
-    return "ENTRAL could not reach OpenAI just now. Check the API key, billing, and network connection, then try again.";
+    return [
+      "[ENTRAL]",
+      "Situation:\nOpenAI command channel unavailable.",
+      "Analysis:\nThe backend could not complete the strategic reasoning request.",
+      "Recommendation:\nCheck API key, billing, and network connection before reissuing the directive.",
+      "Next Actions:\n- Continue with local Command OS controls if possible.\n- Retry once the channel is operational."
+    ].join("\n\n");
   }
 }
 
@@ -367,6 +450,91 @@ function defaultPolicy() {
     severity: "high"
   };
   state.policies.set(policy.id, policy);
+}
+
+function publicMerchStore(store: ClientMerchStore) {
+  return {
+    ...store,
+    storeId: store.id
+  };
+}
+
+function normalizeMerchStoreBody(body: Partial<ClientMerchStore>, userId: string, existing?: ClientMerchStore): ClientMerchStore {
+  const timestamp = now();
+
+  return {
+    audience: body.audience ?? existing?.audience ?? "Audience pending",
+    approvalStatus: body.approvalStatus ?? existing?.approvalStatus ?? "Not Started",
+    brandStyle: body.brandStyle ?? existing?.brandStyle ?? "Brand style pending",
+    businessName: body.businessName ?? existing?.businessName ?? "Business pending",
+    clientName: body.clientName ?? existing?.clientName ?? "Client pending",
+    contactName: body.contactName ?? existing?.contactName ?? "Contact pending",
+    createdAt: existing?.createdAt ?? timestamp,
+    designCount: Number(body.designCount ?? existing?.designCount ?? 0),
+    email: (body.email ?? existing?.email ?? "client@example.com").toLowerCase(),
+    estimatedProfit: Number(body.estimatedProfit ?? existing?.estimatedProfit ?? 0),
+    id: existing?.id ?? id("merch_store"),
+    industry: body.industry ?? existing?.industry ?? "Industry pending",
+    launchStatus: body.launchStatus ?? existing?.launchStatus ?? "Lead",
+    monthlyFee: Number(body.monthlyFee ?? existing?.monthlyFee ?? 0),
+    notes: body.notes ?? existing?.notes ?? null,
+    phone: body.phone ?? existing?.phone ?? null,
+    podProvider: body.podProvider ?? existing?.podProvider ?? "Printify",
+    productTypes: body.productTypes ?? existing?.productTypes ?? [],
+    profitShare: Number(body.profitShare ?? existing?.profitShare ?? 0),
+    revenue: Number(body.revenue ?? existing?.revenue ?? 0),
+    setupFee: Number(body.setupFee ?? existing?.setupFee ?? 0),
+    storePlatform: body.storePlatform ?? existing?.storePlatform ?? "Etsy",
+    updatedAt: timestamp,
+    userId
+  };
+}
+
+function publicPodProduct(product: PodProduct) {
+  const store = state.merchStores.find((item) => item.id === product.storeId);
+
+  return {
+    ...product,
+    productId: product.id,
+    store: store ? {
+      businessName: store.businessName,
+      clientName: store.clientName,
+      id: store.id
+    } : undefined
+  };
+}
+
+function normalizePodProductBody(body: Partial<PodProduct>, existing?: PodProduct): PodProduct {
+  const timestamp = now();
+
+  return {
+    aiDisclosureNeeded: body.aiDisclosureNeeded ?? existing?.aiDisclosureNeeded ?? false,
+    colorDirection: body.colorDirection ?? existing?.colorDirection ?? "Color direction pending",
+    complianceNotes: body.complianceNotes ?? existing?.complianceNotes ?? formatComplianceNotes(body),
+    createdAt: existing?.createdAt ?? timestamp,
+    designConcept: body.designConcept ?? existing?.designConcept ?? "Design concept pending",
+    designPrompt: body.designPrompt ?? existing?.designPrompt ?? "Design prompt pending",
+    designTheme: body.designTheme ?? existing?.designTheme ?? "Design theme pending",
+    estimatedPlatformFees: Number(body.estimatedPlatformFees ?? existing?.estimatedPlatformFees ?? 0),
+    estimatedProfit: Number(body.estimatedProfit ?? existing?.estimatedProfit ?? 0),
+    id: existing?.id ?? id("pod_product"),
+    listingDescription: body.listingDescription ?? existing?.listingDescription ?? null,
+    listingTitle: body.listingTitle ?? existing?.listingTitle ?? null,
+    mockupNotes: body.mockupNotes ?? existing?.mockupNotes ?? null,
+    productName: body.productName ?? existing?.productName ?? "Untitled POD Product",
+    productType: body.productType ?? existing?.productType ?? "Product type pending",
+    productionPartnerDisclosureNeeded: body.productionPartnerDisclosureNeeded ?? existing?.productionPartnerDisclosureNeeded ?? false,
+    profitMargin: Number(body.profitMargin ?? existing?.profitMargin ?? 0),
+    retailPrice: Number(body.retailPrice ?? existing?.retailPrice ?? 0),
+    shippingCost: Number(body.shippingCost ?? existing?.shippingCost ?? 0),
+    status: body.status ?? existing?.status ?? "Idea",
+    storeId: body.storeId ?? existing?.storeId ?? "",
+    supplierCost: Number(body.supplierCost ?? existing?.supplierCost ?? 0),
+    tags: body.tags ?? existing?.tags ?? [],
+    targetAudience: body.targetAudience ?? existing?.targetAudience ?? "Target audience pending",
+    typographyDirection: body.typographyDirection ?? existing?.typographyDirection ?? "Typography direction pending",
+    updatedAt: timestamp
+  };
 }
 
 function seedDemo() {
@@ -512,6 +680,325 @@ app.post("/api/v1/tasks", { preHandler: requireAuth }, async (request, reply) =>
   };
   state.tasks.unshift(task);
   return reply.code(201).send({ task });
+});
+
+app.get("/api/v1/merch/stores", { preHandler: requireAuth }, async (request) => {
+  const user = currentUserOrThrow(request);
+  const query = request.query as {
+    approvalStatus?: ClientMerchStore["approvalStatus"];
+    launchStatus?: ClientMerchStore["launchStatus"];
+    page?: string;
+    pageSize?: string;
+    search?: string;
+  };
+  const page = Math.max(Number(query.page ?? 1), 1);
+  const pageSize = Math.min(Math.max(Number(query.pageSize ?? 20), 1), 100);
+  const search = query.search?.trim().toLowerCase();
+  const filtered = state.merchStores.filter((store) => {
+    if (store.userId !== user.id) return false;
+    if (query.approvalStatus && store.approvalStatus !== query.approvalStatus) return false;
+    if (query.launchStatus && store.launchStatus !== query.launchStatus) return false;
+    if (!search) return true;
+
+    return [
+      store.clientName,
+      store.businessName,
+      store.contactName,
+      store.email,
+      store.industry
+    ].some((value) => value.toLowerCase().includes(search));
+  });
+  const items = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  return {
+    items: items.map(publicMerchStore),
+    page,
+    pageSize,
+    total: filtered.length
+  };
+});
+
+app.post("/api/v1/merch/stores", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const store = normalizeMerchStoreBody(request.body as Partial<ClientMerchStore>, user.id);
+  state.merchStores.unshift(store);
+  return reply.code(201).send({ store: publicMerchStore(store) });
+});
+
+app.get("/api/v1/merch/stores/:storeId/launch-package", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const products = state.podProducts.filter((product) => product.storeId === store.id);
+  return { package: buildLaunchPackage(store, products) };
+});
+
+app.get("/api/v1/merch/stores/:storeId/reports/:reportType", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { reportType, storeId } = request.params as { reportType: MerchReportType; storeId: string };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const products = state.podProducts.filter((product) => product.storeId === store.id);
+  return { report: buildMerchReport(reportType, store, products) };
+});
+
+app.get("/api/v1/merch/stores/:storeId", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  return { store: publicMerchStore(store) };
+});
+
+app.patch("/api/v1/merch/stores/:storeId", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const index = state.merchStores.findIndex((item) => item.id === storeId && item.userId === user.id);
+
+  if (index === -1) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const store = normalizeMerchStoreBody(request.body as Partial<ClientMerchStore>, user.id, state.merchStores[index]);
+  state.merchStores[index] = store;
+  return { store: publicMerchStore(store) };
+});
+
+app.delete("/api/v1/merch/stores/:storeId", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const originalLength = state.merchStores.length;
+  state.merchStores = state.merchStores.filter((store) => !(store.id === storeId && store.userId === user.id));
+
+  if (state.merchStores.length === originalLength) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  state.podProducts = state.podProducts.filter((product) => product.storeId !== storeId);
+
+  return reply.code(204).send();
+});
+
+app.post("/api/v1/merch/compliance/check", { preHandler: requireAuth }, async (request) => {
+  currentUserOrThrow(request);
+  return { compliance: analyzeCompliance(request.body as Parameters<typeof analyzeCompliance>[0]) };
+});
+
+app.post("/api/v1/merch/pricing/calculate", { preHandler: requireAuth }, async (request) => {
+  currentUserOrThrow(request);
+  const body = request.body as {
+    adSpendEstimate?: number;
+    listingFee?: number;
+    paymentProcessingEstimate?: number;
+    platformFeePercent?: number;
+    preset?: PricingPlatformPreset;
+    retailPrice?: number;
+    shippingCost?: number;
+    supplierCost?: number;
+  };
+  const presetName = body.preset && body.preset in pricingPlatformPresets ? body.preset : "Etsy";
+  const preset = pricingPlatformPresets[presetName];
+
+  return {
+    preset: presetName,
+    pricing: calculatePricing({
+      adSpendEstimate: Number(body.adSpendEstimate ?? 0),
+      listingFee: Number(body.listingFee ?? preset.listingFee),
+      paymentProcessingEstimate: Number(body.paymentProcessingEstimate ?? preset.paymentProcessingEstimate),
+      platformFeePercent: Number(body.platformFeePercent ?? preset.platformFeePercent),
+      retailPrice: Number(body.retailPrice ?? 0),
+      shippingCost: Number(body.shippingCost ?? 0),
+      supplierCost: Number(body.supplierCost ?? 0)
+    })
+  };
+});
+
+app.get("/api/v1/merch/products", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const query = request.query as {
+    page?: string;
+    pageSize?: string;
+    search?: string;
+    status?: PodProduct["status"];
+    storeId?: string;
+  };
+  const ownedStoreIds = state.merchStores.filter((store) => store.userId === user.id).map((store) => store.id);
+
+  if (query.storeId && !ownedStoreIds.includes(query.storeId)) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const page = Math.max(Number(query.page ?? 1), 1);
+  const pageSize = Math.min(Math.max(Number(query.pageSize ?? 20), 1), 100);
+  const search = query.search?.trim().toLowerCase();
+  const filtered = state.podProducts.filter((product) => {
+    if (!ownedStoreIds.includes(product.storeId)) return false;
+    if (query.storeId && product.storeId !== query.storeId) return false;
+    if (query.status && product.status !== query.status) return false;
+    if (!search) return true;
+
+    return [
+      product.productName,
+      product.productType,
+      product.targetAudience,
+      product.designTheme,
+      product.listingTitle ?? ""
+    ].some((value) => value.toLowerCase().includes(search));
+  });
+  const items = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  return {
+    items: items.map(publicPodProduct),
+    page,
+    pageSize,
+    total: filtered.length
+  };
+});
+
+app.get("/api/v1/merch/stores/:storeId/products", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const products = state.podProducts.filter((product) => product.storeId === store.id);
+
+  return {
+    items: products.map(publicPodProduct),
+    page: 1,
+    pageSize: products.length || 20,
+    total: products.length
+  };
+});
+
+app.post("/api/v1/merch/products", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const body = request.body as Partial<PodProduct>;
+  const store = state.merchStores.find((item) => item.id === body.storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  if (body.status === "Published") {
+    return reply.code(400).send({ error: "Bad Request", message: "Products must be approved before publishing." });
+  }
+
+  const product = normalizePodProductBody(body);
+  state.podProducts.unshift(product);
+  return reply.code(201).send({ product: publicPodProduct(product) });
+});
+
+app.post("/api/v1/merch/products/batch", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const body = request.body as Partial<ProductBatchInput>;
+  const store = state.merchStores.find((item) => item.id === body.storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const requestedCount = Number(body.productCount ?? 5);
+  const productCount = ([5, 10, 15, 25] as const).includes(requestedCount as 5 | 10 | 15 | 25)
+    ? requestedCount as 5 | 10 | 15 | 25
+    : 5;
+  const priceRange = {
+    min: Number(body.priceRange?.min ?? 24),
+    max: Number(body.priceRange?.max ?? 48)
+  };
+  const input: ProductBatchInput = {
+    audience: body.audience?.trim() || store.audience,
+    priceRange: priceRange.max >= priceRange.min ? priceRange : { min: priceRange.max, max: priceRange.min },
+    productCount,
+    productTypes: Array.isArray(body.productTypes) && body.productTypes.length > 0 ? body.productTypes : store.productTypes.length > 0 ? store.productTypes : ["T-shirt"],
+    riskTolerance: body.riskTolerance === "Low" || body.riskTolerance === "High" ? body.riskTolerance : "Medium",
+    storeId: store.id,
+    styleDirection: body.styleDirection?.trim() || store.brandStyle
+  };
+  const generated = generateProductBatch(store, input);
+  const products = generated.map((product) => normalizePodProductBody(product as Partial<PodProduct>));
+  state.podProducts.unshift(...products);
+  const warnings = generated
+    .flatMap((product) => product.complianceNotes?.split(".").map((warning) => warning.trim()).filter(Boolean) ?? [])
+    .filter((warning, index, all) => all.indexOf(warning) === index);
+
+  return reply.code(201).send({
+    batch: {
+      productCount: products.length,
+      riskTolerance: input.riskTolerance,
+      storeId: store.id,
+      warnings
+    },
+    products: products.map(publicPodProduct)
+  });
+});
+
+app.get("/api/v1/merch/products/:productId", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { productId } = request.params as { productId: string };
+  const ownedStoreIds = state.merchStores.filter((store) => store.userId === user.id).map((store) => store.id);
+  const product = state.podProducts.find((item) => item.id === productId && ownedStoreIds.includes(item.storeId));
+
+  if (!product) {
+    return reply.code(404).send({ error: "Not Found", message: "POD product was not found." });
+  }
+
+  return { product: publicPodProduct(product) };
+});
+
+app.patch("/api/v1/merch/products/:productId", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { productId } = request.params as { productId: string };
+  const ownedStoreIds = state.merchStores.filter((store) => store.userId === user.id).map((store) => store.id);
+  const index = state.podProducts.findIndex((item) => item.id === productId && ownedStoreIds.includes(item.storeId));
+
+  if (index === -1) {
+    return reply.code(404).send({ error: "Not Found", message: "POD product was not found." });
+  }
+
+  const body = request.body as Partial<PodProduct>;
+
+  if (body.storeId && !ownedStoreIds.includes(body.storeId)) {
+    return reply.code(404).send({ error: "Not Found", message: "Target merch store was not found." });
+  }
+
+  if (body.status === "Published" && state.podProducts[index].status !== "Approved") {
+    return reply.code(400).send({ error: "Bad Request", message: "Products must be approved before publishing." });
+  }
+
+  const product = normalizePodProductBody(body, state.podProducts[index]);
+  state.podProducts[index] = product;
+  return { product: publicPodProduct(product) };
+});
+
+app.delete("/api/v1/merch/products/:productId", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { productId } = request.params as { productId: string };
+  const ownedStoreIds = state.merchStores.filter((store) => store.userId === user.id).map((store) => store.id);
+  const originalLength = state.podProducts.length;
+  state.podProducts = state.podProducts.filter((product) => !(product.id === productId && ownedStoreIds.includes(product.storeId)));
+
+  if (state.podProducts.length === originalLength) {
+    return reply.code(404).send({ error: "Not Found", message: "POD product was not found." });
+  }
+
+  return reply.code(204).send();
 });
 
 app.get("/api/v1/ai/conversations", { preHandler: requireAuth }, async (request) => {
@@ -850,7 +1337,7 @@ app.post("/api/v1/admin/agent-tasks/:taskId/revoke", { preHandler: requireAuth }
 seedDemo();
 
 try {
-  await app.listen({ host: "0.0.0.0", port: 4000 });
+  await app.listen({ host: process.env.API_HOST ?? "0.0.0.0", port: 4000 });
   app.log.info("ENTRAL memory backend ready at http://localhost:4000");
 } catch (error) {
   app.log.error(error);

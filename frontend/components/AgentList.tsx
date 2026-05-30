@@ -24,7 +24,7 @@ export function AgentList({ agents, activeAgentId, isLoading = false, onSelect }
         <Bot aria-hidden="true" size={28} />
         <div>
           <strong>No agents yet.</strong>
-          <p>Use a preset below or create one focused assistant to start orchestration.</p>
+          <p>Use a preset below or create one focused execution unit to start orchestration.</p>
         </div>
       </div>
     );

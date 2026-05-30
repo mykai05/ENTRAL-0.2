@@ -14,17 +14,17 @@ function renderBubble(role: "assistant" | "user", content: string) {
 }
 
 describe("MessageBubble", () => {
-  it("labels assistant messages", () => {
-    renderBubble("assistant", "Here is the **plan**.");
+  it("labels command transmissions", () => {
+    renderBubble("assistant", "[ENTRAL]\nAnalysis complete. **Plan** is ready.");
 
-    expect(screen.getByText("Entral")).toBeInTheDocument();
-    expect(screen.getByText("plan")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy assistant message" })).toBeInTheDocument();
+    expect(screen.getByText("[ENTRAL]")).toBeInTheDocument();
+    expect(screen.getByText("Plan")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy command transmission" })).toBeInTheDocument();
   });
 
   it("labels user messages", () => {
     renderBubble("user", "Draft my next steps.");
 
-    expect(screen.getByText("You")).toBeInTheDocument();
+    expect(screen.getByText("[OPERATOR]")).toBeInTheDocument();
   });
 });

@@ -13,6 +13,14 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(128)
 });
 
+const optionalTrimmedString = (maxLength: number) => z.preprocess(
+  (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
+  z.string().trim().max(maxLength).optional()
+);
+
+const moneyAmountSchema = z.coerce.number().finite().min(0).max(999_999_999);
+const percentAmountSchema = z.coerce.number().finite().min(0).max(100);
+
 export const taskStatusSchema = z.enum(["TODO", "IN_PROGRESS", "DONE", "ARCHIVED"]);
 
 export const createTaskSchema = z.object({
@@ -28,6 +36,233 @@ export const taskListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
   status: taskStatusSchema.optional()
+});
+
+export const merchStorePlatformSchema = z.enum(["Etsy", "Shopify", "Other"]);
+export const merchPodProviderSchema = z.enum(["Printify", "Printful", "Other"]);
+export const merchApprovalStatusSchema = z.enum([
+  "Not Started",
+  "Research Approved",
+  "Designs Pending",
+  "Designs Approved",
+  "Listings Approved",
+  "Launch Approved"
+]);
+export const merchLaunchStatusSchema = z.enum([
+  "Lead",
+  "Discovery",
+  "Researching",
+  "Designing",
+  "Awaiting Approval",
+  "Building Store",
+  "Launched",
+  "Optimizing",
+  "Paused",
+  "Archived"
+]);
+export const podProductStatusSchema = z.enum([
+  "Idea",
+  "Prompt Ready",
+  "Designed",
+  "Mockup Created",
+  "Listing Drafted",
+  "Compliance Review",
+  "Awaiting Approval",
+  "Approved",
+  "Published",
+  "Needs Revision",
+  "Rejected",
+  "Archived"
+]);
+export const productBatchSizeSchema = z.union([
+  z.literal(5),
+  z.literal(10),
+  z.literal(15),
+  z.literal(25)
+]);
+export const productBatchRiskToleranceSchema = z.enum(["Low", "Medium", "High"]);
+export const pricingPlatformPresetSchema = z.enum(["Etsy", "Shopify", "Manual"]);
+export const automationLevelSchema = z.enum(["manual", "assisted", "semi_automated", "automated"]);
+export const merchReportTypeSchema = z.enum([
+  "Store Launch Report",
+  "Weekly Store Report",
+  "Product Performance Report",
+  "Sales Report",
+  "Profit Estimate Report",
+  "New Design Opportunity Report",
+  "Client Update Report"
+]);
+
+const clientMerchStoreFields = {
+  clientName: z.string().trim().min(2).max(120),
+  businessName: z.string().trim().min(2).max(140),
+  contactName: z.string().trim().min(2).max(120),
+  email: emailSchema,
+  phone: optionalTrimmedString(40),
+  industry: z.string().trim().min(2).max(120),
+  audience: z.string().trim().min(2).max(500),
+  brandStyle: z.string().trim().min(2).max(500),
+  storePlatform: merchStorePlatformSchema,
+  podProvider: merchPodProviderSchema,
+  productTypes: z.array(z.string().trim().min(1).max(80)).max(30),
+  designCount: z.coerce.number().int().min(0).max(10_000),
+  setupFee: moneyAmountSchema,
+  monthlyFee: moneyAmountSchema,
+  profitShare: percentAmountSchema,
+  approvalStatus: merchApprovalStatusSchema,
+  launchStatus: merchLaunchStatusSchema,
+  revenue: moneyAmountSchema,
+  estimatedProfit: moneyAmountSchema,
+  commandMarshalId: optionalTrimmedString(120),
+  commandMarshalName: optionalTrimmedString(160),
+  commandGeneralId: optionalTrimmedString(120),
+  commandGeneralName: optionalTrimmedString(160),
+  notes: optionalTrimmedString(5000)
+};
+
+export const createClientMerchStoreSchema = z.object({
+  ...clientMerchStoreFields,
+  storePlatform: clientMerchStoreFields.storePlatform.default("Etsy"),
+  podProvider: clientMerchStoreFields.podProvider.default("Printify"),
+  productTypes: clientMerchStoreFields.productTypes.default([]),
+  designCount: clientMerchStoreFields.designCount.default(0),
+  setupFee: clientMerchStoreFields.setupFee.default(0),
+  monthlyFee: clientMerchStoreFields.monthlyFee.default(0),
+  profitShare: clientMerchStoreFields.profitShare.default(0),
+  approvalStatus: clientMerchStoreFields.approvalStatus.default("Not Started"),
+  launchStatus: clientMerchStoreFields.launchStatus.default("Lead"),
+  revenue: clientMerchStoreFields.revenue.default(0),
+  estimatedProfit: clientMerchStoreFields.estimatedProfit.default(0)
+});
+
+export const updateClientMerchStoreSchema = z.object(clientMerchStoreFields).partial().refine(
+  (input) => Object.keys(input).length > 0,
+  "At least one merch store field must be provided."
+);
+
+export const clientMerchStoreIdParamsSchema = z.object({
+  storeId: z.string().cuid()
+});
+
+export const clientMerchStoreListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  approvalStatus: merchApprovalStatusSchema.optional(),
+  launchStatus: merchLaunchStatusSchema.optional(),
+  search: optionalTrimmedString(120)
+});
+
+const podProductFields = {
+  storeId: z.string().cuid(),
+  productName: z.string().trim().min(2).max(160),
+  productType: z.string().trim().min(2).max(120),
+  targetAudience: z.string().trim().min(2).max(500),
+  designTheme: z.string().trim().min(2).max(240),
+  designConcept: z.string().trim().min(2).max(1000),
+  designPrompt: z.string().trim().min(2).max(4000),
+  typographyDirection: z.string().trim().min(2).max(500),
+  colorDirection: z.string().trim().min(2).max(500),
+  mockupNotes: optionalTrimmedString(2000),
+  supplierCost: moneyAmountSchema,
+  shippingCost: moneyAmountSchema,
+  retailPrice: moneyAmountSchema,
+  estimatedPlatformFees: moneyAmountSchema,
+  estimatedProfit: moneyAmountSchema,
+  profitMargin: z.coerce.number().finite().min(0).max(10_000),
+  listingTitle: optionalTrimmedString(200),
+  listingDescription: optionalTrimmedString(5000),
+  tags: z.array(z.string().trim().min(1).max(80)).max(40),
+  complianceNotes: optionalTrimmedString(3000),
+  aiDisclosureNeeded: z.boolean(),
+  productionPartnerDisclosureNeeded: z.boolean(),
+  status: podProductStatusSchema,
+  commandMarshalId: optionalTrimmedString(120),
+  commandMarshalName: optionalTrimmedString(160),
+  commandGeneralId: optionalTrimmedString(120),
+  commandGeneralName: optionalTrimmedString(160),
+  commandCommanderId: optionalTrimmedString(120),
+  commandCommanderName: optionalTrimmedString(160),
+  commandSoldierId: optionalTrimmedString(120),
+  commandSoldierName: optionalTrimmedString(160)
+};
+
+export const createPodProductSchema = z.object({
+  ...podProductFields,
+  supplierCost: podProductFields.supplierCost.default(0),
+  shippingCost: podProductFields.shippingCost.default(0),
+  retailPrice: podProductFields.retailPrice.default(0),
+  estimatedPlatformFees: podProductFields.estimatedPlatformFees.default(0),
+  estimatedProfit: podProductFields.estimatedProfit.default(0),
+  profitMargin: podProductFields.profitMargin.default(0),
+  tags: podProductFields.tags.default([]),
+  aiDisclosureNeeded: podProductFields.aiDisclosureNeeded.default(false),
+  productionPartnerDisclosureNeeded: podProductFields.productionPartnerDisclosureNeeded.default(false),
+  status: podProductFields.status.default("Idea")
+});
+
+export const updatePodProductSchema = z.object(podProductFields).partial().refine(
+  (input) => Object.keys(input).length > 0,
+  "At least one POD product field must be provided."
+);
+
+export const podProductIdParamsSchema = z.object({
+  productId: z.string().cuid()
+});
+
+export const storePodProductParamsSchema = z.object({
+  storeId: z.string().cuid()
+});
+
+export const podProductListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  status: podProductStatusSchema.optional(),
+  storeId: z.string().cuid().optional(),
+  search: optionalTrimmedString(120)
+});
+
+export const generateProductBatchSchema = z.object({
+  storeId: z.string().cuid(),
+  productTypes: z.array(z.string().trim().min(1).max(80)).min(1).max(12),
+  productCount: z.coerce.number().pipe(productBatchSizeSchema).default(5),
+  styleDirection: z.string().trim().min(2).max(500),
+  audience: z.string().trim().min(2).max(500),
+  priceRange: z.object({
+    min: moneyAmountSchema,
+    max: moneyAmountSchema
+  }).refine((range) => range.max >= range.min, "Maximum price must be greater than or equal to minimum price."),
+  riskTolerance: productBatchRiskToleranceSchema.default("Medium")
+});
+
+export const complianceCheckSchema = z.object({
+  aiDisclosureNeeded: z.boolean().optional(),
+  colorDirection: optionalTrimmedString(500),
+  complianceNotes: optionalTrimmedString(3000),
+  designConcept: optionalTrimmedString(1000),
+  designPrompt: optionalTrimmedString(4000),
+  designTheme: optionalTrimmedString(240),
+  listingDescription: optionalTrimmedString(5000),
+  listingTitle: optionalTrimmedString(200),
+  productName: optionalTrimmedString(160),
+  productionPartnerDisclosureNeeded: z.boolean().optional(),
+  tags: z.array(z.string().trim().min(1).max(80)).max(40).default([]),
+  typographyDirection: optionalTrimmedString(500)
+});
+
+export const pricingCalculatorSchema = z.object({
+  preset: pricingPlatformPresetSchema.default("Etsy"),
+  supplierCost: moneyAmountSchema,
+  shippingCost: moneyAmountSchema,
+  retailPrice: moneyAmountSchema,
+  platformFeePercent: percentAmountSchema.optional(),
+  listingFee: moneyAmountSchema.optional(),
+  paymentProcessingEstimate: moneyAmountSchema.optional(),
+  adSpendEstimate: moneyAmountSchema.default(0)
+});
+
+export const merchReportParamsSchema = z.object({
+  reportType: merchReportTypeSchema,
+  storeId: z.string().cuid()
 });
 
 export const conversationIdParamsSchema = z.object({
@@ -216,6 +451,13 @@ export const adminAgentTaskParamsSchema = z.object({
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type CreateClientMerchStoreInput = z.infer<typeof createClientMerchStoreSchema>;
+export type UpdateClientMerchStoreInput = z.infer<typeof updateClientMerchStoreSchema>;
+export type CreatePodProductInput = z.infer<typeof createPodProductSchema>;
+export type UpdatePodProductInput = z.infer<typeof updatePodProductSchema>;
+export type GenerateProductBatchInput = z.infer<typeof generateProductBatchSchema>;
+export type ComplianceCheckInput = z.infer<typeof complianceCheckSchema>;
+export type PricingCalculatorInput = z.infer<typeof pricingCalculatorSchema>;
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type ScreenInsightInput = z.infer<typeof screenInsightSchema>;
 export type ImportConversationsInput = z.infer<typeof importConversationsSchema>;

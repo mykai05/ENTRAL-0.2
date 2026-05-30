@@ -8,11 +8,15 @@ $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $Artifacts = Join-Path $Root "artifacts"
 $BackendDir = Join-Path $Root "backend"
 $FrontendDir = Join-Path $Root "frontend"
+$FrontendUrl = "http://localhost:3000"
+$FrontendReadyUrl = "$FrontendUrl/login"
+$BackendHealthUrl = "http://localhost:4000/health"
 
 New-Item -ItemType Directory -Force -Path $Artifacts | Out-Null
 
 $env:NEXT_TELEMETRY_DISABLED = "1"
 $env:NEXT_PUBLIC_API_URL = "http://localhost:4000"
+$env:API_HOST = "0.0.0.0"
 
 function Repair-ProcessPath {
   $pathValue = [Environment]::GetEnvironmentVariable("Path", "Process")
@@ -73,6 +77,30 @@ function Wait-Endpoint {
   return $false
 }
 
+function Stop-EntralPort {
+  param(
+    [int]$Port
+  )
+
+  $listeners = netstat -ano |
+    Select-String ":$Port\s" |
+    Where-Object { $_ -match "\sLISTENING\s+(\d+)$" }
+
+  foreach ($listener in $listeners) {
+    if (-not ($listener.Line -match "\sLISTENING\s+(\d+)$")) {
+      continue
+    }
+
+    $pidValue = [int]$Matches[1]
+    $process = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
+
+    if ($process -and $process.ProcessName -eq "node") {
+      Stop-Process -Id $pidValue -Force
+      Write-Host "Cleared stale ENTRAL process on port $Port (PID $pidValue)."
+    }
+  }
+}
+
 function Start-EntralProcess {
   param(
     [string]$Name,
@@ -98,10 +126,11 @@ function Start-EntralProcess {
 
 Repair-ProcessPath
 
-$backendReady = Test-Endpoint "http://localhost:4000/health"
-$frontendReady = Test-Endpoint "http://localhost:3000/"
+$backendReady = Test-Endpoint $BackendHealthUrl
+$frontendReady = Test-Endpoint $FrontendReadyUrl
 
 if (-not $backendReady) {
+  Stop-EntralPort 4000
   $stdout = Join-Path $Artifacts "entral-backend-wake-out.log"
   $stderr = Join-Path $Artifacts "entral-backend-wake-err.log"
   $backendRunner = Join-Path $Root "scripts\run-memory-backend.ps1"
@@ -120,25 +149,35 @@ if (-not $backendReady) {
 }
 
 if (-not $frontendReady) {
-  Start-EntralProcess `
-    -Name "frontend" `
-    -WorkingDirectory $FrontendDir `
-    -Arguments @("node_modules\next\dist\bin\next", "dev", "-H", "0.0.0.0", "-p", "3000")
+  Stop-EntralPort 3000
+  $frontendRunner = Join-Path $Root "scripts\run-frontend-dev.cmd"
+  $stdout = Join-Path $Artifacts "entral-frontend-wake-out.log"
+  $stderr = Join-Path $Artifacts "entral-frontend-wake-err.log"
+  $process = Start-Process `
+    -FilePath "cmd.exe" `
+    -ArgumentList "/c `"$frontendRunner`"" `
+    -WorkingDirectory $Root `
+    -RedirectStandardOutput $stdout `
+    -RedirectStandardError $stderr `
+    -WindowStyle Hidden `
+    -PassThru
+
+  Write-Host "Started ENTRAL frontend process (PID $($process.Id))."
 } else {
   Write-Host "ENTRAL frontend is already awake."
 }
 
-$backendReady = Wait-Endpoint "http://localhost:4000/health" 45
-$frontendReady = Wait-Endpoint "http://localhost:3000/" 60
+$backendReady = Wait-Endpoint $BackendHealthUrl 45
+$frontendReady = Wait-Endpoint $FrontendReadyUrl 60
 
 if ($backendReady -and $frontendReady) {
   Write-Host ""
   Write-Host "ENTRAL is awake."
-  Write-Host "Frontend: http://localhost:3000"
-  Write-Host "Backend:  http://localhost:4000/health"
+  Write-Host "Frontend: $FrontendUrl"
+  Write-Host "Backend:  $BackendHealthUrl"
 
   if ($OpenBrowser) {
-    Start-Process "http://localhost:3000"
+    Start-Process $FrontendUrl
   }
 
   exit 0

@@ -55,6 +55,86 @@ export const taskFormSchema = z.object({
   description: z.string().trim().max(2000).optional()
 });
 
+export const clientMerchStoreFormSchema = z.object({
+  clientName: z.string().trim().min(2, "Client name must be at least 2 characters.").max(120),
+  businessName: z.string().trim().min(2, "Business name must be at least 2 characters.").max(140),
+  contactName: z.string().trim().min(2, "Contact name must be at least 2 characters.").max(120),
+  email: z.string().trim().email("Enter a valid email address."),
+  phone: z.string().trim().max(40).optional().or(z.literal("")),
+  industry: z.string().trim().min(2, "Industry is required.").max(120),
+  audience: z.string().trim().min(2, "Audience is required.").max(500),
+  brandStyle: z.string().trim().min(2, "Brand style is required.").max(500),
+  storePlatform: z.enum(["Etsy", "Shopify", "Other"]).default("Etsy"),
+  podProvider: z.enum(["Printify", "Printful", "Other"]).default("Printify"),
+  productTypes: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
+  designCount: z.coerce.number().int().min(0).max(10000).default(0),
+  setupFee: z.coerce.number().min(0).max(999999999).default(0),
+  monthlyFee: z.coerce.number().min(0).max(999999999).default(0),
+  profitShare: z.coerce.number().min(0).max(100).default(0),
+  approvalStatus: z.enum([
+    "Not Started",
+    "Research Approved",
+    "Designs Pending",
+    "Designs Approved",
+    "Listings Approved",
+    "Launch Approved"
+  ]).default("Not Started"),
+  launchStatus: z.enum([
+    "Lead",
+    "Discovery",
+    "Researching",
+    "Designing",
+    "Awaiting Approval",
+    "Building Store",
+    "Launched",
+    "Optimizing",
+    "Paused",
+    "Archived"
+  ]).default("Lead"),
+  revenue: z.coerce.number().min(0).max(999999999).default(0),
+  estimatedProfit: z.coerce.number().min(0).max(999999999).default(0),
+  notes: z.string().trim().max(5000).optional().or(z.literal(""))
+});
+
+export const podProductFormSchema = z.object({
+  storeId: z.string().cuid("Choose a merch store."),
+  productName: z.string().trim().min(2, "Product name must be at least 2 characters.").max(160),
+  productType: z.string().trim().min(2, "Product type is required.").max(120),
+  targetAudience: z.string().trim().min(2, "Target audience is required.").max(500),
+  designTheme: z.string().trim().min(2, "Design theme is required.").max(240),
+  designConcept: z.string().trim().min(2, "Design concept is required.").max(1000),
+  designPrompt: z.string().trim().min(2, "Design prompt is required.").max(4000),
+  typographyDirection: z.string().trim().min(2, "Typography direction is required.").max(500),
+  colorDirection: z.string().trim().min(2, "Color direction is required.").max(500),
+  mockupNotes: z.string().trim().max(2000).optional().or(z.literal("")),
+  supplierCost: z.coerce.number().min(0).max(999999999).default(0),
+  shippingCost: z.coerce.number().min(0).max(999999999).default(0),
+  retailPrice: z.coerce.number().min(0).max(999999999).default(0),
+  estimatedPlatformFees: z.coerce.number().min(0).max(999999999).default(0),
+  estimatedProfit: z.coerce.number().min(0).max(999999999).default(0),
+  profitMargin: z.coerce.number().min(0).max(10000).default(0),
+  listingTitle: z.string().trim().max(200).optional().or(z.literal("")),
+  listingDescription: z.string().trim().max(5000).optional().or(z.literal("")),
+  tags: z.array(z.string().trim().min(1).max(80)).max(40).default([]),
+  complianceNotes: z.string().trim().max(3000).optional().or(z.literal("")),
+  aiDisclosureNeeded: z.boolean().default(false),
+  productionPartnerDisclosureNeeded: z.boolean().default(false),
+  status: z.enum([
+    "Idea",
+    "Prompt Ready",
+    "Designed",
+    "Mockup Created",
+    "Listing Drafted",
+    "Compliance Review",
+    "Awaiting Approval",
+    "Approved",
+    "Published",
+    "Needs Revision",
+    "Rejected",
+    "Archived"
+  ]).default("Idea")
+});
+
 export const chatFormSchema = z.object({
   message: z.string()
     .trim()
@@ -102,6 +182,8 @@ export const policyFormSchema = z.object({
 export type LoginFormInput = z.infer<typeof loginFormSchema>;
 export type SignupFormInput = z.infer<typeof signupFormSchema>;
 export type TaskFormInput = z.infer<typeof taskFormSchema>;
+export type ClientMerchStoreFormInput = z.infer<typeof clientMerchStoreFormSchema>;
+export type PodProductFormInput = z.infer<typeof podProductFormSchema>;
 export type ChatFormInput = z.infer<typeof chatFormSchema>;
 export type AutomationFormInput = z.infer<typeof automationFormSchema>;
 export type AgentFormInput = z.infer<typeof agentFormSchema>;

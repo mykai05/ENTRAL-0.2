@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquarePlus, PanelLeftClose, PanelLeftOpen, Sparkles, Trash2 } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
+import { commandSourceLabel, commandSpeakerFromPrefix } from "../lib/command-communications";
 import { chatFormSchema } from "../lib/validation";
 import { Button } from "./Button";
 import { ChatInput } from "./ChatInput";
@@ -13,6 +14,7 @@ import { MessageBubble, type ChatRole } from "./MessageBubble";
 import { ScreenShareControls, type ScreenShareControlsHandle } from "./ScreenShareControls";
 import { SkeletonList } from "./Skeleton";
 import { useToast } from "./ToastProvider";
+import { useVoice } from "./VoiceProvider";
 
 type ConversationSummary = {
   id: string;
@@ -53,11 +55,11 @@ type ChatResponse = {
 };
 
 const starterPrompts = [
-  "Help me plan tomorrow's launch checklist.",
-  "Summarize the most important risks in this workspace.",
-  "Look at my screen and tell me what to fix first.",
-  "Turn my current goal into three clean tasks.",
-  "Draft a concise status update for the team."
+  "Prepare tomorrow's launch readiness report.",
+  "Identify the highest operational risks in this workspace.",
+  "Analyze my screen and recommend the first corrective action.",
+  "Convert my current objective into three executable tasks.",
+  "Draft a concise command status update for the team."
 ];
 
 function wantsScreenContext(message: string) {
@@ -76,6 +78,7 @@ function messageFromApi(message: { id?: string; messageId?: string; role?: strin
 export function ChatWindow() {
   const router = useRouter();
   const { notify } = useToast();
+  const { speak } = useVoice();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -195,15 +198,19 @@ export function ChatWindow() {
           createdAt: response.createdAt
         }
       ]);
+      {
+        const speaker = commandSpeakerFromPrefix(response.content) ?? "emperor";
+        speak(response.content, speaker, commandSourceLabel(speaker));
+      }
       await loadConversations();
       setDraftPrompt("");
-      notify({ title: screenshot ? "Screen analyzed" : "Message sent", type: "success" });
+      notify({ title: screenshot ? "Screen analyzed" : "Directive sent", type: "success" });
     } catch (sendError) {
       setMessages((current) => current.filter((message) => message.id !== optimisticMessage.id));
 
       if (!handleUnauthorized(sendError)) {
         setError(sendError instanceof Error ? sendError.message : "Unable to send message.");
-        notify({ title: "Chat failed", message: sendError instanceof Error ? sendError.message : "Unable to send message.", type: "error" });
+        notify({ title: "Directive failed", message: sendError instanceof Error ? sendError.message : "Unable to send directive.", type: "error" });
       }
       return false;
     } finally {
@@ -235,7 +242,7 @@ export function ChatWindow() {
   function handleForkConversation(index: number) {
     setMessages((current) => current.slice(0, index + 1));
     setActiveConversationId(null);
-    notify({ title: "Branch created", message: "Your next message will start a fresh conversation from here.", type: "success" });
+    notify({ title: "Branch created", message: "Your next directive will start a fresh command thread from here.", type: "success" });
   }
 
   async function handleRegenerate(index: number) {
@@ -303,13 +310,13 @@ export function ChatWindow() {
   }
 
   return (
-    <section className={isConversationSidebarOpen ? "chat-layout" : "chat-layout sidebar-closed"} aria-label="AI chat workspace">
+    <section className={isConversationSidebarOpen ? "chat-layout" : "chat-layout sidebar-closed"} aria-label="ENTRAL command communications workspace">
       {isConversationSidebarOpen ? (
-      <aside className="conversation-sidebar" aria-label="Conversations">
+      <aside className="conversation-sidebar" aria-label="Command threads">
         <div className="sidebar-heading">
           <div>
             <p className="eyebrow">History</p>
-            <h2>Conversations</h2>
+            <h2>Command threads</h2>
           </div>
           <button className="sidebar-toggle-button" type="button" onClick={() => setIsConversationSidebarOpen(false)} aria-label="Close conversations sidebar">
             <PanelLeftClose aria-hidden="true" size={18} />
@@ -317,12 +324,12 @@ export function ChatWindow() {
         </div>
         <Button type="button" onClick={handleNewChat}>
           <MessageSquarePlus aria-hidden="true" size={20} />
-          New chat
+          New thread
         </Button>
 
         <div className="conversation-list">
           {conversations.length === 0 ? (
-            <p>No conversations yet.</p>
+            <p>No command threads yet.</p>
           ) : (
             conversations.map((conversation) => (
               <button
@@ -346,7 +353,7 @@ export function ChatWindow() {
           }))}
           data={{ conversations, activeMessages: messages }}
           filename="entral-conversations"
-          label="Conversation import/export"
+          label="Command thread import/export"
           onImport={importConversations}
         />
       </aside>
@@ -355,8 +362,8 @@ export function ChatWindow() {
       <div className="chat-panel">
         <header className="chat-panel-header">
           <div>
-            <h1>AI chat</h1>
-            <p>Ask ENTRAL about planning, tasks, or next steps.</p>
+            <h1>ENTRAL Command</h1>
+            <p>Issue directives, request reports, and review operational planning.</p>
           </div>
           <div className="row-actions">
             <Button type="button" variant="secondary" onClick={() => setIsConversationSidebarOpen((open) => !open)}>
@@ -384,13 +391,13 @@ export function ChatWindow() {
 
         <div className="message-log" ref={logRef} role="log" aria-live="polite" aria-relevant="additions text">
           {isLoading ? (
-            <SkeletonList count={4} label="Loading chat messages" />
+            <SkeletonList count={4} label="Loading command transmissions" />
           ) : messages.length === 0 ? (
             <div className="empty-state chat-empty-state">
               <Sparkles aria-hidden="true" size={28} />
               <div>
-                <strong>Start with a clean prompt.</strong>
-                <p>Pick one, or write your own.</p>
+              <strong>Issue the first directive.</strong>
+              <p>Select an objective or enter a command report request.</p>
               </div>
               <div className="starter-prompts">
                 {starterPrompts.map((prompt) => (
@@ -417,7 +424,7 @@ export function ChatWindow() {
               <span className="typing-dot" />
               <span className="typing-dot" />
               <span className="typing-dot" />
-              ENTRAL is typing...
+              ENTRAL is analyzing...
             </div>
           ) : null}
         </div>
@@ -428,11 +435,11 @@ export function ChatWindow() {
           <CurlSnippet
             body={{
               conversationId: activeConversationId ?? "conversation_id",
-              message: "Help me plan the next workflow."
+              message: "Prepare a command report for the next workflow."
             }}
             method="POST"
             path="/ai/chat"
-            title="Send chat message"
+            title="Send command directive"
           />
         </div>
       </div>

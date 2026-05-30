@@ -3,30 +3,80 @@
 ## CommandNode
 
 ```ts
-type NodeType = "emperor" | "general" | "soldier" | "operation";
+type NodeType = "emperor" | "marshal" | "general" | "commander" | "soldier";
 
 type CommandNode = {
-  id: string;
-  type: NodeType;
-  parentId: string | null;
-  name: string;
-  title: string;
-  role: string;
-  status: "idle" | "running" | "success" | "warning" | "error" | "awaiting_approval" | "paused";
-  health: number;
+  children: string[];
+  createdAt: string;
+  currentTask: string | null;
   description?: string;
-  permissions?: string[];
-  tools?: string[];
-  metrics?: Record<string, number | string>;
+  businessName?: string;
+  marshalType?: string;
+  generalType?: string;
+  operationalArea?: string;
+  executionRole?: string;
+  health: number;
+  id: string;
   logs?: string[];
-  children?: string[];
+  memory: CommandMemory;
+  metrics?: Record<string, number | string>;
+  name: string;
+  parentId: string | null;
+  parentMarshalId?: string | null;
+  parentGeneralId?: string | null;
+  parentCommanderId?: string | null;
+  permissions?: string[];
   progress?: number;
+  role: string;
+  status: "idle" | "working" | "thinking" | "waiting" | "error" | "offline";
+  taskHistory: string[];
+  title: string;
+  tools?: string[];
+  type: NodeType;
+};
+
+type CommandMemory = {
+  role: string;
+  instructions: string;
+  recentTasks: string[];
+  taskResults: string[];
+  notes: string[];
+};
+
+type CommandTask = {
+  id: string;
+  name: string;
+  description: string;
+  assignedEntityId: string | null;
+  assignedEntityType?: NodeType | null;
+  marshalId?: string | null;
+  marshalName?: string | null;
+  generalId?: string | null;
+  generalName?: string | null;
+  commanderId?: string | null;
+  commanderName?: string | null;
+  soldierId?: string | null;
+  soldierName?: string | null;
+  status: "pending" | "assigned" | "running" | "completed" | "failed";
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string | null;
+  delegationPath: string[];
+  history: string[];
 };
 ```
 
-## Operations
+## Current Hierarchy
 
-Operations are mock task/process nodes under Soldiers. They include status, progress, logs, created time, and parent Soldier linkage. They do not call external systems yet.
+The current visualization stage only includes structural hierarchy nodes:
+
+- `emperor`: ENTRAL, stationary center.
+- `marshal`: strategic theater or portfolio orbiting ENTRAL.
+- `general`: actual business, client, brand, store, or operation under a Marshal.
+- `commander`: department or operating function orbiting a General.
+- `soldier`: execution unit orbiting a Commander.
+
+Live Operations are represented as local `CommandTask` records for now. They move through ENTRAL -> Marshal -> General -> Commander -> Soldier as simulated delegation events, then persist in browser storage with the full command path.
 
 ## Permissions
 
@@ -35,9 +85,20 @@ Permissions are descriptive strings for now. They document intended future capab
 ## Statuses
 
 - `idle`: available but not running.
-- `running`: active mock process.
-- `success`: completed.
-- `warning`: needs review.
-- `error`: failed.
-- `awaiting_approval`: blocked until approved.
-- `paused`: manually paused.
+- `working`: actively executing delegated work.
+- `thinking`: planning, routing, or deciding.
+- `waiting`: waiting after delegation or ready for the next instruction.
+- `error`: failed or needs intervention.
+- `offline`: manually paused or unavailable.
+
+## Task Statuses
+
+- `pending`: created but not yet routed.
+- `assigned`: accepted by an upstream entity.
+- `running`: executing at Soldier level.
+- `completed`: finished and stored in local memory.
+- `failed`: failed task record reserved for future worker integration.
+
+## State Integrity
+
+Command OS state is validated on hydration and every reducer mutation. Invalid parent links are repaired, missing edges are rebuilt, deleted entity references are removed from tasks, and active tasks assigned to offline/deleted entities are reassigned or failed safely.

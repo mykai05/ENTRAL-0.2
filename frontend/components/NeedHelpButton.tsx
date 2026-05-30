@@ -10,6 +10,7 @@ export function NeedHelpButton() {
   return (
     <Link
       className="need-help-button"
+      data-academy="need-help"
       href={`/chat?prompt=${encodeURIComponent(helpPrompt)}`}
       aria-label="Need help? Open chat with a starter prompt"
     >

@@ -53,6 +53,7 @@ for (const command of commands) {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      API_HOST: process.env.API_HOST ?? "0.0.0.0",
       NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
     },
     shell: false,
