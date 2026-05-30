@@ -4254,9 +4254,57 @@ body:has(.command-center-page) .palette-trigger {
   color: var(--neon-accent);
 }
 
-.command-chat-close,
+.command-chat-close {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 240, 0.12);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 900;
+  gap: 0.28rem;
+  height: 2.15rem;
+  justify-content: center;
+  letter-spacing: 0.04em;
+  padding: 0 0.62rem;
+  text-transform: uppercase;
+}
+
+.command-chat-close:hover,
+.command-chat-close:focus-visible {
+  border-color: rgba(var(--neon-accent-rgb), 0.48);
+  color: var(--ink);
+  outline: none;
+}
+
 .command-chat-reopen {
-  display: none;
+  align-items: center;
+  backdrop-filter: blur(20px);
+  background: rgba(3, 6, 10, 0.82);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.34);
+  border-radius: 999px;
+  bottom: clamp(1rem, 2vw, 1.5rem);
+  box-shadow: 0 0 24px rgba(var(--neon-accent-rgb), 0.14), 0 20px 58px rgba(0, 0, 0, 0.48);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 900;
+  gap: 0.42rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  position: absolute;
+  right: clamp(1rem, 2vw, 1.5rem);
+  z-index: 4;
+}
+
+.command-center-page.chat-closed .command-center-chat {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(100% + 2rem));
 }
 
 .command-chat-status {
@@ -5715,11 +5763,13 @@ body:has(.command-center-page) .palette-trigger {
 
   .command-center-chat {
     border-radius: 22px;
-    bottom: 0.75rem;
-    left: 0.75rem;
-    max-height: 43dvh;
-    padding: 0.75rem;
-    right: 0.75rem;
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+    gap: 0.55rem;
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+    left: 0.65rem;
+    max-height: min(74dvh, calc(100dvh - 5.35rem));
+    padding: 0.65rem;
+    right: 0.65rem;
     top: auto;
     transition: opacity 180ms ease, transform 180ms ease;
     width: auto;
@@ -5731,63 +5781,30 @@ body:has(.command-center-page) .palette-trigger {
     transform: translateY(calc(100% + 1.2rem));
   }
 
+  .command-center-page.chat-closed .command-side-panel {
+    bottom: 0.75rem;
+  }
+
   .command-center-page.focus-mode .command-chat-reopen {
     opacity: 0;
     pointer-events: none;
   }
 
-  .command-chat-close {
-    align-items: center;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 240, 0.12);
-    border-radius: 999px;
-    color: var(--muted);
-    cursor: pointer;
-    display: inline-flex;
-    flex: 0 0 auto;
-    height: 2.15rem;
-    justify-content: center;
-    width: 2.15rem;
-  }
-
-  .command-chat-close:hover,
-  .command-chat-close:focus-visible {
-    border-color: rgba(var(--neon-accent-rgb), 0.48);
-    color: var(--ink);
-    outline: none;
-  }
-
   .command-chat-reopen {
-    align-items: center;
-    backdrop-filter: blur(20px);
-    background: rgba(3, 6, 10, 0.82);
-    border: 1px solid rgba(var(--neon-accent-rgb), 0.34);
-    border-radius: 999px;
-    bottom: 0.85rem;
-    box-shadow: 0 0 24px rgba(var(--neon-accent-rgb), 0.14), 0 20px 58px rgba(0, 0, 0, 0.48);
-    color: var(--ink);
-    cursor: pointer;
-    display: inline-flex;
-    font-size: 0.82rem;
-    font-weight: 900;
-    gap: 0.42rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
     left: 50%;
-    min-height: 2.75rem;
-    padding: 0 1rem;
-    position: absolute;
+    right: auto;
     transform: translateX(-50%);
-    z-index: 4;
   }
 
   .command-console-controls {
-    max-height: 18dvh;
+    max-height: 16dvh;
   }
 
   .command-console-controls[open] {
-    max-height: min(28dvh, 16rem);
+    max-height: min(34dvh, 18rem);
   }
 
-  .command-chat-heading span,
   .command-chat-suggestions {
     display: none;
   }
@@ -5800,6 +5817,16 @@ body:has(.command-center-page) .palette-trigger {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .command-chat-heading .eyebrow,
+  .command-chat-heading span {
+    display: none;
+  }
+
+  .command-chat-heading h2 {
+    font-size: 0.94rem;
+    line-height: 1.1;
+  }
+
   .command-chat-orb {
     display: none;
   }
@@ -5807,6 +5834,11 @@ body:has(.command-center-page) .palette-trigger {
   .command-chat-status {
     font-size: 0.78rem;
     padding: 0.55rem;
+  }
+
+  .command-console-log {
+    min-height: 6.5rem;
+    overscroll-behavior: contain;
   }
 
   .voice-command-status {
@@ -5820,11 +5852,44 @@ body:has(.command-center-page) .palette-trigger {
 
   .command-chat-input-row {
     border-radius: 18px;
+    gap: 0.42rem;
+    grid-template-columns: 2.35rem minmax(0, 1fr) 2.35rem;
+    padding: 0.36rem;
+  }
+
+  .command-chat-input-row input {
+    min-height: 2.35rem;
+  }
+
+  .command-chat-input-row button[type="submit"],
+  .command-chat-input-row .voice-command-button {
+    min-height: 2.28rem;
+    min-width: 2.28rem;
   }
 
   .product-approval-queue header,
   .merch-operations-panel header,
   .product-approval-card-header {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 680px) {
+  .command-center-chat {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    max-height: min(80dvh, calc(100dvh - 4.6rem));
+  }
+
+  .command-chat-status,
+  .voice-command-status {
+    display: none;
+  }
+
+  .command-console-controls {
+    max-height: 14dvh;
+  }
+
+  .command-console-controls[open] {
+    max-height: min(30dvh, 14rem);
   }
 }

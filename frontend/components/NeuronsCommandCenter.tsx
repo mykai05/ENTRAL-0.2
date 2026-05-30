@@ -4228,6 +4228,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </div>
           </div>
           <button className="command-chat-close" type="button" onClick={() => setIsCommandConsoleOpen(false)} aria-label="Close command console">
+            <span>Hide</span>
             <X aria-hidden="true" size={17} />
           </button>
         </header>
