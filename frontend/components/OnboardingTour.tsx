@@ -81,8 +81,8 @@ const modules: AcademyModule[] = [
 
 const academySteps: AcademyStep[] = [
   {
-    description: "ENTRAL is controlled from the dashboard: graph in the center, navigation on the left, command console on the right.",
-    guidedTask: "Open the dashboard and identify ENTRAL, the left navigation, and the command console.",
+    description: "ENTRAL is controlled from the Command Center: graph in the center, navigation on the left, command console on the right.",
+    guidedTask: "Open the Command Center and identify ENTRAL, the left navigation, and the command console.",
     id: "welcome",
     mode: "both",
     moduleId: "start",

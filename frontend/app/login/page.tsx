@@ -7,7 +7,7 @@ export default function LoginPage() {
   return (
     <AuthCard
       title="Sign in"
-      subtitle="Access your team dashboard and active jobs."
+      subtitle="Access your ENTRAL Command Center."
       footerText="New to Entral?"
       footerLabel="Create an account"
       footerHref="/signup"

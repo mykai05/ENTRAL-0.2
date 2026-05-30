@@ -52,7 +52,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
     return reply.send({
       items: conversations.map((conversation) => ({
         id: conversation.id,
-        title: conversation.title ?? "New chat",
+        title: conversation.title ?? "New thread",
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
         lastMessage: conversation.messages[0]?.content ?? null
@@ -71,7 +71,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
     const conversation = await prisma.conversation.create({
       data: {
         userId: currentUser.sub,
-        title: input.title ?? "New chat"
+        title: input.title ?? "New thread"
       }
     });
 
@@ -101,7 +101,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         const conversation = await tx.conversation.create({
           data: {
             userId: currentUser.sub,
-            title: item.title ?? "Imported chat",
+            title: item.title ?? "Imported thread",
             messages: item.messages?.length ? {
               create: item.messages.map((message) => ({
                 content: message.content,
@@ -209,7 +209,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         }
       });
 
-      if (!conversation.title || conversation.title === "New chat") {
+      if (!conversation.title || conversation.title === "New chat" || conversation.title === "New thread") {
         await tx.conversation.update({
           where: { id: conversation.id },
           data: { title: conversationTitle(input.message) }
@@ -319,7 +319,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         }
       });
 
-      if (!conversation.title || conversation.title === "New chat") {
+      if (!conversation.title || conversation.title === "New chat" || conversation.title === "New thread") {
         await tx.conversation.update({
           where: { id: conversation.id },
           data: { title: conversationTitle(input.message) }

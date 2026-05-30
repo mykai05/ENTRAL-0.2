@@ -13,11 +13,11 @@ type AppHeaderProps = {
 };
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/chat", label: "Chat" },
-  { href: "/automations", label: "Tasks" },
+  { href: "/dashboard", label: "Command Center" },
+  { href: "/chat", label: "Communications" },
+  { href: "/automations", label: "Automations" },
   { href: "/agents", label: "Agents" },
-  { href: "/admin", label: "Admin" }
+  { href: "/admin", label: "Governance" }
 ];
 
 function NavLinks() {

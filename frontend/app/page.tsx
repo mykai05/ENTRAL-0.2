@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import { ArrowRight, CheckCircle2, ClipboardList, LogIn, ShieldCheck, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, LogIn, Network, ShieldCheck, Users } from "lucide-react";
 import { BrandMark } from "../components/BrandMark";
 
 export default function LandingPage() {
@@ -22,10 +22,10 @@ export default function LandingPage() {
 
       <section className="hero-grid" aria-labelledby="hero-title">
         <div className="hero-copy">
-          <p className="eyebrow">Phase 1 MVP</p>
+          <p className="eyebrow">Command OS</p>
           <h1 id="hero-title">Entral</h1>
           <p>
-            A precise workspace for authenticated teams, persistent tasks, and disciplined execution.
+            A private command center for directing agents, automations, merch operations, and governance from one account.
           </p>
           <div className="hero-actions">
             <Link href="/signup" className="button button-primary">
@@ -38,10 +38,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="product-preview" aria-label="Dashboard preview">
+        <div className="product-preview" aria-label="Command Center preview">
           <div className="preview-header">
-            <span>Today</span>
-            <strong>3 active tasks</strong>
+            <span>Command Center</span>
+            <strong>System ready</strong>
           </div>
           <div className="preview-bars">
             <span />
@@ -51,19 +51,19 @@ export default function LandingPage() {
           <div className="preview-list">
             <div>
               <CheckCircle2 aria-hidden="true" size={22} />
-              <span>Auth routes protected</span>
+              <span>Create an operator account</span>
             </div>
             <div>
-              <ShieldCheck aria-hidden="true" size={22} />
-              <span>JWT cookie issued</span>
+              <Network aria-hidden="true" size={22} />
+              <span>Open the live hierarchy</span>
             </div>
             <div>
               <Users aria-hidden="true" size={22} />
-              <span>Teams stored in Postgres</span>
+              <span>Issue directives to ENTRAL</span>
             </div>
             <div>
-              <ClipboardList aria-hidden="true" size={22} />
-              <span>Task list starts clean</span>
+              <ShieldCheck aria-hidden="true" size={22} />
+              <span>Review governance and status</span>
             </div>
           </div>
         </div>

@@ -250,8 +250,8 @@ const memorySystemPrompt = [
   "Use organizational terms such as objectives, tasks, operations, reports, delegation, status, readiness, execution, and command structure.",
   "Avoid casual phrases such as 'sure', 'happy to help', 'here is what I found', 'done', slang, emojis, and customer-support language.",
   "The command console is the primary path for communication and control of visible workspace elements such as graph focus, panels, settings, trails, orbital rings, camera focus, and supported workspace actions.",
-  "Supported workspace actions include new chat, new task, run agent, open templates, export history, governance dashboard, automation console, replay tutorial, keyboard shortcuts, and command palette.",
-  "The dashboard exposes a structural local Command OS hierarchy: ENTRAL is the central command system; Marshals orbit ENTRAL; business Generals orbit Marshals; Commanders orbit Generals; Soldiers orbit Commanders. Live Operations are intentionally excluded until real execution is explicitly wired.",
+  "Supported workspace actions include new communications, new automation task, run agent, open templates, export history, governance and audit, automation console, replay tutorial, keyboard shortcuts, and command palette.",
+  "The Command Center exposes a structural local Command OS hierarchy: ENTRAL is the central command system; Marshals orbit ENTRAL; business Generals orbit Marshals; Commanders orbit Generals; Soldiers orbit Commanders. Live Operations are intentionally excluded until real execution is explicitly wired.",
   "Do not claim you executed real-world actions unless a tool, API, or local command handler actually did it.",
   "For restricted or sensitive actions, explain the safe governed next step."
 ].join(" ");
@@ -281,7 +281,7 @@ async function createAssistantContent(conversation: Conversation, prompt: string
       "Situation:\nLive AI command channel is not connected.",
       `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"`,
       "Recommendation:\nAdd OPENAI_API_KEY to .env and restart ENTRAL to enable live GPT-4o strategic command responses.",
-      "Next Actions:\n- Use local dashboard commands for graph control.\n- Restore the OpenAI channel when strategic analysis is required."
+      "Next Actions:\n- Use local Command Center controls for graph control.\n- Restore the OpenAI channel when strategic analysis is required."
     ].join("\n\n");
   }
 
@@ -1025,7 +1025,7 @@ app.post("/api/v1/ai/conversations/import", { preHandler: requireAuth }, async (
       createdAt: now(),
       id: id("convo"),
       messages: (item.messages ?? []).map((message) => ({ ...message, id: message.id ?? id("msg") })),
-      title: item.title ?? "Imported chat",
+      title: item.title ?? "Imported thread",
       updatedAt: now(),
       userId: user.id
     };
@@ -1064,7 +1064,7 @@ async function chatReply(request: FastifyRequest) {
       createdAt: now(),
       id: id("convo"),
       messages: [],
-      title: text.slice(0, 58) || "New chat",
+      title: text.slice(0, 58) || "New thread",
       updatedAt: now(),
       userId: user.id
     };

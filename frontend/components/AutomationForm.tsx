@@ -67,23 +67,25 @@ export function AutomationForm({ onCreated }: AutomationFormProps) {
       <div>
         <label htmlFor="automation-url">URL</label>
         <input
-          defaultValue="https://example.com"
           id="automation-url"
           name="url"
           type="url"
           placeholder="https://example.com"
           required
         />
+        <small>Paste the public page ENTRAL should inspect.</small>
         {errors.url ? <p className="field-error">{errors.url}</p> : null}
       </div>
       <div>
         <label htmlFor="automation-selector">Selector</label>
-        <input defaultValue="h1" id="automation-selector" name="selector" type="text" placeholder="h1" />
+        <input id="automation-selector" name="selector" type="text" placeholder="h1" />
+        <small>Optional. Leave blank to review the page title and visible text.</small>
         {errors.selector ? <p className="field-error">{errors.selector}</p> : null}
       </div>
       <div>
         <label htmlFor="automation-scheduled-at">Schedule</label>
         <input id="automation-scheduled-at" name="scheduledAt" type="datetime-local" />
+        <small>Optional. Leave blank to run immediately.</small>
         {errors.scheduledAt ? <p className="field-error">{errors.scheduledAt}</p> : null}
       </div>
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}

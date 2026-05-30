@@ -329,7 +329,7 @@ export function ChatWindow() {
 
         <div className="conversation-list">
           {conversations.length === 0 ? (
-            <p>No command threads yet.</p>
+            <p>No communications yet.</p>
           ) : (
             conversations.map((conversation) => (
               <button
@@ -362,8 +362,8 @@ export function ChatWindow() {
       <div className="chat-panel">
         <header className="chat-panel-header">
           <div>
-            <h1>ENTRAL Command</h1>
-            <p>Issue directives, request reports, and review operational planning.</p>
+            <h1>ENTRAL Communications</h1>
+            <p>Use this focused channel for saved conversations, screen-aware assistance, and report drafting.</p>
           </div>
           <div className="row-actions">
             <Button type="button" variant="secondary" onClick={() => setIsConversationSidebarOpen((open) => !open)}>
@@ -396,8 +396,8 @@ export function ChatWindow() {
             <div className="empty-state chat-empty-state">
               <Sparkles aria-hidden="true" size={28} />
               <div>
-              <strong>Issue the first directive.</strong>
-              <p>Select an objective or enter a command report request.</p>
+              <strong>Start the first conversation.</strong>
+              <p>Choose a starter prompt or ask ENTRAL for a focused report.</p>
               </div>
               <div className="starter-prompts">
                 {starterPrompts.map((prompt) => (

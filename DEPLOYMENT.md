@@ -20,7 +20,9 @@ The current Fastify backend is a persistent Node service with background workers
 
 | Variable | Required | Notes |
 | --- | --- | --- |
-| `NEXT_PUBLIC_API_URL` | Yes | Public HTTPS URL of the deployed Fastify backend. |
+| `API_PROXY_URL` | Recommended | Public HTTPS URL of the deployed Fastify backend. Vercel rewrites `/api/v1/*` through this proxy so auth cookies stay same-origin. |
+| `NEXT_PUBLIC_API_URL` | Optional | Use only for direct browser-to-backend API calls. Leave unset when using `API_PROXY_URL`. |
+| `NEXT_PUBLIC_APP_URL` | Recommended | Public HTTPS URL of the deployed frontend, used for metadata and previews. |
 | `COOKIE_NAME` | Recommended | Must match backend `COOKIE_NAME` if changed from `entral_token`. |
 
 ### Backend
@@ -82,10 +84,11 @@ The current Fastify backend is a persistent Node service with background workers
    ```
 
 6. Create a Vercel project for the repository root.
-7. Set the Vercel environment variable `NEXT_PUBLIC_API_URL` to the backend HTTPS URL.
-8. Set `COOKIE_NAME` in Vercel only if the backend cookie name is customized.
-9. Add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` to GitHub Actions secrets.
-10. Push to `main`; CI will verify, build, and deploy the frontend.
+7. Set the Vercel environment variable `API_PROXY_URL` to the backend HTTPS URL.
+8. Set `NEXT_PUBLIC_APP_URL` to the frontend HTTPS URL after the first Vercel deploy.
+9. Set `COOKIE_NAME` in Vercel only if the backend cookie name is customized.
+10. Add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` to GitHub Actions secrets.
+11. Push to `main`; CI will verify, build, and deploy the frontend.
 
 ## Direct Deployment Status
 

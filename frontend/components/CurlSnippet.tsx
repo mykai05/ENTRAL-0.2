@@ -49,16 +49,25 @@ export function CurlSnippet({ authenticated = true, body, method = "GET", path, 
     }
   }
 
+  function handleCopyClick(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    void copySnippet();
+  }
+
   return (
-    <article className="curl-card">
-      <header>
-        <strong>{title}</strong>
-        <Button type="button" variant="secondary" onClick={() => void copySnippet()} aria-label={`Copy ${title} cURL`}>
+    <details className="curl-card">
+      <summary>
+        <span>
+          <strong>{title}</strong>
+          <small>Developer API reference</small>
+        </span>
+        <Button type="button" variant="secondary" onClick={handleCopyClick} aria-label={`Copy ${title} cURL`}>
           {copied ? <Check aria-hidden="true" size={18} /> : <Copy aria-hidden="true" size={18} />}
           {copied ? "Copied" : "Copy"}
         </Button>
-      </header>
+      </summary>
       <pre><code>{snippet}</code></pre>
-    </article>
+    </details>
   );
 }

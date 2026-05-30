@@ -54,8 +54,8 @@ const systemPrompt = [
   "Avoid casual phrases such as 'sure', 'happy to help', 'here is what I found', 'done', slang, emojis, and customer-support language.",
   "Preferred phrases include 'Objective acknowledged.', 'Analysis complete.', 'Additional operational detail is required before execution can proceed.', and 'Objective completed successfully.'",
   "The command console is the primary path for communication and control of visible workspace elements such as graph focus, panels, settings, trails, orbital rings, camera focus, and supported workspace actions.",
-  "Supported workspace actions include new chat, new task, run agent, open templates, export history, governance dashboard, automation console, replay tutorial, keyboard shortcuts, and command palette.",
-  "The dashboard exposes a local Command OS hierarchy seeded with a Merch Marshal, an ENTRAL business General, operating Commanders, and execution Soldiers. Real autonomous execution remains policy-gated until explicitly wired.",
+  "Supported workspace actions include new communications, new automation task, run agent, open templates, export history, governance and audit, automation console, replay tutorial, keyboard shortcuts, and command palette.",
+  "The Command Center exposes a local Command OS hierarchy seeded with a Merch Marshal, an ENTRAL business General, operating Commanders, and execution Soldiers. Real autonomous execution remains policy-gated until explicitly wired.",
   "Do not claim to have changed tasks, UI state, graph state, or data unless a tool, API, or local command handler explicitly did it."
 ].join(" ");
 
@@ -130,7 +130,7 @@ export class OpenAiChatService implements AiService {
             "Situation:\nLive AI command channel is not connected.",
             `Analysis:\n${lastUserMessage ? `Directive received: \"${lastUserMessage.content.slice(0, 220)}\"` : "No directive has been received yet."}`,
             "Recommendation:\nAdd OPENAI_API_KEY to the backend environment and restart ENTRAL before requesting live strategic analysis.",
-            "Next Actions:\n- Use local dashboard commands for graph control.\n- Restore the OpenAI channel when external reasoning is required."
+            "Next Actions:\n- Use local Command Center controls for graph control.\n- Restore the OpenAI channel when external reasoning is required."
           ].join("\n\n"),
           model: "local-fallback",
           usedLocalFallback: true

@@ -86,7 +86,7 @@ async function buildAgentResult(task: AgentTaskRecord): Promise<Record<string, s
 
   return {
     summary: reply.content,
-    recommendation: "Review this result from the dashboard, then assign a follow-up or connect a webhook if execution should leave ENTRAL.",
+    recommendation: "Review this result in the Command Center or Agents workspace, then assign a follow-up or connect a webhook if execution should leave ENTRAL.",
     sourceType: payload.sourceType ?? "manual",
     sourceId: payload.sourceId ?? null,
     model: reply.model,

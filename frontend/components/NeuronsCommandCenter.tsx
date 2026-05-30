@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { Activity, AlertTriangle, Bot, Crosshair, Eye, Info, LogOut, Maximize2, Menu, Mic, MicOff, Network, PanelRightClose, PanelRightOpen, Pause, Play, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Volume2, Zap, ZoomIn, ZoomOut } from "lucide-react";
+import { Activity, AlertTriangle, Bot, Crosshair, Eye, Info, LogOut, Maximize2, Menu, Mic, MicOff, Network, PanelRightClose, PanelRightOpen, Pause, Play, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Volume2, X, Zap, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "./Button";
 import { Logo } from "./Logo";
 import { MerchOperationsPanel } from "./MerchOperationsPanel";
@@ -131,6 +131,19 @@ type CameraState = {
   pitch: number;
   target: Vec3;
   yaw: number;
+};
+
+type GesturePoint = {
+  x: number;
+  y: number;
+};
+
+type TouchGestureState = {
+  lastCenter: GesturePoint | null;
+  lastDistance: number | null;
+  moved: boolean;
+  pointers: Map<number, GesturePoint>;
+  primaryPointerId: number | null;
 };
 
 type Matrix4 = [
@@ -1100,6 +1113,20 @@ function clampCamera(camera: CameraState): CameraState {
   };
 }
 
+function midpoint(points: GesturePoint[]) {
+  const total = points.reduce((sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }), { x: 0, y: 0 });
+  const count = Math.max(points.length, 1);
+
+  return {
+    x: total.x / count,
+    y: total.y / count
+  };
+}
+
+function pointDistance(first: GesturePoint, second: GesturePoint) {
+  return Math.hypot(first.x - second.x, first.y - second.y);
+}
+
 export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void; user?: DashboardUser | null }) {
   const { settings, updateSettings } = useTheme();
   const { isSpeaking, settings: voiceSettings, speak, stopSpeaking } = useVoice();
@@ -1152,6 +1179,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [activeStatusFilter, setActiveStatusFilter] = useState<GraphStatus[] | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
+  const [isCommandConsoleOpen, setIsCommandConsoleOpen] = useState(true);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isWebGlReady, setIsWebGlReady] = useState(true);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(() => readStoredGraphControls());
@@ -1179,6 +1207,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const desiredCameraRef = useRef<CameraState>({ ...defaultCamera, target: { ...defaultCamera.target } });
   const matrixRef = useRef<Matrix4 | null>(null);
   const dragRef = useRef<{ button: number; lastX: number; lastY: number; mode: "orbit" | "pan"; moved: boolean } | null>(null);
+  const touchGestureRef = useRef<TouchGestureState>({
+    lastCenter: null,
+    lastDistance: null,
+    moved: false,
+    pointers: new Map(),
+    primaryPointerId: null
+  });
   const lastFrameTimeRef = useRef<number | null>(null);
   const motionRef = useRef<Map<string, NodeMotion>>(new Map());
   const previousBodyOverflowRef = useRef<string | null>(null);
@@ -3496,7 +3531,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     } else if (normalized.includes("export")) {
       routeWorkspaceAction("Export channel selected. Opening history export controls.", "/chat#export");
     } else if (normalized.includes("governance") || normalized.includes("audit") || normalized.includes("admin")) {
-      routeWorkspaceAction("Governance channel selected. Opening the governance dashboard.", "/admin");
+      routeWorkspaceAction("Governance channel selected. Opening governance and audit controls.", "/admin");
     } else if (normalized.includes("automation console") || normalized.includes("automations")) {
       routeWorkspaceAction("Automation channel selected. Opening the automation console.", "/automations");
     } else if (normalized.includes("academy") || normalized.includes("tutorial") || normalized.includes("onboarding")) {
@@ -3653,6 +3688,20 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     lockGraphScroll();
     event.currentTarget.focus();
     event.currentTarget.setPointerCapture(event.pointerId);
+
+    if (event.pointerType === "touch") {
+      const gesture = touchGestureRef.current;
+      gesture.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      gesture.primaryPointerId = gesture.primaryPointerId ?? event.pointerId;
+
+      const points = Array.from(gesture.pointers.values()).slice(0, 2);
+      gesture.lastCenter = midpoint(points);
+      gesture.lastDistance = points.length >= 2 ? pointDistance(points[0], points[1]) : null;
+      gesture.moved = gesture.moved || points.length >= 2;
+      dragRef.current = null;
+      return;
+    }
+
     dragRef.current = {
       button: event.button,
       lastX: event.clientX,
@@ -3663,6 +3712,63 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }
 
   function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (event.pointerType === "touch") {
+      const gesture = touchGestureRef.current;
+
+      if (!gesture.pointers.has(event.pointerId)) {
+        return;
+      }
+
+      event.preventDefault();
+      gesture.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      const points = Array.from(gesture.pointers.values()).slice(0, 2);
+      const center = midpoint(points);
+      const previousCenter = gesture.lastCenter ?? center;
+      const dx = center.x - previousCenter.x;
+      const dy = center.y - previousCenter.y;
+      const sensitivity = graphControlsRef.current.cameraSensitivity;
+
+      gesture.moved = gesture.moved || Math.abs(dx) + Math.abs(dy) > 3;
+
+      if (gesture.moved && lockedNodeIdRef.current) {
+        setLockedNodeId(null);
+        lockedNodeIdRef.current = null;
+      }
+
+      if (points.length >= 2) {
+        const distance = pointDistance(points[0], points[1]);
+        const previousDistance = gesture.lastDistance ?? distance;
+        const zoomRatio = previousDistance > 0 && distance > 0 ? previousDistance / distance : 1;
+        const next = clampCamera({
+          ...desiredCameraRef.current,
+          distance: desiredCameraRef.current.distance * zoomRatio,
+          pitch: desiredCameraRef.current.pitch + dy * 0.0038 * sensitivity,
+          yaw: desiredCameraRef.current.yaw + dx * 0.0038 * sensitivity
+        });
+
+        desiredCameraRef.current = next;
+        gesture.lastDistance = distance;
+      } else {
+        const scale = desiredCameraRef.current.distance * 0.0017 * sensitivity;
+        const axes = getCameraBillboardAxes(desiredCameraRef.current);
+        const panOffset = addVec(
+          scaleVec(axes.right, -dx * scale),
+          scaleVec(axes.up, dy * scale)
+        );
+        const next = clampCamera({
+          ...desiredCameraRef.current,
+          target: addVec(desiredCameraRef.current.target, panOffset)
+        });
+
+        desiredCameraRef.current = next;
+        gesture.lastDistance = null;
+      }
+
+      gesture.lastCenter = center;
+      return;
+    }
+
     const drag = dragRef.current;
 
     if (drag) {
@@ -3722,11 +3828,48 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }
 
   function handlePointerUp(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (event.pointerType === "touch") {
+      const gesture = touchGestureRef.current;
+      const hadSinglePointer = gesture.pointers.size === 1;
+      const picked = pickNode(event.clientX, event.clientY);
+
+      if (picked && hadSinglePointer && !gesture.moved && gesture.primaryPointerId === event.pointerId) {
+        focusCommandNode(picked.node);
+      }
+
+      gesture.pointers.delete(event.pointerId);
+
+      const points = Array.from(gesture.pointers.values()).slice(0, 2);
+      gesture.lastCenter = points.length ? midpoint(points) : null;
+      gesture.lastDistance = points.length >= 2 ? pointDistance(points[0], points[1]) : null;
+      gesture.primaryPointerId = points.length ? (gesture.pointers.keys().next().value ?? null) : null;
+      gesture.moved = points.length > 0;
+      return;
+    }
+
     const drag = dragRef.current;
     const picked = pickNode(event.clientX, event.clientY);
 
     if (picked && !drag?.moved && drag?.button !== 2) {
       focusCommandNode(picked.node);
+    }
+
+    dragRef.current = null;
+  }
+
+  function handlePointerCancel(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (event.pointerType === "touch") {
+      const gesture = touchGestureRef.current;
+      gesture.pointers.delete(event.pointerId);
+
+      if (gesture.pointers.size === 0) {
+        gesture.lastCenter = null;
+        gesture.lastDistance = null;
+        gesture.moved = false;
+        gesture.primaryPointerId = null;
+      }
+
+      return;
     }
 
     dragRef.current = null;
@@ -3799,7 +3942,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       .filter((capability): capability is CapabilityBlueprint => Boolean(capability));
 
   return (
-    <main className={["command-center-page", isPanelOpen ? "info-panel-open" : "", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} aria-label="ENTRAL Atomic Command Center">
+    <main className={["command-center-page", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} aria-label="ENTRAL Atomic Command Center">
       <canvas
         aria-describedby="command-center-camera-help"
         aria-label="3D interactive ENTRAL neuron graph"
@@ -3808,8 +3951,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         onContextMenu={(event) => event.preventDefault()}
         onKeyDown={handleCanvasKeyDown}
         onPointerEnter={lockGraphScroll}
+        onPointerCancel={handlePointerCancel}
         onPointerDown={handlePointerDown}
         onPointerLeave={() => {
+          if (touchGestureRef.current.pointers.size > 0) {
+            return;
+          }
+
           dragRef.current = null;
           releaseGraphScroll();
           setHoveredNodeId(null);
@@ -3829,7 +3977,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         tabIndex={0}
       />
       <p className="sr-only" id="command-center-camera-help">
-        Drag to orbit. Hold right click or shift while dragging to pan the camera up, down, and side to side. Use the mouse wheel or plus and minus keys to zoom. Arrow keys rotate the camera.
+        On touch screens, drag one finger to pan up, down, left, and right. Drag two fingers to rotate around ENTRAL. Pinch two fingers to zoom. On desktop, drag to orbit, right click drag to pan, and use the mouse wheel or plus and minus keys to zoom.
       </p>
 
       <div className="command-center-vignette" aria-hidden="true" />
@@ -3945,7 +4093,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           }}>ENTRAL Overview</button>
           <button type="button" onClick={() => setStatusHighlight(["working", "thinking"], "Highlighted active working and thinking hierarchy nodes.")}>Active Nodes</button>
           <button type="button" onClick={() => setStatusHighlight(["error", "waiting", "offline"], "Highlighted error, waiting, and offline nodes.")}>Alerts</button>
-          <button type="button" onClick={() => respond("Latest activity is visible in the Activity Feed. Mock execution logs are preserved per node.")}>Logs</button>
+          <button type="button" onClick={() => respond("Latest activity is visible in the Activity Feed. Local execution logs are preserved per node.")}>Logs</button>
         </details>
         <details open>
           <summary>Tasks</summary>
@@ -4015,7 +4163,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         <details>
           <summary>Infrastructure</summary>
           {["Memory", "Permissions", "Event Bus", "Tools", "Integrations"].map((label) => (
-            <button key={label} type="button" onClick={() => respond(`${label} is represented in local Command OS mode. Real execution wiring is intentionally disabled for now.`)}>{label}</button>
+            <button key={label} type="button" onClick={() => respond(`${label} is represented in local Command OS mode. External execution remains policy-gated until explicitly connected.`)}>{label}</button>
           ))}
         </details>
         <details>
@@ -4069,14 +4217,19 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
       <form className="command-center-chat" data-academy="command-console" onSubmit={runCommand} aria-label="ENTRAL command input">
         <header className="command-chat-heading">
-          <div className="command-chat-orb">
-            <Bot aria-hidden="true" size={20} />
+          <div className="command-chat-title">
+            <div className="command-chat-orb">
+              <Bot aria-hidden="true" size={20} />
+            </div>
+            <div>
+              <p className="eyebrow">Persistent command console</p>
+              <h2>ENTRAL Command</h2>
+              <span>Issue directives. ENTRAL routes objectives through Marshals, business Generals, Commanders, Soldiers, panels, and graph control.</span>
+            </div>
           </div>
-          <div>
-            <p className="eyebrow">Persistent command console</p>
-            <h2>ENTRAL Command</h2>
-            <span>Issue directives. ENTRAL routes objectives through Marshals, business Generals, Commanders, Soldiers, panels, and graph control.</span>
-          </div>
+          <button className="command-chat-close" type="button" onClick={() => setIsCommandConsoleOpen(false)} aria-label="Close command console">
+            <X aria-hidden="true" size={17} />
+          </button>
         </header>
 
         <div className={isThinking ? "command-chat-status thinking" : "command-chat-status"} role="status">
@@ -4304,6 +4457,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           </button>
         </div>
       </form>
+
+      {!isCommandConsoleOpen ? (
+        <button className="command-chat-reopen" type="button" onClick={() => setIsCommandConsoleOpen(true)} aria-label="Open command console">
+          <Bot aria-hidden="true" size={17} />
+          Command
+        </button>
+      ) : null}
 
       {pendingRemovalNode ? (
         <div className="command-confirm-backdrop" role="presentation">

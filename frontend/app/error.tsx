@@ -10,8 +10,8 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
     <main className="auth-shell">
       <section className="auth-panel launch-state">
         <BrandMark />
-        <h1>Something slipped</h1>
-        <p>ENTRAL caught the error and kept the workspace intact.</p>
+        <h1>Workspace error</h1>
+        <p>ENTRAL hit a recoverable error. Your workspace was not intentionally changed.</p>
         <Button type="button" onClick={reset}>
           <RotateCcw aria-hidden="true" size={18} />
           Try again

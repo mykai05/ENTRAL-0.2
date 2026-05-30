@@ -49,7 +49,7 @@ export function DashboardClient() {
         return;
       }
 
-      setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard.");
+      setError(loadError instanceof Error ? loadError.message : "Unable to load Command Center.");
     } finally {
       setIsLoading(false);
     }

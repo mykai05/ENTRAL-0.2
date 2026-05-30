@@ -6,7 +6,7 @@ export default function SignupPage() {
   return (
     <AuthCard
       title="Create account"
-      subtitle="Set up your first team workspace."
+      subtitle="Create your operator account and open the Command Center."
       footerText="Already have an account?"
       footerLabel="Sign in"
       footerHref="/login"

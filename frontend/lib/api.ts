@@ -42,7 +42,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
       throw new ApiError(408, "Request timed out.", null);
     }
 
-    throw new ApiError(503, "ENTRAL API is not reachable. Check that the backend is running and NEXT_PUBLIC_API_URL is correct.", {
+    throw new ApiError(503, "ENTRAL API is not reachable. Check that the backend is running and the frontend API URL or proxy is configured correctly.", {
       cause: error instanceof Error ? error.message : String(error)
     });
   } finally {

@@ -18,7 +18,7 @@ const shortcuts = [
   { keys: "Cmd/Ctrl + ,", label: "Open theme settings" },
   { keys: "Cmd/Ctrl + /", label: "Open keyboard help" },
   { keys: "?", label: "Open keyboard help" },
-  { keys: "Cmd/Ctrl + Shift + T", label: "New task" },
+  { keys: "Cmd/Ctrl + Shift + T", label: "New automation task" },
   { keys: "Esc", label: "Close overlays or cancel current action" }
 ];
 
@@ -54,12 +54,13 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
 
   const actions = useMemo<PaletteAction[]>(() => [
-    { description: "Start a fresh ENTRAL command thread", href: "/chat", id: "new-chat", keywords: "ai command conversation directive", label: "New command thread" },
+    { description: "Return to the live hierarchy and primary command console", href: "/dashboard", id: "command-center", keywords: "dashboard hierarchy graph command center", label: "Open Command Center" },
+    { description: "Start a focused conversation outside the graph view", href: "/chat", id: "new-chat", keywords: "ai command conversation directive communications", label: "Open Communications" },
     { description: "Open the automation task composer", href: "/automations", id: "new-task", keywords: "task job todo automation", label: "New task" },
     { description: "Assign work to a specialized agent", href: "/agents", id: "run-agent", keywords: "agent run assign orchestration", label: "Run agent" },
     { description: "Open the agent preset gallery", href: "/agents#templates", id: "templates", keywords: "presets templates scraper research linkedin", label: "Open templates" },
     { description: "Open chat export controls", href: "/chat#export", id: "export-history", keywords: "export json csv history", label: "Export history" },
-    { description: "Review policies and audit logs", href: "/admin", id: "governance", keywords: "policy audit admin governance", label: "Governance dashboard" },
+    { description: "Review policies and audit logs", href: "/admin", id: "governance", keywords: "policy audit admin governance", label: "Governance & Audit" },
     { description: "Run browser automation jobs", href: "/automations", id: "automation", keywords: "scrape browser job", label: "Automation console" },
     { description: "Tune neon color, brightness, and onboarding", id: "settings", keywords: "theme customizer accent color settings tutorial academy", label: "Open settings", run: () => window.dispatchEvent(new Event("entral:open-settings")) },
     { description: "Open lessons, guided tasks, and progress tracking", id: "academy", keywords: "help onboarding guide tutorial beginner advanced academy training", label: "ENTRAL Academy", run: () => window.dispatchEvent(new Event("entral:open-academy")) },
@@ -180,7 +181,7 @@ export function CommandPalette() {
                   {index === 0 ? <kbd>Enter</kbd> : <ExternalLink aria-hidden="true" size={16} />}
                 </button>
               )) : (
-                <p className="command-empty">No match yet. Try “agent”, “export”, “settings”, “tutorial”, or “task”.</p>
+                <p className="command-empty">No match yet. Try "agent", "export", "settings", "tutorial", or "task".</p>
               )}
             </div>
           </section>

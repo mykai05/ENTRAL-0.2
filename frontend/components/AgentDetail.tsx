@@ -84,7 +84,10 @@ export function AgentDetail({
     return (
       <section className="agent-detail">
         <div className="empty-state">
-          <p>Select or create an agent.</p>
+          <div>
+            <strong>Select or create an agent.</strong>
+            <p>Agent details, schedules, tasks, logs, and console activity will appear here.</p>
+          </div>
         </div>
       </section>
     );

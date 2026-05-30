@@ -7,10 +7,10 @@ import { ChatWindow } from "../../components/ChatWindow";
 export default function ChatPage() {
   return (
     <main className="dashboard-shell">
-      <AppHeader title="Command Console" subtitle="Operational transmissions are saved to your account." actions={(
+      <AppHeader title="Communications" subtitle="Focused conversation history and screen-aware assistance. Use the Command Center for hierarchy control." actions={(
         <Link href="/dashboard" className="button button-secondary">
           <ArrowLeft aria-hidden="true" size={20} />
-          Dashboard
+          Command Center
         </Link>
       )} />
       <ChatWindow />

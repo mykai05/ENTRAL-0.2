@@ -135,7 +135,12 @@ export function ProductApprovalQueue({ isLoading, onAction, onRefresh, products,
           })}
         </div>
       ) : (
-        <p className="product-approval-empty">{isLoading ? "Loading generated products..." : "No generated products are waiting in the approval queue."}</p>
+        <div className="product-approval-empty empty-state">
+          <div>
+            <strong>{isLoading ? "Loading generated products..." : "No products are waiting for approval."}</strong>
+            <p>{isLoading ? "ENTRAL is checking the approval queue." : "Generate a product batch for a Client Merch Store to review approvals here."}</p>
+          </div>
+        </div>
       )}
     </section>
   );
