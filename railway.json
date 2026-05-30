@@ -5,8 +5,8 @@
     "buildCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm prisma:generate && pnpm --filter @entral/backend build"
   },
   "deploy": {
-    "preDeployCommand": "pnpm prisma:deploy",
-    "startCommand": "pnpm --filter @entral/backend start",
+    "preDeployCommand": "corepack enable && pnpm prisma:deploy",
+    "startCommand": "corepack enable && pnpm --filter @entral/backend start",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
