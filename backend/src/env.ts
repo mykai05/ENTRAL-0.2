@@ -35,6 +35,7 @@ const optionalTrimmedString = z.preprocess((value) => {
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  API_HOST: z.string().min(1).default("localhost"),
   API_PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
@@ -64,7 +65,8 @@ const envSchema = z.object({
 
 export const env = envSchema.parse({
   NODE_ENV: process.env.NODE_ENV,
-  API_PORT: process.env.API_PORT,
+  API_HOST: process.env.API_HOST,
+  API_PORT: process.env.API_PORT ?? process.env.PORT,
   DATABASE_URL: process.env.DATABASE_URL,
   JWT_SECRET: process.env.JWT_SECRET,
   COOKIE_NAME: process.env.COOKIE_NAME,

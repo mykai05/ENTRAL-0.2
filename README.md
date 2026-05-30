@@ -480,3 +480,5 @@ Audit entries use a standard JSON shape with actor, target, action, outcome, sev
 The included GitHub Actions workflow verifies lint, tests, Prisma client generation, and builds. A production Vercel deployment job is included for `main` and expects Vercel secrets to be configured in GitHub.
 
 The verification job also runs `pnpm audit --audit-level high` so dependency vulnerabilities fail CI before deployment.
+
+See `DEPLOYMENT.md` for the production environment checklist, Vercel frontend setup, and backend hosting requirements.

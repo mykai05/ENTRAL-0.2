@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+!.env.example
+.logs
+artifacts
+coverage
+*.log
+backend/dist
+frontend/.next
+frontend/.next-dev
