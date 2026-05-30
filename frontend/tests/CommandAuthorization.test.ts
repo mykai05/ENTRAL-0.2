@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   buildArchiveAuthorizationSummary,
+  buildArchiveEditDraft,
   buildBusinessTemplateAuthorizationSummary,
+  buildCreateNodeEditDraft,
   buildCreateNodeAuthorizationSummary,
+  buildMoveEditDraft,
   buildMoveAuthorizationSummary,
   buildRemoveAuthorizationImpact,
   buildWorkflowAuthorizationSummary,
@@ -23,6 +26,21 @@ describe("command authorization summaries", () => {
       "Command path impact: 1 new Commander will be added under Iron House Gym General.",
       "Authorize creation?"
     ].join("\n"));
+  });
+
+  it("builds editable command drafts for pending authorizations", () => {
+    expect(buildCreateNodeEditDraft({
+      nodeName: "Design Commander",
+      nodeType: "commander",
+      parentName: "Iron House Gym General"
+    })).toBe("Create Commander named Design Commander under Iron House Gym General");
+    expect(buildMoveEditDraft({
+      entityName: "Typography Soldier",
+      newParentName: "Listing Commander"
+    })).toBe("Move Typography Soldier under Listing Commander");
+    expect(buildArchiveEditDraft({
+      entityName: "Merch Marshal"
+    })).toBe("Archive Merch Marshal");
   });
 
   it("builds business template previews with optional context", () => {

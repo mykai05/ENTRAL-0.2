@@ -27,6 +27,14 @@ export function buildCreateNodeAuthorizationSummary(input: {
   ].join("\n");
 }
 
+export function buildCreateNodeEditDraft(input: {
+  nodeName: string;
+  nodeType: Exclude<NodeType, "emperor">;
+  parentName: string;
+}) {
+  return `Create ${commandTitleFor(input.nodeType)} named ${input.nodeName} under ${input.parentName}`;
+}
+
 export function buildBusinessTemplateAuthorizationSummary(input: {
   businessName: string;
   contextLines: string[];
@@ -66,6 +74,13 @@ export function buildMoveAuthorizationSummary(input: {
   ].join("\n");
 }
 
+export function buildMoveEditDraft(input: {
+  entityName: string;
+  newParentName: string;
+}) {
+  return `Move ${input.entityName} under ${input.newParentName}`;
+}
+
 export function buildArchiveAuthorizationSummary(input: {
   descendantCount: number;
   entityName: string;
@@ -81,6 +96,12 @@ export function buildArchiveAuthorizationSummary(input: {
     "Safety: Archive is recommended before permanent deletion because descendants, task history, and reports remain available for review.",
     "Authorize archive?"
   ].join("\n");
+}
+
+export function buildArchiveEditDraft(input: {
+  entityName: string;
+}) {
+  return `Archive ${input.entityName}`;
 }
 
 export function buildRemoveAuthorizationImpact(input: {

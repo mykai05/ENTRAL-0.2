@@ -50,9 +50,12 @@ import { type ClientMerchStore, type PodProduct, type ProductBatchGeneratorRespo
 import { collectTranscript, getSpeechRecognitionConstructor, normalizeWakeWordCommand, type SpeechRecognitionLike } from "../lib/voice-command";
 import { planCommandAction } from "../lib/command-action-plan";
 import {
+  buildArchiveEditDraft,
   buildArchiveAuthorizationSummary,
   buildBusinessTemplateAuthorizationSummary,
+  buildCreateNodeEditDraft,
   buildCreateNodeAuthorizationSummary,
+  buildMoveEditDraft,
   buildMoveAuthorizationSummary,
   buildRemoveAuthorizationImpact,
   buildWorkflowAuthorizationSummary,
@@ -1458,6 +1461,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [lockedNodeId, setLockedNodeId] = useState<string | null>(null);
   const [pendingRemovalId, setPendingRemovalId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const commandInputRef = useRef<HTMLInputElement | null>(null);
   const graphControlsRef = useRef(graphControls);
   const lockedNodeIdRef = useRef<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
@@ -3368,11 +3372,46 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       return;
     }
 
+    let draft = "";
+
+    if (pending.type === "create-node") {
+      const parent = graphRef.current.nodes.find((candidate) => candidate.id === pending.parentId);
+      draft = buildCreateNodeEditDraft({
+        nodeName: pending.nodeName,
+        nodeType: pending.nodeType,
+        parentName: parent?.name ?? "selected parent"
+      });
+    }
+
+    if (pending.type === "move-node") {
+      const node = graphRef.current.nodes.find((candidate) => candidate.id === pending.nodeId);
+      const parent = graphRef.current.nodes.find((candidate) => candidate.id === pending.parentId);
+      draft = buildMoveEditDraft({
+        entityName: node?.name ?? "selected entity",
+        newParentName: parent?.name ?? "new parent"
+      });
+    }
+
+    if (pending.type === "archive-node") {
+      const node = graphRef.current.nodes.find((candidate) => candidate.id === pending.nodeId);
+      draft = buildArchiveEditDraft({
+        entityName: node?.name ?? "selected entity"
+      });
+    }
+
+    if (pending.type === "create-workflow") {
+      draft = pending.workflowText;
+    }
+
+    setCommand(draft);
+    setPendingAuthorization(null);
+    setIsCommandConsoleOpen(true);
+    window.requestAnimationFrame(() => commandInputRef.current?.focus());
     respond({
-      analysis: "Inline modification is not yet supported for this authorization type.",
-      nextActions: ["Cancel this authorization.", "Reissue the directive with the corrected entity, parent, or workflow details."],
-      recommendation: "No action will execute until you approve the current preview or cancel it.",
-      situation: "Modification requires a revised command."
+      analysis: "The pending authorization has been converted back into an editable command draft. Nothing was executed.",
+      nextActions: ["Edit the command text.", "Submit it again.", "Review the new authorization preview."],
+      recommendation: "Modify command wording when the intended action is close but the entity, parent, or workflow details need adjustment.",
+      situation: "Authorization returned to edit mode."
     });
   }
 
@@ -6086,6 +6125,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           </button>
           <input
             id="entral-command-input"
+            ref={commandInputRef}
             disabled={isThinking}
             value={command}
             onChange={(event) => setCommand(event.target.value)}
