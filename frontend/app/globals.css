@@ -6,7 +6,6 @@
   --neon-saturation: 1;
   --color-matte-black: #050505;
   --color-deep-navy: #07111f;
-  --color-gold: #00f0ff;
   --color-ivory: #fffff0;
   --bg: var(--color-matte-black);
   --bg-navy: var(--color-deep-navy);
@@ -229,7 +228,7 @@ textarea:focus-visible {
 .conversation-item:hover,
 .template-card:hover,
 .curl-card:hover {
-  border-color: rgba(212, 175, 55, 0.72);
+  border-color: rgba(var(--neon-accent-rgb), 0.72);
   box-shadow: var(--glow);
 }
 
@@ -561,7 +560,7 @@ textarea:focus-visible {
 }
 
 .agent-away-summary {
-  border-color: rgba(212, 175, 55, 0.55);
+  border-color: rgba(var(--neon-accent-rgb), 0.55);
   box-shadow: var(--glow);
 }
 
@@ -902,7 +901,7 @@ textarea:focus-visible {
 .message-assistant {
   align-self: flex-start;
   background: var(--bg-navy);
-  border-color: rgba(212, 175, 55, 0.36);
+  border-color: rgba(var(--neon-accent-rgb), 0.36);
   color: #fffff0;
 }
 
@@ -1045,7 +1044,7 @@ textarea:focus-visible {
 }
 
 .status-success {
-  background: rgba(212, 175, 55, 0.14);
+  background: rgba(var(--neon-accent-rgb), 0.14);
   color: var(--brand);
 }
 
@@ -1060,7 +1059,7 @@ textarea:focus-visible {
 }
 
 .status-waiting {
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(var(--neon-accent-rgb), 0.12);
   color: var(--brand);
 }
 
@@ -1214,7 +1213,7 @@ textarea:focus-visible {
 }
 
 .chip {
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(var(--neon-accent-rgb), 0.12);
   border-radius: 999px;
   color: var(--brand);
   display: inline-flex;
@@ -1332,7 +1331,7 @@ textarea:focus-visible {
 }
 
 .admin-row code {
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(var(--neon-accent-rgb), 0.12);
   border-radius: 8px;
   color: var(--brand);
   padding: 0.35rem 0.5rem;
@@ -1641,7 +1640,7 @@ kbd {
 .app-nav-link:hover,
 .mobile-nav a:hover,
 .nav-link:hover {
-  border-color: rgba(212, 175, 55, 0.72);
+  border-color: rgba(var(--neon-accent-rgb), 0.72);
   box-shadow: var(--glow);
   color: var(--brand);
 }
@@ -1703,7 +1702,7 @@ kbd {
 .skeleton-card strong,
 .skeleton-card small {
   animation: skeletonPulse 1.25s ease-in-out infinite;
-  background: linear-gradient(90deg, rgba(255, 255, 240, 0.06), rgba(212, 175, 55, 0.18), rgba(255, 255, 240, 0.06));
+  background: linear-gradient(90deg, rgba(255, 255, 240, 0.06), rgba(var(--neon-accent-rgb), 0.18), rgba(255, 255, 240, 0.06));
   background-size: 220% 100%;
   border-radius: 999px;
   display: block;
@@ -1734,7 +1733,7 @@ kbd {
 .message-copy {
   align-items: center;
   background: rgba(255, 255, 240, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.32);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.32);
   border-radius: 6px;
   color: var(--ink);
   cursor: pointer;
@@ -1766,7 +1765,7 @@ kbd {
 
 .markdown-message code {
   background: rgba(10, 10, 10, 0.52);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.2);
   border-radius: 6px;
   color: var(--brand);
   padding: 0.1rem 0.28rem;
@@ -1786,7 +1785,7 @@ kbd {
 }
 
 .starter-prompts button {
-  background: rgba(212, 175, 55, 0.1);
+  background: rgba(var(--neon-accent-rgb), 0.1);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink);
@@ -1877,7 +1876,7 @@ kbd {
 .privacy-notice {
   align-items: flex-start;
   background: #08111f;
-  border: 1px solid rgba(212, 175, 55, 0.55);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.55);
   border-radius: 8px;
   box-shadow: var(--glow);
   display: grid;
@@ -1988,7 +1987,7 @@ kbd {
 }
 
 .status-waiting {
-  background: rgba(212, 175, 55, 0.14);
+  background: rgba(var(--neon-accent-rgb), 0.14);
   color: var(--brand);
 }
 

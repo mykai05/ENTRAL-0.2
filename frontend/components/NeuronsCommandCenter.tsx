@@ -1390,6 +1390,24 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }, []);
 
   useEffect(() => {
+    function openGuidedBusinessSetup() {
+      setIsCommandConsoleOpen(true);
+      setIsPanelOpen(false);
+      setIsControlsOpen(false);
+      openBusinessWizard();
+    }
+
+    window.addEventListener("entral:open-business-wizard", openGuidedBusinessSetup);
+
+    if (window.location.hash === "#business-setup") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+      window.setTimeout(openGuidedBusinessSetup, 0);
+    }
+
+    return () => window.removeEventListener("entral:open-business-wizard", openGuidedBusinessSetup);
+  }, []);
+
+  useEffect(() => {
     selectedRef.current = selectedNodeId;
   }, [selectedNodeId]);
 
@@ -4798,12 +4816,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <Sparkles aria-hidden="true" size={16} />
                 Start guided setup
               </Button>
-              <Button type="button" variant="secondary" onClick={() => respond({
-                analysis: businessTemplates.map((template) => `${template.label}: ${template.description}`).join("\n"),
-                nextActions: ["Say: Help me create my first business.", "Or choose Start guided setup.", "Use a named command like Create POD business named Iron House Gym."],
-                recommendation: "Start with a template that matches the first business you actually want to operate.",
-                situation: "Business templates available."
-              })}>
+              <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
                 View templates
               </Button>
             </div>

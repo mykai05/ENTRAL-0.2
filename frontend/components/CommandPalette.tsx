@@ -55,10 +55,11 @@ export function CommandPalette() {
 
   const actions = useMemo<PaletteAction[]>(() => [
     { description: "Return to the live hierarchy and primary command console", href: "/dashboard", id: "command-center", keywords: "dashboard hierarchy graph command center", label: "Open Command Center" },
+    { description: "Launch the guided flow that creates a Marshal, business General, Commanders, Soldiers, and first intake task", href: "/dashboard#business-setup", id: "business-setup", keywords: "business setup first business wizard onboarding general marshal template create company client store", label: "Business setup", run: () => window.dispatchEvent(new Event("entral:open-business-wizard")) },
     { description: "Start a focused conversation outside the graph view", href: "/chat", id: "new-chat", keywords: "ai command conversation directive communications", label: "Open Communications" },
     { description: "Open the automation task composer", href: "/automations", id: "new-task", keywords: "task job todo automation", label: "New task" },
     { description: "Assign work to a specialized agent", href: "/agents", id: "run-agent", keywords: "agent run assign orchestration", label: "Run agent" },
-    { description: "Open the agent preset gallery", href: "/agents#templates", id: "templates", keywords: "presets templates scraper research linkedin", label: "Open templates" },
+    { description: "Open the agent preset gallery", href: "/agents#templates", id: "templates", keywords: "agent presets templates scraper research linkedin", label: "Agent templates" },
     { description: "Open chat export controls", href: "/chat#export", id: "export-history", keywords: "export json csv history", label: "Export history" },
     { description: "Review policies and audit logs", href: "/admin", id: "governance", keywords: "policy audit admin governance", label: "Governance & Audit" },
     { description: "Run browser automation jobs", href: "/automations", id: "automation", keywords: "scrape browser job", label: "Automation console" },
@@ -168,7 +169,7 @@ export function CommandPalette() {
           <section className="command-palette" role="dialog" aria-label="Command palette" onMouseDown={(event) => event.stopPropagation()}>
             <div className="command-input">
               <Command aria-hidden="true" size={20} />
-              <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleQueryKeyDown} placeholder="Search actions, pages, agents, exports..." />
+              <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleQueryKeyDown} placeholder="Search setup, pages, agents, exports..." />
             </div>
             <p className="command-palette-hint">Type what you want ENTRAL to do, then press Enter or click an action.</p>
             <div className="command-results">
@@ -181,7 +182,7 @@ export function CommandPalette() {
                   {index === 0 ? <kbd>Enter</kbd> : <ExternalLink aria-hidden="true" size={16} />}
                 </button>
               )) : (
-                <p className="command-empty">No match yet. Try "agent", "export", "settings", "tutorial", or "task".</p>
+                <p className="command-empty">No match yet. Try "business", "agent", "export", "settings", "tutorial", or "task".</p>
               )}
             </div>
           </section>
