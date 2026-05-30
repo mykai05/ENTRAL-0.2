@@ -38,6 +38,7 @@ Implemented in the current v0.3 work session:
 - Added tests for command intent, command action planning, command creation, command reports, command suggestions, Command OS defaults/store behavior, onboarding, and Merch workflow fixtures.
 - Step checkpoint after resume: wired the shared authorization summary helper into the dashboard and added focused authorization summary tests.
 - Step 2 checkpoint after resume: hardened destructive removal confirmations with shared impact summaries for parent, descendant, task, and report impact.
+- Step 3 checkpoint after resume: added approval-path tests covering authorized creation, reassignment, archive/delete cleanup, and Merch workflow task paths.
 
 Changed files at checkpoint:
 
@@ -82,6 +83,7 @@ Checks passed before checkpoint:
 
 - Frontend typecheck/lint: passed.
 - Focused authorization tests: 1 file, 4 tests passed.
+- Step 3 focused approval/store/workflow tests: 3 files, 21 tests passed.
 - Frontend tests: 15 files, 58 tests passed.
 - Frontend production build: passed.
 - Backend typecheck/lint: passed.
