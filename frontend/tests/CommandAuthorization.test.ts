@@ -58,6 +58,12 @@ describe("command authorization summaries", () => {
       entityTitle: "Marshal",
       parentName: "ENTRAL"
     })).toContain("Child impact: 3 descendants will remain preserved but inactive under this archived entity.");
+    expect(buildArchiveAuthorizationSummary({
+      descendantCount: 3,
+      entityName: "Merch Marshal",
+      entityTitle: "Marshal",
+      parentName: "ENTRAL"
+    })).toContain("Safety: Archive is recommended before permanent deletion");
   });
 
   it("builds destructive removal impact summaries with task and report counts", () => {

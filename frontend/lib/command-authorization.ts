@@ -78,6 +78,7 @@ export function buildArchiveAuthorizationSummary(input: {
     `Type: ${input.entityTitle}`,
     `Parent: ${input.parentName}`,
     `Child impact: ${pluralize(input.descendantCount, "descendant")} will remain preserved but inactive under this archived entity.`,
+    "Safety: Archive is recommended before permanent deletion because descendants, task history, and reports remain available for review.",
     "Authorize archive?"
   ].join("\n");
 }

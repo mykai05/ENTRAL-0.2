@@ -58,6 +58,7 @@ import {
   buildWorkflowAuthorizationSummary,
   commandTitleFor
 } from "../lib/command-authorization";
+import { getCommandRecoverySummary } from "../lib/command-recovery";
 import { buildCommandOSReport, buildCommandOSReportRecord } from "../lib/command-reports";
 import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../lib/command-suggestions";
 import { creationBlockedTransmission, hierarchyNameFromCommandText, nextCommandPlaceholderName } from "../lib/command-creation";
@@ -5167,6 +5168,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const visibleTasks = graph.tasks.slice(0, 8);
   const userBusinessGenerals = generalNodes.filter((node) => node.id !== "entral-general");
   const selectedTemplate = businessTemplates.find((template) => template.id === businessWizard.templateId) ?? businessTemplates[0];
+  const recoverySummary = getCommandRecoverySummary(graph);
+  const recoveryMarshalNode = recoverySummary.marshalId ? nodeMap.get(recoverySummary.marshalId) ?? null : null;
   const contextCommandSuggestions = getContextCommandSuggestions({
     businessGeneralCount: userBusinessGenerals.length,
     isBusinessWizardOpen: businessWizard.isOpen,
@@ -5712,19 +5715,38 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           </button>
         </header>
 
-        <div className={isThinking ? "command-chat-status thinking" : "command-chat-status"} role="status">
-          <Sparkles aria-hidden="true" size={16} />
-          <span>{statusMessage}</span>
-        </div>
+        <div className="command-console-scroll">
+          <div className={isThinking ? "command-chat-status thinking" : "command-chat-status"} role="status">
+            <Sparkles aria-hidden="true" size={16} />
+            <span>{statusMessage}</span>
+          </div>
 
-        <div className={["voice-command-status", isListening ? "listening" : "", isSpeaking ? "speaking" : ""].filter(Boolean).join(" ")} data-academy="voice-controls" role="status" aria-live="polite">
-          {isListening ? <Mic aria-hidden="true" size={15} /> : isSpeaking ? <Volume2 aria-hidden="true" size={15} /> : <MicOff aria-hidden="true" size={15} />}
-          <span>{isListening ? "Microphone active. Speak directive." : isSpeaking ? "ENTRAL speaking." : voiceStatus}</span>
-          <button type="button" onClick={stopSpeaking} disabled={!isSpeaking}>Stop speech</button>
-        </div>
+          <div className={["voice-command-status", isListening ? "listening" : "", isSpeaking ? "speaking" : ""].filter(Boolean).join(" ")} data-academy="voice-controls" role="status" aria-live="polite">
+            {isListening ? <Mic aria-hidden="true" size={15} /> : isSpeaking ? <Volume2 aria-hidden="true" size={15} /> : <MicOff aria-hidden="true" size={15} />}
+            <span>{isListening ? "Microphone active. Speak directive." : isSpeaking ? "ENTRAL speaking." : voiceStatus}</span>
+            <button type="button" onClick={stopSpeaking} disabled={!isSpeaking}>Stop speech</button>
+          </div>
 
-        {userBusinessGenerals.length === 0 && !businessWizard.isOpen ? (
-          <section className="business-empty-guide" aria-label="First business guidance">
+          {recoverySummary.hasRecoveryMarshal ? (
+            <section className="command-recovery-notice" role="status" aria-label="Recovered command state notice">
+            <ShieldCheck aria-hidden="true" size={18} />
+            <div>
+              <p className="eyebrow">Recovery queue</p>
+              <h3>{recoverySummary.marshalName ?? "Recovered command structure"}</h3>
+              <p>
+                Preserved {recoverySummary.recoveredEntityCount} recovered entit{recoverySummary.recoveredEntityCount === 1 ? "y" : "ies"}
+                {recoverySummary.recoveredGeneralCount ? `, including ${recoverySummary.recoveredGeneralCount} General${recoverySummary.recoveredGeneralCount === 1 ? "" : "s"}` : ""}
+                {recoverySummary.repairedTaskCount ? `, with ${recoverySummary.repairedTaskCount} task${recoverySummary.repairedTaskCount === 1 ? "" : "s"} needing review` : ""}.
+              </p>
+            </div>
+            <Button type="button" variant="secondary" disabled={!recoveryMarshalNode} onClick={() => recoveryMarshalNode && focusCommandNode(recoveryMarshalNode)}>
+              Review
+            </Button>
+            </section>
+          ) : null}
+
+          {userBusinessGenerals.length === 0 && !businessWizard.isOpen ? (
+            <section className="business-empty-guide" aria-label="First business guidance">
             <div>
               <p className="eyebrow">First mission</p>
               <h3>Create your first business General</h3>
@@ -5754,11 +5776,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 Load demo environment
               </Button>
             </div>
-          </section>
-        ) : null}
+            </section>
+          ) : null}
 
-        {businessWizard.isOpen ? (
-          <section className="business-wizard" data-academy="business-wizard" aria-label="Guided business creation">
+          {businessWizard.isOpen ? (
+            <section className="business-wizard" data-academy="business-wizard" aria-label="Guided business creation">
             <header>
               <div>
                 <p className="eyebrow">Guided setup</p>
@@ -5840,10 +5862,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 Reset
               </Button>
             </div>
-          </section>
-        ) : null}
+            </section>
+          ) : null}
 
-        <details className="command-console-controls" data-academy="command-controls" open={isControlsOpen} onToggle={(event) => setIsControlsOpen(event.currentTarget.open)}>
+          <details className="command-console-controls" data-academy="command-controls" open={isControlsOpen} onToggle={(event) => setIsControlsOpen(event.currentTarget.open)}>
           <summary>
             <SlidersHorizontal aria-hidden="true" size={16} />
             Unified controls
@@ -5924,37 +5946,45 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </div>
           </div>
 
-          <ProductBatchGenerator
-            generatedProducts={productBatchResults}
-            isGenerating={isGeneratingProductBatch}
-            isLoadingStores={isLoadingMerchStores}
-            onChange={handleProductBatchFormChange}
-            onGenerate={() => void generateProductBatchFromForm()}
-            onRefreshStores={() => void loadMerchStores()}
-            stores={merchStores}
-            value={productBatchForm}
-            warnings={productBatchWarnings}
-          />
+            <details className="command-tool-drawer">
+              <summary>
+                <Sparkles aria-hidden="true" size={16} />
+                Merch/POD tools
+                <span>Products, approvals, store operations</span>
+              </summary>
 
-          <ProductApprovalQueue
-            isLoading={isLoadingApprovalQueue}
-            onAction={(product, action) => void updateProductApproval(product, action)}
-            onRefresh={() => void loadApprovalQueue()}
-            products={approvalQueueProducts}
-            updatingProductIds={updatingApprovalProductIds}
-          />
+              <ProductBatchGenerator
+                generatedProducts={productBatchResults}
+                isGenerating={isGeneratingProductBatch}
+                isLoadingStores={isLoadingMerchStores}
+                onChange={handleProductBatchFormChange}
+                onGenerate={() => void generateProductBatchFromForm()}
+                onRefreshStores={() => void loadMerchStores()}
+                stores={merchStores}
+                value={productBatchForm}
+                warnings={productBatchWarnings}
+              />
 
-          <MerchOperationsPanel
-            isLoadingStores={isLoadingMerchStores}
-            onEvent={(message) => {
-              recordActivity(message);
-              setStatusMessage(message);
-            }}
-            onRefreshStores={() => void loadMerchStores()}
-            stores={merchStores}
-          />
+              <ProductApprovalQueue
+                isLoading={isLoadingApprovalQueue}
+                onAction={(product, action) => void updateProductApproval(product, action)}
+                onRefresh={() => void loadApprovalQueue()}
+                products={approvalQueueProducts}
+                updatingProductIds={updatingApprovalProductIds}
+              />
 
-          <div className="command-structure-actions" data-academy="command-structure-actions" aria-label="Chain of command controls">
+              <MerchOperationsPanel
+                isLoadingStores={isLoadingMerchStores}
+                onEvent={(message) => {
+                  recordActivity(message);
+                  setStatusMessage(message);
+                }}
+                onRefreshStores={() => void loadMerchStores()}
+                stores={merchStores}
+              />
+            </details>
+
+            <div className="command-structure-actions" data-academy="command-structure-actions" aria-label="Chain of command controls">
             <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
               <Sparkles aria-hidden="true" size={16} />
               Business setup
@@ -5979,9 +6009,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <Trash2 aria-hidden="true" size={16} />
               Remove Selected
             </Button>
-          </div>
+            </div>
 
-          <div className="command-legend compact" aria-label="Hierarchy colors">
+            <div className="command-legend compact" aria-label="Hierarchy colors">
             {graph.groups.map((group) => (
               <article className={activeGroupId === group.id ? "command-color-row active" : "command-color-row"} key={group.id}>
                 <button type="button" onClick={() => focusGroup(group.id)}>
@@ -5994,20 +6024,20 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 </label>
               </article>
             ))}
-          </div>
-        </details>
+            </div>
+          </details>
 
-        <div className="command-console-log" data-academy="command-task-list" aria-label="Command console history">
+          <div className="command-console-log" data-academy="command-task-list" aria-label="Command console history">
           {commandHistory.map((message) => (
             <article className={`command-console-message ${message.role} source-${message.sourceType}`} key={message.id}>
               <span className="command-console-source">{message.sourceLabel}</span>
               <p>{message.content}</p>
             </article>
           ))}
-        </div>
+          </div>
 
-        {pendingAuthorization ? (
-          <section className="command-authorization-card" aria-label="Pending authorization">
+          {pendingAuthorization ? (
+            <section className="command-authorization-card" aria-label="Pending authorization">
             <div>
               <p className="eyebrow">Authorization required</p>
               <pre>{pendingAuthorization.summary}</pre>
@@ -6023,15 +6053,16 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 Cancel
               </Button>
             </div>
-          </section>
-        ) : null}
+            </section>
+          ) : null}
 
-        <div className="command-chat-suggestions" aria-label="Example ENTRAL commands">
+          <div className="command-chat-suggestions" aria-label="Example ENTRAL commands">
           {contextCommandSuggestions.map((example) => (
             <button key={example} type="button" onClick={() => executeCommand(example)}>
               {example}
             </button>
           ))}
+          </div>
         </div>
 
         <div className="command-chat-input-row">

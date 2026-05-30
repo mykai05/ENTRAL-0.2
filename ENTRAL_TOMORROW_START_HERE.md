@@ -39,6 +39,8 @@ Implemented in the current v0.3 work session:
 - Step checkpoint after resume: wired the shared authorization summary helper into the dashboard and added focused authorization summary tests.
 - Step 2 checkpoint after resume: hardened destructive removal confirmations with shared impact summaries for parent, descendant, task, and report impact.
 - Step 3 checkpoint after resume: added approval-path tests covering authorized creation, reassignment, archive/delete cleanup, and Merch workflow task paths.
+- Step 4 checkpoint after resume: added recovery-state summaries, visible recovery review notice, and stronger archive safety language.
+- Step 3.5 console cleanup: refurbished the ENTRAL Command console so the middle content scrolls, the input remains reachable, and bulky Merch/POD tools are collapsed behind a drawer.
 
 Changed files at checkpoint:
 
@@ -84,6 +86,8 @@ Checks passed before checkpoint:
 - Frontend typecheck/lint: passed.
 - Focused authorization tests: 1 file, 4 tests passed.
 - Step 3 focused approval/store/workflow tests: 3 files, 21 tests passed.
+- Step 4 focused authorization/recovery/approval/store tests: 4 files, 24 tests passed.
+- Step 3.5 console cleanup checks: frontend lint passed; focused authorization/recovery/approval/store tests passed with 4 files and 24 tests.
 - Frontend tests: 15 files, 58 tests passed.
 - Frontend production build: passed.
 - Backend typecheck/lint: passed.
