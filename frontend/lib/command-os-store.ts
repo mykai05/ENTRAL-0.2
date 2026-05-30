@@ -1,5 +1,6 @@
 import {
   type CommandMemory,
+  type CommandReportRecord,
   type CommandStatus,
   type CommandTask,
   type CommandTaskStatus,
@@ -22,6 +23,8 @@ export type CommandNodeLike = {
   parentId: string | null;
   parentMarshalId?: string | null;
   parentMarshalName?: string | null;
+  reportHistory?: CommandReportRecord[];
+  reports?: CommandReportRecord[];
   status: CommandStatus;
   taskHistory: string[];
   type: "core" | "agent";
@@ -147,10 +150,34 @@ function normalizeNode<TNode extends CommandNodeLike>(node: TNode): TNode {
       taskResults: Array.isArray(node.memory?.taskResults) ? node.memory.taskResults.filter((item): item is string => typeof item === "string") : []
     },
     parentId: typeof node.parentId === "string" ? node.parentId : null,
+    reportHistory: Array.isArray(node.reportHistory) ? node.reportHistory : [],
+    reports: Array.isArray(node.reports) ? node.reports : [],
     status: isValidStatus(node.status) ? node.status : "idle",
     taskHistory: Array.isArray(node.taskHistory) ? node.taskHistory.filter((item): item is string => typeof item === "string") : [],
     type: node.commandType === "emperor" ? "core" : "agent"
   };
+}
+
+function sanitizeReportHistory<TNode extends CommandNodeLike>(reports: unknown, nodesById: Map<string, TNode>): CommandReportRecord[] {
+  if (!Array.isArray(reports)) {
+    return [];
+  }
+
+  return reports.filter((report): report is CommandReportRecord => {
+    if (!report || typeof report !== "object") return false;
+    const candidate = report as Partial<CommandReportRecord>;
+
+    return typeof candidate.id === "string"
+      && typeof candidate.createdAt === "string"
+      && typeof candidate.sourceEntityId === "string"
+      && typeof candidate.destinationEntityId === "string"
+      && nodesById.has(candidate.sourceEntityId)
+      && nodesById.has(candidate.destinationEntityId)
+      && typeof candidate.situation === "string"
+      && typeof candidate.analysis === "string"
+      && typeof candidate.recommendation === "string"
+      && Array.isArray(candidate.nextActions);
+  }).slice(0, 20);
 }
 
 function firstNodeOfType<TNode extends CommandNodeLike>(nodes: TNode[], type: NodeType) {
@@ -387,7 +414,7 @@ function sanitizeTasks<TNode extends CommandNodeLike>(
         marshalId: pathDetails.marshalId,
         marshalName: pathDetails.marshalName,
         name: typeof task.name === "string" ? task.name : "Untitled task",
-        reportHistory: Array.isArray(task.reportHistory) ? task.reportHistory : [],
+        reportHistory: sanitizeReportHistory(task.reportHistory, nodesById),
         soldierId: pathDetails.soldierId,
         soldierName: pathDetails.soldierName,
         status: nextStatus,
@@ -500,6 +527,8 @@ export function validateCommandOSState<TNode extends CommandNodeLike>(
 
   for (const node of uniqueNodes) {
     node.children = Array.from(new Set(childIdsByParent.get(node.id) ?? []));
+    node.reportHistory = sanitizeReportHistory(node.reportHistory, nodesById);
+    node.reports = sanitizeReportHistory(node.reports, nodesById);
   }
 
   const sanitized = sanitizeTasks(state.tasks, uniqueNodes, {

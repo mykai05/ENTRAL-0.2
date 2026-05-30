@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Entral",
     description: "Command directives, automation tasks, multi-agent orchestration, and governance in one launch-ready workspace.",
-    images: [{ url: "/icon.svg", width: 512, height: 512, alt: "Entral command atom emblem logo" }],
+    images: [{ url: "/icon.svg", width: 512, height: 512, alt: "Entral command emblem logo" }],
     siteName: "Entral",
     type: "website"
   },

@@ -232,6 +232,37 @@ describe("Command OS store", () => {
     expect(hydrated.nodes.find((item) => item.id === "soldier-2")?.memory.notes).toContain("Persist me");
   });
 
+  it("preserves valid report history and removes dangling report references", () => {
+    const validReport = {
+      analysis: "Command path is valid.",
+      createdAt: "2026-05-30T00:00:00.000Z",
+      destinationEntityId: "commander-1",
+      destinationEntityType: "commander" as const,
+      id: "report-valid",
+      nextActions: ["Review task."],
+      recommendation: "Continue.",
+      situation: "Soldier report ready.",
+      sourceEntityId: "soldier-1",
+      sourceEntityType: "soldier" as const
+    };
+    const danglingReport = {
+      ...validReport,
+      destinationEntityId: "deleted-commander",
+      id: "report-dangling"
+    };
+    const state = validateCommandOSState({
+      ...baseState(),
+      nodes: baseState().nodes.map((item) => item.id === "soldier-1"
+        ? { ...item, reportHistory: [validReport, danglingReport], reports: [validReport, danglingReport] }
+        : item),
+      tasks: [task({ reportHistory: [validReport, danglingReport] })]
+    }, { fallback: baseState() });
+
+    expect(state.nodes.find((item) => item.id === "soldier-1")?.reportHistory?.map((report) => report.id)).toEqual(["report-valid"]);
+    expect(state.nodes.find((item) => item.id === "soldier-1")?.reports?.map((report) => report.id)).toEqual(["report-valid"]);
+    expect(state.tasks[0].reportHistory?.map((report) => report.id)).toEqual(["report-valid"]);
+  });
+
   it("recovers interrupted active tasks during hydration", () => {
     const state = assignCommandTask(baseState(), task({ status: "running" }), baseState());
     const runningState = {

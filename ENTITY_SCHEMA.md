@@ -63,6 +63,24 @@ type CommandTask = {
   completedAt?: string | null;
   delegationPath: string[];
   history: string[];
+  reportHistory?: CommandReportRecord[];
+};
+
+type CommandReportRecord = {
+  id: string;
+  sourceEntityId: string;
+  sourceEntityType: NodeType;
+  destinationEntityId: string;
+  destinationEntityType: NodeType;
+  marshalId?: string | null;
+  generalId?: string | null;
+  commanderId?: string | null;
+  soldierId?: string | null;
+  situation: string;
+  analysis: string;
+  recommendation: string;
+  nextActions: string[];
+  createdAt: string;
 };
 ```
 
@@ -77,6 +95,8 @@ The current visualization stage only includes structural hierarchy nodes:
 - `soldier`: execution unit orbiting a Commander.
 
 Live Operations are represented as local `CommandTask` records for now. They move through ENTRAL -> Marshal -> General -> Commander -> Soldier as simulated delegation events, then persist in browser storage with the full command path.
+
+Reports are represented as local `CommandReportRecord` records. A generated report is attached to the source entity, upward command path, destination entity, and related tasks. Report records are local-state backed in v0.3 and are not database-backed yet.
 
 ## Permissions
 
@@ -101,4 +121,4 @@ Permissions are descriptive strings for now. They document intended future capab
 
 ## State Integrity
 
-Command OS state is validated on hydration and every reducer mutation. Invalid parent links are repaired, missing edges are rebuilt, deleted entity references are removed from tasks, and active tasks assigned to offline/deleted entities are reassigned or failed safely.
+Command OS state is validated on hydration and every reducer mutation. Invalid parent links are repaired, missing edges are rebuilt, deleted entity references are removed from tasks, dangling report references are removed, and active tasks assigned to offline/deleted entities are reassigned or failed safely.

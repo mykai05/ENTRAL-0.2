@@ -23,7 +23,7 @@ The center remains the existing full-screen 3D atomic/neural graph. ENTRAL sits 
 
 ## Right Command Console
 
-The right console is persistent. It is the primary path for navigation, command execution, Marshal creation, business General creation, Commander creation, Soldier creation, status checks, logs, graph controls, hierarchy colors, and AI conversation. Atom/graph controls are consolidated here so the dashboard does not have a second competing control window.
+The right console is persistent on desktop and closable on mobile. It is the primary path for navigation, command execution, Marshal creation, business General creation, Commander creation, Soldier creation, status checks, logs, graph controls, hierarchy colors, and AI conversation. Graph controls are consolidated here so the dashboard does not have a second competing control window.
 
 ## Focus Mode
 
@@ -35,4 +35,12 @@ The node inspector overlays beside the graph and shows selected node details: hi
 
 ## Responsiveness
 
-On smaller screens, navigation collapses away first and the command console becomes the primary drawer-like surface while the graph remains usable.
+On smaller screens, desktop sidebars collapse away and the bottom tabs become the primary navigation path:
+
+- Command
+- Hierarchy
+- Tasks
+- Reports
+- More
+
+The graph remains available as a touch surface. The hierarchy tab provides a collapsible tree so mobile users are not forced to operate from the 3D graph alone.

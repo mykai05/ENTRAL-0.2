@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { commandGenerals, commandMarshals, createDefaultCommandHierarchy } from "../lib/command-os";
 
 describe("Command OS default hierarchy", () => {
-  it("seeds the Merch Marshal hierarchy without legacy mock entities", () => {
+  it("starts first-time users with ENTRAL only and no legacy mock entities", () => {
     const nodes = createDefaultCommandHierarchy();
 
     expect(commandMarshals).toEqual([
@@ -19,11 +19,17 @@ describe("Command OS default hierarchy", () => {
       })
     ]);
     expect(nodes.some((node) => node.id.startsWith("mock-") || node.name.startsWith("Mock "))).toBe(false);
-    expect(nodes.find((node) => node.id === "entral")?.children).toEqual(["merch-marshal"]);
-    expect(nodes.find((node) => node.id === "merch-marshal")?.children).toEqual(["entral-general"]);
-    expect(nodes.filter((node) => node.type === "commander")).toHaveLength(9);
-    expect(nodes.filter((node) => node.type === "soldier")).toHaveLength(41);
-    expect(nodes.some((node) => node.name === "SEO Soldier")).toBe(true);
-    expect(nodes.some((node) => node.name === "Shopify Setup Soldier")).toBe(true);
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0]).toEqual(expect.objectContaining({
+      children: [],
+      id: "entral",
+      name: "ENTRAL",
+      type: "emperor"
+    }));
+    expect(nodes.find((node) => node.id === "entral")?.logs).toContain("No command structures detected.");
+    expect(nodes.some((node) => node.type === "marshal")).toBe(false);
+    expect(nodes.some((node) => node.type === "general")).toBe(false);
+    expect(nodes.some((node) => node.type === "commander")).toBe(false);
+    expect(nodes.some((node) => node.type === "soldier")).toBe(false);
   });
 });

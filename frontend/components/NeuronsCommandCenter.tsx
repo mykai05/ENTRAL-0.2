@@ -32,6 +32,7 @@ import {
   inferSoldierBlueprint,
   type CommandMemory,
   type CommandNode,
+  type CommandReportRecord,
   type CommandStatus,
   type CommandTask,
   type CommandTaskStatus,
@@ -47,6 +48,10 @@ import {
 import { createMerchLaunchWorkflowTasks, merchLaunchWorkflowSteps } from "../lib/merch-workflow";
 import { type ClientMerchStore, type PodProduct, type ProductBatchGeneratorResponse } from "../lib/merch-store";
 import { collectTranscript, getSpeechRecognitionConstructor, normalizeWakeWordCommand, type SpeechRecognitionLike } from "../lib/voice-command";
+import { planCommandAction } from "../lib/command-action-plan";
+import { buildCommandOSReport, buildCommandOSReportRecord } from "../lib/command-reports";
+import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../lib/command-suggestions";
+import { creationBlockedTransmission, hierarchyNameFromCommandText, nextCommandPlaceholderName } from "../lib/command-creation";
 
 type GraphStatus = CommandStatus;
 
@@ -94,6 +99,8 @@ type GraphNode3D = Vec3 & {
   operationalArea?: string;
   executionRole?: string;
   reasoning: string;
+  reportHistory?: CommandReportRecord[];
+  reports?: CommandReportRecord[];
   role: string;
   status: GraphStatus;
   taskHistory: string[];
@@ -254,12 +261,59 @@ type BusinessTemplate = {
 
 type BusinessWizardState = {
   audience: string;
+  brandStyle: string;
   businessName: string;
   goal: string;
   industry: string;
+  initialProducts: string;
   isOpen: boolean;
+  notes: string;
+  preferredMarshal: string;
   templateId: string;
 };
+
+type PendingAuthorization =
+  | {
+    createdAt: string;
+    id: string;
+    nodeName: string;
+    parentId: string;
+    nodeType: Exclude<NodeType, "emperor">;
+    summary: string;
+    type: "create-node";
+  }
+  | {
+    createdAt: string;
+    id: string;
+    nodeId: string;
+    parentId: string;
+    summary: string;
+    type: "move-node";
+  }
+  | {
+    createdAt: string;
+    id: string;
+    nodeId: string;
+    summary: string;
+    type: "archive-node";
+  }
+  | {
+    createdAt: string;
+    id: string;
+    summary: string;
+    type: "create-workflow";
+    workflowText: string;
+  }
+  | {
+    createdAt: string;
+    id: string;
+    summary: string;
+    templateId: string;
+    type: "create-business-template";
+      wizard: BusinessWizardState;
+  };
+
+type MobileCommandTab = "command" | "hierarchy" | "tasks" | "reports" | "more";
 
 const defaultCamera: CameraState = {
   distance: 900,
@@ -272,7 +326,7 @@ const graphControlsKey = "entral-command-center-controls";
 
 const orbitPatternOptions: Array<{ description: string; label: string; value: OrbitPattern }> = [
   { description: "Clean horizontal circular motion.", label: "Flat circle", value: "flat" },
-  { description: "Classic 3D atomic rings.", label: "Tilted", value: "tilted" },
+  { description: "Classic layered command orbits.", label: "Tilted", value: "tilted" },
   { description: "Soft neural wave through each orbit.", label: "Wave", value: "wave" },
   { description: "Tall satellite-style polar loops.", label: "Vertical", value: "vertical" },
   { description: "Subtle corkscrew drift around the shell.", label: "Helix", value: "helix" }
@@ -346,81 +400,148 @@ const businessTemplates: BusinessTemplate[] = [
     color: "#00F0FF",
     commanders: [
       { name: "Client Intake Commander", soldiers: ["Business Profile Soldier", "Audience Soldier", "Offer Soldier", "Notes Soldier"] },
-      { name: "Brand Commander", soldiers: ["Brand Voice Soldier", "Color Direction Soldier", "Style Direction Soldier"] },
-      { name: "Design Commander", soldiers: ["Design Concept Soldier", "Prompt Soldier", "Mockup Soldier"] },
-      { name: "Listing Commander", soldiers: ["Title Soldier", "Description Soldier", "SEO Soldier"] },
-      { name: "Compliance Commander", soldiers: ["Trademark Risk Soldier", "AI Disclosure Soldier", "Production Partner Soldier"] },
-      { name: "Store Launch Commander", soldiers: ["Etsy Setup Soldier", "Shopify Setup Soldier", "Launch QA Soldier"] },
-      { name: "Marketing Commander", soldiers: ["Instagram Caption Soldier", "TikTok Script Soldier", "Promo Calendar Soldier"] },
-      { name: "Reporting Commander", soldiers: ["Weekly Report Soldier", "Product Performance Soldier", "Opportunity Report Soldier"] }
+      { name: "Brand Commander", soldiers: ["Brand Voice Soldier", "Color Direction Soldier", "Style Direction Soldier", "Collection Theme Soldier"] },
+      { name: "Design Commander", soldiers: ["Design Concept Soldier", "Prompt Soldier", "Typography Soldier", "Mockup Soldier", "Variation Soldier"] },
+      { name: "Listing Commander", soldiers: ["Title Soldier", "Description Soldier", "Tags Soldier", "SEO Soldier", "Materials Soldier"] },
+      { name: "Compliance Commander", soldiers: ["Trademark Risk Soldier", "Copyright Risk Soldier", "AI Disclosure Soldier", "Production Partner Soldier", "Prohibited Content Soldier"] },
+      { name: "Store Launch Commander", soldiers: ["Etsy Setup Soldier", "Printify Setup Soldier", "Shopify Setup Soldier", "Product Publish Checklist Soldier", "Launch QA Soldier"] },
+      { name: "Marketing Commander", soldiers: ["Instagram Caption Soldier", "TikTok Script Soldier", "Email Launch Soldier", "QR Flyer Soldier", "Promo Calendar Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Weekly Report Soldier", "Sales Report Soldier", "Product Performance Soldier", "Opportunity Report Soldier"] }
     ],
     description: "Best for a done-for-you POD or client merch store with approvals before publishing.",
     generalType: "POD Store",
     id: "pod-merch-store",
-    label: "POD merch store",
+    label: "POD / Merch Business",
     marshalName: "Merch Marshal",
     marshalType: "Merch Theater",
-    starterCommands: ["start merch store launch workflow", "generate 10 product ideas", "open approval queue"]
+    starterCommands: ["define target audience", "generate product ideas", "create design concepts", "review compliance", "build launch package"]
+  },
+  {
+    color: "#00BFFF",
+    commanders: [
+      { name: "Client Intake Commander", soldiers: ["Business Profile Soldier", "Offer Soldier", "Discovery Notes Soldier"] },
+      { name: "Design Commander", soldiers: ["Wireframe Soldier", "Visual Direction Soldier", "Design QA Soldier"] },
+      { name: "Content Commander", soldiers: ["Homepage Copy Soldier", "Service Page Copy Soldier", "Call To Action Soldier"] },
+      { name: "SEO Commander", soldiers: ["Keyword Soldier", "Local SEO Soldier", "Metadata Soldier"] },
+      { name: "Development Commander", soldiers: ["Frontend Soldier", "Integration Soldier", "Responsive QA Soldier"] },
+      { name: "Deployment Commander", soldiers: ["Launch Checklist Soldier", "DNS Soldier", "Post Launch QA Soldier"] },
+      { name: "Client Success Commander", soldiers: ["Update Report Soldier", "Request Tracker Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Weekly Report Soldier", "Opportunity Report Soldier"] }
+    ],
+    description: "Best for building and managing websites, SEO work, client delivery, and recurring updates.",
+    generalType: "Agency Client",
+    id: "website-agency",
+    label: "Website Agency",
+    marshalName: "Website Marshal",
+    marshalType: "Website Theater",
+    starterCommands: ["define service offer", "create homepage outline", "draft SEO plan", "prepare client intake checklist", "generate website readiness report"]
+  },
+  {
+    color: "#FF00FF",
+    commanders: [
+      { name: "Research Commander", soldiers: ["Trend Soldier", "Audience Signal Soldier", "Competitor Content Soldier"] },
+      { name: "Script Commander", soldiers: ["Hook Soldier", "Short Script Soldier", "Long Script Soldier"] },
+      { name: "Short Form Commander", soldiers: ["Clip Idea Soldier", "Caption Soldier", "Hashtag Soldier"] },
+      { name: "Long Form Commander", soldiers: ["Outline Soldier", "Segment Soldier", "Description Soldier"] },
+      { name: "SEO Commander", soldiers: ["Keyword Soldier", "Topic Cluster Soldier", "Metadata Soldier"] },
+      { name: "Publishing Commander", soldiers: ["Platform Checklist Soldier", "Scheduling Soldier", "Post QA Soldier"] },
+      { name: "Analytics Commander", soldiers: ["Engagement Report Soldier", "Opportunity Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Weekly Report Soldier", "Client Update Soldier"] }
+    ],
+    description: "Best for content engines, creator operations, social campaigns, and recurring creative output.",
+    generalType: "Agency Client",
+    id: "content-agency",
+    label: "Content Agency",
+    marshalName: "Content Marshal",
+    marshalType: "Marketing Theater",
+    starterCommands: ["define content pillars", "create 14 day calendar", "draft first scripts", "prepare publishing checklist", "generate content readiness report"]
   },
   {
     color: "#39FF14",
     commanders: [
-      { name: "Website Commander", soldiers: ["Page Structure Soldier", "Copy Soldier", "QA Soldier"] },
-      { name: "SEO Commander", soldiers: ["Keyword Soldier", "Local SEO Soldier", "Content Brief Soldier"] },
+      { name: "Product Research Commander", soldiers: ["Product Opportunity Soldier", "Audience Fit Soldier", "Trend Soldier"] },
+      { name: "Supplier Commander", soldiers: ["Supplier Cost Soldier", "Shipping Soldier", "Inventory Notes Soldier"] },
+      { name: "Storefront Commander", soldiers: ["Catalog Soldier", "Checkout QA Soldier", "Theme QA Soldier"] },
+      { name: "Listing Commander", soldiers: ["Title Soldier", "Description Soldier", "SEO Soldier"] },
+      { name: "Marketing Commander", soldiers: ["Ad Angle Soldier", "Email Soldier", "Social Caption Soldier"] },
+      { name: "Fulfillment Commander", soldiers: ["Order Flow Soldier", "Returns Soldier", "Customer Notice Soldier"] },
+      { name: "Customer Support Commander", soldiers: ["FAQ Soldier", "Support Response Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Sales Report Soldier", "Profit Report Soldier"] }
+    ],
+    description: "Best for product brands, online stores, offer testing, pricing, fulfillment notes, and launch reporting.",
+    generalType: "Brand",
+    id: "ecommerce-brand",
+    label: "E-commerce Brand",
+    marshalName: "E-commerce Marshal",
+    marshalType: "Marketing Theater",
+    starterCommands: ["define first offer", "draft product collection", "calculate margin targets", "prepare launch checklist", "generate store readiness report"]
+  },
+  {
+    color: "#9B5CFF",
+    commanders: [
+      { name: "Product Commander", soldiers: ["Requirements Soldier", "Roadmap Soldier", "User Story Soldier"] },
+      { name: "Engineering Commander", soldiers: ["Frontend Soldier", "Backend Soldier", "Integration Soldier"] },
+      { name: "UX Commander", soldiers: ["User Flow Soldier", "Prototype Soldier", "Usability Notes Soldier"] },
+      { name: "Marketing Commander", soldiers: ["Positioning Soldier", "Landing Page Soldier", "Waitlist Soldier"] },
+      { name: "Sales Commander", soldiers: ["Lead Notes Soldier", "Demo Script Soldier"] },
+      { name: "Support Commander", soldiers: ["Docs Soldier", "Feedback Soldier"] },
+      { name: "Analytics Commander", soldiers: ["Activation Soldier", "Retention Soldier", "Metric Report Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Sprint Report Soldier", "Risk Report Soldier"] }
+    ],
+    description: "Best for SaaS ideas, apps, internal tools, MVP planning, development, QA, and launch tracking.",
+    generalType: "Internal Business",
+    id: "saas-startup",
+    label: "SaaS Startup",
+    marshalName: "SaaS Marshal",
+    marshalType: "Automation Theater",
+    starterCommands: ["define MVP scope", "create roadmap", "draft landing page", "prepare QA checklist", "generate product readiness report"]
+  },
+  {
+    color: "#39FF14",
+    commanders: [
       { name: "Lead Intake Commander", soldiers: ["Offer Soldier", "Contact Form Soldier", "CRM Notes Soldier"] },
-      { name: "Client Success Commander", soldiers: ["Update Report Soldier", "Request Tracker Soldier"] },
+      { name: "Website Commander", soldiers: ["Page Structure Soldier", "Copy Soldier", "QA Soldier"] },
+      { name: "Local SEO Commander", soldiers: ["Keyword Soldier", "Map Listing Soldier", "Content Brief Soldier"] },
+      { name: "Reviews Commander", soldiers: ["Review Request Soldier", "Reputation Notes Soldier"] },
+      { name: "Scheduling Commander", soldiers: ["Booking Flow Soldier", "Calendar Notes Soldier"] },
+      { name: "Customer Follow-Up Commander", soldiers: ["Follow Up Soldier", "Retention Offer Soldier"] },
       { name: "Reporting Commander", soldiers: ["Weekly Report Soldier", "Opportunity Report Soldier"] }
     ],
     description: "Best for local service clients that need a website, lead flow, SEO, and reporting.",
     generalType: "Client Business",
     id: "local-service-business",
-    label: "Local service business",
+    label: "Local Service Business",
+    marshalName: "Local Business Marshal",
+    marshalType: "Client Operations Theater",
+    starterCommands: ["define service area", "draft homepage outline", "create lead intake checklist", "draft local SEO plan", "generate client update report"]
+  },
+  {
+    color: "#FF7AFF",
+    commanders: [
+      { name: "Planning Commander", soldiers: ["Objective Soldier", "Scope Soldier"] },
+      { name: "Operations Commander", soldiers: ["Checklist Soldier", "Execution Notes Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Status Report Soldier", "Opportunity Report Soldier"] }
+    ],
+    description: "Best when the business does not fit a preset yet and the user wants a minimal editable structure.",
+    generalType: "Other",
+    id: "custom-blank-structure",
+    label: "Custom Blank Structure",
     marshalName: "Client Operations Marshal",
     marshalType: "Client Operations Theater",
-    starterCommands: ["create task build homepage outline", "show active Commanders", "generate client update report"]
-  },
-  {
-    color: "#FF00FF",
-    commanders: [
-      { name: "Content Commander", soldiers: ["Trend Soldier", "Caption Soldier", "Script Soldier"] },
-      { name: "Offer Commander", soldiers: ["Audience Soldier", "Product Angle Soldier", "CTA Soldier"] },
-      { name: "Design Commander", soldiers: ["Visual Direction Soldier", "Mockup Soldier"] },
-      { name: "Launch Commander", soldiers: ["Calendar Soldier", "Publishing Checklist Soldier"] },
-      { name: "Reporting Commander", soldiers: ["Engagement Report Soldier", "Opportunity Report Soldier"] }
-    ],
-    description: "Best for creators, clothing concepts, content engines, or brand launch planning.",
-    generalType: "Brand",
-    id: "creator-brand",
-    label: "Creator or clothing brand",
-    marshalName: "Marketing Marshal",
-    marshalType: "Marketing Theater",
-    starterCommands: ["create task draft launch calendar", "open Marketing Commander", "show brand report"]
-  },
-  {
-    color: "#9B5CFF",
-    commanders: [
-      { name: "Planning Commander", soldiers: ["Requirements Soldier", "Scope Soldier", "Milestone Soldier"] },
-      { name: "Development Commander", soldiers: ["Frontend Soldier", "Backend Soldier", "Integration Soldier"] },
-      { name: "QA Commander", soldiers: ["Bug Tracker Soldier", "Test Runner Soldier"] },
-      { name: "Deployment Commander", soldiers: ["Release Soldier", "Monitor Soldier"] },
-      { name: "Reporting Commander", soldiers: ["Sprint Report Soldier", "Risk Report Soldier"] }
-    ],
-    description: "Best for internal tools, web apps, SaaS ideas, and software delivery workflows.",
-    generalType: "Internal Business",
-    id: "software-project",
-    label: "Software or automation project",
-    marshalName: "Automation Marshal",
-    marshalType: "Automation Theater",
-    starterCommands: ["create task define MVP scope", "open Development Commander", "show project health"]
+    starterCommands: ["define objective", "add operating departments", "add execution units", "create first task", "generate first status report"]
   }
 ];
 
 const defaultBusinessWizard: BusinessWizardState = {
   audience: "",
+  brandStyle: "",
   businessName: "",
   goal: "",
   industry: "",
+  initialProducts: "",
   isOpen: false,
+  notes: "",
+  preferredMarshal: "",
   templateId: businessTemplates[0].id
 };
 
@@ -536,16 +657,18 @@ const identityPillars = [
 ];
 
 function parentMarshalId(node: CommandNode, allNodes: CommandNode[]) {
+  const firstMarshalId = allNodes.find((candidate) => candidate.type === "marshal")?.id ?? "core";
+
   if (node.type === "marshal") return node.id;
-  if (node.type === "general") return node.parentId ?? commandMarshals[0]?.id ?? "merch-marshal";
+  if (node.type === "general") return node.parentId ?? firstMarshalId;
   if (node.type === "commander") {
     const parentGeneral = allNodes.find((candidate) => candidate.id === node.parentId);
-    return parentGeneral?.parentId ?? commandMarshals[0]?.id ?? "merch-marshal";
+    return parentGeneral?.parentId ?? firstMarshalId;
   }
   if (node.type === "soldier") {
     const parentCommander = allNodes.find((candidate) => candidate.id === node.parentId);
     const parentGeneral = allNodes.find((candidate) => candidate.id === parentCommander?.parentId);
-    return parentGeneral?.parentId ?? commandMarshals[0]?.id ?? "merch-marshal";
+    return parentGeneral?.parentId ?? firstMarshalId;
   }
 
   return "core";
@@ -604,6 +727,8 @@ function graphNodeFromCommandNode(node: CommandNode, allNodes: CommandNode[]): O
     progress: node.progress,
     executionRole: node.executionRole,
     reasoning: node.description ?? node.role,
+    reportHistory: node.reportHistory ?? [],
+    reports: node.reports ?? [],
     role: node.role,
     status: node.status,
     taskHistory: node.taskHistory,
@@ -619,7 +744,13 @@ function graphNodeFromCommandNode(node: CommandNode, allNodes: CommandNode[]): O
 function graphStateFromCommandNodes(commandNodes: CommandNode[]): GraphState3D {
   const groups: GraphGroup[] = [
     { color: "#00F0FF", id: "core", name: "ENTRAL Core" },
-    ...commandMarshals.map((marshal) => ({ color: marshal.color, id: marshal.id, name: marshal.name }))
+    ...commandNodes
+      .filter((node) => node.type === "marshal")
+      .map((marshal, index) => ({
+        color: commandMarshals.find((item) => item.id === marshal.id)?.color ?? ["#00F0FF", "#FF00FF", "#39FF14", "#9B5CFF", "#00BFFF"][index % 5],
+        id: marshal.id,
+        name: marshal.name
+      }))
   ];
   const edges = commandNodes
     .filter((node) => node.parentId)
@@ -729,6 +860,8 @@ function normalizeGraphState(input: Partial<GraphState3D> | null | undefined): G
       progress: typeof node.progress === "number" ? node.progress : 0,
       executionRole: node.executionRole,
       reasoning: node.reasoning ?? node.description ?? role,
+      reportHistory: Array.isArray(node.reportHistory) ? node.reportHistory : [],
+      reports: Array.isArray(node.reports) ? node.reports : [],
       role,
       status: normalizeCommandStatus(node.status),
       taskHistory: Array.isArray(node.taskHistory) ? node.taskHistory : [],
@@ -756,13 +889,23 @@ function normalizeGraphState(input: Partial<GraphState3D> | null | undefined): G
     }));
   const tasks = Array.isArray(input?.tasks) ? input.tasks.map((task) => ({
     assignedEntityId: typeof task.assignedEntityId === "string" ? task.assignedEntityId : null,
+    assignedEntityType: task.assignedEntityType ?? null,
+    commanderId: typeof task.commanderId === "string" ? task.commanderId : null,
+    commanderName: typeof task.commanderName === "string" ? task.commanderName : null,
     completedAt: typeof task.completedAt === "string" ? task.completedAt : null,
     createdAt: typeof task.createdAt === "string" ? task.createdAt : new Date().toISOString(),
     delegationPath: Array.isArray(task.delegationPath) ? task.delegationPath : [],
     description: typeof task.description === "string" ? task.description : "No task description provided.",
+    generalId: typeof task.generalId === "string" ? task.generalId : null,
+    generalName: typeof task.generalName === "string" ? task.generalName : null,
     history: Array.isArray(task.history) ? task.history : [],
     id: typeof task.id === "string" ? task.id : `task-${Date.now().toString(36)}`,
+    marshalId: typeof task.marshalId === "string" ? task.marshalId : null,
+    marshalName: typeof task.marshalName === "string" ? task.marshalName : null,
     name: typeof task.name === "string" ? task.name : "Untitled task",
+    reportHistory: Array.isArray(task.reportHistory) ? task.reportHistory : [],
+    soldierId: typeof task.soldierId === "string" ? task.soldierId : null,
+    soldierName: typeof task.soldierName === "string" ? task.soldierName : null,
     status: normalizeTaskStatus(task.status),
     updatedAt: typeof task.updatedAt === "string" ? task.updatedAt : new Date().toISOString()
   })) : [];
@@ -1259,10 +1402,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [commandHistory, setCommandHistory] = useState<CommandConsoleMessage[]>([
     {
       content: formatCommandReport({
-        analysis: "Merch Marshal, ENTRAL General, Commanders, and Soldiers are loaded as the default operational command structure.",
-        nextActions: ["Issue a directive through the command console.", "Inspect Merch Marshal for theater detail.", "Create a business General when ready."],
+        analysis: "No command structures are loaded by default. Marshals, business Generals, Commanders, and Soldiers will be created only when directed by the operator.",
+        nextActions: ["Type help.", "Create your first Marshal.", "Open guided business setup.", "Start tutorial."],
         recommendation: "Use ENTRAL as the strategic authority for navigation, delegation, reports, and graph control.",
-        situation: "ENTRAL Command System online. All command structures operational."
+        situation: "ENTRAL Command System online. No command structures detected. Awaiting directives."
       }),
       id: "system-boot",
       role: "system",
@@ -1273,7 +1416,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([
     {
       id: "activity-boot",
-      message: "Merch command hierarchy loaded.",
+      message: "ENTRAL online. Awaiting first command structure.",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -1290,6 +1433,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isWebGlReady, setIsWebGlReady] = useState(true);
   const [businessWizard, setBusinessWizard] = useState<BusinessWizardState>(defaultBusinessWizard);
+  const [pendingAuthorization, setPendingAuthorization] = useState<PendingAuthorization | null>(null);
+  const [mobileTab, setMobileTab] = useState<MobileCommandTab>("command");
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(() => readStoredGraphControls());
   const [merchStores, setMerchStores] = useState<ClientMerchStore[]>([]);
   const [productBatchForm, setProductBatchForm] = useState<ProductBatchFormState>(() => defaultProductBatchForm());
@@ -1380,8 +1525,24 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         setIsControlsOpen(true);
       }
 
+      if (detail?.target === "command-console" || detail?.target === "command-task-list" || detail?.target === "voice-controls") {
+        setIsCommandConsoleOpen(true);
+      }
+
       if (detail?.target === "command-inspector") {
         setIsPanelOpen(true);
+      }
+
+      if (detail?.target === "business-wizard") {
+        setIsCommandConsoleOpen(true);
+        setIsPanelOpen(false);
+        setIsControlsOpen(false);
+        setBusinessWizard((current) => ({ ...current, isOpen: true }));
+      }
+
+      if (detail?.target === "command-structure-actions") {
+        setIsCommandConsoleOpen(true);
+        setIsControlsOpen(true);
       }
     }
 
@@ -1528,7 +1689,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   function resetGraphControls() {
     graphControlsRef.current = defaultGraphControls;
     setGraphControls(defaultGraphControls);
-    setStatusMessage("Atom dynamics reset to the tuned ENTRAL defaults.");
+    setStatusMessage("Graph dynamics reset to the tuned ENTRAL defaults.");
   }
 
   function getNodeMotion(node: GraphNode3D): NodeMotion {
@@ -2866,18 +3027,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }
 
   function nextPlaceholderName(type: Exclude<NodeType, "emperor">) {
-    const label = type === "marshal" ? "Marshal" : type === "general" ? "General" : type === "commander" ? "Commander" : "Soldier";
-    const matcher = new RegExp(`^${label} (\\d+)$`, "i");
-    const max = graphRef.current.nodes.reduce((highest, node) => {
-      if (node.commandType !== type) return highest;
-      const value = Number(matcher.exec(node.name)?.[1] ?? 0);
-      return Math.max(highest, value);
-    }, 0);
-
-    return `${label} ${max + 1}`;
+    return nextCommandPlaceholderName(type, graphRef.current.nodes);
   }
 
-  function selectedMarshalId() {
+  function selectedMarshalId(): string | null {
     const selected = graphRef.current.nodes.find((node) => node.id === selectedRef.current);
 
     if (selected?.commandType === "marshal") return selected.id;
@@ -2885,14 +3038,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       const lineage = lineageForNode(selected.id);
       return lineage.find((node) => node.commandType === "marshal")?.id
         ?? graphRef.current.nodes.find((node) => node.commandType === "marshal")?.id
-        ?? commandMarshals[0]?.id
-        ?? "merch-marshal";
+        ?? null;
     }
 
-    return graphRef.current.nodes.find((node) => node.commandType === "marshal")?.id ?? commandMarshals[0]?.id ?? "merch-marshal";
+    return graphRef.current.nodes.find((node) => node.commandType === "marshal")?.id ?? null;
   }
 
-  function selectedGeneralId() {
+  function selectedGeneralId(): string | null {
     const selected = graphRef.current.nodes.find((node) => node.id === selectedRef.current);
 
     if (selected?.commandType === "general") return selected.id;
@@ -2901,18 +3053,16 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       return lineage.find((node) => node.commandType === "general")?.id
         ?? graphRef.current.nodes.find((node) => node.commandType === "general" && node.parentId === selectedMarshalId())?.id
         ?? graphRef.current.nodes.find((node) => node.commandType === "general")?.id
-        ?? commandGenerals[0]?.id
-        ?? "entral-general";
+        ?? null;
     }
 
     const marshalId = selectedMarshalId();
     return graphRef.current.nodes.find((node) => node.commandType === "general" && node.parentId === marshalId)?.id
       ?? graphRef.current.nodes.find((node) => node.commandType === "general")?.id
-      ?? commandGenerals[0]?.id
-      ?? "entral-general";
+      ?? null;
   }
 
-  function selectedCommanderId() {
+  function selectedCommanderId(): string | null {
     const selected = graphRef.current.nodes.find((node) => node.id === selectedRef.current);
 
     if (selected?.commandType === "commander") return selected.id;
@@ -2929,9 +3079,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
     return businessTemplates.find((template) => normalized.includes(template.id.replace(/-/g, " ")) || normalized.includes(template.label.toLowerCase()))
       ?? (/\b(pod|merch|etsy|printify|shopify)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "pod-merch-store") : null)
+      ?? (/\b(website agency|web agency|website|web design|seo agency)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "website-agency") : null)
+      ?? (/\b(content agency|content|creator|social media|video|caption)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "content-agency") : null)
+      ?? (/\b(ecommerce|e-commerce|commerce|online store|product brand)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "ecommerce-brand") : null)
+      ?? (/\b(saas|software|app|startup|tool)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "saas-startup") : null)
       ?? (/\b(local|landscaping|gym|restaurant|contractor|service)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "local-service-business") : null)
-      ?? (/\b(creator|brand|clothing|apparel|content)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "creator-brand") : null)
-      ?? (/\b(software|app|automation|saas|tool)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "software-project") : null)
+      ?? (/\b(custom|blank|scratch)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "custom-blank-structure") : null)
       ?? null;
   }
 
@@ -2967,6 +3120,275 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     setBusinessWizard((current) => ({ ...current, ...changes }));
   }
 
+  function requestNodeAuthorization(type: Exclude<NodeType, "emperor">, requestedName?: string) {
+    const nodeName = requestedName?.trim() || nextPlaceholderName(type);
+    const title = type === "marshal" ? "Marshal" : type === "general" ? "General" : type === "commander" ? "Commander" : "Soldier";
+    const parentId = parentIdForNewNode(type);
+    const parent = parentId ? graphRef.current.nodes.find((node) => node.id === parentId) : null;
+
+    if (!parentId || !parent) {
+      respond(creationBlockedTransmission(type));
+      return;
+    }
+
+    const summary = [
+      `Objective interpreted: Create ${title}.`,
+      `Name: ${nodeName}`,
+      `Parent: ${parent.name}`,
+      `Command path impact: 1 new ${title} will be added under ${parent.name}.`,
+      "Authorize creation?"
+    ].join("\n");
+
+    setPendingAuthorization({
+      createdAt: new Date().toISOString(),
+      id: `auth-${Date.now().toString(36)}`,
+      nodeName,
+      nodeType: type,
+      parentId,
+      summary,
+      type: "create-node"
+    });
+    setIsCommandConsoleOpen(true);
+    respond(summary, `${title} creation awaiting authorization.`);
+  }
+
+  function requestBusinessTemplateAuthorization(template: BusinessTemplate, form: BusinessWizardState) {
+    const businessName = form.businessName.trim();
+
+    if (!businessName) {
+      respond({
+        analysis: "A business General needs a real business, client, brand, store, or operation name before ENTRAL can prepare an authorization preview.",
+        nextActions: ["Enter a business name.", "Choose a template.", "Request creation again."],
+        recommendation: "Use a concrete name like Iron House Gym, Smith Landscaping, or Veteran Apparel.",
+        situation: "Business creation paused."
+      });
+      return;
+    }
+
+    const soldierCount = template.commanders.reduce((total, commander) => total + commander.soldiers.length, 0);
+    const marshalName = form.preferredMarshal.trim() || template.marshalName;
+    const contextLines = [
+      form.industry.trim() ? `Industry: ${form.industry.trim()}` : "",
+      form.audience.trim() ? `Audience: ${form.audience.trim()}` : "",
+      form.brandStyle.trim() ? `Brand style: ${form.brandStyle.trim()}` : "",
+      form.initialProducts.trim() ? `Initial services/products: ${form.initialProducts.trim()}` : ""
+    ].filter(Boolean);
+    const summary = [
+      "Objective interpreted: Create business command structure.",
+      `Template: ${template.label}`,
+      `Marshal: ${marshalName}`,
+      `Business General: ${businessName} General`,
+      `Commanders: ${template.commanders.length}`,
+      `Soldiers: ${soldierCount}`,
+      contextLines.length ? `Context: ${contextLines.join(" | ")}` : "Context: no optional business context entered.",
+      "Initial setup: first intake task assigned for review.",
+      "Authorize creation?"
+    ].join("\n");
+
+    setPendingAuthorization({
+      createdAt: new Date().toISOString(),
+      id: `auth-${Date.now().toString(36)}`,
+      summary,
+      templateId: template.id,
+      type: "create-business-template",
+      wizard: {
+        ...form,
+        businessName,
+        isOpen: false,
+        templateId: template.id
+      }
+    });
+    setIsCommandConsoleOpen(true);
+    respond(summary, `${businessName} business structure awaiting authorization.`);
+  }
+
+  function requestMoveAuthorization(node: GraphNode3D, parent: GraphNode3D) {
+    if (!canMoveEntity(node, parent)) {
+      moveEntity(node, parent);
+      return;
+    }
+
+    const descendants = descendantIdsFor(node.id).length;
+    const summary = [
+      "Objective interpreted: Move command entity.",
+      `Entity: ${node.name}`,
+      `Current parent: ${node.parentId ? graphRef.current.nodes.find((candidate) => candidate.id === node.parentId)?.name ?? "Unknown" : "ENTRAL"}`,
+      `New parent: ${parent.name}`,
+      `Child impact: ${descendants} descendant${descendants === 1 ? "" : "s"} will keep reporting through ${node.name}.`,
+      "Authorize reassignment?"
+    ].join("\n");
+
+    setPendingAuthorization({
+      createdAt: new Date().toISOString(),
+      id: `auth-${Date.now().toString(36)}`,
+      nodeId: node.id,
+      parentId: parent.id,
+      summary,
+      type: "move-node"
+    });
+    setIsCommandConsoleOpen(true);
+    respond(summary, `${node.name} reassignment awaiting authorization.`);
+  }
+
+  function requestArchiveAuthorization(node: GraphNode3D) {
+    const descendants = descendantIdsFor(node.id).length;
+    const summary = [
+      "Objective interpreted: Archive command entity.",
+      `Entity: ${node.name}`,
+      `Type: ${node.title}`,
+      `Parent: ${node.parentId ? graphRef.current.nodes.find((candidate) => candidate.id === node.parentId)?.name ?? "Unknown" : "ENTRAL"}`,
+      `Child impact: ${descendants} descendant${descendants === 1 ? "" : "s"} will remain preserved but inactive under this archived entity.`,
+      "Authorize archive?"
+    ].join("\n");
+
+    setPendingAuthorization({
+      createdAt: new Date().toISOString(),
+      id: `auth-${Date.now().toString(36)}`,
+      nodeId: node.id,
+      summary,
+      type: "archive-node"
+    });
+    setIsCommandConsoleOpen(true);
+    respond(summary, `${node.name} archive awaiting authorization.`);
+  }
+
+  function requestWorkflowAuthorization(text: string) {
+    const workflowName = workflowNameFromCommand(text);
+    const preview = createMerchLaunchWorkflowTasks(graphRef.current.nodes, {
+      now: new Date().toISOString(),
+      workflowName
+    });
+    const uniqueSoldiers = new Set(preview.tasks.map((task) => task.assignedEntityId).filter(Boolean)).size;
+    const summary = [
+      "Objective interpreted: Generate Merch/POD workflow.",
+      `Workflow: ${workflowName}`,
+      `Planned tasks: ${preview.tasks.length}`,
+      `Assigned Soldiers: ${uniqueSoldiers}`,
+      preview.missingSteps.length ? `Missing lanes: ${preview.missingSteps.map((step) => step.name).join(", ")}` : "Missing lanes: none detected.",
+      "This will create task records and update entity memory/status in local Command OS state.",
+      "Authorize workflow generation?"
+    ].join("\n");
+
+    setPendingAuthorization({
+      createdAt: new Date().toISOString(),
+      id: `auth-${Date.now().toString(36)}`,
+      summary,
+      type: "create-workflow",
+      workflowText: text
+    });
+    setIsCommandConsoleOpen(true);
+    respond(summary, `${workflowName} workflow awaiting authorization.`);
+  }
+
+  function approvePendingAuthorization() {
+    const pending = pendingAuthorization;
+    if (!pending) {
+      respond("No pending authorization is waiting for approval.");
+      return;
+    }
+
+    setPendingAuthorization(null);
+
+    if (pending.type === "create-node") {
+      createHierarchyNode(pending.nodeType, pending.nodeName, pending.parentId);
+      return;
+    }
+
+    if (pending.type === "move-node") {
+      const node = graphRef.current.nodes.find((candidate) => candidate.id === pending.nodeId);
+      const parent = graphRef.current.nodes.find((candidate) => candidate.id === pending.parentId);
+
+      if (!node || !parent) {
+        respond({
+          analysis: "The entity or parent selected for reassignment no longer exists.",
+          nextActions: ["Inspect the hierarchy.", "Select the entity and parent again.", "Reissue the move directive."],
+          recommendation: "No hierarchy changes were made.",
+          situation: "Reassignment authorization expired."
+        });
+        return;
+      }
+
+      moveEntity(node, parent);
+      return;
+    }
+
+    if (pending.type === "archive-node") {
+      const node = graphRef.current.nodes.find((candidate) => candidate.id === pending.nodeId);
+
+      if (!node || node.type === "core") {
+        respond({
+          analysis: "The selected entity can no longer be archived.",
+          recommendation: "No hierarchy changes were made.",
+          situation: "Archive authorization expired."
+        });
+        return;
+      }
+
+      mutateNode(node.id, {
+        logs: [`Archived from command directive after authorization. Descendant references preserved.`, ...node.logs].slice(0, 10),
+        status: "offline"
+      });
+      respond(`${node.name} archived locally after authorization. Descendant records were preserved and no external systems were touched.`, `${node.name} archived.`, commandSpeakerFromNodeType(node.commandType));
+      return;
+    }
+
+    if (pending.type === "create-workflow") {
+      startMerchLaunchWorkflow(pending.workflowText);
+      return;
+    }
+
+    const template = businessTemplates.find((item) => item.id === pending.templateId);
+    if (!template) {
+      respond({
+        analysis: "The requested business template could not be found.",
+        nextActions: ["Open the business wizard.", "Choose a template again."],
+        recommendation: "No hierarchy changes were made.",
+        situation: "Authorization could not be executed."
+      });
+      return;
+    }
+
+    createBusinessFromTemplate(template, pending.wizard);
+  }
+
+  function modifyPendingAuthorization() {
+    const pending = pendingAuthorization;
+    if (!pending) {
+      respond("No pending authorization is active.");
+      return;
+    }
+
+    if (pending.type === "create-business-template") {
+      setBusinessWizard({ ...pending.wizard, isOpen: true });
+      setPendingAuthorization(null);
+      respond({
+        analysis: "The business setup form has been reopened so you can change the business name, template, Marshal, audience, industry, brand style, products, notes, or initial goal.",
+        nextActions: ["Edit the form.", "Preview creation again.", "Approve the revised plan."],
+        recommendation: "Use Modify when the structure is directionally right but needs more detail.",
+        situation: "Business authorization returned to edit mode."
+      });
+      return;
+    }
+
+    respond({
+      analysis: "Inline modification is not yet supported for this authorization type.",
+      nextActions: ["Cancel this authorization.", "Reissue the directive with the corrected entity, parent, or workflow details."],
+      recommendation: "No action will execute until you approve the current preview or cancel it.",
+      situation: "Modification requires a revised command."
+    });
+  }
+
+  function cancelPendingAuthorization() {
+    if (!pendingAuthorization) {
+      respond("No pending authorization is active.");
+      return;
+    }
+
+    const summary = pendingAuthorization.summary.split("\n")[0] ?? "Pending action";
+    setPendingAuthorization(null);
+    respond(`Authorization canceled. ${summary} was not executed.`);
+  }
+
   function uniqueNodeId(baseId: string, reserved: Set<string>) {
     if (!reserved.has(baseId)) {
       reserved.add(baseId);
@@ -2999,8 +3421,17 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
     const now = new Date().toISOString();
     const existingIds = new Set(graphRef.current.nodes.map((node) => node.id));
-    const existingMarshal = graphRef.current.nodes.find((node) => node.commandType === "marshal" && node.name.toLowerCase() === template.marshalName.toLowerCase());
-    const marshalId = existingMarshal?.id ?? uniqueNodeId(createCommandId(template.marshalName, "marshal"), existingIds);
+    const marshalName = form.preferredMarshal.trim() || template.marshalName;
+    const businessContextNotes = [
+      form.industry.trim() ? `Industry: ${form.industry.trim()}.` : "",
+      form.audience.trim() ? `Audience: ${form.audience.trim()}.` : "",
+      form.brandStyle.trim() ? `Brand style: ${form.brandStyle.trim()}.` : "",
+      form.initialProducts.trim() ? `Initial services/products: ${form.initialProducts.trim()}.` : "",
+      form.goal.trim() ? `Initial objective: ${form.goal.trim()}.` : "",
+      form.notes.trim() ? `Operator notes: ${form.notes.trim()}.` : ""
+    ].filter(Boolean);
+    const existingMarshal = graphRef.current.nodes.find((node) => node.commandType === "marshal" && node.name.toLowerCase() === marshalName.toLowerCase());
+    const marshalId = existingMarshal?.id ?? uniqueNodeId(createCommandId(marshalName, "marshal"), existingIds);
     const generalName = /\bGeneral$/i.test(businessName) ? businessName : `${businessName} General`;
     const generalId = uniqueNodeId(`${marshalId}-${createCommandId(generalName, "general")}`, existingIds);
     const commanderIds: string[] = [];
@@ -3012,9 +3443,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       instructions,
       notes: [
         ...notes,
-        form.industry.trim() ? `Industry: ${form.industry.trim()}.` : "",
-        form.audience.trim() ? `Audience: ${form.audience.trim()}.` : "",
-        form.goal.trim() ? `Initial objective: ${form.goal.trim()}.` : ""
+        ...businessContextNotes
       ].filter(Boolean),
       recentTasks: [],
       role,
@@ -3024,6 +3453,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     const makeNode = (node: Omit<GraphNode3D, "metrics" | "type" | "vx" | "vy" | "vz" | "x" | "y" | "z"> & Partial<Pick<GraphNode3D, "x" | "y" | "z">>): GraphNode3D => ({
       ...node,
       metrics: { cost: 0, roi: 0, successRate: 100 },
+      reportHistory: node.reportHistory ?? [],
+      reports: node.reports ?? [],
       type: node.commandType === "emperor" ? "core" : "agent",
       vx: 0,
       vy: 0,
@@ -3044,19 +3475,19 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       commandType: "marshal",
       createdAt: now,
       currentTask: `Standing up ${template.label} operations.`,
-      description: `${template.marshalName} oversees ${template.label.toLowerCase()} businesses and routes reports to ENTRAL.`,
+      description: `${marshalName} oversees ${template.label.toLowerCase()} businesses and routes reports to ENTRAL.`,
       groupId: marshalId,
       health: 100,
       id: marshalId,
-      logs: [`${template.marshalName} created by the business wizard.`],
+      logs: [`${marshalName} created by the business wizard.`],
       marshalType: template.marshalType,
-      memory: makeMemory(`${template.marshalName} strategic theater`, `Oversee ${template.label.toLowerCase()} businesses, enforce approvals, and report theater readiness to ENTRAL.`, [`Template: ${template.label}.`]),
-      name: template.marshalName,
+      memory: makeMemory(`${marshalName} strategic theater`, `Oversee ${template.label.toLowerCase()} businesses, enforce approvals, and report theater readiness to ENTRAL.`, [`Template: ${template.label}.`]),
+      name: marshalName,
       parentId: "entral",
       permissions: ["govern_hierarchy", "route_commands", "manage_business_generals"],
       progress: 12,
       reasoning: "Created as the strategic theater for guided business onboarding.",
-      role: `${template.marshalName} strategic theater`,
+      role: `${marshalName} strategic theater`,
       status: "thinking",
       taskHistory: [`Create ${businessName} General`],
       title: "Marshal",
@@ -3077,17 +3508,17 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       commandType: "general",
       createdAt: now,
       currentTask: "Complete business intake and confirm operating plan.",
-      description: `${generalName} represents ${businessName} as an operating business General inside ${template.marshalName}.`,
+      description: `${generalName} represents ${businessName} as an operating business General inside ${marshalName}.`,
       generalType: template.generalType,
       groupId: marshalId,
       health: 100,
       id: generalId,
       logs: [`${generalName} created from ${template.label} template.`, "Awaiting initial intake confirmation."],
-      memory: makeMemory(`${businessName} business command`, `Coordinate Commanders for ${businessName}, maintain business memory, and report progress to ${template.marshalName}.`, [`Business template: ${template.label}.`]),
+      memory: makeMemory(`${businessName} business command`, `Coordinate Commanders for ${businessName}, maintain business memory, and report progress to ${marshalName}.`, [`Business template: ${template.label}.`]),
       name: generalName,
       parentId: marshalId,
       parentMarshalId: marshalId,
-      parentMarshalName: template.marshalName,
+      parentMarshalName: marshalName,
       permissions: ["manage_commanders", "request_approval", "report_business_status"],
       progress: 18,
       reasoning: "Created through guided onboarding so the user can begin operating a real business structure quickly.",
@@ -3126,7 +3557,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         parentGeneralName: generalName,
         parentId: generalId,
         parentMarshalId: marshalId,
-        parentMarshalName: template.marshalName,
+        parentMarshalName: marshalName,
         permissions: ["assign_soldiers", "report_department_status"],
         progress: 8,
         reasoning: "Created as a department lane for the selected business template.",
@@ -3166,7 +3597,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           parentGeneralName: generalName,
           parentId: commanderId,
           parentMarshalId: marshalId,
-          parentMarshalName: template.marshalName,
+          parentMarshalName: marshalName,
           permissions: blueprint?.permissions ?? ["read_command_context", "report_status"],
           progress: soldierId === firstSoldierId ? 10 : 0,
           reasoning: "Created as an execution unit during guided business setup.",
@@ -3195,11 +3626,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       generalName,
       history: [
         `ENTRAL created ${generalName} from the ${template.label} template.`,
-        `${template.marshalName} routed first intake to ${template.commanders[0]?.name ?? "the first Commander"}.`
+        `${marshalName} routed first intake to ${template.commanders[0]?.name ?? "the first Commander"}.`
       ],
       id: `task-${generalId}-first-intake`,
       marshalId,
-      marshalName: template.marshalName,
+      marshalName,
       name: "Complete first business intake",
       reportHistory: [],
       soldierId: firstSoldierId,
@@ -3213,11 +3644,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         ...current,
         groups: existingMarshal
           ? current.groups
-          : [...current.groups, { color: template.color, id: marshalId, name: template.marshalName }],
+          : [...current.groups, { color: template.color, id: marshalId, name: marshalName }],
         nodes: [
           ...current.nodes.map((node) => {
             if (node.id === "entral" && !existingMarshal) {
-              return { ...node, children: [...(node.children ?? []), marshalId], logs: [`${template.marshalName} added through guided onboarding.`, ...node.logs].slice(0, 10) };
+              return { ...node, children: [...(node.children ?? []), marshalId], logs: [`${marshalName} added through guided onboarding.`, ...node.logs].slice(0, 10) };
             }
 
             if (node.id === marshalId) {
@@ -3245,38 +3676,35 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     setActiveGroupId(marshalId);
     setStatusMessage(`${generalName} created with ${commanderIds.length} Commanders and ${soldierIds.length} Soldiers.`);
     respond({
-      analysis: `${generalName} is now under ${template.marshalName}. ENTRAL created ${commanderIds.length} Commanders, ${soldierIds.length} Soldiers, and the first intake task.`,
+      analysis: `${generalName} is now under ${marshalName}. ENTRAL created ${commanderIds.length} Commanders, ${soldierIds.length} Soldiers, and the first intake task.`,
       nextActions: template.starterCommands,
       recommendation: "Open the new General, complete the first intake task, then start the launch workflow or assign the next objective.",
       situation: "First business command structure created."
     }, `${generalName} created from ${template.label} template.`, "general");
   }
 
-  function createHierarchyNode(type: Exclude<NodeType, "emperor">, requestedName?: string) {
+  function createHierarchyNode(type: Exclude<NodeType, "emperor">, requestedName?: string, forcedParentId?: string) {
     const palette = ["#00F0FF", "#FF00FF", "#39FF14", "#9B5CFF", "#00BFFF", "#FF7AFF"];
     const name = requestedName?.trim() || nextPlaceholderName(type);
-    const parentId = type === "marshal" ? "entral" : type === "general" ? selectedMarshalId() : type === "commander" ? selectedGeneralId() : selectedCommanderId();
+    const parentId = forcedParentId ?? parentIdForNewNode(type);
 
     if (!parentId) {
-      respond({
-        analysis: type === "general"
-          ? "Additional operational detail is required. A General must belong to a Marshal."
-          : type === "commander"
-            ? "Commanders require a business General parent in the active command model."
-            : "Soldiers require a Commander parent in the active command model.",
-        nextActions: type === "general"
-          ? ["Select or create a Marshal.", "Create the General under that Marshal."]
-          : type === "commander"
-            ? ["Select or create a Marshal.", "Select or create a business General.", "Create the Commander again."]
-            : ["Select or create a General.", "Create a Commander under that General.", "Create the Soldier again."],
-        recommendation: "Build the command lane before adding execution units.",
-        situation: `${type[0].toUpperCase()}${type.slice(1)} creation blocked by hierarchy requirements.`
-      });
+      respond(creationBlockedTransmission(type));
       return null;
     }
 
     const parent = graphRef.current.nodes.find((node) => node.id === parentId);
-    let groupId = type === "marshal" ? createCommandId(name, "marshal") : parent?.groupId ?? selectedMarshalId();
+    if (!parent) {
+      respond({
+        analysis: "The parent entity selected during authorization is no longer available.",
+        nextActions: ["Refresh the hierarchy.", "Select a valid parent entity.", "Reissue the creation directive."],
+        recommendation: "ENTRAL will not create an orphan entity.",
+        situation: "Creation authorization expired."
+      });
+      return null;
+    }
+
+    let groupId = type === "marshal" ? createCommandId(name, "marshal") : parent?.groupId ?? selectedMarshalId() ?? "core";
     const baseId = type === "marshal" ? groupId : `${parentId}-${createCommandId(name, type)}`;
     const id = graphRef.current.nodes.some((node) => node.id === baseId) ? `${baseId}-${Date.now().toString(36)}` : baseId;
     groupId = type === "marshal" ? id : groupId;
@@ -3331,7 +3759,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     };
 
     setGraph((current) => {
-      const next = {
+      const next = validateCommandOSState({
         ...current,
         edges: [...current.edges, { id: `e-${parentId}-${id}`, label: `${type} command link`, source: parentId, target: id }],
         groups: type === "marshal"
@@ -3340,7 +3768,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         nodes: current.nodes
           .map((node) => (node.id === parentId ? { ...node, children: [...(node.children ?? []), id] } : node))
           .concat(newNode)
-      };
+      }, { fallback: createInitialState() });
 
       graphRef.current = next;
       return next;
@@ -3466,7 +3894,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     setStatusMessage(`Zoomed to ${node.name}. ENTRAL updated graph focus from command directive.`);
   }
 
-  function fitGraph(message = "Fit atom to the full command field.") {
+  function fitGraph(message = "Fit graph to the full command field.") {
     setLockedNodeId(null);
     lockedNodeIdRef.current = null;
     setCamera({ ...defaultCamera, target: { ...defaultCamera.target } });
@@ -3535,6 +3963,23 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     respond("Objective acknowledged. Graph controls collapsed inside the unified command console.");
   }
 
+  function openMobileTab(tab: MobileCommandTab) {
+    setMobileTab(tab);
+    setIsCommandConsoleOpen(tab === "command");
+
+    if (tab !== "command") {
+      setIsPanelOpen(false);
+    }
+  }
+
+  function openCommandAccessTab(tab: MobileCommandTab) {
+    setMobileTab(tab);
+
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 720px)").matches) {
+      openMobileTab(tab);
+    }
+  }
+
   function toggleInfoPanel() {
     setIsPanelOpen((open) => !open);
   }
@@ -3580,11 +4025,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
     if (explicitNode?.commandType === "general") return explicitNode.id;
     if (explicitNode?.commandType === "commander" || explicitNode?.commandType === "soldier") {
-      return lineageForNode(explicitNode.id).find((node) => node.commandType === "general")?.id ?? selectedGeneralId();
+      return lineageForNode(explicitNode.id).find((node) => node.commandType === "general")?.id ?? null;
     }
 
     return graphRef.current.nodes.find((node) => node.commandType === "general" && (normalized.includes(node.id) || normalized.includes(node.name.toLowerCase())))?.id
-      ?? selectedGeneralId();
+      ?? null;
   }
 
   function commanderIdFromCommand(text: string) {
@@ -3595,23 +4040,43 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     if (selectedNode?.commandType === "commander") return selectedNode.id;
     if (selectedNode?.commandType === "soldier") return selectedNode.parentId ?? null;
 
-    const generalId = generalIdFromCommand(text);
-    return graphRef.current.nodes.find((candidate) => candidate.commandType === "commander" && candidate.parentId === generalId)?.id ?? null;
+    return null;
+  }
+
+  function parentIdForNewNode(type: Exclude<NodeType, "emperor">) {
+    const selected = selectedRef.current ? graphRef.current.nodes.find((node) => node.id === selectedRef.current) : null;
+
+    if (type === "marshal") return "entral";
+
+    if (type === "general") {
+      if (activeGroupId && graphRef.current.nodes.some((node) => node.id === activeGroupId && node.commandType === "marshal")) {
+        return activeGroupId;
+      }
+
+      if (selected?.commandType === "marshal") return selected.id;
+      if (selected && selected.commandType !== "emperor") {
+        return lineageForNode(selected.id).find((node) => node.commandType === "marshal")?.id ?? null;
+      }
+
+      return null;
+    }
+
+    if (type === "commander") {
+      if (selected?.commandType === "general") return selected.id;
+      if (selected?.commandType === "commander" || selected?.commandType === "soldier") {
+        return lineageForNode(selected.id).find((node) => node.commandType === "general")?.id ?? null;
+      }
+
+      return null;
+    }
+
+    if (selected?.commandType === "commander") return selected.id;
+    if (selected?.commandType === "soldier") return selected.parentId ?? null;
+    return null;
   }
 
   function hierarchyNameFromCommand(text: string, type: Exclude<NodeType, "emperor">) {
-    const label = type === "marshal" ? "Marshal" : type === "general" ? "General" : type === "commander" ? "Commander" : "Soldier";
-    const beforeUnder = new RegExp(`create\\s+(?:a\\s+|an\\s+|new\\s+)?(.+?)\\s+${label}(?:\\s+under|\\s+for|$)`, "i").exec(text)?.[1]?.trim();
-    const afterFor = new RegExp(`${label}\\s+for\\s+([^,.;]+)`, "i").exec(text)?.[1]?.trim();
-    const usableBeforeUnder = beforeUnder && beforeUnder.replace(/^new$/i, "").trim().length > 0 ? beforeUnder : undefined;
-    const rawName = usableBeforeUnder || afterFor;
-
-    if (!rawName) return nextPlaceholderName(type);
-
-    const cleaned = rawName.replace(/^new\s+/i, "").trim();
-    const normalized = cleaned.length > 0 ? cleaned : "Mock";
-
-    return new RegExp(`\\b${label}$`, "i").test(normalized) ? normalized : `${normalized} ${label}`;
+    return hierarchyNameFromCommandText(text, type, graphRef.current.nodes);
   }
 
   function focusCommandNode(node: GraphNode3D) {
@@ -3712,19 +4177,154 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }
 
   function createOperationalBriefing(label = "Operational readiness report"): CommandReport {
-    const runningTasks = graphRef.current.tasks.filter((task) => task.status === "running" || task.status === "assigned");
-    const failedTasks = graphRef.current.tasks.filter((task) => task.status === "failed");
-    const activeNodes = graphRef.current.nodes.filter((node) => node.status === "working" || node.status === "thinking");
-    const offlineNodes = graphRef.current.nodes.filter((node) => node.status === "offline" || node.status === "error");
+    return buildCommandOSReport({
+      label,
+      nodes: graphRef.current.nodes,
+      targetId: "entral",
+      tasks: graphRef.current.tasks
+    });
+  }
 
-    return {
-      analysis: `${marshalNodes.length} Marshals, ${generalNodes.length} business Generals, ${commanderNodes.length} Commanders, and ${soldierNodes.length} Soldiers registered. ${activeNodes.length} command entities active. ${runningTasks.length} active tasks. ${failedTasks.length} failed tasks.`,
-      nextActions: offlineNodes.length > 0
-        ? ["Review offline or error entities.", "Inspect failed task history.", "Reassign work to healthy Soldiers."]
-        : ["Select a Marshal for theater detail.", "Inspect a business General.", "Assign the next objective."],
-      recommendation: offlineNodes.length > 0 ? "Stabilize degraded entities before expanding operations." : "Command structure is ready for the next directive.",
-      situation: `${label}. All command structures are reachable in local Command OS mode.`
-    };
+  function createFocusedReport(target: GraphNode3D | null | undefined, label?: string) {
+    const reportTarget = target ?? graphRef.current.nodes.find((node) => node.id === "entral") ?? null;
+
+    return buildCommandOSReport({
+      label,
+      nodes: graphRef.current.nodes,
+      targetId: reportTarget?.id,
+      tasks: graphRef.current.tasks
+    });
+  }
+
+  function recordFocusedReport(target: GraphNode3D | null | undefined, label?: string) {
+    const reportTarget = target ?? graphRef.current.nodes.find((node) => node.id === "entral") ?? null;
+    const record = buildCommandOSReportRecord({
+      createdAt: new Date().toISOString(),
+      label,
+      nodes: graphRef.current.nodes,
+      targetId: reportTarget?.id,
+      tasks: graphRef.current.tasks
+    });
+
+    if (!record || !reportTarget) {
+      return;
+    }
+
+    const recipientIds = new Set(lineageForNode(reportTarget.id, graphRef.current.nodes).map((node) => node.id));
+    recipientIds.add(record.sourceEntityId);
+    recipientIds.add(record.destinationEntityId);
+
+    setGraph((current) => {
+      const next = {
+        ...current,
+        nodes: current.nodes.map((node) => {
+          if (!recipientIds.has(node.id)) {
+            return node;
+          }
+
+          const reportHistory = [record, ...(node.reportHistory ?? [])].slice(0, 20);
+
+          return {
+            ...node,
+            logs: [`Report received: ${record.situation}`, ...node.logs].slice(0, 10),
+            memory: {
+              ...node.memory,
+              notes: [`Report ${record.id}: ${record.situation}`, ...node.memory.notes].slice(0, 10)
+            },
+            reportHistory,
+            reports: reportHistory
+          };
+        }),
+        tasks: current.tasks.map((task) => {
+          if (task.assignedEntityId !== reportTarget.id && !task.delegationPath.some((id) => recipientIds.has(id))) {
+            return task;
+          }
+
+          return {
+            ...task,
+            reportHistory: [record, ...(task.reportHistory ?? [])].slice(0, 20)
+          };
+        })
+      };
+
+      graphRef.current = next;
+      return next;
+    });
+  }
+
+  function isHelpCommand(normalized: string) {
+    return normalized === "help"
+      || normalized === "?"
+      || normalized.includes("what can you do")
+      || normalized.includes("show commands")
+      || normalized.includes("show help")
+      || normalized.includes("command help")
+      || normalized.includes("how do i use")
+      || normalized.includes("explain the chain of command");
+  }
+
+  function createCommandHelpTransmission() {
+    return [
+      "ENTRAL Command Help",
+      "",
+      "What ENTRAL Is:",
+      "ENTRAL is a command operating system for building, organizing, and managing business operations through a structured hierarchy.",
+      "",
+      "Chain of Command:",
+      "ENTRAL oversees Marshals. Marshals oversee Generals. Generals are businesses or operations. Commanders manage departments. Soldiers execute tasks.",
+      "",
+      "Common Commands:",
+      "- Create a Marshal",
+      "- Create a business called Iron House Gym",
+      "- Show hierarchy",
+      "- Show tasks",
+      "- Generate report",
+      "- Start tutorial",
+      "- Open mobile guide",
+      "",
+      "Structure Creation:",
+      "- Create Merch Marshal",
+      "- Create General named Iron House Gym under Merch Marshal",
+      "- Create Design Commander under Iron House Gym",
+      "- Create Typography Soldier under Design Commander",
+      "",
+      "Business Creation:",
+      "- Create my first business",
+      "- I want to start a POD business",
+      "- I want to build a website agency",
+      "- Use template",
+      "",
+      "Tasks and Reports:",
+      "- Create task Review the command hierarchy",
+      "- Report on Merch Marshal",
+      "- Report on Iron House Gym",
+      "- Show what needs attention",
+      "",
+      "Voice, Mobile, Tutorials:",
+      "- ENTRAL, report",
+      "- Start voice guide",
+      "- Show mobile guide",
+      "- Replay tutorial",
+      "",
+      "Troubleshooting:",
+      "If a directive needs more detail, ENTRAL will ask for the missing Marshal, General, Commander, Soldier, or approval before execution proceeds."
+    ].join("\n");
+  }
+
+  function requestDemoEnvironmentAuthorization() {
+    const template = businessTemplates[0];
+
+    setMobileTab("command");
+    setIsCommandConsoleOpen(true);
+    requestBusinessTemplateAuthorization(template, {
+      ...defaultBusinessWizard,
+      audience: "Demo operators learning ENTRAL",
+      businessName: "Demo Merch Lab",
+      goal: "Explore Command OS structure safely",
+      industry: "Client merch and POD operations",
+      isOpen: false,
+      templateId: template.id
+    });
   }
 
   function isBriefingCommand(normalized: string) {
@@ -3809,6 +4409,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   function executeCommand(commandText: string) {
     const rawText = commandText.trim();
     const text = rawText.replace(/^(entral|marshal|general|commander)[,\s:;-]+/i, "").trim() || rawText;
+    const actionPlan = planCommandAction(rawText);
+    const intent = actionPlan.intent;
     const normalized = text.toLowerCase();
     const group = commandTextToGroup(text, graph.groups);
     const commandNode = commandTextToNode(text, graph.nodes);
@@ -3819,12 +4421,105 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     if (!rawText) return;
     appendConsoleMessage("operator", rawText, "operator");
 
-    if (normalized.includes("return to entral") || normalized.includes("central command overview") || normalized.includes("emperor overview") || normalized.includes("show entral")) {
+    if (pendingAuthorization && actionPlan.kind === "approve_authorization") {
+      approvePendingAuthorization();
+    } else if (pendingAuthorization && actionPlan.kind === "cancel_authorization") {
+      cancelPendingAuthorization();
+    } else if (actionPlan.kind === "open_help" || isHelpCommand(normalized)) {
+      respond(createCommandHelpTransmission(), "ENTRAL Command Help opened.");
+    } else if (actionPlan.kind === "open_voice_settings" && intent.kind === "tutorial_request") {
+      openSettings("voice");
+      respond({
+        analysis: "Voice settings are open. Push-to-talk, speech mode, volume, speed, and voice selection can be configured there.",
+        nextActions: ["Enable speech if desired.", "Use push-to-talk to issue a directive.", "Say: ENTRAL, report."],
+        recommendation: "Start with Reports Only voice mode until the command structure is familiar.",
+        situation: "Voice guide opened."
+      });
+    } else if (actionPlan.kind === "open_mobile_guide") {
+      setMobileTab("more");
+      setIsCommandConsoleOpen(false);
+      respond({
+        analysis: "Mobile controls: one finger pans the graph, two fingers rotate the point of view, pinch zooms, and the bottom tabs expose Command, Hierarchy, Tasks, Reports, and More.",
+        nextActions: ["Open the Hierarchy tab.", "Inspect a node.", "Return to Command to issue directives."],
+        recommendation: "Use the bottom tabs as the primary mobile navigation system.",
+        situation: "Mobile guide displayed."
+      });
+    } else if (actionPlan.kind === "open_tutorial") {
+      routeWorkspaceAction("Training channel selected. Opening ENTRAL Academy.", undefined, normalized.includes("library") || normalized.includes("academy") ? "entral:open-academy" : "entral:open-tutorial");
+    } else if (intent.kind === "tutorial_request") {
+      if (normalized.includes("voice guide")) {
+        openSettings("voice");
+        respond({
+          analysis: "Voice settings are open. Push-to-talk, speech mode, volume, speed, and voice selection can be configured there.",
+          nextActions: ["Enable speech if desired.", "Use push-to-talk to issue a directive.", "Say: ENTRAL, report."],
+          recommendation: "Start with Reports Only voice mode until the command structure is familiar.",
+          situation: "Voice guide opened."
+        });
+      } else if (normalized.includes("mobile guide")) {
+        setMobileTab("more");
+        setIsCommandConsoleOpen(false);
+        respond({
+          analysis: "Mobile controls: one finger pans the graph, two fingers rotate the point of view, pinch zooms, and the bottom tabs expose Command, Hierarchy, Tasks, Reports, and More.",
+          nextActions: ["Open the Hierarchy tab.", "Inspect a node.", "Return to Command to issue directives."],
+          recommendation: "Use the bottom tabs as the primary mobile navigation system.",
+          situation: "Mobile guide displayed."
+        });
+      } else {
+        routeWorkspaceAction("Training channel selected. Opening ENTRAL Academy.", undefined, normalized.includes("library") || normalized.includes("academy") ? "entral:open-academy" : "entral:open-tutorial");
+      }
+    } else if (actionPlan.kind === "open_voice_settings" || intent.kind === "voice_request") {
+      openSettings("voice");
+      respond({
+        analysis: "Voice command settings are open. ENTRAL can accept push-to-talk directives and speak reports based on the configured speech mode.",
+        nextActions: ["Enable speech if desired.", "Set speech mode to Reports Only or Full Voice.", "Use the microphone button in the command console."],
+        recommendation: "Use push-to-talk for controlled command entry.",
+        situation: "Voice command channel selected."
+      });
+    } else if (actionPlan.kind === "return_to_entral") {
       const entral = graphRef.current.nodes.find((node) => node.id === "entral");
       if (entral) focusCommandNode(entral);
+    } else if (actionPlan.kind === "open_tasks") {
+      openCommandAccessTab("tasks");
+      respond({
+        analysis: `${graphRef.current.tasks.length} task${graphRef.current.tasks.length === 1 ? "" : "s"} are currently recorded in local Command OS state.`,
+        nextActions: ["Create a task from Command.", "Select an assigned entity to inspect work history.", "Use a business template to generate starter tasks."],
+        recommendation: "Use the Tasks tab as the fastest mobile view of active work.",
+        situation: "Task center opened."
+      });
+    } else if (actionPlan.kind === "open_reports") {
+      openCommandAccessTab("reports");
+      respond({
+        analysis: `${recentReportMessages.length} recent report${recentReportMessages.length === 1 ? "" : "s"} are available in the command feed.`,
+        nextActions: ["Generate a system report.", "Report on a Marshal or business General.", "Open related entities from report context."],
+        recommendation: "Use reports to review Situation, Analysis, Recommendation, and Next Actions without searching chat history.",
+        situation: "Report center opened."
+      });
+    } else if (actionPlan.kind === "open_businesses") {
+      setActiveStatusFilter(null);
+      setSearch("general");
+      openCommandAccessTab("hierarchy");
+      respond({
+        analysis: `${generalNodes.length} business General${generalNodes.length === 1 ? "" : "s"} currently exist. Generals represent businesses, clients, brands, stores, or operations.`,
+        nextActions: ["Open a business General.", "Create a business with the wizard.", "Generate a General report."],
+        recommendation: "Use Generals as the primary business records inside ENTRAL.",
+        situation: "Business Generals displayed."
+      }, "Business General list displayed.", "general");
+    } else if (intent.kind === "report_request") {
+      const reportTarget = commandNode ?? selected ?? graphRef.current.nodes.find((node) => node.id === "entral") ?? null;
+      const reportLabel = normalized.includes("morning")
+        ? "Morning briefing"
+        : normalized.includes("what needs attention") || normalized.includes("what is wrong")
+          ? "Attention Report"
+          : normalized.includes("readiness")
+            ? "Operational readiness report"
+            : undefined;
+      const report = createFocusedReport(reportTarget, reportLabel);
+
+      recordFocusedReport(reportTarget, reportLabel);
+      respond(report, `${reportTarget?.name ?? "ENTRAL"} report generated.`, commandSpeakerFromNodeType(reportTarget?.commandType ?? "emperor"));
     } else if (isBriefingCommand(normalized)) {
       respond(createOperationalBriefing(normalized.includes("morning") ? "Morning briefing" : "Operational status report"));
-    } else if (normalized.includes("chain of command") || normalized.includes("display hierarchy") || normalized.includes("show hierarchy")) {
+    } else if (actionPlan.kind === "show_hierarchy") {
       setActiveStatusFilter(null);
       setSearch("");
       fitGraph();
@@ -3834,9 +4529,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         recommendation: "Use this overview for broad command awareness.",
         situation: "Full chain of command displayed."
       });
-    } else if (normalized.includes("show failing") || normalized.includes("alerts")) {
+    } else if (actionPlan.kind === "show_alerts") {
       setStatusHighlight(["error", "waiting", "offline"], "Highlighted error, waiting, and offline hierarchy nodes.");
-    } else if (normalized.includes("show marshals") || normalized.includes("all marshals")) {
+    } else if (actionPlan.kind === "show_marshals") {
       setActiveStatusFilter(null);
       setSearch("marshal");
       respond({
@@ -3845,9 +4540,15 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         recommendation: "Use Marshals as strategic theaters for groups of businesses, clients, brands, stores, or operations.",
         situation: "Marshal layer displayed."
       }, "Marshal list displayed.", "marshal");
-    } else if (normalized.includes("show active") || normalized.includes("active soldiers") || normalized.includes("active commanders") || normalized.includes("active marshals") || normalized.includes("active generals")) {
+    } else if (actionPlan.kind === "show_active") {
       setStatusHighlight(["working", "thinking"], "Highlighted working and thinking hierarchy nodes.");
+    } else if (normalized.includes("demo environment") || normalized.includes("demo command") || normalized.includes("load demo")) {
+      requestDemoEnvironmentAuthorization();
+    } else if (intent.kind === "template_request") {
+      const template = templateFromText(text);
+      openBusinessWizard(template?.id);
     } else if (
+      intent.kind === "business_creation_request" ||
       normalized.includes("business wizard") ||
       normalized.includes("business template") ||
       normalized.includes("create my first business") ||
@@ -3861,7 +4562,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       const businessName = businessNameFromCommand(text);
 
       if (businessName && template) {
-        createBusinessFromTemplate(template, {
+        requestBusinessTemplateAuthorization(template, {
           ...businessWizard,
           businessName,
           isOpen: false,
@@ -3886,12 +4587,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       const removalTarget = commandNode ?? selected;
 
       if (removalTarget && removalTarget.type !== "core") {
-        if (normalized.includes("archive") && (removalTarget.commandType === "marshal" || removalTarget.commandType === "general")) {
-          mutateNode(removalTarget.id, {
-            logs: [`Archived from command directive. Descendant references preserved.`, ...removalTarget.logs].slice(0, 10),
-            status: "offline"
-          });
-          respond(`${removalTarget.name} archived locally. Descendant records were preserved and no external systems were touched.`, `${removalTarget.name} archived.`, commandSpeakerFromNodeType(removalTarget.commandType));
+        if (normalized.includes("archive")) {
+          requestArchiveAuthorization(removalTarget);
         } else {
           requestRemoveNode(removalTarget.id);
           respond("Removal confirmation opened. Review name, parent relationship, and child impact before confirming.");
@@ -3900,13 +4597,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         requestRemoveNode(selectedNodeId);
       }
     } else if (normalized.includes("create") && normalized.includes("marshal")) {
-      createHierarchyNode("marshal", hierarchyNameFromCommand(text, "marshal"));
-    } else if (normalized.includes("create") && (normalized.includes("business") || normalized.includes("client") || normalized.includes("brand") || normalized.includes("store") || normalized.includes("project")) && !normalized.includes("commander") && !normalized.includes("soldier")) {
+      requestNodeAuthorization("marshal", hierarchyNameFromCommand(text, "marshal"));
+    } else if (normalized.includes("create") && (normalized.includes("business") || normalized.includes("client") || normalized.includes("brand") || normalized.includes("store") || normalized.includes("project") || normalized.includes("operation")) && !normalized.includes("commander") && !normalized.includes("soldier")) {
       const template = templateFromText(text);
       const businessName = businessNameFromCommand(text);
 
       if (template && businessName) {
-        createBusinessFromTemplate(template, {
+        requestBusinessTemplateAuthorization(template, {
           ...businessWizard,
           businessName,
           isOpen: false,
@@ -3928,15 +4625,25 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           situation: "Additional operational detail is required."
         });
         openBusinessWizard();
+        if (businessName) updateBusinessWizard({ businessName });
         return;
       }
 
       const nameMatch = /\b(?:business|client|brand|store|operation)\s+(?:named|called)?\s*([^,.;]+)/i.exec(text);
       const rawName = nameMatch?.[1]?.trim() || hierarchyNameFromCommand(text, "general").replace(/\s+General$/i, "");
       const marshalId = marshalIdFromCommand(text);
+      if (!marshalId) {
+        respond({
+          analysis: "A Marshal could not be identified for this business General.",
+          nextActions: ["Create a Marshal.", "Then create the business General under that Marshal."],
+          recommendation: "Use: Create Merch Marshal. Then: Create General named Iron House Gym under Merch Marshal.",
+          situation: "General creation is awaiting Marshal selection."
+        });
+        return;
+      }
       setSelectedNodeId(marshalId);
       selectedRef.current = marshalId;
-      createHierarchyNode("general", /\bGeneral$/i.test(rawName) ? rawName : `${rawName} General`);
+      requestNodeAuthorization("general", /\bGeneral$/i.test(rawName) ? rawName : `${rawName} General`);
     } else if (normalized.includes("create") && normalized.includes("general")) {
       if (!commandHasMarshalContext(text)) {
         respond({
@@ -3949,23 +4656,41 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       }
 
       const marshalId = marshalIdFromCommand(text);
+      if (!marshalId) {
+        respond({
+          analysis: "A General must belong to a Marshal, but no Marshal was selected or named.",
+          nextActions: ["Create a Marshal.", "Open an existing Marshal.", "Reissue the General creation directive."],
+          recommendation: "Do not create Generals directly under ENTRAL.",
+          situation: "Additional operational detail is required."
+        });
+        return;
+      }
       setSelectedNodeId(marshalId);
       selectedRef.current = marshalId;
-      createHierarchyNode("general", hierarchyNameFromCommand(text, "general"));
+      requestNodeAuthorization("general", hierarchyNameFromCommand(text, "general"));
     } else if (normalized.includes("create") && normalized.includes("commander")) {
       const generalId = generalIdFromCommand(text);
+      if (!generalId) {
+        respond({
+          analysis: "A Commander must belong to a business General, but no General was selected or named.",
+          nextActions: ["Create a Marshal.", "Create a business General under it.", "Then create the Commander."],
+          recommendation: "Use the business setup wizard if you want ENTRAL to build the structure for you.",
+          situation: "Commander creation is awaiting General selection."
+        });
+        return;
+      }
       setSelectedNodeId(generalId);
       selectedRef.current = generalId;
-      createHierarchyNode("commander", hierarchyNameFromCommand(text, "commander"));
+      requestNodeAuthorization("commander", hierarchyNameFromCommand(text, "commander"));
     } else if (normalized.includes("create") && normalized.includes("soldier")) {
       const commanderId = commanderIdFromCommand(text);
 
       if (commanderId) {
         setSelectedNodeId(commanderId);
         selectedRef.current = commanderId;
-        createHierarchyNode("soldier", hierarchyNameFromCommand(text, "soldier"));
+        requestNodeAuthorization("soldier", hierarchyNameFromCommand(text, "soldier"));
       } else {
-        createHierarchyNode("soldier", hierarchyNameFromCommand(text, "soldier"));
+        requestNodeAuthorization("soldier", hierarchyNameFromCommand(text, "soldier"));
       }
     } else if (normalized.includes("approval queue") || normalized.includes("approve products") || normalized.includes("product approvals")) {
       setIsControlsOpen(true);
@@ -4014,7 +4739,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         situation: "Product Batch Generator standing by."
       });
     } else if (isMerchLaunchWorkflowCommand(normalized)) {
-      startMerchLaunchWorkflow(text);
+      requestWorkflowAuthorization(text);
     } else if ((normalized.includes("create") || normalized.includes("assign") || normalized.includes("run") || normalized.includes("start")) && normalized.includes("task")) {
       createDelegatedTask(text, commandNode ?? selected);
     } else if (normalized.includes("new chat") || normalized.includes("fresh chat") || normalized.includes("start chat")) {
@@ -4097,7 +4822,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
       patchGraphControls({
         orbitSpeed: Math.min(Math.max(nextSpeed, 0), 2.2)
-      }, `Atom orbit speed set to ${Math.min(Math.max(nextSpeed, 0), 2.2).toFixed(2)}x from ENTRAL Command.`);
+      }, `Graph orbit speed set to ${Math.min(Math.max(nextSpeed, 0), 2.2).toFixed(2)}x from ENTRAL Command.`);
     } else if (normalized.includes("gravity") || normalized.includes("tighter") || normalized.includes("looser")) {
       const current = graphControlsRef.current.gravity;
       const nextGravity = numericValue !== null
@@ -4108,7 +4833,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
       patchGraphControls({
         gravity: Math.min(Math.max(nextGravity, 0.2), 1.35)
-      }, "Adjusted atom gravity and orbit tightness from ENTRAL Command.");
+      }, "Adjusted graph gravity and orbit tightness from ENTRAL Command.");
     } else if (normalized.includes("glow")) {
       const current = graphControlsRef.current.glowIntensity;
       const nextGlow = numericValue !== null ? numericValue : normalized.includes("less") || normalized.includes("down") ? current * 0.82 : current * 1.16;
@@ -4127,14 +4852,14 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       const nameMatch = /group (?:called |named |for )?([^,.;]+)/i.exec(text);
       createGroup(nameMatch?.[1]?.trim() || "New Cluster");
     } else if (normalized.includes("create")) {
-      createHierarchyNode("soldier", hierarchyNameFromCommand(text, "soldier"));
+      requestNodeAuthorization("soldier", hierarchyNameFromCommand(text, "soldier"));
     } else if (normalized.includes("reassign") || normalized.includes("move")) {
       const target = graph.nodes.find((node) => node.type !== "core" && normalized.includes(node.name.toLowerCase().split(" ")[0]));
       const moveTarget = commandNode ?? target ?? selected;
       const newParent = parentNodeFromMoveCommand(text, graph.nodes);
 
       if (moveTarget && newParent) {
-        moveEntity(moveTarget, newParent);
+        requestMoveAuthorization(moveTarget, newParent);
       } else if (target && group) {
         mutateNode(target.id, {
           groupId: group.id,
@@ -4428,68 +5153,29 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const selectedTasks = selectedNode
     ? graph.tasks.filter((task) => task.assignedEntityId === selectedNode.id || task.delegationPath.includes(selectedNode.id)).slice(0, 8)
     : [];
+  const selectedReportHistory = selectedNode ? (selectedNode.reportHistory ?? []).slice(0, 5) : [];
+  const selectedDescendantIds = selectedNode ? descendantIdsFor(selectedNode.id, graph.nodes) : [];
+  const selectedScopeIds = new Set(selectedNode ? [selectedNode.id, ...selectedDescendantIds] : []);
+  const selectedScopeNodes = selectedNode ? graph.nodes.filter((node) => selectedScopeIds.has(node.id)) : [];
+  const selectedScopeTasks = selectedNode ? graph.tasks.filter((task) => task.assignedEntityId === selectedNode.id || task.delegationPath.some((id) => selectedScopeIds.has(id))) : [];
+  const selectedInspectorStats = selectedNode ? {
+    activeTasks: selectedScopeTasks.filter((task) => task.status === "assigned" || task.status === "running").length,
+    commanders: selectedScopeNodes.filter((node) => node.commandType === "commander").length,
+    failedTasks: selectedScopeTasks.filter((task) => task.status === "failed").length,
+    generals: selectedScopeNodes.filter((node) => node.commandType === "general").length,
+    marshals: selectedScopeNodes.filter((node) => node.commandType === "marshal").length,
+    soldiers: selectedScopeNodes.filter((node) => node.commandType === "soldier").length
+  } : null;
+  const selectedSuggestedActions = getInspectorSuggestedActions(selectedNode);
   const visibleTasks = graph.tasks.slice(0, 8);
   const userBusinessGenerals = generalNodes.filter((node) => node.id !== "entral-general");
   const selectedTemplate = businessTemplates.find((template) => template.id === businessWizard.templateId) ?? businessTemplates[0];
-  const contextCommandSuggestions = (() => {
-    if (businessWizard.isOpen) {
-      return [
-        "Create my first business",
-        "Use POD merch store template",
-        "Use local service business template",
-        "Show business templates"
-      ];
-    }
-
-    if (userBusinessGenerals.length === 0) {
-      return [
-        "Help me create my first business",
-        "Create POD business named Iron House Gym",
-        "Show business templates",
-        "Explain the chain of command",
-        "Open Merch Marshal"
-      ];
-    }
-
-    if (selectedNode?.commandType === "general") {
-      return [
-        `Report on ${selectedNode.businessName ?? selectedNode.name}`,
-        "Start merch store launch workflow",
-        "Generate 10 product ideas",
-        "Open approval queue",
-        "Create task complete business intake"
-      ];
-    }
-
-    if (selectedNode?.commandType === "commander") {
-      return [
-        `Assign task to ${selectedNode.name}`,
-        "Create Soldier under this Commander",
-        "Show active Soldiers",
-        "Show failing Operations",
-        "Return to ENTRAL"
-      ];
-    }
-
-    if (selectedNode?.commandType === "soldier") {
-      return [
-        `Assign task to ${selectedNode.name}`,
-        "Show current task",
-        "Report on this Soldier",
-        "Open parent Commander",
-        "Return to ENTRAL"
-      ];
-    }
-
-    return [
-      "Show chain of command",
-      "Create my first business",
-      "Show active Generals",
-      "Open business templates",
-      "Create task review today's command status",
-      "Return to ENTRAL"
-    ];
-  })();
+  const contextCommandSuggestions = getContextCommandSuggestions({
+    businessGeneralCount: userBusinessGenerals.length,
+    isBusinessWizardOpen: businessWizard.isOpen,
+    pendingAuthorization: Boolean(pendingAuthorization),
+    selectedNode
+  });
   const pendingRemovalNode = pendingRemovalId ? nodeMap.get(pendingRemovalId) ?? null : null;
   const pendingRemovalChildren = pendingRemovalNode ? descendantIdsFor(pendingRemovalNode.id, graph.nodes) : [];
   const pendingRemovalParent = pendingRemovalNode?.parentId ? nodeMap.get(pendingRemovalNode.parentId) : null;
@@ -4498,9 +5184,102 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     : (selectedNode?.capabilities ?? ["tool-orchestration"])
       .map((id) => capabilityById(id))
       .filter((capability): capability is CapabilityBlueprint => Boolean(capability));
+  const recentReportMessages = commandHistory
+    .filter((message) => message.role === "system" && /^\s*Situation:\n/i.test(message.content))
+    .slice(-5)
+    .reverse();
+
+  function renderMobileHierarchyNode(node: GraphNode3D, depth = 0): React.ReactNode {
+    const children = graph.nodes.filter((candidate) => candidate.parentId === node.id);
+    const taskCount = graph.tasks.filter((task) => task.assignedEntityId === node.id || task.delegationPath.includes(node.id)).length;
+    const isActive = selectedNodeId === node.id;
+    const isDegraded = node.status === "error" || node.status === "waiting" || node.status === "offline";
+
+    return (
+      <details
+        className={isActive ? "command-mobile-tree-node active" : "command-mobile-tree-node"}
+        key={node.id}
+        open={depth < 2 || selectedLineage.some((lineageNode) => lineageNode.id === node.id)}
+        style={{ "--depth": depth } as React.CSSProperties}
+      >
+        <summary>
+          <span className={`mobile-tree-dot status-${node.status}`} />
+          <span>
+            <strong>{node.name}</strong>
+            <small>{node.title} / {statusLabel(node.status)}{taskCount ? ` / ${taskCount} task${taskCount === 1 ? "" : "s"}` : ""}</small>
+          </span>
+          {isDegraded ? <AlertTriangle aria-hidden="true" size={14} /> : null}
+        </summary>
+        <button type="button" onClick={() => focusCommandNode(node)}>
+          Inspect {node.title}
+        </button>
+        {children.length > 0 ? (
+          <div>
+            {children.map((child) => renderMobileHierarchyNode(child, depth + 1))}
+          </div>
+        ) : null}
+      </details>
+    );
+  }
+
+  function renderChildEmptyState(node: GraphNode3D) {
+    if (node.commandType === "emperor") {
+      return (
+        <section className="command-empty-state compact">
+          <h3>No Marshals exist yet.</h3>
+          <p>Create your first strategic command layer or use guided setup to create a business structure.</p>
+          <div>
+            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("marshal", "First Marshal")}>Create Marshal</Button>
+            <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>Use Template</Button>
+          </div>
+        </section>
+      );
+    }
+
+    if (node.commandType === "marshal") {
+      return (
+        <section className="command-empty-state compact">
+          <h3>No business Generals exist yet.</h3>
+          <p>Create a business General under this Marshal or apply a business template.</p>
+          <div>
+            <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>Create Business</Button>
+            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("general")}>Add General</Button>
+          </div>
+        </section>
+      );
+    }
+
+    if (node.commandType === "general") {
+      return (
+        <section className="command-empty-state compact">
+          <h3>No Commanders exist under this General yet.</h3>
+          <p>Add departments to operate this business or use a template to generate recommended lanes.</p>
+          <div>
+            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("commander")}>Add Commander</Button>
+            <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>Apply Template</Button>
+          </div>
+        </section>
+      );
+    }
+
+    if (node.commandType === "commander") {
+      return (
+        <section className="command-empty-state compact">
+          <h3>No Soldiers exist under this Commander yet.</h3>
+          <p>Add execution units before assigning tasks to this operating lane.</p>
+          <div>
+            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("soldier")}>Add Soldier</Button>
+            <Button type="button" variant="secondary" onClick={() => executeCommand("Help")}>Open Help</Button>
+          </div>
+        </section>
+      );
+    }
+
+    return null;
+  }
 
   return (
-    <main className={["command-center-page", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} aria-label="ENTRAL Atomic Command Center">
+    <main className={["command-center-page", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} aria-label="ENTRAL Command Center">
       <canvas
         aria-describedby="command-center-camera-help"
         aria-label="3D interactive ENTRAL neuron graph"
@@ -4550,9 +5329,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       </header>
 
       <div className="command-center-top-actions">
-        <button className="command-icon-button" data-academy="command-palette" type="button" onClick={() => window.dispatchEvent(new Event("entral:open-command-palette"))} aria-label="Open command menu">
-          <Menu aria-hidden="true" size={18} />
-        </button>
+          <button className="command-icon-button" data-academy="command-palette" type="button" onClick={() => window.dispatchEvent(new Event("entral:open-command-palette"))} aria-label="Open command menu">
+            <Menu aria-hidden="true" size={18} />
+          </button>
         <button className="command-icon-button" type="button" onClick={() => {
           setIsFocusMode(true);
           setStatusMessage("Focus Mode engaged. Press Escape or double-click the graph to restore controls.");
@@ -4603,11 +5382,126 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
             <button type="button" onClick={openAtomControls}>Controls</button>
             <button type="button" onClick={() => openSettings()}>Settings</button>
-            <button type="button" onClick={() => createHierarchyNode("marshal")}>Add Marshal</button>
-            <button type="button" onClick={() => createHierarchyNode("general")}>Add General</button>
+            <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
+            <button type="button" onClick={() => requestNodeAuthorization("general")}>Add General</button>
           </div>
         </nav>
       </details>
+
+      <section className={`command-mobile-panel tab-${mobileTab}`} aria-label="Mobile command access">
+        {mobileTab === "hierarchy" ? (
+          <>
+            <header>
+              <div>
+                <p className="eyebrow">Hierarchy</p>
+                <h2>Command structure</h2>
+              </div>
+              <button type="button" onClick={() => openMobileTab("command")}>Command</button>
+            </header>
+            <div className="command-mobile-tree">
+              {graph.nodes.find((node) => node.id === "entral") ? renderMobileHierarchyNode(graph.nodes.find((node) => node.id === "entral") as GraphNode3D) : null}
+            </div>
+          </>
+        ) : null}
+
+        {mobileTab === "tasks" ? (
+          <>
+            <header>
+              <div>
+                <p className="eyebrow">Tasks</p>
+                <h2>Active work</h2>
+              </div>
+              <button type="button" onClick={() => executeCommand("Create task Review the command hierarchy")}>New task</button>
+            </header>
+            {visibleTasks.length > 0 ? (
+              <div className="command-mobile-card-list">
+                {visibleTasks.map((task) => (
+                  <button key={task.id} type="button" onClick={() => {
+                    const assigned = task.assignedEntityId ? graphRef.current.nodes.find((node) => node.id === task.assignedEntityId) : null;
+                    if (assigned) focusCommandNode(assigned);
+                  }}>
+                    <span className={`task-dot task-${task.status}`} />
+                    <strong>{task.name}</strong>
+                    <small>{taskStatusLabel(task.status)}</small>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="command-mobile-empty">
+                <strong>No tasks assigned yet.</strong>
+                <p>Create a task directly, use guided business setup, or load a demo environment for safe exploration.</p>
+                <button type="button" onClick={() => executeCommand("Create task Review the command hierarchy")}>Create first task</button>
+                <button type="button" onClick={() => openBusinessWizard()}>Guided setup</button>
+              </div>
+            )}
+          </>
+        ) : null}
+
+        {mobileTab === "reports" ? (
+          <>
+            <header>
+              <div>
+                <p className="eyebrow">Reports</p>
+                <h2>Command feed</h2>
+              </div>
+              <button type="button" onClick={() => executeCommand("ENTRAL report")}>Generate</button>
+            </header>
+            {recentReportMessages.length > 0 ? (
+              <div className="command-mobile-report-list">
+                {recentReportMessages.map((message) => (
+                  <article key={message.id}>
+                    <strong>{message.sourceLabel}</strong>
+                    <p>{message.content}</p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="command-mobile-empty">
+                <strong>No reports yet.</strong>
+                <p>Ask ENTRAL for a report to populate this feed.</p>
+                <button type="button" onClick={() => executeCommand("ENTRAL report")}>Generate report</button>
+              </div>
+            )}
+          </>
+        ) : null}
+
+        {mobileTab === "more" ? (
+          <>
+            <header>
+              <div>
+                <p className="eyebrow">Actions</p>
+                <h2>Command menu</h2>
+              </div>
+              <button type="button" onClick={() => openMobileTab("command")}>Close</button>
+            </header>
+            <div className="command-mobile-action-grid">
+              <button type="button" onClick={() => executeCommand("Help")}>Help</button>
+              <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
+              <button type="button" onClick={requestDemoEnvironmentAuthorization}>Load demo</button>
+              <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
+              <button type="button" onClick={openAtomControls}>Graph controls</button>
+              <button type="button" onClick={() => openSettings()}>Settings</button>
+              <button type="button" onClick={() => routeWorkspaceAction("Training channel selected. Opening ENTRAL Academy.", undefined, "entral:open-academy")}>Academy</button>
+              <button type="button" onClick={() => executeCommand("Show hierarchy")}>Full picture</button>
+            </div>
+          </>
+        ) : null}
+      </section>
+
+      <nav className="command-mobile-tabs" data-academy="command-nav" aria-label="Mobile command tabs">
+        {([
+          ["command", "Command", Bot],
+          ["hierarchy", "Hierarchy", Network],
+          ["tasks", "Tasks", Activity],
+          ["reports", "Reports", ShieldCheck],
+          ["more", "More", Menu]
+        ] as const).map(([tab, label, Icon]) => (
+          <button className={mobileTab === tab ? "active" : ""} key={tab} type="button" onClick={() => openMobileTab(tab)} aria-pressed={mobileTab === tab}>
+            <Icon aria-hidden="true" size={16} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
 
       <nav className="command-os-nav" data-academy="command-nav" aria-label="Command OS navigation">
         <div className="command-os-nav-header">
@@ -4656,7 +5550,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </details>
         <details open>
           <summary>Tasks</summary>
-          <button type="button" onClick={() => startMerchLaunchWorkflow("start merch store launch workflow")}>
+          <button type="button" onClick={() => requestWorkflowAuthorization("start merch store launch workflow")}>
             <span className="task-dot task-assigned" />
             Generate launch workflow
           </button>
@@ -4715,10 +5609,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           <button type="button" onClick={() => setSearch("commander")}>Commanders</button>
           <button type="button" onClick={() => setSearch("soldier")}>Soldiers</button>
           <button type="button" onClick={() => openBusinessWizard()}>Guided business setup</button>
-          <button type="button" onClick={() => createHierarchyNode("marshal")}>Add Marshal</button>
-          <button type="button" onClick={() => createHierarchyNode("general")}>Add General</button>
-          <button type="button" onClick={() => createHierarchyNode("commander")}>Add Commander</button>
-          <button type="button" onClick={() => createHierarchyNode("soldier")}>Add Soldier</button>
+          <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
+          <button type="button" onClick={() => requestNodeAuthorization("general")}>Add General</button>
+          <button type="button" onClick={() => requestNodeAuthorization("commander")}>Add Commander</button>
+          <button type="button" onClick={() => requestNodeAuthorization("soldier")}>Add Soldier</button>
         </details>
         <details>
           <summary>Infrastructure</summary>
@@ -4798,7 +5692,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           <span>{statusMessage}</span>
         </div>
 
-        <div className={["voice-command-status", isListening ? "listening" : "", isSpeaking ? "speaking" : ""].filter(Boolean).join(" ")} role="status" aria-live="polite">
+        <div className={["voice-command-status", isListening ? "listening" : "", isSpeaking ? "speaking" : ""].filter(Boolean).join(" ")} data-academy="voice-controls" role="status" aria-live="polite">
           {isListening ? <Mic aria-hidden="true" size={15} /> : isSpeaking ? <Volume2 aria-hidden="true" size={15} /> : <MicOff aria-hidden="true" size={15} />}
           <span>{isListening ? "Microphone active. Speak directive." : isSpeaking ? "ENTRAL speaking." : voiceStatus}</span>
           <button type="button" onClick={stopSpeaking} disabled={!isSpeaking}>Stop speech</button>
@@ -4809,9 +5703,18 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             <div>
               <p className="eyebrow">First mission</p>
               <h3>Create your first business General</h3>
-              <p>Choose a template and ENTRAL will build the full command path for you: Marshal, business General, Commanders, Soldiers, and first intake task.</p>
+              <p>Start from ENTRAL alone. Create a Marshal first, open the guided business setup, or use an opt-in demo to learn the command structure safely.</p>
             </div>
             <div className="business-empty-actions">
+              <Button type="button" variant="secondary" onClick={() => executeCommand("Help")}>
+                Help
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => routeWorkspaceAction("Training channel selected. Opening ENTRAL Academy.", undefined, "entral:open-tutorial")}>
+                Start tutorial
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("marshal", "First Marshal")}>
+                Create First Marshal
+              </Button>
               <Button type="button" onClick={() => openBusinessWizard()}>
                 <Sparkles aria-hidden="true" size={16} />
                 Start guided setup
@@ -4819,12 +5722,18 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
                 View templates
               </Button>
+              <Button type="button" variant="secondary" onClick={() => executeCommand("Start voice guide")}>
+                Voice introduction
+              </Button>
+              <Button type="button" variant="secondary" onClick={requestDemoEnvironmentAuthorization}>
+                Load demo environment
+              </Button>
             </div>
           </section>
         ) : null}
 
         {businessWizard.isOpen ? (
-          <section className="business-wizard" aria-label="Guided business creation">
+          <section className="business-wizard" data-academy="business-wizard" aria-label="Guided business creation">
             <header>
               <div>
                 <p className="eyebrow">Guided setup</p>
@@ -4862,26 +5771,42 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <input value={businessWizard.industry} onChange={(event) => updateBusinessWizard({ industry: event.target.value })} placeholder="Fitness, landscaping, apparel..." />
               </label>
               <label>
+                <span>Preferred Marshal</span>
+                <input value={businessWizard.preferredMarshal} onChange={(event) => updateBusinessWizard({ preferredMarshal: event.target.value })} placeholder={selectedTemplate.marshalName} />
+              </label>
+              <label>
                 <span>Audience</span>
                 <input value={businessWizard.audience} onChange={(event) => updateBusinessWizard({ audience: event.target.value })} placeholder="Local gym members, homeowners..." />
+              </label>
+              <label>
+                <span>Brand style</span>
+                <input value={businessWizard.brandStyle} onChange={(event) => updateBusinessWizard({ brandStyle: event.target.value })} placeholder="Premium, tactical, playful, minimalist..." />
+              </label>
+              <label>
+                <span>Initial services/products</span>
+                <input value={businessWizard.initialProducts} onChange={(event) => updateBusinessWizard({ initialProducts: event.target.value })} placeholder="Hoodies, landing pages, SEO retainers..." />
               </label>
               <label>
                 <span>Initial goal</span>
                 <input value={businessWizard.goal} onChange={(event) => updateBusinessWizard({ goal: event.target.value })} placeholder="Launch first merch collection" />
               </label>
+              <label className="business-wizard-wide">
+                <span>Notes</span>
+                <textarea value={businessWizard.notes} onChange={(event) => updateBusinessWizard({ notes: event.target.value })} placeholder="Approval rules, contact notes, constraints, important context..." rows={3} />
+              </label>
             </div>
 
             <ol className="business-wizard-steps" aria-label="What ENTRAL will create">
-              <li>Marshal theater: {selectedTemplate.marshalName}</li>
+              <li>Marshal theater: {businessWizard.preferredMarshal.trim() || selectedTemplate.marshalName}</li>
               <li>Business General: {businessWizard.businessName.trim() || "Your business"} General</li>
               <li>{selectedTemplate.commanders.length} Commanders and {selectedTemplate.commanders.reduce((total, commander) => total + commander.soldiers.length, 0)} Soldiers</li>
               <li>First intake task assigned for review</li>
             </ol>
 
             <div className="business-wizard-actions">
-              <Button type="button" onClick={() => createBusinessFromTemplate(selectedTemplate, businessWizard)}>
+              <Button type="button" onClick={() => requestBusinessTemplateAuthorization(selectedTemplate, businessWizard)}>
                 <Plus aria-hidden="true" size={16} />
-                Create business
+                Preview creation
               </Button>
               <Button type="button" variant="secondary" onClick={() => {
                 updateBusinessWizard(defaultBusinessWizard);
@@ -5009,19 +5934,19 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <Sparkles aria-hidden="true" size={16} />
               Business setup
             </Button>
-            <Button type="button" variant="secondary" onClick={() => createHierarchyNode("marshal")}>
+            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("marshal")}>
               <Plus aria-hidden="true" size={16} />
               Add Marshal
             </Button>
-            <Button type="button" variant="secondary" onClick={() => createHierarchyNode("general")}>
+            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("general")}>
               <Plus aria-hidden="true" size={16} />
               Add General
             </Button>
-            <Button type="button" variant="secondary" onClick={() => createHierarchyNode("commander")}>
+            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("commander")}>
               <Plus aria-hidden="true" size={16} />
               Add Commander
             </Button>
-            <Button type="button" variant="secondary" onClick={() => createHierarchyNode("soldier")}>
+            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("soldier")}>
               <Plus aria-hidden="true" size={16} />
               Add Soldier
             </Button>
@@ -5055,6 +5980,26 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </article>
           ))}
         </div>
+
+        {pendingAuthorization ? (
+          <section className="command-authorization-card" aria-label="Pending authorization">
+            <div>
+              <p className="eyebrow">Authorization required</p>
+              <pre>{pendingAuthorization.summary}</pre>
+            </div>
+            <div>
+              <Button type="button" onClick={approvePendingAuthorization}>
+                Approve
+              </Button>
+              <Button type="button" variant="secondary" onClick={modifyPendingAuthorization}>
+                Modify
+              </Button>
+              <Button type="button" variant="secondary" onClick={cancelPendingAuthorization}>
+                Cancel
+              </Button>
+            </div>
+          </section>
+        ) : null}
 
         <div className="command-chat-suggestions" aria-label="Example ENTRAL commands">
           {contextCommandSuggestions.map((example) => (
@@ -5193,6 +6138,33 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               {selectedNode.commandType === "soldier" ? <small>{selectedNode.executionRole ?? selectedNode.name} under {selectedNode.parentCommanderName ?? "Commander"}</small> : null}
             </section>
 
+            {selectedInspectorStats ? (
+              <section className="command-node-brief" aria-label="Operational summary">
+                <h3>Operational summary</h3>
+                <div>
+                  <span><strong>{selectedInspectorStats.marshals}</strong> Marshals</span>
+                  <span><strong>{selectedInspectorStats.generals}</strong> Generals</span>
+                  <span><strong>{selectedInspectorStats.commanders}</strong> Commanders</span>
+                  <span><strong>{selectedInspectorStats.soldiers}</strong> Soldiers</span>
+                  <span><strong>{selectedInspectorStats.activeTasks}</strong> active tasks</span>
+                  <span><strong>{selectedInspectorStats.failedTasks}</strong> failed tasks</span>
+                </div>
+              </section>
+            ) : null}
+
+            {selectedSuggestedActions.length > 0 ? (
+              <section className="command-suggested-actions" aria-label="Suggested actions">
+                <h3>Suggested actions</h3>
+                <div>
+                  {selectedSuggestedActions.map((action) => (
+                    <button key={action.label} type="button" onClick={() => executeCommand(action.command)}>
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             <section className="command-capabilities" aria-label="Agent capability architecture">
               <div className="section-title-row compact">
                 {selectedNode.type === "core" ? <Network aria-hidden="true" size={17} /> : <Zap aria-hidden="true" size={17} />}
@@ -5240,7 +6212,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                   </button>
                 ))}
               </section>
-            ) : null}
+            ) : renderChildEmptyState(selectedNode)}
 
             <section>
               <h3>What is being displayed</h3>
@@ -5261,7 +6233,32 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                     </article>
                   ))}
                 </div>
-              ) : <p>No tasks have touched this entity yet.</p>}
+              ) : (
+                <div className="command-empty-state compact">
+                  <h3>No active tasks.</h3>
+                  <p>Create a task or generate a workflow after this entity has execution capacity.</p>
+                  <div>
+                    <Button type="button" variant="secondary" onClick={() => executeCommand("Create task Review the command hierarchy")}>Create Task</Button>
+                    <Button type="button" variant="secondary" onClick={() => requestWorkflowAuthorization("start merch store launch workflow")}>Generate Workflow</Button>
+                  </div>
+                </div>
+              )}
+            </section>
+            <section className="command-report-history">
+              <h3>Report history</h3>
+              {selectedReportHistory.length > 0 ? (
+                <div>
+                  {selectedReportHistory.map((report) => (
+                    <article key={report.id}>
+                      <strong>{report.situation}</strong>
+                      <span>{new Date(report.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</span>
+                      <p>{report.recommendation}</p>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p>No reports recorded yet. Generate a report to preserve command history.</p>
+              )}
             </section>
             <section className="command-memory-panel">
               <h3>Memory</h3>

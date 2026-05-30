@@ -10,7 +10,7 @@ Command OS is an additive layer on top of the existing ENTRAL app. It does not r
 - Commanders: departments or operating functions under each General.
 - Soldiers: execution units under each Commander.
 
-Default seed: ENTRAL -> Merch Marshal -> ENTRAL General -> Merch Commanders -> Merch Soldiers.
+First-time default state: ENTRAL only. No Marshals, Generals, Commanders, Soldiers, businesses, demo projects, or fake activity are created until the user asks for them or approves an opt-in demo/template flow.
 
 ## Graph Layer
 
@@ -28,9 +28,9 @@ The persistent right-side command console is the primary communication and contr
 
 ## Local State Layer
 
-The dashboard now keeps a local Command OS state object with hierarchy nodes, task records, task history, and per-entity memory. It persists to browser storage so created Marshals, Generals, Commanders, Soldiers, delegated tasks, status changes, and memory notes survive page refreshes.
+The dashboard now keeps a local Command OS state object with hierarchy nodes, task records, task history, report history, and per-entity memory. It persists to browser storage so created Marshals, Generals, Commanders, Soldiers, delegated tasks, status changes, reports, and memory notes survive page refreshes.
 
-State changes flow through a dedicated reducer and validation layer. Every mutation is repaired back to the hierarchy contract: Marshals report to ENTRAL, Generals report to Marshals, Commanders report to Generals, Soldiers report to Commanders, edges are rebuilt from parent IDs, stale task references are cleaned, and interrupted active tasks are marked failed for review during hydration. Legacy four-level local state is migrated by inserting a Primary Marshal and moving existing root Generals underneath it without deleting user data.
+State changes flow through a dedicated reducer and validation layer. Every mutation is repaired back to the hierarchy contract: Marshals report to ENTRAL, Generals report to Marshals, Commanders report to Generals, Soldiers report to Commanders, edges are rebuilt from parent IDs, stale task references are cleaned, dangling report references are removed, and interrupted active tasks are marked failed for review during hydration. Legacy four-level local state is migrated by inserting a Primary Marshal and moving existing root Generals underneath it without deleting user data.
 
 ## Future Execution Layer
 

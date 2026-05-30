@@ -61,7 +61,7 @@ describe("OnboardingProvider", () => {
     });
 
     expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Understand the Command OS", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Start from ENTRAL", level: 2 })).toBeInTheDocument();
   });
 
   it("opens the tutorial library from the global event", () => {
@@ -79,7 +79,8 @@ describe("OnboardingProvider", () => {
     });
 
     expect(screen.getByText("Tutorial library")).toBeInTheDocument();
-    expect(screen.getByText("First Launch")).toBeInTheDocument();
+    expect(screen.getByText("Quick Start")).toBeInTheDocument();
+    expect(screen.getByText("Business Creation")).toBeInTheDocument();
   });
 
   it("persists advanced mode selection", async () => {
@@ -118,11 +119,11 @@ describe("OnboardingProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show me" }));
 
     expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: "Understand the Command OS walkthrough" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Start from ENTRAL walkthrough" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Return to Academy" }));
 
     expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Understand the Command OS", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Start from ENTRAL", level: 2 })).toBeInTheDocument();
   });
 });

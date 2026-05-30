@@ -58,144 +58,184 @@ const academySignOutEvent = "entral:user-signed-out";
 
 const modules: AcademyModule[] = [
   {
-    description: "The minimum path for a brand-new user to understand ENTRAL.",
-    id: "start",
-    title: "First Launch"
+    description: "The fastest path from a blank command center to first useful action.",
+    id: "quick-start",
+    title: "Quick Start"
   },
   {
-    description: "Learn the graph, console, inspector, and core command flow.",
-    id: "command-center",
-    title: "Command Center"
+    description: "Learn how to speak to ENTRAL and issue operational directives.",
+    id: "command-guide",
+    title: "Command Guide"
   },
   {
-    description: "Practice creating hierarchy nodes and assigning work.",
-    id: "operations",
-    title: "Guided Operations"
+    description: "Understand ENTRAL, Marshals, Generals, Commanders, and Soldiers.",
+    id: "hierarchy-guide",
+    title: "Hierarchy Guide"
   },
   {
-    description: "Use screen sharing, settings, replay, shortcuts, and recovery safely.",
-    id: "power",
-    title: "Power Tools"
+    description: "Create a business General from templates without memorizing structure.",
+    id: "business-guide",
+    title: "Business Creation"
+  },
+  {
+    description: "Operate ENTRAL from a phone or tablet without desktop sidebars.",
+    id: "mobile-guide",
+    title: "Mobile Guide"
+  },
+  {
+    description: "Use push-to-talk, reports-only voice, and spoken command feedback.",
+    id: "voice-guide",
+    title: "Voice Guide"
+  },
+  {
+    description: "Learn the Merch/POD launch structure and approval-gated workflow.",
+    id: "merch-guide",
+    title: "Merch/POD Guide"
+  },
+  {
+    description: "Advanced operators can review recovery, settings, shortcuts, and screen sharing.",
+    id: "advanced-tools",
+    title: "Advanced Tools"
   }
 ];
 
 const academySteps: AcademyStep[] = [
   {
-    description: "ENTRAL is controlled from the Command Center: graph in the center, navigation on the left, command console on the right.",
-    guidedTask: "Open the Command Center and identify ENTRAL, the left navigation, and the command console.",
+    description: "ENTRAL begins as a central command system with no fake hierarchy. Your first job is to create the operating structure it will command.",
+    guidedTask: "Notice the ENTRAL status at the top of the dashboard. A new user should see ENTRAL online and awaiting directives.",
     id: "welcome",
     mode: "both",
-    moduleId: "start",
+    moduleId: "quick-start",
     route: "/dashboard",
     target: "command-brand",
-    title: "Understand the Command OS"
+    title: "Start from ENTRAL"
   },
   {
-    description: "The command palette gives visible access to actions that might otherwise feel hidden behind shortcuts.",
-    guidedTask: "Open the Command button or press Ctrl/Cmd + K and search for Academy, tasks, or settings.",
-    id: "command-palette",
+    description: "The command console is the primary control path. You can ask questions, request reports, create structure, or route work from one place.",
+    guidedTask: "Look at the command console. Try commands like Help, Create a Marshal, Create my first business, or ENTRAL report.",
+    id: "command-console",
     mode: "both",
-    moduleId: "start",
+    moduleId: "command-guide",
+    route: "/dashboard",
+    target: "command-console",
+    title: "Command through ENTRAL"
+  },
+  {
+    description: "The visible command menu is the replacement for hidden shortcut discovery. Keyboard shortcuts still work, but no essential action should depend on them.",
+    guidedTask: "Open the Command button and look for actions such as Academy, tasks, settings, business setup, and reports.",
+    id: "command-menu",
+    mode: "both",
+    moduleId: "command-guide",
     route: "/dashboard",
     target: "command-palette",
-    title: "Find actions fast"
+    title: "Find actions without guessing"
   },
   {
-    description: "Beginner mode keeps the Academy focused. Advanced mode adds system recovery, task state, and governance details.",
-    guidedTask: "Switch modes here or in Settings whenever you want a lighter or deeper training path.",
-    id: "modes",
-    mode: "both",
-    moduleId: "start",
-    route: "/dashboard",
-    target: "settings",
-    title: "Choose your training depth"
-  },
-  {
-    description: "The 3D graph is the live command view. ENTRAL sits at the center; Marshals, Generals, Commanders, and Soldiers orbit in official command order.",
-    guidedTask: "Drag the graph, zoom with the wheel, then press Escape to return to the full picture if you are focused in.",
+    description: "The 3D graph is the live command view. ENTRAL sits at the center. Marshals, Generals, Commanders, and Soldiers appear only when you create them.",
+    guidedTask: "Read the graph as a chain of command: ENTRAL -> Marshal -> General -> Commander -> Soldier.",
     id: "graph",
     mode: "both",
-    moduleId: "command-center",
+    moduleId: "hierarchy-guide",
     route: "/dashboard",
     target: "command-graph",
     title: "Read the graph"
   },
   {
-    description: "Use the left navigation for clear structure: hierarchy, tasks, Marshals, business Generals, operations, analytics, and settings.",
-    guidedTask: "Click a Marshal or General in the navigation and watch the graph focus.",
+    description: "Marshals are strategic theaters or portfolios. A Merch Marshal, Website Marshal, or Marketing Marshal can contain multiple business Generals.",
+    guidedTask: "Use the navigation to inspect Marshals. If no Marshals exist yet, create one before creating a business General.",
     id: "navigation",
     mode: "both",
-    moduleId: "command-center",
+    moduleId: "hierarchy-guide",
     route: "/dashboard",
     target: "command-nav",
-    title: "Navigate without guessing"
+    title: "Understand Marshals"
   },
   {
-    description: "The command console is the primary control path. You can talk normally or issue direct commands.",
-    guidedTask: "Try: show chain of command, open Design Commander, or assign task inspect SEO readiness to SEO Soldier.",
-    id: "console",
-    mode: "both",
-    moduleId: "command-center",
-    route: "/dashboard",
-    target: "command-console",
-    title: "Command through chat"
-  },
-  {
-    description: "A new user can create a first business from the command console. The guided setup creates a Marshal, business General, Commanders, Soldiers, and a first intake task.",
-    guidedTask: "Open Business setup, choose a template, enter a business name, then create the business command structure.",
-    id: "first-business",
-    mode: "both",
-    moduleId: "operations",
-    route: "/dashboard",
-    target: "command-console",
-    title: "Create your first business"
-  },
-  {
-    description: "Clicking an entity opens the inspector with status, parent, children, current task, memory, tools, logs, and history.",
-    guidedTask: "Click a Soldier, then inspect its memory and task history.",
+    description: "Generals represent actual businesses, clients, brands, stores, or operations. Commanders are departments inside a General. Soldiers execute under Commanders.",
+    guidedTask: "Open the inspector and review the command path, direct reports, memory, tasks, and suggested actions for the selected entity.",
     id: "inspector",
     mode: "both",
-    moduleId: "command-center",
+    moduleId: "hierarchy-guide",
     route: "/dashboard",
     target: "command-inspector",
-    title: "Inspect any entity"
+    title: "Inspect the hierarchy"
   },
   {
-    description: "Unified controls tune graph behavior and create/remove hierarchy nodes without needing hidden shortcuts.",
+    description: "Use the structure controls when you want to build manually. ENTRAL enforces the official order: Marshals under ENTRAL, Generals under Marshals, Commanders under Generals, Soldiers under Commanders.",
     guidedTask: "Open Unified controls and locate Add Marshal, Add General, Add Commander, Add Soldier, and Remove Selected.",
-    id: "controls",
-    mode: "both",
-    moduleId: "operations",
-    route: "/dashboard",
-    target: "command-controls",
-    title: "Use unified controls"
-  },
-  {
-    description: "Creation follows hierarchy rules: Marshals under ENTRAL, Generals under Marshals, Commanders under Generals, Soldiers under Commanders.",
-    guidedTask: "Create one General under a Marshal, one Commander under that General, then one Soldier under that Commander.",
     id: "create-entities",
     mode: "both",
-    moduleId: "operations",
+    moduleId: "hierarchy-guide",
     route: "/dashboard",
-    target: "command-controls",
+    target: "command-structure-actions",
     title: "Create the chain of command"
   },
   {
-    description: "Tasks move from ENTRAL through the hierarchy to a valid online Soldier. Offline entities cannot receive new work.",
-    guidedTask: "Assign a task to a Soldier and watch the task list plus inspector update.",
-    id: "task-delegation",
+    description: "The business wizard turns a business idea into a Marshal, business General, operating Commanders, Soldiers, and an initial task.",
+    guidedTask: "Open Business setup, choose a template, enter a business name, and preview the creation plan before approval.",
+    id: "first-business",
     mode: "both",
-    moduleId: "operations",
+    moduleId: "business-guide",
+    route: "/dashboard",
+    target: "business-wizard",
+    title: "Create your first business"
+  },
+  {
+    description: "Templates reduce setup time. ENTRAL currently supports POD/Merch, Website Agency, Content Agency, E-commerce Brand, SaaS Startup, Local Service Business, and Custom Blank Structure.",
+    guidedTask: "Review the template buttons and choose the one closest to your business model.",
+    id: "templates",
+    mode: "both",
+    moduleId: "business-guide",
+    route: "/dashboard",
+    target: "business-wizard",
+    title: "Use business templates"
+  },
+  {
+    description: "Tasks are delegated through the hierarchy and reports preserve what happened. Reports use Situation, Analysis, Recommendation, and Next Actions.",
+    guidedTask: "Generate an ENTRAL report or assign a task. Then review the command feed and selected entity report history.",
+    id: "tasks-reports",
+    mode: "both",
+    moduleId: "command-guide",
     route: "/dashboard",
     target: "command-task-list",
-    title: "Delegate a task"
+    title: "Use tasks and reports"
+  },
+  {
+    description: "On mobile, use bottom tabs instead of desktop sidebars. Command, Hierarchy, Tasks, Reports, and More are the main surfaces.",
+    guidedTask: "Open the bottom tabs on a narrow screen. Use Hierarchy for structure, Tasks for work, Reports for briefings, and Command for directives.",
+    id: "mobile",
+    mode: "both",
+    moduleId: "mobile-guide",
+    route: "/dashboard",
+    target: "command-nav",
+    title: "Operate from mobile"
+  },
+  {
+    description: "Voice mode lets ENTRAL hear push-to-talk directives and speak reports based on your settings.",
+    guidedTask: "Find the microphone status and try a safe text version first: ENTRAL, report. Then enable voice if desired.",
+    id: "voice",
+    mode: "both",
+    moduleId: "voice-guide",
+    route: "/dashboard",
+    target: "voice-controls",
+    title: "Use voice commands"
+  },
+  {
+    description: "The Merch/POD template creates the operating lane for client merch: intake, brand, design, listing, compliance, launch, marketing, and reporting.",
+    guidedTask: "Open Business setup and choose POD / Merch Business. Review the generated Commanders and Soldiers before approving anything.",
+    id: "merch-pod",
+    mode: "both",
+    moduleId: "merch-guide",
+    route: "/dashboard",
+    target: "business-wizard",
+    title: "Launch a Merch/POD structure"
   },
   {
     description: "ENTRAL repairs local state on refresh: broken edges are rebuilt and interrupted active tasks are marked failed for review.",
-    guidedTask: "Review the task history after a refresh. Interrupted local tasks should never silently pretend they completed.",
+    guidedTask: "Review task history after a refresh. Interrupted local tasks should never silently pretend they completed.",
     id: "recovery",
     mode: "advanced",
-    moduleId: "operations",
+    moduleId: "advanced-tools",
     route: "/dashboard",
     target: "command-task-list",
     title: "Understand recovery"
@@ -205,27 +245,37 @@ const academySteps: AcademyStep[] = [
     guidedTask: "Open Chat, find Share Screen, read the privacy notice, then stop before granting permission unless you need it.",
     id: "screen-sharing",
     mode: "both",
-    moduleId: "power",
+    moduleId: "advanced-tools",
     route: "/chat",
     target: "screen-share",
     title: "Use screen view safely"
   },
   {
-    description: "Settings contain appearance, account, Command AI behavior, and Academy controls including replay and mode selection.",
-    guidedTask: "Open Settings, switch to Academy, and replay this library whenever you need a refresher.",
+    description: "Settings contain appearance, account, Command AI behavior, voice, and Academy controls including replay and mode selection.",
+    guidedTask: "Open Settings, switch to Academy, and replay the tutorial library whenever you need a refresher.",
     id: "settings",
     mode: "both",
-    moduleId: "power",
+    moduleId: "advanced-tools",
     route: "/dashboard",
     target: "settings",
     title: "Replay and customize"
   },
   {
-    description: "Advanced operators should use command palette, keyboard help, governance, and task recovery together.",
-    guidedTask: "Open keyboard help, then use the palette to jump to governance or automations.",
+    description: "Beginner mode keeps the Academy focused. Advanced mode adds system recovery, screen sharing, task state, and governance details.",
+    guidedTask: "Switch modes here or in Settings whenever you want a lighter or deeper training path.",
+    id: "modes",
+    mode: "both",
+    moduleId: "advanced-tools",
+    route: "/dashboard",
+    target: "settings",
+    title: "Choose your training depth"
+  },
+  {
+    description: "Advanced operators should use the visible command menu, keyboard help, governance, and task recovery together.",
+    guidedTask: "Open keyboard help, then use the command menu to jump to governance or automations.",
     id: "advanced-flow",
     mode: "advanced",
-    moduleId: "power",
+    moduleId: "advanced-tools",
     route: "/dashboard",
     target: "command-palette",
     title: "Operate like a power user"

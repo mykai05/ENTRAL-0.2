@@ -181,196 +181,37 @@ function createMemory(role: string, instructions: string): CommandMemory {
 }
 
 export function createDefaultCommandHierarchy(): CommandNode[] {
-  const merchMarshal = commandMarshals[0];
-  const merchGeneral = commandGenerals[0];
-  const commanderIds = merchCommanders.map((commander) => createCommandId(commander.name, "commander"));
-  const nodes: CommandNode[] = [
+  return [
     {
-      activeCommanders: merchCommanders.length,
-      activeGenerals: 1,
-      activeProjects: ["ENTRAL Merch Operations"],
-      activeSoldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0),
-      children: [merchMarshal.id],
+      activeCommanders: 0,
+      activeGenerals: 0,
+      activeProjects: [],
+      activeSoldiers: 0,
+      children: [],
       createdAt: bootTime,
-      currentTask: "Supervising the Merch theater and routing command-console directives.",
-      description: "Stationary supreme command layer overseeing Marshals, business Generals, Commanders, Soldiers, approvals, memory, and system health.",
+      currentTask: null,
+      description: "Stationary supreme command layer awaiting user-created Marshals, business Generals, Commanders, Soldiers, approvals, memory, and system health.",
       health: 100,
       id: "entral",
-      logs: ["Command OS online.", "ENTRAL core stable.", "Marshal layer initialized.", "Merch theater initialized."],
-      memory: createMemory("Strategic Command Core", "Receive user intent, maintain Marshal hierarchy state, delegate tasks, and preserve operational memory."),
+      logs: ["ENTRAL Command System online.", "No command structures detected.", "Awaiting directives."],
+      memory: createMemory("Strategic Command Core", "Receive user intent, create command structures only with user direction, maintain hierarchy state, delegate tasks, and preserve operational memory."),
       metrics: {
-        commanders: merchCommanders.length,
-        generals: 1,
-        marshals: 1,
-        soldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0)
+        commanders: 0,
+        generals: 0,
+        marshals: 0,
+        soldiers: 0
       },
       name: "ENTRAL",
       parentId: null,
       permissions: ["govern_hierarchy", "route_commands", "manage_visual_structure"],
       role: "Strategic Command Core",
       status: "thinking",
-      taskHistory: ["Booted Merch Command OS hierarchy."],
+      taskHistory: [],
       title: "Central Command",
       tools: ["command_console", "neural_graph", "local_hierarchy_store"],
       type: "emperor"
     }
   ];
-
-  nodes.push({
-    activeCommanders: merchCommanders.length,
-    activeGenerals: 1,
-    activeProjects: ["Client Merch Store Launch"],
-    activeSoldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0),
-    children: [merchGeneral.id],
-    createdAt: bootTime,
-    currentTask: "Maintaining Merch theater readiness and routing business Generals.",
-    description: "Merch Marshal is the strategic theater authority for POD stores, launch packages, product batches, compliance review, and client merch operations.",
-    health: healthFor(merchMarshal.id),
-    id: merchMarshal.id,
-    logs: ["Merch Marshal initialized.", "ENTRAL General assigned."],
-    marshalType: merchMarshal.type,
-    memory: {
-      ...createMemory(merchMarshal.role, "Oversee all Merch business Generals, enforce approval rules, track theater health, and report strategic readiness to ENTRAL."),
-      notes: [
-        "Strategic Purpose: operate the POD merch service through business Generals.",
-        "Business Category: client merch stores and POD launch operations.",
-        "Approval Rules: no publishing, client contact, deletion, or launch-status changes without user approval.",
-        "Compliance Notes: risk warnings are operational signals only and are not legal advice."
-      ]
-    },
-    metrics: {
-      activeBusinesses: 1,
-      activeGenerals: 1,
-      commanders: merchCommanders.length,
-      riskLevel: "low",
-      soldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0),
-      successRate: 100
-    },
-    name: merchMarshal.name,
-    parentId: "entral",
-    permissions: ["create_generals", "archive_generals", "inspect_businesses", "route_merch_operations"],
-    reports: [],
-    reportHistory: [],
-    role: merchMarshal.role,
-    status: "idle",
-    taskHistory: [],
-    title: "Marshal",
-    tools: ["merch_theater_router", "approval_gate", ...defaultTools],
-    type: "marshal",
-    updatedAt: bootTime
-  });
-
-  nodes.push({
-    children: commanderIds,
-    createdAt: bootTime,
-    currentTask: "Standing by as the default internal business General for Merch Command workflows.",
-    businessName: merchGeneral.businessName,
-    description: "ENTRAL General represents the internal business operation used to stage POD workflows until a client/business General is created.",
-    generalType: merchGeneral.type,
-    health: healthFor(merchGeneral.id),
-    id: merchGeneral.id,
-    logs: ["ENTRAL General initialized.", `${commanderIds.length} operating Commanders assigned.`],
-    memory: {
-      ...createMemory(merchGeneral.role, "Represent the named business or client being operated, coordinate department Commanders, and report business status to Merch Marshal."),
-      notes: [
-        "Business Name: ENTRAL.",
-        "Industry: AI command systems and merch operations.",
-        "Audience: ENTRAL operators and client merch workflows.",
-        "Approval Rules: user approval required before publishing or external client contact."
-      ]
-    },
-    metrics: {
-      activeProjects: 1,
-      businessHealth: "healthy",
-      commanders: commanderIds.length,
-      soldiers: merchCommanders.reduce((total, commander) => total + commander.soldiers.length, 0)
-    },
-    name: merchGeneral.name,
-    parentId: merchMarshal.id,
-    parentMarshalId: merchMarshal.id,
-    parentMarshalName: merchMarshal.name,
-    permissions: ["create_commanders", "remove_commanders", "inspect_soldiers", "route_merch_operations"],
-    reports: [],
-    reportHistory: [],
-    role: merchGeneral.role,
-    status: "idle",
-    taskHistory: [],
-    title: "General",
-    tools: ["merch_command_router", ...defaultTools],
-    type: "general",
-    updatedAt: bootTime
-  });
-
-  for (const commander of merchCommanders) {
-    const commanderId = createCommandId(commander.name, "commander");
-    const soldierIds = commander.soldiers.map((soldier) => `${commanderId}-${createCommandId(soldier, "soldier")}`);
-
-    nodes.push({
-      children: soldierIds,
-      createdAt: bootTime,
-      currentTask: null,
-      description: `${commander.name} manages ${commander.soldiers.length} Merch Soldiers and reports execution status to ENTRAL General.`,
-      health: healthFor(commanderId),
-      id: commanderId,
-      logs: [`${commander.name} initialized.`, `${commander.soldiers.length} Soldiers assigned.`],
-      memory: createMemory(`${commander.name} operations`, "Break Merch theater work into Soldier-level execution and update the business General with progress."),
-      metrics: { soldiers: soldierIds.length },
-      name: commander.name,
-      parentId: merchGeneral.id,
-      parentGeneralId: merchGeneral.id,
-      parentGeneralName: merchGeneral.name,
-      parentMarshalId: merchMarshal.id,
-      parentMarshalName: merchMarshal.name,
-      permissions: ["create_soldiers", "remove_soldiers", "report_readiness", "assign_merch_work"],
-      operationalArea: commander.name.replace(/\s+Commander$/i, ""),
-      reports: [],
-      reportHistory: [],
-      role: `${commander.name} operations`,
-      status: "idle",
-      taskHistory: [],
-      title: "Commander",
-      tools: ["merch_status_reporter", ...defaultTools],
-      type: "commander",
-      updatedAt: bootTime
-    });
-
-    for (const soldierName of commander.soldiers) {
-      const soldierId = `${commanderId}-${createCommandId(soldierName, "soldier")}`;
-
-      nodes.push({
-        children: [],
-        createdAt: bootTime,
-        currentTask: null,
-        description: `${soldierName} executes ${commander.name.toLowerCase()} work for the Merch theater.`,
-        health: healthFor(soldierId),
-        id: soldierId,
-        logs: [`${soldierName} initialized.`, "Awaiting Merch theater directives."],
-        memory: createMemory(`${soldierName} execution`, `Execute assigned ${commander.name.toLowerCase()} tasks and return concise results to ${commander.name}.`),
-        metrics: { readiness: "ready" },
-        name: soldierName,
-        parentId: commanderId,
-        parentCommanderId: commanderId,
-        parentCommanderName: commander.name,
-        parentGeneralId: merchGeneral.id,
-        parentGeneralName: merchGeneral.name,
-        parentMarshalId: merchMarshal.id,
-        parentMarshalName: merchMarshal.name,
-        permissions: defaultPermissions,
-        executionRole: `${soldierName} execution`,
-        reports: [],
-        reportHistory: [],
-        role: `${soldierName} execution`,
-        status: "idle",
-        taskHistory: [],
-        title: "Soldier",
-        tools: defaultTools,
-        type: "soldier",
-        updatedAt: bootTime
-      });
-    }
-  }
-
-  return nodes;
 }
 
 export function commandStatusLabel(status: CommandStatus) {
