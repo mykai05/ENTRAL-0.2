@@ -4108,7 +4108,7 @@ body:has(.command-center-page) .palette-trigger {
   box-shadow: 0 24px 90px rgba(0, 0, 0, 0.58);
   display: grid;
   gap: 0.75rem;
-  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto auto;
   left: auto;
   min-height: 0;
   overflow: hidden;
@@ -4382,6 +4382,149 @@ body:has(.command-center-page) .palette-trigger {
 .voice-command-status button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.business-empty-guide,
+.business-wizard {
+  background: linear-gradient(180deg, rgba(var(--neon-accent-rgb), 0.08), rgba(255, 255, 255, 0.025));
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.16);
+  border-radius: 16px;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.72rem;
+}
+
+.business-empty-guide h3,
+.business-empty-guide p,
+.business-wizard h3,
+.business-wizard p,
+.business-wizard ol {
+  margin: 0;
+}
+
+.business-empty-guide h3,
+.business-wizard h3 {
+  color: var(--ink);
+  font-size: 0.96rem;
+}
+
+.business-empty-guide p,
+.business-wizard span,
+.business-wizard li {
+  color: rgba(255, 255, 240, 0.62);
+  font-size: 0.78rem;
+  line-height: 1.42;
+}
+
+.business-empty-actions,
+.business-wizard-actions {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr);
+}
+
+.business-wizard header {
+  align-items: start;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.business-wizard header button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 240, 0.1);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.business-template-grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.business-template-grid button {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 240, 0.08);
+  border-radius: 14px;
+  color: rgba(255, 255, 240, 0.78);
+  cursor: pointer;
+  display: grid;
+  gap: 0.18rem;
+  min-height: 4.15rem;
+  padding: 0.55rem;
+  text-align: left;
+}
+
+.business-template-grid button.active,
+.business-template-grid button:hover {
+  border-color: rgba(var(--neon-accent-rgb), 0.34);
+  box-shadow: 0 0 18px rgba(var(--neon-accent-rgb), 0.08);
+  color: var(--ink);
+}
+
+.business-template-grid button span {
+  background: var(--template-color);
+  border-radius: 999px;
+  box-shadow: 0 0 14px var(--template-color);
+  height: 0.52rem;
+  width: 0.52rem;
+}
+
+.business-template-grid strong {
+  font-size: 0.78rem;
+}
+
+.business-template-grid small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.business-wizard-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.business-wizard-grid label {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.business-wizard-grid label span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.business-wizard-grid input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 240, 0.1);
+  border-radius: 12px;
+  color: var(--ink);
+  min-height: 2.35rem;
+  outline: none;
+  padding: 0 0.68rem;
+}
+
+.business-wizard-grid input:focus {
+  border-color: rgba(var(--neon-accent-rgb), 0.44);
+  box-shadow: 0 0 0 3px rgba(var(--neon-accent-rgb), 0.07);
+}
+
+.business-wizard-steps {
+  display: grid;
+  gap: 0.3rem;
+  padding-left: 1.2rem;
 }
 
 .voice-command-button {
@@ -5765,7 +5908,7 @@ body:has(.command-center-page) .palette-trigger {
     border-radius: 22px;
     bottom: max(0.65rem, env(safe-area-inset-bottom));
     gap: 0.55rem;
-    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto;
     left: 0.65rem;
     max-height: min(74dvh, calc(100dvh - 5.35rem));
     padding: 0.65rem;
@@ -5803,6 +5946,23 @@ body:has(.command-center-page) .palette-trigger {
 
   .command-console-controls[open] {
     max-height: min(34dvh, 18rem);
+  }
+
+  .business-empty-guide,
+  .business-wizard {
+    padding: 0.62rem;
+  }
+
+  .business-empty-actions,
+  .business-template-grid,
+  .business-wizard-actions,
+  .business-wizard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .business-template-grid {
+    max-height: 9rem;
+    overflow: auto;
   }
 
   .command-chat-suggestions {
@@ -5876,7 +6036,7 @@ body:has(.command-center-page) .palette-trigger {
 
 @media (max-width: 760px) and (max-height: 680px) {
   .command-center-chat {
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     max-height: min(80dvh, calc(100dvh - 4.6rem));
   }
 

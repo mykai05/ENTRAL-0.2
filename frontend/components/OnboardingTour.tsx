@@ -141,6 +141,16 @@ const academySteps: AcademyStep[] = [
     title: "Command through chat"
   },
   {
+    description: "A new user can create a first business from the command console. The guided setup creates a Marshal, business General, Commanders, Soldiers, and a first intake task.",
+    guidedTask: "Open Business setup, choose a template, enter a business name, then create the business command structure.",
+    id: "first-business",
+    mode: "both",
+    moduleId: "operations",
+    route: "/dashboard",
+    target: "command-console",
+    title: "Create your first business"
+  },
+  {
     description: "Clicking an entity opens the inspector with status, parent, children, current task, memory, tools, logs, and history.",
     guidedTask: "Click a Soldier, then inspect its memory and task history.",
     id: "inspector",

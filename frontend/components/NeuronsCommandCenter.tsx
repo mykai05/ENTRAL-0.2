@@ -237,6 +237,30 @@ type CapabilityBlueprint = {
   risk: "standard" | "sensitive" | "restricted";
 };
 
+type BusinessTemplate = {
+  color: string;
+  commanders: Array<{
+    name: string;
+    soldiers: string[];
+  }>;
+  description: string;
+  generalType: NonNullable<CommandNode["generalType"]>;
+  id: string;
+  label: string;
+  marshalName: string;
+  marshalType: NonNullable<CommandNode["marshalType"]>;
+  starterCommands: string[];
+};
+
+type BusinessWizardState = {
+  audience: string;
+  businessName: string;
+  goal: string;
+  industry: string;
+  isOpen: boolean;
+  templateId: string;
+};
+
 const defaultCamera: CameraState = {
   distance: 900,
   pitch: 0.34,
@@ -316,6 +340,89 @@ const businessCapabilityBlueprints: CapabilityBlueprint[] = [
     risk: "standard"
   }
 ];
+
+const businessTemplates: BusinessTemplate[] = [
+  {
+    color: "#00F0FF",
+    commanders: [
+      { name: "Client Intake Commander", soldiers: ["Business Profile Soldier", "Audience Soldier", "Offer Soldier", "Notes Soldier"] },
+      { name: "Brand Commander", soldiers: ["Brand Voice Soldier", "Color Direction Soldier", "Style Direction Soldier"] },
+      { name: "Design Commander", soldiers: ["Design Concept Soldier", "Prompt Soldier", "Mockup Soldier"] },
+      { name: "Listing Commander", soldiers: ["Title Soldier", "Description Soldier", "SEO Soldier"] },
+      { name: "Compliance Commander", soldiers: ["Trademark Risk Soldier", "AI Disclosure Soldier", "Production Partner Soldier"] },
+      { name: "Store Launch Commander", soldiers: ["Etsy Setup Soldier", "Shopify Setup Soldier", "Launch QA Soldier"] },
+      { name: "Marketing Commander", soldiers: ["Instagram Caption Soldier", "TikTok Script Soldier", "Promo Calendar Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Weekly Report Soldier", "Product Performance Soldier", "Opportunity Report Soldier"] }
+    ],
+    description: "Best for a done-for-you POD or client merch store with approvals before publishing.",
+    generalType: "POD Store",
+    id: "pod-merch-store",
+    label: "POD merch store",
+    marshalName: "Merch Marshal",
+    marshalType: "Merch Theater",
+    starterCommands: ["start merch store launch workflow", "generate 10 product ideas", "open approval queue"]
+  },
+  {
+    color: "#39FF14",
+    commanders: [
+      { name: "Website Commander", soldiers: ["Page Structure Soldier", "Copy Soldier", "QA Soldier"] },
+      { name: "SEO Commander", soldiers: ["Keyword Soldier", "Local SEO Soldier", "Content Brief Soldier"] },
+      { name: "Lead Intake Commander", soldiers: ["Offer Soldier", "Contact Form Soldier", "CRM Notes Soldier"] },
+      { name: "Client Success Commander", soldiers: ["Update Report Soldier", "Request Tracker Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Weekly Report Soldier", "Opportunity Report Soldier"] }
+    ],
+    description: "Best for local service clients that need a website, lead flow, SEO, and reporting.",
+    generalType: "Client Business",
+    id: "local-service-business",
+    label: "Local service business",
+    marshalName: "Client Operations Marshal",
+    marshalType: "Client Operations Theater",
+    starterCommands: ["create task build homepage outline", "show active Commanders", "generate client update report"]
+  },
+  {
+    color: "#FF00FF",
+    commanders: [
+      { name: "Content Commander", soldiers: ["Trend Soldier", "Caption Soldier", "Script Soldier"] },
+      { name: "Offer Commander", soldiers: ["Audience Soldier", "Product Angle Soldier", "CTA Soldier"] },
+      { name: "Design Commander", soldiers: ["Visual Direction Soldier", "Mockup Soldier"] },
+      { name: "Launch Commander", soldiers: ["Calendar Soldier", "Publishing Checklist Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Engagement Report Soldier", "Opportunity Report Soldier"] }
+    ],
+    description: "Best for creators, clothing concepts, content engines, or brand launch planning.",
+    generalType: "Brand",
+    id: "creator-brand",
+    label: "Creator or clothing brand",
+    marshalName: "Marketing Marshal",
+    marshalType: "Marketing Theater",
+    starterCommands: ["create task draft launch calendar", "open Marketing Commander", "show brand report"]
+  },
+  {
+    color: "#9B5CFF",
+    commanders: [
+      { name: "Planning Commander", soldiers: ["Requirements Soldier", "Scope Soldier", "Milestone Soldier"] },
+      { name: "Development Commander", soldiers: ["Frontend Soldier", "Backend Soldier", "Integration Soldier"] },
+      { name: "QA Commander", soldiers: ["Bug Tracker Soldier", "Test Runner Soldier"] },
+      { name: "Deployment Commander", soldiers: ["Release Soldier", "Monitor Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Sprint Report Soldier", "Risk Report Soldier"] }
+    ],
+    description: "Best for internal tools, web apps, SaaS ideas, and software delivery workflows.",
+    generalType: "Internal Business",
+    id: "software-project",
+    label: "Software or automation project",
+    marshalName: "Automation Marshal",
+    marshalType: "Automation Theater",
+    starterCommands: ["create task define MVP scope", "open Development Commander", "show project health"]
+  }
+];
+
+const defaultBusinessWizard: BusinessWizardState = {
+  audience: "",
+  businessName: "",
+  goal: "",
+  industry: "",
+  isOpen: false,
+  templateId: businessTemplates[0].id
+};
 
 function readStoredGraphControls(): GraphControlSettings {
   if (typeof window === "undefined") {
@@ -1182,6 +1289,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [isCommandConsoleOpen, setIsCommandConsoleOpen] = useState(true);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isWebGlReady, setIsWebGlReady] = useState(true);
+  const [businessWizard, setBusinessWizard] = useState<BusinessWizardState>(defaultBusinessWizard);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(() => readStoredGraphControls());
   const [merchStores, setMerchStores] = useState<ClientMerchStore[]>([]);
   const [productBatchForm, setProductBatchForm] = useState<ProductBatchFormState>(() => defaultProductBatchForm());
@@ -2798,6 +2906,334 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       ?? null;
   }
 
+  function templateFromText(value: string) {
+    const normalized = value.toLowerCase();
+
+    return businessTemplates.find((template) => normalized.includes(template.id.replace(/-/g, " ")) || normalized.includes(template.label.toLowerCase()))
+      ?? (/\b(pod|merch|etsy|printify|shopify)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "pod-merch-store") : null)
+      ?? (/\b(local|landscaping|gym|restaurant|contractor|service)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "local-service-business") : null)
+      ?? (/\b(creator|brand|clothing|apparel|content)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "creator-brand") : null)
+      ?? (/\b(software|app|automation|saas|tool)\b/.test(normalized) ? businessTemplates.find((template) => template.id === "software-project") : null)
+      ?? null;
+  }
+
+  function businessNameFromCommand(value: string) {
+    const named = /\b(?:named|called)\s+([^,.;]+)/i.exec(value)?.[1]?.trim();
+    const afterBusiness = /\b(?:business|client|brand|store|project|operation)\s+(?:for\s+)?([^,.;]+)/i.exec(value)?.[1]?.trim();
+    const raw = named ?? afterBusiness ?? "";
+
+    return raw
+      .replace(/\s+under\s+.+$/i, "")
+      .replace(/\s+using\s+.+$/i, "")
+      .replace(/\s+with\s+.+$/i, "")
+      .replace(/\s+template\s*$/i, "")
+      .trim();
+  }
+
+  function openBusinessWizard(templateId?: string) {
+    setBusinessWizard((current) => ({
+      ...current,
+      isOpen: true,
+      templateId: templateId ?? current.templateId
+    }));
+    setIsCommandConsoleOpen(true);
+    respond({
+      analysis: "Guided creation is ready. Select a business template, enter the business name, and ENTRAL will build the Marshal, General, Commanders, Soldiers, and first intake task.",
+      nextActions: ["Choose a template.", "Enter the business name.", "Confirm Create business."],
+      recommendation: "Use POD merch store for your first merch client, or Local service business for a standard client operation.",
+      situation: "Business creation wizard opened."
+    });
+  }
+
+  function updateBusinessWizard(changes: Partial<BusinessWizardState>) {
+    setBusinessWizard((current) => ({ ...current, ...changes }));
+  }
+
+  function uniqueNodeId(baseId: string, reserved: Set<string>) {
+    if (!reserved.has(baseId)) {
+      reserved.add(baseId);
+      return baseId;
+    }
+
+    let suffix = 2;
+    while (reserved.has(`${baseId}-${suffix}`)) {
+      suffix += 1;
+    }
+
+    const id = `${baseId}-${suffix}`;
+    reserved.add(id);
+    return id;
+  }
+
+  function createBusinessFromTemplate(template: BusinessTemplate, form: BusinessWizardState) {
+    const businessName = form.businessName.trim();
+
+    if (!businessName) {
+      respond({
+        analysis: "A business General needs a real business, client, brand, store, or operation name.",
+        nextActions: ["Enter a business name.", "Choose a template.", "Create the business again."],
+        recommendation: "Use a concrete name like Iron House Gym, Smith Landscaping, or Veteran Apparel.",
+        situation: "Business creation paused."
+      });
+      setBusinessWizard((current) => ({ ...current, isOpen: true }));
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const existingIds = new Set(graphRef.current.nodes.map((node) => node.id));
+    const existingMarshal = graphRef.current.nodes.find((node) => node.commandType === "marshal" && node.name.toLowerCase() === template.marshalName.toLowerCase());
+    const marshalId = existingMarshal?.id ?? uniqueNodeId(createCommandId(template.marshalName, "marshal"), existingIds);
+    const generalName = /\bGeneral$/i.test(businessName) ? businessName : `${businessName} General`;
+    const generalId = uniqueNodeId(`${marshalId}-${createCommandId(generalName, "general")}`, existingIds);
+    const commanderIds: string[] = [];
+    const soldierIds: string[] = [];
+    let firstSoldierId: string | null = null;
+    let firstCommanderId: string | null = null;
+
+    const makeMemory = (role: string, instructions: string, notes: string[] = []): CommandMemory => ({
+      instructions,
+      notes: [
+        ...notes,
+        form.industry.trim() ? `Industry: ${form.industry.trim()}.` : "",
+        form.audience.trim() ? `Audience: ${form.audience.trim()}.` : "",
+        form.goal.trim() ? `Initial objective: ${form.goal.trim()}.` : ""
+      ].filter(Boolean),
+      recentTasks: [],
+      role,
+      taskResults: []
+    });
+
+    const makeNode = (node: Omit<GraphNode3D, "metrics" | "type" | "vx" | "vy" | "vz" | "x" | "y" | "z"> & Partial<Pick<GraphNode3D, "x" | "y" | "z">>): GraphNode3D => ({
+      ...node,
+      metrics: { cost: 0, roi: 0, successRate: 100 },
+      type: node.commandType === "emperor" ? "core" : "agent",
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      x: node.x ?? 0,
+      y: node.y ?? 0,
+      z: node.z ?? 0
+    });
+
+    const newMarshal = existingMarshal ? null : makeNode({
+      activeCommanders: template.commanders.length,
+      activeGenerals: 1,
+      activeProjects: [`${businessName} launch`],
+      activeSoldiers: template.commanders.reduce((total, commander) => total + commander.soldiers.length, 0),
+      activeStores: [],
+      capabilities: ["governance", "tool-orchestration", "status_reporter"],
+      children: [],
+      commandType: "marshal",
+      createdAt: now,
+      currentTask: `Standing up ${template.label} operations.`,
+      description: `${template.marshalName} oversees ${template.label.toLowerCase()} businesses and routes reports to ENTRAL.`,
+      groupId: marshalId,
+      health: 100,
+      id: marshalId,
+      logs: [`${template.marshalName} created by the business wizard.`],
+      marshalType: template.marshalType,
+      memory: makeMemory(`${template.marshalName} strategic theater`, `Oversee ${template.label.toLowerCase()} businesses, enforce approvals, and report theater readiness to ENTRAL.`, [`Template: ${template.label}.`]),
+      name: template.marshalName,
+      parentId: "entral",
+      permissions: ["govern_hierarchy", "route_commands", "manage_business_generals"],
+      progress: 12,
+      reasoning: "Created as the strategic theater for guided business onboarding.",
+      role: `${template.marshalName} strategic theater`,
+      status: "thinking",
+      taskHistory: [`Create ${businessName} General`],
+      title: "Marshal",
+      tools: ["command_bus", "status_reporter", "approval_gate"],
+      x: 240,
+      y: 32,
+      z: 240
+    });
+
+    const newGeneral = makeNode({
+      activeCommanders: template.commanders.length,
+      activeProjects: [`${businessName} setup`],
+      activeSoldiers: template.commanders.reduce((total, commander) => total + commander.soldiers.length, 0),
+      activeStores: template.id === "pod-merch-store" ? [`${businessName} merch store`] : [],
+      businessName,
+      capabilities: ["governance", "tool-orchestration", "business-discovery"],
+      children: [],
+      commandType: "general",
+      createdAt: now,
+      currentTask: "Complete business intake and confirm operating plan.",
+      description: `${generalName} represents ${businessName} as an operating business General inside ${template.marshalName}.`,
+      generalType: template.generalType,
+      groupId: marshalId,
+      health: 100,
+      id: generalId,
+      logs: [`${generalName} created from ${template.label} template.`, "Awaiting initial intake confirmation."],
+      memory: makeMemory(`${businessName} business command`, `Coordinate Commanders for ${businessName}, maintain business memory, and report progress to ${template.marshalName}.`, [`Business template: ${template.label}.`]),
+      name: generalName,
+      parentId: marshalId,
+      parentMarshalId: marshalId,
+      parentMarshalName: template.marshalName,
+      permissions: ["manage_commanders", "request_approval", "report_business_status"],
+      progress: 18,
+      reasoning: "Created through guided onboarding so the user can begin operating a real business structure quickly.",
+      role: `${businessName} business General`,
+      status: "thinking",
+      taskHistory: ["Business structure created"],
+      title: "General",
+      tools: ["command_bus", "business_memory", "status_reporter"],
+      x: 340,
+      y: 70,
+      z: 320
+    });
+
+    const newNodes: GraphNode3D[] = [newGeneral];
+
+    for (const commander of template.commanders) {
+      const commanderId = uniqueNodeId(`${generalId}-${createCommandId(commander.name, "commander")}`, existingIds);
+      commanderIds.push(commanderId);
+      if (!firstCommanderId) firstCommanderId = commanderId;
+
+      newNodes.push(makeNode({
+        capabilities: ["tool-orchestration", "report_status"],
+        children: [],
+        commandType: "commander",
+        createdAt: now,
+        currentTask: "Prepare department readiness.",
+        description: `${commander.name} manages ${businessName} ${commander.name.replace(/\s+Commander$/i, "").toLowerCase()} operations.`,
+        groupId: marshalId,
+        health: 100,
+        id: commanderId,
+        logs: [`${commander.name} initialized for ${businessName}.`],
+        memory: makeMemory(`${commander.name} operations`, `Break ${businessName} objectives into Soldier-level tasks and report upward to ${generalName}.`),
+        name: commander.name,
+        operationalArea: commander.name.replace(/\s+Commander$/i, ""),
+        parentGeneralId: generalId,
+        parentGeneralName: generalName,
+        parentId: generalId,
+        parentMarshalId: marshalId,
+        parentMarshalName: template.marshalName,
+        permissions: ["assign_soldiers", "report_department_status"],
+        progress: 8,
+        reasoning: "Created as a department lane for the selected business template.",
+        role: `${commander.name} operations`,
+        status: "idle",
+        taskHistory: [],
+        title: "Commander",
+        tools: ["command_bus", "status_reporter"],
+        x: 420,
+        y: 90,
+        z: 360
+      }));
+
+      for (const soldierName of commander.soldiers) {
+        const soldierId = uniqueNodeId(`${commanderId}-${createCommandId(soldierName, "soldier")}`, existingIds);
+        soldierIds.push(soldierId);
+        if (!firstSoldierId) firstSoldierId = soldierId;
+        const blueprint = inferSoldierBlueprint(soldierName);
+
+        newNodes.push(makeNode({
+          capabilities: blueprint?.tools ?? ["tool-orchestration", "report_status"],
+          children: [],
+          commandType: "soldier",
+          createdAt: now,
+          currentTask: soldierId === firstSoldierId ? "Complete first business intake." : null,
+          description: `${soldierName} executes ${commander.name.toLowerCase()} work for ${businessName}.`,
+          executionRole: blueprint?.role ?? `${soldierName} execution`,
+          groupId: marshalId,
+          health: 100,
+          id: soldierId,
+          logs: [`${soldierName} initialized for ${businessName}.`],
+          memory: makeMemory(blueprint?.role ?? `${soldierName} execution`, `Execute assigned work for ${businessName} and report concise results to ${commander.name}.`),
+          name: soldierName,
+          parentCommanderId: commanderId,
+          parentCommanderName: commander.name,
+          parentGeneralId: generalId,
+          parentGeneralName: generalName,
+          parentId: commanderId,
+          parentMarshalId: marshalId,
+          parentMarshalName: template.marshalName,
+          permissions: blueprint?.permissions ?? ["read_command_context", "report_status"],
+          progress: soldierId === firstSoldierId ? 10 : 0,
+          reasoning: "Created as an execution unit during guided business setup.",
+          role: blueprint?.role ?? `${soldierName} execution`,
+          status: soldierId === firstSoldierId ? "working" : "idle",
+          taskHistory: soldierId === firstSoldierId ? ["Complete first business intake"] : [],
+          title: "Soldier",
+          tools: blueprint?.tools ?? ["command_bus", "status_reporter"],
+          x: 500,
+          y: 100,
+          z: 420
+        }));
+      }
+    }
+
+    const firstTask: CommandTask | null = firstSoldierId && firstCommanderId ? {
+      assignedEntityId: firstSoldierId,
+      assignedEntityType: "soldier",
+      commanderId: firstCommanderId,
+      commanderName: template.commanders[0]?.name ?? null,
+      completedAt: null,
+      createdAt: now,
+      delegationPath: ["entral", marshalId, generalId, firstCommanderId, firstSoldierId],
+      description: `Capture business basics, audience, offer, and immediate launch objective for ${businessName}.`,
+      generalId,
+      generalName,
+      history: [
+        `ENTRAL created ${generalName} from the ${template.label} template.`,
+        `${template.marshalName} routed first intake to ${template.commanders[0]?.name ?? "the first Commander"}.`
+      ],
+      id: `task-${generalId}-first-intake`,
+      marshalId,
+      marshalName: template.marshalName,
+      name: "Complete first business intake",
+      reportHistory: [],
+      soldierId: firstSoldierId,
+      soldierName: newNodes.find((node) => node.id === firstSoldierId)?.name ?? null,
+      status: "assigned",
+      updatedAt: now
+    } : null;
+
+    setGraph((current) => {
+      const next = validateCommandOSState({
+        ...current,
+        groups: existingMarshal
+          ? current.groups
+          : [...current.groups, { color: template.color, id: marshalId, name: template.marshalName }],
+        nodes: [
+          ...current.nodes.map((node) => {
+            if (node.id === "entral" && !existingMarshal) {
+              return { ...node, children: [...(node.children ?? []), marshalId], logs: [`${template.marshalName} added through guided onboarding.`, ...node.logs].slice(0, 10) };
+            }
+
+            if (node.id === marshalId) {
+              return { ...node, children: [...(node.children ?? []), generalId], logs: [`${generalName} added through guided onboarding.`, ...node.logs].slice(0, 10) };
+            }
+
+            return node;
+          }),
+          ...(newMarshal ? [newMarshal] : []),
+          ...newNodes
+        ],
+        tasks: firstTask ? [firstTask, ...current.tasks] : current.tasks
+      }, { fallback: createInitialState() });
+
+      graphRef.current = next;
+      return next;
+    });
+
+    setBusinessWizard({ ...defaultBusinessWizard, isOpen: false, templateId: template.id });
+    setSelectedNodeId(generalId);
+    selectedRef.current = generalId;
+    setLockedNodeId(generalId);
+    lockedNodeIdRef.current = generalId;
+    setIsPanelOpen(true);
+    setActiveGroupId(marshalId);
+    setStatusMessage(`${generalName} created with ${commanderIds.length} Commanders and ${soldierIds.length} Soldiers.`);
+    respond({
+      analysis: `${generalName} is now under ${template.marshalName}. ENTRAL created ${commanderIds.length} Commanders, ${soldierIds.length} Soldiers, and the first intake task.`,
+      nextActions: template.starterCommands,
+      recommendation: "Open the new General, complete the first intake task, then start the launch workflow or assign the next objective.",
+      situation: "First business command structure created."
+    }, `${generalName} created from ${template.label} template.`, "general");
+  }
+
   function createHierarchyNode(type: Exclude<NodeType, "emperor">, requestedName?: string) {
     const palette = ["#00F0FF", "#FF00FF", "#39FF14", "#9B5CFF", "#00BFFF", "#FF7AFF"];
     const name = requestedName?.trim() || nextPlaceholderName(type);
@@ -3393,6 +3829,30 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       }, "Marshal list displayed.", "marshal");
     } else if (normalized.includes("show active") || normalized.includes("active soldiers") || normalized.includes("active commanders") || normalized.includes("active marshals") || normalized.includes("active generals")) {
       setStatusHighlight(["working", "thinking"], "Highlighted working and thinking hierarchy nodes.");
+    } else if (
+      normalized.includes("business wizard") ||
+      normalized.includes("business template") ||
+      normalized.includes("create my first business") ||
+      normalized.includes("set up my first business") ||
+      normalized.includes("start my first business") ||
+      normalized.includes("help me create") ||
+      normalized.includes("guide me") ||
+      normalized.includes("first business")
+    ) {
+      const template = templateFromText(text);
+      const businessName = businessNameFromCommand(text);
+
+      if (businessName && template) {
+        createBusinessFromTemplate(template, {
+          ...businessWizard,
+          businessName,
+          isOpen: false,
+          templateId: template.id
+        });
+      } else {
+        openBusinessWizard(template?.id);
+        if (businessName) updateBusinessWizard({ businessName });
+      }
     } else if (normalized.includes("pause all failed")) {
       setGraph((current) => {
         const next = {
@@ -3423,14 +3883,33 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       }
     } else if (normalized.includes("create") && normalized.includes("marshal")) {
       createHierarchyNode("marshal", hierarchyNameFromCommand(text, "marshal"));
-    } else if (normalized.includes("create") && (normalized.includes("business") || normalized.includes("client") || normalized.includes("brand") || normalized.includes("store")) && !normalized.includes("commander") && !normalized.includes("soldier")) {
+    } else if (normalized.includes("create") && (normalized.includes("business") || normalized.includes("client") || normalized.includes("brand") || normalized.includes("store") || normalized.includes("project")) && !normalized.includes("commander") && !normalized.includes("soldier")) {
+      const template = templateFromText(text);
+      const businessName = businessNameFromCommand(text);
+
+      if (template && businessName) {
+        createBusinessFromTemplate(template, {
+          ...businessWizard,
+          businessName,
+          isOpen: false,
+          templateId: template.id
+        });
+        return;
+      }
+
+      if (template && !businessName) {
+        openBusinessWizard(template.id);
+        return;
+      }
+
       if (!commandHasMarshalContext(text)) {
         respond({
           analysis: "A business General must belong to a Marshal before creation can proceed.",
-          nextActions: ["Select a Marshal.", "Or say: Create General named Iron House Gym under Merch Marshal."],
+          nextActions: ["Open the business wizard.", "Select a template.", "Or say: Create General named Iron House Gym under Merch Marshal."],
           recommendation: "Create or select a Marshal first so the business is placed inside the official command path.",
           situation: "Additional operational detail is required."
         });
+        openBusinessWizard();
         return;
       }
 
@@ -3932,6 +4411,67 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     ? graph.tasks.filter((task) => task.assignedEntityId === selectedNode.id || task.delegationPath.includes(selectedNode.id)).slice(0, 8)
     : [];
   const visibleTasks = graph.tasks.slice(0, 8);
+  const userBusinessGenerals = generalNodes.filter((node) => node.id !== "entral-general");
+  const selectedTemplate = businessTemplates.find((template) => template.id === businessWizard.templateId) ?? businessTemplates[0];
+  const contextCommandSuggestions = (() => {
+    if (businessWizard.isOpen) {
+      return [
+        "Create my first business",
+        "Use POD merch store template",
+        "Use local service business template",
+        "Show business templates"
+      ];
+    }
+
+    if (userBusinessGenerals.length === 0) {
+      return [
+        "Help me create my first business",
+        "Create POD business named Iron House Gym",
+        "Show business templates",
+        "Explain the chain of command",
+        "Open Merch Marshal"
+      ];
+    }
+
+    if (selectedNode?.commandType === "general") {
+      return [
+        `Report on ${selectedNode.businessName ?? selectedNode.name}`,
+        "Start merch store launch workflow",
+        "Generate 10 product ideas",
+        "Open approval queue",
+        "Create task complete business intake"
+      ];
+    }
+
+    if (selectedNode?.commandType === "commander") {
+      return [
+        `Assign task to ${selectedNode.name}`,
+        "Create Soldier under this Commander",
+        "Show active Soldiers",
+        "Show failing Operations",
+        "Return to ENTRAL"
+      ];
+    }
+
+    if (selectedNode?.commandType === "soldier") {
+      return [
+        `Assign task to ${selectedNode.name}`,
+        "Show current task",
+        "Report on this Soldier",
+        "Open parent Commander",
+        "Return to ENTRAL"
+      ];
+    }
+
+    return [
+      "Show chain of command",
+      "Create my first business",
+      "Show active Generals",
+      "Open business templates",
+      "Create task review today's command status",
+      "Return to ENTRAL"
+    ];
+  })();
   const pendingRemovalNode = pendingRemovalId ? nodeMap.get(pendingRemovalId) ?? null : null;
   const pendingRemovalChildren = pendingRemovalNode ? descendantIdsFor(pendingRemovalNode.id, graph.nodes) : [];
   const pendingRemovalParent = pendingRemovalNode?.parentId ? nodeMap.get(pendingRemovalNode.parentId) : null;
@@ -4042,6 +4582,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </button>
           ))}
           <div className="command-mobile-nav-actions">
+            <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
             <button type="button" onClick={openAtomControls}>Controls</button>
             <button type="button" onClick={() => openSettings()}>Settings</button>
             <button type="button" onClick={() => createHierarchyNode("marshal")}>Add Marshal</button>
@@ -4155,6 +4696,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           <button type="button" onClick={() => setSearch("general")}>Business Generals</button>
           <button type="button" onClick={() => setSearch("commander")}>Commanders</button>
           <button type="button" onClick={() => setSearch("soldier")}>Soldiers</button>
+          <button type="button" onClick={() => openBusinessWizard()}>Guided business setup</button>
           <button type="button" onClick={() => createHierarchyNode("marshal")}>Add Marshal</button>
           <button type="button" onClick={() => createHierarchyNode("general")}>Add General</button>
           <button type="button" onClick={() => createHierarchyNode("commander")}>Add Commander</button>
@@ -4243,6 +4785,100 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           <span>{isListening ? "Microphone active. Speak directive." : isSpeaking ? "ENTRAL speaking." : voiceStatus}</span>
           <button type="button" onClick={stopSpeaking} disabled={!isSpeaking}>Stop speech</button>
         </div>
+
+        {userBusinessGenerals.length === 0 && !businessWizard.isOpen ? (
+          <section className="business-empty-guide" aria-label="First business guidance">
+            <div>
+              <p className="eyebrow">First mission</p>
+              <h3>Create your first business General</h3>
+              <p>Choose a template and ENTRAL will build the full command path for you: Marshal, business General, Commanders, Soldiers, and first intake task.</p>
+            </div>
+            <div className="business-empty-actions">
+              <Button type="button" onClick={() => openBusinessWizard()}>
+                <Sparkles aria-hidden="true" size={16} />
+                Start guided setup
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => respond({
+                analysis: businessTemplates.map((template) => `${template.label}: ${template.description}`).join("\n"),
+                nextActions: ["Say: Help me create my first business.", "Or choose Start guided setup.", "Use a named command like Create POD business named Iron House Gym."],
+                recommendation: "Start with a template that matches the first business you actually want to operate.",
+                situation: "Business templates available."
+              })}>
+                View templates
+              </Button>
+            </div>
+          </section>
+        ) : null}
+
+        {businessWizard.isOpen ? (
+          <section className="business-wizard" aria-label="Guided business creation">
+            <header>
+              <div>
+                <p className="eyebrow">Guided setup</p>
+                <h3>Build first business</h3>
+                <span>{selectedTemplate.description}</span>
+              </div>
+              <button type="button" onClick={() => updateBusinessWizard({ isOpen: false })} aria-label="Close business setup">
+                <X aria-hidden="true" size={16} />
+              </button>
+            </header>
+
+            <div className="business-template-grid" role="list" aria-label="Business templates">
+              {businessTemplates.map((template) => (
+                <button
+                  className={template.id === businessWizard.templateId ? "active" : ""}
+                  key={template.id}
+                  type="button"
+                  onClick={() => updateBusinessWizard({ templateId: template.id })}
+                  role="listitem"
+                >
+                  <span style={{ "--template-color": template.color } as React.CSSProperties} />
+                  <strong>{template.label}</strong>
+                  <small>{template.marshalName}</small>
+                </button>
+              ))}
+            </div>
+
+            <div className="business-wizard-grid">
+              <label>
+                <span>Business name</span>
+                <input value={businessWizard.businessName} onChange={(event) => updateBusinessWizard({ businessName: event.target.value })} placeholder="Iron House Gym" />
+              </label>
+              <label>
+                <span>Industry</span>
+                <input value={businessWizard.industry} onChange={(event) => updateBusinessWizard({ industry: event.target.value })} placeholder="Fitness, landscaping, apparel..." />
+              </label>
+              <label>
+                <span>Audience</span>
+                <input value={businessWizard.audience} onChange={(event) => updateBusinessWizard({ audience: event.target.value })} placeholder="Local gym members, homeowners..." />
+              </label>
+              <label>
+                <span>Initial goal</span>
+                <input value={businessWizard.goal} onChange={(event) => updateBusinessWizard({ goal: event.target.value })} placeholder="Launch first merch collection" />
+              </label>
+            </div>
+
+            <ol className="business-wizard-steps" aria-label="What ENTRAL will create">
+              <li>Marshal theater: {selectedTemplate.marshalName}</li>
+              <li>Business General: {businessWizard.businessName.trim() || "Your business"} General</li>
+              <li>{selectedTemplate.commanders.length} Commanders and {selectedTemplate.commanders.reduce((total, commander) => total + commander.soldiers.length, 0)} Soldiers</li>
+              <li>First intake task assigned for review</li>
+            </ol>
+
+            <div className="business-wizard-actions">
+              <Button type="button" onClick={() => createBusinessFromTemplate(selectedTemplate, businessWizard)}>
+                <Plus aria-hidden="true" size={16} />
+                Create business
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => {
+                updateBusinessWizard(defaultBusinessWizard);
+                openBusinessWizard();
+              }}>
+                Reset
+              </Button>
+            </div>
+          </section>
+        ) : null}
 
         <details className="command-console-controls" data-academy="command-controls" open={isControlsOpen} onToggle={(event) => setIsControlsOpen(event.currentTarget.open)}>
           <summary>
@@ -4356,6 +4992,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           />
 
           <div className="command-structure-actions" data-academy="command-structure-actions" aria-label="Chain of command controls">
+            <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
+              <Sparkles aria-hidden="true" size={16} />
+              Business setup
+            </Button>
             <Button type="button" variant="secondary" onClick={() => createHierarchyNode("marshal")}>
               <Plus aria-hidden="true" size={16} />
               Add Marshal
@@ -4404,23 +5044,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </div>
 
         <div className="command-chat-suggestions" aria-label="Example ENTRAL commands">
-          {[
-            "take me to Merch Marshal",
-            "create General named Iron House Gym under Merch Marshal",
-            "start merch store launch workflow",
-            "generate 10 product ideas for merch store",
-            "open approval queue",
-            "open pricing calculator",
-            "build launch package",
-            "generate client update report",
-            "show active Soldiers",
-            "open Design Commander",
-            "create a Soldier under Listing Commander",
-            "create task review today's command status",
-            "assign task inspect SEO readiness to SEO Soldier",
-            "return to ENTRAL",
-            "show chain of command"
-          ].map((example) => (
+          {contextCommandSuggestions.map((example) => (
             <button key={example} type="button" onClick={() => executeCommand(example)}>
               {example}
             </button>
