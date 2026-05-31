@@ -398,6 +398,29 @@ textarea:focus-visible {
   width: 100%;
 }
 
+@media (max-width: 480px) {
+  .auth-shell {
+    justify-items: stretch;
+    padding: 0.85rem;
+  }
+
+  .auth-panel {
+    max-width: none;
+    min-width: 0;
+    padding: 1.2rem;
+    width: min(100%, calc(100vw - 1.7rem));
+  }
+
+  .auth-form-options {
+    justify-content: flex-start;
+  }
+
+  .auth-text-button,
+  .auth-switch a {
+    overflow-wrap: anywhere;
+  }
+}
+
 .auth-panel h1 {
   font-size: clamp(1.7rem, 7vw, 2rem);
   line-height: 1.1;

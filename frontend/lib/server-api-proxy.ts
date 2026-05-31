@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
-const localApiBaseUrl = "http://localhost:4000";
+const localApiBaseUrl = "http://127.0.0.1:4000";
 
 const hopByHopHeaders = new Set([
   "connection",
   "content-encoding",
   "content-length",
+  "expect",
   "host",
   "keep-alive",
   "proxy-authenticate",

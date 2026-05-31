@@ -35,7 +35,7 @@ describe("resolveApiBaseUrl", () => {
 
 describe("apiProxyBase", () => {
   it("defaults the local proxy to the development backend", () => {
-    expect(apiProxyBase("development", undefined)).toBe("http://localhost:4000");
+    expect(apiProxyBase("development", undefined)).toBe("http://127.0.0.1:4000");
   });
 
   it("requires an explicit proxy target in production", () => {
