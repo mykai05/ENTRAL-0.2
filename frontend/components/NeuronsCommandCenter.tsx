@@ -327,6 +327,14 @@ type PendingAuthorization =
   };
 
 type MobileCommandTab = "command" | "hierarchy" | "tasks" | "reports" | "more";
+type CommandConsoleSection = "command" | "setup" | "controls" | "tools";
+
+const commandConsoleSectionLabels: Record<CommandConsoleSection, string> = {
+  command: "Command",
+  setup: "Setup",
+  controls: "Controls",
+  tools: "Tools"
+};
 
 const defaultCamera: CameraState = {
   distance: 900,
@@ -1443,6 +1451,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
   const [isCommandConsoleOpen, setIsCommandConsoleOpen] = useState(true);
+  const [commandConsoleSection, setCommandConsoleSection] = useState<CommandConsoleSection>("command");
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isWebGlReady, setIsWebGlReady] = useState(true);
   const [businessWizard, setBusinessWizard] = useState<BusinessWizardState>(defaultBusinessWizard);
@@ -1537,10 +1546,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
       if (detail?.target === "command-controls") {
         setIsControlsOpen(true);
+        setCommandConsoleSection("controls");
       }
 
       if (detail?.target === "command-console" || detail?.target === "command-task-list" || detail?.target === "voice-controls") {
         setIsCommandConsoleOpen(true);
+        setCommandConsoleSection("command");
       }
 
       if (detail?.target === "command-inspector") {
@@ -1551,12 +1562,14 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         setIsCommandConsoleOpen(true);
         setIsPanelOpen(false);
         setIsControlsOpen(false);
+        setCommandConsoleSection("setup");
         setBusinessWizard((current) => ({ ...current, isOpen: true }));
       }
 
       if (detail?.target === "command-structure-actions") {
         setIsCommandConsoleOpen(true);
         setIsControlsOpen(true);
+        setCommandConsoleSection("setup");
       }
     }
 
@@ -2414,6 +2427,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
   function openProductBatchGenerator() {
     setIsControlsOpen(true);
+    setCommandConsoleSection("tools");
     setStatusMessage("Product Batch Generator and approval queue ready.");
     void loadMerchStores(true);
     void loadApprovalQueue(true);
@@ -3122,6 +3136,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       templateId: templateId ?? current.templateId
     }));
     setIsCommandConsoleOpen(true);
+    setCommandConsoleSection("setup");
     respond({
       analysis: "Guided creation is ready. Select a business template, enter the business name, and ENTRAL will build the Marshal, General, Commanders, Soldiers, and first intake task.",
       nextActions: ["Choose a template.", "Enter the business name.", "Confirm Create business."],
@@ -3992,6 +4007,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
   function openAtomControls() {
     setIsControlsOpen(true);
+    setCommandConsoleSection("controls");
     respond("Objective acknowledged. Graph controls expanded inside the unified command console.");
   }
 
@@ -4731,6 +4747,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       }
     } else if (normalized.includes("approval queue") || normalized.includes("approve products") || normalized.includes("product approvals")) {
       setIsControlsOpen(true);
+      setCommandConsoleSection("tools");
       void loadApprovalQueue();
       respond({
         analysis: "The generated product approval queue is open. Products are blocked from publishing until marked Approved.",
@@ -4740,6 +4757,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       });
     } else if (normalized.includes("pricing calculator") || normalized.includes("price calculator") || normalized.includes("profit calculator") || normalized.includes("profit margin")) {
       setIsControlsOpen(true);
+      setCommandConsoleSection("tools");
       void loadMerchStores(true);
       respond({
         analysis: "The Merch pricing calculator is open in Unified Controls with Etsy, Shopify, and Manual presets.",
@@ -4749,6 +4767,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       });
     } else if (normalized.includes("launch package") || normalized.includes("build package")) {
       setIsControlsOpen(true);
+      setCommandConsoleSection("tools");
       void loadMerchStores(true);
       void loadApprovalQueue(true);
       respond({
@@ -4759,6 +4778,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       });
     } else if (normalized.includes("store report") || normalized.includes("weekly report") || normalized.includes("sales report") || normalized.includes("profit estimate") || normalized.includes("client update report") || normalized.includes("design opportunity report")) {
       setIsControlsOpen(true);
+      setCommandConsoleSection("tools");
       void loadMerchStores(true);
       respond({
         analysis: "Merch reporting controls are open. Reports use ENTRAL's Situation, Analysis, Recommendation, and Next Actions structure.",
@@ -5627,6 +5647,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           </button>
           <button type="button" onClick={() => {
             setIsControlsOpen(true);
+            setCommandConsoleSection("tools");
             void loadApprovalQueue();
           }}>
             <span className="task-dot task-pending" />
@@ -5634,6 +5655,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           </button>
           <button type="button" onClick={() => {
             setIsControlsOpen(true);
+            setCommandConsoleSection("tools");
             void loadMerchStores(true);
           }}>
             <span className="task-dot task-running" />
@@ -5736,7 +5758,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </div>
       ) : null}
 
-      <form className="command-center-chat" data-academy="command-console" onSubmit={runCommand} aria-label="ENTRAL command input">
+      <form className="command-center-chat" data-academy="command-console" data-console-section={commandConsoleSection} onSubmit={runCommand} aria-label="ENTRAL command input">
         <header className="command-chat-heading">
           <div className="command-chat-title">
             <div className="command-chat-orb">
@@ -5753,6 +5775,24 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             <X aria-hidden="true" size={17} />
           </button>
         </header>
+
+        <nav className="command-console-tabs" aria-label="ENTRAL command console sections">
+          {(Object.keys(commandConsoleSectionLabels) as CommandConsoleSection[]).map((section) => (
+            <button
+              className={commandConsoleSection === section ? "active" : ""}
+              key={section}
+              type="button"
+              onClick={() => {
+                setCommandConsoleSection(section);
+                if (section === "controls" || section === "tools") {
+                  setIsControlsOpen(true);
+                }
+              }}
+            >
+              {commandConsoleSectionLabels[section]}
+            </button>
+          ))}
+        </nav>
 
         <div className="command-console-scroll">
           <div className={isThinking ? "command-chat-status thinking" : "command-chat-status"} role="status">
@@ -5904,7 +5944,41 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </section>
           ) : null}
 
-          <details className="command-console-controls" data-academy="command-controls" open={isControlsOpen} onToggle={(event) => setIsControlsOpen(event.currentTarget.open)}>
+          <section className="command-setup-actions" data-academy="command-structure-actions" aria-label="Chain of command setup">
+            <div>
+              <p className="eyebrow">Hierarchy setup</p>
+              <h3>Build or adjust the command chain</h3>
+              <p>Create Marshals, business Generals, Commanders, and Soldiers from one place. ENTRAL will still request authorization before structural changes execute.</p>
+            </div>
+            <div className="command-structure-actions" aria-label="Chain of command controls">
+              <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
+                <Sparkles aria-hidden="true" size={16} />
+                Business setup
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("marshal")}>
+                <Plus aria-hidden="true" size={16} />
+                Add Marshal
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("general")}>
+                <Plus aria-hidden="true" size={16} />
+                Add General
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("commander")}>
+                <Plus aria-hidden="true" size={16} />
+                Add Commander
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("soldier")}>
+                <Plus aria-hidden="true" size={16} />
+                Add Soldier
+              </Button>
+              <Button type="button" variant="secondary" disabled={!selectedNode || selectedNode.type === "core"} onClick={() => requestRemoveNode(selectedNode?.id ?? selectedNodeId)}>
+                <Trash2 aria-hidden="true" size={16} />
+                Remove Selected
+              </Button>
+            </div>
+          </section>
+
+          <details className="command-console-controls" data-academy="command-controls" open={isControlsOpen || commandConsoleSection === "controls" || commandConsoleSection === "tools"} onToggle={(event) => setIsControlsOpen(event.currentTarget.open)}>
           <summary>
             <SlidersHorizontal aria-hidden="true" size={16} />
             Unified controls
@@ -5985,7 +6059,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </div>
           </div>
 
-            <details className="command-tool-drawer">
+            <details className="command-tool-drawer" open={commandConsoleSection === "tools"}>
               <summary>
                 <Sparkles aria-hidden="true" size={16} />
                 Merch/POD tools
@@ -6022,33 +6096,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 stores={merchStores}
               />
             </details>
-
-            <div className="command-structure-actions" data-academy="command-structure-actions" aria-label="Chain of command controls">
-            <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
-              <Sparkles aria-hidden="true" size={16} />
-              Business setup
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("marshal")}>
-              <Plus aria-hidden="true" size={16} />
-              Add Marshal
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("general")}>
-              <Plus aria-hidden="true" size={16} />
-              Add General
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("commander")}>
-              <Plus aria-hidden="true" size={16} />
-              Add Commander
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("soldier")}>
-              <Plus aria-hidden="true" size={16} />
-              Add Soldier
-            </Button>
-            <Button type="button" variant="secondary" disabled={!selectedNode || selectedNode.type === "core"} onClick={() => requestRemoveNode(selectedNode?.id ?? selectedNodeId)}>
-              <Trash2 aria-hidden="true" size={16} />
-              Remove Selected
-            </Button>
-            </div>
 
             <div className="command-legend compact" aria-label="Hierarchy colors">
             {graph.groups.map((group) => (

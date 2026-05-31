@@ -42,6 +42,7 @@ Implemented in the current v0.3 work session:
 - Step 4 checkpoint after resume: added recovery-state summaries, visible recovery review notice, and stronger archive safety language.
 - Step 3.5 console cleanup: refurbished the ENTRAL Command console so the middle content scrolls, the input remains reachable, and bulky Merch/POD tools are collapsed behind a drawer.
 - Step 5 checkpoint after resume: made Modify on create/move/archive/workflow authorizations return an editable command draft and refocus the command input.
+- Step 5.5 command console organization: split the right-side ENTRAL Command panel into Command, Setup, Controls, and Tools sections so users can reach content without fighting one overcrowded scroll column.
 
 Changed files at checkpoint:
 
@@ -90,6 +91,7 @@ Checks passed before checkpoint:
 - Step 4 focused authorization/recovery/approval/store tests: 4 files, 24 tests passed.
 - Step 3.5 console cleanup checks: frontend lint passed; focused authorization/recovery/approval/store tests passed with 4 files and 24 tests.
 - Step 5 focused authorization/recovery/approval/store tests: 4 files, 25 tests passed.
+- Step 5.5 command console organization checks: frontend lint passed; focused authorization/recovery/approval/store tests passed with 4 files and 25 tests.
 - Frontend tests: 15 files, 58 tests passed.
 - Frontend production build: passed.
 - Backend typecheck/lint: passed.
