@@ -4,7 +4,7 @@ Date: 2026-05-31
 
 ## Current Project Status
 
-ENTRAL is in a clean v0.3 checkpoint state for the Command Intelligence / Onboarding pass.
+ENTRAL is in a clean v0.3 checkpoint state with the v0.4 AI Brain / Connection Layer foundation now being added on top.
 
 The official hierarchy remains:
 
@@ -16,6 +16,15 @@ The current working tree contains completed step 6-9 work from the v0.3 plan:
 - Step 7: hierarchy integrity, terminology, inspector/report, backend persistence, and docs polish.
 - Step 8: validation, documentation, and checkpoint update.
 - Step 9: cleanup and final verification gate, since the written plan only numbers steps 1-8.
+
+Current v0.4 state:
+
+- AI Brain classifiers now create intent, risk, tool, entity, authorization, and audit metadata.
+- Dashboard command console shows the latest AI Brain interpretation.
+- External/high-risk requests are routed to authorization before mock execution.
+- Connection Center is available in the dashboard `Tools` tab.
+- Backend exposes authenticated connection registry/test/mock routes.
+- Real external actions are still not implemented. Mock mode and approval gates are the intended safety boundary.
 
 ## What Was Completed
 
@@ -53,6 +62,20 @@ The current working tree contains completed step 6-9 work from the v0.3 plan:
 - `frontend/lib/command-authorization.ts`
 - `frontend/lib/command-os.ts`
 - `frontend/tests/CommandAuthorization.test.ts`
+- `frontend/lib/ai-brain.ts`
+- `frontend/lib/tool-registry.ts`
+- `frontend/components/ConnectionCenter.tsx`
+- `frontend/tests/AiBrain.test.ts`
+- `frontend/tests/ToolRegistry.test.ts`
+- `backend/src/routes/connections.ts`
+- `backend/src/services/aiBrain.ts`
+- `backend/src/services/toolRegistry.ts`
+- `backend/tests/aiBrain.test.ts`
+- `backend/tests/toolRegistry.test.ts`
+- `ENTRAL_AI_ARCHITECTURE.md`
+- `ENTRAL_CONNECTIONS.md`
+- `ENTRAL_TOOL_REGISTRY.md`
+- `ENTRAL_SECURITY_AND_AUTHORIZATION.md`
 - `prisma/schema.prisma`
 
 ## Files Created
@@ -72,6 +95,13 @@ The current working tree contains completed step 6-9 work from the v0.3 plan:
 - Frontend production build: passed.
 - Backend production build: passed.
 - `git diff --check`: passed.
+- v0.4 frontend lint/typecheck: passed.
+- v0.4 backend lint/typecheck: passed.
+- v0.4 frontend tests: 22 files, 100 tests passed.
+- v0.4 backend tests: 12 files, 43 tests passed.
+- v0.4 frontend production build: passed.
+- v0.4 backend production build: passed.
+- Local smoke check: `/dashboard` redirects unauthenticated users to `/login`, `/login` returns `200`, and memory backend `/health` returns `{"mode":"memory","ok":true}`.
 
 Known warning:
 

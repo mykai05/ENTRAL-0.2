@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { env } from "../env.js";
+import { buildAiBrainContextPrompt, createAiActionPlan } from "./aiBrain.js";
 
 export type StoredChatMessage = {
   role: string;
@@ -120,17 +121,19 @@ export class OpenAiChatService implements AiService {
       return cached;
     }
 
+    const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+    const actionPlan = createAiActionPlan(lastUserMessage?.content ?? "");
+    const aiBrainContext = buildAiBrainContextPrompt(actionPlan);
+
     if (!env.OPENAI_API_KEY) {
       if (env.NODE_ENV !== "production" && env.AI_LOCAL_FALLBACK) {
-        const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
-
         const reply = {
           content: [
             "[ENTRAL]",
             "Situation:\nLive AI command channel is not connected.",
-            `Analysis:\n${lastUserMessage ? `Directive received: \"${lastUserMessage.content.slice(0, 220)}\"` : "No directive has been received yet."}`,
+            `Analysis:\n${lastUserMessage ? `Directive received: \"${lastUserMessage.content.slice(0, 220)}\"` : "No directive has been received yet."}\nIntent: ${actionPlan.intent}. Risk: ${actionPlan.riskLevel}. Tools: ${actionPlan.toolsRequired.length ? actionPlan.toolsRequired.join(", ") : "none"}.`,
             "Recommendation:\nAdd OPENAI_API_KEY to the backend environment and restart ENTRAL before requesting live strategic analysis.",
-            "Next Actions:\n- Use local Command Center controls for graph control.\n- Restore the OpenAI channel when external reasoning is required."
+            `Next Actions:\n- Use local Command Center controls for graph control.\n- ${actionPlan.authorizationRequired ? "Review and authorize the prepared action plan before execution." : "Proceed with local command handling where available."}\n- Restore the OpenAI channel when external reasoning is required.`
           ].join("\n\n"),
           model: "local-fallback",
           usedLocalFallback: true
@@ -150,6 +153,7 @@ export class OpenAiChatService implements AiService {
         model: env.OPENAI_MODEL,
         messages: [
           { role: "system", content: systemPrompt },
+          { role: "system", content: aiBrainContext },
           ...sanitizeMessages(messages)
         ],
         temperature: 0.4

@@ -11,6 +11,7 @@ import { taskRoutes } from "./routes/tasks.js";
 import { aiRoutes } from "./routes/ai.js";
 import { automationRoutes } from "./routes/automation.js";
 import { commandOSRoutes } from "./routes/commandOS.js";
+import { connectionRoutes } from "./routes/connections.js";
 import { agentRoutes } from "./routes/agents.js";
 import { merchStoreRoutes } from "./routes/merchStores.js";
 import { podProductRoutes } from "./routes/podProducts.js";
@@ -79,6 +80,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(aiRoutes, { prefix: "/api/v1", aiService: options.aiService });
   await app.register(automationRoutes, { prefix: "/api/v1" });
   await app.register(commandOSRoutes, { prefix: "/api/v1" });
+  await app.register(connectionRoutes, { prefix: "/api/v1" });
   await app.register(agentRoutes, { prefix: "/api/v1" });
   await app.register(merchStoreRoutes, { prefix: "/api/v1" });
   await app.register(podProductRoutes, { prefix: "/api/v1" });

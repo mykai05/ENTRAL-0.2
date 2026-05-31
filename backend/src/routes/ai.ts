@@ -9,6 +9,7 @@ import {
   screenInsightSchema
 } from "../schemas.js";
 import { openAiChatService, type AiReply, type AiService } from "../services/openaiService.js";
+import { createAiActionPlan, createAiAuditEntry } from "../services/aiBrain.js";
 
 type AiRoutesOptions = {
   aiService?: AiService;
@@ -181,6 +182,8 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
 
     const input = chatMessageSchema.parse(request.body);
     const startedAt = performance.now();
+    const brainPlan = createAiActionPlan(input.message);
+    const brainAuditEntry = createAiAuditEntry({ plan: brainPlan });
 
     const result = await prisma.$transaction(async (tx) => {
       const conversation = input.conversationId
@@ -253,6 +256,10 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       assistantMessageId: assistantMessage.id,
       aiModel: aiReply.model,
       openAiRequestId: aiReply.requestId,
+      intent: brainPlan.intent,
+      riskLevel: brainPlan.riskLevel,
+      authorizationRequired: brainPlan.authorizationRequired,
+      toolsRequired: brainPlan.toolsRequired,
       usedLocalFallback: aiReply.usedLocalFallback,
       latencyMs: Math.round(performance.now() - startedAt)
     }, "ENTRAL command response completed");
@@ -266,6 +273,10 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         messageId: result.userMessage.id,
         content: result.userMessage.content,
         createdAt: result.userMessage.createdAt
+      },
+      brain: {
+        auditEntry: brainAuditEntry,
+        plan: brainPlan
       }
     });
   });

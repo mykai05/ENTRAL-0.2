@@ -7,6 +7,7 @@ import { Logo } from "./Logo";
 import { MerchOperationsPanel } from "./MerchOperationsPanel";
 import { ProductApprovalQueue, type ProductApprovalAction } from "./ProductApprovalQueue";
 import { ProductBatchGenerator, type ProductBatchFormState } from "./ProductBatchGenerator";
+import { ConnectionCenter } from "./ConnectionCenter";
 import { useTheme } from "./ThemeProvider";
 import { useVoice } from "./VoiceProvider";
 import { apiFetch } from "../lib/api";
@@ -66,6 +67,8 @@ import { getCommandRecoverySummary } from "../lib/command-recovery";
 import { buildCommandOSReport, buildCommandOSReportRecord } from "../lib/command-reports";
 import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../lib/command-suggestions";
 import { creationBlockedTransmission, hierarchyNameFromCommandText, nextCommandPlaceholderName } from "../lib/command-creation";
+import { createAiActionPlan, createAiAuditEntry, formatActionPlanSummary, type AiActionPlan, type AiAuditEntry } from "../lib/ai-brain";
+import { buildMockToolExecution, defaultToolRegistry, toolById, type MockToolExecutionResult, type ToolRegistryEntry } from "../lib/tool-registry";
 
 type GraphStatus = CommandStatus;
 
@@ -214,6 +217,10 @@ type OrbitPattern = "flat" | "tilted" | "wave" | "vertical" | "helix";
 type GravityRank = Exclude<NodeType, "emperor">;
 
 type DashboardChatResponse = {
+  brain?: {
+    auditEntry: AiAuditEntry;
+    plan: AiActionPlan;
+  };
   conversationId: string;
   content: string;
 };
@@ -335,6 +342,13 @@ type PendingAuthorization =
     templateId: string;
     type: "create-business-template";
       wizard: BusinessWizardState;
+  }
+  | {
+    createdAt: string;
+    id: string;
+    plan: AiActionPlan;
+    summary: string;
+    type: "ai-action-plan";
   };
 
 type MobileCommandTab = "graph" | "command" | "hierarchy" | "tasks" | "reports" | "more";
@@ -364,7 +378,7 @@ const commandConsoleSectionCopy: Record<CommandConsoleSection, { body: string; e
     title: "View operations"
   },
   tools: {
-    body: "Access Merch/POD generation, approvals, launch packages, pricing, and reporting tools.",
+    body: "Access the Connection Center, mock tool execution, Merch/POD generation, approvals, launch packages, pricing, and reporting tools.",
     eyebrow: "Operational tools",
     title: "Business tool bay"
   }
@@ -1769,6 +1783,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [isGeneratingProductBatch, setIsGeneratingProductBatch] = useState(false);
   const [isLoadingApprovalQueue, setIsLoadingApprovalQueue] = useState(false);
   const [updatingApprovalProductIds, setUpdatingApprovalProductIds] = useState<Set<string>>(() => new Set());
+  const [toolRegistry, setToolRegistry] = useState<ToolRegistryEntry[]>([]);
+  const [latestAiPlan, setLatestAiPlan] = useState<AiActionPlan | null>(null);
+  const [aiAuditEntries, setAiAuditEntries] = useState<AiAuditEntry[]>([]);
   const [lockedNodeId, setLockedNodeId] = useState<string | null>(null);
   const [pendingRemovalId, setPendingRemovalId] = useState<string | null>(null);
   const [isCommandPersistenceReady, setIsCommandPersistenceReady] = useState(false);
@@ -3905,6 +3922,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
     setPendingAuthorization(null);
 
+    if (pending.type === "ai-action-plan") {
+      completeMockAiAction(pending.plan);
+      return;
+    }
+
     if (pending.type === "create-node") {
       createHierarchyNode(pending.nodeType, pending.nodeName, pending.parentId);
       return;
@@ -3986,6 +4008,21 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       return;
     }
 
+    if (pending.type === "ai-action-plan") {
+      setCommand(pending.plan.userRequest);
+      setPendingAuthorization(null);
+      setIsCommandConsoleOpen(true);
+      setCommandConsoleSection("command");
+      window.requestAnimationFrame(() => commandInputRef.current?.focus());
+      respond({
+        analysis: "The AI Brain plan has been returned to the command input for revision. No mock or external execution occurred.",
+        nextActions: ["Edit the directive.", "Submit again.", "Review the revised intent, tools, and authorization level."],
+        recommendation: "Use Modify when ENTRAL interpreted the objective correctly but the operational details need adjustment.",
+        situation: "AI Brain authorization returned to edit mode."
+      });
+      return;
+    }
+
     let draft = "";
 
     if (pending.type === "create-node") {
@@ -4036,6 +4073,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     }
 
     const summary = pendingAuthorization.summary.split("\n")[0] ?? "Pending action";
+    if (pendingAuthorization.type === "ai-action-plan") {
+      recordAiBrainAudit(pendingAuthorization.plan, "canceled", "Authorization canceled. No external action executed.");
+    }
     setPendingAuthorization(null);
     respond(`Authorization canceled. ${summary} was not executed.`);
   }
@@ -4604,6 +4644,58 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     recordActivity(activity ?? statusLineForTransmission(transmission));
   }
 
+  function recordAiBrainPlan(message: string) {
+    const plan = createAiActionPlan(message);
+    const auditEntry = createAiAuditEntry({ plan });
+
+    setLatestAiPlan(plan);
+    setAiAuditEntries((current) => [auditEntry, ...current.slice(0, 23)]);
+    return plan;
+  }
+
+  function recordAiBrainAudit(plan: AiActionPlan, authorizationStatus: AiAuditEntry["authorizationStatus"], executionResult: string, toolsUsed = plan.toolsRequired) {
+    const auditEntry = createAiAuditEntry({
+      authorizationStatus,
+      executionResult,
+      plan,
+      toolsUsed
+    });
+
+    setAiAuditEntries((current) => [auditEntry, ...current.slice(0, 23)]);
+    return auditEntry;
+  }
+
+  function requestAiActionAuthorization(plan: AiActionPlan) {
+    setPendingAuthorization({
+      createdAt: new Date().toISOString(),
+      id: `auth-${Date.now().toString(36)}`,
+      plan,
+      summary: formatActionPlanSummary(plan),
+      type: "ai-action-plan"
+    });
+    setCommandConsoleSection("tools");
+    setIsControlsOpen(true);
+    setIsCommandConsoleOpen(true);
+    respond(formatActionPlanSummary(plan), "AI Brain action plan awaiting authorization.");
+  }
+
+  function completeMockAiAction(plan: AiActionPlan) {
+    const registry = toolRegistry.length ? toolRegistry : defaultToolRegistry;
+    const primaryTool = plan.toolsRequired.length ? toolById(plan.toolsRequired[0], registry) : null;
+    const mockResult = primaryTool ? buildMockToolExecution(primaryTool, plan.userRequest) : null;
+    const executionResult = mockResult?.simulatedResult ?? "Local Command OS plan approved. No external tool was required or contacted.";
+
+    recordAiBrainAudit(plan, "approved", executionResult, primaryTool ? [primaryTool.id] : []);
+    respond({
+      analysis: mockResult
+        ? `${mockResult.message} ${mockResult.simulatedResult}`
+        : "The AI Brain plan was approved for local handling only. No external service was contacted.",
+      nextActions: mockResult?.nextSteps ?? ["Continue with local Command OS controls.", "Connect credentials only when ready.", "Require approval before external execution."],
+      recommendation: "Keep mock mode active until the relevant external integration has credentials, scopes, and a reviewed execution policy.",
+      situation: "AI Brain authorization approved and executed in safe mock mode."
+    }, "AI Brain mock execution completed.");
+  }
+
   function openGraphControls() {
     setIsControlsOpen(true);
     showCommandConsole("controls");
@@ -4865,6 +4957,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       });
 
       setDashboardConversationId(response.conversationId);
+      if (response.brain) {
+        setLatestAiPlan(response.brain.plan);
+        setAiAuditEntries((current) => [response.brain!.auditEntry, ...current.slice(0, 23)]);
+      }
       respond(response.content, "ENTRAL returned strategic command analysis.");
     } catch (error) {
       respond({
@@ -5138,11 +5234,30 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
     if (!rawText) return;
     appendConsoleMessage("operator", rawText, "operator");
+    const brainPlan = recordAiBrainPlan(rawText);
+    const externalBrainIntent = [
+      "browser_web_request",
+      "calendar_request",
+      "email_request",
+      "external_tool_request",
+      "file_document_request",
+      "merch_pod_workflow",
+      "research_request",
+      "website_workflow"
+    ].includes(brainPlan.intent);
+    const shouldRequestBrainAuthorization = !pendingAuthorization
+      && actionPlan.kind !== "approve_authorization"
+      && actionPlan.kind !== "cancel_authorization"
+      && brainPlan.authorizationRequired
+      && externalBrainIntent
+      && brainPlan.toolsRequired.length > 0;
 
     if (pendingAuthorization && actionPlan.kind === "approve_authorization") {
       approvePendingAuthorization();
     } else if (pendingAuthorization && actionPlan.kind === "cancel_authorization") {
       cancelPendingAuthorization();
+    } else if (shouldRequestBrainAuthorization) {
+      requestAiActionAuthorization(brainPlan);
     } else if (actionPlan.kind === "open_gravity_help") {
       explainGravityControls();
     } else if (actionPlan.kind === "open_help" || isHelpCommand(normalized)) {
@@ -6743,6 +6858,34 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </button>
           </div>
 
+          {latestAiPlan ? (
+            <section className="ai-brain-summary" aria-label="AI Brain interpretation">
+              <div>
+                <p className="eyebrow">AI Brain</p>
+                <h3>{latestAiPlan.intent.replaceAll("_", " ")}</h3>
+                <p>{latestAiPlan.summary}</p>
+              </div>
+              <dl>
+                <div>
+                  <dt>Risk</dt>
+                  <dd>{latestAiPlan.riskLevel}</dd>
+                </div>
+                <div>
+                  <dt>Tools</dt>
+                  <dd>{latestAiPlan.toolsRequired.length ? latestAiPlan.toolsRequired.join(", ") : "None"}</dd>
+                </div>
+                <div>
+                  <dt>Authorization</dt>
+                  <dd>{latestAiPlan.authorizationRequired ? "Required" : "Not required"}</dd>
+                </div>
+                <div>
+                  <dt>Audits</dt>
+                  <dd>{aiAuditEntries.length}</dd>
+                </div>
+              </dl>
+            </section>
+          ) : null}
+
           <div className={isThinking ? "command-chat-status thinking" : "command-chat-status"} role="status">
             <Sparkles aria-hidden="true" size={16} />
             <span>{statusMessage}</span>
@@ -7444,9 +7587,26 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             <details className="command-tool-drawer" open={commandConsoleSection === "tools"}>
               <summary>
                 <Sparkles aria-hidden="true" size={16} />
-                Merch/POD tools
-                <span>Products, approvals, store operations</span>
+                Connection Center
+                <span>Tools, products, approvals, store operations</span>
               </summary>
+
+              <ConnectionCenter
+                latestRequest={latestAiPlan?.userRequest ?? command}
+                onEvent={(message) => {
+                  recordActivity(message);
+                  setStatusMessage(message);
+                }}
+                onMockResult={(result: MockToolExecutionResult) => {
+                  respond({
+                    analysis: `${result.message} ${result.simulatedResult}`,
+                    nextActions: result.nextSteps,
+                    recommendation: "Keep this action in mock mode until credentials, authorization policy, and external scopes are reviewed.",
+                    situation: `${result.toolName} mock result prepared.`
+                  }, `${result.toolName} mock execution prepared.`);
+                }}
+                onRegistryLoad={setToolRegistry}
+              />
 
               <ProductBatchGenerator
                 generatedProducts={productBatchResults}
