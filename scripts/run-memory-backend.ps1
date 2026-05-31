@@ -11,8 +11,12 @@ if (-not (Test-Path $NodeExe)) {
 Set-Location $BackendDir
 $env:API_HOST = "0.0.0.0"
 
-if (Test-Path "dist\dev-memory-server.js") {
+$TsxCli = "node_modules\tsx\dist\cli.mjs"
+
+if (Test-Path $TsxCli) {
+  & $NodeExe "node_modules\tsx\dist\cli.mjs" "src\dev-memory-server.ts"
+} elseif (Test-Path "dist\dev-memory-server.js") {
   & $NodeExe "dist\dev-memory-server.js"
 } else {
-  & $NodeExe "node_modules\tsx\dist\cli.mjs" "src\dev-memory-server.ts"
+  throw "Could not find tsx or dist\dev-memory-server.js for the memory backend."
 }

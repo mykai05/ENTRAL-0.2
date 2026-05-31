@@ -285,19 +285,22 @@ function recentOpenAiMessages(conversation: Conversation): OpenAiMessage[] {
 
 async function createAssistantContent(conversation: Conversation, prompt: string, screenshot?: string) {
   const client = getOpenAiClient();
+  const { buildAiBrainContextPrompt, createAiActionPlan } = await import("./services/aiBrain.js");
+  const brainPlan = createAiActionPlan(prompt);
 
   if (!client) {
     return [
       "[ENTRAL]",
       "Situation:\nLive AI command channel is not connected.",
-      `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"`,
+      `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"\nIntent: ${brainPlan.intent}. Risk: ${brainPlan.riskLevel}. Tools: ${brainPlan.toolsRequired.length ? brainPlan.toolsRequired.join(", ") : "none"}.`,
       "Recommendation:\nAdd OPENAI_API_KEY to .env and restart ENTRAL to enable live GPT-4o strategic command responses.",
-      "Next Actions:\n- Use local Command Center controls for graph control.\n- Restore the OpenAI channel when strategic analysis is required."
+      `Next Actions:\n- Use local Command Center controls for graph control.\n- ${brainPlan.authorizationRequired ? "Review and authorize the prepared action plan before execution." : "Proceed with local command handling where available."}\n- Restore the OpenAI channel when strategic analysis is required.`
     ].join("\n\n");
   }
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: memorySystemPrompt },
+    { role: "system", content: buildAiBrainContextPrompt(brainPlan) },
     ...recentOpenAiMessages(conversation)
   ];
 
@@ -1093,6 +1096,9 @@ async function chatReply(request: FastifyRequest) {
   const user = currentUserOrThrow(request);
   const body = request.body as { conversationId?: string; message?: string; prompt?: string; screenshot?: string };
   const text = body.message ?? body.prompt ?? "";
+  const { createAiActionPlan, createAiAuditEntry } = await import("./services/aiBrain.js");
+  const brainPlan = createAiActionPlan(text);
+  const brainAuditEntry = createAiAuditEntry({ plan: brainPlan });
   const conversation = body.conversationId && state.conversations.get(body.conversationId)?.userId === user.id
     ? state.conversations.get(body.conversationId)!
     : {
@@ -1134,12 +1140,55 @@ async function chatReply(request: FastifyRequest) {
       content: userMessage.content,
       createdAt: userMessage.createdAt,
       messageId: userMessage.id
+    },
+    brain: {
+      auditEntry: brainAuditEntry,
+      plan: brainPlan
     }
   };
 }
 
 app.post("/api/v1/ai/chat", { preHandler: requireAuth }, chatReply);
 app.post("/api/v1/ai/screen", { preHandler: requireAuth }, chatReply);
+
+app.get("/api/v1/connections/tools", { preHandler: requireAuth }, async () => {
+  const { getToolRegistry } = await import("./services/toolRegistry.js");
+  const items = getToolRegistry();
+  const categories = items.reduce<Record<string, number>>((groups, tool) => {
+    groups[tool.category] = (groups[tool.category] ?? 0) + 1;
+    return groups;
+  }, {});
+
+  return {
+    categories,
+    items
+  };
+});
+
+app.post("/api/v1/connections/tools/:toolId/test", { preHandler: requireAuth }, async (request, reply) => {
+  const { toolId } = request.params as { toolId: string };
+  const { buildToolTestResult, getToolById } = await import("./services/toolRegistry.js");
+  const tool = getToolById(toolId);
+
+  if (!tool) {
+    return reply.code(404).send({ error: "Not Found", message: "Tool was not found." });
+  }
+
+  return { result: buildToolTestResult(tool) };
+});
+
+app.post("/api/v1/connections/tools/:toolId/mock-execute", { preHandler: requireAuth }, async (request, reply) => {
+  const { toolId } = request.params as { toolId: string };
+  const body = request.body as { request?: string };
+  const { buildMockToolExecution, getToolById } = await import("./services/toolRegistry.js");
+  const tool = getToolById(toolId);
+
+  if (!tool) {
+    return reply.code(404).send({ error: "Not Found", message: "Tool was not found." });
+  }
+
+  return { result: buildMockToolExecution(tool, body.request ?? "") };
+});
 
 app.get("/api/v1/automation/jobs", { preHandler: requireAuth }, async (request) => {
   const user = currentUserOrThrow(request);
