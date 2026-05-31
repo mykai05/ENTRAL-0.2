@@ -42,6 +42,8 @@ Source of truth: `ENTRAL_V0_3_GOAL_SPEC.md`
 ## Current Persistence / Hydration
 
 - Dashboard graph state persists in localStorage under `entral-command-os-state-v3`, with fallbacks to older keys.
+- Authenticated dashboards now sync the validated Command OS snapshot to `/api/v1/command-os/state`.
+- Backend persistence stores one `CommandOSSnapshot` per user and deduplicated `CommandOSReport` records extracted from entity/task report history.
 - Invalid legacy mock entities are cleared.
 - Previous state is backed up before Marshal migration.
 - Active tasks can be marked failed during hydration recovery.
@@ -63,12 +65,13 @@ Source of truth: `ENTRAL_V0_3_GOAL_SPEC.md`
   - Two-finger rotate/perspective changes
   - Tap to focus entity
 - Mobile now has bottom tabs for Command, Hierarchy, Tasks, Reports, and More plus compact hierarchy/task/report panels. It still needs live phone QA because the dashboard remains a dense integration surface.
+- The right-side ENTRAL Command panel is now split into Talk, Build, Graph, and Tools sections so users can reach command history, setup actions, graph controls, and Merch/POD tools without fighting one overcrowded scroll region.
 
 ## Current Graph / Orbit Visualization
 
 - Dashboard uses a custom WebGL canvas in `NeuronsCommandCenter`.
 - It supports click/tap focus, camera movement, lock/follow behavior, orbit controls, trails, rings, and grouped hierarchy rendering.
-- User-facing terminology still includes some `Atom` wording in labels/messages. v0.3 prefers hierarchy/graph/control wording unless referring to visual style only.
+- User-facing `Atom` wording has been removed where it referred to hierarchy controls. Remaining atomic language is limited to the visual graph style.
 
 ## Current Tutorial / Onboarding / Voice
 
@@ -82,7 +85,7 @@ Source of truth: `ENTRAL_V0_3_GOAL_SPEC.md`
 - Frontend has Merch panels inside the dashboard.
 - Command OS no longer preloads Merch data for first-time fallback. Merch templates and tools remain opt-in through wizard/templates or the explicit demo environment authorization flow.
 - Business wizard templates now cover the required v0.3 categories: POD / Merch Business, Website Agency, Content Agency, E-commerce Brand, SaaS Startup, Local Service Business, and Custom Blank Structure.
-- Business wizard now exposes the main optional PDF fields: industry, audience, preferred Marshal, brand style, notes, initial services/products, and initial goal. These are stored as local memory notes for now.
+- Business wizard now exposes the main optional PDF fields: industry, audience, preferred Marshal, brand style, notes, initial services/products, and initial goal. These are stored as Command OS memory notes and synced through the Command OS snapshot when the user is signed in.
 
 ## Current Tests and Scripts
 

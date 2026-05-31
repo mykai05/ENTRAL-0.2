@@ -215,6 +215,13 @@ type DashboardChatResponse = {
   content: string;
 };
 
+type CommandOSSnapshotResponse = {
+  snapshot: {
+    state: Partial<GraphState3D>;
+    updatedAt: string;
+  } | null;
+};
+
 type CommandConsoleMessage = {
   content: string;
   id: string;
@@ -247,6 +254,7 @@ type SpacePoint = Vec3 & {
 
 type DashboardUser = {
   email: string;
+  id: string;
   name: string;
 };
 
@@ -330,10 +338,33 @@ type MobileCommandTab = "command" | "hierarchy" | "tasks" | "reports" | "more";
 type CommandConsoleSection = "command" | "setup" | "controls" | "tools";
 
 const commandConsoleSectionLabels: Record<CommandConsoleSection, string> = {
-  command: "Command",
-  setup: "Setup",
-  controls: "Controls",
+  command: "Talk",
+  setup: "Build",
+  controls: "Graph",
   tools: "Tools"
+};
+
+const commandConsoleSectionCopy: Record<CommandConsoleSection, { body: string; eyebrow: string; title: string }> = {
+  command: {
+    body: "Send directives, ask for reports, and review ENTRAL responses without losing access to the graph.",
+    eyebrow: "Primary channel",
+    title: "Command stream"
+  },
+  setup: {
+    body: "Create Marshals, business Generals, Commanders, Soldiers, and first missions from one organized workspace.",
+    eyebrow: "Structure builder",
+    title: "Hierarchy setup"
+  },
+  controls: {
+    body: "Adjust the 3D command view, search hierarchy nodes, focus the graph, and tune orbit behavior.",
+    eyebrow: "Graph control",
+    title: "View operations"
+  },
+  tools: {
+    body: "Access Merch/POD generation, approvals, launch packages, pricing, and reporting tools.",
+    eyebrow: "Operational tools",
+    title: "Business tool bay"
+  }
 };
 
 const defaultCamera: CameraState = {
@@ -797,6 +828,19 @@ function createInitialState(): GraphState3D {
 const legacyCommandStateKey = "entral-command-os-state-v1";
 const previousCommandStateKey = "entral-command-os-state-v2";
 const commandStateKey = "entral-command-os-state-v3";
+const commandStateUpdatedKey = "entral-command-os-state-updated-at";
+
+function hasStoredCommandState() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return Boolean(
+    window.localStorage.getItem(commandStateKey)
+      ?? window.localStorage.getItem(previousCommandStateKey)
+      ?? window.localStorage.getItem(legacyCommandStateKey)
+  );
+}
 
 function normalizeCommandStatus(status: unknown): GraphStatus {
   if (status === "working" || status === "thinking" || status === "waiting" || status === "error" || status === "offline" || status === "idle") {
@@ -820,7 +864,7 @@ function normalizeTaskStatus(status: unknown): CommandTaskStatus {
 function defaultMemoryForNode(node: Pick<GraphNode3D, "name" | "role">): CommandMemory {
   return {
     instructions: `Operate as ${node.name}. Preserve context, accept delegated work, and report status upward.`,
-    notes: ["Created in local Command OS memory."],
+    notes: ["Created in Command OS memory."],
     recentTasks: [],
     role: node.role,
     taskResults: []
@@ -1256,7 +1300,7 @@ function commandTextToOrbitPattern(text: string): OrbitPattern | null {
   const normalized = text.toLowerCase();
 
   if (normalized.includes("flat") || normalized.includes("clean circle") || normalized.includes("circular")) return "flat";
-  if (normalized.includes("tilted") || normalized.includes("classic atom")) return "tilted";
+  if (normalized.includes("tilted") || normalized.includes("classic orbit")) return "tilted";
   if (normalized.includes("wave") || normalized.includes("neural wave")) return "wave";
   if (normalized.includes("vertical") || normalized.includes("polar")) return "vertical";
   if (normalized.includes("helix") || normalized.includes("corkscrew") || normalized.includes("spiral")) return "helix";
@@ -1469,9 +1513,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [updatingApprovalProductIds, setUpdatingApprovalProductIds] = useState<Set<string>>(() => new Set());
   const [lockedNodeId, setLockedNodeId] = useState<string | null>(null);
   const [pendingRemovalId, setPendingRemovalId] = useState<string | null>(null);
+  const [isCommandPersistenceReady, setIsCommandPersistenceReady] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const commandInputRef = useRef<HTMLInputElement | null>(null);
   const graphControlsRef = useRef(graphControls);
+  const commandSyncTimerRef = useRef<number | null>(null);
+  const hadStoredCommandStateRef = useRef(hasStoredCommandState());
+  const lastSyncedCommandStateRef = useRef<string | null>(null);
   const lockedNodeIdRef = useRef<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
   const selectedRef = useRef("entral");
@@ -1510,9 +1558,89 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const visibleNodes = graph.nodes.filter((node) => node.type === "core" || !groupMap.get(node.groupId)?.collapsed);
 
   useEffect(() => {
+    let isCancelled = false;
+
+    async function restoreBackendCommandState() {
+      if (!user?.id) {
+        setIsCommandPersistenceReady(false);
+        return;
+      }
+
+      try {
+        const response = await apiFetch<CommandOSSnapshotResponse>("/command-os/state", { timeoutMs: 8000 });
+
+        if (isCancelled) return;
+
+        if (response.snapshot?.state && !hadStoredCommandStateRef.current) {
+          const restored = validateCommandOSState(normalizeGraphState(response.snapshot.state), {
+            fallback: createInitialState(),
+            recoverInterruptedTasks: true
+          });
+
+          graphRef.current = restored;
+          dispatchGraph({
+            fallback: createInitialState(),
+            state: restored,
+            type: "replace"
+          });
+          window.localStorage.setItem(commandStateKey, JSON.stringify(restored));
+          window.localStorage.setItem(commandStateUpdatedKey, response.snapshot.updatedAt);
+          setStatusMessage("Persistent Command OS memory restored from ENTRAL backend.");
+        } else if (response.snapshot?.state) {
+          setStatusMessage("Local Command OS memory preserved. Backend persistence is online.");
+        }
+      } catch {
+        if (!isCancelled) {
+          setStatusMessage("Command OS memory is saved locally. Backend persistence will retry after changes.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsCommandPersistenceReady(true);
+        }
+      }
+    }
+
+    void restoreBackendCommandState();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     graphRef.current = graph;
-    window.localStorage.setItem(commandStateKey, JSON.stringify(graph));
-  }, [graph]);
+    const serialized = JSON.stringify(graph);
+    window.localStorage.setItem(commandStateKey, serialized);
+    window.localStorage.setItem(commandStateUpdatedKey, new Date().toISOString());
+
+    if (!user?.id || !isCommandPersistenceReady || lastSyncedCommandStateRef.current === serialized) {
+      return;
+    }
+
+    if (commandSyncTimerRef.current) {
+      window.clearTimeout(commandSyncTimerRef.current);
+    }
+
+    commandSyncTimerRef.current = window.setTimeout(() => {
+      const state = graphRef.current;
+      const nextSerialized = JSON.stringify(state);
+
+      void apiFetch<{ reportCount: number }>("/command-os/state", {
+        json: {
+          source: "dashboard",
+          state
+        },
+        method: "PUT",
+        timeoutMs: 12000
+      }).then(() => {
+        lastSyncedCommandStateRef.current = nextSerialized;
+      }).catch(() => {
+        setStatusMessage("Command OS memory is saved locally. Backend persistence is temporarily unavailable.");
+      }).finally(() => {
+        commandSyncTimerRef.current = null;
+      });
+    }, 1500);
+  }, [graph, isCommandPersistenceReady, user?.id]);
 
   useEffect(() => {
     graphControlsRef.current = graphControls;
@@ -1531,6 +1659,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
     for (const timer of taskTimersRef.current) {
       window.clearTimeout(timer);
+    }
+
+    if (commandSyncTimerRef.current) {
+      window.clearTimeout(commandSyncTimerRef.current);
     }
 
     recognitionRef.current?.stop();
@@ -2857,7 +2989,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     });
 
     const completionTimer = window.setTimeout(() => {
-      updateDelegationStep(taskId, soldier.id, "completed", "waiting", `${soldier.name} completed ${details.name}. Result stored in local memory.`, true);
+      updateDelegationStep(taskId, soldier.id, "completed", "waiting", `${soldier.name} completed ${details.name}. Result stored in Command OS memory.`, true);
       settleDelegationPath(path.map((node) => node.id), details.name);
       setStatusMessage(`Objective completed successfully by ${soldier.name}.`);
     }, 450 + path.length * 850 + 1200);
@@ -3776,7 +3908,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       logs: [`${name} created from the Command Center.`],
       memory: {
         instructions: blueprint?.role ?? `Operate as ${name}, accept delegated tasks, and report status to ${parent?.name ?? "ENTRAL"}.`,
-        notes: [`Created under ${parent?.name ?? "ENTRAL"} from the local Command Center.`],
+        notes: [`Created under ${parent?.name ?? "ENTRAL"} from the Command Center.`],
         recentTasks: [],
         role: blueprint?.role ?? `${title} command layer`,
         taskResults: []
@@ -3830,7 +3962,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     lockedNodeIdRef.current = id;
     setIsPanelOpen(true);
     respond({
-      analysis: `${name} now reports to ${parent?.name ?? "ENTRAL"}. This ${title} is active in local Command OS structure.`,
+      analysis: `${name} now reports to ${parent?.name ?? "ENTRAL"}. This ${title} is active in the Command OS structure.`,
       nextActions: type === "soldier" ? ["Assign an execution task.", "Review permissions.", "Inspect memory."] : ["Add subordinate entities.", "Inspect readiness.", "Assign an objective."],
       recommendation: "Use the new entity for hierarchy planning until real execution wiring is connected.",
       situation: `${title} created successfully.`
@@ -3888,7 +4020,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     lockedNodeIdRef.current = null;
     setSelectedNodeId(nextSelectedId);
     respond({
-      analysis: `${descendants.length} descendant${descendants.length === 1 ? "" : "s"} and any connected hierarchy links were removed from local state.`,
+      analysis: `${descendants.length} descendant${descendants.length === 1 ? "" : "s"} and any connected hierarchy links were removed from Command OS state.`,
       nextActions: ["Inspect the parent entity.", "Create replacement capacity if required.", "Review task history for impact."],
       recommendation: "Confirm the remaining command chain before assigning new objectives.",
       situation: `${target.name} removed from the Command OS structure.`
@@ -4005,13 +4137,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     recordActivity(activity ?? statusLineForTransmission(transmission));
   }
 
-  function openAtomControls() {
+  function openGraphControls() {
     setIsControlsOpen(true);
     setCommandConsoleSection("controls");
     respond("Objective acknowledged. Graph controls expanded inside the unified command console.");
   }
 
-  function closeAtomControls() {
+  function closeGraphControls() {
     setIsControlsOpen(false);
     respond("Objective acknowledged. Graph controls collapsed inside the unified command console.");
   }
@@ -4534,7 +4666,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     } else if (actionPlan.kind === "open_tasks") {
       openCommandAccessTab("tasks");
       respond({
-        analysis: `${graphRef.current.tasks.length} task${graphRef.current.tasks.length === 1 ? "" : "s"} are currently recorded in local Command OS state.`,
+        analysis: `${graphRef.current.tasks.length} task${graphRef.current.tasks.length === 1 ? "" : "s"} are currently recorded in Command OS state.`,
         nextActions: ["Create a task from Command.", "Select an assigned entity to inspect work history.", "Use a business template to generate starter tasks."],
         recommendation: "Use the Tasks tab as the fastest mobile view of active work.",
         situation: "Task center opened."
@@ -4831,11 +4963,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       const shouldShow = normalized.includes("show") || normalized.includes("open");
 
       if (shouldHide) {
-        closeAtomControls();
+        closeGraphControls();
       } else if (shouldShow || !isControlsOpen) {
-        openAtomControls();
+        openGraphControls();
       } else {
-        closeAtomControls();
+        closeGraphControls();
       }
 
       respond(`${shouldHide ? "Collapsed" : shouldShow ? "Expanded" : "Toggled"} unified graph controls from command directive.`);
@@ -5467,7 +5599,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           ))}
           <div className="command-mobile-nav-actions">
             <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
-            <button type="button" onClick={openAtomControls}>Controls</button>
+            <button type="button" onClick={openGraphControls}>Controls</button>
             <button type="button" onClick={() => openSettings()}>Settings</button>
             <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
             <button type="button" onClick={() => requestNodeAuthorization("general")}>Add General</button>
@@ -5566,7 +5698,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
               <button type="button" onClick={requestDemoEnvironmentAuthorization}>Load demo</button>
               <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
-              <button type="button" onClick={openAtomControls}>Graph controls</button>
+              <button type="button" onClick={openGraphControls}>Graph controls</button>
               <button type="button" onClick={() => openSettings()}>Settings</button>
               <button type="button" onClick={() => routeWorkspaceAction("Training channel selected. Opening ENTRAL Academy.", undefined, "entral:open-academy")}>Academy</button>
               <button type="button" onClick={() => executeCommand("Show hierarchy")}>Full picture</button>
@@ -5722,7 +5854,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           <button type="button" onClick={() => openSettings("assistant")}>Command AI</button>
           <button type="button" onClick={() => openSettings("voice")}>Voice</button>
           <button type="button" onClick={() => openSettings("academy")}>Academy</button>
-          <button type="button" onClick={openAtomControls}>Graph Settings</button>
+          <button type="button" onClick={openGraphControls}>Graph Settings</button>
           <button type="button" onClick={() => respond("Agent permissions are shown in the selected node inspector. Real permission enforcement remains policy-gated.")}>Agent Permissions</button>
           <button type="button" onClick={() => respond("Notifications are local in this Command OS layer until real delivery channels are connected.")}>Notifications</button>
         </details>
@@ -5795,6 +5927,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </nav>
 
         <div className="command-console-scroll">
+          <section className="command-console-section-intro" aria-label={`${commandConsoleSectionCopy[commandConsoleSection].title} overview`}>
+            <p className="eyebrow">{commandConsoleSectionCopy[commandConsoleSection].eyebrow}</p>
+            <h3>{commandConsoleSectionCopy[commandConsoleSection].title}</h3>
+            <p>{commandConsoleSectionCopy[commandConsoleSection].body}</p>
+          </section>
+
           <div className={isThinking ? "command-chat-status thinking" : "command-chat-status"} role="status">
             <Sparkles aria-hidden="true" size={16} />
             <span>{statusMessage}</span>

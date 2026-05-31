@@ -136,7 +136,7 @@ export function buildWorkflowAuthorizationSummary(input: {
     `Planned tasks: ${input.taskCount}`,
     `Assigned Soldiers: ${input.assignedSoldierCount}`,
     input.missingLanes.length ? `Missing lanes: ${input.missingLanes.join(", ")}` : "Missing lanes: none detected.",
-    "This will create task records and update entity memory/status in local Command OS state.",
+    "This will create task records and update entity memory/status in Command OS state.",
     "Authorize workflow generation?"
   ].join("\n");
 }

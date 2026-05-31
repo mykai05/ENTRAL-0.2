@@ -12,12 +12,13 @@ Source of truth: `ENTRAL_V0_3_GOAL_SPEC.md`
 
 - `NeuronsCommandCenter` is very dense and owns graph rendering, command console, business wizard, Merch tools, inspector, voice, local state, and mobile layout. It works, but future changes are risky. Recommendation: split only after v0.3 behavior is stable.
 - Mobile still uses the dashboard as the main command surface. Improved: command suggestions are visible, bottom tabs are present, and mobile hierarchy/task/report panels are now reachable without hidden shortcuts. Remaining: live phone QA and possible panel-height tuning.
+- The right-side command panel was too crowded for normal use. Fixed: the panel is now organized into Talk, Build, Graph, and Tools sections, with the command input kept reachable and mobile layout using more of the viewport.
 - Business setup exists and now has a clearer authorization path. Fixed: preview/approve/cancel flow exists for template creation, and `Modify` reopens the business wizard for editing. Remaining: move/archive/workflow previews still require canceling and reissuing the corrected directive for modification.
 - Template coverage is now aligned to the required v0.3 categories. Remaining: the wizard should expose the full optional field set before calling Phase 6 complete.
 
 ## Medium Priority Issues
 
-- Some internal function names still use `Atom`, but user-facing labels have been shifted toward graph/command terminology. Recommendation: rename internals later when safe.
+- Internal and user-facing hierarchy-control terminology now uses graph/command language. Atomic language is reserved for the visual style of the graph.
 - Command classification now exists in `frontend/lib/command-intent.ts`, but command execution is still mostly conditional routing inside `executeCommand`. Recommendation: continue extraction into tested handlers.
 - Command palette and command console overlap in purpose. Current decision: keep both. Command console is primary; palette is a visible shortcut/action index.
 
@@ -48,9 +49,10 @@ Source of truth: `ENTRAL_V0_3_GOAL_SPEC.md`
 - First-contact action set and child/task empty states.
 - Mobile command suggestions restored.
 - Mobile bottom tabs and hierarchy/task/report panels.
+- Reorganized ENTRAL Command panel with clearer section navigation and more accessible scroll behavior.
 - Opt-in demo environment authorization.
 - Reusable command-intent classifier with tests.
-- User-facing `Atom` wording reduced where it referred to command hierarchy.
+- User-facing `Atom` wording removed where it referred to command hierarchy.
 
 ## Deferred For Safety
 

@@ -145,6 +145,16 @@ type Policy = {
   severity: string;
 };
 
+type CommandOSSnapshot = {
+  createdAt: string;
+  id: string;
+  source: string;
+  state: Record<string, unknown>;
+  stateVersion: number;
+  updatedAt: string;
+  userId: string;
+};
+
 type ClientMerchStore = {
   audience: string;
   approvalStatus: "Not Started" | "Research Approved" | "Designs Pending" | "Designs Approved" | "Listings Approved" | "Launch Approved";
@@ -225,6 +235,7 @@ const state = {
     targetType: string;
   }>,
   automationJobs: [] as AutomationJob[],
+  commandSnapshots: new Map<string, CommandOSSnapshot>(),
   conversations: new Map<string, Conversation>(),
   merchStores: [] as ClientMerchStore[],
   podProducts: [] as PodProduct[],
@@ -244,8 +255,8 @@ const memorySystemPrompt = [
   "Do not behave like a casual chatbot, customer-support assistant, or friendly companion. Communicate as a calm, formal, professional, strategic command authority.",
   "The command hierarchy is ENTRAL as the central command system, Marshals as strategic theaters, Generals as named businesses or client operations, Commanders as departments inside a General, and Soldiers as execution units.",
   "ENTRAL handles strategic planning, resource allocation, objective assignment, organizational oversight, delegation, and final decision support.",
-  "Generals communicate in executive, analytical, report-focused language. Commanders communicate in operational, task-oriented language. Soldiers communicate in concise execution reports.",
-  "Prefix command responses with [ENTRAL] unless the response is explicitly from another level; then use [GENERAL], [COMMANDER], or [SOLDIER].",
+  "Marshals communicate as strategic theater authorities. Generals communicate as named business authorities. Commanders communicate in operational, task-oriented language. Soldiers communicate in concise execution reports.",
+  "Prefix command responses with [ENTRAL] unless the response is explicitly from another level; then use [MARSHAL], [GENERAL], [COMMANDER], or [SOLDIER].",
   "Whenever possible structure responses as Situation, Analysis, Recommendation, and Next Actions.",
   "Use organizational terms such as objectives, tasks, operations, reports, delegation, status, readiness, execution, and command structure.",
   "Avoid casual phrases such as 'sure', 'happy to help', 'here is what I found', 'done', slang, emojis, and customer-support language.",
@@ -645,6 +656,30 @@ app.get("/api/v1/dashboard", { preHandler: requireAuth }, async (request) => {
     teams,
     user: publicUser(user)
   };
+});
+
+app.get("/api/v1/command-os/state", { preHandler: requireAuth }, async (request) => {
+  const user = currentUserOrThrow(request);
+  return { snapshot: state.commandSnapshots.get(user.id) ?? null };
+});
+
+app.put("/api/v1/command-os/state", { preHandler: requireAuth }, async (request) => {
+  const user = currentUserOrThrow(request);
+  const body = request.body as { source?: string; state?: Record<string, unknown> };
+  const existing = state.commandSnapshots.get(user.id);
+  const timestamp = now();
+  const snapshot: CommandOSSnapshot = {
+    createdAt: existing?.createdAt ?? timestamp,
+    id: existing?.id ?? id("command-snapshot"),
+    source: body.source ?? "dashboard",
+    state: body.state ?? {},
+    stateVersion: (existing?.stateVersion ?? 0) + 1,
+    updatedAt: timestamp,
+    userId: user.id
+  };
+
+  state.commandSnapshots.set(user.id, snapshot);
+  return { reportCount: 0, snapshot };
 });
 
 app.get("/api/v1/tasks", { preHandler: requireAuth }, async (request) => {

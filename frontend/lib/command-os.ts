@@ -173,7 +173,7 @@ function healthFor(id: string) {
 function createMemory(role: string, instructions: string): CommandMemory {
   return {
     instructions,
-    notes: ["Local memory is persisted in browser storage until database-backed memory is connected."],
+    notes: ["Command memory is saved locally and syncs to the backend when the operator is signed in."],
     recentTasks: [],
     role,
     taskResults: []

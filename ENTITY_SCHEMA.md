@@ -94,9 +94,15 @@ The current visualization stage only includes structural hierarchy nodes:
 - `commander`: department or operating function orbiting a General.
 - `soldier`: execution unit orbiting a Commander.
 
-Live Operations are represented as local `CommandTask` records for now. They move through ENTRAL -> Marshal -> General -> Commander -> Soldier as simulated delegation events, then persist in browser storage with the full command path.
+Live Operations are represented as `CommandTask` records for now. They move through ENTRAL -> Marshal -> General -> Commander -> Soldier as simulated delegation events, then persist in browser storage and the authenticated backend snapshot with the full command path.
 
-Reports are represented as local `CommandReportRecord` records. A generated report is attached to the source entity, upward command path, destination entity, and related tasks. Report records are local-state backed in v0.3 and are not database-backed yet.
+Reports are represented as `CommandReportRecord` records. A generated report is attached to the source entity, upward command path, destination entity, and related tasks. The backend now extracts these records into user-scoped `CommandOSReport` rows whenever the dashboard syncs state.
+
+## Backend Persistence
+
+`CommandOSSnapshot` stores the latest validated Command OS state for the signed-in user.
+
+`CommandOSReport` stores deduplicated report transmissions by `userId + reportId` so generated reports survive browser changes and can later power report centers, audits, and database-backed memory.
 
 ## Permissions
 

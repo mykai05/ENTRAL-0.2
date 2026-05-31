@@ -33,7 +33,7 @@ Source of truth: `ENTRAL_V0_3_GOAL_SPEC.md`
    - Fix safe clarity issues; document risky removals instead of deleting.
 
 7. Polish data integrity, terminology, inspector, reports, and docs.
-   - Validate the official hierarchy: ENTRAL → Marshal → General → Commander → Soldier.
+   - Validate the official hierarchy: ENTRAL -> Marshal -> General -> Commander -> Soldier.
    - Remove old user-facing terminology where safe.
    - Improve report structure and entity inspector usefulness.
 
@@ -69,3 +69,8 @@ Focus first on phases 0 through 5 and any low-risk fixes that directly improve c
 - Report generation now writes local report-history records to the source entity, upward command path, destination entity, and related tasks.
 - Command OS hydration now preserves valid report history and removes records with dangling source/destination references.
 - Frontend and backend lint/test/build checks passed under the local shell, with the known Node version warning.
+- Step 6 access/simplification audit is complete, including `ENTRAL_V0_3_ACCESS_AUDIT.md` and `ENTRAL_V0_3_SIMPLIFICATION_AUDIT.md`.
+- Step 7 persistence/report polish is complete for v0.3: authenticated dashboards sync Command OS snapshots to the backend and deduplicated report records are stored separately.
+- Step 7 terminology/access polish includes the reorganized right-side ENTRAL Command panel with `Talk`, `Build`, `Graph`, and `Tools` sections.
+- Step 8 documentation is current in `ENTRAL_TOMORROW_START_HERE.md`, `COMMAND_OS_ARCHITECTURE.md`, `COMMAND_PROTOCOL.md`, and `ENTITY_SCHEMA.md`.
+- Step 9 cleanup/check gate passed: Prisma generate, frontend/backend lint, frontend/backend tests, frontend/backend builds, and `git diff --check`.

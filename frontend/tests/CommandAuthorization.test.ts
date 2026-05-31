@@ -116,7 +116,7 @@ describe("command authorization summaries", () => {
       "Planned tasks: 12",
       "Assigned Soldiers: 7",
       "Missing lanes: Client Approval, Launch",
-      "This will create task records and update entity memory/status in local Command OS state.",
+        "This will create task records and update entity memory/status in Command OS state.",
       "Authorize workflow generation?"
     ].join("\n"));
   });

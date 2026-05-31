@@ -21,11 +21,13 @@ No essential feature should require more than 3 taps/clicks from the main interf
 | Open Help | Type `help` or click suggestion on empty state | 1 | Previously hidden behind generic command behavior | Yes |
 | Open Reports | Mobile Reports tab or command text | 1 | Mobile report center needed real structured report content | Yes: mobile report feed added and now filters to structured reports only |
 | Open Mobile Guide | Command text or mobile More tab | 1 | Needs live-device QA | Improved: guide content describes bottom tabs and touch controls |
+| Use right command panel content | Right-side command panel tabs | 1 | Panel was too cramped and mixed too many systems in one crowded scroll column | Improved: panel is organized into Talk, Build, Graph, and Tools sections with a clearer mobile full-height layout |
 
 ## Current Access Risks
 
 - Mobile now has bottom-tab Command / Hierarchy / Tasks / Reports / More navigation.
 - Command console remains the most complete access surface.
+- The right-side ENTRAL Command panel has been widened on desktop and reorganized into dedicated Talk / Build / Graph / Tools sections.
 - Keyboard shortcuts are no longer required for core functionality, but the command palette is still useful as a visible action index.
 - The new mobile panels still need live phone/browser QA for exact fit and touch comfort.
 - Voice guide requests now open voice settings and explain push-to-talk/report modes. Academy now includes a Voice Guide module, but live browser microphone QA is still required.

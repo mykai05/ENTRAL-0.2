@@ -305,6 +305,110 @@ export const screenInsightSchema = z.object({
     .regex(/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, "Screenshot must be a base64 image data URL.")
 });
 
+export const commandOSNodeTypeSchema = z.enum(["emperor", "marshal", "general", "commander", "soldier"]);
+export const commandOSStatusSchema = z.enum(["idle", "working", "thinking", "waiting", "error", "offline"]);
+export const commandOSTaskStatusSchema = z.enum(["pending", "assigned", "running", "completed", "failed"]);
+
+const commandOSMemorySchema = z.object({
+  instructions: z.string().max(5000),
+  notes: z.array(z.string().max(2000)).max(100),
+  recentTasks: z.array(z.string().max(500)).max(100),
+  role: z.string().max(500),
+  taskResults: z.array(z.string().max(2000)).max(100)
+}).passthrough();
+
+export const commandOSReportRecordSchema = z.object({
+  analysis: z.string().max(10_000),
+  commanderId: z.string().max(160).nullable().optional(),
+  createdAt: z.string().datetime(),
+  destinationEntityId: z.string().min(1).max(160),
+  destinationEntityType: commandOSNodeTypeSchema,
+  generalId: z.string().max(160).nullable().optional(),
+  id: z.string().min(1).max(180),
+  marshalId: z.string().max(160).nullable().optional(),
+  nextActions: z.array(z.string().max(1000)).max(20),
+  recommendation: z.string().max(10_000),
+  situation: z.string().max(10_000),
+  soldierId: z.string().max(160).nullable().optional(),
+  sourceEntityId: z.string().min(1).max(160),
+  sourceEntityType: commandOSNodeTypeSchema
+}).passthrough();
+
+const commandOSNodeSchema = z.object({
+  children: z.array(z.string().max(160)).max(500).optional(),
+  commandType: commandOSNodeTypeSchema,
+  currentTask: z.string().max(500).nullable(),
+  groupId: z.string().min(1).max(160),
+  id: z.string().min(1).max(160),
+  logs: z.array(z.string().max(2000)).max(200),
+  memory: commandOSMemorySchema,
+  name: z.string().min(1).max(200),
+  parentId: z.string().max(160).nullable(),
+  reportHistory: z.array(commandOSReportRecordSchema).max(50).optional(),
+  reports: z.array(commandOSReportRecordSchema).max(50).optional(),
+  status: commandOSStatusSchema,
+  taskHistory: z.array(z.string().max(500)).max(200),
+  type: z.enum(["core", "agent"])
+}).passthrough();
+
+const commandOSGroupSchema = z.object({
+  collapsed: z.boolean().optional(),
+  color: z.string().max(40),
+  id: z.string().min(1).max(160),
+  name: z.string().min(1).max(200)
+}).passthrough();
+
+const commandOSEdgeSchema = z.object({
+  id: z.string().min(1).max(220),
+  label: z.string().max(200),
+  source: z.string().min(1).max(160),
+  target: z.string().min(1).max(160)
+}).passthrough();
+
+const commandOSTaskSchema = z.object({
+  assignedEntityId: z.string().max(160).nullable(),
+  assignedEntityType: commandOSNodeTypeSchema.nullable().optional(),
+  completedAt: z.string().datetime().nullable().optional(),
+  commanderId: z.string().max(160).nullable().optional(),
+  commanderName: z.string().max(200).nullable().optional(),
+  createdAt: z.string().datetime(),
+  delegationPath: z.array(z.string().max(160)).max(20),
+  description: z.string().max(5000),
+  generalId: z.string().max(160).nullable().optional(),
+  generalName: z.string().max(200).nullable().optional(),
+  history: z.array(z.string().max(2000)).max(200),
+  id: z.string().min(1).max(180),
+  marshalId: z.string().max(160).nullable().optional(),
+  marshalName: z.string().max(200).nullable().optional(),
+  name: z.string().min(1).max(240),
+  reportHistory: z.array(commandOSReportRecordSchema).max(50).optional(),
+  soldierId: z.string().max(160).nullable().optional(),
+  soldierName: z.string().max(200).nullable().optional(),
+  status: commandOSTaskStatusSchema,
+  updatedAt: z.string().datetime()
+}).passthrough();
+
+export const commandOSStateSchema = z.object({
+  edges: z.array(commandOSEdgeSchema).max(2500),
+  groups: z.array(commandOSGroupSchema).max(500),
+  nodes: z.array(commandOSNodeSchema).min(1).max(1000),
+  tasks: z.array(commandOSTaskSchema).max(2500)
+}).passthrough();
+
+export const commandOSSnapshotSchema = z.object({
+  source: z.enum(["dashboard", "import", "repair"]).default("dashboard"),
+  state: commandOSStateSchema
+}).superRefine((input, context) => {
+  const size = JSON.stringify(input.state).length;
+
+  if (size > 2_000_000) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Command OS state is too large to persist safely."
+    });
+  }
+});
+
 export const automationJobTypeSchema = z.enum(["scrape"]);
 export const automationJobStatusSchema = z.enum(["pending", "scheduled", "running", "completed", "failed", "canceled"]);
 
@@ -460,6 +564,8 @@ export type ComplianceCheckInput = z.infer<typeof complianceCheckSchema>;
 export type PricingCalculatorInput = z.infer<typeof pricingCalculatorSchema>;
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type ScreenInsightInput = z.infer<typeof screenInsightSchema>;
+export type CommandOSSnapshotInput = z.infer<typeof commandOSSnapshotSchema>;
+export type CommandOSReportRecordInput = z.infer<typeof commandOSReportRecordSchema>;
 export type ImportConversationsInput = z.infer<typeof importConversationsSchema>;
 export type CreateAutomationJobInput = z.infer<typeof createAutomationJobSchema>;
 export type ScrapePayload = z.infer<typeof scrapePayloadSchema>;

@@ -41,7 +41,9 @@ Commands can focus graph nodes, highlight status groups, create Marshals, create
 
 Report commands such as `ENTRAL report`, `Report on Merch Marshal`, `Report on Iron House Gym`, and `What needs attention?` route through the local Command OS report builder. Reports use Situation, Analysis, Recommendation, and Next Actions, include command path, status, risks, scoped task information, and populate the mobile Reports feed.
 
-Generated reports are also recorded into local Command OS state. Report-history records are attached to the source entity, the upward command path, the destination entity, and related tasks. Hydration keeps valid report history and removes records that point to missing source or destination entities.
+Generated reports are also recorded into Command OS state. Report-history records are attached to the source entity, the upward command path, the destination entity, and related tasks. Hydration keeps valid report history and removes records that point to missing source or destination entities.
+
+When the operator is signed in, the dashboard syncs the validated state to `/api/v1/command-os/state`. The backend stores the latest snapshot and extracts report records into user-scoped persistence rows. If the backend is unavailable, the dashboard keeps the local copy and retries on later changes.
 
 Generals are never created directly under ENTRAL. If a General directive does not name or select a Marshal, ENTRAL asks for the missing operational detail before proceeding.
 

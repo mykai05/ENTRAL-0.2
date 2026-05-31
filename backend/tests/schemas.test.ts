@@ -13,6 +13,7 @@ import {
   merchReportParamsSchema,
   pricingCalculatorSchema,
   createPolicySchema,
+  commandOSSnapshotSchema,
   screenInsightSchema,
   signupSchema,
   taskListQuerySchema
@@ -76,6 +77,41 @@ describe("validation schemas", () => {
 
     expect(result.conversationId).toBeUndefined();
     expect(result.screenshot).toContain("data:image/jpeg;base64,");
+  });
+
+  it("validates a compact Command OS snapshot payload", () => {
+    const result = commandOSSnapshotSchema.parse({
+      source: "dashboard",
+      state: {
+        edges: [],
+        groups: [{ color: "#00F0FF", id: "core", name: "ENTRAL Core" }],
+        nodes: [
+          {
+            children: [],
+            commandType: "emperor",
+            currentTask: null,
+            groupId: "core",
+            id: "entral",
+            logs: ["ENTRAL online."],
+            memory: {
+              instructions: "Preserve command memory.",
+              notes: [],
+              recentTasks: [],
+              role: "Strategic Command",
+              taskResults: []
+            },
+            name: "ENTRAL",
+            parentId: null,
+            status: "thinking",
+            taskHistory: [],
+            type: "core"
+          }
+        ],
+        tasks: []
+      }
+    });
+
+    expect(result.state.nodes[0].commandType).toBe("emperor");
   });
 
   it("validates scrape automation jobs", () => {
