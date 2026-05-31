@@ -11,6 +11,22 @@ const memoryKey = "entral-ai-memory-enabled";
 const profileKey = "entral-account-settings";
 type SettingsTab = "appearance" | "account" | "assistant" | "voice" | "academy";
 
+function readSettingsStorage(key: string) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSettingsStorage(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Account/settings preferences are optional local convenience data.
+  }
+}
+
 export function SettingsPanel() {
   const { settings, updateSettings } = useTheme();
   const { mode, openLibrary, openTour, progress, setMode } = useOnboarding();
@@ -24,10 +40,10 @@ export function SettingsPanel() {
   const profileSavedTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setMemoryEnabled(window.localStorage.getItem(memoryKey) === "true");
+    setMemoryEnabled(readSettingsStorage(memoryKey) === "true");
 
     try {
-      const profile = JSON.parse(window.localStorage.getItem(profileKey) ?? "{}") as { email?: string; name?: string };
+      const profile = JSON.parse(readSettingsStorage(profileKey) ?? "{}") as { email?: string; name?: string };
       setProfileName(profile.name ?? "");
       setProfileEmail(profile.email ?? "");
     } catch {
@@ -59,7 +75,7 @@ export function SettingsPanel() {
 
   function updateMemory(enabled: boolean) {
     setMemoryEnabled(enabled);
-    window.localStorage.setItem(memoryKey, String(enabled));
+    writeSettingsStorage(memoryKey, String(enabled));
   }
 
   function resetTheme() {
@@ -85,7 +101,7 @@ export function SettingsPanel() {
 
   function saveAccountSettings(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    window.localStorage.setItem(profileKey, JSON.stringify({ email: profileEmail, name: profileName }));
+    writeSettingsStorage(profileKey, JSON.stringify({ email: profileEmail, name: profileName }));
     setProfileSaved(true);
 
     if (profileSavedTimerRef.current) {

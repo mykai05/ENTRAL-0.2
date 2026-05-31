@@ -5,6 +5,7 @@ export type CommandActionKind =
   | "cancel_authorization"
   | "fallback"
   | "open_businesses"
+  | "open_gravity_help"
   | "open_help"
   | "open_mobile_guide"
   | "open_reports"
@@ -37,6 +38,15 @@ function isBusinessListCommand(normalized: string) {
   return /\b(show|open|view|list|display)\s+(my\s+|all\s+)?(businesses|business generals|clients|stores|brands)\b/i.test(normalized);
 }
 
+function isGravityGuideCommand(normalized: string) {
+  return /\b(gravity|graph pull|orbit tightness|command field)\b/i.test(normalized)
+    && (
+      /\b(help|guide|explain|what is|how do i|how does|show me|teach|walkthrough|instructions?)\b/i.test(normalized)
+      || /\b(open|show)\s+(the\s+)?gravity\s+(controls?|settings|panel)\b/i.test(normalized)
+      || /\bgravity\s+(controls?|settings|panel)\b/i.test(normalized)
+    );
+}
+
 export function planCommandAction(message: string): CommandActionPlan {
   const intent = classifyCommandIntent(message);
   const normalized = intent.normalized;
@@ -49,8 +59,16 @@ export function planCommandAction(message: string): CommandActionPlan {
     return { intent, kind: "cancel_authorization", normalized };
   }
 
+  if (isGravityGuideCommand(normalized)) {
+    return { intent, kind: "open_gravity_help", normalized };
+  }
+
   if (intent.kind === "help_request") {
     return { intent, kind: "open_help", normalized };
+  }
+
+  if (intent.kind === "command_request") {
+    return { intent, kind: "fallback", normalized };
   }
 
   if (/\breturn to entral\b|\bcentral command overview\b|\bemperor overview\b|\bshow entral\b/i.test(normalized)) {

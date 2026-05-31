@@ -43,13 +43,29 @@ function sanitizeColor(value: unknown) {
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : defaultSettings.accentColor;
 }
 
+function readThemeStorage(key: string) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeThemeStorage(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Theme persistence should never block rendering.
+  }
+}
+
 function readStoredSettings(): ThemeSettings {
   if (typeof window === "undefined") {
     return defaultSettings;
   }
 
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(settingsKey) ?? "{}") as Partial<ThemeSettings>;
+    const parsed = JSON.parse(readThemeStorage(settingsKey) ?? "{}") as Partial<ThemeSettings>;
 
     return {
       accentColor: sanitizeColor(parsed.accentColor),
@@ -90,12 +106,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const nextSettings = readStoredSettings();
     setSettings(nextSettings);
     applyTheme(nextSettings);
-    window.localStorage.setItem(storageKey, "dark");
+    writeThemeStorage(storageKey, "dark");
   }, []);
 
   useEffect(() => {
     applyTheme(settings);
-    window.localStorage.setItem(settingsKey, JSON.stringify(settings));
+    writeThemeStorage(settingsKey, JSON.stringify(settings));
   }, [settings]);
 
   const value = useMemo<ThemeContextValue>(() => ({

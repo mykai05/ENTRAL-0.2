@@ -20,9 +20,27 @@ type DashboardResponse = {
   user: User;
 };
 
+const authenticatedUserSessionKey = "entral-authenticated-user";
+
 function displayName(name: string) {
   const trimmed = name.trim();
   return trimmed ? `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}` : "Operator";
+}
+
+function writeSessionValue(key: string, value: string) {
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch {
+    // Session storage is a convenience for the Academy handoff, not a load blocker.
+  }
+}
+
+function removeSessionValue(key: string) {
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // Sign-out should still proceed even if the browser blocks session storage.
+  }
 }
 
 export function DashboardClient() {
@@ -36,13 +54,13 @@ export function DashboardClient() {
       setError("");
       const dashboard = await apiFetch<DashboardResponse>("/dashboard", { timeoutMs: 8000 });
       const nextUser = { ...dashboard.user, name: displayName(dashboard.user.name) };
+      const authDetail = {
+        email: nextUser.email,
+        userId: nextUser.id
+      };
       setUser(nextUser);
-      window.dispatchEvent(new CustomEvent("entral:user-authenticated", {
-        detail: {
-          email: nextUser.email,
-          userId: nextUser.id
-        }
-      }));
+      writeSessionValue(authenticatedUserSessionKey, JSON.stringify(authDetail));
+      window.dispatchEvent(new CustomEvent("entral:user-authenticated", { detail: authDetail }));
     } catch (loadError) {
       if (loadError instanceof ApiError && loadError.status === 401) {
         router.push("/login?next=/dashboard");
@@ -61,6 +79,7 @@ export function DashboardClient() {
 
   async function handleLogout() {
     await apiFetch("/logout", { method: "POST" }).catch(() => null);
+    removeSessionValue(authenticatedUserSessionKey);
     window.dispatchEvent(new Event("entral:user-signed-out"));
     router.push("/login");
     router.refresh();

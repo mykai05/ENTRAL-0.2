@@ -50,6 +50,18 @@ function entityTypeFromText(value: string) {
   return matches[0]?.type;
 }
 
+function isGraphControlCommand(value: string) {
+  return /\b(settings|controls|panel|sidebar|focus mode|clean room|graph|rings?|trails?|tails?|speed|gravity|glow|particle size|export|governance|automation|agent)\b/i.test(value);
+}
+
+export function explicitHierarchyCreateTypeFromText(message: string) {
+  const normalized = cleanCommand(message);
+
+  if (!/\b(create|add|new)\b/i.test(normalized)) return null;
+
+  return entityTypeFromText(normalized) ?? null;
+}
+
 export function classifyCommandIntent(message: string): CommandIntent {
   const normalized = cleanCommand(message);
 
@@ -90,10 +102,12 @@ export function classifyCommandIntent(message: string): CommandIntent {
     return { confidence: "medium", kind: "voice_request", normalized, requiresAuthorization: false };
   }
 
-  if (/\b(create|add|new)\b/i.test(normalized) && /\b(marshal|general|commander|soldier)\b/i.test(normalized)) {
+  const hierarchyCreateType = explicitHierarchyCreateTypeFromText(message);
+
+  if (hierarchyCreateType) {
     return {
       confidence: "high",
-      entityType: entityTypeFromText(normalized),
+      entityType: hierarchyCreateType,
       kind: "entity_creation_request",
       normalized,
       requiresAuthorization: true
@@ -102,6 +116,10 @@ export function classifyCommandIntent(message: string): CommandIntent {
 
   if (/\b(workflow|launch sequence|launch plan)\b/i.test(normalized)) {
     return { confidence: "high", kind: "task_request", normalized, requiresAuthorization: true };
+  }
+
+  if (isGraphControlCommand(normalized)) {
+    return { confidence: "medium", kind: "command_request", normalized, requiresAuthorization: false };
   }
 
   if (/\b(templates?|pod|merch|website agency|website operation|content agency|e-commerce|ecommerce|saas|local service|custom blank)\b/i.test(normalized)) {
@@ -144,7 +162,7 @@ export function classifyCommandIntent(message: string): CommandIntent {
     return { confidence: "medium", kind: "navigation_request", normalized, requiresAuthorization: false };
   }
 
-  if (/\b(settings|controls|panel|sidebar|focus mode|clean room|graph|ring|trail|speed|gravity|glow|export|governance|automation|agent)\b/i.test(normalized)) {
+  if (isGraphControlCommand(normalized)) {
     return { confidence: "medium", kind: "command_request", normalized, requiresAuthorization: false };
   }
 

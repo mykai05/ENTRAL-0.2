@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn } from "lucide-react";
@@ -16,8 +16,13 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
+  const [isReady, setIsReady] = useState(false);
   const [resetNotice, setResetNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -92,9 +97,9 @@ export function LoginForm() {
       </div>
       {resetNotice ? <p className="form-notice" role="status">{resetNotice}</p> : null}
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
-      <Button type="submit" disabled={isSubmitting}>
+      <Button type="submit" disabled={!isReady || isSubmitting}>
         <LogIn aria-hidden="true" size={20} />
-        {isSubmitting ? "Signing in..." : "Sign in"}
+        {!isReady ? "Loading..." : isSubmitting ? "Signing in..." : "Sign in"}
       </Button>
     </form>
   );

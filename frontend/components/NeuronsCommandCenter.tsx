@@ -49,6 +49,7 @@ import { createMerchLaunchWorkflowTasks, merchLaunchWorkflowSteps } from "../lib
 import { type ClientMerchStore, type PodProduct, type ProductBatchGeneratorResponse } from "../lib/merch-store";
 import { collectTranscript, getSpeechRecognitionConstructor, normalizeWakeWordCommand, type SpeechRecognitionLike } from "../lib/voice-command";
 import { planCommandAction } from "../lib/command-action-plan";
+import { explicitHierarchyCreateTypeFromText } from "../lib/command-intent";
 import {
   buildArchiveEditDraft,
   buildArchiveAuthorizationSummary,
@@ -198,6 +199,7 @@ type TooltipState = {
 
 type GraphControlSettings = {
   cameraSensitivity: number;
+  entityGravity: Record<string, number>;
   glowIntensity: number;
   gravity: number;
   orbitPattern: OrbitPattern;
@@ -209,6 +211,7 @@ type GraphControlSettings = {
 };
 
 type OrbitPattern = "flat" | "tilted" | "wave" | "vertical" | "helix";
+type GravityRank = Exclude<NodeType, "emperor">;
 
 type DashboardChatResponse = {
   conversationId: string;
@@ -334,7 +337,7 @@ type PendingAuthorization =
       wizard: BusinessWizardState;
   };
 
-type MobileCommandTab = "command" | "hierarchy" | "tasks" | "reports" | "more";
+type MobileCommandTab = "graph" | "command" | "hierarchy" | "tasks" | "reports" | "more";
 type CommandConsoleSection = "command" | "setup" | "controls" | "tools";
 
 const commandConsoleSectionLabels: Record<CommandConsoleSection, string> = {
@@ -356,7 +359,7 @@ const commandConsoleSectionCopy: Record<CommandConsoleSection, { body: string; e
     title: "Hierarchy setup"
   },
   controls: {
-    body: "Adjust the 3D command view, search hierarchy nodes, focus the graph, and tune orbit behavior.",
+    body: "Tune the 3D view. Global gravity affects inherited and future entities; all, rank, branch, and individual gravity tune precise layers of the command field.",
     eyebrow: "Graph control",
     title: "View operations"
   },
@@ -375,6 +378,42 @@ const defaultCamera: CameraState = {
 };
 
 const graphControlsKey = "entral-command-center-controls";
+const gravityMin = 0;
+const gravityMax = 12;
+const gravityPercentMin = gravityMin * 100;
+const gravityPercentMax = gravityMax * 100;
+
+const gravityPresetOptions = [
+  { label: "Drift", value: 0.18 },
+  { label: "Standard", value: 0.72 },
+  { label: "Tight", value: 1.5 },
+  { label: "Lock", value: 3 },
+  { label: "Anchor", value: 6 },
+  { label: "Singularity", value: 10 }
+];
+
+const gravityNudgeOptions = [
+  { deltaPercent: -100, label: "-100%" },
+  { deltaPercent: -10, label: "-10%" },
+  { deltaPercent: 10, label: "+10%" },
+  { deltaPercent: 100, label: "+100%" }
+];
+
+const gravityBandOptions = [
+  { description: "Wide, loose formation for exploratory viewing.", label: "Drift field", max: 0.35 },
+  { description: "Balanced ENTRAL default with readable motion.", label: "Standard field", max: 1.15 },
+  { description: "Sharper hierarchy pull with quicker settling.", label: "Tactical field", max: 2.4 },
+  { description: "Tight orbital lock for compact command structure.", label: "Locked field", max: 4.5 },
+  { description: "Heavy pull for dense business or branch inspection.", label: "Anchor field", max: 8 },
+  { description: "Maximum gravity for near-static command focus.", label: "Singularity field", max: gravityMax + 1 }
+];
+
+const gravityRankOptions: Array<{ label: string; plural: string; type: GravityRank }> = [
+  { label: "Marshal", plural: "Marshals", type: "marshal" },
+  { label: "General", plural: "Generals", type: "general" },
+  { label: "Commander", plural: "Commanders", type: "commander" },
+  { label: "Soldier", plural: "Soldiers", type: "soldier" }
+];
 
 const orbitPatternOptions: Array<{ description: string; label: string; value: OrbitPattern }> = [
   { description: "Clean horizontal circular motion.", label: "Flat circle", value: "flat" },
@@ -386,6 +425,7 @@ const orbitPatternOptions: Array<{ description: string; label: string; value: Or
 
 const defaultGraphControls: GraphControlSettings = {
   cameraSensitivity: 1,
+  entityGravity: {},
   glowIntensity: 1,
   gravity: 0.72,
   orbitPattern: "flat",
@@ -395,6 +435,38 @@ const defaultGraphControls: GraphControlSettings = {
   showTrails: true,
   trailLength: 18
 };
+
+function readLocalStorageValue(key: string) {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalStorageValue(key: string, value: string) {
+  if (typeof window === "undefined") return false;
+
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removeLocalStorageValue(key: string) {
+  if (typeof window === "undefined") return false;
+
+  try {
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const businessCapabilityBlueprints: CapabilityBlueprint[] = [
   {
@@ -603,16 +675,22 @@ function readStoredGraphControls(): GraphControlSettings {
   }
 
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(graphControlsKey) ?? "{}") as Partial<GraphControlSettings>;
+    const parsed = JSON.parse(readLocalStorageValue(graphControlsKey) ?? "{}") as Partial<GraphControlSettings>;
     const storedOrbitPattern = parsed.orbitPattern;
     const orbitPattern: OrbitPattern = storedOrbitPattern && orbitPatternOptions.some((option) => option.value === storedOrbitPattern)
       ? storedOrbitPattern
       : defaultGraphControls.orbitPattern;
+    const entityGravity = Object.fromEntries(
+      Object.entries(parsed.entityGravity ?? {})
+        .filter((entry): entry is [string, number] => typeof entry[0] === "string" && typeof entry[1] === "number")
+        .map(([nodeId, gravity]) => [nodeId, clampGravity(gravity)])
+    );
 
     return {
       cameraSensitivity: clampNumber(parsed.cameraSensitivity, 0.45, 1.8, defaultGraphControls.cameraSensitivity),
+      entityGravity,
       glowIntensity: clampNumber(parsed.glowIntensity, 0.45, 1.85, defaultGraphControls.glowIntensity),
-      gravity: clampNumber(parsed.gravity, 0.2, 1.35, defaultGraphControls.gravity),
+      gravity: clampGravity(parsed.gravity, defaultGraphControls.gravity),
       orbitPattern,
       orbitSpeed: clampNumber(parsed.orbitSpeed, 0, 2.2, defaultGraphControls.orbitSpeed),
       particleSize: clampNumber(parsed.particleSize, 0.65, 1.7, defaultGraphControls.particleSize),
@@ -627,6 +705,165 @@ function readStoredGraphControls(): GraphControlSettings {
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {
   return typeof value === "number" && Number.isFinite(value) ? Math.min(Math.max(value, min), max) : fallback;
+}
+
+function clampGravity(value: unknown, fallback = defaultGraphControls.gravity) {
+  return clampNumber(value, gravityMin, gravityMax, fallback);
+}
+
+function gravityFromCommandNumber(value: number | null, fallback: number, context = "") {
+  if (value === null) return fallback;
+
+  const looksLikePercent = /%|\b(percent|percentage)\b/i.test(context) || value >= 25;
+  const normalized = value > gravityMax && looksLikePercent ? value / 100 : value;
+  return clampGravity(normalized, fallback);
+}
+
+function formatGravity(value: number) {
+  return `${Math.round(clampGravity(value) * 100)}%`;
+}
+
+function gravityToPercent(value: number) {
+  return Math.round(clampGravity(value) * 100);
+}
+
+function gravityFromPercentInput(value: string, fallback: number) {
+  if (!value.trim()) return fallback;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? clampGravity(parsed / 100, fallback) : fallback;
+}
+
+function gravityFromNudge(value: number, deltaPercent: number) {
+  return clampGravity(value + deltaPercent / 100);
+}
+
+function gravityPresetFromCommandText(value: string) {
+  if (/\b(no gravity|zero gravity|gravity off|turn gravity off|disable gravity|minimum gravity|min gravity|gravity to zero|gravity to min(?:imum)?|zero pull|min(?:imum)? pull)\b/i.test(value)) {
+    return 0;
+  }
+
+  if (/\b(max gravity|maximum gravity|full gravity|strongest gravity|gravity to max(?:imum)?|gravity max(?:imum)?|max(?:imum)? pull|full pull|strongest pull)\b/i.test(value)) {
+    return gravityMax;
+  }
+
+  if (/\b(default gravity|standard gravity|normal gravity|balanced gravity|gravity to default|gravity to standard|gravity to normal|gravity to balanced)\b/i.test(value)) {
+    return defaultGraphControls.gravity;
+  }
+
+  const preset = gravityPresetOptions.find((option) => new RegExp(`\\b${option.label.toLowerCase()}\\b`, "i").test(value));
+  return preset?.value ?? null;
+}
+
+function gravityDirectionFromCommandText(value: string) {
+  if (/\b(loosen|looser|decrease|decreased|decreasing|lower|less|reduce|reduced|reducing|weaker|weaken|soften|relax|wider|spread out|pull back|ease)\b/i.test(value)) {
+    return -1;
+  }
+
+  if (/\b(tighten|tighter|increase|increased|increasing|raise|higher|more|stronger|strengthen|boost|boosted|pull in|closer|compact|lock)\b/i.test(value)) {
+    return 1;
+  }
+
+  if (/\b(up)\b/i.test(value) && !/\b(set up|setup)\b/i.test(value)) {
+    return 1;
+  }
+
+  if (/\b(down)\b/i.test(value)) {
+    return -1;
+  }
+
+  return 1;
+}
+
+function gravityNudgePercentFromCommandText(value: string) {
+  if (/\b(tiny|fine|slight|slightly|small|little|nudge|tap)\b/i.test(value)) return 10;
+  if (/\b(major|big|large|hard|heavy|heavily|a lot|much|dramatic|dramatically)\b/i.test(value)) return 100;
+  return 25;
+}
+
+function gravityFromNaturalCommand(value: string, numericValue: number | null, current: number) {
+  const preset = numericValue === null ? gravityPresetFromCommandText(value) : null;
+
+  if (preset !== null) {
+    return clampGravity(preset, current);
+  }
+
+  if (numericValue !== null) {
+    return gravityFromCommandNumber(numericValue, current, value);
+  }
+
+  const direction = gravityDirectionFromCommandText(value);
+  const deltaPercent = gravityNudgePercentFromCommandText(value) * direction;
+  return gravityFromNudge(current, deltaPercent);
+}
+
+function gravityDepthPercent(value: number) {
+  return `${Math.round((clampGravity(value) / gravityMax) * 100)}%`;
+}
+
+function gravityBandFor(value: number) {
+  const gravity = clampGravity(value);
+  return gravityBandOptions.find((band) => gravity <= band.max) ?? gravityBandOptions[gravityBandOptions.length - 1];
+}
+
+function gravityVisualStrength(value: number) {
+  return clampNumber(clampGravity(value) / gravityMax, 0, 1, 0);
+}
+
+function gravityRankFromCommandText(value: string, hasNamedNode: boolean): GravityRank | null {
+  if (hasNamedNode) return null;
+
+  for (const rank of gravityRankOptions) {
+    const singular = rank.label.toLowerCase();
+    const plural = rank.plural.toLowerCase();
+    const patterns = [
+      new RegExp(`\\b(all|every|each)\\s+${plural}\\b`, "i"),
+      new RegExp(`\\b(all|every|each)\\s+${singular}\\b`, "i"),
+      new RegExp(`\\b${plural}\\s+gravity\\b`, "i"),
+      new RegExp(`\\b${singular}\\s+(rank|layer)\\b`, "i")
+    ];
+
+    if (patterns.some((pattern) => pattern.test(value))) {
+      return rank.type;
+    }
+  }
+
+  return null;
+}
+
+function gravityTightness(gravity: number) {
+  return clampNumber(1.54 / (1 + clampGravity(gravity) * 0.42), 0.18, 1.62, 1);
+}
+
+function gravitySettle(gravity: number, dt: number, reducedMotion: boolean) {
+  if (reducedMotion) return 1;
+
+  const pull = Math.min(0.48, 0.028 + clampGravity(gravity) * 0.074);
+  return 1 - Math.pow(1 - pull, dt * 60);
+}
+
+function nodeGravity(node: GraphNode3D, controls: GraphControlSettings) {
+  return clampGravity(controls.entityGravity[node.id], controls.gravity);
+}
+
+function uniformGravityForNodes(nodes: GraphNode3D[], controls: GraphControlSettings) {
+  const overrideValues = nodes
+    .filter((node) => controls.entityGravity[node.id] !== undefined)
+    .map((node) => clampGravity(controls.entityGravity[node.id]));
+
+  if (nodes.length === 0) {
+    return { overrideCount: 0, uniform: null, values: overrideValues };
+  }
+
+  if (overrideValues.length === nodes.length && overrideValues.length > 0) {
+    const firstValue = overrideValues[0];
+
+    if (overrideValues.every((value) => Math.abs(value - firstValue) < 0.01)) {
+      return { overrideCount: overrideValues.length, uniform: firstValue, values: overrideValues };
+    }
+  }
+
+  return { overrideCount: overrideValues.length, uniform: null, values: overrideValues };
 }
 
 function stableNumber(seed: string, salt = 0) {
@@ -836,9 +1073,9 @@ function hasStoredCommandState() {
   }
 
   return Boolean(
-    window.localStorage.getItem(commandStateKey)
-      ?? window.localStorage.getItem(previousCommandStateKey)
-      ?? window.localStorage.getItem(legacyCommandStateKey)
+    readLocalStorageValue(commandStateKey)
+      ?? readLocalStorageValue(previousCommandStateKey)
+      ?? readLocalStorageValue(legacyCommandStateKey)
   );
 }
 
@@ -993,18 +1230,18 @@ function readStoredCommandState(): GraphState3D {
   }
 
   try {
-    const storedValue = window.localStorage.getItem(commandStateKey)
-      ?? window.localStorage.getItem(previousCommandStateKey)
-      ?? window.localStorage.getItem(legacyCommandStateKey);
+    const storedValue = readLocalStorageValue(commandStateKey)
+      ?? readLocalStorageValue(previousCommandStateKey)
+      ?? readLocalStorageValue(legacyCommandStateKey);
     const parsed = JSON.parse(storedValue ?? "null") as Partial<GraphState3D> | null;
 
     if (hasLegacyMockEntities(parsed)) {
-      window.localStorage.removeItem(commandStateKey);
+      removeLocalStorageValue(commandStateKey);
       return fallback;
     }
 
-    if (parsed && !window.localStorage.getItem("entral-command-os-pre-marshal-backup")) {
-      window.localStorage.setItem("entral-command-os-pre-marshal-backup", JSON.stringify(parsed));
+    if (parsed && !readLocalStorageValue("entral-command-os-pre-marshal-backup")) {
+      writeLocalStorageValue("entral-command-os-pre-marshal-backup", JSON.stringify(parsed));
     }
 
     const stored = normalizeGraphState(parsed);
@@ -1309,7 +1546,28 @@ function commandTextToOrbitPattern(text: string): OrbitPattern | null {
 
 function commandTextToNode(text: string, nodes: GraphNode3D[]) {
   const normalized = text.toLowerCase();
-  const ignoredWords = new Set(["agent", "bot", "the", "to", "for", "show", "zoom", "focus", "open", "select", "monitor", "mock"]);
+  const ignoredWords = new Set([
+    "agent",
+    "bot",
+    "brand",
+    "business",
+    "client",
+    "commander",
+    "for",
+    "focus",
+    "general",
+    "marshal",
+    "mock",
+    "monitor",
+    "open",
+    "select",
+    "show",
+    "soldier",
+    "store",
+    "the",
+    "to",
+    "zoom"
+  ]);
   const placeholderMatch = /\b(marshal|general|commander|soldier)\s+(\d+)\b/.exec(normalized);
 
   if (placeholderMatch) {
@@ -1583,8 +1841,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             state: restored,
             type: "replace"
           });
-          window.localStorage.setItem(commandStateKey, JSON.stringify(restored));
-          window.localStorage.setItem(commandStateUpdatedKey, response.snapshot.updatedAt);
+          writeLocalStorageValue(commandStateKey, JSON.stringify(restored));
+          writeLocalStorageValue(commandStateUpdatedKey, response.snapshot.updatedAt);
           setStatusMessage("Persistent Command OS memory restored from ENTRAL backend.");
         } else if (response.snapshot?.state) {
           setStatusMessage("Local Command OS memory preserved. Backend persistence is online.");
@@ -1610,8 +1868,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   useEffect(() => {
     graphRef.current = graph;
     const serialized = JSON.stringify(graph);
-    window.localStorage.setItem(commandStateKey, serialized);
-    window.localStorage.setItem(commandStateUpdatedKey, new Date().toISOString());
+    const savedCommandState = writeLocalStorageValue(commandStateKey, serialized);
+    writeLocalStorageValue(commandStateUpdatedKey, new Date().toISOString());
+
+    if (!savedCommandState) {
+      setStatusMessage("Command OS is running, but this browser blocked local memory storage. Backend sync will still be attempted.");
+    }
 
     if (!user?.id || !isCommandPersistenceReady || lastSyncedCommandStateRef.current === serialized) {
       return;
@@ -1644,8 +1906,27 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
   useEffect(() => {
     graphControlsRef.current = graphControls;
-    window.localStorage.setItem(graphControlsKey, JSON.stringify(graphControls));
+    writeLocalStorageValue(graphControlsKey, JSON.stringify(graphControls));
   }, [graphControls]);
+
+  useEffect(() => {
+    const nodeIds = new Set(graph.nodes.map((node) => node.id));
+    const staleGravityIds = Object.keys(graphControlsRef.current.entityGravity).filter((nodeId) => !nodeIds.has(nodeId));
+
+    if (staleGravityIds.length === 0) return;
+
+    setGraphControls((current) => {
+      const entityGravity = { ...current.entityGravity };
+
+      for (const nodeId of staleGravityIds) {
+        delete entityGravity[nodeId];
+      }
+
+      const next = { ...current, entityGravity };
+      graphControlsRef.current = next;
+      return next;
+    });
+  }, [graph.nodes]);
 
   useEffect(() => {
     lockedNodeIdRef.current = lockedNodeId;
@@ -1830,7 +2111,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
   function updateGraphControl<K extends keyof GraphControlSettings>(key: K, value: GraphControlSettings[K]) {
     setGraphControls((current) => {
-      const next = { ...current, [key]: value };
+      const nextValue = key === "gravity" ? clampGravity(value) : value;
+      const next = { ...current, [key]: nextValue };
       graphControlsRef.current = next;
       return next;
     });
@@ -1838,17 +2120,184 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
   function patchGraphControls(changes: Partial<GraphControlSettings>, message: string) {
     setGraphControls((current) => {
-      const next = { ...current, ...changes };
+      const next = {
+        ...current,
+        ...changes,
+        gravity: changes.gravity === undefined ? current.gravity : clampGravity(changes.gravity),
+        entityGravity: changes.entityGravity ?? current.entityGravity
+      };
       graphControlsRef.current = next;
       return next;
     });
     setStatusMessage(message);
   }
 
+  function setEntityGravity(nodeId: string, gravity: number, message?: string) {
+    setGraphControls((current) => {
+      const next = {
+        ...current,
+        entityGravity: {
+          ...current.entityGravity,
+          [nodeId]: clampGravity(gravity)
+        }
+      };
+      graphControlsRef.current = next;
+      return next;
+    });
+
+    if (message) {
+      setStatusMessage(message);
+    }
+  }
+
+  function clearEntityGravity(nodeId: string, label = "Selected entity") {
+    setGraphControls((current) => {
+      const entityGravity = { ...current.entityGravity };
+      delete entityGravity[nodeId];
+      const next = { ...current, entityGravity };
+      graphControlsRef.current = next;
+      return next;
+    });
+    setStatusMessage(`${label} gravity returned to global pull.`);
+  }
+
+  function applyGravityToNodes(nodes: GraphNode3D[], gravity: number, label: string) {
+    if (nodes.length === 0) {
+      setStatusMessage(`Create at least one ${label.slice(0, -1) || "entity"} before tuning that rank.`);
+      return;
+    }
+
+    const nextGravity = clampGravity(gravity);
+    patchGraphControls({
+      entityGravity: {
+        ...graphControlsRef.current.entityGravity,
+        ...Object.fromEntries(nodes.map((node) => [node.id, nextGravity]))
+      }
+    }, `Applied ${formatGravity(nextGravity)} gravity to ${nodes.length} ${label.toLowerCase()}.`);
+  }
+
+  function applyGravityToAllEntities(gravity = graphControlsRef.current.gravity) {
+    const gravityNodes = graphRef.current.nodes.filter((node) => node.type !== "core");
+
+    if (gravityNodes.length === 0) {
+      setStatusMessage("Create a Marshal, General, Commander, or Soldier before applying individual gravity.");
+      return;
+    }
+
+    const nextGravity = clampGravity(gravity);
+    patchGraphControls({
+      entityGravity: Object.fromEntries(gravityNodes.map((node) => [node.id, nextGravity]))
+    }, `Applied ${formatGravity(nextGravity)} individual gravity to ${gravityNodes.length} entit${gravityNodes.length === 1 ? "y" : "ies"}.`);
+  }
+
+  function applyGravityToRank(rank: GravityRank, gravity = graphControlsRef.current.gravity) {
+    const option = gravityRankOptions.find((item) => item.type === rank);
+    const rankNodes = graphRef.current.nodes.filter((node) => node.commandType === rank);
+    applyGravityToNodes(rankNodes, gravity, option?.plural ?? `${rank}s`);
+  }
+
+  function branchNodesFor(nodeId: string, nodes = graphRef.current.nodes) {
+    const branchIds = new Set([nodeId, ...descendantIdsFor(nodeId, nodes)]);
+    return nodes.filter((node) => node.type !== "core" && branchIds.has(node.id));
+  }
+
+  function applyGravityToBranch(nodeId: string, gravity = graphControlsRef.current.gravity) {
+    const root = graphRef.current.nodes.find((node) => node.id === nodeId);
+    const branchNodes = branchNodesFor(nodeId);
+
+    if (!root || root.type === "core" || branchNodes.length === 0) {
+      setStatusMessage("Select a Marshal, General, Commander, or Soldier before applying branch gravity.");
+      return;
+    }
+
+    const nextGravity = clampGravity(gravity);
+    patchGraphControls({
+      entityGravity: {
+        ...graphControlsRef.current.entityGravity,
+        ...Object.fromEntries(branchNodes.map((node) => [node.id, nextGravity]))
+      }
+    }, `${root.name} branch gravity set to ${formatGravity(nextGravity)} across ${branchNodes.length} entit${branchNodes.length === 1 ? "y" : "ies"}.`);
+  }
+
+  function clearRankGravity(rank: GravityRank) {
+    const option = gravityRankOptions.find((item) => item.type === rank);
+    const rankNodes = graphRef.current.nodes.filter((node) => node.commandType === rank);
+
+    if (rankNodes.length === 0) {
+      setStatusMessage(`No ${option?.plural.toLowerCase() ?? `${rank}s`} exist yet.`);
+      return;
+    }
+
+    const rankIds = new Set(rankNodes.map((node) => node.id));
+
+    setGraphControls((current) => {
+      const entityGravity = Object.fromEntries(
+        Object.entries(current.entityGravity).filter(([nodeId]) => !rankIds.has(nodeId))
+      );
+      const next = { ...current, entityGravity };
+      graphControlsRef.current = next;
+      return next;
+    });
+    setStatusMessage(`${option?.plural ?? `${rank}s`} now inherit global gravity.`);
+  }
+
+  function clearBranchGravity(nodeId: string) {
+    const root = graphRef.current.nodes.find((node) => node.id === nodeId);
+    const branchNodes = branchNodesFor(nodeId);
+
+    if (!root || root.type === "core" || branchNodes.length === 0) {
+      setStatusMessage("Select a Marshal, General, Commander, or Soldier before clearing branch gravity.");
+      return;
+    }
+
+    const branchIds = new Set(branchNodes.map((node) => node.id));
+
+    setGraphControls((current) => {
+      const entityGravity = Object.fromEntries(
+        Object.entries(current.entityGravity).filter(([nodeId]) => !branchIds.has(nodeId))
+      );
+      const next = { ...current, entityGravity };
+      graphControlsRef.current = next;
+      return next;
+    });
+    setStatusMessage(`${root.name} branch now inherits global gravity.`);
+  }
+
+  function clearAllGravityOverrides(message = "All hierarchy entities now inherit global gravity.") {
+    patchGraphControls({ entityGravity: {} }, message);
+  }
+
+  function resetGravityField() {
+    patchGraphControls({
+      entityGravity: {},
+      gravity: defaultGraphControls.gravity
+    }, `Gravity reset to ${formatGravity(defaultGraphControls.gravity)}. All hierarchy entities inherit the default field.`);
+  }
+
   function resetGraphControls() {
-    graphControlsRef.current = defaultGraphControls;
-    setGraphControls(defaultGraphControls);
+    const next = { ...defaultGraphControls, entityGravity: {} };
+    graphControlsRef.current = next;
+    setGraphControls(next);
     setStatusMessage("Graph dynamics reset to the tuned ENTRAL defaults.");
+  }
+
+  function renderGravityNudges(label: string, value: number, onApply: (gravity: number) => void, disabled = false, isMixed = false) {
+    return (
+      <div className={isMixed ? "gravity-nudge-row mixed" : "gravity-nudge-row"} role="group" aria-label={`${label} gravity fine adjustment`}>
+        <span>{isMixed ? "Mixed" : "Fine tune"}</span>
+        {gravityNudgeOptions.map((option) => (
+          <button
+            aria-label={`${label} gravity ${option.label}`}
+            disabled={disabled || isMixed}
+            key={option.label}
+            type="button"
+            onClick={() => onApply(gravityFromNudge(value, option.deltaPercent))}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    );
   }
 
   function getNodeMotion(node: GraphNode3D): NodeMotion {
@@ -2130,9 +2579,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       const activeGroups = graphNow.groups.filter((group) => group.id !== "core");
       const groupIndexes = new Map(activeGroups.map((group, index) => [group.id, index]));
       const parentLocalIndexes = new Map<string, number>();
-      const orbitTightness = 1.28 - controlsNow.gravity * 0.36;
+      const orbitTightness = gravityTightness(controlsNow.gravity);
       const orbitPattern = controlsNow.orbitPattern;
-      const settle = reducedMotionRef.current ? 1 : 1 - Math.pow(1 - Math.min(0.22, 0.055 + controlsNow.gravity * 0.09), dt * 60);
 
       for (const node of renderNodes) {
         if (node.type === "core") {
@@ -2147,8 +2595,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
         const groupIndex = groupIndexes.get(node.groupId) ?? 0;
         const shellMeta = orbitMeta(groupIndex);
+        const effectiveGravity = nodeGravity(node, controlsNow);
+        const effectiveTightness = gravityTightness(effectiveGravity);
+        const settle = gravitySettle(effectiveGravity, dt, reducedMotionRef.current);
         const marshalCenter = orbitPoint(
-          { ...shellMeta, radius: shellMeta.radius * orbitTightness },
+          { ...shellMeta, radius: shellMeta.radius * effectiveTightness },
           timeRef.current * shellMeta.speed * controlsNow.orbitSpeed + shellMeta.phase,
           orbitPattern
         );
@@ -2165,10 +2616,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             ? { x: parent.x, y: parent.y, z: parent.z }
             : marshalCenter;
           const localRadius = node.commandType === "general"
-            ? (132 + localIndex * 18) * orbitTightness
+            ? (132 + localIndex * 18) * effectiveTightness
             : node.commandType === "commander"
-            ? (86 + localIndex * 13) * orbitTightness
-            : (36 + localIndex * 7) * orbitTightness;
+            ? (86 + localIndex * 13) * effectiveTightness
+            : (36 + localIndex * 7) * effectiveTightness;
           const localMeta: OrbitMeta = {
             phase: motion.phase + localIndex * 0.64,
             radius: localRadius,
@@ -2323,6 +2774,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           }
         } else {
           const motion = getNodeMotion(node);
+          const effectiveGravity = nodeGravity(node, controlsNow);
+          const gravityStrength = gravityVisualStrength(effectiveGravity);
+          const hasGravityOverride = controlsNow.entityGravity[node.id] !== undefined;
 
           if (controlsNow.showTrails) {
             for (let trail = motion.trail.length - 1; trail >= 0; trail -= 1) {
@@ -2333,7 +2787,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
           const statusColor = commandStatusColor(node.status);
           const pulse = node.status === "working" && !reducedMotionRef.current ? 1 + Math.sin(timeRef.current * 4.2 + stableNumber(node.id, 31) * 6.28) * 0.07 : 1;
-          drawPoint(node, statusColor, (size + 18) * pulse, dimmed ? 0.08 : 0.26);
+          if (hasGravityOverride || effectiveGravity > controlsNow.gravity + 0.05) {
+            const gravityPulse = reducedMotionRef.current ? 1 : 1 + Math.sin(timeRef.current * 2.6 + stableNumber(node.id, 43) * 6.28) * 0.08;
+            drawPoint(node, accent, (size + 28 + gravityStrength * 58) * gravityPulse, dimmed ? 0.035 : 0.08 + gravityStrength * 0.2);
+          }
+          drawPoint(node, statusColor, (size + 18 + gravityStrength * 10) * pulse, dimmed ? 0.08 : 0.22 + gravityStrength * 0.16);
           drawPoint(node, color, (size + 9) * pulse, dimmed ? 0.34 : 0.98);
           drawNodeMarker(node, color, statusColor || accent, size, dimmed, pulse, billboardAxes);
           drawPoint(node, statusColor || accent, Math.max(8, size * 0.28) * pulse, dimmed ? 0.2 : 0.82);
@@ -3261,14 +3719,23 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       .trim();
   }
 
+  function showCommandConsole(section: CommandConsoleSection = "command") {
+    setIsCommandConsoleOpen(true);
+    setCommandConsoleSection(section);
+
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+      setMobileTab("command");
+      setIsPanelOpen(false);
+    }
+  }
+
   function openBusinessWizard(templateId?: string) {
     setBusinessWizard((current) => ({
       ...current,
       isOpen: true,
       templateId: templateId ?? current.templateId
     }));
-    setIsCommandConsoleOpen(true);
-    setCommandConsoleSection("setup");
+    showCommandConsole("setup");
     respond({
       analysis: "Guided creation is ready. Select a business template, enter the business name, and ENTRAL will build the Marshal, General, Commanders, Soldiers, and first intake task.",
       nextActions: ["Choose a template.", "Enter the business name.", "Confirm Create business."],
@@ -3307,7 +3774,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       summary,
       type: "create-node"
     });
-    setIsCommandConsoleOpen(true);
+    showCommandConsole("command");
     respond(summary, `${title} creation awaiting authorization.`);
   }
 
@@ -4055,7 +4522,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     const meta = orbitMeta(Math.max(groupIndex, 0));
     const center = groupId === "core" || groupIndex < 0
       ? { x: 0, y: 0, z: 0 }
-      : orbitPoint({ ...meta, radius: meta.radius * (1.28 - controls.gravity * 0.36) }, timeRef.current * meta.speed * controls.orbitSpeed + meta.phase, controls.orbitPattern);
+      : orbitPoint({ ...meta, radius: meta.radius * gravityTightness(controls.gravity) }, timeRef.current * meta.speed * controls.orbitSpeed + meta.phase, controls.orbitPattern);
 
     setCamera({
       distance: groupId === "core" ? 520 : 560,
@@ -4139,13 +4606,59 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
   function openGraphControls() {
     setIsControlsOpen(true);
-    setCommandConsoleSection("controls");
+    showCommandConsole("controls");
     respond("Objective acknowledged. Graph controls expanded inside the unified command console.");
+  }
+
+  function explainGravityControls() {
+    setIsControlsOpen(true);
+    showCommandConsole("controls");
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>("[data-gravity-guide]");
+      target?.scrollIntoView({ block: "start", behavior: "smooth" });
+      target?.focus?.({ preventScroll: true });
+    });
+    respond({
+      analysis: "Global gravity controls the inherited field for current and future entities. All entity gravity writes overrides to every current hierarchy entity. Rank gravity tunes Marshals, Generals, Commanders, or Soldiers as layers. Branch gravity tunes one parent and its descendants. Individual gravity tunes one selected entity.",
+      nextActions: [
+        "Use Global when the whole graph should feel looser or tighter.",
+        "Use All when every current entity should receive the same explicit pull.",
+        "Use Rank when one hierarchy layer needs its own motion.",
+        "Use Branch when one business chain or department should move together.",
+        "Use Individual when one entity needs precise tuning."
+      ],
+      recommendation: "Start with Global for the overall feel, then use Rank, Branch, or Individual only when a specific part of the command structure needs a different pull.",
+      situation: "Gravity controls are open in the Graph section."
+    }, "Gravity controls explained.");
+  }
+
+  function jumpToGravityScope(scope: "all" | "branch" | "global" | "individual" | "rank") {
+    setIsControlsOpen(true);
+    setCommandConsoleSection("controls");
+
+    window.requestAnimationFrame(() => {
+      const selector = scope === "global"
+        ? "[data-gravity-scope='global']"
+        : `[data-gravity-scope='${scope}']`;
+      const target = document.querySelector<HTMLElement>(selector);
+      target?.scrollIntoView({ block: "start", behavior: "smooth" });
+      target?.focus?.({ preventScroll: true });
+    });
   }
 
   function closeGraphControls() {
     setIsControlsOpen(false);
     respond("Objective acknowledged. Graph controls collapsed inside the unified command console.");
+  }
+
+  function closeCommandConsoleForGraph() {
+    setIsCommandConsoleOpen(false);
+
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+      setMobileTab("graph");
+      setIsPanelOpen(false);
+      setStatusMessage("Graph view cleared. Use Command to reopen ENTRAL controls.");
+    }
   }
 
   function openMobileTab(tab: MobileCommandTab) {
@@ -4154,6 +4667,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
     if (tab !== "command") {
       setIsPanelOpen(false);
+    }
+
+    if (tab === "graph") {
+      setStatusMessage("Graph view active. Use Command to reopen ENTRAL controls.");
     }
   }
 
@@ -4491,6 +5008,21 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       "- Show mobile guide",
       "- Replay tutorial",
       "",
+      "Graph Control:",
+      "- Set global gravity to 300%",
+      "- Set global gravity to 1000%",
+      "- Set all gravity to 300%",
+      "- Set every entity gravity to 300%",
+      "- Set all Soldiers gravity to 250%",
+      "- Set all Commanders gravity to 900%",
+      "- Clear all Commanders gravity",
+      "- Set selected branch gravity to 220%",
+      "- Set selected branch gravity to 850%",
+      "- Set selected gravity to 40%",
+      "- Set Iron House Gym gravity to 500%",
+      "- Make the graph looser",
+      "- Hide orbit rings",
+      "",
       "Troubleshooting:",
       "If a directive needs more detail, ENTRAL will ask for the missing Marshal, General, Commander, Soldier, or approval before execution proceeds."
     ].join("\n");
@@ -4602,6 +5134,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     const selected = selectedNodeId ? nodeMap.get(selectedNodeId) : null;
     const numberMatch = /(\d+(?:\.\d+)?)/.exec(normalized);
     const numericValue = numberMatch ? Number(numberMatch[1]) : null;
+    const explicitHierarchyCreateType = explicitHierarchyCreateTypeFromText(rawText);
 
     if (!rawText) return;
     appendConsoleMessage("operator", rawText, "operator");
@@ -4610,6 +5143,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       approvePendingAuthorization();
     } else if (pendingAuthorization && actionPlan.kind === "cancel_authorization") {
       cancelPendingAuthorization();
+    } else if (actionPlan.kind === "open_gravity_help") {
+      explainGravityControls();
     } else if (actionPlan.kind === "open_help" || isHelpCommand(normalized)) {
       respond(createCommandHelpTransmission(), "ENTRAL Command Help opened.");
     } else if (actionPlan.kind === "open_voice_settings" && intent.kind === "tutorial_request") {
@@ -4729,11 +5264,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       setStatusHighlight(["working", "thinking"], "Highlighted working and thinking hierarchy nodes.");
     } else if (normalized.includes("demo environment") || normalized.includes("demo command") || normalized.includes("load demo")) {
       requestDemoEnvironmentAuthorization();
-    } else if (intent.kind === "template_request") {
+    } else if (!explicitHierarchyCreateType && intent.kind === "template_request") {
       const template = templateFromText(text);
       openBusinessWizard(template?.id);
     } else if (
-      intent.kind === "business_creation_request" ||
+      !explicitHierarchyCreateType && (
+        intent.kind === "business_creation_request" ||
       normalized.includes("business wizard") ||
       normalized.includes("business template") ||
       normalized.includes("create my first business") ||
@@ -4742,6 +5278,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       normalized.includes("help me create") ||
       normalized.includes("guide me") ||
       normalized.includes("first business")
+      )
     ) {
       const template = templateFromText(text);
       const businessName = businessNameFromCommand(text);
@@ -4781,9 +5318,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       } else {
         requestRemoveNode(selectedNodeId);
       }
-    } else if (normalized.includes("create") && normalized.includes("marshal")) {
+    } else if (explicitHierarchyCreateType === "marshal") {
       requestNodeAuthorization("marshal", hierarchyNameFromCommand(text, "marshal"));
-    } else if (normalized.includes("create") && (normalized.includes("business") || normalized.includes("client") || normalized.includes("brand") || normalized.includes("store") || normalized.includes("project") || normalized.includes("operation")) && !normalized.includes("commander") && !normalized.includes("soldier")) {
+    } else if (/\b(create|add|new)\b/i.test(normalized) && (normalized.includes("business") || normalized.includes("client") || normalized.includes("brand") || normalized.includes("store") || normalized.includes("project") || normalized.includes("operation")) && !normalized.includes("commander") && !normalized.includes("soldier")) {
       const template = templateFromText(text);
       const businessName = businessNameFromCommand(text);
 
@@ -4829,7 +5366,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       setSelectedNodeId(marshalId);
       selectedRef.current = marshalId;
       requestNodeAuthorization("general", /\bGeneral$/i.test(rawName) ? rawName : `${rawName} General`);
-    } else if (normalized.includes("create") && normalized.includes("general")) {
+    } else if (explicitHierarchyCreateType === "general") {
       if (!commandHasMarshalContext(text)) {
         respond({
           analysis: "A General represents an actual business, client, brand, store, or operation and must belong to a Marshal.",
@@ -4853,7 +5390,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       setSelectedNodeId(marshalId);
       selectedRef.current = marshalId;
       requestNodeAuthorization("general", hierarchyNameFromCommand(text, "general"));
-    } else if (normalized.includes("create") && normalized.includes("commander")) {
+    } else if (explicitHierarchyCreateType === "commander") {
       const generalId = generalIdFromCommand(text);
       if (!generalId) {
         respond({
@@ -4867,7 +5404,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       setSelectedNodeId(generalId);
       selectedRef.current = generalId;
       requestNodeAuthorization("commander", hierarchyNameFromCommand(text, "commander"));
-    } else if (normalized.includes("create") && normalized.includes("soldier")) {
+    } else if (explicitHierarchyCreateType === "soldier") {
       const commanderId = commanderIdFromCommand(text);
 
       if (commanderId) {
@@ -4980,25 +5517,34 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     } else if ((normalized.includes("orbit") || normalized.includes("pattern")) && commandTextToOrbitPattern(text)) {
       const orbitPattern = commandTextToOrbitPattern(text) ?? defaultGraphControls.orbitPattern;
       const option = orbitPatternOptions.find((candidate) => candidate.value === orbitPattern);
+      const message = `Orbit pattern set to ${option?.label ?? orbitPattern}.`;
       patchGraphControls({
         orbitPattern
-      }, `Orbit pattern set to ${option?.label ?? orbitPattern}.`);
+      }, message);
+      respond(message);
     } else if (normalized.includes("ring") || normalized.includes("orbit path")) {
       const shouldShow = normalized.includes("show") || normalized.includes("enable") || normalized.includes("turn on");
       const shouldHide = normalized.includes("hide") || normalized.includes("remove") || normalized.includes("disable") || normalized.includes("turn off");
+      const message = `${shouldHide ? "Hidden" : shouldShow ? "Shown" : "Toggled"} orbital rings from ENTRAL Command.`;
       patchGraphControls({
         showRings: shouldHide ? false : shouldShow ? true : !graphControlsRef.current.showRings
-      }, `${shouldHide ? "Hidden" : shouldShow ? "Shown" : "Toggled"} orbital rings from ENTRAL Command.`);
+      }, message);
+      respond(message);
     } else if (normalized.includes("trail length") || normalized.includes("tail length")) {
+      const nextTrailLength = Math.min(Math.max(numericValue ?? graphControlsRef.current.trailLength + 6, 4), 42);
+      const message = `Particle trail length set to ${nextTrailLength} from ENTRAL Command.`;
       patchGraphControls({
-        trailLength: Math.min(Math.max(numericValue ?? graphControlsRef.current.trailLength + 6, 4), 42)
-      }, "Updated particle trail length from ENTRAL Command.");
+        trailLength: nextTrailLength
+      }, message);
+      respond(message);
     } else if (normalized.includes("trail") || normalized.includes("tail")) {
       const shouldShow = normalized.includes("show") || normalized.includes("enable") || normalized.includes("turn on");
       const shouldHide = normalized.includes("hide") || normalized.includes("remove") || normalized.includes("disable") || normalized.includes("turn off");
+      const message = `${shouldHide ? "Hidden" : shouldShow ? "Shown" : "Toggled"} particle trails from ENTRAL Command.`;
       patchGraphControls({
         showTrails: shouldHide ? false : shouldShow ? true : !graphControlsRef.current.showTrails
-      }, `${shouldHide ? "Hidden" : shouldShow ? "Shown" : "Toggled"} particle trails from ENTRAL Command.`);
+      }, message);
+      respond(message);
     } else if (normalized.includes("speed") || normalized.includes("faster") || normalized.includes("slower") || normalized.includes("freeze")) {
       const current = graphControlsRef.current.orbitSpeed;
       const nextSpeed = normalized.includes("freeze") || normalized.includes("stop")
@@ -5008,35 +5554,183 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           : normalized.includes("slower")
             ? current * 0.72
             : current * 1.28;
+      const speed = Math.min(Math.max(nextSpeed, 0), 2.2);
+      const message = `Graph orbit speed set to ${speed.toFixed(2)}x from ENTRAL Command.`;
 
       patchGraphControls({
-        orbitSpeed: Math.min(Math.max(nextSpeed, 0), 2.2)
-      }, `Graph orbit speed set to ${Math.min(Math.max(nextSpeed, 0), 2.2).toFixed(2)}x from ENTRAL Command.`);
+        orbitSpeed: speed
+      }, message);
+      respond(message);
     } else if (normalized.includes("gravity") || normalized.includes("tighter") || normalized.includes("looser")) {
-      const current = graphControlsRef.current.gravity;
-      const nextGravity = numericValue !== null
-        ? numericValue
-        : normalized.includes("looser")
-          ? current * 0.82
-          : current * 1.14;
+      const shouldClearGravity = normalized.includes("clear") || normalized.includes("remove override") || normalized.includes("inherit");
+      const shouldResetGravity = normalized.includes("reset") || normalized.includes("default");
+      const mentionedGravityNode = commandNode && commandNode.type !== "core" ? commandNode : null;
+      const selectedGravityNode = selected && selected.type !== "core" ? selected : null;
+      const targetGravityRank = gravityRankFromCommandText(normalized, Boolean(mentionedGravityNode));
+      const wantsEveryEntityGravity = /\b(each|every)\b/i.test(normalized)
+        || normalized.includes("all individual")
+        || normalized.includes("all gravity")
+        || normalized.includes("formation pull")
+        || normalized.includes("all agent")
+        || normalized.includes("all agents")
+        || normalized.includes("all entity")
+        || normalized.includes("all entities")
+        || normalized.includes("all neuron")
+        || normalized.includes("all neurons")
+        || normalized.includes("all node")
+        || normalized.includes("all nodes")
+        || /\beveryone\b/i.test(normalized);
+      const wantsEntityGravity = Boolean(mentionedGravityNode)
+        || normalized.includes("selected")
+        || normalized.includes("individual")
+        || normalized.includes("this entity")
+        || normalized.includes("this node");
+      const targetGravityNode = wantsEntityGravity ? mentionedGravityNode ?? selectedGravityNode : null;
+      const wantsBranchGravity = normalized.includes("branch")
+        || normalized.includes("subordinate")
+        || normalized.includes("subordinates")
+        || normalized.includes("children")
+        || normalized.includes("team gravity")
+        || normalized.includes("unit gravity")
+        || normalized.includes("division gravity")
+        || normalized.includes("department gravity");
+      const targetBranchNode = wantsBranchGravity ? mentionedGravityNode ?? selectedGravityNode : null;
 
-      patchGraphControls({
-        gravity: Math.min(Math.max(nextGravity, 0.2), 1.35)
-      }, "Adjusted graph gravity and orbit tightness from ENTRAL Command.");
+      if ((shouldClearGravity || shouldResetGravity) && wantsBranchGravity) {
+        if (targetBranchNode) {
+          clearBranchGravity(targetBranchNode.id);
+          respond(`${targetBranchNode.name} branch now inherits global gravity at ${formatGravity(graphControlsRef.current.gravity)}.`);
+        } else {
+          respond("Additional operational detail is required. Select or name a Marshal, General, Commander, or Soldier before clearing branch gravity.");
+        }
+        setCommand("");
+        return;
+      }
+
+      if (wantsBranchGravity && !shouldClearGravity && !shouldResetGravity) {
+        if (!targetBranchNode) {
+          respond("Additional operational detail is required. Select or name a Marshal, General, Commander, or Soldier before assigning branch gravity.");
+          setCommand("");
+          return;
+        }
+
+        const branchNodes = branchNodesFor(targetBranchNode.id);
+        const branchSummary = uniformGravityForNodes(branchNodes, graphControlsRef.current);
+        const current = branchSummary.uniform ?? nodeGravity(targetBranchNode, graphControlsRef.current);
+        const gravity = gravityFromNaturalCommand(normalized, numericValue, current);
+
+        applyGravityToBranch(targetBranchNode.id, gravity);
+        respond(`${targetBranchNode.name} branch now has a gravity override of ${formatGravity(gravity)} across ${branchNodes.length} entit${branchNodes.length === 1 ? "y" : "ies"}.`);
+        setCommand("");
+        return;
+      }
+
+      if ((shouldClearGravity || shouldResetGravity) && targetGravityRank) {
+        clearRankGravity(targetGravityRank);
+        const rank = gravityRankOptions.find((option) => option.type === targetGravityRank);
+        respond(`${rank?.plural ?? "Rank"} now inherit global gravity at ${formatGravity(graphControlsRef.current.gravity)}.`);
+        setCommand("");
+        return;
+      }
+
+      if ((shouldClearGravity || shouldResetGravity) && targetGravityNode) {
+        clearEntityGravity(targetGravityNode.id, targetGravityNode.name);
+        respond(`${targetGravityNode.name} now inherits global gravity at ${formatGravity(graphControlsRef.current.gravity)}.`);
+        setCommand("");
+        return;
+      }
+
+      if (targetGravityRank && !shouldClearGravity && !shouldResetGravity) {
+        const rank = gravityRankOptions.find((option) => option.type === targetGravityRank);
+        const rankNodes = graphRef.current.nodes.filter((node) => node.commandType === targetGravityRank);
+
+        if (rankNodes.length === 0) {
+          respond(`No ${rank?.plural.toLowerCase() ?? "rank entities"} exist yet. Create that command layer before assigning rank gravity.`);
+          setCommand("");
+          return;
+        }
+
+        const rankSummary = uniformGravityForNodes(rankNodes, graphControlsRef.current);
+        const current = rankSummary.uniform ?? graphControlsRef.current.gravity;
+        const gravity = gravityFromNaturalCommand(normalized, numericValue, current);
+
+        applyGravityToRank(targetGravityRank, gravity);
+        respond(`${rank?.plural ?? "Rank entities"} now have an individual gravity override of ${formatGravity(gravity)}. Other command layers were not changed.`);
+        setCommand("");
+        return;
+      }
+
+      if (shouldClearGravity && (normalized.includes("all") || normalized.includes("override"))) {
+        clearAllGravityOverrides("Cleared all individual gravity overrides.");
+        respond("All individual gravity overrides cleared. Entities now inherit global gravity.");
+        setCommand("");
+        return;
+      }
+
+      if (wantsEveryEntityGravity && !shouldClearGravity && !shouldResetGravity) {
+        const gravityNodes = graphRef.current.nodes.filter((node) => node.type !== "core");
+
+        if (gravityNodes.length === 0) {
+          respond("No subordinate entities exist yet. Create a Marshal, General, Commander, or Soldier before assigning individual gravity.");
+          setCommand("");
+          return;
+        }
+
+        const current = graphControlsRef.current.gravity;
+        const gravity = gravityFromNaturalCommand(normalized, numericValue, current);
+
+        patchGraphControls({
+          entityGravity: Object.fromEntries(gravityNodes.map((node) => [node.id, gravity]))
+        }, `Individual gravity set to ${formatGravity(gravity)} for ${gravityNodes.length} entit${gravityNodes.length === 1 ? "y" : "ies"}.`);
+        respond(`Every current hierarchy entity now has an individual gravity override of ${formatGravity(gravity)}. Global gravity remains ${formatGravity(graphControlsRef.current.gravity)} for future or inherited entities.`);
+        setCommand("");
+        return;
+      }
+
+      if (shouldResetGravity && !wantsEntityGravity) {
+        resetGravityField();
+        respond(`Global gravity reset to ${formatGravity(defaultGraphControls.gravity)}. Individual gravity overrides cleared.`);
+        setCommand("");
+        return;
+      }
+
+      const current = targetGravityNode ? nodeGravity(targetGravityNode, graphControlsRef.current) : graphControlsRef.current.gravity;
+      const nextGravity = gravityFromNaturalCommand(normalized, numericValue, current);
+
+      if (targetGravityNode) {
+        const gravity = clampGravity(nextGravity);
+        setEntityGravity(targetGravityNode.id, gravity, `${targetGravityNode.name} gravity override set to ${formatGravity(gravity)}.`);
+        respond(`${targetGravityNode.name} now has an individual gravity override of ${formatGravity(gravity)}. Global gravity remains ${formatGravity(graphControlsRef.current.gravity)}.`);
+      } else if (wantsEntityGravity) {
+        respond("Additional operational detail is required. Select or name a Marshal, General, Commander, or Soldier before assigning individual gravity.");
+      } else {
+        const gravity = clampGravity(nextGravity);
+        const message = `Global graph gravity adjusted to ${formatGravity(gravity)}. Current and future inherited entities will use this pull unless they have individual overrides.`;
+        patchGraphControls({
+          gravity
+        }, message);
+        respond(message);
+      }
     } else if (normalized.includes("glow")) {
       const current = graphControlsRef.current.glowIntensity;
       const nextGlow = numericValue !== null ? numericValue : normalized.includes("less") || normalized.includes("down") ? current * 0.82 : current * 1.16;
+      const glowIntensity = Math.min(Math.max(nextGlow, 0.45), 1.85);
+      const message = `Neon glow intensity set to ${glowIntensity.toFixed(2)} from ENTRAL Command.`;
 
       patchGraphControls({
-        glowIntensity: Math.min(Math.max(nextGlow, 0.45), 1.85)
-      }, "Adjusted neon glow intensity from ENTRAL Command.");
+        glowIntensity
+      }, message);
+      respond(message);
     } else if (normalized.includes("particle size") || normalized.includes("bigger") || normalized.includes("smaller")) {
       const current = graphControlsRef.current.particleSize;
       const nextSize = numericValue !== null ? numericValue : normalized.includes("smaller") ? current * 0.86 : current * 1.12;
+      const particleSize = Math.min(Math.max(nextSize, 0.65), 1.7);
+      const message = `Electron particle size set to ${particleSize.toFixed(2)} from ENTRAL Command.`;
 
       patchGraphControls({
-        particleSize: Math.min(Math.max(nextSize, 0.65), 1.7)
-      }, "Adjusted electron particle size from ENTRAL Command.");
+        particleSize
+      }, message);
+      respond(message);
     } else if (normalized.includes("create") && normalized.includes("group")) {
       const nameMatch = /group (?:called |named |for )?([^,.;]+)/i.exec(text);
       createGroup(nameMatch?.[1]?.trim() || "New Cluster");
@@ -5342,10 +6036,80 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const selectedTasks = selectedNode
     ? graph.tasks.filter((task) => task.assignedEntityId === selectedNode.id || task.delegationPath.includes(selectedNode.id)).slice(0, 8)
     : [];
+  const selectedGravityOverride = selectedNode && selectedNode.type !== "core" ? graphControls.entityGravity[selectedNode.id] : undefined;
+  const selectedGravityValue = selectedNode && selectedNode.type !== "core"
+    ? selectedGravityOverride ?? graphControls.gravity
+    : graphControls.gravity;
+  const globalGravityBand = gravityBandFor(graphControls.gravity);
+  const selectedGravityBand = gravityBandFor(selectedGravityValue);
+  const gravityAdjustableNodes = graph.nodes.filter((node) => node.type !== "core");
+  const activeGravityOverrideNodes = gravityAdjustableNodes.filter((node) => graphControls.entityGravity[node.id] !== undefined);
+  const gravityOverrideCount = Object.keys(graphControls.entityGravity).length;
+  const allEntityGravitySummary = uniformGravityForNodes(gravityAdjustableNodes, graphControls);
+  const uniformAllEntityGravity = allEntityGravitySummary.uniform;
+  const allEntityGravityValue = uniformAllEntityGravity ?? graphControls.gravity;
+  const isAllEntityGravityMixed = activeGravityOverrideNodes.length > 0 && uniformAllEntityGravity === null;
+  const allEntityGravityStatus = gravityAdjustableNodes.length === 0
+    ? "Create a Marshal, General, Commander, or Soldier to tune individual pull."
+    : isAllEntityGravityMixed
+      ? `${activeGravityOverrideNodes.length} of ${gravityAdjustableNodes.length} entities have custom gravity.`
+      : uniformAllEntityGravity === null
+        ? `All ${gravityAdjustableNodes.length} entities inherit global gravity.`
+        : `All ${gravityAdjustableNodes.length} entities share ${formatGravity(uniformAllEntityGravity)} gravity.`;
+  const gravityRankRows = gravityRankOptions.map((rank) => {
+    const nodes = gravityAdjustableNodes.filter((node) => node.commandType === rank.type);
+    const summary = uniformGravityForNodes(nodes, graphControls);
+    const isMixed = summary.overrideCount > 0 && summary.uniform === null;
+    const value = summary.uniform ?? graphControls.gravity;
+    return {
+      ...rank,
+      band: gravityBandFor(value),
+      isMixed,
+      nodes,
+      overrideCount: summary.overrideCount,
+      status: nodes.length === 0
+        ? `No ${rank.plural.toLowerCase()} yet.`
+        : isMixed
+          ? `${summary.overrideCount} of ${nodes.length} custom.`
+          : summary.uniform === null
+            ? `${nodes.length} inherit global.`
+            : `${nodes.length} at ${formatGravity(summary.uniform)}.`,
+      value
+    };
+  });
+  const nodeOrder = new Map(graph.nodes.map((node, index) => [node.id, index]));
+  const gravityOverrideEntries = Object.entries(graphControls.entityGravity)
+    .map(([nodeId, gravity]) => ({
+      gravity: clampGravity(gravity),
+      node: nodeMap.get(nodeId) ?? null,
+      nodeId
+    }))
+    .sort((left, right) => (nodeOrder.get(left.nodeId) ?? Number.MAX_SAFE_INTEGER) - (nodeOrder.get(right.nodeId) ?? Number.MAX_SAFE_INTEGER));
+  const branchGravityOptions = gravityAdjustableNodes.map((node) => ({
+    node,
+    size: branchNodesFor(node.id, graph.nodes).length
+  }));
   const selectedReportHistory = selectedNode ? (selectedNode.reportHistory ?? []).slice(0, 5) : [];
   const selectedDescendantIds = selectedNode ? descendantIdsFor(selectedNode.id, graph.nodes) : [];
   const selectedScopeIds = new Set(selectedNode ? [selectedNode.id, ...selectedDescendantIds] : []);
   const selectedScopeNodes = selectedNode ? graph.nodes.filter((node) => selectedScopeIds.has(node.id)) : [];
+  const branchGravityRoot = selectedNode && selectedNode.type !== "core"
+    ? selectedNode
+    : gravityAdjustableNodes.find((node) => descendantIdsFor(node.id, graph.nodes).length > 0) ?? gravityAdjustableNodes[0] ?? null;
+  const branchGravityNodes = branchGravityRoot ? branchNodesFor(branchGravityRoot.id, graph.nodes) : [];
+  const branchGravitySummary = uniformGravityForNodes(branchGravityNodes, graphControls);
+  const branchGravityMixed = branchGravitySummary.overrideCount > 0 && branchGravitySummary.uniform === null;
+  const branchGravityValue = branchGravitySummary.uniform ?? (branchGravityRoot?.id === selectedNode?.id ? selectedGravityValue : graphControls.gravity);
+  const branchGravityBand = gravityBandFor(branchGravityValue);
+  const branchGravityStatus = !branchGravityRoot
+    ? "Create a Marshal, General, Commander, or Soldier to tune a branch."
+    : branchGravityNodes.length <= 1
+      ? `${branchGravityRoot.name} branch currently contains only this entity.`
+      : branchGravityMixed
+        ? `${branchGravitySummary.overrideCount} of ${branchGravityNodes.length} branch entities have custom gravity.`
+        : branchGravitySummary.uniform === null
+          ? `${branchGravityNodes.length} branch entities inherit global gravity.`
+          : `${branchGravityNodes.length} branch entities share ${formatGravity(branchGravitySummary.uniform)} gravity.`;
   const selectedScopeTasks = selectedNode ? graph.tasks.filter((task) => task.assignedEntityId === selectedNode.id || task.delegationPath.some((id) => selectedScopeIds.has(id))) : [];
   const selectedInspectorStats = selectedNode ? {
     activeTasks: selectedScopeTasks.filter((task) => task.status === "assigned" || task.status === "running").length,
@@ -5560,7 +6324,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         <button className="command-icon-button" type="button" onClick={toggleInfoPanel} aria-label={isPanelOpen ? "Hide side information panel" : "Show side information panel"}>
           {isPanelOpen ? <PanelRightClose aria-hidden="true" size={18} /> : <PanelRightOpen aria-hidden="true" size={18} />}
         </button>
-        <button className="command-icon-button" data-academy="settings" type="button" onClick={() => openSettings()} aria-label="Open settings">
+        <button className="command-icon-button" data-academy="settings" type="button" onClick={() => openSettings()} aria-label="Open command center settings">
           <Settings aria-hidden="true" size={18} />
         </button>
         <button className="command-icon-button" type="button" onClick={onLogout} aria-label="Sign out">
@@ -5691,7 +6455,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <p className="eyebrow">Actions</p>
                 <h2>Command menu</h2>
               </div>
-              <button type="button" onClick={() => openMobileTab("command")}>Close</button>
+              <button type="button" onClick={() => openMobileTab("graph")}>Close</button>
             </header>
             <div className="command-mobile-action-grid">
               <button type="button" onClick={() => executeCommand("Help")}>Help</button>
@@ -5709,13 +6473,21 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
       <nav className="command-mobile-tabs" data-academy="command-nav" aria-label="Mobile command tabs">
         {([
+          ["graph", "Graph", Crosshair],
           ["command", "Command", Bot],
           ["hierarchy", "Hierarchy", Network],
           ["tasks", "Tasks", Activity],
           ["reports", "Reports", ShieldCheck],
           ["more", "More", Menu]
         ] as const).map(([tab, label, Icon]) => (
-          <button className={mobileTab === tab ? "active" : ""} key={tab} type="button" onClick={() => openMobileTab(tab)} aria-pressed={mobileTab === tab}>
+          <button
+            aria-label={tab === "graph" ? "View command graph" : `Open ${label} tab`}
+            className={mobileTab === tab ? "active" : ""}
+            key={tab}
+            type="button"
+            onClick={() => openMobileTab(tab)}
+            aria-pressed={mobileTab === tab}
+          >
             <Icon aria-hidden="true" size={16} />
             <span>{label}</span>
           </button>
@@ -5890,7 +6662,15 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </div>
       ) : null}
 
-      <form className="command-center-chat" data-academy="command-console" data-console-section={commandConsoleSection} onSubmit={runCommand} aria-label="ENTRAL command input">
+      <div
+        aria-hidden={!isCommandConsoleOpen}
+        className="command-center-chat"
+        data-academy="command-console"
+        data-console-section={commandConsoleSection}
+        inert={isCommandConsoleOpen ? undefined : true}
+        role="region"
+        aria-label="ENTRAL command console"
+      >
         <header className="command-chat-heading">
           <div className="command-chat-title">
             <div className="command-chat-orb">
@@ -5902,8 +6682,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <span>Issue directives. ENTRAL routes objectives through Marshals, business Generals, Commanders, Soldiers, panels, and graph control.</span>
             </div>
           </div>
-          <button className="command-chat-close" type="button" onClick={() => setIsCommandConsoleOpen(false)} aria-label="Close command console">
-            <span>Hide</span>
+          <button className="command-chat-close" type="button" onClick={closeCommandConsoleForGraph} aria-label="Close command console and view graph">
+            <span>View graph</span>
             <X aria-hidden="true" size={17} />
           </button>
         </header>
@@ -5913,6 +6693,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             <button
               className={commandConsoleSection === section ? "active" : ""}
               key={section}
+              aria-label={section === "controls" ? "Open graph controls section" : `Open ${commandConsoleSectionLabels[section]} section`}
               type="button"
               onClick={() => {
                 setCommandConsoleSection(section);
@@ -5932,6 +6713,35 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             <h3>{commandConsoleSectionCopy[commandConsoleSection].title}</h3>
             <p>{commandConsoleSectionCopy[commandConsoleSection].body}</p>
           </section>
+          <div className="command-section-quick-actions" aria-label="Quick command console actions">
+            {commandConsoleSection !== "command" ? (
+              <button type="button" onClick={() => showCommandConsole("command")}>
+                Command stream
+              </button>
+            ) : null}
+            {commandConsoleSection !== "controls" ? (
+              <button type="button" onClick={openGraphControls}>
+                Graph controls
+              </button>
+            ) : null}
+            {commandConsoleSection !== "setup" ? (
+              <button type="button" onClick={() => openBusinessWizard()}>
+                Guided setup
+              </button>
+            ) : null}
+            {commandConsoleSection !== "tools" ? (
+              <button type="button" onClick={() => {
+                setCommandConsoleSection("tools");
+                setIsControlsOpen(true);
+                void loadApprovalQueue();
+              }}>
+                Tool bay
+              </button>
+            ) : null}
+            <button type="button" onClick={closeCommandConsoleForGraph}>
+              View graph
+            </button>
+          </div>
 
           <div className={isThinking ? "command-chat-status thinking" : "command-chat-status"} role="status">
             <Sparkles aria-hidden="true" size={16} />
@@ -6152,6 +6962,25 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           </div>
 
           <div className="command-control-menu" aria-label="Command graph controls">
+            <div className="gravity-guide-card" data-gravity-guide tabIndex={-1} role="note" aria-label="Gravity controls guide">
+              <strong>Gravity guide</strong>
+              <p>Global sets the default command field. All applies one override to every current entity. Rank tunes a hierarchy layer. Branch tunes one parent and its descendants. Individual tunes one selected entity.</p>
+              <small>Try: "set all gravity to 300%", "set Soldiers gravity to 250%", or "set selected branch gravity to 220%".</small>
+            </div>
+            <div className="gravity-scope-nav" aria-label="Gravity scope shortcuts">
+              <span>Gravity scope</span>
+              {[
+                ["global", "Global"],
+                ["all", "All"],
+                ["rank", "Rank"],
+                ["branch", "Branch"],
+                ["individual", "Individual"]
+              ].map(([scope, label]) => (
+                <button key={scope} type="button" onClick={() => jumpToGravityScope(scope as "all" | "branch" | "global" | "individual" | "rank")}>
+                  {label}
+                </button>
+              ))}
+            </div>
             <label className="command-range">
               <span>Orbit speed</span>
               <input aria-label="Orbit and particle speed" type="range" min="0" max="2.2" step="0.05" value={graphControls.orbitSpeed} onChange={(event) => updateGraphControl("orbitSpeed", Number(event.target.value))} />
@@ -6165,11 +6994,426 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 ))}
               </select>
             </label>
-            <label className="command-range">
-              <span>Gravity</span>
-              <input aria-label="Gravity and orbit tightness" type="range" min="0.2" max="1.35" step="0.05" value={graphControls.gravity} onChange={(event) => updateGraphControl("gravity", Number(event.target.value))} />
-              <strong>{Math.round(graphControls.gravity * 100)}%</strong>
+            <label className="command-range" data-gravity-scope="global" tabIndex={-1}>
+              <span>Global gravity</span>
+              <input aria-label="Global gravity and orbit tightness" type="range" min={gravityMin} max={gravityMax} step="0.01" value={graphControls.gravity} onChange={(event) => updateGraphControl("gravity", Number(event.target.value))} />
+              <strong>{formatGravity(graphControls.gravity)}</strong>
             </label>
+            <label className="command-number gravity-precision">
+              <span>Exact global</span>
+              <input
+                aria-label="Exact global gravity percent"
+                type="number"
+                min={gravityPercentMin}
+                max={gravityPercentMax}
+                step="1"
+                value={gravityToPercent(graphControls.gravity)}
+                onChange={(event) => updateGraphControl("gravity", gravityFromPercentInput(event.currentTarget.value, graphControls.gravity))}
+              />
+              <strong>%</strong>
+            </label>
+            {renderGravityNudges("Global", graphControls.gravity, (gravity) => patchGraphControls({ gravity }, `Global gravity field nudged to ${formatGravity(gravity)}.`))}
+            <div
+              aria-label={`Global gravity depth: ${globalGravityBand.label}`}
+              className="gravity-depth-meter"
+              style={{ "--gravity-depth": gravityDepthPercent(graphControls.gravity) } as React.CSSProperties}
+            >
+              <span aria-hidden="true"><i /></span>
+              <small>{globalGravityBand.label}: {globalGravityBand.description} Range 0-{gravityPercentMax}%.</small>
+            </div>
+            <div className="gravity-preset-row" aria-label="Global gravity presets">
+              {gravityPresetOptions.map((preset) => (
+                <button className={Math.abs(graphControls.gravity - preset.value) < 0.01 ? "active" : ""} key={preset.label} type="button" onClick={() => patchGraphControls({ gravity: preset.value }, `Global gravity field set to ${preset.label} (${formatGravity(preset.value)}).`)}>
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <section className="command-all-gravity" data-gravity-scope="all" tabIndex={-1} aria-label="All entities gravity">
+              <div>
+                <p className="eyebrow">All entities</p>
+                <h3>Formation pull</h3>
+                <span>{allEntityGravityStatus}</span>
+              </div>
+              <label className="command-range">
+                <span>All gravity</span>
+                <input
+                  aria-label="All entity gravity"
+                  disabled={gravityAdjustableNodes.length === 0}
+                  type="range"
+                  min={gravityMin}
+                  max={gravityMax}
+                  step="0.01"
+                  value={allEntityGravityValue}
+                  onChange={(event) => applyGravityToAllEntities(Number(event.target.value))}
+                />
+                <strong>{isAllEntityGravityMixed ? "Mixed" : formatGravity(allEntityGravityValue)}</strong>
+              </label>
+              <label className="command-number gravity-precision">
+                <span>Exact all</span>
+                <input
+                  aria-label="Exact all entity gravity percent"
+                  disabled={gravityAdjustableNodes.length === 0}
+                  type="number"
+                  min={gravityPercentMin}
+                  max={gravityPercentMax}
+                  step="1"
+                  placeholder={isAllEntityGravityMixed ? "Mixed" : undefined}
+                  value={isAllEntityGravityMixed ? "" : gravityToPercent(allEntityGravityValue)}
+                  onChange={(event) => {
+                    if (event.currentTarget.value.trim()) {
+                      applyGravityToAllEntities(gravityFromPercentInput(event.currentTarget.value, allEntityGravityValue));
+                    }
+                  }}
+              />
+              <strong>%</strong>
+            </label>
+              {renderGravityNudges("All entities", allEntityGravityValue, (gravity) => applyGravityToAllEntities(gravity), gravityAdjustableNodes.length === 0, isAllEntityGravityMixed)}
+              <div className="gravity-preset-row compact" aria-label="All entities gravity presets">
+                {gravityPresetOptions.map((preset) => (
+                  <button
+                    className={!isAllEntityGravityMixed && Math.abs(allEntityGravityValue - preset.value) < 0.01 ? "active" : ""}
+                    key={preset.label}
+                    type="button"
+                    disabled={gravityAdjustableNodes.length === 0}
+                    onClick={() => applyGravityToAllEntities(preset.value)}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <div className="command-control-row compact">
+                <button className="command-toggle" type="button" disabled={gravityAdjustableNodes.length === 0} onClick={() => applyGravityToAllEntities(graphControls.gravity)}>
+                  Match global
+                </button>
+                <button className="command-toggle" type="button" disabled={gravityOverrideCount === 0} onClick={() => clearAllGravityOverrides("Cleared all individual gravity overrides. Global gravity remains unchanged.")}>
+                  Clear overrides
+                </button>
+                <button className="command-toggle command-toggle-wide" type="button" onClick={resetGravityField}>
+                  Reset gravity
+                </button>
+              </div>
+            </section>
+            <section className="command-rank-gravity" data-gravity-scope="rank" tabIndex={-1} aria-label="Rank gravity controls">
+              <div>
+                <p className="eyebrow">By rank</p>
+                <h3>Layer pull</h3>
+                <span>Tune an entire command layer without touching the others.</span>
+              </div>
+              <div className="gravity-rank-grid">
+                {gravityRankRows.map((rank) => (
+                  <article className="gravity-rank-row" key={rank.type}>
+                    <div>
+                      <strong>{rank.plural}</strong>
+                      <span>{rank.status}</span>
+                    </div>
+                    <label className="command-range gravity-rank-range">
+                      <span>Layer gravity</span>
+                      <input
+                        aria-label={`${rank.plural} gravity`}
+                        disabled={rank.nodes.length === 0}
+                        type="range"
+                        min={gravityMin}
+                        max={gravityMax}
+                        step="0.01"
+                        value={rank.value}
+                        onChange={(event) => applyGravityToRank(rank.type, Number(event.target.value))}
+                      />
+                      <strong>{rank.isMixed ? "Mixed" : formatGravity(rank.value)}</strong>
+                    </label>
+                    <label className="command-number gravity-precision">
+                      <span>Exact</span>
+                      <input
+                        aria-label={`Exact ${rank.plural} gravity percent`}
+                        disabled={rank.nodes.length === 0}
+                        type="number"
+                        min={gravityPercentMin}
+                        max={gravityPercentMax}
+                        step="1"
+                        placeholder={rank.isMixed ? "Mixed" : undefined}
+                        value={rank.isMixed ? "" : gravityToPercent(rank.value)}
+                        onChange={(event) => {
+                          if (event.currentTarget.value.trim()) {
+                            applyGravityToRank(rank.type, gravityFromPercentInput(event.currentTarget.value, rank.value));
+                          }
+                        }}
+                      />
+                      <strong>%</strong>
+                    </label>
+                    {renderGravityNudges(rank.plural, rank.value, (gravity) => applyGravityToRank(rank.type, gravity), rank.nodes.length === 0, rank.isMixed)}
+                    <div
+                      aria-label={`${rank.plural} gravity depth: ${rank.band.label}`}
+                      className="gravity-depth-meter compact gravity-rank-depth"
+                      style={{ "--gravity-depth": gravityDepthPercent(rank.value) } as React.CSSProperties}
+                    >
+                      <span aria-hidden="true"><i /></span>
+                      <small>{rank.isMixed ? "Mixed custom pull across this layer." : `${rank.band.label}: ${rank.band.description}`}</small>
+                    </div>
+                    <div className="command-control-row compact">
+                      <button className="command-toggle" type="button" disabled={rank.nodes.length === 0} onClick={() => applyGravityToRank(rank.type, graphControls.gravity)}>
+                        Apply global
+                      </button>
+                      <button className="command-toggle" type="button" disabled={rank.nodes.length === 0 || rank.overrideCount === 0} onClick={() => clearRankGravity(rank.type)}>
+                        Clear rank
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+            <div className="gravity-override-summary" aria-label="Individual gravity override summary">
+              <span>{gravityOverrideCount} custom override{gravityOverrideCount === 1 ? "" : "s"} active</span>
+            </div>
+            {gravityOverrideEntries.length > 0 ? (
+              <div className="gravity-override-list" aria-label="Entities with custom gravity">
+                {gravityOverrideEntries.map((entry) => (
+                  <div className="gravity-override-row" key={entry.nodeId}>
+                    <button
+                      type="button"
+                      disabled={!entry.node}
+                      onClick={() => {
+                        if (entry.node) {
+                          focusCommandNode(entry.node);
+                          setStatusMessage(`${entry.node.name} selected. Custom gravity is ${formatGravity(entry.gravity)}.`);
+                        }
+                      }}
+                    >
+                      <strong>{entry.node?.name ?? "Missing entity"}</strong>
+                      <span>{entry.node ? `${entry.node.title} / ${formatGravity(entry.gravity)}` : `Stale override / ${formatGravity(entry.gravity)}`}</span>
+                    </button>
+                    <button
+                      aria-label={`Clear ${entry.node?.name ?? entry.nodeId} gravity override`}
+                      type="button"
+                      onClick={() => clearEntityGravity(entry.nodeId, entry.node?.name ?? "Stale override")}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <section className="command-branch-gravity" data-gravity-scope="branch" tabIndex={-1} aria-label="Branch gravity controls">
+              <div>
+                <strong>Branch pull</strong>
+                <span>{branchGravityStatus}</span>
+              </div>
+              <label className="command-select command-entity-picker">
+                <span>Branch root</span>
+                <select
+                  aria-label="Choose branch for gravity"
+                  disabled={gravityAdjustableNodes.length === 0}
+                  value={branchGravityRoot?.id ?? ""}
+                  onChange={(event) => {
+                    const nextNode = nodeMap.get(event.target.value);
+
+                    if (nextNode && nextNode.type !== "core") {
+                      focusCommandNode(nextNode);
+                      setStatusMessage(`${nextNode.name} branch selected for gravity tuning.`);
+                    }
+                  }}
+                >
+                  <option value="">{gravityAdjustableNodes.length === 0 ? "Create an entity first" : "Choose branch..."}</option>
+                  {branchGravityOptions.map(({ node, size: branchSize }) => {
+                    return (
+                      <option key={node.id} value={node.id}>
+                        {node.title}: {node.name} / {branchSize} entit{branchSize === 1 ? "y" : "ies"}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+              <label className="command-range">
+                <span>Branch gravity</span>
+                <input
+                  aria-label="Branch gravity"
+                  disabled={!branchGravityRoot}
+                  type="range"
+                  min={gravityMin}
+                  max={gravityMax}
+                  step="0.01"
+                  value={branchGravityValue}
+                  onChange={(event) => {
+                    if (branchGravityRoot) {
+                      applyGravityToBranch(branchGravityRoot.id, Number(event.target.value));
+                    }
+                  }}
+                />
+                <strong>{branchGravityMixed ? "Mixed" : formatGravity(branchGravityValue)}</strong>
+              </label>
+              <label className="command-number gravity-precision">
+                <span>Exact branch</span>
+                <input
+                  aria-label="Exact branch gravity percent"
+                  disabled={!branchGravityRoot}
+                  type="number"
+                  min={gravityPercentMin}
+                  max={gravityPercentMax}
+                  step="1"
+                  placeholder={branchGravityMixed ? "Mixed" : undefined}
+                  value={branchGravityMixed ? "" : gravityToPercent(branchGravityValue)}
+                  onChange={(event) => {
+                    if (branchGravityRoot && event.currentTarget.value.trim()) {
+                      applyGravityToBranch(branchGravityRoot.id, gravityFromPercentInput(event.currentTarget.value, branchGravityValue));
+                    }
+                  }}
+                />
+                <strong>%</strong>
+              </label>
+              {renderGravityNudges("Branch", branchGravityValue, (gravity) => {
+                if (branchGravityRoot) {
+                  applyGravityToBranch(branchGravityRoot.id, gravity);
+                }
+              }, !branchGravityRoot, branchGravityMixed)}
+              <div
+                aria-label={`Branch gravity depth: ${branchGravityBand.label}`}
+                className="gravity-depth-meter compact"
+                style={{ "--gravity-depth": gravityDepthPercent(branchGravityValue) } as React.CSSProperties}
+              >
+                <span aria-hidden="true"><i /></span>
+                <small>{branchGravityMixed ? "Mixed branch pull." : `${branchGravityBand.label}: ${branchGravityBand.description}`}</small>
+              </div>
+              <div className="gravity-preset-row compact" aria-label="Branch gravity presets">
+                {gravityPresetOptions.map((preset) => (
+                  <button
+                    className={!branchGravityMixed && Math.abs(branchGravityValue - preset.value) < 0.01 ? "active" : ""}
+                    key={preset.label}
+                    type="button"
+                    disabled={!branchGravityRoot}
+                    onClick={() => {
+                      if (branchGravityRoot) {
+                        applyGravityToBranch(branchGravityRoot.id, preset.value);
+                      }
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <div className="command-control-row compact">
+                <button className="command-toggle" type="button" disabled={!branchGravityRoot} onClick={() => {
+                  if (branchGravityRoot) {
+                    applyGravityToBranch(branchGravityRoot.id, graphControls.gravity);
+                  }
+                }}>
+                  Apply global
+                </button>
+                <button className="command-toggle" type="button" disabled={!branchGravityRoot || branchGravitySummary.overrideCount === 0} onClick={() => {
+                  if (branchGravityRoot) {
+                    clearBranchGravity(branchGravityRoot.id);
+                  }
+                }}>
+                  Clear branch
+                </button>
+              </div>
+            </section>
+            <section className="command-entity-gravity" data-gravity-scope="individual" tabIndex={-1} aria-label="Selected entity gravity">
+              <div>
+                <p className="eyebrow">Individual pull</p>
+                <h3>{selectedNode && selectedNode.type !== "core" ? selectedNode.name : "Select an entity"}</h3>
+                <span>{selectedNode && selectedNode.type !== "core" ? (selectedGravityOverride === undefined ? "Using global gravity" : "Custom gravity active") : "Tune Marshals, Generals, Commanders, or Soldiers one at a time."}</span>
+              </div>
+              <label className="command-select command-entity-picker">
+                <span>Entity</span>
+                <select
+                  aria-label="Choose entity for individual gravity"
+                  disabled={gravityAdjustableNodes.length === 0}
+                  value={selectedNode && selectedNode.type !== "core" ? selectedNode.id : ""}
+                  onChange={(event) => {
+                    const nextNode = nodeMap.get(event.target.value);
+
+                    if (nextNode && nextNode.type !== "core") {
+                      focusCommandNode(nextNode);
+                      setStatusMessage(`${nextNode.name} selected for individual gravity tuning.`);
+                    }
+                  }}
+                >
+                  <option value="">{gravityAdjustableNodes.length === 0 ? "Create an entity first" : "Choose entity..."}</option>
+                  {gravityAdjustableNodes.map((node) => {
+                    const override = graphControls.entityGravity[node.id];
+                    return (
+                      <option key={node.id} value={node.id}>
+                        {node.title}: {node.name}{override === undefined ? "" : ` / ${formatGravity(override)} custom`}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+              <label className="command-range">
+                <span>Selected gravity</span>
+                <input
+                  aria-label="Selected entity gravity"
+                  disabled={!selectedNode || selectedNode.type === "core"}
+                  type="range"
+                  min={gravityMin}
+                  max={gravityMax}
+                  step="0.01"
+                  value={selectedGravityValue}
+                  onChange={(event) => {
+                    if (selectedNode && selectedNode.type !== "core") {
+                      setEntityGravity(selectedNode.id, Number(event.target.value), `${selectedNode.name} gravity override set to ${formatGravity(Number(event.target.value))}.`);
+                    }
+                  }}
+                />
+                <strong>{formatGravity(selectedGravityValue)}</strong>
+              </label>
+              <label className="command-number gravity-precision">
+                <span>Exact selected</span>
+                <input
+                  aria-label="Exact selected entity gravity percent"
+                  disabled={!selectedNode || selectedNode.type === "core"}
+                  type="number"
+                  min={gravityPercentMin}
+                  max={gravityPercentMax}
+                  step="1"
+                  value={gravityToPercent(selectedGravityValue)}
+                  onChange={(event) => {
+                    if (selectedNode && selectedNode.type !== "core") {
+                      setEntityGravity(selectedNode.id, gravityFromPercentInput(event.currentTarget.value, selectedGravityValue), `${selectedNode.name} gravity override set to ${formatGravity(gravityFromPercentInput(event.currentTarget.value, selectedGravityValue))}.`);
+                    }
+                  }}
+                />
+                <strong>%</strong>
+              </label>
+              {renderGravityNudges("Selected entity", selectedGravityValue, (gravity) => {
+                if (selectedNode && selectedNode.type !== "core") {
+                  setEntityGravity(selectedNode.id, gravity, `${selectedNode.name} gravity override nudged to ${formatGravity(gravity)}.`);
+                }
+              }, !selectedNode || selectedNode.type === "core")}
+              <div
+                aria-label={`Selected gravity depth: ${selectedGravityBand.label}`}
+                className="gravity-depth-meter compact"
+                style={{ "--gravity-depth": gravityDepthPercent(selectedGravityValue) } as React.CSSProperties}
+              >
+                <span aria-hidden="true"><i /></span>
+                <small>{selectedGravityBand.label}: {selectedGravityBand.description}</small>
+              </div>
+              <div className="gravity-preset-row compact" aria-label="Selected entity gravity presets">
+                {gravityPresetOptions.map((preset) => (
+                  <button className={Math.abs(selectedGravityValue - preset.value) < 0.01 ? "active" : ""} key={preset.label} type="button" disabled={!selectedNode || selectedNode.type === "core"} onClick={() => {
+                    if (selectedNode && selectedNode.type !== "core") {
+                      setEntityGravity(selectedNode.id, preset.value, `${selectedNode.name} gravity override set to ${preset.label} (${formatGravity(preset.value)}).`);
+                    }
+                  }}>
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <div className="command-control-row compact">
+                <button className={selectedGravityOverride === undefined ? "command-toggle" : "command-toggle active"} type="button" disabled={!selectedNode || selectedNode.type === "core"} onClick={() => {
+                  if (selectedNode && selectedNode.type !== "core") {
+                    setEntityGravity(selectedNode.id, graphControls.gravity, `${selectedNode.name} now has a gravity override matching global pull.`);
+                  }
+                }}>
+                  Match global
+                </button>
+                <button className="command-toggle" type="button" disabled={!selectedNode || selectedNode.type === "core" || selectedGravityOverride === undefined} onClick={() => {
+                  if (selectedNode && selectedNode.type !== "core") {
+                    clearEntityGravity(selectedNode.id, selectedNode.name);
+                  }
+                }}>
+                  Clear
+                </button>
+              </div>
+            </section>
             <label className="command-range">
               <span>Trail length</span>
               <input aria-label="Color trail length" type="range" min="4" max="42" step="1" value={graphControls.trailLength} onChange={(event) => updateGraphControl("trailLength", Number(event.target.value))} disabled={!graphControls.showTrails} />
@@ -6267,13 +7511,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <pre>{pendingAuthorization.summary}</pre>
             </div>
             <div>
-              <Button type="button" onClick={approvePendingAuthorization}>
+              <Button type="button" aria-label="Approve pending authorization" onClick={approvePendingAuthorization}>
                 Approve
               </Button>
-              <Button type="button" variant="secondary" onClick={modifyPendingAuthorization}>
+              <Button type="button" aria-label="Modify pending authorization" variant="secondary" onClick={modifyPendingAuthorization}>
                 Modify
               </Button>
-              <Button type="button" variant="secondary" onClick={cancelPendingAuthorization}>
+              <Button type="button" aria-label="Cancel pending authorization" variant="secondary" onClick={cancelPendingAuthorization}>
                 Cancel
               </Button>
             </div>
@@ -6289,7 +7533,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           </div>
         </div>
 
-        <div className="command-chat-input-row">
+        <form className="command-chat-input-row" onSubmit={runCommand} aria-label="ENTRAL command input">
           <label className="sr-only" htmlFor="entral-command-input">ENTRAL command directive</label>
           <button
             className={isListening ? "voice-command-button listening" : "voice-command-button"}
@@ -6319,11 +7563,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           <button type="submit" aria-label="Send command" disabled={isThinking}>
             <Send aria-hidden="true" size={18} />
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
 
       {!isCommandConsoleOpen ? (
-        <button className="command-chat-reopen" type="button" onClick={() => setIsCommandConsoleOpen(true)} aria-label="Open command console">
+        <button className="command-chat-reopen" type="button" onClick={() => showCommandConsole("command")} aria-label="Open command console">
           <Bot aria-hidden="true" size={17} />
           Command
         </button>
@@ -6431,6 +7675,77 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 </div>
               </section>
             ) : null}
+
+            <section className="command-node-brief command-gravity-brief" aria-label="Graph gravity summary">
+              <h3>Graph gravity</h3>
+              <div>
+                <span><strong>{formatGravity(graphControls.gravity)}</strong> global pull</span>
+                <span><strong>{formatGravity(selectedGravityValue)}</strong> selected pull</span>
+                <span><strong>{selectedGravityOverride === undefined ? "Inherited" : "Custom"}</strong> mode</span>
+                <span><strong>{selectedGravityBand.label}</strong> depth</span>
+              </div>
+              <p>{selectedNode.type === "core" ? "ENTRAL remains fixed at the center. Global gravity controls the rest of the command field." : "Gravity controls how tightly this entity is pulled toward its command orbit and how quickly it settles into formation."} {selectedGravityBand.description}</p>
+              {selectedNode.type !== "core" ? (
+                <>
+                  <label className="inspector-gravity-range">
+                    <span>Selected entity pull</span>
+                    <input
+                      aria-label={`${selectedNode.name} gravity`}
+                      type="range"
+                      min={gravityMin}
+                      max={gravityMax}
+                      step="0.01"
+                      value={selectedGravityValue}
+                      onChange={(event) => setEntityGravity(selectedNode.id, Number(event.target.value), `${selectedNode.name} gravity override set to ${formatGravity(Number(event.target.value))}.`)}
+                    />
+                    <strong>{formatGravity(selectedGravityValue)}</strong>
+                  </label>
+                  <label className="inspector-gravity-exact">
+                    <span>Exact pull</span>
+                    <input
+                      aria-label={`${selectedNode.name} exact gravity percent`}
+                      type="number"
+                      min={gravityPercentMin}
+                      max={gravityPercentMax}
+                      step="1"
+                      value={gravityToPercent(selectedGravityValue)}
+                      onChange={(event) => {
+                        const gravity = gravityFromPercentInput(event.currentTarget.value, selectedGravityValue);
+                        setEntityGravity(selectedNode.id, gravity, `${selectedNode.name} gravity override set to ${formatGravity(gravity)}.`);
+                      }}
+                    />
+                    <strong>%</strong>
+                  </label>
+                  {renderGravityNudges(selectedNode.name, selectedGravityValue, (gravity) => setEntityGravity(selectedNode.id, gravity, `${selectedNode.name} gravity override nudged to ${formatGravity(gravity)}.`))}
+                  <div
+                    aria-label={`${selectedNode.name} gravity depth: ${selectedGravityBand.label}`}
+                    className="gravity-depth-meter compact"
+                    style={{ "--gravity-depth": gravityDepthPercent(selectedGravityValue) } as React.CSSProperties}
+                  >
+                    <span aria-hidden="true"><i /></span>
+                    <small>{selectedGravityBand.label}: {selectedGravityBand.description}</small>
+                  </div>
+                  <div className="inspector-gravity-presets" aria-label={`${selectedNode.name} gravity presets`}>
+                    {gravityPresetOptions.map((preset) => (
+                      <button
+                        className={Math.abs(selectedGravityValue - preset.value) < 0.01 ? "active" : ""}
+                        key={preset.label}
+                        type="button"
+                        onClick={() => setEntityGravity(selectedNode.id, preset.value, `${selectedNode.name} gravity override set to ${preset.label} (${formatGravity(preset.value)}).`)}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="command-dynamics-actions">
+                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 0.4, `${selectedNode.name} gravity loosened to ${formatGravity(0.4)}.`)}>Loosen</button>
+                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 3, `${selectedNode.name} orbit locked at ${formatGravity(3)}.`)}>Lock orbit</button>
+                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 6, `${selectedNode.name} gravity anchored at ${formatGravity(6)}.`)}>Anchor</button>
+                    <button type="button" disabled={selectedGravityOverride === undefined} onClick={() => clearEntityGravity(selectedNode.id, selectedNode.name)}>Inherit global</button>
+                  </div>
+                </>
+              ) : null}
+            </section>
 
             {selectedSuggestedActions.length > 0 ? (
               <section className="command-suggested-actions" aria-label="Suggested actions">

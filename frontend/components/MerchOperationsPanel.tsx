@@ -27,6 +27,22 @@ type MerchOperationsPanelProps = {
 
 const automationStorageKey = "entral-merch-automation-level";
 
+function readMerchStorage(key: string) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeMerchStorage(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Merch automation level persistence is best-effort.
+  }
+}
+
 const presetDefaults: Record<PricingPlatformPreset, Pick<PricingCalculatorInput, "listingFee" | "paymentProcessingEstimate" | "platformFeePercent">> = {
   Etsy: {
     listingFee: 0.2,
@@ -50,7 +66,7 @@ function readAutomationLevel(): MerchAutomationLevel {
     return "assisted";
   }
 
-  const stored = window.localStorage.getItem(automationStorageKey);
+  const stored = readMerchStorage(automationStorageKey);
   return merchAutomationLevels.some((level) => level.value === stored) ? stored as MerchAutomationLevel : "assisted";
 }
 
@@ -93,7 +109,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   function updateAutomationLevel(nextLevel: MerchAutomationLevel) {
     setAutomationLevel(nextLevel);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(automationStorageKey, nextLevel);
+      writeMerchStorage(automationStorageKey, nextLevel);
     }
     onEvent?.(`Merch automation level set to ${merchAutomationLevels.find((level) => level.value === nextLevel)?.label ?? nextLevel}.`);
   }

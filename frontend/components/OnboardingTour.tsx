@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, Bot, CheckCircle2, ChevronLeft, ChevronRight, Command, Compass, GraduationCap, Layers3, MonitorUp, Play, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { Button } from "./Button";
@@ -53,6 +53,7 @@ type OnboardingContextValue = {
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 const legacyCompleteKey = "entral-onboarding-complete";
 const academyStorageKey = "entral-academy-state-v1";
+const authenticatedUserSessionKey = "entral-authenticated-user";
 const academyAuthEvent = "entral:user-authenticated";
 const academySignOutEvent = "entral:user-signed-out";
 
@@ -298,6 +299,30 @@ function academyUserKey(detail: unknown) {
   return value;
 }
 
+function readLocalValue(storage: Storage, key: string) {
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalValue(storage: Storage, key: string, value: string) {
+  try {
+    storage.setItem(key, value);
+  } catch {
+    // Academy progress should never block access to the Command Center.
+  }
+}
+
+function removeLocalValue(storage: Storage, key: string) {
+  try {
+    storage.removeItem(key);
+  } catch {
+    // Ignore blocked storage; the signed-out event still resets in-memory state.
+  }
+}
+
 function readAcademyState(userKey: string | null): AcademyState {
   if (!userKey) {
     return { completedSteps: [], firstLaunchSeen: true, mode: "beginner" };
@@ -308,7 +333,7 @@ function readAcademyState(userKey: string | null): AcademyState {
   }
 
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(academyStorageKeyFor(userKey)) ?? "{}") as Partial<AcademyState>;
+    const parsed = JSON.parse(readLocalValue(window.localStorage, academyStorageKeyFor(userKey)) ?? "{}") as Partial<AcademyState>;
     return {
       completedSteps: Array.isArray(parsed.completedSteps) ? parsed.completedSteps.filter((step): step is string => typeof step === "string") : [],
       firstLaunchSeen: Boolean(parsed.firstLaunchSeen),
@@ -401,6 +426,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [academyPlacement, setAcademyPlacement] = useState<AcademyPlacement>("center");
   const [spotlightStepId, setSpotlightStepId] = useState<string | null>(null);
   const [spotlightMissingTarget, setSpotlightMissingTarget] = useState(false);
+  const dismissedInCurrentSessionRef = useRef(false);
+  const academyStateRef = useRef(academyState);
+  const isOpenRef = useRef(isOpen);
+  const signedInUserKeyRef = useRef<string | null>(null);
+  const spotlightStepIdRef = useRef<string | null>(spotlightStepId);
+  const userInteractedBeforeAutoOpenRef = useRef(false);
   const visibleSteps = useMemo(() => visibleStepsFor(academyState.mode), [academyState.mode]);
   const safeStepIndex = Math.min(stepIndex, Math.max(visibleSteps.length - 1, 0));
   const currentStep = visibleSteps[safeStepIndex] ?? visibleSteps[0];
@@ -408,12 +439,49 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const completedSet = useMemo(() => new Set(academyState.completedSteps), [academyState.completedSteps]);
   const completedVisibleCount = visibleSteps.filter((step) => completedSet.has(step.id)).length;
 
+  useEffect(() => {
+    academyStateRef.current = academyState;
+  }, [academyState]);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    signedInUserKeyRef.current = signedInUserKey;
+  }, [signedInUserKey]);
+
+  useEffect(() => {
+    spotlightStepIdRef.current = spotlightStepId;
+  }, [spotlightStepId]);
+
+  useEffect(() => {
+    function markOperatorInteraction() {
+      if (!isOpenRef.current && !spotlightStepIdRef.current && document.querySelector(".command-center-page")) {
+        userInteractedBeforeAutoOpenRef.current = true;
+      }
+    }
+
+    window.addEventListener("keydown", markOperatorInteraction, true);
+    window.addEventListener("pointerdown", markOperatorInteraction, true);
+    window.addEventListener("input", markOperatorInteraction, true);
+
+    return () => {
+      window.removeEventListener("keydown", markOperatorInteraction, true);
+      window.removeEventListener("pointerdown", markOperatorInteraction, true);
+      window.removeEventListener("input", markOperatorInteraction, true);
+    };
+  }, []);
+
   function updateAcademyState(updater: (current: AcademyState) => AcademyState) {
     setAcademyState((current) => {
       const next = updater(current);
-      if (signedInUserKey) {
-        window.localStorage.setItem(academyStorageKeyFor(signedInUserKey), JSON.stringify(next));
-        window.localStorage.setItem(legacyCompleteKey, next.firstLaunchSeen ? "true" : "false");
+      academyStateRef.current = next;
+      const userKey = signedInUserKeyRef.current ?? signedInUserKey;
+
+      if (userKey) {
+        writeLocalValue(window.localStorage, academyStorageKeyFor(userKey), JSON.stringify(next));
+        writeLocalValue(window.localStorage, legacyCompleteKey, next.firstLaunchSeen ? "true" : "false");
       }
       return next;
     });
@@ -439,15 +507,30 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     function handleAuthenticated(event: Event) {
       const detail = event instanceof CustomEvent ? event.detail : null;
       const userKey = academyUserKey(detail);
+      const storedState = readAcademyState(userKey);
+      const nextState = dismissedInCurrentSessionRef.current
+        ? { ...storedState, firstLaunchSeen: true }
+        : storedState;
 
       if (!userKey) return;
+      signedInUserKeyRef.current = userKey;
       setSignedInUserKey(userKey);
-      setAcademyState(readAcademyState(userKey));
+      setAcademyState(nextState);
+      academyStateRef.current = nextState;
+      if (dismissedInCurrentSessionRef.current) {
+        writeLocalValue(window.localStorage, academyStorageKeyFor(userKey), JSON.stringify(nextState));
+        writeLocalValue(window.localStorage, legacyCompleteKey, "true");
+      }
     }
 
     function handleSignedOut() {
+      dismissedInCurrentSessionRef.current = false;
+      userInteractedBeforeAutoOpenRef.current = false;
+      signedInUserKeyRef.current = null;
       setSignedInUserKey(null);
-      setAcademyState(readAcademyState(null));
+      const signedOutState = readAcademyState(null);
+      setAcademyState(signedOutState);
+      academyStateRef.current = signedOutState;
       setIsOpen(false);
       setSpotlightStepId(null);
       setHighlightRect(null);
@@ -455,6 +538,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener(academyAuthEvent, handleAuthenticated);
     window.addEventListener(academySignOutEvent, handleSignedOut);
+
+    try {
+      const storedAuthDetail = JSON.parse(readLocalValue(window.sessionStorage, authenticatedUserSessionKey) ?? "null") as unknown;
+      if (academyUserKey(storedAuthDetail)) {
+        handleAuthenticated(new CustomEvent(academyAuthEvent, { detail: storedAuthDetail }));
+      }
+    } catch {
+      removeLocalValue(window.sessionStorage, authenticatedUserSessionKey);
+    }
 
     return () => {
       window.removeEventListener(academyAuthEvent, handleAuthenticated);
@@ -480,6 +572,16 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     if (signedInUserKey && !academyState.firstLaunchSeen) {
       const timer = window.setTimeout(() => {
+        if (dismissedInCurrentSessionRef.current || academyStateRef.current.firstLaunchSeen) {
+          return;
+        }
+
+        if (userInteractedBeforeAutoOpenRef.current) {
+          dismissedInCurrentSessionRef.current = true;
+          updateAcademyState((current) => ({ ...current, firstLaunchSeen: true }));
+          return;
+        }
+
         closeSettingsWindow();
         setView("tour");
         setIsOpen(true);
@@ -605,12 +707,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }
 
   function closeAcademy() {
+    dismissedInCurrentSessionRef.current = true;
     updateAcademyState((current) => ({ ...current, firstLaunchSeen: true }));
     setIsOpen(false);
     setView("tour");
   }
 
   function finishTour() {
+    dismissedInCurrentSessionRef.current = true;
     updateAcademyState((current) => ({
       ...current,
       completedSteps: Array.from(new Set([...current.completedSteps, ...visibleSteps.map((step) => step.id)])),
@@ -777,34 +881,34 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
               <span style={{ width: `${visibleSteps.length > 0 ? (completedVisibleCount / visibleSteps.length) * 100 : 0}%` }} />
             </div>
 
-            {view === "library" ? (
-              <div className="academy-library">
-                {moduleProgress.map(({ completed, module, steps: moduleSteps, total }) => (
-                  <article key={module.id}>
-                    <header>
-                      <BookOpen aria-hidden="true" size={18} />
+            <div className="academy-content">
+              {view === "library" ? (
+                <div className="academy-library">
+                  {moduleProgress.map(({ completed, module, steps: moduleSteps, total }) => (
+                    <article key={module.id}>
+                      <header>
+                        <BookOpen aria-hidden="true" size={18} />
+                        <div>
+                          <strong>{module.title}</strong>
+                          <small>{completed}/{total} complete</small>
+                        </div>
+                      </header>
+                      <p>{module.description}</p>
                       <div>
-                        <strong>{module.title}</strong>
-                        <small>{completed}/{total} complete</small>
+                        {moduleSteps.map((step) => (
+                          <button key={step.id} type="button" onClick={() => {
+                            setStepIndex(visibleSteps.findIndex((candidate) => candidate.id === step.id));
+                            setView("tour");
+                          }}>
+                            {completedSet.has(step.id) ? <CheckCircle2 aria-hidden="true" size={15} /> : <Play aria-hidden="true" size={15} />}
+                            {step.title}
+                          </button>
+                        ))}
                       </div>
-                    </header>
-                    <p>{module.description}</p>
-                    <div>
-                      {moduleSteps.map((step) => (
-                        <button key={step.id} type="button" onClick={() => {
-                          setStepIndex(visibleSteps.findIndex((candidate) => candidate.id === step.id));
-                          setView("tour");
-                        }}>
-                          {completedSet.has(step.id) ? <CheckCircle2 aria-hidden="true" size={15} /> : <Play aria-hidden="true" size={15} />}
-                          {step.title}
-                        </button>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <>
+                    </article>
+                  ))}
+                </div>
+              ) : (
                 <div className="academy-step-grid">
                   <aside className="academy-section-nav" aria-label="Academy jump navigation">
                     {moduleProgress.map(({ completed, module, steps: moduleSteps, total }) => (
@@ -844,31 +948,36 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                     </div>
                   </article>
                 </div>
+              )}
+            </div>
 
+            {view === "tour" ? (
                 <div className="academy-actions">
-                  <Button type="button" variant="secondary" onClick={() => setView("library")}>
+                  <Button className="academy-enter-button" type="button" variant="secondary" onClick={closeAcademy}>
+                    Enter Command Center
+                  </Button>
+                  <Button className="academy-library-button" type="button" variant="secondary" onClick={() => setView("library")}>
                     <BookOpen aria-hidden="true" size={17} />
                     Library
                   </Button>
-                  <Button type="button" variant="secondary" onClick={previousStep} disabled={safeStepIndex === 0}>
+                  <Button className="academy-back-button" type="button" variant="secondary" onClick={previousStep} disabled={safeStepIndex === 0}>
                     <ChevronLeft aria-hidden="true" size={17} />
                     Back
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => markStepComplete()}>
+                  <Button className="academy-complete-button" type="button" variant="secondary" onClick={() => markStepComplete()}>
                     <CheckCircle2 aria-hidden="true" size={17} />
                     Mark complete
                   </Button>
-                  <Button type="button" onClick={() => startWalkthrough()}>
+                  <Button className="academy-show-button" type="button" onClick={() => startWalkthrough()}>
                     <Play aria-hidden="true" size={17} />
                     Show me
                   </Button>
-                  <Button type="button" onClick={nextStep}>
+                  <Button className="academy-next-button" type="button" onClick={nextStep}>
                     {safeStepIndex < visibleSteps.length - 1 ? <ChevronRight aria-hidden="true" size={17} /> : <ShieldCheck aria-hidden="true" size={17} />}
                     {safeStepIndex < visibleSteps.length - 1 ? "Next lesson" : "Complete Academy"}
                   </Button>
                 </div>
-              </>
-            )}
+            ) : null}
 
             <footer className="academy-footer">
               <span><Command aria-hidden="true" size={14} /> Replay from Command Palette</span>

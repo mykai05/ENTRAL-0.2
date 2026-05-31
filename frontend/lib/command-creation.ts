@@ -34,10 +34,11 @@ export function nextCommandPlaceholderName(type: Exclude<NodeType, "emperor">, n
 
 export function hierarchyNameFromCommandText(text: string, type: Exclude<NodeType, "emperor">, nodes: CreationNodeContext[]) {
   const label = titleFor(type);
-  const beforeUnder = new RegExp(`create\\s+(?:a\\s+|an\\s+|new\\s+)?(.+?)\\s+${label}(?:\\s+under|\\s+for|$)`, "i").exec(text)?.[1]?.trim();
+  const directNamed = new RegExp(`\\b${label}\\s+(?:named|called)\\s+([^,.;]+?)(?:\\s+under\\b|\\s+for\\b|$)`, "i").exec(text)?.[1]?.trim();
+  const beforeUnder = new RegExp(`\\b(?:create|add|new)\\s+(?:a\\s+|an\\s+|new\\s+)?(.+?)\\s+${label}(?:\\s+under|\\s+for|$)`, "i").exec(text)?.[1]?.trim();
   const afterFor = new RegExp(`${label}\\s+for\\s+([^,.;]+)`, "i").exec(text)?.[1]?.trim();
   const usableBeforeUnder = beforeUnder && beforeUnder.replace(/^new$/i, "").trim().length > 0 ? beforeUnder : undefined;
-  const rawName = usableBeforeUnder || afterFor;
+  const rawName = directNamed || usableBeforeUnder || afterFor;
 
   if (!rawName) return nextCommandPlaceholderName(type, nodes);
 

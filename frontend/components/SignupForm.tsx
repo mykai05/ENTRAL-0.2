@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
@@ -15,7 +15,12 @@ export function SignupForm() {
   const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
+  const [isReady, setIsReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -84,9 +89,9 @@ export function SignupForm() {
         required
       />
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
-      <Button type="submit" disabled={isSubmitting}>
+      <Button type="submit" disabled={!isReady || isSubmitting}>
         <UserPlus aria-hidden="true" size={20} />
-        {isSubmitting ? "Creating account..." : "Create account"}
+        {!isReady ? "Loading..." : isSubmitting ? "Creating account..." : "Create account"}
       </Button>
     </form>
   );

@@ -19,6 +19,9 @@ describe("command creation helpers", () => {
     expect(hierarchyNameFromCommandText("Create a Design Commander under Iron House Gym", "commander", nodes)).toBe("Design Commander");
     expect(hierarchyNameFromCommandText("Create Typography Soldier under Design Commander", "soldier", nodes)).toBe("Typography Soldier");
     expect(hierarchyNameFromCommandText("Create General for Iron House Gym", "general", nodes)).toBe("Iron House Gym General");
+    expect(hierarchyNameFromCommandText("Add Merch Marshal", "marshal", nodes)).toBe("Merch Marshal");
+    expect(hierarchyNameFromCommandText("New SEO Commander under Iron House Gym General", "commander", nodes)).toBe("SEO Commander");
+    expect(hierarchyNameFromCommandText("Create General named Iron House Gym under Merch Marshal", "general", nodes)).toBe("Iron House Gym General");
   });
 
   it("explains missing parent requirements with official v0.3 terminology", () => {

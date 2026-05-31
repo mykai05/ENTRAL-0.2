@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyCommandIntent } from "../lib/command-intent";
+import { classifyCommandIntent, explicitHierarchyCreateTypeFromText } from "../lib/command-intent";
 
 describe("command intent classification", () => {
   it("recognizes help requests instead of treating help like a generic report", () => {
@@ -22,6 +22,43 @@ describe("command intent classification", () => {
       entityType: "soldier",
       kind: "entity_creation_request",
       requiresAuthorization: true
+    });
+  });
+
+  it("keeps explicit hierarchy creation ahead of business template keywords", () => {
+    expect(explicitHierarchyCreateTypeFromText("Create Merch Marshal")).toBe("marshal");
+    expect(explicitHierarchyCreateTypeFromText("Create POD General under Merch Marshal")).toBe("general");
+    expect(explicitHierarchyCreateTypeFromText("Create POD business named Iron House Gym")).toBeNull();
+  });
+
+  it("does not let template keywords hijack graph control commands", () => {
+    expect(classifyCommandIntent("Set Merch gravity to 300%")).toMatchObject({
+      kind: "command_request",
+      requiresAuthorization: false
+    });
+    expect(classifyCommandIntent("Set every entity gravity to 300%")).toMatchObject({
+      kind: "command_request",
+      requiresAuthorization: false
+    });
+    expect(classifyCommandIntent("Set all agents gravity to 300%")).toMatchObject({
+      kind: "command_request",
+      requiresAuthorization: false
+    });
+    expect(classifyCommandIntent("Set all gravity to 300%")).toMatchObject({
+      kind: "command_request",
+      requiresAuthorization: false
+    });
+    expect(classifyCommandIntent("Set all Soldiers gravity to 250%")).toMatchObject({
+      kind: "command_request",
+      requiresAuthorization: false
+    });
+    expect(classifyCommandIntent("Set selected branch gravity to 220%")).toMatchObject({
+      kind: "command_request",
+      requiresAuthorization: false
+    });
+    expect(classifyCommandIntent("Turn POD trails off")).toMatchObject({
+      kind: "command_request",
+      requiresAuthorization: false
     });
   });
 

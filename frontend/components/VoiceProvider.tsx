@@ -25,6 +25,14 @@ type VoiceContextValue = {
 
 const VoiceContext = createContext<VoiceContextValue | null>(null);
 
+function writeVoiceStorage(value: VoiceSettings) {
+  try {
+    window.localStorage.setItem(voiceSettingsKey, JSON.stringify(value));
+  } catch {
+    // Voice settings are optional local preferences; rendering should continue.
+  }
+}
+
 export function VoiceProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<VoiceSettings>(defaultVoiceSettings);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -37,7 +45,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(voiceSettingsKey, JSON.stringify(settings));
+    writeVoiceStorage(settings);
   }, [settings]);
 
   useEffect(() => {

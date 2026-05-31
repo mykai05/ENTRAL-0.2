@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { API_BASE_URL } from "../lib/api";
+import { resolveApiBaseUrl } from "../lib/api";
 import { Button } from "./Button";
 import { useToast } from "./ToastProvider";
 
@@ -24,8 +24,10 @@ export function CurlSnippet({ authenticated = true, body, method = "GET", path, 
   const [copied, setCopied] = useState(false);
   const { notify } = useToast();
   const snippet = useMemo(() => {
+    const apiBaseUrl = resolveApiBaseUrl();
+    const apiOrigin = apiBaseUrl || (typeof window === "undefined" ? "" : window.location.origin);
     const lines = [
-      `curl -X ${method} "${API_BASE_URL}/api/v1${path}"`,
+      `curl -X ${method} "${apiOrigin}/api/v1${path}"`,
       ...(authenticated ? [`  -H "Authorization: Bearer $ENTRAL_TOKEN"`] : []),
       `  -H "Content-Type: application/json"`
     ];
