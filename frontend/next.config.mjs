@@ -3,6 +3,7 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 /** @type {(phase: string) => import('next').NextConfig} */
 export default function nextConfig(phase) {
   return {
+    devIndicators: false,
     distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
     async rewrites() {
       const apiProxyUrl = process.env.API_PROXY_URL?.replace(/\/$/, "");
