@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, FlaskConical, LockKeyhole, PlugZap, ShieldAlert, Sparkles } from "lucide-react";
+import { CheckCircle2, FlaskConical, GitBranch, LockKeyhole, PlugZap, Rocket, ShieldAlert, Sparkles } from "lucide-react";
 import { apiFetch, ApiError } from "../lib/api";
 import {
   buildMockToolExecution,
@@ -19,6 +19,30 @@ type ToolsResponse = {
 
 type ToolResultResponse<T> = {
   result: T;
+};
+
+type DevelopmentStatusResponse = {
+  github: {
+    defaultBranch: string | null;
+    latestCommit: { message: string; sha: string; url: string | null } | null;
+    missingEnvVars: string[];
+    repository: string | null;
+    status: ToolRegistryEntry["status"];
+    workflowStatus: string | null;
+  };
+  health: {
+    message: string;
+    status: "Green" | "Yellow" | "Red" | "Gray";
+    updatedAt: string;
+  };
+  vercel: {
+    latestDeployment: { status: string; url: string | null; createdAt: string | null } | null;
+    missingEnvVars: string[];
+    productionDeployment: { status: string; url: string | null; createdAt: string | null } | null;
+    productionUrl: string | null;
+    projectName: string | null;
+    status: ToolRegistryEntry["status"];
+  };
 };
 
 type ConnectionCenterProps = {
@@ -41,6 +65,7 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
   const [isLoading, setIsLoading] = useState(false);
   const [activeResult, setActiveResult] = useState<ToolTestResult | MockToolExecutionResult | null>(null);
   const [busyToolId, setBusyToolId] = useState<string | null>(null);
+  const [developmentStatus, setDevelopmentStatus] = useState<DevelopmentStatusResponse | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -49,8 +74,10 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
       setIsLoading(true);
       try {
         const response = await apiFetch<ToolsResponse>("/connections/tools", { timeoutMs: 8000 });
+        const statusResponse = await apiFetch<DevelopmentStatusResponse>("/connections/development-status", { timeoutMs: 8000 }).catch(() => null);
         if (isCancelled) return;
         setTools(response.items);
+        setDevelopmentStatus(statusResponse);
         onRegistryLoad?.(response.items);
       } catch (error) {
         if (isCancelled) return;
@@ -71,6 +98,7 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
   }, [onEvent, onRegistryLoad]);
 
   const groupedTools = useMemo(() => toolsByCategory(tools), [tools]);
+  const developmentHealthClass = developmentStatus?.health.status.toLowerCase() ?? "gray";
 
   async function testTool(tool: ToolRegistryEntry) {
     setBusyToolId(tool.id);
@@ -125,8 +153,43 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
         </span>
       </header>
 
+      {developmentStatus ? (
+        <section className={`development-status-panel health-${developmentHealthClass}`} aria-label="ENTRAL development status">
+          <div className="development-status-header">
+            <div>
+              <p className="eyebrow">Development Status</p>
+              <h4>Pipeline health: {developmentStatus.health.status}</h4>
+              <p>{developmentStatus.health.message}</p>
+            </div>
+            <span className="connection-readonly-badge">Read-only</span>
+          </div>
+          <div className="development-status-grid">
+            <article>
+              <GitBranch aria-hidden="true" size={15} />
+              <div>
+                <strong>GitHub</strong>
+                <span>{developmentStatus.github.status}</span>
+                <small>{developmentStatus.github.repository ?? "Repository not configured"}</small>
+                <small>{developmentStatus.github.defaultBranch ? `Branch: ${developmentStatus.github.defaultBranch}` : "Branch unavailable"}</small>
+                <small>{developmentStatus.github.latestCommit ? `Latest: ${developmentStatus.github.latestCommit.sha} ${developmentStatus.github.latestCommit.message}` : "Latest commit unavailable"}</small>
+              </div>
+            </article>
+            <article>
+              <Rocket aria-hidden="true" size={15} />
+              <div>
+                <strong>Vercel</strong>
+                <span>{developmentStatus.vercel.status}</span>
+                <small>{developmentStatus.vercel.projectName ?? "Project not configured"}</small>
+                <small>{developmentStatus.vercel.productionDeployment ? `Production: ${developmentStatus.vercel.productionDeployment.status}` : "Production deployment unavailable"}</small>
+                <small>{developmentStatus.vercel.productionUrl ?? developmentStatus.vercel.latestDeployment?.url ?? "Deployment URL unavailable"}</small>
+              </div>
+            </article>
+          </div>
+        </section>
+      ) : null}
+
       {Object.entries(groupedTools).map(([category, categoryTools]) => (
-        <details className="connection-category" key={category} open={category === "AI" || category === "Development" || category === "POD"}>
+        <details className="connection-category" key={category} open={category === "AI" || category === "Development" || category === "Deployment" || category === "POD"}>
           <summary>
             <span>{category}</span>
             <small>{categoryTools.length} tools</small>
@@ -147,6 +210,8 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
                 <div className="connection-tool-meta">
                   <span className={`connection-risk risk-${riskClass(tool.riskLevel)}`}>{tool.riskLevel} risk</span>
                   <span>{tool.requiresAuthorization ? "Approval required" : "No approval gate"}</span>
+                  {tool.readOnly ? <span className="connection-readonly-badge">Read-only connection</span> : null}
+                  {tool.writeActionsEnabled === false ? <span>No write access enabled</span> : null}
                   {tool.providerName ? <span>{tool.providerName} / {tool.modelName ?? "default model"}</span> : null}
                 </div>
                 <p className="connection-credentials">
@@ -155,7 +220,7 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
                     ? `Missing: ${tool.missingEnvVars.join(", ")}`
                     : tool.requiredCredentials.length ? tool.requiredCredentials.join(", ") : "No credentials required"}
                 </p>
-                {tool.status === "Missing API Key" || tool.status === "Mock Mode" ? (
+                {tool.status === "Missing API Key" || tool.status === "Missing Credentials" || tool.status === "Mock Mode" ? (
                   <p className="connection-mock-note">Mock Mode active. No provider secrets are exposed to the browser.</p>
                 ) : null}
                 <div className="connection-actions">
@@ -182,6 +247,16 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
           <p>{activeResult.message}</p>
           {"missingEnvVars" in activeResult && activeResult.missingEnvVars?.length ? (
             <p>Missing: {activeResult.missingEnvVars.join(", ")}</p>
+          ) : null}
+          {"metadata" in activeResult && activeResult.metadata ? (
+            <dl className="connection-result-metadata">
+              {Object.entries(activeResult.metadata).map(([key, value]) => (
+                <div key={key}>
+                  <dt>{key.replace(/([A-Z])/g, " $1")}</dt>
+                  <dd>{value === null || value === "" ? "Unavailable" : String(value)}</dd>
+                </div>
+              ))}
+            </dl>
           ) : null}
           {"simulatedResult" in activeResult ? <pre>{activeResult.simulatedResult}</pre> : null}
           <ul>

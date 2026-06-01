@@ -102,6 +102,16 @@ function normalize(message: string) {
   return message.trim().toLowerCase();
 }
 
+function isDevelopmentWriteAction(message: string) {
+  const normalized = normalize(message);
+
+  return (
+    /\b(push|commit|merge|delete|rollback|redeploy)\b/.test(normalized) &&
+    /\b(github|repo|repository|branch|pull request|pr|vercel|deploy|deployment)\b/.test(normalized)
+  ) || /\b(trigger|start|run)\s+(a\s+)?deployment\b/.test(normalized) ||
+    /\b(modify|change|edit)\s+(vercel\s+)?(settings|environment variables|env vars)\b/.test(normalized);
+}
+
 function idFor(prefix: string, value: string, timestamp: string) {
   return `${prefix}_${createHash("sha256").update(`${value}:${timestamp}`).digest("hex").slice(0, 12)}`;
 }
@@ -259,7 +269,7 @@ function authorizationFor(category: AiRequestCategory, toolIds: string[], riskLe
 export function classifyAiRequest(message: string, timestamp = new Date().toISOString()): AiRequestClassification {
   const detectedIntent = categoryFromMessage(message);
   const requiredTools = requiredToolsForAiMessage(message);
-  const riskLevel = strongestRisk(requiredTools);
+  const riskLevel = isDevelopmentWriteAction(message) ? "High" : strongestRisk(requiredTools);
 
   return {
     authorizationRequirement: authorizationFor(detectedIntent, requiredTools, riskLevel),

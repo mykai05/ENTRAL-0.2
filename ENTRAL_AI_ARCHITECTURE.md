@@ -1,6 +1,6 @@
 # ENTRAL AI Brain Architecture
 
-ENTRAL v0.4 adds an AI Brain layer above the existing Command OS. v0.4.1 connects that brain to the first backend-only AI provider while preserving structured understanding, planning, authorization, audit logging, and safe mock execution.
+ENTRAL v0.4 adds an AI Brain layer above the existing Command OS. v0.4.1 connects that brain to the first backend-only AI provider while preserving structured understanding, planning, authorization, audit logging, and safe mock execution. v0.4.2 adds read-only GitHub and Vercel status awareness.
 
 ## Request Flow
 
@@ -12,8 +12,9 @@ ENTRAL v0.4 adds an AI Brain layer above the existing Command OS. v0.4.1 connect
 6. Risk and authorization requirements are recalculated server-side.
 7. Safe local commands can continue immediately.
 8. External or risky actions require explicit authorization.
-9. Approved external actions still run in mock mode until each real integration is connected and policy-approved.
-10. Audit entries record the plan, provider, model, authorization state, tools, and outcome.
+9. Read-only development status requests can query GitHub/Vercel status services.
+10. Approved external write actions still run in mock mode until each real integration is connected and policy-approved.
+11. Audit entries record the plan, provider, model, authorization state, tools, and outcome.
 
 ## Current Implementation
 
@@ -22,6 +23,7 @@ ENTRAL v0.4 adds an AI Brain layer above the existing Command OS. v0.4.1 connect
 - Dashboard Connection Center: `frontend/components/ConnectionCenter.tsx`
 - Backend classifier and planner: `backend/src/services/aiBrain.ts`
 - Backend AI provider interface: `backend/src/services/aiProvider.ts`
+- Backend development status services: `backend/src/services/developmentConnections.ts`
 - Backend OpenAI routing service: `backend/src/services/openaiService.ts`
 - Backend tool registry: `backend/src/services/toolRegistry.ts`
 - Backend connection routes: `backend/src/routes/connections.ts`
@@ -40,8 +42,26 @@ Optional:
 
 If `OPENAI_API_KEY` is missing, ENTRAL does not crash. The provider reports `Missing API Key`, chat continues in Mock Mode, and deterministic AI Brain planning remains active.
 
+## GitHub + Vercel Read-Only Development Awareness
+
+ENTRAL can answer development pipeline questions such as:
+
+- "ENTRAL, check deployment status."
+- "Is ENTRAL live?"
+- "What was the latest commit?"
+- "What's wrong with deployment?"
+
+These requests route to backend-only read services:
+
+- GitHub requires `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`.
+- Vercel requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+
+GitHub and Vercel responses use the command persona and report Situation, Analysis, Recommendation, and Next Actions. Each read check creates an audit entry.
+
 ## Safety Boundary
 
 ENTRAL may plan, explain, simulate, and request approval. ENTRAL must not claim it has emailed, deployed, published, charged, scraped, posted, or modified external systems unless a real connected tool executed the action and returned a verified result.
 
 Provider output is treated as advisory. ENTRAL validates all provider JSON before using it and never allows provider output to downgrade high-risk actions into automatic execution.
+
+GitHub/Vercel write requests are refused in v0.4.2. ENTRAL cannot push, commit, merge, delete branches, trigger deployments, roll back deployments, or modify Vercel settings.

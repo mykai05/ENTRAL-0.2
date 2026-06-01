@@ -263,6 +263,7 @@ const memorySystemPrompt = [
   "Avoid casual phrases such as 'sure', 'happy to help', 'here is what I found', 'done', slang, emojis, and customer-support language.",
   "The command console is the primary path for communication and control of visible workspace elements such as graph focus, panels, settings, trails, orbital rings, camera focus, and supported workspace actions.",
   "Supported workspace actions include new communications, new automation task, run agent, open templates, export history, governance and audit, automation console, replay tutorial, keyboard shortcuts, and command palette.",
+  "GitHub and Vercel connections are read-only in this phase. You may report repository or deployment status when the backend provides it, but you must refuse push, commit, merge, branch deletion, deployment trigger, rollback, or Vercel settings changes.",
   "The Command Center exposes a structural local Command OS hierarchy: ENTRAL is the central command system; Marshals orbit ENTRAL; business Generals orbit Marshals; Commanders orbit Generals; Soldiers orbit Commanders. Live Operations are intentionally excluded until real execution is explicitly wired.",
   "Do not claim you executed real-world actions unless a tool, API, or local command handler actually did it.",
   "For restricted or sensitive actions, explain the safe governed next step."
@@ -1099,6 +1100,12 @@ async function chatReply(request: FastifyRequest) {
   const text = body.message ?? body.prompt ?? "";
   const { createAiAuditEntry } = await import("./services/aiBrain.js");
   const { createProviderBackedAiDecision } = await import("./services/openaiService.js");
+  const {
+    createDevelopmentStatusReport,
+    createReadOnlyWriteRefusal,
+    isDevelopmentStatusRequest,
+    isDevelopmentWriteActionRequest
+  } = await import("./services/developmentConnections.js");
   const brainDecision = await createProviderBackedAiDecision(text);
   const brainPlan = brainDecision.plan;
   const conversation = body.conversationId && state.conversations.get(body.conversationId)?.userId === user.id
@@ -1122,7 +1129,24 @@ async function chatReply(request: FastifyRequest) {
   };
   conversation.messages.push(userMessage);
 
-  const assistantContent = await createAssistantContent(conversation, text, body.screenshot, brainPlan);
+  let assistantContent: string;
+  const developmentChecks: Array<{ status: string; toolId: string; toolName: string; readOnly: boolean; writeActionsEnabled: boolean }> = [];
+
+  if (isDevelopmentWriteActionRequest(text)) {
+    assistantContent = createReadOnlyWriteRefusal();
+  } else if (isDevelopmentStatusRequest(text)) {
+    const report = await createDevelopmentStatusReport(text);
+    assistantContent = report.content;
+    developmentChecks.push(...report.checks.map((check) => ({
+      readOnly: check.readOnly,
+      status: check.status,
+      toolId: check.toolId,
+      toolName: check.toolName,
+      writeActionsEnabled: check.writeActionsEnabled
+    })));
+  } else {
+    assistantContent = await createAssistantContent(conversation, text, body.screenshot, brainPlan);
+  }
 
   const assistantMessage: Message = {
     content: assistantContent,
@@ -1161,6 +1185,26 @@ async function chatReply(request: FastifyRequest) {
     targetId: conversation.id,
     targetType: "ai_conversation"
   });
+
+  for (const check of developmentChecks) {
+    state.auditLogs.unshift({
+      action: check.toolId === "github" ? "github.status.read" : "vercel.status.read",
+      createdAt: now(),
+      entry: {
+        readOnly: check.readOnly,
+        requestedBy: text,
+        resultStatus: check.status,
+        tool: check.toolName,
+        writeActionsEnabled: check.writeActionsEnabled
+      },
+      entryHash: id("hash"),
+      id: id("audit"),
+      outcome: check.status === "Connected" ? "success" : check.status === "Error" ? "failure" : "blocked",
+      severity: check.status === "Error" ? "medium" : "low",
+      targetId: check.toolId,
+      targetType: "external_tool"
+    });
+  }
 
   return {
     content: assistantMessage.content,
@@ -1205,7 +1249,54 @@ app.post("/api/v1/connections/tools/:toolId/test", { preHandler: requireAuth }, 
     return reply.code(404).send({ error: "Not Found", message: "Tool was not found." });
   }
 
-  return { result: await buildToolTestResultWithProvider(tool) };
+  const result = await buildToolTestResultWithProvider(tool);
+
+  if (tool.id === "github" || tool.id === "vercel") {
+    state.auditLogs.unshift({
+      action: tool.id === "github" ? "github.status.read" : "vercel.status.read",
+      createdAt: now(),
+      entry: {
+        readOnly: result.readOnly ?? false,
+        resultStatus: result.status,
+        tool: result.toolName,
+        writeActionsEnabled: result.writeActionsEnabled ?? false
+      },
+      entryHash: id("hash"),
+      id: id("audit"),
+      outcome: result.success ? "success" : result.status === "Error" ? "failure" : "blocked",
+      severity: result.status === "Error" ? "medium" : "low",
+      targetId: tool.id,
+      targetType: "external_tool"
+    });
+  }
+
+  return { result };
+});
+
+app.get("/api/v1/connections/development-status", { preHandler: requireAuth }, async () => {
+  const { getDevelopmentStatusSnapshot } = await import("./services/developmentConnections.js");
+  const snapshot = await getDevelopmentStatusSnapshot();
+
+  for (const result of [snapshot.github, snapshot.vercel]) {
+    state.auditLogs.unshift({
+      action: result.toolId === "github" ? "github.status.read" : "vercel.status.read",
+      createdAt: now(),
+      entry: {
+        readOnly: result.readOnly,
+        resultStatus: result.status,
+        tool: result.toolName,
+        writeActionsEnabled: result.writeActionsEnabled
+      },
+      entryHash: id("hash"),
+      id: id("audit"),
+      outcome: result.status === "Connected" ? "success" : result.status === "Error" ? "failure" : "blocked",
+      severity: result.status === "Error" ? "medium" : "low",
+      targetId: result.toolId,
+      targetType: "external_tool"
+    });
+  }
+
+  return snapshot;
 });
 
 app.post("/api/v1/connections/tools/:toolId/mock-execute", { preHandler: requireAuth }, async (request, reply) => {

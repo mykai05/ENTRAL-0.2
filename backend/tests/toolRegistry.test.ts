@@ -7,6 +7,12 @@ beforeEach(() => {
   process.env.JWT_SECRET = "test-secret-that-is-long-enough-for-jwt";
   process.env.COOKIE_NAME = "entral_token";
   process.env.CORS_ORIGIN = "http://localhost:3000";
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GITHUB_OWNER;
+  delete process.env.GITHUB_REPO;
+  delete process.env.VERCEL_TOKEN;
+  delete process.env.VERCEL_ORG_ID;
+  delete process.env.VERCEL_PROJECT_ID;
 });
 
 describe("backend Tool Registry", () => {
@@ -19,7 +25,22 @@ describe("backend Tool Registry", () => {
     expect(openai?.providerName).toBe("OpenAI");
     expect(openai?.modelName).toBe("gpt-4o");
     expect(openai?.status).toBe("Missing API Key");
+    expect(registry.some((tool) => tool.id === "github" && tool.readOnly && tool.riskLevel === "Low")).toBe(true);
+    expect(registry.some((tool) => tool.id === "vercel" && tool.readOnly && tool.status === "Missing Credentials")).toBe(true);
     expect(registry.some((tool) => tool.id === "gmail" && tool.requiresAuthorization)).toBe(true);
+  });
+
+  it("tests read-only development tools without write capability", async () => {
+    const { buildToolTestResultWithProvider, getToolById } = await import("../src/services/toolRegistry.js");
+    const github = getToolById("github");
+
+    expect(github).toBeDefined();
+    const result = await buildToolTestResultWithProvider(github!);
+
+    expect(result.status).toBe("Missing Credentials");
+    expect(result.readOnly).toBe(true);
+    expect(result.writeActionsEnabled).toBe(false);
+    expect(result.missingEnvVars).toEqual(["GITHUB_TOKEN", "GITHUB_OWNER", "GITHUB_REPO"]);
   });
 
   it("reports unconnected credentials safely", async () => {

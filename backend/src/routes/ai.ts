@@ -11,6 +11,13 @@ import {
 import { openAiChatService, createProviderBackedAiDecision, type AiReply, type AiService } from "../services/openaiService.js";
 import { createAiAuditEntry, type AiActionPlan } from "../services/aiBrain.js";
 import { recordAuditLog } from "../services/audit.js";
+import {
+  buildDevelopmentStatusAuditEntry,
+  createDevelopmentStatusReport,
+  createReadOnlyWriteRefusal,
+  isDevelopmentStatusRequest,
+  isDevelopmentWriteActionRequest
+} from "../services/developmentConnections.js";
 
 type AiRoutesOptions = {
   aiService?: AiService;
@@ -239,7 +246,33 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
     let aiReply: AiReply;
 
     try {
-      aiReply = await aiService.createReply(history, { actionPlan: brainPlan });
+      if (isDevelopmentWriteActionRequest(input.message)) {
+        aiReply = {
+          content: createReadOnlyWriteRefusal(),
+          model: "read-only-development-policy",
+          providerName: "ENTRAL Development Monitor",
+          usedLocalFallback: false
+        };
+      } else if (isDevelopmentStatusRequest(input.message)) {
+        const developmentReport = await createDevelopmentStatusReport(input.message);
+        await Promise.all(developmentReport.checks.map((result) => recordAuditLog(buildDevelopmentStatusAuditEntry({
+          actorRole: currentUser.role,
+          actorUserId: currentUser.sub,
+          requestId: request.id,
+          result,
+          userRequest: input.message
+        })).catch((error) => {
+          request.log.warn({ err: error, toolId: result.toolId }, "Development status audit log write failed");
+        })));
+        aiReply = {
+          content: developmentReport.content,
+          model: "read-only-development-status",
+          providerName: "ENTRAL Development Monitor",
+          usedLocalFallback: false
+        };
+      } else {
+        aiReply = await aiService.createReply(history, { actionPlan: brainPlan });
+      }
     } catch (error) {
       await prisma.message.delete({ where: { id: result.userMessage.id } }).catch(() => undefined);
       throw error;

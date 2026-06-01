@@ -28,6 +28,12 @@ Current v0.4 state:
 - External/high-risk requests are routed to authorization before mock execution.
 - Connection Center is available in the dashboard `Tools` tab.
 - Backend exposes authenticated connection registry/test/mock routes; OpenAI tests can verify the provider when a backend key exists.
+- v0.4.2 adds backend-only GitHub and Vercel read-only status checks.
+- GitHub status uses `GITHUB_TOKEN`, `GITHUB_OWNER`, and `GITHUB_REPO`.
+- Vercel status uses `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`.
+- GitHub/Vercel write actions are explicitly refused: no push, commit, merge, branch deletion, deployment trigger, rollback, or Vercel setting mutation.
+- Connection Center now includes a Development Status panel for GitHub, Vercel, and overall pipeline health.
+- GitHub/Vercel status checks create low-risk audit records.
 - Real external actions are still not implemented. Mock mode and approval gates are the intended safety boundary.
 
 ## What Was Completed
@@ -78,6 +84,8 @@ Current v0.4 state:
 - `backend/tests/aiBrain.test.ts`
 - `backend/tests/aiProvider.test.ts`
 - `backend/tests/toolRegistry.test.ts`
+- `backend/src/services/developmentConnections.ts`
+- `backend/tests/developmentConnections.test.ts`
 - `ENTRAL_AI_ARCHITECTURE.md`
 - `ENTRAL_CONNECTIONS.md`
 - `ENTRAL_TOOL_REGISTRY.md`
@@ -88,8 +96,10 @@ Current v0.4 state:
 
 - `backend/src/routes/commandOS.ts`
 - `backend/src/services/aiProvider.ts`
+- `backend/src/services/developmentConnections.ts`
 - `backend/src/services/commandOSPersistence.ts`
 - `backend/tests/aiProvider.test.ts`
+- `backend/tests/developmentConnections.test.ts`
 - `backend/tests/commandOSPersistence.test.ts`
 - `prisma/migrations/20260530093000_add_command_os_persistence/migration.sql`
 
@@ -119,6 +129,13 @@ v0.4.1 checks should be rerun after the provider integration commit:
 - Frontend tests
 - Backend and frontend production build
 
+v0.4.2 checks run during implementation:
+
+- Backend lint/typecheck: passed.
+- Backend tests: 14 files, 55 tests passed.
+- Frontend lint/typecheck: passed.
+- Frontend tests: 22 files, 100 tests passed.
+
 Known warning:
 
 - Local shell is running Node `v22.20.0`; the project target remains Node `20.19.0`. All checks passed despite the local version warning.
@@ -132,11 +149,12 @@ Known warning:
 - Existing user localStorage is intentionally preserved, so returning users may still see older saved structures.
 - External execution, publishing, client contact, and real autonomous business operations remain intentionally out of scope.
 - OpenAI is the only real provider target in v0.4.1. All other tools remain mock/future integrations.
+- GitHub and Vercel are read-only status integrations only. They intentionally cannot perform writes.
 
 ## Recommended Next Step
 
-Run the v0.4.1 checks, commit the provider integration, push, and redeploy frontend/backend so the public app receives the real AI provider status and Mock Mode behavior.
+Run the full v0.4.2 recursive build, commit the GitHub/Vercel read-only integration, push, and redeploy frontend/backend so the public app receives development pipeline visibility.
 
 Suggested next Codex prompt:
 
-`Run the v0.4.1 verification checks, commit and push the real AI provider integration, then verify frontend and backend deployment health.`
+`Run the v0.4.2 verification checks, commit and push the GitHub/Vercel read-only development connection integration, then verify Connection Center and deployment health.`

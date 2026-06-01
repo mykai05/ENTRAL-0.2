@@ -19,6 +19,15 @@ describe("backend AI Brain", () => {
     expect(plan.authorizationRequired).toBe(true);
   });
 
+  it("keeps read-only development status checks low risk", async () => {
+    const { createAiActionPlan } = await import("../src/services/aiBrain.js");
+    const plan = createAiActionPlan("What was the latest commit?");
+
+    expect(plan.toolsRequired).toContain("github");
+    expect(plan.riskLevel).toBe("Low");
+    expect(plan.authorizationRequired).toBe(false);
+  });
+
   it("identifies governed research requests", async () => {
     const { classifyAiRequest } = await import("../src/services/aiBrain.js");
     const classification = classifyAiRequest("Research competitors and search the web for pricing.");

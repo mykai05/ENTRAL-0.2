@@ -4,6 +4,7 @@ export type ToolCategory =
   | "Browser"
   | "Calendar"
   | "Design"
+  | "Deployment"
   | "Development"
   | "E-commerce"
   | "Email"
@@ -14,7 +15,7 @@ export type ToolCategory =
   | "Social Media"
   | "Website";
 
-export type ToolConnectionStatus = "Connected" | "Coming Soon" | "Disabled" | "Error" | "Missing API Key" | "Mock Mode" | "Needs Credentials" | "Not Connected";
+export type ToolConnectionStatus = "Connected" | "Coming Soon" | "Disabled" | "Error" | "Missing API Key" | "Missing Credentials" | "Mock Mode" | "Needs Credentials" | "Not Connected";
 export type ToolRiskLevel = "Low" | "Medium" | "High" | "Critical";
 
 export type ToolRegistryEntry = {
@@ -24,28 +25,34 @@ export type ToolRegistryEntry = {
   description: string;
   id: string;
   lastUsedAt?: string | null;
+  metadata?: Record<string, string | number | boolean | null>;
   missingEnvVars?: string[];
   modelName?: string;
   name: string;
   providerName?: string;
   requiredCredentials: string[];
+  readOnly?: boolean;
   requiresAuthorization: boolean;
   riskLevel: ToolRiskLevel;
   status: ToolConnectionStatus;
+  writeActionsEnabled?: boolean;
 };
 
 export type ToolTestResult = {
   error?: string;
   message: string;
+  metadata?: Record<string, string | number | boolean | null>;
   missingEnvVars?: string[];
   modelName?: string;
   nextSteps: string[];
   providerName?: string;
+  readOnly?: boolean;
   status: ToolConnectionStatus;
   success: boolean;
   timestamp: string;
   toolId: string;
   toolName: string;
+  writeActionsEnabled?: boolean;
 };
 
 export type MockToolExecutionResult = {
@@ -117,26 +124,42 @@ export const defaultToolRegistry: ToolRegistryEntry[] = [
     status: "Mock Mode"
   }),
   entry({
-    availableActions: ["repo.read", "issue.create.mock", "pull_request.mock"],
+    availableActions: ["repo.metadata.read", "repo.commits.read", "repo.pull_requests.read", "repo.checks.read"],
     category: "Development",
-    description: "Repository connection for future source control operations.",
+    description: "Read-only repository status for ENTRAL development visibility.",
     id: "github",
+    metadata: {
+      mode: "Mock Mode",
+      readOnly: true,
+      writeActionsEnabled: false
+    },
+    missingEnvVars: ["GITHUB_TOKEN", "GITHUB_OWNER", "GITHUB_REPO"],
     name: "GitHub",
-    requiredCredentials: ["GITHUB_TOKEN"],
-    requiresAuthorization: true,
-    riskLevel: "High",
-    status: "Mock Mode"
+    readOnly: true,
+    requiredCredentials: ["GITHUB_TOKEN", "GITHUB_OWNER", "GITHUB_REPO"],
+    requiresAuthorization: false,
+    riskLevel: "Low",
+    status: "Missing Credentials",
+    writeActionsEnabled: false
   }),
   entry({
-    availableActions: ["deployment.status.mock", "deployment.trigger.mock"],
-    category: "Development",
-    description: "Deployment platform connection for future release operations.",
+    availableActions: ["deployment.status.read", "deployment.metadata.read"],
+    category: "Deployment",
+    description: "Read-only Vercel deployment status for ENTRAL release visibility.",
     id: "vercel",
+    metadata: {
+      mode: "Mock Mode",
+      readOnly: true,
+      writeActionsEnabled: false
+    },
+    missingEnvVars: ["VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID"],
     name: "Vercel",
-    requiredCredentials: ["VERCEL_TOKEN", "VERCEL_PROJECT_ID"],
-    requiresAuthorization: true,
-    riskLevel: "High",
-    status: "Mock Mode"
+    readOnly: true,
+    requiredCredentials: ["VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID"],
+    requiresAuthorization: false,
+    riskLevel: "Low",
+    status: "Missing Credentials",
+    writeActionsEnabled: false
   }),
   entry({
     availableActions: ["draft.email.mock", "send.email.future"],
@@ -417,17 +440,20 @@ export function buildToolTestResult(tool: ToolRegistryEntry): ToolTestResult {
     message: success
       ? `${tool.name} is available in ${tool.status}. No external action was executed.`
       : `${tool.name} is not connected. Required credentials: ${missingCredentials}.`,
+    metadata: tool.metadata,
     missingEnvVars: tool.missingEnvVars,
     modelName: tool.modelName,
     nextSteps: success
       ? ["Use mock execution for planning.", "Request explicit approval before any external action."]
       : ["Add backend-controlled credentials.", "Configure required scopes.", "Run test connection again."],
     providerName: tool.providerName,
+    readOnly: tool.readOnly,
     status: tool.status,
     success,
     timestamp: new Date().toISOString(),
     toolId: tool.id,
-    toolName: tool.name
+    toolName: tool.name,
+    writeActionsEnabled: tool.writeActionsEnabled
   };
 }
 

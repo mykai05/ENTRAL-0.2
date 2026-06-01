@@ -5679,6 +5679,7 @@ body:has(.command-center-page) .palette-trigger {
 
 .connection-status.coming-soon,
 .connection-status.missing-api-key,
+.connection-status.missing-credentials,
 .connection-status.not-connected,
 .connection-status.needs-credentials {
   background: rgba(255, 191, 0, 0.08);
@@ -5705,6 +5706,16 @@ body:has(.command-center-page) .palette-trigger {
 .connection-credentials {
   color: rgba(255, 255, 240, 0.56);
   font-size: 0.68rem;
+}
+
+.connection-readonly-badge {
+  background: rgba(0, 191, 255, 0.1);
+  border: 1px solid rgba(0, 191, 255, 0.22);
+  border-radius: 999px;
+  color: #00bfff !important;
+  font-size: 0.62rem !important;
+  font-weight: 900;
+  padding: 0.14rem 0.42rem;
 }
 
 .connection-risk {
@@ -5790,6 +5801,104 @@ body:has(.command-center-page) .palette-trigger {
   gap: 0.24rem;
   margin: 0;
   padding-left: 1rem;
+}
+
+.development-status-panel {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 240, 0.08);
+  border-radius: 14px;
+  display: grid;
+  gap: 0.62rem;
+  padding: 0.66rem;
+}
+
+.development-status-panel.health-green {
+  border-color: rgba(57, 255, 20, 0.2);
+}
+
+.development-status-panel.health-yellow {
+  border-color: rgba(255, 209, 102, 0.24);
+}
+
+.development-status-panel.health-red {
+  border-color: rgba(255, 77, 109, 0.28);
+}
+
+.development-status-header,
+.development-status-grid article {
+  align-items: start;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.development-status-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.development-status-grid article {
+  background: rgba(255, 255, 255, 0.026);
+  border: 1px solid rgba(255, 255, 240, 0.07);
+  border-radius: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 0.56rem;
+}
+
+.development-status-grid strong,
+.development-status-grid span,
+.development-status-grid small {
+  display: block;
+}
+
+.development-status-grid strong {
+  color: var(--ink);
+  font-size: 0.72rem;
+}
+
+.development-status-grid span {
+  color: rgb(var(--neon-accent-rgb));
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.development-status-grid small {
+  color: rgba(255, 255, 240, 0.56);
+  font-size: 0.63rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.connection-result-metadata {
+  display: grid;
+  gap: 0.36rem;
+  margin: 0;
+}
+
+.connection-result-metadata div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.connection-result-metadata dt {
+  color: rgba(255, 255, 240, 0.46);
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.connection-result-metadata dd {
+  color: rgba(255, 255, 240, 0.74);
+  font-size: 0.68rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .development-status-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .product-batch-tool {

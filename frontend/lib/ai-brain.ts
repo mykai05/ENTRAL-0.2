@@ -103,6 +103,16 @@ function strongestRisk(toolIds: string[]): ToolRiskLevel {
     .sort((first, second) => weight[second] - weight[first])[0] ?? "Low";
 }
 
+function isDevelopmentWriteAction(message: string) {
+  const normalized = normalizedMessage(message);
+
+  return (
+    /\b(push|commit|merge|delete|rollback|redeploy)\b/.test(normalized) &&
+    /\b(github|repo|repository|branch|pull request|pr|vercel|deploy|deployment)\b/.test(normalized)
+  ) || /\b(trigger|start|run)\s+(a\s+)?deployment\b/.test(normalized) ||
+    /\b(modify|change|edit)\s+(vercel\s+)?(settings|environment variables|env vars)\b/.test(normalized);
+}
+
 function authorizationFor(category: AiRequestCategory, toolIds: string[], riskLevel: ToolRiskLevel): AuthorizationRequirement {
   if (riskLevel === "High" || riskLevel === "Critical") return "required";
 
@@ -195,7 +205,7 @@ function suggestedActionFor(category: AiRequestCategory) {
 export function classifyAiRequest(message: string, timestamp = new Date().toISOString()): AiRequestClassification {
   const detectedIntent = categoryFromMessage(message);
   const requiredTools = requiredToolsForMessage(message);
-  const riskLevel = strongestRisk(requiredTools);
+  const riskLevel = isDevelopmentWriteAction(message) ? "High" : strongestRisk(requiredTools);
   const authorizationRequirement = authorizationFor(detectedIntent, requiredTools, riskLevel);
   const commandIntent = classifyCommandIntent(message);
   const confidence: AiConfidence = detectedIntent === "unknown_needs_clarification" ? "low" : commandIntent.confidence;

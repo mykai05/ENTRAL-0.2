@@ -14,8 +14,11 @@ describe("Tool Registry", () => {
 
     expect(grouped.AI.length).toBeGreaterThan(0);
     expect(grouped.Development.length).toBeGreaterThan(0);
+    expect(grouped.Deployment.length).toBeGreaterThan(0);
     expect(openai?.providerName).toBe("OpenAI");
     expect(openai?.missingEnvVars).toContain("OPENAI_API_KEY");
+    expect(toolById("github")?.readOnly).toBe(true);
+    expect(toolById("vercel")?.writeActionsEnabled).toBe(false);
   });
 
   it("prepares safe mock execution results", () => {
@@ -29,12 +32,13 @@ describe("Tool Registry", () => {
   });
 
   it("does not mark missing credentials as connected", () => {
-    const tool = toolById("gmail");
+    const tool = toolById("github");
 
     expect(tool).toBeDefined();
     const result = buildToolTestResult(tool!);
 
     expect(result.success).toBe(false);
+    expect(result.readOnly).toBe(true);
     expect(result.message).toContain("Required credentials");
   });
 });
