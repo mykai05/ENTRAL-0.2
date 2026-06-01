@@ -9,7 +9,7 @@ beforeEach(() => {
   process.env.CORS_ORIGIN = "http://localhost:3000";
   process.env.AI_FEATURE_ENABLED = "true";
   process.env.AI_LOCAL_FALLBACK = "true";
-  delete process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = "";
 });
 
 describe("OpenAiChatService", () => {
@@ -22,7 +22,20 @@ describe("OpenAiChatService", () => {
 
     expect(reply.usedLocalFallback).toBe(true);
     expect(reply.model).toBe("local-fallback");
+    expect(reply.providerName).toBe("OpenAI");
     expect(reply.content).toContain("How should I plan onboarding?");
+  });
+
+  it("keeps production chat in Mock Mode when the provider key is missing", async () => {
+    process.env.NODE_ENV = "production";
+    const { OpenAiChatService } = await import("../src/services/openaiService.js");
+    const service = new OpenAiChatService();
+    const reply = await service.createReply([
+      { role: "user", content: "ENTRAL, report." }
+    ]);
+
+    expect(reply.usedLocalFallback).toBe(true);
+    expect(reply.content).toContain("AI Provider Not Connected");
   });
 
   it("uses a local fallback for screen analysis when no API key is configured", async () => {
@@ -33,6 +46,7 @@ describe("OpenAiChatService", () => {
     ], "data:image/jpeg;base64,aGVsbG8=", "What do you see?");
 
     expect(reply.usedLocalFallback).toBe(true);
-    expect(reply.content).toContain("vision command channel is not configured");
+    expect(reply.providerName).toBe("OpenAI");
+    expect(reply.content).toContain("vision command channel is not connected");
   });
 });

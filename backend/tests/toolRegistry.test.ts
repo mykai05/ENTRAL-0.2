@@ -13,8 +13,12 @@ describe("backend Tool Registry", () => {
   it("exposes the OpenAI provider and guarded external tools", async () => {
     const { getToolRegistry } = await import("../src/services/toolRegistry.js");
     const registry = getToolRegistry();
+    const openai = registry.find((tool) => tool.id === "openai");
 
-    expect(registry.some((tool) => tool.id === "openai")).toBe(true);
+    expect(openai).toBeDefined();
+    expect(openai?.providerName).toBe("OpenAI");
+    expect(openai?.modelName).toBe("gpt-4o");
+    expect(openai?.status).toBe("Missing API Key");
     expect(registry.some((tool) => tool.id === "gmail" && tool.requiresAuthorization)).toBe(true);
   });
 

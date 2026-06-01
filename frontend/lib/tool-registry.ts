@@ -14,7 +14,7 @@ export type ToolCategory =
   | "Social Media"
   | "Website";
 
-export type ToolConnectionStatus = "Connected" | "Coming Soon" | "Disabled" | "Error" | "Mock Mode" | "Needs Credentials" | "Not Connected";
+export type ToolConnectionStatus = "Connected" | "Coming Soon" | "Disabled" | "Error" | "Missing API Key" | "Mock Mode" | "Needs Credentials" | "Not Connected";
 export type ToolRiskLevel = "Low" | "Medium" | "High" | "Critical";
 
 export type ToolRegistryEntry = {
@@ -24,7 +24,10 @@ export type ToolRegistryEntry = {
   description: string;
   id: string;
   lastUsedAt?: string | null;
+  missingEnvVars?: string[];
+  modelName?: string;
   name: string;
+  providerName?: string;
   requiredCredentials: string[];
   requiresAuthorization: boolean;
   riskLevel: ToolRiskLevel;
@@ -34,7 +37,10 @@ export type ToolRegistryEntry = {
 export type ToolTestResult = {
   error?: string;
   message: string;
+  missingEnvVars?: string[];
+  modelName?: string;
   nextSteps: string[];
+  providerName?: string;
   status: ToolConnectionStatus;
   success: boolean;
   timestamp: string;
@@ -68,7 +74,10 @@ export const defaultToolRegistry: ToolRegistryEntry[] = [
     category: "AI",
     description: "Primary AI provider for ENTRAL command reasoning and vision analysis.",
     id: "openai",
+    missingEnvVars: ["OPENAI_API_KEY"],
+    modelName: "gpt-4o",
     name: "OpenAI",
+    providerName: "OpenAI",
     requiredCredentials: ["OPENAI_API_KEY", "OPENAI_MODEL"],
     requiresAuthorization: false,
     riskLevel: "Low",
@@ -408,9 +417,12 @@ export function buildToolTestResult(tool: ToolRegistryEntry): ToolTestResult {
     message: success
       ? `${tool.name} is available in ${tool.status}. No external action was executed.`
       : `${tool.name} is not connected. Required credentials: ${missingCredentials}.`,
+    missingEnvVars: tool.missingEnvVars,
+    modelName: tool.modelName,
     nextSteps: success
       ? ["Use mock execution for planning.", "Request explicit approval before any external action."]
       : ["Add backend-controlled credentials.", "Configure required scopes.", "Run test connection again."],
+    providerName: tool.providerName,
     status: tool.status,
     success,
     timestamp: new Date().toISOString(),

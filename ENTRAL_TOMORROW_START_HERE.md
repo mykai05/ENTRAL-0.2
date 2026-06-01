@@ -20,10 +20,14 @@ The current working tree contains completed step 6-9 work from the v0.3 plan:
 Current v0.4 state:
 
 - AI Brain classifiers now create intent, risk, tool, entity, authorization, and audit metadata.
+- v0.4.1 adds a backend-only OpenAI provider interface for real AI routing.
+- `OPENAI_API_KEY` stays server-side only; missing keys produce `AI Provider Not Connected` and continue in Mock Mode.
+- Provider JSON classification/action plans are validated and merged with deterministic safety checks.
+- AI chat and screen routes now write provider-aware audit metadata.
 - Dashboard command console shows the latest AI Brain interpretation.
 - External/high-risk requests are routed to authorization before mock execution.
 - Connection Center is available in the dashboard `Tools` tab.
-- Backend exposes authenticated connection registry/test/mock routes.
+- Backend exposes authenticated connection registry/test/mock routes; OpenAI tests can verify the provider when a backend key exists.
 - Real external actions are still not implemented. Mock mode and approval gates are the intended safety boundary.
 
 ## What Was Completed
@@ -70,7 +74,9 @@ Current v0.4 state:
 - `backend/src/routes/connections.ts`
 - `backend/src/services/aiBrain.ts`
 - `backend/src/services/toolRegistry.ts`
+- `backend/src/services/aiProvider.ts`
 - `backend/tests/aiBrain.test.ts`
+- `backend/tests/aiProvider.test.ts`
 - `backend/tests/toolRegistry.test.ts`
 - `ENTRAL_AI_ARCHITECTURE.md`
 - `ENTRAL_CONNECTIONS.md`
@@ -81,7 +87,9 @@ Current v0.4 state:
 ## Files Created
 
 - `backend/src/routes/commandOS.ts`
+- `backend/src/services/aiProvider.ts`
 - `backend/src/services/commandOSPersistence.ts`
+- `backend/tests/aiProvider.test.ts`
 - `backend/tests/commandOSPersistence.test.ts`
 - `prisma/migrations/20260530093000_add_command_os_persistence/migration.sql`
 
@@ -103,6 +111,14 @@ Current v0.4 state:
 - v0.4 backend production build: passed.
 - Local smoke check: `/dashboard` redirects unauthenticated users to `/login`, `/login` returns `200`, and memory backend `/health` returns `{"mode":"memory","ok":true}`.
 
+v0.4.1 checks should be rerun after the provider integration commit:
+
+- Backend lint/typecheck
+- Frontend lint/typecheck
+- Backend tests
+- Frontend tests
+- Backend and frontend production build
+
 Known warning:
 
 - Local shell is running Node `v22.20.0`; the project target remains Node `20.19.0`. All checks passed despite the local version warning.
@@ -115,11 +131,12 @@ Known warning:
 - The right command panel now fits better statically and builds cleanly, but browser automation for final screenshots was blocked by the local browser-control layer. Manual mobile/browser QA should still happen before a release claim.
 - Existing user localStorage is intentionally preserved, so returning users may still see older saved structures.
 - External execution, publishing, client contact, and real autonomous business operations remain intentionally out of scope.
+- OpenAI is the only real provider target in v0.4.1. All other tools remain mock/future integrations.
 
 ## Recommended Next Step
 
-Commit and push this checkpoint, then redeploy frontend/backend so the public app receives the Command OS persistence and v5.5 command panel improvements.
+Run the v0.4.1 checks, commit the provider integration, push, and redeploy frontend/backend so the public app receives the real AI provider status and Mock Mode behavior.
 
 Suggested next Codex prompt:
 
-`Commit and push the v0.3 steps 6-9 checkpoint, then verify the deployed frontend and backend URLs.`
+`Run the v0.4.1 verification checks, commit and push the real AI provider integration, then verify frontend and backend deployment health.`

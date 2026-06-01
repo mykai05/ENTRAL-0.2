@@ -9,6 +9,7 @@ import { generateProductBatch, type ProductBatchInput } from "./services/product
 import { analyzeCompliance, formatComplianceNotes } from "./services/complianceGuardrails.js";
 import { buildLaunchPackage, buildMerchReport, type MerchReportType } from "./services/merchReports.js";
 import { calculatePricing, pricingPlatformPresets, type PricingPlatformPreset } from "./services/pricingCalculator.js";
+import type { AiActionPlan } from "./services/aiBrain.js";
 
 config({ path: resolve(process.cwd(), ".env") });
 config({ path: resolve(process.cwd(), "../.env") });
@@ -283,17 +284,17 @@ function recentOpenAiMessages(conversation: Conversation): OpenAiMessage[] {
     .map((message) => ({ content: message.content.slice(0, 4000), role: message.role }));
 }
 
-async function createAssistantContent(conversation: Conversation, prompt: string, screenshot?: string) {
+async function createAssistantContent(conversation: Conversation, prompt: string, screenshot?: string, preparedBrainPlan?: AiActionPlan) {
   const client = getOpenAiClient();
   const { buildAiBrainContextPrompt, createAiActionPlan } = await import("./services/aiBrain.js");
-  const brainPlan = createAiActionPlan(prompt);
+  const brainPlan = preparedBrainPlan ?? createAiActionPlan(prompt);
 
   if (!client) {
     return [
       "[ENTRAL]",
-      "Situation:\nLive AI command channel is not connected.",
+      "Situation:\nAI Provider Not Connected. ENTRAL is operating in Mock Mode.",
       `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"\nIntent: ${brainPlan.intent}. Risk: ${brainPlan.riskLevel}. Tools: ${brainPlan.toolsRequired.length ? brainPlan.toolsRequired.join(", ") : "none"}.`,
-      "Recommendation:\nAdd OPENAI_API_KEY to .env and restart ENTRAL to enable live GPT-4o strategic command responses.",
+      "Recommendation:\nAdd OPENAI_API_KEY to the backend environment and restart ENTRAL to enable live GPT-4o strategic command responses.",
       `Next Actions:\n- Use local Command Center controls for graph control.\n- ${brainPlan.authorizationRequired ? "Review and authorize the prepared action plan before execution." : "Proceed with local command handling where available."}\n- Restore the OpenAI channel when strategic analysis is required.`
     ].join("\n\n");
   }
@@ -1096,9 +1097,10 @@ async function chatReply(request: FastifyRequest) {
   const user = currentUserOrThrow(request);
   const body = request.body as { conversationId?: string; message?: string; prompt?: string; screenshot?: string };
   const text = body.message ?? body.prompt ?? "";
-  const { createAiActionPlan, createAiAuditEntry } = await import("./services/aiBrain.js");
-  const brainPlan = createAiActionPlan(text);
-  const brainAuditEntry = createAiAuditEntry({ plan: brainPlan });
+  const { createAiAuditEntry } = await import("./services/aiBrain.js");
+  const { createProviderBackedAiDecision } = await import("./services/openaiService.js");
+  const brainDecision = await createProviderBackedAiDecision(text);
+  const brainPlan = brainDecision.plan;
   const conversation = body.conversationId && state.conversations.get(body.conversationId)?.userId === user.id
     ? state.conversations.get(body.conversationId)!
     : {
@@ -1120,7 +1122,7 @@ async function chatReply(request: FastifyRequest) {
   };
   conversation.messages.push(userMessage);
 
-  const assistantContent = await createAssistantContent(conversation, text, body.screenshot);
+  const assistantContent = await createAssistantContent(conversation, text, body.screenshot, brainPlan);
 
   const assistantMessage: Message = {
     content: assistantContent,
@@ -1130,6 +1132,35 @@ async function chatReply(request: FastifyRequest) {
   };
   conversation.messages.push(assistantMessage);
   conversation.updatedAt = assistantMessage.createdAt;
+  const brainAuditEntry = createAiAuditEntry({
+    errors: brainDecision.errors,
+    executionResult: body.screenshot
+      ? "Screen analysis response generated. Screenshot was processed transiently and not stored."
+      : brainPlan.authorizationRequired ? "Plan prepared. Authorization required before execution." : "Plan prepared. No external action executed.",
+    modelName: openAiApiKey ? openAiModel : "local-fallback",
+    plan: brainPlan,
+    providerName: "OpenAI"
+  });
+  state.auditLogs.unshift({
+    action: body.screenshot ? "ai.screen.analyzed" : "ai.command.planned",
+    createdAt: now(),
+    entry: {
+      authorizationRequired: brainPlan.authorizationRequired,
+      decisionSource: brainDecision.source,
+      errors: brainDecision.errors,
+      plan: brainPlan,
+      provider: "OpenAI",
+      providerStatus: brainDecision.provider.connectionStatus,
+      screenshotStored: false,
+      userMessage: text
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: brainPlan.riskLevel === "Critical" ? "critical" : brainPlan.riskLevel === "High" ? "high" : brainPlan.riskLevel === "Medium" ? "medium" : "info",
+    targetId: conversation.id,
+    targetType: "ai_conversation"
+  });
 
   return {
     content: assistantMessage.content,
@@ -1167,14 +1198,14 @@ app.get("/api/v1/connections/tools", { preHandler: requireAuth }, async () => {
 
 app.post("/api/v1/connections/tools/:toolId/test", { preHandler: requireAuth }, async (request, reply) => {
   const { toolId } = request.params as { toolId: string };
-  const { buildToolTestResult, getToolById } = await import("./services/toolRegistry.js");
+  const { buildToolTestResultWithProvider, getToolById } = await import("./services/toolRegistry.js");
   const tool = getToolById(toolId);
 
   if (!tool) {
     return reply.code(404).send({ error: "Not Found", message: "Tool was not found." });
   }
 
-  return { result: buildToolTestResult(tool) };
+  return { result: await buildToolTestResultWithProvider(tool) };
 });
 
 app.post("/api/v1/connections/tools/:toolId/mock-execute", { preHandler: requireAuth }, async (request, reply) => {

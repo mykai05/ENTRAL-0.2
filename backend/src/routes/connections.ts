@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireAuth } from "../auth.js";
-import { buildMockToolExecution, buildToolTestResult, getToolById, getToolRegistry } from "../services/toolRegistry.js";
+import { buildMockToolExecution, buildToolTestResultWithProvider, getToolById, getToolRegistry } from "../services/toolRegistry.js";
 
 const toolIdParamsSchema = z.object({
   toolId: z.string().trim().min(1).max(120)
@@ -41,7 +41,7 @@ export async function connectionRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not Found", message: "Tool was not found." });
     }
 
-    return reply.send({ result: buildToolTestResult(tool) });
+    return reply.send({ result: await buildToolTestResultWithProvider(tool) });
   });
 
   app.post("/connections/tools/:toolId/mock-execute", { preHandler: requireAuth }, async (request, reply) => {

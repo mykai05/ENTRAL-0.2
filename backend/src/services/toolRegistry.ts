@@ -1,4 +1,4 @@
-import { env } from "../env.js";
+import { getPrimaryAiProviderState, testPrimaryAiProvider, type AiProviderTestResult } from "./aiProvider.js";
 
 export type ToolCategory =
   | "AI"
@@ -16,7 +16,7 @@ export type ToolCategory =
   | "Social Media"
   | "Website";
 
-export type ToolConnectionStatus = "Connected" | "Coming Soon" | "Disabled" | "Error" | "Mock Mode" | "Needs Credentials" | "Not Connected";
+export type ToolConnectionStatus = "Connected" | "Coming Soon" | "Disabled" | "Error" | "Missing API Key" | "Mock Mode" | "Needs Credentials" | "Not Connected";
 export type ToolRiskLevel = "Low" | "Medium" | "High" | "Critical";
 
 export type ToolRegistryEntry = {
@@ -26,7 +26,10 @@ export type ToolRegistryEntry = {
   description: string;
   id: string;
   lastUsedAt?: string | null;
+  missingEnvVars?: string[];
+  modelName?: string;
   name: string;
+  providerName?: string;
   requiredCredentials: string[];
   requiresAuthorization: boolean;
   riskLevel: ToolRiskLevel;
@@ -37,6 +40,9 @@ export type ToolTestResult = {
   error?: string;
   message: string;
   nextSteps: string[];
+  providerName?: string;
+  missingEnvVars?: string[];
+  modelName?: string;
   status: ToolConnectionStatus;
   success: boolean;
   timestamp: string;
@@ -354,15 +360,27 @@ const toolBlueprints: ToolBlueprint[] = [
 
 function statusForTool(tool: ToolBlueprint): ToolConnectionStatus {
   if (tool.id === "openai") {
-    if (!env.AI_FEATURE_ENABLED) return "Disabled";
-    return env.OPENAI_API_KEY ? "Connected" : "Mock Mode";
+    return getPrimaryAiProviderState().connectionStatus;
   }
 
   return tool.status ?? "Not Connected";
 }
 
 export function getToolRegistry() {
-  return toolBlueprints.map((tool) => entry({ ...tool, status: statusForTool(tool) }));
+  return toolBlueprints.map((tool) => {
+    if (tool.id !== "openai") {
+      return entry({ ...tool, status: statusForTool(tool) });
+    }
+
+    const provider = getPrimaryAiProviderState();
+    return entry({
+      ...tool,
+      missingEnvVars: provider.missingEnvVars,
+      modelName: provider.modelName,
+      providerName: provider.providerName,
+      status: statusForTool(tool)
+    });
+  });
 }
 
 export function getToolById(toolId: string) {
@@ -378,12 +396,36 @@ export function buildToolTestResult(tool: ToolRegistryEntry): ToolTestResult {
     message: success
       ? `${tool.name} is available in ${tool.status}. No external action was executed.`
       : `${tool.name} is not connected. Required credentials: ${missingCredentials}.`,
+    missingEnvVars: tool.missingEnvVars,
+    modelName: tool.modelName,
     nextSteps: success
       ? ["Use mock execution for planning.", "Request explicit approval before any external action."]
       : ["Add backend-controlled credentials.", "Configure required scopes.", "Run test connection again."],
+    providerName: tool.providerName,
     status: tool.status,
     success,
     timestamp: new Date().toISOString(),
+    toolId: tool.id,
+    toolName: tool.name
+  };
+}
+
+export async function buildToolTestResultWithProvider(tool: ToolRegistryEntry): Promise<ToolTestResult> {
+  if (tool.id !== "openai") {
+    return buildToolTestResult(tool);
+  }
+
+  const result: AiProviderTestResult = await testPrimaryAiProvider();
+  return {
+    error: result.error,
+    message: result.message,
+    missingEnvVars: result.missingEnvVars,
+    modelName: result.modelName,
+    nextSteps: result.nextSteps,
+    providerName: result.providerName,
+    status: result.status,
+    success: result.success,
+    timestamp: result.timestamp,
     toolId: tool.id,
     toolName: tool.name
   };
@@ -404,4 +446,3 @@ export function buildMockToolExecution(tool: ToolRegistryEntry, request: string)
     toolName: tool.name
   };
 }
-

@@ -1,8 +1,16 @@
 import { createHash } from "node:crypto";
-import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { env } from "../env.js";
-import { buildAiBrainContextPrompt, createAiActionPlan } from "./aiBrain.js";
+import {
+  buildAiBrainContextPrompt,
+  classifyAiRequest,
+  createAiActionPlanFromClassification,
+  sanitizeProviderActionPlan,
+  sanitizeProviderClassification,
+  type AiActionPlan,
+  type AiRequestClassification
+} from "./aiBrain.js";
+import { getPrimaryAiProviderState, openAiProvider, type AiProviderState } from "./aiProvider.js";
 
 export type StoredChatMessage = {
   role: string;
@@ -12,12 +20,25 @@ export type StoredChatMessage = {
 export type AiReply = {
   content: string;
   model: string;
+  providerName: string;
   requestId?: string;
   usedLocalFallback: boolean;
 };
 
+export type AiBrainDecision = {
+  classification: AiRequestClassification;
+  errors: string[];
+  plan: AiActionPlan;
+  provider: AiProviderState;
+  source: "deterministic" | "provider";
+};
+
+export type AiReplyContext = {
+  actionPlan?: AiActionPlan;
+};
+
 export type AiService = {
-  createReply(messages: StoredChatMessage[]): Promise<AiReply>;
+  createReply(messages: StoredChatMessage[], context?: AiReplyContext): Promise<AiReply>;
   createVisionReply?(messages: StoredChatMessage[], screenshotDataUrl: string, prompt: string): Promise<AiReply>;
 };
 
@@ -106,10 +127,97 @@ function writeCachedReply(key: string, reply: AiReply) {
   });
 }
 
-export class OpenAiChatService implements AiService {
-  private client?: OpenAI;
+function localCommandFallbackContent(prompt: string, actionPlan: AiActionPlan) {
+  return [
+    "[ENTRAL]",
+    "Situation:\nAI Provider Not Connected. ENTRAL is operating in Mock Mode.",
+    `Analysis:\n${prompt ? `Directive received: \"${prompt.slice(0, 220)}\"` : "No directive has been received yet."}\nIntent: ${actionPlan.intent}. Risk: ${actionPlan.riskLevel}. Tools: ${actionPlan.toolsRequired.length ? actionPlan.toolsRequired.join(", ") : "none"}.`,
+    "Recommendation:\nAdd OPENAI_API_KEY to the backend environment to enable live provider reasoning.",
+    `Next Actions:\n- Use local Command Center controls for graph control.\n- ${actionPlan.authorizationRequired ? "Review and authorize the prepared action plan before execution." : "Proceed with local command handling where available."}\n- Keep external actions blocked until a connected provider and explicit approval are present.`
+  ].join("\n\n");
+}
 
-  async createReply(messages: StoredChatMessage[]): Promise<AiReply> {
+function parseJsonObject(content: string) {
+  try {
+    const parsed = JSON.parse(content);
+    return typeof parsed === "object" && parsed !== null ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function createProviderBackedAiDecision(message: string): Promise<AiBrainDecision> {
+  const timestamp = new Date().toISOString();
+  const fallbackClassification = classifyAiRequest(message, timestamp);
+  const fallbackPlan = createAiActionPlanFromClassification(fallbackClassification, timestamp);
+  const provider = getPrimaryAiProviderState();
+
+  if (!openAiProvider.canRequest()) {
+    return {
+      classification: fallbackClassification,
+      errors: provider.missingEnvVars.length ? [`Missing provider environment variables: ${provider.missingEnvVars.join(", ")}`] : [],
+      plan: fallbackPlan,
+      provider,
+      source: "deterministic"
+    };
+  }
+
+  try {
+    const response = await openAiProvider.request({
+      responseFormat: "json_object",
+      temperature: 0,
+      messages: [
+        {
+          role: "system",
+          content: [
+            "You are the ENTRAL AI Brain classifier and planner.",
+            "Return only valid JSON.",
+            "Do not execute actions.",
+            "Do not lower risk for external tools, deletion, publishing, email sending, deployment, code push, money movement, or customer contact.",
+            "Use ENTRAL hierarchy terms: Marshal, General, Commander, Soldier.",
+            "JSON shape: {\"classification\": {\"detectedIntent\": string, \"confidence\": \"high|medium|low\", \"requiredEntities\": string[], \"requiredTools\": string[], \"riskLevel\": \"Low|Medium|High|Critical\", \"authorizationRequirement\": \"not_required|recommended|required\", \"suggestedAction\": string}, \"actionPlan\": {\"summary\": string, \"steps\": [{\"id\": string, \"label\": string, \"requiresApproval\": boolean, \"status\": \"blocked|planned|ready\"}], \"entitiesAffected\": string[], \"toolsRequired\": string[], \"riskLevel\": \"Low|Medium|High|Critical\", \"authorizationRequired\": boolean, \"expectedOutput\": string}}"
+          ].join(" ")
+        },
+        { role: "user", content: message }
+      ]
+    });
+    const parsed = parseJsonObject(response.content);
+
+    if (!parsed) {
+      return {
+        classification: fallbackClassification,
+        errors: ["Provider returned invalid JSON. Deterministic classification used."],
+        plan: fallbackPlan,
+        provider: { ...provider, modelName: response.model, providerName: response.providerName },
+        source: "deterministic"
+      };
+    }
+
+    const classification = sanitizeProviderClassification(parsed.classification ?? parsed, fallbackClassification);
+    const planFallback = createAiActionPlanFromClassification(classification, timestamp);
+    const plan = sanitizeProviderActionPlan(parsed.actionPlan ?? parsed.plan ?? parsed, planFallback);
+
+    return {
+      classification,
+      errors: [],
+      plan,
+      provider: { ...provider, modelName: response.model, providerName: response.providerName },
+      source: "provider"
+    };
+  } catch (error) {
+    return {
+      classification: fallbackClassification,
+      errors: [error instanceof Error ? error.message : "Provider classification failed."],
+      plan: fallbackPlan,
+      provider,
+      source: "deterministic"
+    };
+  }
+}
+
+export class OpenAiChatService implements AiService {
+
+  async createReply(messages: StoredChatMessage[], context: AiReplyContext = {}): Promise<AiReply> {
     if (!env.AI_FEATURE_ENABLED) {
       throw new AiUnavailableError("ENTRAL command channel is temporarily disabled.");
     }
@@ -122,20 +230,15 @@ export class OpenAiChatService implements AiService {
     }
 
     const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
-    const actionPlan = createAiActionPlan(lastUserMessage?.content ?? "");
+    const actionPlan = context.actionPlan ?? (await createProviderBackedAiDecision(lastUserMessage?.content ?? "")).plan;
     const aiBrainContext = buildAiBrainContextPrompt(actionPlan);
 
     if (!env.OPENAI_API_KEY) {
-      if (env.NODE_ENV !== "production" && env.AI_LOCAL_FALLBACK) {
+      if (env.AI_LOCAL_FALLBACK) {
         const reply = {
-          content: [
-            "[ENTRAL]",
-            "Situation:\nLive AI command channel is not connected.",
-            `Analysis:\n${lastUserMessage ? `Directive received: \"${lastUserMessage.content.slice(0, 220)}\"` : "No directive has been received yet."}\nIntent: ${actionPlan.intent}. Risk: ${actionPlan.riskLevel}. Tools: ${actionPlan.toolsRequired.length ? actionPlan.toolsRequired.join(", ") : "none"}.`,
-            "Recommendation:\nAdd OPENAI_API_KEY to the backend environment and restart ENTRAL before requesting live strategic analysis.",
-            `Next Actions:\n- Use local Command Center controls for graph control.\n- ${actionPlan.authorizationRequired ? "Review and authorize the prepared action plan before execution." : "Proceed with local command handling where available."}\n- Restore the OpenAI channel when external reasoning is required.`
-          ].join("\n\n"),
+          content: localCommandFallbackContent(lastUserMessage?.content ?? "", actionPlan),
           model: "local-fallback",
+          providerName: "OpenAI",
           usedLocalFallback: true
         };
 
@@ -146,11 +249,8 @@ export class OpenAiChatService implements AiService {
       throw new AiUnavailableError("ENTRAL command channel is not configured.");
     }
 
-    this.client ??= new OpenAI({ apiKey: env.OPENAI_API_KEY });
-
     try {
-      const response = await this.client.chat.completions.create({
-        model: env.OPENAI_MODEL,
+      const response = await openAiProvider.request({
         messages: [
           { role: "system", content: systemPrompt },
           { role: "system", content: aiBrainContext },
@@ -159,22 +259,33 @@ export class OpenAiChatService implements AiService {
         temperature: 0.4
       });
 
-      const content = response.choices[0]?.message?.content?.trim();
-
-      if (!content) {
-        throw new AiUnavailableError("The AI service returned an empty response.");
-      }
-
       const reply = {
-        content,
+        content: response.content,
         model: response.model,
-        requestId: response._request_id ?? undefined,
+        providerName: response.providerName,
+        requestId: response.requestId,
         usedLocalFallback: false
       };
 
       writeCachedReply(key, reply);
       return reply;
     } catch (error) {
+      if (env.AI_LOCAL_FALLBACK) {
+        const reply = {
+          content: [
+            localCommandFallbackContent(lastUserMessage?.content ?? "", actionPlan),
+            "",
+            "Provider Error:\nLive provider response failed. Mock Mode response returned instead."
+          ].join("\n"),
+          model: "local-fallback",
+          providerName: "OpenAI",
+          usedLocalFallback: true
+        };
+
+        writeCachedReply(key, reply);
+        return reply;
+      }
+
       if (error instanceof AiUnavailableError) {
         throw error;
       }
@@ -189,24 +300,23 @@ export class OpenAiChatService implements AiService {
     }
 
     if (!env.OPENAI_API_KEY) {
-      if (env.NODE_ENV !== "production" && env.AI_LOCAL_FALLBACK) {
+      if (env.AI_LOCAL_FALLBACK) {
         return {
           content: [
             "[ENTRAL]",
-            "Situation:\nScreen sharing is active, but the vision command channel is not configured in this local environment.",
+            "Situation:\nScreen sharing is active, but the vision command channel is not connected.",
             `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"`,
             "Recommendation:\nConfigure OPENAI_API_KEY before requesting visual analysis.",
             "Next Actions:\n- Stop sharing if visual review is no longer required.\n- Retry after the vision channel is operational."
           ].join("\n\n"),
           model: "local-fallback",
+          providerName: "OpenAI",
           usedLocalFallback: true
         };
       }
 
       throw new AiUnavailableError("ENTRAL vision command channel is not configured.");
     }
-
-    this.client ??= new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
     const visionPrompt = [
       prompt,
@@ -234,25 +344,34 @@ export class OpenAiChatService implements AiService {
     ];
 
     try {
-      const response = await this.client.chat.completions.create({
-        model: env.OPENAI_MODEL,
+      const response = await openAiProvider.request({
         messages: chatMessages,
         temperature: 0.2
       });
 
-      const content = response.choices[0]?.message?.content?.trim();
-
-      if (!content) {
-        throw new AiUnavailableError("The AI service returned an empty response.");
-      }
-
       return {
-        content,
+        content: response.content,
         model: response.model,
-        requestId: response._request_id ?? undefined,
+        providerName: response.providerName,
+        requestId: response.requestId,
         usedLocalFallback: false
       };
     } catch (error) {
+      if (env.AI_LOCAL_FALLBACK) {
+        return {
+          content: [
+            "[ENTRAL]",
+            "Situation:\nThe live vision provider returned an error.",
+            `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"`,
+            "Recommendation:\nKeep screen sharing optional and retry after provider health is restored.",
+            "Next Actions:\n- Continue with text command guidance.\n- Retry visual analysis when the provider test passes."
+          ].join("\n\n"),
+          model: "local-fallback",
+          providerName: "OpenAI",
+          usedLocalFallback: true
+        };
+      }
+
       if (error instanceof AiUnavailableError) {
         throw error;
       }

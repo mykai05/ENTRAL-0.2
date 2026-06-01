@@ -8,8 +8,9 @@ import {
   importConversationsSchema,
   screenInsightSchema
 } from "../schemas.js";
-import { openAiChatService, type AiReply, type AiService } from "../services/openaiService.js";
-import { createAiActionPlan, createAiAuditEntry } from "../services/aiBrain.js";
+import { openAiChatService, createProviderBackedAiDecision, type AiReply, type AiService } from "../services/openaiService.js";
+import { createAiAuditEntry, type AiActionPlan } from "../services/aiBrain.js";
+import { recordAuditLog } from "../services/audit.js";
 
 type AiRoutesOptions = {
   aiService?: AiService;
@@ -17,6 +18,13 @@ type AiRoutesOptions = {
 
 function conversationTitle(message: string) {
   return message.length > 58 ? `${message.slice(0, 58)}...` : message;
+}
+
+function auditSeverityFor(plan: AiActionPlan) {
+  if (plan.riskLevel === "Critical") return "critical";
+  if (plan.riskLevel === "High") return "high";
+  if (plan.riskLevel === "Medium") return "medium";
+  return "info";
 }
 
 async function assertConversationOwner(conversationId: string, userId: string) {
@@ -182,8 +190,8 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
 
     const input = chatMessageSchema.parse(request.body);
     const startedAt = performance.now();
-    const brainPlan = createAiActionPlan(input.message);
-    const brainAuditEntry = createAiAuditEntry({ plan: brainPlan });
+    const brainDecision = await createProviderBackedAiDecision(input.message);
+    const brainPlan = brainDecision.plan;
 
     const result = await prisma.$transaction(async (tx) => {
       const conversation = input.conversationId
@@ -231,7 +239,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
     let aiReply: AiReply;
 
     try {
-      aiReply = await aiService.createReply(history);
+      aiReply = await aiService.createReply(history, { actionPlan: brainPlan });
     } catch (error) {
       await prisma.message.delete({ where: { id: result.userMessage.id } }).catch(() => undefined);
       throw error;
@@ -250,17 +258,54 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       data: { updatedAt: new Date() }
     });
 
+    const brainAuditEntry = createAiAuditEntry({
+      errors: brainDecision.errors,
+      executionResult: brainPlan.authorizationRequired
+        ? "Plan prepared. Authorization required before execution."
+        : "Plan prepared. No external action executed.",
+      modelName: aiReply.model,
+      plan: brainPlan,
+      providerName: aiReply.providerName
+    });
+
+    await recordAuditLog({
+      action: "ai.command.planned",
+      actorRole: currentUser.role,
+      actorUserId: currentUser.sub,
+      metadata: {
+        authorizationRequired: brainPlan.authorizationRequired,
+        classification: brainDecision.classification,
+        decisionSource: brainDecision.source,
+        errors: brainDecision.errors,
+        model: aiReply.model,
+        plan: brainPlan,
+        provider: aiReply.providerName,
+        providerStatus: brainDecision.provider.connectionStatus,
+        userMessage: input.message,
+        usedLocalFallback: aiReply.usedLocalFallback
+      },
+      outcome: "success",
+      requestId: request.id,
+      severity: auditSeverityFor(brainPlan),
+      targetId: result.conversation.id,
+      targetType: "ai_conversation"
+    }).catch((error) => {
+      request.log.warn({ err: error, conversationId: result.conversation.id }, "AI audit log write failed");
+    });
+
     request.log.info({
       conversationId: result.conversation.id,
       userMessageId: result.userMessage.id,
       assistantMessageId: assistantMessage.id,
       aiModel: aiReply.model,
+      aiProvider: aiReply.providerName,
       openAiRequestId: aiReply.requestId,
       intent: brainPlan.intent,
       riskLevel: brainPlan.riskLevel,
       authorizationRequired: brainPlan.authorizationRequired,
       toolsRequired: brainPlan.toolsRequired,
       usedLocalFallback: aiReply.usedLocalFallback,
+      aiDecisionSource: brainDecision.source,
       latencyMs: Math.round(performance.now() - startedAt)
     }, "ENTRAL command response completed");
 
@@ -302,6 +347,8 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
 
     const input = screenInsightSchema.parse(request.body);
     const startedAt = performance.now();
+    const brainDecision = await createProviderBackedAiDecision(input.message);
+    const brainPlan = brainDecision.plan;
 
     const result = await prisma.$transaction(async (tx) => {
       const conversation = input.conversationId
@@ -368,13 +415,49 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       data: { updatedAt: new Date() }
     });
 
+    const brainAuditEntry = createAiAuditEntry({
+      errors: brainDecision.errors,
+      executionResult: "Screen analysis response generated. Screenshot was processed transiently and not stored.",
+      modelName: aiReply.model,
+      plan: brainPlan,
+      providerName: aiReply.providerName
+    });
+
+    await recordAuditLog({
+      action: "ai.screen.analyzed",
+      actorRole: currentUser.role,
+      actorUserId: currentUser.sub,
+      metadata: {
+        authorizationRequired: brainPlan.authorizationRequired,
+        classification: brainDecision.classification,
+        decisionSource: brainDecision.source,
+        errors: brainDecision.errors,
+        model: aiReply.model,
+        plan: brainPlan,
+        provider: aiReply.providerName,
+        providerStatus: brainDecision.provider.connectionStatus,
+        screenshotStored: false,
+        userMessage: input.message,
+        usedLocalFallback: aiReply.usedLocalFallback
+      },
+      outcome: "success",
+      requestId: request.id,
+      severity: auditSeverityFor(brainPlan),
+      targetId: result.conversation.id,
+      targetType: "ai_conversation"
+    }).catch((error) => {
+      request.log.warn({ err: error, conversationId: result.conversation.id }, "AI screen audit log write failed");
+    });
+
     request.log.info({
       conversationId: result.conversation.id,
       userMessageId: result.userMessage.id,
       assistantMessageId: assistantMessage.id,
       aiModel: aiReply.model,
+      aiProvider: aiReply.providerName,
       openAiRequestId: aiReply.requestId,
       usedLocalFallback: aiReply.usedLocalFallback,
+      aiDecisionSource: brainDecision.source,
       latencyMs: Math.round(performance.now() - startedAt)
     }, "AI screen analysis completed");
 
@@ -387,6 +470,10 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         messageId: result.userMessage.id,
         content: result.userMessage.content,
         createdAt: result.userMessage.createdAt
+      },
+      brain: {
+        auditEntry: brainAuditEntry,
+        plan: brainPlan
       }
     });
   });

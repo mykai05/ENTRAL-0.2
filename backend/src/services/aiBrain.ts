@@ -25,6 +25,32 @@ export type AiRequestCategory =
 export type AiConfidence = "high" | "medium" | "low";
 export type AuthorizationRequirement = "not_required" | "recommended" | "required";
 
+export const aiRequestCategories = [
+  "browser_web_request",
+  "business_setup",
+  "calendar_request",
+  "command",
+  "conversation",
+  "create_hierarchy",
+  "delete_archive_hierarchy",
+  "email_request",
+  "external_tool_request",
+  "file_document_request",
+  "help",
+  "merch_pod_workflow",
+  "modify_hierarchy",
+  "report_request",
+  "research_request",
+  "task_creation",
+  "task_update",
+  "unknown_needs_clarification",
+  "website_workflow"
+] as const satisfies readonly AiRequestCategory[];
+
+const aiConfidenceLevels = ["high", "medium", "low"] as const satisfies readonly AiConfidence[];
+const authorizationRequirements = ["not_required", "recommended", "required"] as const satisfies readonly AuthorizationRequirement[];
+const riskLevels = ["Low", "Medium", "High", "Critical"] as const satisfies readonly ToolRiskLevel[];
+
 export type AiRequestClassification = {
   authorizationRequirement: AuthorizationRequirement;
   confidence: AiConfidence;
@@ -60,10 +86,13 @@ export type AiAuditEntry = {
   actionPlanId: string;
   authorizationStatus: "approved" | "blocked" | "canceled" | "not_required" | "pending";
   entitiesChanged: string[];
+  errors?: string[];
   executionResult: string;
   id: string;
   intent: AiRequestCategory;
+  modelName?: string;
   planSummary: string;
+  providerName?: string;
   timestamp: string;
   toolsUsed: string[];
   userRequest: string;
@@ -75,6 +104,46 @@ function normalize(message: string) {
 
 function idFor(prefix: string, value: string, timestamp: string) {
   return `${prefix}_${createHash("sha256").update(`${value}:${timestamp}`).digest("hex").slice(0, 12)}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringValue(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function stringArrayValue(value: unknown, fallback: string[]) {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const items = value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => item.trim())
+    .slice(0, 20);
+
+  return items.length ? Array.from(new Set(items)) : fallback;
+}
+
+function enumValue<T extends string>(value: unknown, options: readonly T[], fallback: T): T {
+  return typeof value === "string" && options.includes(value as T) ? value as T : fallback;
+}
+
+function riskWeight(risk: ToolRiskLevel) {
+  const weight: Record<ToolRiskLevel, number> = {
+    Low: 1,
+    Medium: 2,
+    High: 3,
+    Critical: 4
+  };
+
+  return weight[risk];
+}
+
+function strongestRiskFromValues(values: ToolRiskLevel[]) {
+  return values.sort((first, second) => riskWeight(second) - riskWeight(first))[0] ?? "Low";
 }
 
 export function requiredToolsForAiMessage(message: string) {
@@ -205,8 +274,17 @@ export function classifyAiRequest(message: string, timestamp = new Date().toISOS
   };
 }
 
-export function createAiActionPlan(message: string, timestamp = new Date().toISOString()): AiActionPlan {
-  const classification = classifyAiRequest(message, timestamp);
+function planStepsFor(classification: AiRequestClassification) {
+  return [
+    { id: "classify", label: `Classify request as ${classification.detectedIntent.replaceAll("_", " ")}.`, requiresApproval: false, status: "ready" as const },
+    { id: "map-context", label: "Map relevant hierarchy entities and tool requirements.", requiresApproval: false, status: "planned" as const },
+    ...(classification.requiredTools.length ? [{ id: "tool-check", label: `Check Tool Registry status for ${classification.requiredTools.join(", ")}.`, requiresApproval: false, status: "planned" as const }] : []),
+    ...(classification.authorizationRequirement === "required" ? [{ id: "authorization", label: "Request explicit authorization before execution.", requiresApproval: true, status: "blocked" as const }] : []),
+    { id: "report", label: "Return command report with result, limitations, and next actions.", requiresApproval: false, status: "planned" as const }
+  ];
+}
+
+export function createAiActionPlanFromClassification(classification: AiRequestClassification, timestamp = classification.timestamp): AiActionPlan {
   const authorizationRequired = classification.authorizationRequirement === "required";
 
   return {
@@ -215,26 +293,99 @@ export function createAiActionPlan(message: string, timestamp = new Date().toISO
     entitiesAffected: classification.requiredEntities,
     expectedOutput: authorizationRequired ? "Authorization card followed by approved internal execution or mock tool result." : "Command response or local UI action.",
     intent: classification.detectedIntent,
-    planId: idFor("plan", message, timestamp),
+    planId: idFor("plan", classification.originalMessage, timestamp),
     riskLevel: classification.riskLevel,
-    steps: [
-      { id: "classify", label: `Classify request as ${classification.detectedIntent.replaceAll("_", " ")}.`, requiresApproval: false, status: "ready" },
-      { id: "map-context", label: "Map relevant hierarchy entities and tool requirements.", requiresApproval: false, status: "planned" },
-      ...(classification.requiredTools.length ? [{ id: "tool-check", label: `Check Tool Registry status for ${classification.requiredTools.join(", ")}.`, requiresApproval: false, status: "planned" as const }] : []),
-      ...(authorizationRequired ? [{ id: "authorization", label: "Request explicit authorization before execution.", requiresApproval: true, status: "blocked" as const }] : []),
-      { id: "report", label: "Return command report with result, limitations, and next actions.", requiresApproval: false, status: "planned" }
-    ],
+    steps: planStepsFor(classification),
     summary: classification.suggestedAction,
     toolsRequired: classification.requiredTools,
-    userRequest: message
+    userRequest: classification.originalMessage
+  };
+}
+
+export function createAiActionPlan(message: string, timestamp = new Date().toISOString()): AiActionPlan {
+  return createAiActionPlanFromClassification(classifyAiRequest(message, timestamp), timestamp);
+}
+
+export function sanitizeProviderClassification(raw: unknown, fallback: AiRequestClassification): AiRequestClassification {
+  if (!isRecord(raw)) {
+    return fallback;
+  }
+
+  const detectedIntent = enumValue(raw.detectedIntent ?? raw.intent, aiRequestCategories, fallback.detectedIntent);
+  const providerTools = stringArrayValue(raw.requiredTools ?? raw.toolsRequired, []);
+  const requiredTools = Array.from(new Set([...fallback.requiredTools, ...providerTools]));
+  const providerRisk = enumValue(raw.riskLevel, riskLevels, fallback.riskLevel);
+  const riskLevel = strongestRiskFromValues([fallback.riskLevel, providerRisk, strongestRisk(requiredTools)]);
+  const providerAuthorization = enumValue(raw.authorizationRequirement, authorizationRequirements, fallback.authorizationRequirement);
+  const authorizationRequirement = authorizationFor(detectedIntent, requiredTools, riskLevel) === "required" || providerAuthorization === "required"
+    ? "required"
+    : providerAuthorization === "recommended" || fallback.authorizationRequirement === "recommended" ? "recommended" : "not_required";
+
+  return {
+    authorizationRequirement,
+    confidence: enumValue(raw.confidence, aiConfidenceLevels, "high"),
+    detectedIntent,
+    originalMessage: fallback.originalMessage,
+    requiredEntities: stringArrayValue(raw.requiredEntities ?? raw.entitiesAffected, fallback.requiredEntities),
+    requiredTools,
+    riskLevel,
+    suggestedAction: stringValue(raw.suggestedAction ?? raw.summary, suggestedActionFor(detectedIntent)),
+    timestamp: fallback.timestamp
+  };
+}
+
+export function sanitizeProviderActionPlan(raw: unknown, fallback: AiActionPlan): AiActionPlan {
+  if (!isRecord(raw)) {
+    return fallback;
+  }
+
+  const intent = enumValue(raw.intent, aiRequestCategories, fallback.intent);
+  const providerTools = stringArrayValue(raw.toolsRequired, []);
+  const toolsRequired = Array.from(new Set([...fallback.toolsRequired, ...providerTools]));
+  const providerRisk = enumValue(raw.riskLevel, riskLevels, fallback.riskLevel);
+  const riskLevel = strongestRiskFromValues([fallback.riskLevel, providerRisk, strongestRisk(toolsRequired)]);
+  const authorizationRequired = Boolean(raw.authorizationRequired) || fallback.authorizationRequired || authorizationFor(intent, toolsRequired, riskLevel) === "required";
+  const steps = Array.isArray(raw.steps)
+    ? raw.steps
+      .filter(isRecord)
+      .slice(0, 8)
+      .map((step, index) => ({
+        id: stringValue(step.id, `step-${index + 1}`),
+        label: stringValue(step.label ?? step.description, fallback.steps[index]?.label ?? "Review command step."),
+        requiresApproval: Boolean(step.requiresApproval),
+        status: enumValue(step.status, ["blocked", "planned", "ready"] as const, "planned")
+      }))
+    : fallback.steps;
+  const normalizedSteps = authorizationRequired && !steps.some((step) => step.id === "authorization")
+    ? [
+      ...steps,
+      { id: "authorization", label: "Request explicit authorization before execution.", requiresApproval: true, status: "blocked" as const }
+    ]
+    : steps;
+
+  return {
+    authorizationRequired,
+    createdAt: fallback.createdAt,
+    entitiesAffected: Array.from(new Set([...fallback.entitiesAffected, ...stringArrayValue(raw.entitiesAffected, [])])),
+    expectedOutput: stringValue(raw.expectedOutput, fallback.expectedOutput),
+    intent,
+    planId: fallback.planId,
+    riskLevel,
+    steps: normalizedSteps.map((step) => authorizationRequired && step.id === "authorization" ? { ...step, requiresApproval: true, status: "blocked" as const } : step),
+    summary: stringValue(raw.summary, fallback.summary),
+    toolsRequired,
+    userRequest: fallback.userRequest
   };
 }
 
 export function createAiAuditEntry(input: {
   authorizationStatus?: AiAuditEntry["authorizationStatus"];
   entitiesChanged?: string[];
+  errors?: string[];
   executionResult?: string;
+  modelName?: string;
   plan: AiActionPlan;
+  providerName?: string;
   timestamp?: string;
   toolsUsed?: string[];
 }): AiAuditEntry {
@@ -244,10 +395,13 @@ export function createAiAuditEntry(input: {
     actionPlanId: input.plan.planId,
     authorizationStatus: input.authorizationStatus ?? (input.plan.authorizationRequired ? "pending" : "not_required"),
     entitiesChanged: input.entitiesChanged ?? [],
+    errors: input.errors,
     executionResult: input.executionResult ?? "Planned. No external action executed.",
     id: idFor("audit", input.plan.planId, timestamp),
     intent: input.plan.intent,
+    modelName: input.modelName,
     planSummary: input.plan.summary,
+    providerName: input.providerName,
     timestamp,
     toolsUsed: input.toolsUsed ?? input.plan.toolsRequired,
     userRequest: input.plan.userRequest

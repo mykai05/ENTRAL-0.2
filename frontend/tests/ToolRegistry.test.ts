@@ -10,9 +10,12 @@ describe("Tool Registry", () => {
 
   it("groups tools by category", () => {
     const grouped = toolsByCategory();
+    const openai = toolById("openai");
 
     expect(grouped.AI.length).toBeGreaterThan(0);
     expect(grouped.Development.length).toBeGreaterThan(0);
+    expect(openai?.providerName).toBe("OpenAI");
+    expect(openai?.missingEnvVars).toContain("OPENAI_API_KEY");
   });
 
   it("prepares safe mock execution results", () => {

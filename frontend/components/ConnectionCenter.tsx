@@ -147,11 +147,17 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
                 <div className="connection-tool-meta">
                   <span className={`connection-risk risk-${riskClass(tool.riskLevel)}`}>{tool.riskLevel} risk</span>
                   <span>{tool.requiresAuthorization ? "Approval required" : "No approval gate"}</span>
+                  {tool.providerName ? <span>{tool.providerName} / {tool.modelName ?? "default model"}</span> : null}
                 </div>
                 <p className="connection-credentials">
                   <LockKeyhole aria-hidden="true" size={13} />
-                  {tool.requiredCredentials.length ? tool.requiredCredentials.join(", ") : "No credentials required"}
+                  {tool.missingEnvVars?.length
+                    ? `Missing: ${tool.missingEnvVars.join(", ")}`
+                    : tool.requiredCredentials.length ? tool.requiredCredentials.join(", ") : "No credentials required"}
                 </p>
+                {tool.status === "Missing API Key" || tool.status === "Mock Mode" ? (
+                  <p className="connection-mock-note">Mock Mode active. No provider secrets are exposed to the browser.</p>
+                ) : null}
                 <div className="connection-actions">
                   <button type="button" disabled={busyToolId === tool.id} onClick={() => void testTool(tool)}>
                     <FlaskConical aria-hidden="true" size={14} />
@@ -170,7 +176,13 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
 
       {activeResult ? (
         <article className="connection-result" aria-label="Latest connection result">
+          {"providerName" in activeResult && activeResult.providerName ? (
+            <strong>{activeResult.providerName} / {activeResult.modelName ?? "default model"}</strong>
+          ) : null}
           <p>{activeResult.message}</p>
+          {"missingEnvVars" in activeResult && activeResult.missingEnvVars?.length ? (
+            <p>Missing: {activeResult.missingEnvVars.join(", ")}</p>
+          ) : null}
           {"simulatedResult" in activeResult ? <pre>{activeResult.simulatedResult}</pre> : null}
           <ul>
             {activeResult.nextSteps.map((step) => (

@@ -63,10 +63,13 @@ export type AiAuditEntry = {
   actionPlanId: string;
   authorizationStatus: "approved" | "blocked" | "canceled" | "not_required" | "pending";
   entitiesChanged: string[];
+  errors?: string[];
   executionResult: string;
   id: string;
   intent: AiRequestCategory;
+  modelName?: string;
   planSummary: string;
+  providerName?: string;
   timestamp: string;
   toolsUsed: string[];
   userRequest: string;
@@ -268,8 +271,11 @@ export function createAiActionPlan(message: string, timestamp = new Date().toISO
 export function createAiAuditEntry(input: {
   authorizationStatus?: AiAuditEntry["authorizationStatus"];
   entitiesChanged?: string[];
+  errors?: string[];
   executionResult?: string;
+  modelName?: string;
   plan: AiActionPlan;
+  providerName?: string;
   timestamp?: string;
   toolsUsed?: string[];
 }): AiAuditEntry {
@@ -279,10 +285,13 @@ export function createAiAuditEntry(input: {
     actionPlanId: input.plan.planId,
     authorizationStatus: input.authorizationStatus ?? (input.plan.authorizationRequired ? "pending" : "not_required"),
     entitiesChanged: input.entitiesChanged ?? [],
+    errors: input.errors,
     executionResult: input.executionResult ?? "Planned. No external action executed.",
     id: stableId("audit", input.plan.planId, timestamp),
     intent: input.plan.intent,
+    modelName: input.modelName,
     planSummary: input.plan.summary,
+    providerName: input.providerName,
     timestamp,
     toolsUsed: input.toolsUsed ?? input.plan.toolsRequired,
     userRequest: input.plan.userRequest

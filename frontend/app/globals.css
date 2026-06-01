@@ -5678,6 +5678,7 @@ body:has(.command-center-page) .palette-trigger {
 }
 
 .connection-status.coming-soon,
+.connection-status.missing-api-key,
 .connection-status.not-connected,
 .connection-status.needs-credentials {
   background: rgba(255, 191, 0, 0.08);
@@ -5729,6 +5730,10 @@ body:has(.command-center-page) .palette-trigger {
   display: flex;
   gap: 0.32rem;
   overflow-wrap: anywhere;
+}
+
+.connection-mock-note {
+  color: rgba(var(--neon-accent-rgb), 0.78) !important;
 }
 
 .connection-actions button {
