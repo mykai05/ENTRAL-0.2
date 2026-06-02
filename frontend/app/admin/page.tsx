@@ -7,7 +7,7 @@ import { AppHeader } from "../../components/AppHeader";
 export default function AdminPage() {
   return (
     <main className="dashboard-shell">
-      <AppHeader title="Governance & Audit" subtitle="Review policies, audit logs, and autonomy controls." actions={(
+      <AppHeader title="Governance & Audit" subtitle="Review policies, audit logs, and background-agent controls." actions={(
         <Link href="/dashboard" className="button button-secondary">
           <ArrowLeft aria-hidden="true" size={20} />
           Command Center

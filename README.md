@@ -22,6 +22,28 @@ Keep that terminal open while using the app. Closing it stops both local servers
 
 The fast start uses an in-memory backend so signup, login, dashboard, tasks, chat, automations, agents, and admin screens are usable without PostgreSQL. Data resets when the server stops.
 
+### E2E Smoke Tests
+
+Run browser smoke coverage for auth, dashboard, chat, and mobile:
+
+```powershell
+npm.cmd run test:e2e
+```
+
+The E2E runner starts or reuses the local memory backend on `http://127.0.0.1:4000` and the frontend on `http://localhost:3000`. It uses installed Edge or Chrome through `playwright-core`; set `E2E_BROWSER_EXECUTABLE` if your browser lives somewhere else.
+
+### Release Readiness Gate
+
+Run the launch safety gate before treating a build as public-release-ready:
+
+```powershell
+npm.cmd run release:check
+```
+
+The check fails when local source is missing the approved positioning, real/mock/read-only labels, human approval gates, cost guardrails, or locked growth orchestration behavior. It also scans public source and docs for forbidden launch claims such as unsupported full-operation or external-execution promises.
+
+The command checks `https://entral-0-2-frontend.vercel.app` by default and warns when the live deployment is behind local source. Set `ENTRAL_LIVE_URL` to check another public URL. Set `RELEASE_CHECK_STRICT_LIVE=1` for a final release pass where live deployment drift should fail the command.
+
 ### Full Stack Setup
 
 1. Install dependencies:
@@ -373,11 +395,11 @@ These routes require auth and only affect owned agents:
 - `POST /api/v1/agents/:agentId/resume`
 - `POST /api/v1/agents/:agentId/restart`
 
-## Governance And Autonomy Configuration
+## Governance And Scheduled Work Configuration
 
-Phase 5 adds autonomous schedules, policy enforcement, audit logging, and an admin dashboard at `/admin`.
+Phase 5 adds approved recurring schedules, policy enforcement, audit logging, and an admin dashboard at `/admin`.
 
-Set `AUTONOMY_SCHEDULER_ENABLED=true` to let the backend turn due schedules into agent tasks. `AUTONOMY_SCHEDULER_INTERVAL_MS` controls how often the scheduler checks for due work. `AUTONOMY_MIN_INTERVAL_MINUTES` caps how frequently a recurring schedule can run.
+Set `AUTONOMY_SCHEDULER_ENABLED=true` to let the backend turn due approved schedules into agent tasks. `AUTONOMY_SCHEDULER_INTERVAL_MS` controls how often the scheduler checks for due work. `AUTONOMY_MIN_INTERVAL_MINUTES` caps how frequently a recurring schedule can run. These environment variable names are retained for compatibility; the product language should describe scheduled, approved work.
 
 Set `DATA_ENCRYPTION_KEY` to enable app-level AES-GCM encryption for sensitive JSON payloads and audit entries. Existing plaintext JSON remains readable so local development can upgrade safely. Set `ADMIN_MFA_CODE` to require admins to send `x-admin-mfa-code` on admin API calls. Set `ALERT_WEBHOOK_URL` to receive policy-block alerts in Slack/email-style webhook tools.
 
@@ -389,7 +411,7 @@ Default policies are seeded automatically on first startup:
 
 ### `POST /api/v1/agents/:agentId/schedules`
 
-Requires auth. Creates an autonomous recurring schedule for one owned agent. The scheduler creates agent tasks without more user input.
+Requires auth. Creates a recurring schedule for one owned agent. The scheduler creates agent tasks only inside the configured schedule, policy, and audit boundaries.
 
 Request:
 
@@ -400,7 +422,7 @@ Request:
   "intervalMinutes": 60,
   "runImmediately": true,
   "payload": {
-    "instructions": "Run an autonomous account check and summarize changes.",
+    "instructions": "Run a scheduled account check and summarize changes.",
     "sourceType": "schedule"
   }
 }
@@ -466,10 +488,11 @@ These routes require admin role:
 - `POST /api/v1/admin/agent-tasks/:taskId/revoke`
 - `POST /api/v1/admin/agents/pause-all`
 
-Audit entries use a standard JSON shape with actor, target, action, outcome, severity, metadata, timestamp, and an integrity hash. Policy checks run before agent execution and before scheduled autonomous work is converted into an agent task.
+Audit entries use a standard JSON shape with actor, target, action, outcome, severity, metadata, timestamp, and an integrity hash. Policy checks run before agent execution and before scheduled work is converted into an agent task.
 
 ## Test Plan
 
+- Launch safety gate: `npm.cmd run release:check`
 - Backend validation and auth utilities: `pnpm --filter @entral/backend test`
 - Backend policy helpers and governance schemas: `pnpm --filter @entral/backend test`
 - Frontend component rendering: `pnpm --filter @entral/frontend test`

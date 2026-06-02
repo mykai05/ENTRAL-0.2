@@ -2,7 +2,9 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Brain, GraduationCap, Mic, Palette, RotateCcw, Settings, SlidersHorizontal, UserRound, Volume2, X } from "lucide-react";
+import { AccountPrivacyControls } from "./AccountPrivacyControls";
 import { Button } from "./Button";
+import { ModeBadge } from "./ModeStatus";
 import { neonPresets, useTheme } from "./ThemeProvider";
 import { useOnboarding } from "./OnboardingTour";
 import { speechModeLabels, useVoice } from "./VoiceProvider";
@@ -229,32 +231,37 @@ export function SettingsPanel() {
             ) : null}
 
             {activeTab === "account" ? (
-              <form className="settings-section account-settings-form" onSubmit={saveAccountSettings}>
-                <div className="section-title-row">
-                  <UserRound aria-hidden="true" size={18} />
-                  <h3>Account</h3>
-                </div>
-                <label>
-                  <span>Profile name</span>
-                  <input value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="Your name" />
-                </label>
-                <label>
-                  <span>Email</span>
-                  <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="you@example.com" />
-                </label>
-                <label>
-                  <span>Current password</span>
-                  <input type="password" placeholder="Current password" autoComplete="current-password" />
-                </label>
-                <label>
-                  <span>New password</span>
-                  <input type="password" placeholder="New password" autoComplete="new-password" />
-                </label>
-                <div className="settings-actions">
-                  <Button type="submit" variant="secondary">Save account settings</Button>
-                  {profileSaved ? <span className="settings-saved" role="status">Saved locally</span> : null}
-                </div>
-              </form>
+              <>
+                <form className="settings-section account-settings-form" onSubmit={saveAccountSettings}>
+                  <div className="section-title-row">
+                    <UserRound aria-hidden="true" size={18} />
+                    <h3>Account</h3>
+                    <ModeBadge mode="mock">Local profile</ModeBadge>
+                  </div>
+                  <p className="settings-helper">These profile fields are local browser preferences. Privacy export and account deletion below operate on real saved account data.</p>
+                  <label>
+                    <span>Profile name</span>
+                    <input value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="Your name" />
+                  </label>
+                  <label>
+                    <span>Email</span>
+                    <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="you@example.com" />
+                  </label>
+                  <label>
+                    <span>Current password</span>
+                    <input type="password" placeholder="Current password" autoComplete="current-password" />
+                  </label>
+                  <label>
+                    <span>New password</span>
+                    <input type="password" placeholder="New password" autoComplete="new-password" />
+                  </label>
+                  <div className="settings-actions">
+                    <Button type="submit" variant="secondary">Save account settings</Button>
+                    {profileSaved ? <span className="settings-saved" role="status">Saved locally</span> : null}
+                  </div>
+                </form>
+                <AccountPrivacyControls />
+              </>
             ) : null}
 
             {activeTab === "assistant" ? (

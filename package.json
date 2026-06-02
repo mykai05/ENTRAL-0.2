@@ -19,6 +19,8 @@
     "build": "node .corepack/v1/pnpm/9.12.3/bin/pnpm.cjs --recursive build",
     "lint": "node .corepack/v1/pnpm/9.12.3/bin/pnpm.cjs --recursive lint",
     "test": "node .corepack/v1/pnpm/9.12.3/bin/pnpm.cjs --recursive test",
+    "test:e2e": "node e2e/entral.e2e.mjs",
+    "release:check": "node scripts/release-readiness.mjs",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema prisma/schema.prisma",

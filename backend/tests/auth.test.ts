@@ -31,4 +31,15 @@ describe("auth tokens", () => {
     expect(capitalizeDisplayName("ada lovelace")).toBe("Ada lovelace");
     expect(capitalizeDisplayName("  grace hopper  ")).toBe("Grace hopper");
   });
+
+  it("creates random recovery tokens and stores only hashes", async () => {
+    const { createAuthToken, hashAuthToken } = await import("../src/services/authTokens.js");
+
+    const first = createAuthToken();
+    const second = createAuthToken();
+
+    expect(first.token).not.toBe(second.token);
+    expect(first.tokenHash).toBe(hashAuthToken(first.token));
+    expect(first.tokenHash).not.toContain(first.token);
+  });
 });

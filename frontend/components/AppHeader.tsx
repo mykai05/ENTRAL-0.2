@@ -5,6 +5,7 @@ import React, { type ReactNode } from "react";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "./BrandMark";
+import { ModeStatusStrip, authenticatedModeItems } from "./ModeStatus";
 
 type AppHeaderProps = {
   actions?: ReactNode;
@@ -62,6 +63,12 @@ export function AppHeader({ actions, subtitle, title }: AppHeaderProps) {
         </nav>
       </details>
       {actions ? <div className="nav-actions">{actions}</div> : null}
+      <ModeStatusStrip
+        ariaLabel="Authenticated workspace mode status"
+        className="app-mode-strip"
+        compact
+        items={authenticatedModeItems}
+      />
     </header>
   );
 }

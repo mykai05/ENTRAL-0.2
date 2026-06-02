@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
@@ -6,12 +6,18 @@ import {
   clientMerchStoreIdParamsSchema,
   clientMerchStoreListQuerySchema,
   createClientMerchStoreSchema,
+  growthApprovalPacketParamsSchema,
   merchReportParamsSchema,
+  requestGrowthApprovalSchema,
+  reviewGrowthApprovalSchema,
   updateClientMerchStoreSchema,
   type CreateClientMerchStoreInput,
   type UpdateClientMerchStoreInput
 } from "../schemas.js";
+import { buildGrowthApprovalPacket, buildGrowthOrchestrationPreview, buildGrowthPlan, type GrowthApprovalPacket } from "../services/growthPlans.js";
+import { recordAuditLog } from "../services/audit.js";
 import { buildLaunchPackage, buildMerchReport, type MerchProductSnapshot } from "../services/merchReports.js";
+import { parseSecureJson, stringifySecureJson } from "../services/secureJson.js";
 
 const storePlatformToDb = {
   Etsy: "ETSY",
@@ -218,6 +224,53 @@ function merchProductSnapshot(product: PodProductSnapshotRecord): MerchProductSn
   };
 }
 
+type GrowthApprovalPacketRecord = {
+  id: string;
+  mode: string;
+  packetJson: string;
+  requestAuditLogId: string | null;
+  reviewAuditLogId: string | null;
+  reviewedAt: Date | null;
+  reviewedById: string | null;
+  reviewNote: string | null;
+  scheduledFor: Date | null;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function growthApprovalStatusLabel(status: string) {
+  if (status === "approved") return "Approved - execution still locked";
+  if (status === "rejected") return "Rejected";
+  return "Pending approval";
+}
+
+function publicGrowthApprovalPacket(record: GrowthApprovalPacketRecord) {
+  const packet = parseSecureJson<GrowthApprovalPacket>(record.packetJson);
+
+  if (!packet) {
+    throw new Error("Growth approval packet payload is unreadable.");
+  }
+
+  return {
+    id: record.id,
+    auditLogId: record.requestAuditLogId,
+    createdAt: record.createdAt,
+    executionState: "No external action executed",
+    mode: record.mode,
+    packet,
+    requestAuditLogId: record.requestAuditLogId,
+    reviewAuditLogId: record.reviewAuditLogId,
+    reviewedAt: record.reviewedAt,
+    reviewedById: record.reviewedById,
+    reviewNote: record.reviewNote,
+    scheduledFor: record.scheduledFor,
+    status: record.status,
+    statusLabel: growthApprovalStatusLabel(record.status),
+    updatedAt: record.updatedAt
+  };
+}
+
 function createMerchStoreData(userId: string, input: CreateClientMerchStoreInput): Prisma.ClientMerchStoreUncheckedCreateInput {
   return {
     userId,
@@ -369,6 +422,268 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     const products = store.products.map((product) => merchProductSnapshot(product));
     return reply.send({ package: buildLaunchPackage(merchStoreSnapshot(store), products) });
+  });
+
+  app.get("/merch/stores/:storeId/growth-plan", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = clientMerchStoreIdParamsSchema.parse(request.params);
+    const store = await prisma.clientMerchStore.findFirst({
+      where: {
+        id: params.storeId,
+        userId: currentUser.sub
+      },
+      include: {
+        products: {
+          orderBy: { updatedAt: "desc" }
+        }
+      }
+    });
+
+    if (!store) {
+      return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+    }
+
+    const products = store.products.map((product) => merchProductSnapshot(product));
+    return reply.send({ plan: buildGrowthPlan(merchStoreSnapshot(store), products) });
+  });
+
+  app.get("/merch/stores/:storeId/growth-approvals", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = clientMerchStoreIdParamsSchema.parse(request.params);
+    const store = await prisma.clientMerchStore.findFirst({
+      where: {
+        id: params.storeId,
+        userId: currentUser.sub
+      },
+      select: { id: true }
+    });
+
+    if (!store) {
+      return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+    }
+
+    const items = await prisma.growthApprovalPacket.findMany({
+      where: {
+        storeId: store.id,
+        userId: currentUser.sub
+      },
+      orderBy: { createdAt: "desc" },
+      take: 25
+    });
+
+    return reply.send({
+      items: items.map(publicGrowthApprovalPacket)
+    });
+  });
+
+  app.post("/merch/stores/:storeId/growth-plan/approval-request", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = clientMerchStoreIdParamsSchema.parse(request.params);
+    const input = requestGrowthApprovalSchema.parse(request.body);
+    const store = await prisma.clientMerchStore.findFirst({
+      where: {
+        id: params.storeId,
+        userId: currentUser.sub
+      },
+      include: {
+        products: {
+          orderBy: { updatedAt: "desc" }
+        }
+      }
+    });
+
+    if (!store) {
+      return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+    }
+
+    const products = store.products.map((product) => merchProductSnapshot(product));
+    const packet = buildGrowthApprovalPacket({
+      note: input.note,
+      products,
+      scheduledFor: input.scheduledFor ?? null,
+      store: merchStoreSnapshot(store),
+      storeId: store.id
+    });
+    const record = await prisma.growthApprovalPacket.create({
+      data: {
+        mode: packet.mode,
+        packetJson: stringifySecureJson(packet),
+        scheduledFor: packet.scheduledFor ? new Date(packet.scheduledFor) : null,
+        status: "pending",
+        storeId: store.id,
+        userId: currentUser.sub
+      }
+    });
+    const auditLog = await recordAuditLog({
+      action: "growth.approval.requested",
+      actorUserId: currentUser.sub,
+      metadata: {
+        packet,
+        packetId: record.id,
+        store: {
+          businessName: store.businessName,
+          platform: storePlatformFromDb[store.storePlatform]
+        }
+      },
+      outcome: "success",
+      severity: "medium",
+      targetId: record.id,
+      targetType: "growth_approval_packet"
+    });
+    const approval = await prisma.growthApprovalPacket.update({
+      where: { id: record.id },
+      data: { requestAuditLogId: auditLog.id }
+    });
+
+    return reply.code(201).send({
+      approval: publicGrowthApprovalPacket(approval),
+      auditLogId: auditLog.id,
+      packet
+    });
+  });
+
+  async function reviewGrowthApproval(request: FastifyRequest, reply: FastifyReply, status: "approved" | "rejected") {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = growthApprovalPacketParamsSchema.parse(request.params);
+    const input = reviewGrowthApprovalSchema.parse(request.body);
+    const existing = await prisma.growthApprovalPacket.findFirst({
+      where: {
+        id: params.packetId,
+        storeId: params.storeId,
+        userId: currentUser.sub
+      }
+    });
+
+    if (!existing) {
+      return reply.code(404).send({ error: "Not Found", message: "Growth approval packet was not found." });
+    }
+
+    if (existing.status !== "pending") {
+      return reply.code(409).send({
+        error: "Conflict",
+        message: `This growth approval packet is already ${growthApprovalStatusLabel(existing.status).toLowerCase()}.`
+      });
+    }
+
+    const packet = parseSecureJson<GrowthApprovalPacket>(existing.packetJson);
+    const reviewed = await prisma.growthApprovalPacket.update({
+      where: { id: existing.id },
+      data: {
+        reviewedAt: new Date(),
+        reviewedById: currentUser.sub,
+        reviewNote: input.note ?? null,
+        status
+      }
+    });
+    const auditLog = await recordAuditLog({
+      action: status === "approved" ? "growth.approval.approved" : "growth.approval.rejected",
+      actorUserId: currentUser.sub,
+      metadata: {
+        externalExecution: false,
+        note: input.note ?? null,
+        packet,
+        packetId: reviewed.id,
+        reviewStatus: status
+      },
+      outcome: "success",
+      severity: status === "approved" ? "medium" : "low",
+      targetId: reviewed.id,
+      targetType: "growth_approval_packet"
+    });
+    const finalRecord = await prisma.growthApprovalPacket.update({
+      where: { id: reviewed.id },
+      data: { reviewAuditLogId: auditLog.id }
+    });
+
+    return reply.send({
+      approval: publicGrowthApprovalPacket(finalRecord),
+      auditLogId: auditLog.id,
+      message: status === "approved"
+        ? "Growth packet approved for preparation only. No external action executed."
+        : "Growth packet rejected. No external action executed."
+    });
+  }
+
+  app.post("/merch/stores/:storeId/growth-approvals/:packetId/approve", { preHandler: requireAuth }, async (request, reply) => (
+    reviewGrowthApproval(request, reply, "approved")
+  ));
+
+  app.post("/merch/stores/:storeId/growth-approvals/:packetId/reject", { preHandler: requireAuth }, async (request, reply) => (
+    reviewGrowthApproval(request, reply, "rejected")
+  ));
+
+  app.get("/merch/stores/:storeId/growth-approvals/:packetId/orchestration-preview", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = growthApprovalPacketParamsSchema.parse(request.params);
+    const existing = await prisma.growthApprovalPacket.findFirst({
+      where: {
+        id: params.packetId,
+        storeId: params.storeId,
+        userId: currentUser.sub
+      }
+    });
+
+    if (!existing) {
+      return reply.code(404).send({ error: "Not Found", message: "Growth approval packet was not found." });
+    }
+
+    if (existing.status !== "approved") {
+      return reply.code(409).send({
+        error: "Conflict",
+        message: "Approve the growth packet before previewing the locked orchestration handoff."
+      });
+    }
+
+    const packet = parseSecureJson<GrowthApprovalPacket>(existing.packetJson);
+
+    if (!packet) {
+      return reply.code(500).send({ error: "Internal Server Error", message: "Growth approval packet payload is unreadable." });
+    }
+
+    const preview = buildGrowthOrchestrationPreview(packet);
+    const auditLog = await recordAuditLog({
+      action: "growth.orchestration.previewed",
+      actorUserId: currentUser.sub,
+      metadata: {
+        externalExecution: false,
+        packetId: existing.id,
+        preview
+      },
+      outcome: "success",
+      severity: "low",
+      targetId: existing.id,
+      targetType: "growth_approval_packet"
+    });
+
+    return reply.send({
+      auditLogId: auditLog.id,
+      preview
+    });
   });
 
   app.get("/merch/stores/:storeId/reports/:reportType", { preHandler: requireAuth }, async (request, reply) => {

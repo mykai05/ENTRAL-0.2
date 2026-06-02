@@ -20,7 +20,7 @@ export const agentCapabilityBlueprints: AgentCapabilityBlueprint[] = [
   },
   {
     allowedActions: ["governed_deep_research"],
-    description: "Restricted-network research connector for Tor or similar networks. This is a policy-gated planning surface, not an unrestricted crawler.",
+    description: "Restricted-source research planning surface. This is policy-gated preparation, not an unrestricted crawler.",
     id: "restricted-network-research",
     label: "Restricted network research",
     requiredControls: ["legal scope", "admin approval", "audit log", "manual review", "egress isolation"],
@@ -36,7 +36,7 @@ export const agentCapabilityBlueprints: AgentCapabilityBlueprint[] = [
   },
   {
     allowedActions: ["commerce_operations", "automation_review", "external_tool_call"],
-    description: "Coordinate Shopify setup, catalog work, optimization experiments, fulfillment checks, reporting, and commerce tools.",
+    description: "Prepare Shopify setup, catalog work, optimization experiments, fulfillment checks, reporting, and commerce tool requests.",
     id: "shopify-operations",
     label: "Shopify operations",
     requiredControls: ["credential vault", "approval checkpoints", "rollback plan"],

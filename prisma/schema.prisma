@@ -13,6 +13,7 @@ model User {
   email        String       @unique
   passwordHash String
   role         String       @default("USER")
+  emailVerifiedAt DateTime?
   lastDashboardSeenAt DateTime?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -20,6 +21,7 @@ model User {
   tasksCreated Task[]       @relation("TaskCreatedBy")
   tasksAssigned Task[]      @relation("TaskAssignedTo")
   conversations Conversation[]
+  aiUsageEvents AiUsageEvent[]
   automationJobs AutomationJob[]
   agents      Agent[]
   agentTasks  AgentTask[]
@@ -29,8 +31,39 @@ model User {
   commandReports CommandOSReport[]
   policiesCreated Policy[]      @relation("PolicyCreatedBy")
   auditLogs   AuditLog[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  growthApprovalPackets GrowthApprovalPacket[] @relation("GrowthApprovalOwner")
+  growthApprovalsReviewed GrowthApprovalPacket[] @relation("GrowthApprovalReviewer")
 
   @@index([email])
+  @@index([emailVerifiedAt])
+}
+
+model EmailVerificationToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consumedAt])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consumedAt])
+  @@index([expiresAt])
 }
 
 enum MerchStorePlatform {
@@ -98,6 +131,7 @@ model ClientMerchStore {
   updatedAt       DateTime             @updatedAt
   user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   products        PodProduct[]
+  growthApprovalPackets GrowthApprovalPacket[]
 
   @@index([userId, launchStatus])
   @@index([userId, approvalStatus])
@@ -105,6 +139,31 @@ model ClientMerchStore {
   @@index([userId, commandMarshalId])
   @@index([userId, commandGeneralId])
   @@index([email])
+}
+
+model GrowthApprovalPacket {
+  id                String           @id @default(cuid())
+  userId            String
+  storeId           String
+  status            String           @default("pending")
+  mode              String           @default("Mock Mode")
+  packetJson        String
+  scheduledFor      DateTime?
+  requestAuditLogId String?
+  reviewAuditLogId  String?
+  reviewedAt        DateTime?
+  reviewedById      String?
+  reviewNote        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  user              User             @relation("GrowthApprovalOwner", fields: [userId], references: [id], onDelete: Cascade)
+  store             ClientMerchStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reviewedBy        User?            @relation("GrowthApprovalReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([storeId, status])
+  @@index([scheduledFor])
+  @@index([createdAt])
 }
 
 enum PodProductStatus {
@@ -361,6 +420,24 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
+}
+
+model AiUsageEvent {
+  id                 String   @id @default(cuid())
+  userId             String
+  requestKind        String
+  providerName       String
+  modelName          String
+  estimatedCostCents Int
+  usedLocalFallback  Boolean  @default(false)
+  requestId          String?
+  metadataJson       String?
+  createdAt          DateTime @default(now())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, requestKind, createdAt])
+  @@index([requestId])
 }
 
 model AutomationJob {

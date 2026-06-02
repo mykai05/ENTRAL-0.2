@@ -5,6 +5,7 @@ import { Bot, Send } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
 import { agentFormSchema, agentScheduleFormSchema, agentTaskFormSchema } from "../lib/validation";
 import { Button } from "./Button";
+import { ModeBadge, type ModeStatusKind } from "./ModeStatus";
 
 export type Agent = {
   id: string;
@@ -54,6 +55,15 @@ function splitCapabilities(input: string) {
     .filter(Boolean);
 }
 
+function AgentModeNote({ children, label, mode }: { children: React.ReactNode; label: string; mode: ModeStatusKind }) {
+  return (
+    <p className="surface-mode-note" role="note">
+      <ModeBadge mode={mode}>{label}</ModeBadge>
+      <span>{children}</span>
+    </p>
+  );
+}
+
 export function AgentCreateForm({ defaults, onCreated }: AgentFormProps) {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,6 +111,9 @@ export function AgentCreateForm({ defaults, onCreated }: AgentFormProps) {
 
   return (
     <form className="agent-form" onSubmit={handleSubmit} noValidate>
+      <AgentModeNote label="Real config" mode="real">
+        Agent settings are saved to your account. External tool use still depends on connection state, policies, and approval gates.
+      </AgentModeNote>
       <div>
         <label htmlFor="agent-name">Name</label>
         <input defaultValue={defaults?.name ?? "Researcher"} id="agent-name" name="name" placeholder="Researcher" required />
@@ -197,6 +210,9 @@ export function AgentTaskForm({ activeAgent, defaults, onAssigned }: AgentTaskFo
 
   return (
     <form className="agent-form" onSubmit={handleSubmit} noValidate>
+      <AgentModeNote label="Real assignment" mode="real">
+        Tasks are logged before running. Outreach, webhooks, and external delivery stay governed by configured approval paths.
+      </AgentModeNote>
       <div>
         <label htmlFor="agent-task-title">Task title</label>
         <input defaultValue={defaults?.title ?? "Research target account"} id="agent-task-title" name="title" placeholder="Research target account" required />
@@ -298,6 +314,9 @@ export function AgentScheduleForm({ activeAgent, defaults, onScheduled }: AgentS
 
   return (
     <form className="agent-form" onSubmit={handleSubmit} noValidate>
+      <AgentModeNote label="Scheduled work" mode="read-only">
+        Schedules run under background-agent controls, policy checks, and audit logging. Sensitive actions require approval first.
+      </AgentModeNote>
       <div>
         <label htmlFor="agent-schedule-title">Schedule title</label>
         <input defaultValue={defaults?.title ?? "Daily account pulse"} id="agent-schedule-title" name="title" placeholder="Daily account pulse" required />
@@ -315,7 +334,7 @@ export function AgentScheduleForm({ activeAgent, defaults, onScheduled }: AgentS
       <div>
         <label htmlFor="agent-schedule-instructions">Instructions</label>
         <textarea
-          defaultValue={defaults?.instructions ?? "Run an autonomous account check and summarize changes."}
+          defaultValue={defaults?.instructions ?? "Run a scheduled account check and summarize changes."}
           id="agent-schedule-instructions"
           name="instructions"
           placeholder="What should this agent do on schedule?"

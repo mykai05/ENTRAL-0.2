@@ -13,6 +13,32 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(128)
 });
 
+const authTokenSchema = z.string().trim().min(32).max(256);
+
+export const requestPasswordResetSchema = z.object({
+  email: emailSchema
+});
+
+export const confirmPasswordResetSchema = z.object({
+  token: authTokenSchema,
+  password: z.string().min(8).max(128)
+});
+
+export const requestEmailVerificationSchema = z.object({
+  email: emailSchema
+});
+
+export const confirmEmailVerificationSchema = z.object({
+  token: authTokenSchema
+});
+
+export const accountDeletionConfirmation = "DELETE MY ACCOUNT";
+
+export const deleteAccountSchema = z.object({
+  confirmation: z.literal(accountDeletionConfirmation),
+  password: z.string().min(1).max(128)
+});
+
 const optionalTrimmedString = (maxLength: number) => z.preprocess(
   (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
   z.string().trim().max(maxLength).optional()
@@ -263,6 +289,20 @@ export const pricingCalculatorSchema = z.object({
 export const merchReportParamsSchema = z.object({
   reportType: merchReportTypeSchema,
   storeId: z.string().cuid()
+});
+
+export const requestGrowthApprovalSchema = z.object({
+  note: optionalTrimmedString(500),
+  scheduledFor: z.string().datetime().optional()
+});
+
+export const growthApprovalPacketParamsSchema = z.object({
+  packetId: z.string().cuid(),
+  storeId: z.string().cuid()
+});
+
+export const reviewGrowthApprovalSchema = z.object({
+  note: optionalTrimmedString(500)
 });
 
 export const conversationIdParamsSchema = z.object({
@@ -554,6 +594,11 @@ export const adminAgentTaskParamsSchema = z.object({
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
+export type ConfirmPasswordResetInput = z.infer<typeof confirmPasswordResetSchema>;
+export type RequestEmailVerificationInput = z.infer<typeof requestEmailVerificationSchema>;
+export type ConfirmEmailVerificationInput = z.infer<typeof confirmEmailVerificationSchema>;
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type CreateClientMerchStoreInput = z.infer<typeof createClientMerchStoreSchema>;
 export type UpdateClientMerchStoreInput = z.infer<typeof updateClientMerchStoreSchema>;
@@ -562,6 +607,8 @@ export type UpdatePodProductInput = z.infer<typeof updatePodProductSchema>;
 export type GenerateProductBatchInput = z.infer<typeof generateProductBatchSchema>;
 export type ComplianceCheckInput = z.infer<typeof complianceCheckSchema>;
 export type PricingCalculatorInput = z.infer<typeof pricingCalculatorSchema>;
+export type RequestGrowthApprovalInput = z.infer<typeof requestGrowthApprovalSchema>;
+export type ReviewGrowthApprovalInput = z.infer<typeof reviewGrowthApprovalSchema>;
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type ScreenInsightInput = z.infer<typeof screenInsightSchema>;
 export type CommandOSSnapshotInput = z.infer<typeof commandOSSnapshotSchema>;

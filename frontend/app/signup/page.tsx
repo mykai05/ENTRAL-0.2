@@ -6,7 +6,7 @@ export default function SignupPage() {
   return (
     <AuthCard
       title="Create account"
-      subtitle="Create your operator account and open the Command Center."
+      subtitle="Create a verified private beta account after reviewing ENTRAL's safety context."
       footerText="Already have an account?"
       footerLabel="Sign in"
       footerHref="/login"

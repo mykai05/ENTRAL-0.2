@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import React from "react";
 import { AuthCard } from "../../components/AuthCard";
+import { AuthLoadingFallback } from "../../components/AuthLoadingFallback";
 import { LoginForm } from "../../components/LoginForm";
 
 export default function LoginPage() {
@@ -12,7 +13,7 @@ export default function LoginPage() {
       footerLabel="Create an account"
       footerHref="/signup"
     >
-      <Suspense fallback={null}>
+      <Suspense fallback={<AuthLoadingFallback label="Loading sign-in form..." />}>
         <LoginForm />
       </Suspense>
     </AuthCard>

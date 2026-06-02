@@ -73,7 +73,7 @@ const templates: AgentTemplate[] = [
   {
     action: "research",
     capabilities: "security, policy, audit",
-    instructions: "Review audit entries and identify risky autonomy patterns.",
+    instructions: "Review audit entries and identify risky background-agent patterns.",
     name: "Security Watch",
     role: "Watch governance logs and surface risky activity",
     title: "Review governance risk"
@@ -86,7 +86,7 @@ export function AgentTemplateGallery({ onUseTemplate }: { onUseTemplate: (templa
       <header>
         <div>
           <h2>Template Gallery</h2>
-          <p>One-click presets for common autonomous workflows.</p>
+          <p>Guided presets for policy-gated workflows.</p>
         </div>
       </header>
       <div className="template-grid">

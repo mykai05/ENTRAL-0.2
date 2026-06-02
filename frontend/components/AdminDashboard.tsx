@@ -6,6 +6,7 @@ import { ApiError, apiFetch } from "../lib/api";
 import { policyFormSchema } from "../lib/validation";
 import { Button } from "./Button";
 import { CurlSnippet } from "./CurlSnippet";
+import { ModeStatusStrip } from "./ModeStatus";
 import { SkeletonList } from "./Skeleton";
 
 type Policy = {
@@ -67,6 +68,24 @@ const emptyOverview: AdminOverview = {
   },
   policies: []
 };
+
+const adminModeItems = [
+  {
+    description: "Policies, audit entries, and agent controls are saved when the backend is connected.",
+    label: "Real governance",
+    mode: "real" as const
+  },
+  {
+    description: "Provider or pipeline health can be read-only when write scopes are disabled.",
+    label: "Read-only status",
+    mode: "read-only" as const
+  },
+  {
+    description: "Disconnected integrations stay simulated until credentials and approvals are configured.",
+    label: "Mock integrations",
+    mode: "mock" as const
+  }
+];
 
 function splitValues(input: string) {
   return input.split(",").map((value) => value.trim()).filter(Boolean);
@@ -270,6 +289,7 @@ export function AdminDashboard() {
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       {isLoading ? <SkeletonList count={4} label="Loading governance controls" /> : null}
+      <ModeStatusStrip ariaLabel="Governance mode status" className="admin-mode-strip" compact items={adminModeItems} />
 
       <div className="admin-metrics" aria-label="System health">
         <article className="metric-card">
@@ -290,10 +310,10 @@ export function AdminDashboard() {
         </article>
       </div>
 
-      <section className="admin-panel" aria-label="Autonomy kill switch">
+      <section className="admin-panel" aria-label="Background agent pause control">
         <header>
           <div>
-            <h2>Autonomy Controls</h2>
+            <h2>Background Agent Controls</h2>
             <p>{overview.health.activeSchedules} active schedules, {overview.health.enabledPolicies} enabled policies.</p>
           </div>
           <Button type="button" variant="secondary" onClick={() => void pauseAllAgents()}>
@@ -319,7 +339,7 @@ export function AdminDashboard() {
         <header>
           <div>
             <h2>Policies</h2>
-            <p>Rules are checked before autonomous or assigned agent work runs.</p>
+            <p>Rules are checked before scheduled or assigned agent work runs.</p>
           </div>
           <ShieldCheck aria-hidden="true" size={28} />
         </header>

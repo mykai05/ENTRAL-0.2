@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMockToolExecution, buildToolTestResult, requiredToolsForMessage, toolById, toolsByCategory } from "../lib/tool-registry";
+import { buildMockToolExecution, buildToolTestResult, defaultToolRegistry, requiredToolsForMessage, toolById, toolsByCategory } from "../lib/tool-registry";
 
 describe("Tool Registry", () => {
   it("maps natural requests to required tools", () => {
@@ -40,5 +40,13 @@ describe("Tool Registry", () => {
     expect(result.success).toBe(false);
     expect(result.readOnly).toBe(true);
     expect(result.message).toContain("Required credentials");
+  });
+
+  it("keeps tool copy explicit about mock mode and approval gates", () => {
+    const registryCopy = JSON.stringify(defaultToolRegistry).toLowerCase();
+
+    expect(registryCopy).not.toMatch(/\btor\b/);
+    expect(toolById("shopify")?.description).toContain("after approval");
+    expect(toolById("social-publisher")?.description).toContain("explicit approval");
   });
 });

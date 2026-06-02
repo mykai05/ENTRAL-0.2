@@ -41,8 +41,12 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   COOKIE_NAME: z.string().min(1).default("entral_token"),
   CORS_ORIGIN: z.string().url().default("http://localhost:3000"),
+  APP_PUBLIC_URL: z.string().url().default("http://localhost:3000"),
   REDIS_URL: optionalTrimmedString,
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
+  AUTH_EMAIL_PROVIDER: z.enum(["resend", "console"]).default(process.env.NODE_ENV === "production" ? "resend" : "console"),
+  AUTH_EMAIL_FROM: optionalTrimmedString,
+  RESEND_API_KEY: optionalTrimmedString,
   OPENAI_API_KEY: z.string().trim().optional(),
   OPENAI_MODEL: z.string().min(1).default("gpt-4o"),
   GITHUB_TOKEN: optionalTrimmedString,
@@ -53,6 +57,12 @@ const envSchema = z.object({
   VERCEL_PROJECT_ID: optionalTrimmedString,
   AI_FEATURE_ENABLED: booleanFromEnv.default(true),
   AI_LOCAL_FALLBACK: booleanFromEnv.default(true),
+  AI_DAILY_COST_LIMIT_CENTS: z.coerce.number().int().min(0).default(250),
+  AI_MONTHLY_COST_LIMIT_CENTS: z.coerce.number().int().min(0).default(2500),
+  AI_DECISION_ESTIMATED_COST_CENTS: z.coerce.number().int().min(0).default(1),
+  AI_CHAT_ESTIMATED_COST_CENTS: z.coerce.number().int().min(0).default(4),
+  AI_SCREEN_ESTIMATED_COST_CENTS: z.coerce.number().int().min(0).default(8),
+  AI_LOCAL_FALLBACK_ESTIMATED_COST_CENTS: z.coerce.number().int().min(0).default(0),
   AUTOMATION_FEATURE_ENABLED: booleanFromEnv.default(true),
   AUTOMATION_WORKER_ENABLED: booleanFromEnv.default(true),
   AUTOMATION_ALLOWED_DOMAINS: z.string().default("example.com"),
@@ -67,6 +77,32 @@ const envSchema = z.object({
   DATA_ENCRYPTION_KEY: optionalTrimmedString,
   ADMIN_MFA_CODE: optionalTrimmedString,
   ALERT_WEBHOOK_URL: optionalTrimmedString
+}).superRefine((value, context) => {
+  if (value.NODE_ENV === "production" && value.AUTH_EMAIL_PROVIDER === "console") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["AUTH_EMAIL_PROVIDER"],
+      message: "Production auth email delivery must use a real provider."
+    });
+  }
+
+  if (value.AUTH_EMAIL_PROVIDER === "resend") {
+    if (!value.RESEND_API_KEY) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["RESEND_API_KEY"],
+        message: "RESEND_API_KEY is required when AUTH_EMAIL_PROVIDER is resend."
+      });
+    }
+
+    if (!value.AUTH_EMAIL_FROM) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["AUTH_EMAIL_FROM"],
+        message: "AUTH_EMAIL_FROM is required when AUTH_EMAIL_PROVIDER is resend."
+      });
+    }
+  }
 });
 
 export const env = envSchema.parse({
@@ -77,8 +113,12 @@ export const env = envSchema.parse({
   JWT_SECRET: process.env.JWT_SECRET,
   COOKIE_NAME: process.env.COOKIE_NAME,
   CORS_ORIGIN: process.env.CORS_ORIGIN,
+  APP_PUBLIC_URL: process.env.APP_PUBLIC_URL,
   REDIS_URL: process.env.REDIS_URL,
   LOG_LEVEL: process.env.LOG_LEVEL,
+  AUTH_EMAIL_PROVIDER: process.env.AUTH_EMAIL_PROVIDER,
+  AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL,
   GITHUB_TOKEN: process.env.GITHUB_TOKEN,
@@ -89,6 +129,12 @@ export const env = envSchema.parse({
   VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
   AI_FEATURE_ENABLED: process.env.AI_FEATURE_ENABLED,
   AI_LOCAL_FALLBACK: process.env.AI_LOCAL_FALLBACK,
+  AI_DAILY_COST_LIMIT_CENTS: process.env.AI_DAILY_COST_LIMIT_CENTS,
+  AI_MONTHLY_COST_LIMIT_CENTS: process.env.AI_MONTHLY_COST_LIMIT_CENTS,
+  AI_DECISION_ESTIMATED_COST_CENTS: process.env.AI_DECISION_ESTIMATED_COST_CENTS,
+  AI_CHAT_ESTIMATED_COST_CENTS: process.env.AI_CHAT_ESTIMATED_COST_CENTS,
+  AI_SCREEN_ESTIMATED_COST_CENTS: process.env.AI_SCREEN_ESTIMATED_COST_CENTS,
+  AI_LOCAL_FALLBACK_ESTIMATED_COST_CENTS: process.env.AI_LOCAL_FALLBACK_ESTIMATED_COST_CENTS,
   AUTOMATION_FEATURE_ENABLED: process.env.AUTOMATION_FEATURE_ENABLED,
   AUTOMATION_WORKER_ENABLED: process.env.AUTOMATION_WORKER_ENABLED,
   AUTOMATION_ALLOWED_DOMAINS: process.env.AUTOMATION_ALLOWED_DOMAINS,

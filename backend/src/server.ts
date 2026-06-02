@@ -6,6 +6,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import { ZodError } from "zod";
 import { authRoutes } from "./routes/auth.js";
+import { accountRoutes } from "./routes/account.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { taskRoutes } from "./routes/tasks.js";
 import { aiRoutes } from "./routes/ai.js";
@@ -21,6 +22,8 @@ import type { AiService } from "./services/openaiService.js";
 import { startAutomationWorker } from "./services/automationQueue.js";
 import { startAgentOrchestrator } from "./services/agentOrchestrator.js";
 import { startAutonomyScheduler } from "./services/autonomyScheduler.js";
+import { buildHealthPayload } from "./services/health.js";
+import { emitOperationalAlert } from "./services/operationalMonitoring.js";
 import { ensureDefaultPolicies } from "./services/policyEngine.js";
 
 type BuildServerOptions = {
@@ -50,12 +53,17 @@ export async function buildServer(options: BuildServerOptions = {}) {
     max: 120,
     timeWindow: "1 minute"
   });
+  app.addHook("onRequest", (request, reply, done) => {
+    reply.header("x-request-id", request.id);
+    done();
+  });
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {
       return reply.code(400).send({
         error: "Bad Request",
         message: "Input validation failed.",
+        requestId: request.id,
         issues: error.issues.map((issue) => ({
           path: issue.path.join("."),
           message: issue.message
@@ -66,15 +74,32 @@ export async function buildServer(options: BuildServerOptions = {}) {
     request.log.error({ err: error, requestId: request.id }, "Unhandled API error");
     const statusCode = "statusCode" in error && typeof error.statusCode === "number" ? error.statusCode : 500;
     const message = statusCode >= 500 ? "Something went wrong." : error.message;
+
+    if (statusCode >= 500) {
+      void emitOperationalAlert({
+        metadata: {
+          method: request.method,
+          route: request.url,
+          statusCode
+        },
+        requestId: request.id,
+        severity: "high",
+        title: "Unhandled ENTRAL API error"
+      }, request.log);
+    }
+
     return reply.code(statusCode).send({
       error: statusCode >= 500 ? "Internal Server Error" : "Request Error",
-      message
+      message,
+      requestId: request.id
     });
   });
 
-  app.get("/health", async () => ({ ok: true }));
+  app.get("/health", async (request) => buildHealthPayload(request.id));
+  app.get("/api/v1/health", async (request) => buildHealthPayload(request.id));
   await ensureDefaultPolicies();
   await app.register(authRoutes, { prefix: "/api/v1" });
+  await app.register(accountRoutes, { prefix: "/api/v1" });
   await app.register(dashboardRoutes, { prefix: "/api/v1" });
   await app.register(taskRoutes, { prefix: "/api/v1" });
   await app.register(aiRoutes, { prefix: "/api/v1", aiService: options.aiService });

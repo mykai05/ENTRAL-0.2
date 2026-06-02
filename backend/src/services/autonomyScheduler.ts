@@ -128,7 +128,7 @@ async function pauseScheduleForPolicy(schedule: ScheduleRecord, reason: string, 
     severity: "high",
     targetId: schedule.id,
     targetType: "agent_schedule",
-    title: "Autonomous schedule paused by policy"
+    title: "Background schedule paused by policy"
   }, logger);
   logger?.warn({ agentId: schedule.agentId, scheduleId: schedule.id, reason }, "Agent schedule blocked by policy");
 }
@@ -323,11 +323,11 @@ export function startAutonomyScheduler(logger?: FastifyBaseLogger) {
     logger?.warn({ err: error }, "Unable to initialize BullMQ repeatable agent schedules");
   });
   void enqueueDueAgentSchedules(logger).catch((error) => {
-    logger?.error({ err: error }, "Autonomy scheduler polling failed");
+    logger?.error({ err: error }, "Background agent scheduler polling failed");
   });
   schedulerTimer = setInterval(() => {
     void enqueueDueAgentSchedules(logger).catch((error) => {
-      logger?.error({ err: error }, "Autonomy scheduler polling failed");
+      logger?.error({ err: error }, "Background agent scheduler polling failed");
     });
   }, env.AUTONOMY_SCHEDULER_INTERVAL_MS);
 

@@ -24,7 +24,7 @@ export type AiRequestCategory =
 
 export type AiConfidence = "high" | "medium" | "low";
 export type AuthorizationRequirement = "not_required" | "recommended" | "required";
-export type ExecutionMode = "manual" | "assisted" | "semi_automated" | "autonomous";
+export type ExecutionMode = "manual" | "assisted" | "semi_automated" | "scheduled";
 
 export type AiRequestClassification = {
   authorizationRequirement: AuthorizationRequirement;

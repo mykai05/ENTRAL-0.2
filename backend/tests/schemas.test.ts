@@ -9,9 +9,12 @@ import {
   createPodProductSchema,
   complianceCheckSchema,
   generateProductBatchSchema,
+  growthApprovalPacketParamsSchema,
   loginSchema,
   merchReportParamsSchema,
   pricingCalculatorSchema,
+  requestGrowthApprovalSchema,
+  reviewGrowthApprovalSchema,
   createPolicySchema,
   commandOSSnapshotSchema,
   screenInsightSchema,
@@ -290,6 +293,24 @@ describe("validation schemas", () => {
     expect(reportParams.reportType).toBe("Client Update Report");
   });
 
+  it("validates growth approval scheduling and review inputs", () => {
+    const approvalRequest = requestGrowthApprovalSchema.parse({
+      note: "Review before any social, Shopify, ad, or analytics work leaves ENTRAL.",
+      scheduledFor: "2026-06-03T16:00:00.000Z"
+    });
+    const params = growthApprovalPacketParamsSchema.parse({
+      packetId: "clx0b5v8g000008l58v3n0wz1",
+      storeId: "clx0b5v8g000008l58v3n0wz0"
+    });
+    const review = reviewGrowthApprovalSchema.parse({
+      note: "Approved for preparation only; external execution remains locked."
+    });
+
+    expect(approvalRequest.scheduledFor).toBe("2026-06-03T16:00:00.000Z");
+    expect(params.packetId).toBe("clx0b5v8g000008l58v3n0wz1");
+    expect(review.note).toContain("external execution remains locked");
+  });
+
   it("validates agent profiles and task assignments", () => {
     const agent = createAgentSchema.parse({
       name: "Researcher",
@@ -310,7 +331,7 @@ describe("validation schemas", () => {
     expect(task.action).toBe("research");
   });
 
-  it("validates autonomous agent schedules", () => {
+  it("validates background agent schedules", () => {
     const schedule = createAgentScheduleSchema.parse({
       title: "Daily account pulse",
       action: "research",

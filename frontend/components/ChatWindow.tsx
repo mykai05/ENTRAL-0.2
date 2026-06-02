@@ -6,11 +6,13 @@ import { MessageSquarePlus, PanelLeftClose, PanelLeftOpen, Sparkles, Trash2 } fr
 import { ApiError, apiFetch } from "../lib/api";
 import { commandSourceLabel, commandSpeakerFromPrefix } from "../lib/command-communications";
 import { chatFormSchema } from "../lib/validation";
+import { AiUsageGuardrail } from "./AiUsageGuardrail";
 import { Button } from "./Button";
 import { ChatInput } from "./ChatInput";
 import { CurlSnippet } from "./CurlSnippet";
 import { DataPortability } from "./DataPortability";
 import { MessageBubble, type ChatRole } from "./MessageBubble";
+import { ModeBadge } from "./ModeStatus";
 import { ScreenShareControls, type ScreenShareControlsHandle } from "./ScreenShareControls";
 import { SkeletonList } from "./Skeleton";
 import { useToast } from "./ToastProvider";
@@ -88,6 +90,7 @@ export function ChatWindow() {
   const [inputError, setInputError] = useState("");
   const [draftPrompt, setDraftPrompt] = useState("");
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] = useState(true);
+  const [usageRefreshIndex, setUsageRefreshIndex] = useState(0);
   const logRef = useRef<HTMLDivElement>(null);
   const screenShareRef = useRef<ScreenShareControlsHandle>(null);
 
@@ -203,6 +206,7 @@ export function ChatWindow() {
         speak(response.content, speaker, commandSourceLabel(speaker));
       }
       await loadConversations();
+      setUsageRefreshIndex((current) => current + 1);
       setDraftPrompt("");
       notify({ title: screenshot ? "Screen analyzed" : "Directive sent", type: "success" });
     } catch (sendError) {
@@ -376,6 +380,12 @@ export function ChatWindow() {
             </Button>
           </div>
         </header>
+        <p className="surface-mode-note chat-mode-note" role="note">
+          <ModeBadge mode="real">Real account history</ModeBadge>
+          <span>Conversation history is saved to your workspace. Screen analysis only uses frames you choose to share.</span>
+        </p>
+
+        <AiUsageGuardrail refreshIndex={usageRefreshIndex} />
 
         {error ? <p className="form-error" role="alert">{error}</p> : null}
 

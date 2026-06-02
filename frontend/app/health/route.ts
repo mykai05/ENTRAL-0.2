@@ -3,21 +3,36 @@ import { apiProxyBase, sanitizedResponseHeaders } from "../../lib/server-api-pro
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+function responseRequestId(request: Request) {
+  return request.headers.get("x-request-id") ?? crypto.randomUUID();
+}
+
+export async function GET(request: Request) {
   const baseUrl = apiProxyBase();
+  const requestId = responseRequestId(request);
+  const timestamp = new Date().toISOString();
 
   if (!baseUrl) {
-    return NextResponse.json({
-      backend: {
-        configured: false,
+    return NextResponse.json(
+      {
+        backend: {
+          configured: false,
+          ok: false,
+          status: null
+        },
+        frontend: {
+          ok: true,
+          service: "entral-frontend",
+          timestamp
+        },
         ok: false,
-        status: null
+        requestId
       },
-      frontend: {
-        ok: true
-      },
-      ok: true
-    });
+      {
+        headers: { "x-request-id": requestId },
+        status: 503
+      }
+    );
   }
 
   try {
@@ -39,12 +54,18 @@ export async function GET() {
           upstream: payload
         },
         frontend: {
-          ok: true
+          ok: true,
+          service: "entral-frontend",
+          timestamp
         },
-        ok: response.ok
+        ok: response.ok,
+        requestId
       },
       {
-        headers: sanitizedResponseHeaders(response.headers),
+        headers: {
+          ...Object.fromEntries(sanitizedResponseHeaders(response.headers).entries()),
+          "x-request-id": requestId
+        },
         status: response.ok ? 200 : 502
       }
     );
@@ -58,11 +79,17 @@ export async function GET() {
           status: null
         },
         frontend: {
-          ok: true
+          ok: true,
+          service: "entral-frontend",
+          timestamp
         },
-        ok: false
+        ok: false,
+        requestId
       },
-      { status: 502 }
+      {
+        headers: { "x-request-id": requestId },
+        status: 502
+      }
     );
   }
 }

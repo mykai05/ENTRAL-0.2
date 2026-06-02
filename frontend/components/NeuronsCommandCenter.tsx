@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } 
 import { Activity, AlertTriangle, Bot, Crosshair, Eye, Info, LogOut, Maximize2, Menu, Mic, MicOff, Network, PanelRightClose, PanelRightOpen, Pause, Play, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Volume2, X, Zap, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "./Button";
 import { Logo } from "./Logo";
+import { ModeStatusStrip, type ModeStatusItem } from "./ModeStatus";
 import { MerchOperationsPanel } from "./MerchOperationsPanel";
 import { ProductApprovalQueue, type ProductApprovalAction } from "./ProductApprovalQueue";
 import { ProductBatchGenerator, type ProductBatchFormState } from "./ProductBatchGenerator";
@@ -482,6 +483,24 @@ function removeLocalStorageValue(key: string) {
   }
 }
 
+const commandCenterModeItems: ModeStatusItem[] = [
+  {
+    description: "Hierarchy, reports, and workspace data are saved locally or through ENTRAL APIs.",
+    label: "Real workspace",
+    mode: "real"
+  },
+  {
+    description: "Tool and product actions stay simulated until credentials and approval paths are configured.",
+    label: "Mock tools labeled",
+    mode: "mock"
+  },
+  {
+    description: "External publishing, commerce, outreach, and browser actions require scoped approval.",
+    label: "Read-only before trust",
+    mode: "read-only"
+  }
+];
+
 const businessCapabilityBlueprints: CapabilityBlueprint[] = [
   {
     description: "Plan and run compliant research across public search engines, websites, maps data, directories, and approved data APIs.",
@@ -490,7 +509,7 @@ const businessCapabilityBlueprints: CapabilityBlueprint[] = [
     risk: "standard"
   },
   {
-    description: "Policy-gated research connector for restricted networks such as Tor; requires explicit legal scope, governance approval, and safe-use controls.",
+    description: "Policy-gated research planning for restricted sources; requires explicit legal scope, governance approval, and safe-use controls.",
     id: "restricted-network-research",
     label: "Restricted network research",
     risk: "restricted"
@@ -502,7 +521,7 @@ const businessCapabilityBlueprints: CapabilityBlueprint[] = [
     risk: "sensitive"
   },
   {
-    description: "Coordinate Shopify setup, catalog work, optimization experiments, fulfillment checks, reporting, and external commerce tools.",
+    description: "Prepare Shopify setup, catalog work, optimization experiments, fulfillment checks, reporting, and external commerce tool requests.",
     id: "shopify-operations",
     label: "Shopify operations",
     risk: "sensitive"
@@ -955,7 +974,7 @@ const identityPillars = [
   ["Neural", "AI cognition layer"],
   ["Tactical", "execution-oriented"],
   ["Reasoning", "multi-step logic and planning"],
-  ["Autonomous", "independent workflows"],
+  ["Authorized", "permission-gated workflows"],
   ["Logic", "governance and operational consistency"]
 ];
 
@@ -2084,7 +2103,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     if (!hovered) return;
 
     if (hovered.type === "core") {
-      setStatusMessage("ENTRAL Command Core: Evolving, Neural, Tactical, Reasoning, Autonomous, Logic.");
+      setStatusMessage("ENTRAL Command Core: Evolving, Neural, Tactical, Reasoning, Authorized, Logic.");
       return;
     }
 
@@ -3743,6 +3762,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
       setMobileTab("command");
       setIsPanelOpen(false);
+      if (section === "command") {
+        focusMobileCommandInput();
+      }
     }
   }
 
@@ -4434,7 +4456,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       parentMarshalName: type !== "marshal" ? lineageForNode(parentId).find((node) => node.commandType === "marshal")?.name ?? null : null,
       permissions: blueprint?.permissions ?? ["read_command_context", "manage_children", "report_status"],
       progress: 0,
-      reasoning: `ENTRAL added ${name} to expand the ${title} layer. Real autonomous execution remains policy-gated.`,
+      reasoning: `ENTRAL added ${name} to expand the ${title} layer. Real background execution remains policy-gated.`,
       role: blueprint?.role ?? `${title} command layer`,
       status: "idle",
       taskHistory: [],
@@ -4743,10 +4765,24 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     respond("Objective acknowledged. Graph controls collapsed inside the unified command console.");
   }
 
+  function isMobileCommandViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
+  }
+
+  function focusMobileCommandInput() {
+    if (!isMobileCommandViewport()) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      commandInputRef.current?.focus({ preventScroll: true });
+    });
+  }
+
   function closeCommandConsoleForGraph() {
     setIsCommandConsoleOpen(false);
 
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+    if (isMobileCommandViewport()) {
       setMobileTab("graph");
       setIsPanelOpen(false);
       setStatusMessage("Graph view cleared. Use Command to reopen ENTRAL controls.");
@@ -4763,6 +4799,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
     if (tab === "graph") {
       setStatusMessage("Graph view active. Use Command to reopen ENTRAL controls.");
+    }
+
+    if (tab === "command") {
+      focusMobileCommandInput();
     }
   }
 
@@ -6377,7 +6417,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }
 
   return (
-    <main className={["command-center-page", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} aria-label="ENTRAL Command Center">
+    <main className={["command-center-page", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} data-mobile-tab={mobileTab} aria-label="ENTRAL Command Center">
       <canvas
         aria-describedby="command-center-camera-help"
         aria-label="3D interactive ENTRAL neuron graph"
@@ -6420,11 +6460,14 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       <header className="command-center-brand" data-academy="command-brand" aria-label="Command center status">
         <Logo />
         <div>
-          <p className="eyebrow">Command OS</p>
+          <p className="eyebrow">Command center</p>
           <h1>ENTRAL</h1>
-          <span>{user?.name ? `${user.name}'s central command layer` : "Military-neural command graph"}</span>
+          <span>{user?.name ? `${user.name}'s central command layer` : "Supervised operations graph"}</span>
         </div>
       </header>
+      <div className="command-center-mode-strip" data-academy="mode-status">
+        <ModeStatusStrip ariaLabel="Command center mode status" compact items={commandCenterModeItems} />
+      </div>
 
       <div className="command-center-top-actions">
           <button className="command-icon-button" data-academy="command-palette" type="button" onClick={() => window.dispatchEvent(new Event("entral:open-command-palette"))} aria-label="Open command menu">

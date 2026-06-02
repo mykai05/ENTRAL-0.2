@@ -7,6 +7,7 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { generateProductBatch, type ProductBatchInput } from "./services/productBatchGenerator.js";
 import { analyzeCompliance, formatComplianceNotes } from "./services/complianceGuardrails.js";
+import { buildGrowthApprovalPacket, buildGrowthOrchestrationPreview, buildGrowthPlan, type GrowthApprovalPacket as GrowthApprovalPacketPayload } from "./services/growthPlans.js";
 import { buildLaunchPackage, buildMerchReport, type MerchReportType } from "./services/merchReports.js";
 import { calculatePricing, pricingPlatformPresets, type PricingPlatformPreset } from "./services/pricingCalculator.js";
 import type { AiActionPlan } from "./services/aiBrain.js";
@@ -57,6 +58,17 @@ type Conversation = {
   messages: Message[];
   title: string;
   updatedAt: string;
+  userId: string;
+};
+
+type AiUsageEvent = {
+  createdAt: string;
+  estimatedCostCents: number;
+  id: string;
+  modelName: string;
+  providerName: string;
+  requestKind: string;
+  usedLocalFallback: boolean;
   userId: string;
 };
 
@@ -212,6 +224,23 @@ type PodProduct = {
   updatedAt: string;
 };
 
+type GrowthApprovalPacketRecord = {
+  createdAt: string;
+  id: string;
+  mode: "Mock Mode";
+  packet: GrowthApprovalPacketPayload;
+  requestAuditLogId?: string | null;
+  reviewAuditLogId?: string | null;
+  reviewedAt?: string | null;
+  reviewedById?: string | null;
+  reviewNote?: string | null;
+  scheduledFor?: string | null;
+  status: "pending" | "approved" | "rejected";
+  storeId: string;
+  updatedAt: string;
+  userId: string;
+};
+
 const app = Fastify({
   logger: {
     level: "info"
@@ -224,6 +253,7 @@ const state = {
   agents: new Map<string, Agent>(),
   agentSchedules: new Map<string, AgentSchedule[]>(),
   agentTasks: new Map<string, AgentTask[]>(),
+  aiUsageEvents: [] as AiUsageEvent[],
   auditLogs: [] as Array<{
     action: string;
     createdAt: string;
@@ -238,6 +268,7 @@ const state = {
   automationJobs: [] as AutomationJob[],
   commandSnapshots: new Map<string, CommandOSSnapshot>(),
   conversations: new Map<string, Conversation>(),
+  growthApprovalPackets: [] as GrowthApprovalPacketRecord[],
   merchStores: [] as ClientMerchStore[],
   podProducts: [] as PodProduct[],
   policies: new Map<string, Policy>(),
@@ -250,6 +281,81 @@ const state = {
 const openAiModel = process.env.OPENAI_MODEL?.trim() || "gpt-4o";
 const openAiApiKey = process.env.OPENAI_API_KEY?.trim();
 let openAiClient: OpenAI | null = null;
+const aiDailyCostLimitCents = Number(process.env.AI_DAILY_COST_LIMIT_CENTS ?? 250);
+const aiMonthlyCostLimitCents = Number(process.env.AI_MONTHLY_COST_LIMIT_CENTS ?? 2500);
+const aiDecisionEstimatedCostCents = Number(process.env.AI_DECISION_ESTIMATED_COST_CENTS ?? 1);
+const aiChatEstimatedCostCents = Number(process.env.AI_CHAT_ESTIMATED_COST_CENTS ?? 4);
+const aiScreenEstimatedCostCents = Number(process.env.AI_SCREEN_ESTIMATED_COST_CENTS ?? 8);
+const aiLocalFallbackEstimatedCostCents = Number(process.env.AI_LOCAL_FALLBACK_ESTIMATED_COST_CENTS ?? 0);
+
+function startOfUtcDay(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())).toISOString();
+}
+
+function startOfUtcMonth(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)).toISOString();
+}
+
+function aiUsageSummary(userId: string) {
+  const dailySince = startOfUtcDay();
+  const monthlySince = startOfUtcMonth();
+  const dailyUsedCents = state.aiUsageEvents
+    .filter((event) => event.userId === userId && event.createdAt >= dailySince)
+    .reduce((sum, event) => sum + event.estimatedCostCents, 0);
+  const monthlyUsedCents = state.aiUsageEvents
+    .filter((event) => event.userId === userId && event.createdAt >= monthlySince)
+    .reduce((sum, event) => sum + event.estimatedCostCents, 0);
+  const providerStatus = openAiApiKey ? "Connected" : "Missing API Key";
+
+  return {
+    daily: {
+      limitCents: aiDailyCostLimitCents,
+      remainingCents: Math.max(0, aiDailyCostLimitCents - dailyUsedCents),
+      usedCents: dailyUsedCents
+    },
+    monthly: {
+      limitCents: aiMonthlyCostLimitCents,
+      remainingCents: Math.max(0, aiMonthlyCostLimitCents - monthlyUsedCents),
+      usedCents: monthlyUsedCents
+    },
+    mode: providerStatus === "Connected" ? "real" : "mock",
+    provider: {
+      modelName: openAiModel,
+      providerName: "OpenAI",
+      status: providerStatus
+    }
+  };
+}
+
+function estimateAiMemoryCostCents(kind: "chat" | "development_status" | "development_write_refusal" | "screen") {
+  if (!openAiApiKey) return aiLocalFallbackEstimatedCostCents;
+  if (kind === "screen") return aiDecisionEstimatedCostCents + aiScreenEstimatedCostCents;
+  if (kind === "chat") return aiDecisionEstimatedCostCents + aiChatEstimatedCostCents;
+  return aiDecisionEstimatedCostCents;
+}
+
+function assertAiMemoryUsage(userId: string, kind: "chat" | "development_status" | "development_write_refusal" | "screen", reply: FastifyReply) {
+  const summary = aiUsageSummary(userId);
+  const estimatedCostCents = estimateAiMemoryCostCents(kind);
+
+  if (
+    estimatedCostCents > 0
+    && (
+      summary.daily.usedCents + estimatedCostCents > summary.daily.limitCents
+      || summary.monthly.usedCents + estimatedCostCents > summary.monthly.limitCents
+    )
+  ) {
+    reply.code(429).send({
+      error: "Usage Limit Reached",
+      message: "AI usage limit reached. Real provider calls are paused until the budget window resets.",
+      mode: "real",
+      summary
+    });
+    return null;
+  }
+
+  return { estimatedCostCents, summary };
+}
 
 const memorySystemPrompt = [
   "You are ENTRAL, the Supreme Command Authority inside a military-neural Command OS.",
@@ -407,6 +513,112 @@ function teamsForUser(userId: string) {
   return [...state.teams.values()].filter((team) => team.userId === userId);
 }
 
+const accountDeletionConfirmation = "DELETE MY ACCOUNT";
+
+function buildMemoryAccountExport(user: User) {
+  const teams = teamsForUser(user.id);
+  const teamIds = new Set(teams.map((team) => team.id));
+  const conversations = [...state.conversations.values()].filter((conversation) => conversation.userId === user.id);
+  const stores = state.merchStores.filter((store) => store.userId === user.id);
+  const storeIds = new Set(stores.map((store) => store.id));
+  const products = state.podProducts.filter((product) => storeIds.has(product.storeId));
+  const agents = [...state.agents.values()].filter((agent) => agent.userId === user.id).map((agent) => ({
+    ...agent,
+    logs: state.agentLogs.get(agent.id) ?? [],
+    messages: state.agentMessages.get(agent.id) ?? [],
+    schedules: state.agentSchedules.get(agent.id) ?? [],
+    tasks: state.agentTasks.get(agent.id) ?? []
+  }));
+  const automationJobs = state.automationJobs.filter((job) => job.userId === user.id);
+  const aiUsageEvents = state.aiUsageEvents.filter((event) => event.userId === user.id);
+  const tasks = state.tasks.filter((task) => teamIds.has(task.teamId) || task.userId === user.id);
+  const messages = conversations.reduce((count, conversation) => count + conversation.messages.length, 0);
+  const agentTasks = agents.reduce((count, agent) => count + agent.tasks.length, 0);
+
+  return {
+    exportedAt: now(),
+    formatVersion: 1,
+    mode: {
+      accountData: "real",
+      externalProvidersContacted: false,
+      note: "ENTRAL privacy export for organizing, planning, monitoring, and safely preparing business operations."
+    },
+    summary: {
+      agentTasks,
+      agents: agents.length,
+      aiUsageEvents: aiUsageEvents.length,
+      auditLogs: state.auditLogs.length,
+      automationJobs: automationJobs.length,
+      commandReports: 0,
+      conversations: conversations.length,
+      messages,
+      podProducts: products.length,
+      tasksAssigned: 0,
+      tasksCreated: tasks.length,
+      teams: teams.length
+    },
+    user: publicUser(user),
+    teams,
+    tasks: {
+      assigned: [],
+      created: tasks
+    },
+    conversations,
+    aiUsageEvents,
+    automationJobs,
+    agents,
+    merchStores: stores.map((store) => ({
+      ...store,
+      products: products.filter((product) => product.storeId === store.id)
+    })),
+    command: {
+      reports: [],
+      snapshot: state.commandSnapshots.get(user.id) ?? null
+    },
+    policiesCreated: [],
+    auditLogs: state.auditLogs
+  };
+}
+
+function deleteMemoryAccount(userId: string) {
+  const teams = teamsForUser(userId);
+  const teamIds = new Set(teams.map((team) => team.id));
+  const stores = state.merchStores.filter((store) => store.userId === userId);
+  const storeIds = new Set(stores.map((store) => store.id));
+  const agentIds = [...state.agents.values()].filter((agent) => agent.userId === userId).map((agent) => agent.id);
+
+  for (const agentId of agentIds) {
+    state.agentLogs.delete(agentId);
+    state.agentMessages.delete(agentId);
+    state.agentSchedules.delete(agentId);
+    state.agentTasks.delete(agentId);
+    state.agents.delete(agentId);
+  }
+
+  for (const conversation of [...state.conversations.values()]) {
+    if (conversation.userId === userId) {
+      state.conversations.delete(conversation.id);
+    }
+  }
+
+  for (const teamId of teamIds) {
+    state.teams.delete(teamId);
+  }
+
+  state.aiUsageEvents = state.aiUsageEvents.filter((event) => event.userId !== userId);
+  state.automationJobs = state.automationJobs.filter((job) => job.userId !== userId);
+  state.commandSnapshots.delete(userId);
+  state.merchStores = state.merchStores.filter((store) => store.userId !== userId);
+  state.podProducts = state.podProducts.filter((product) => !storeIds.has(product.storeId));
+  state.tasks = state.tasks.filter((task) => task.userId !== userId && !teamIds.has(task.teamId));
+  for (const [token, sessionUserId] of state.sessions.entries()) {
+    if (sessionUserId === userId) {
+      state.sessions.delete(token);
+    }
+  }
+  state.users.delete(userId);
+}
+
 function setSession(reply: FastifyReply, user: User) {
   const token = id("dev_session");
   state.sessions.set(token, user.id);
@@ -472,6 +684,32 @@ function publicMerchStore(store: ClientMerchStore) {
   return {
     ...store,
     storeId: store.id
+  };
+}
+
+function growthApprovalStatusLabel(status: GrowthApprovalPacketRecord["status"]) {
+  if (status === "approved") return "Approved - execution still locked";
+  if (status === "rejected") return "Rejected";
+  return "Pending approval";
+}
+
+function publicGrowthApprovalPacket(record: GrowthApprovalPacketRecord) {
+  return {
+    id: record.id,
+    auditLogId: record.requestAuditLogId ?? null,
+    createdAt: record.createdAt,
+    executionState: "No external action executed",
+    mode: record.mode,
+    packet: record.packet,
+    requestAuditLogId: record.requestAuditLogId ?? null,
+    reviewAuditLogId: record.reviewAuditLogId ?? null,
+    reviewedAt: record.reviewedAt ?? null,
+    reviewedById: record.reviewedById ?? null,
+    reviewNote: record.reviewNote ?? null,
+    scheduledFor: record.scheduledFor ?? null,
+    status: record.status,
+    statusLabel: growthApprovalStatusLabel(record.status),
+    updatedAt: record.updatedAt
   };
 }
 
@@ -587,8 +825,20 @@ app.setErrorHandler((error, _request, reply) => {
   });
 });
 
-app.get("/health", async () => ({ mode: "memory", ok: true }));
-app.get("/api/v1/health", async () => ({ mode: "memory", ok: true }));
+app.get("/health", async () => ({
+  mode: "memory",
+  ok: true,
+  service: "entral-memory-backend",
+  timestamp: new Date().toISOString(),
+  uptimeSeconds: Math.round(process.uptime())
+}));
+app.get("/api/v1/health", async () => ({
+  mode: "memory",
+  ok: true,
+  service: "entral-memory-backend",
+  timestamp: new Date().toISOString(),
+  uptimeSeconds: Math.round(process.uptime())
+}));
 
 app.post("/api/v1/signup", async (request, reply) => {
   const body = request.body as { email?: string; name?: string; password?: string };
@@ -633,6 +883,61 @@ app.get("/api/v1/me", { preHandler: requireAuth }, async (request) => {
     teams: teamsForUser(user.id),
     user: publicUser(user)
   };
+});
+
+app.get("/api/v1/account/export", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const exportData = buildMemoryAccountExport(user);
+  state.auditLogs.unshift({
+    action: "account.data_exported",
+    createdAt: now(),
+    entry: {
+      mode: "real",
+      summary: exportData.summary,
+      userId: user.id
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: "low",
+    targetId: user.id,
+    targetType: "account"
+  });
+
+  return reply
+    .header("content-disposition", `attachment; filename="entral-account-export-${user.id}.json"`)
+    .send(exportData);
+});
+
+app.delete("/api/v1/account", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const body = request.body as { confirmation?: string; password?: string };
+
+  if (body.confirmation !== accountDeletionConfirmation || body.password !== user.password) {
+    return reply.code(401).send({ error: "Unauthorized", message: "Password confirmation failed." });
+  }
+
+  const exportData = buildMemoryAccountExport(user);
+  state.auditLogs.unshift({
+    action: "account.deletion_confirmed",
+    createdAt: now(),
+    entry: {
+      email: user.email,
+      mode: "real",
+      summary: exportData.summary,
+      userId: user.id
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: "high",
+    targetId: user.id,
+    targetType: "account"
+  });
+
+  deleteMemoryAccount(user.id);
+  clearSession(reply);
+  return reply.send({ ok: true, message: "Account and personal workspace data deleted." });
 });
 
 app.get("/api/v1/dashboard", { preHandler: requireAuth }, async (request) => {
@@ -776,6 +1081,207 @@ app.get("/api/v1/merch/stores/:storeId/launch-package", { preHandler: requireAut
 
   const products = state.podProducts.filter((product) => product.storeId === store.id);
   return { package: buildLaunchPackage(store, products) };
+});
+
+app.get("/api/v1/merch/stores/:storeId/growth-plan", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const products = state.podProducts.filter((product) => product.storeId === store.id);
+  return { plan: buildGrowthPlan(store, products) };
+});
+
+app.get("/api/v1/merch/stores/:storeId/growth-approvals", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const items = state.growthApprovalPackets
+    .filter((packet) => packet.storeId === store.id && packet.userId === user.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 25)
+    .map(publicGrowthApprovalPacket);
+
+  return { items };
+});
+
+app.post("/api/v1/merch/stores/:storeId/growth-plan/approval-request", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const body = request.body as { note?: string; scheduledFor?: string };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const products = state.podProducts.filter((product) => product.storeId === store.id);
+  const packet = buildGrowthApprovalPacket({
+    note: body.note ?? null,
+    products,
+    scheduledFor: body.scheduledFor ?? null,
+    store,
+    storeId: store.id
+  });
+  const record: GrowthApprovalPacketRecord = {
+    createdAt: now(),
+    id: id("growth_approval"),
+    mode: packet.mode,
+    packet,
+    requestAuditLogId: null,
+    reviewAuditLogId: null,
+    reviewedAt: null,
+    reviewedById: null,
+    reviewNote: null,
+    scheduledFor: packet.scheduledFor,
+    status: "pending",
+    storeId: store.id,
+    updatedAt: now(),
+    userId: user.id
+  };
+  const auditLog = {
+    action: "growth.approval.requested",
+    createdAt: now(),
+    entry: {
+      packet,
+      packetId: record.id,
+      store: {
+        businessName: store.businessName,
+        platform: store.storePlatform
+      }
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: "medium",
+    targetId: record.id,
+    targetType: "growth_approval_packet"
+  };
+
+  record.requestAuditLogId = auditLog.id;
+  state.growthApprovalPackets.unshift(record);
+  state.auditLogs.unshift(auditLog);
+
+  return reply.code(201).send({
+    approval: publicGrowthApprovalPacket(record),
+    auditLogId: auditLog.id,
+    packet
+  });
+});
+
+function reviewMemoryGrowthApproval(request: FastifyRequest, reply: FastifyReply, status: GrowthApprovalPacketRecord["status"]) {
+  const user = currentUserOrThrow(request);
+  const { packetId, storeId } = request.params as { packetId: string; storeId: string };
+  const body = request.body as { note?: string };
+  const record = state.growthApprovalPackets.find((item) => (
+    item.id === packetId && item.storeId === storeId && item.userId === user.id
+  ));
+
+  if (!record) {
+    return reply.code(404).send({ error: "Not Found", message: "Growth approval packet was not found." });
+  }
+
+  if (record.status !== "pending") {
+    return reply.code(409).send({
+      error: "Conflict",
+      message: `This growth approval packet is already ${growthApprovalStatusLabel(record.status).toLowerCase()}.`
+    });
+  }
+
+  record.status = status;
+  record.reviewedAt = now();
+  record.reviewedById = user.id;
+  record.reviewNote = body.note?.trim() || null;
+  record.updatedAt = now();
+
+  const auditLog = {
+    action: status === "approved" ? "growth.approval.approved" : "growth.approval.rejected",
+    createdAt: now(),
+    entry: {
+      externalExecution: false,
+      note: record.reviewNote,
+      packet: record.packet,
+      packetId: record.id,
+      reviewStatus: status
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: status === "approved" ? "medium" : "low",
+    targetId: record.id,
+    targetType: "growth_approval_packet"
+  };
+
+  record.reviewAuditLogId = auditLog.id;
+  state.auditLogs.unshift(auditLog);
+
+  return reply.send({
+    approval: publicGrowthApprovalPacket(record),
+    auditLogId: auditLog.id,
+    message: status === "approved"
+      ? "Growth packet approved for preparation only. No external action executed."
+      : "Growth packet rejected. No external action executed."
+  });
+}
+
+app.post("/api/v1/merch/stores/:storeId/growth-approvals/:packetId/approve", { preHandler: requireAuth }, async (request, reply) => (
+  reviewMemoryGrowthApproval(request, reply, "approved")
+));
+
+app.post("/api/v1/merch/stores/:storeId/growth-approvals/:packetId/reject", { preHandler: requireAuth }, async (request, reply) => (
+  reviewMemoryGrowthApproval(request, reply, "rejected")
+));
+
+app.get("/api/v1/merch/stores/:storeId/growth-approvals/:packetId/orchestration-preview", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { packetId, storeId } = request.params as { packetId: string; storeId: string };
+  const record = state.growthApprovalPackets.find((item) => (
+    item.id === packetId && item.storeId === storeId && item.userId === user.id
+  ));
+
+  if (!record) {
+    return reply.code(404).send({ error: "Not Found", message: "Growth approval packet was not found." });
+  }
+
+  if (record.status !== "approved") {
+    return reply.code(409).send({
+      error: "Conflict",
+      message: "Approve the growth packet before previewing the locked orchestration handoff."
+    });
+  }
+
+  const preview = buildGrowthOrchestrationPreview(record.packet);
+  const auditLog = {
+    action: "growth.orchestration.previewed",
+    createdAt: now(),
+    entry: {
+      externalExecution: false,
+      packetId: record.id,
+      preview
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: "low",
+    targetId: record.id,
+    targetType: "growth_approval_packet"
+  };
+
+  state.auditLogs.unshift(auditLog);
+
+  return {
+    auditLogId: auditLog.id,
+    preview
+  };
 });
 
 app.get("/api/v1/merch/stores/:storeId/reports/:reportType", { preHandler: requireAuth }, async (request, reply) => {
@@ -1057,6 +1563,14 @@ app.get("/api/v1/ai/conversations", { preHandler: requireAuth }, async (request)
   return { items };
 });
 
+app.get("/api/v1/ai/usage", { preHandler: requireAuth }, async (request) => {
+  const user = currentUserOrThrow(request);
+
+  return {
+    summary: aiUsageSummary(user.id)
+  };
+});
+
 app.post("/api/v1/ai/conversations/import", { preHandler: requireAuth }, async (request, reply) => {
   const user = currentUserOrThrow(request);
   const body = request.body as { conversations?: Array<{ messages?: Message[]; title?: string }> };
@@ -1094,7 +1608,7 @@ app.delete("/api/v1/ai/conversations/:conversationId", { preHandler: requireAuth
   return { ok: true };
 });
 
-async function chatReply(request: FastifyRequest) {
+async function chatReply(request: FastifyRequest, reply: FastifyReply) {
   const user = currentUserOrThrow(request);
   const body = request.body as { conversationId?: string; message?: string; prompt?: string; screenshot?: string };
   const text = body.message ?? body.prompt ?? "";
@@ -1106,6 +1620,17 @@ async function chatReply(request: FastifyRequest) {
     isDevelopmentStatusRequest,
     isDevelopmentWriteActionRequest
   } = await import("./services/developmentConnections.js");
+  const requestKind = body.screenshot
+    ? "screen"
+    : isDevelopmentWriteActionRequest(text)
+      ? "development_write_refusal"
+      : isDevelopmentStatusRequest(text) ? "development_status" : "chat";
+  const usagePreflight = assertAiMemoryUsage(user.id, requestKind, reply);
+
+  if (!usagePreflight) {
+    return;
+  }
+
   const brainDecision = await createProviderBackedAiDecision(text);
   const brainPlan = brainDecision.plan;
   const conversation = body.conversationId && state.conversations.get(body.conversationId)?.userId === user.id
@@ -1156,6 +1681,19 @@ async function chatReply(request: FastifyRequest) {
   };
   conversation.messages.push(assistantMessage);
   conversation.updatedAt = assistantMessage.createdAt;
+  const isDevelopmentOnlyUsage = requestKind === "development_status" || requestKind === "development_write_refusal";
+  const usedLocalFallback = !isDevelopmentOnlyUsage && !openAiApiKey;
+  const usageEvent: AiUsageEvent = {
+    createdAt: now(),
+    estimatedCostCents: usagePreflight.estimatedCostCents,
+    id: id("usage"),
+    modelName: isDevelopmentOnlyUsage ? "read-only-development-monitor" : usedLocalFallback ? "local-fallback" : openAiModel,
+    providerName: isDevelopmentOnlyUsage ? "ENTRAL Development Monitor" : "OpenAI",
+    requestKind,
+    usedLocalFallback,
+    userId: user.id
+  };
+  state.aiUsageEvents.unshift(usageEvent);
   const brainAuditEntry = createAiAuditEntry({
     errors: brainDecision.errors,
     executionResult: body.screenshot
@@ -1176,6 +1714,11 @@ async function chatReply(request: FastifyRequest) {
       provider: "OpenAI",
       providerStatus: brainDecision.provider.connectionStatus,
       screenshotStored: false,
+      usage: {
+        estimatedCostCents: usageEvent.estimatedCostCents,
+        eventId: usageEvent.id,
+        requestKind
+      },
       userMessage: text
     },
     entryHash: id("hash"),
@@ -1219,6 +1762,11 @@ async function chatReply(request: FastifyRequest) {
     brain: {
       auditEntry: brainAuditEntry,
       plan: brainPlan
+    },
+    usage: {
+      estimatedCostCents: usageEvent.estimatedCostCents,
+      eventId: usageEvent.id,
+      summary: aiUsageSummary(user.id)
     }
   };
 }
@@ -1418,7 +1966,7 @@ app.post("/api/v1/agents/:agentId/assign", { preHandler: requireAuth }, async (r
     completedAt: now(),
     id: id("agent_task"),
     result: {
-      recommendation: "Use the real backend for persistent autonomous execution.",
+      recommendation: "Use the real backend for persistent background agent execution.",
       summary: "Dev memory agent completed the task immediately."
     },
     status: "completed",

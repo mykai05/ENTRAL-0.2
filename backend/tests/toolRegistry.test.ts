@@ -64,4 +64,13 @@ describe("backend Tool Registry", () => {
     expect(result.message).toContain("No external system was contacted");
     expect(result.simulatedResult).toContain("Prepare Shopify launch");
   });
+
+  it("keeps external-tool copy behind approval language", async () => {
+    const { getToolRegistry, getToolById } = await import("../src/services/toolRegistry.js");
+    const registryCopy = JSON.stringify(getToolRegistry()).toLowerCase();
+
+    expect(registryCopy).not.toMatch(/\btor\b/);
+    expect(getToolById("shopify")?.description).toContain("after approval");
+    expect(getToolById("social-publisher")?.description).toContain("explicit approval");
+  });
 });

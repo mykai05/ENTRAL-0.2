@@ -5,6 +5,7 @@ import { Play } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
 import { automationFormSchema } from "../lib/validation";
 import { Button } from "./Button";
+import { ModeBadge } from "./ModeStatus";
 import { useToast } from "./ToastProvider";
 
 type AutomationFormProps = {
@@ -64,6 +65,10 @@ export function AutomationForm({ onCreated }: AutomationFormProps) {
 
   return (
     <form className="automation-form" onSubmit={handleSubmit} noValidate>
+      <p className="surface-mode-note" role="note">
+        <ModeBadge mode="real">Real queue</ModeBadge>
+        <span>Jobs inspect public URLs, are logged, and can be canceled or retried. External writes remain approval-gated.</span>
+      </p>
       <div>
         <label htmlFor="automation-url">URL</label>
         <input

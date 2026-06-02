@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import {
@@ -11,6 +11,13 @@ import {
 import { openAiChatService, createProviderBackedAiDecision, type AiReply, type AiService } from "../services/openaiService.js";
 import { createAiAuditEntry, type AiActionPlan } from "../services/aiBrain.js";
 import { recordAuditLog } from "../services/audit.js";
+import {
+  AiUsageLimitError,
+  assertAiUsageAllowed,
+  getAiUsageSummary,
+  recordAiUsageEvent,
+  type AiUsageRequestKind
+} from "../services/aiUsage.js";
 import {
   buildDevelopmentStatusAuditEntry,
   createDevelopmentStatusReport,
@@ -34,6 +41,15 @@ function auditSeverityFor(plan: AiActionPlan) {
   return "info";
 }
 
+function sendAiUsageLimit(reply: FastifyReply, error: AiUsageLimitError) {
+  return reply.code(error.statusCode).send({
+    error: "Usage Limit Reached",
+    message: error.message,
+    mode: "real",
+    summary: error.summary
+  });
+}
+
 async function assertConversationOwner(conversationId: string, userId: string) {
   return prisma.conversation.findFirst({
     where: {
@@ -45,6 +61,18 @@ async function assertConversationOwner(conversationId: string, userId: string) {
 
 export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = {}) {
   const aiService = options.aiService ?? openAiChatService;
+
+  app.get("/ai/usage", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    return reply.send({
+      summary: await getAiUsageSummary(currentUser.sub)
+    });
+  });
 
   app.get("/ai/conversations", { preHandler: requireAuth }, async (request, reply) => {
     const currentUser = request.user;
@@ -196,6 +224,21 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
     }
 
     const input = chatMessageSchema.parse(request.body);
+    const requestKind: AiUsageRequestKind = isDevelopmentWriteActionRequest(input.message)
+      ? "development_write_refusal"
+      : isDevelopmentStatusRequest(input.message) ? "development_status" : "chat";
+    let usagePreflight: Awaited<ReturnType<typeof assertAiUsageAllowed>>;
+
+    try {
+      usagePreflight = await assertAiUsageAllowed(currentUser.sub, requestKind);
+    } catch (error) {
+      if (error instanceof AiUsageLimitError) {
+        return sendAiUsageLimit(reply, error);
+      }
+
+      throw error;
+    }
+
     const startedAt = performance.now();
     const brainDecision = await createProviderBackedAiDecision(input.message);
     const brainPlan = brainDecision.plan;
@@ -290,6 +333,22 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       where: { id: result.conversation.id },
       data: { updatedAt: new Date() }
     });
+    const usageEvent = await recordAiUsageEvent({
+      estimatedCostCents: usagePreflight.estimatedCostCents,
+      metadata: {
+        authorizationRequired: brainPlan.authorizationRequired,
+        intent: brainPlan.intent,
+        riskLevel: brainPlan.riskLevel,
+        source: brainDecision.source,
+        toolsRequired: brainPlan.toolsRequired
+      },
+      modelName: aiReply.model,
+      providerName: aiReply.providerName,
+      requestId: request.id,
+      requestKind,
+      usedLocalFallback: aiReply.usedLocalFallback,
+      userId: currentUser.sub
+    });
 
     const brainAuditEntry = createAiAuditEntry({
       errors: brainDecision.errors,
@@ -314,6 +373,11 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         plan: brainPlan,
         provider: aiReply.providerName,
         providerStatus: brainDecision.provider.connectionStatus,
+        usage: {
+          estimatedCostCents: usageEvent.estimatedCostCents,
+          eventId: usageEvent.id,
+          requestKind
+        },
         userMessage: input.message,
         usedLocalFallback: aiReply.usedLocalFallback
       },
@@ -339,6 +403,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       toolsRequired: brainPlan.toolsRequired,
       usedLocalFallback: aiReply.usedLocalFallback,
       aiDecisionSource: brainDecision.source,
+      estimatedCostCents: usageEvent.estimatedCostCents,
       latencyMs: Math.round(performance.now() - startedAt)
     }, "ENTRAL command response completed");
 
@@ -355,6 +420,11 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       brain: {
         auditEntry: brainAuditEntry,
         plan: brainPlan
+      },
+      usage: {
+        estimatedCostCents: usageEvent.estimatedCostCents,
+        eventId: usageEvent.id,
+        summary: await getAiUsageSummary(currentUser.sub)
       }
     });
   });
@@ -379,6 +449,18 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
     }
 
     const input = screenInsightSchema.parse(request.body);
+    let usagePreflight: Awaited<ReturnType<typeof assertAiUsageAllowed>>;
+
+    try {
+      usagePreflight = await assertAiUsageAllowed(currentUser.sub, "screen");
+    } catch (error) {
+      if (error instanceof AiUsageLimitError) {
+        return sendAiUsageLimit(reply, error);
+      }
+
+      throw error;
+    }
+
     const startedAt = performance.now();
     const brainDecision = await createProviderBackedAiDecision(input.message);
     const brainPlan = brainDecision.plan;
@@ -447,6 +529,22 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       where: { id: result.conversation.id },
       data: { updatedAt: new Date() }
     });
+    const usageEvent = await recordAiUsageEvent({
+      estimatedCostCents: usagePreflight.estimatedCostCents,
+      metadata: {
+        authorizationRequired: brainPlan.authorizationRequired,
+        intent: brainPlan.intent,
+        riskLevel: brainPlan.riskLevel,
+        source: brainDecision.source,
+        toolsRequired: brainPlan.toolsRequired
+      },
+      modelName: aiReply.model,
+      providerName: aiReply.providerName,
+      requestId: request.id,
+      requestKind: "screen",
+      usedLocalFallback: aiReply.usedLocalFallback,
+      userId: currentUser.sub
+    });
 
     const brainAuditEntry = createAiAuditEntry({
       errors: brainDecision.errors,
@@ -470,6 +568,11 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         provider: aiReply.providerName,
         providerStatus: brainDecision.provider.connectionStatus,
         screenshotStored: false,
+        usage: {
+          estimatedCostCents: usageEvent.estimatedCostCents,
+          eventId: usageEvent.id,
+          requestKind: "screen"
+        },
         userMessage: input.message,
         usedLocalFallback: aiReply.usedLocalFallback
       },
@@ -491,6 +594,7 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       openAiRequestId: aiReply.requestId,
       usedLocalFallback: aiReply.usedLocalFallback,
       aiDecisionSource: brainDecision.source,
+      estimatedCostCents: usageEvent.estimatedCostCents,
       latencyMs: Math.round(performance.now() - startedAt)
     }, "AI screen analysis completed");
 
@@ -507,6 +611,11 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       brain: {
         auditEntry: brainAuditEntry,
         plan: brainPlan
+      },
+      usage: {
+        estimatedCostCents: usageEvent.estimatedCostCents,
+        eventId: usageEvent.id,
+        summary: await getAiUsageSummary(currentUser.sub)
       }
     });
   });

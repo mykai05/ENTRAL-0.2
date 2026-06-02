@@ -223,7 +223,7 @@ const toolBlueprints: ToolBlueprint[] = [
   {
     availableActions: ["store.setup.mock", "product.publish.future"],
     category: "E-commerce",
-    description: "Shopify store connection for future storefront operations.",
+    description: "Shopify store connection for future storefront preparation after approval.",
     id: "shopify",
     name: "Shopify",
     requiredCredentials: ["SHOPIFY_ADMIN_TOKEN", "SHOPIFY_SHOP_DOMAIN"],

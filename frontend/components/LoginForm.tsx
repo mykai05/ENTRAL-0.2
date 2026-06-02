@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import React from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
@@ -16,8 +17,8 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
+  const [verificationEmail, setVerificationEmail] = useState("");
   const [isReady, setIsReady] = useState(false);
-  const [resetNotice, setResetNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export function LoginForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
-    setResetNotice("");
+    setVerificationEmail("");
     setErrors({});
 
     const formData = new FormData(event.currentTarget);
@@ -53,23 +54,17 @@ export function LoginForm() {
       router.refresh();
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Unable to sign in.");
+      if (error instanceof ApiError && error.status === 403) {
+        setVerificationEmail(parsed.data.email);
+      }
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  function handleForgotPassword(event: React.MouseEvent<HTMLButtonElement>) {
-    const form = event.currentTarget.form;
-    const email = form ? new FormData(form).get("email")?.toString().trim() : "";
-
-    setFormError("");
-    setResetNotice(email
-      ? "Password reset is not connected to email delivery yet. Contact your workspace admin to reset this account."
-      : "Enter your email first, then use forgot password to request account recovery.");
-  }
-
   return (
     <form className="form-stack" onSubmit={handleSubmit} noValidate>
+      <p className="form-notice">Real account access. Email verification is required before the command center opens.</p>
       <TextField
         id="email"
         label="Email"
@@ -91,12 +86,14 @@ export function LoginForm() {
         required
       />
       <div className="auth-form-options">
-        <button type="button" className="auth-text-button" onClick={handleForgotPassword}>
-          Forgot password?
-        </button>
+        <Link className="auth-text-button" href="/forgot-password">Forgot password?</Link>
       </div>
-      {resetNotice ? <p className="form-notice" role="status">{resetNotice}</p> : null}
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
+      {verificationEmail ? (
+        <p className="form-notice">
+          Need another link? <Link href={`/verify-email?email=${encodeURIComponent(verificationEmail)}`}>Request verification email</Link>.
+        </p>
+      ) : null}
       <Button type="submit" disabled={!isReady || isSubmitting}>
         <LogIn aria-hidden="true" size={20} />
         {!isReady ? "Loading..." : isSubmitting ? "Signing in..." : "Sign in"}

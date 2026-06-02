@@ -275,6 +275,136 @@ export type LaunchPackage = {
   storeBuildChecklist: string[];
 };
 
+export type GrowthDraft = {
+  approvalStatus: "Draft - needs approval";
+  channel: "Social" | "Shopify" | "Ads" | "Analytics";
+  copy: string;
+  title: string;
+};
+
+export type GrowthCampaignDraft = {
+  audience: string;
+  budgetGuardrail: string;
+  name: string;
+  objective: string;
+  status: "Draft - spend locked";
+};
+
+export type GrowthAnalyticsLoop = {
+  cadence: string;
+  guardrail: string;
+  metric: string;
+  source: string;
+};
+
+export type GrowthPlan = {
+  adCampaignDrafts: GrowthCampaignDraft[];
+  analyticsLoop: GrowthAnalyticsLoop[];
+  approvalQueue: string[];
+  auditEvents: string[];
+  blockedActions: string[];
+  commercePrep: string[];
+  contentDrafts: GrowthDraft[];
+  mode: "Mock Mode";
+  readinessScore: number;
+  summary: string;
+};
+
+export type GrowthApprovalAction = {
+  approvalStatus: "Pending human approval";
+  channel: "Social" | "Shopify" | "Ads" | "Analytics";
+  executionState: "Locked - no external action";
+  id: string;
+  requiredControls: string[];
+  scheduledFor: string | null;
+  summary: string;
+  title: string;
+};
+
+export type GrowthApprovalPacket = {
+  actions: GrowthApprovalAction[];
+  auditEvents: string[];
+  blockedActions: string[];
+  businessName: string;
+  costGuardrail: string;
+  createdAt: string;
+  humanApprovalRequired: true;
+  id: string;
+  logging: string;
+  mode: "Mock Mode";
+  note: string | null;
+  scheduledFor: string | null;
+  status: "Pending approval";
+  storeId: string;
+  summary: string;
+};
+
+export type GrowthApprovalRecord = {
+  auditLogId: string | null;
+  createdAt: string;
+  executionState: "No external action executed";
+  id: string;
+  mode: "Mock Mode";
+  packet: GrowthApprovalPacket;
+  requestAuditLogId: string | null;
+  reviewAuditLogId: string | null;
+  reviewedAt: string | null;
+  reviewedById: string | null;
+  reviewNote: string | null;
+  scheduledFor: string | null;
+  status: "pending" | "approved" | "rejected";
+  statusLabel: "Pending approval" | "Approved - execution still locked" | "Rejected";
+  updatedAt: string;
+};
+
+export type GrowthApprovalResponse = {
+  approval: GrowthApprovalRecord;
+  auditLogId: string;
+  packet: GrowthApprovalPacket;
+};
+
+export type GrowthApprovalListResponse = {
+  items: GrowthApprovalRecord[];
+};
+
+export type GrowthApprovalReviewResponse = {
+  approval: GrowthApprovalRecord;
+  auditLogId: string;
+  message: string;
+};
+
+export type GrowthOrchestrationStep = {
+  actionId: string;
+  channel: "Social" | "Shopify" | "Ads" | "Analytics";
+  checklist: string[];
+  executionState: "Locked - no external action";
+  guardrail: string;
+  scheduledFor: string | null;
+  status: "Ready for manual handoff";
+  title: string;
+};
+
+export type GrowthOrchestrationPreview = {
+  approvalPacketId: string;
+  auditEvents: string[];
+  businessName: string;
+  costGuardrail: string;
+  estimatedAiCostCents: 0;
+  estimatedExternalSpendCents: 0;
+  externalExecution: false;
+  mode: "Read-only orchestration preview";
+  providerContacted: false;
+  scheduledFor: string | null;
+  status: "Approved - execution locked";
+  steps: GrowthOrchestrationStep[];
+  summary: string;
+};
+
+export type GrowthOrchestrationPreviewResponse = {
+  auditLogId: string;
+  preview: GrowthOrchestrationPreview;
+};
+
 export function formatMerchCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     currency: "USD",

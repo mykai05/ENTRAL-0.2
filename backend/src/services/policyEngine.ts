@@ -59,7 +59,7 @@ const defaultPolicies: Array<{
     severity: "high"
   },
   {
-    description: "Caps agent task volume to keep runaway autonomy visible.",
+    description: "Caps agent task volume to keep runaway scheduled work visible.",
     name: "Default per-agent quota",
     rule: {
       kind: "agent_quota",
@@ -136,7 +136,7 @@ async function evaluateRule(policy: PolicyRecord, rule: PolicyRule, subject: Age
   }
 
   if (rule.kind === "manual_approval_required" && subject.scheduled && rule.actions.some((action) => action === subject.action)) {
-    return `Autonomous ${subject.action} tasks require manual approval.`;
+    return `Scheduled ${subject.action} tasks require manual approval.`;
   }
 
   return null;

@@ -25,12 +25,13 @@ export function capitalizeDisplayName(name: string) {
   return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
 }
 
-export function publicUser(user: { id: string; name: string; email: string; role: string }) {
+export function publicUser(user: { emailVerifiedAt?: Date | null; id: string; name: string; email: string; role: string }) {
   return {
     id: user.id,
     name: capitalizeDisplayName(user.name),
     email: user.email,
-    role: normalizeUserRole(user.role)
+    role: normalizeUserRole(user.role),
+    emailVerified: Boolean(user.emailVerifiedAt)
   };
 }
 

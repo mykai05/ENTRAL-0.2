@@ -135,7 +135,7 @@ export function AgentDetail({
         {agent.webhookUrl ? <p>Default webhook: {agent.webhookUrl}</p> : null}
       </div>
       <div className="agent-section">
-        <h3>Autonomous schedules</h3>
+        <h3>Background schedules</h3>
         {schedules.length === 0 ? <p>No schedules yet.</p> : schedules.map((schedule) => (
           <article className="agent-task-row" key={schedule.id}>
             <strong>{schedule.title}</strong>

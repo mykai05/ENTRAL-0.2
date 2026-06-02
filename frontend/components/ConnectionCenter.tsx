@@ -12,6 +12,7 @@ import {
   type ToolRegistryEntry,
   type ToolTestResult
 } from "../lib/tool-registry";
+import { ModeStatusStrip } from "./ModeStatus";
 
 type ToolsResponse = {
   items: ToolRegistryEntry[];
@@ -58,6 +59,12 @@ function statusClass(status: ToolRegistryEntry["status"]) {
 
 function riskClass(risk: ToolRegistryEntry["riskLevel"]) {
   return risk.toLowerCase();
+}
+
+function approvalLabel(tool: ToolRegistryEntry) {
+  if (tool.requiresAuthorization) return "Approval required";
+  if (tool.readOnly || tool.writeActionsEnabled === false) return "Read-only scope";
+  return "Standard approval policy";
 }
 
 export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, onRegistryLoad }: ConnectionCenterProps) {
@@ -152,6 +159,28 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
           {isLoading ? "Syncing" : `${tools.length} tools`}
         </span>
       </header>
+      <ModeStatusStrip
+        ariaLabel="Connection mode status"
+        className="connection-mode-strip"
+        compact
+        items={[
+          {
+            description: "Connected services show provider-backed status and stay logged.",
+            label: "Real connections",
+            mode: "real"
+          },
+          {
+            description: "Missing credentials use local simulations before trust.",
+            label: "Mock Mode",
+            mode: "mock"
+          },
+          {
+            description: "Repository, deployment, and provider health can run without write access.",
+            label: "Read-only checks",
+            mode: "read-only"
+          }
+        ]}
+      />
 
       {developmentStatus ? (
         <section className={`development-status-panel health-${developmentHealthClass}`} aria-label="ENTRAL development status">
@@ -209,7 +238,7 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
                 </div>
                 <div className="connection-tool-meta">
                   <span className={`connection-risk risk-${riskClass(tool.riskLevel)}`}>{tool.riskLevel} risk</span>
-                  <span>{tool.requiresAuthorization ? "Approval required" : "No approval gate"}</span>
+                  <span>{approvalLabel(tool)}</span>
                   {tool.readOnly ? <span className="connection-readonly-badge">Read-only connection</span> : null}
                   {tool.writeActionsEnabled === false ? <span>No write access enabled</span> : null}
                   {tool.providerName ? <span>{tool.providerName} / {tool.modelName ?? "default model"}</span> : null}

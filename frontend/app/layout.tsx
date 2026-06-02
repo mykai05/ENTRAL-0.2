@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: "Entral",
     template: "%s | Entral"
   },
-  description: "A clean autonomous command workspace for directives, tasks, agents, and governance.",
+  description: "An AI command center for organizing, planning, monitoring, and safely preparing business operations.",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Entral",
-    description: "Command directives, automation tasks, multi-agent orchestration, and governance in one launch-ready workspace.",
+    description: "An AI command center for organizing, planning, monitoring, and safely preparing business operations.",
     images: [{ url: "/icon.svg", width: 512, height: 512, alt: "Entral command emblem logo" }],
     siteName: "Entral",
     type: "website"
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "Entral",
-    description: "Command directives, automation tasks, multi-agent orchestration, and governance.",
+    description: "An AI command center for organizing, planning, monitoring, and safely preparing business operations.",
     images: ["/icon.svg"]
   }
 };

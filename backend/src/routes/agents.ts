@@ -329,7 +329,7 @@ export async function agentRoutes(app: FastifyInstance) {
     }
 
     if (!agent.runInBackground) {
-      return reply.code(409).send({ error: "Conflict", message: "Enable Run in Background before assigning autonomous work." });
+      return reply.code(409).send({ error: "Conflict", message: "Enable Run in Background before assigning background agent work." });
     }
 
     const task = await prisma.agentTask.create({
@@ -403,7 +403,7 @@ export async function agentRoutes(app: FastifyInstance) {
     }
 
     if (agent.isPaused) {
-      return reply.code(409).send({ error: "Conflict", message: "Paused agents cannot receive autonomous schedules." });
+      return reply.code(409).send({ error: "Conflict", message: "Paused agents cannot receive background schedules." });
     }
 
     if (!agent.runInBackground) {
@@ -430,7 +430,7 @@ export async function agentRoutes(app: FastifyInstance) {
     await prisma.agentLog.create({
       data: {
         agentId: agent.id,
-        message: "Autonomous schedule created"
+        message: "Background schedule created"
       }
     });
     await recordAuditLog({

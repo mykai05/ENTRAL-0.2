@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BrandMark } from "./BrandMark";
 
 type AuthCardProps = {
+  modeLabel?: string;
   title: string;
   subtitle: string;
   footerLabel: string;
@@ -11,7 +12,15 @@ type AuthCardProps = {
   children: ReactNode;
 };
 
-export function AuthCard({ title, subtitle, footerLabel, footerHref, footerText, children }: AuthCardProps) {
+export function AuthCard({
+  modeLabel = "Real account action",
+  title,
+  subtitle,
+  footerLabel,
+  footerHref,
+  footerText,
+  children
+}: AuthCardProps) {
   return (
     <main className="auth-shell">
       <section className="auth-panel" aria-labelledby="auth-title">
@@ -19,6 +28,7 @@ export function AuthCard({ title, subtitle, footerLabel, footerHref, footerText,
           <div className="auth-brand-row">
             <BrandMark />
           </div>
+          <p className="auth-mode-label">{modeLabel}</p>
           <h1 id="auth-title">{title}</h1>
           <p>{subtitle}</p>
         </div>

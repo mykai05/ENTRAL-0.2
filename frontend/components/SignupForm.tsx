@@ -47,7 +47,7 @@ export function SignupForm() {
         json: parsed.data
       });
 
-      router.push("/dashboard");
+      router.push(`/verify-email?email=${encodeURIComponent(parsed.data.email)}`);
       router.refresh();
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Unable to create account.");
@@ -58,6 +58,10 @@ export function SignupForm() {
 
   return (
     <form className="form-stack" onSubmit={handleSubmit} noValidate>
+      <p className="form-notice">
+        Private beta account creation. A real verification email is required before command-center access, and
+        disconnected systems remain mock or read-only until explicitly configured.
+      </p>
       <TextField
         id="name"
         label="Name"

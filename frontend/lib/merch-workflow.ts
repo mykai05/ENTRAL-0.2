@@ -96,14 +96,14 @@ export const merchLaunchWorkflowSteps: MerchWorkflowStep[] = [
   },
   {
     commanderName: "Store Launch Commander",
-    description: "Build the selected Etsy, Shopify, or POD-backed storefront and connect required production systems.",
+    description: "Prepare the selected Etsy, Shopify, or POD-backed storefront and list required production connections for approval.",
     id: "store-build",
     name: "Store Build",
     soldierName: "Shopify Setup Soldier"
   },
   {
     commanderName: "Store Launch Commander",
-    description: "Publish products, run launch QA, confirm checklist completion, and prepare go-live status.",
+    description: "Prepare product publishing steps, run launch QA, confirm checklist completion, and queue go-live status for approval.",
     id: "launch",
     name: "Launch",
     soldierName: "Launch QA Soldier"

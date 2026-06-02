@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
 
   if ((isDashboard || isChat || isAutomations || isAgents || isAdmin) && !token) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/onboarding";
     url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
