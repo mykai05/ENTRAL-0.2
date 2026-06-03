@@ -6740,12 +6740,12 @@ function executeMemoryRevenueBusinessFleetGapAcceleration(userId: string, body: 
 
 function memoryRevenueBusinessFleetGapSeedTargets(userId: string, body: Record<string, unknown>) {
   const maxStores = Math.min(25, Math.max(1, Number(body.maxStores ?? 10) || 10));
-  const sourceKeys = Array.isArray(body.sourceKeys)
+  const requestedKeys = Array.isArray(body.sourceKeys)
     ? body.sourceKeys.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : typeof body.sourceKeys === "string"
       ? body.sourceKeys.split(",").map((item) => item.trim()).filter(Boolean)
       : [];
-  const requestedSourceKeys = new Set(sourceKeys);
+  const requestedSourceKeys = new Set(requestedKeys);
   const opportunities = state.revenueOpportunities
     .filter((opportunity) => opportunity.userId === userId && opportunity.storeId)
     .filter((opportunity) => requestedSourceKeys.size > 0

@@ -1398,6 +1398,15 @@ describe("Revenue Engine", () => {
     expect(plan.portfolioSignal.scalePressure.assets[0]).toMatchObject({
       recommendation: "scale"
     });
+    expect(plan.advisoryContext).toMatchObject({
+      advisoryOnly: true,
+      posture: "scale_review",
+      signal: "scale_reinvestment_review",
+      source: "revenue_engine_scored_portfolio"
+    });
+    expect(plan.advisoryContext.scalePressure.pressureScore).toBe(plan.portfolioSignal.scalePressure.pressureScore);
+    expect(plan.advisoryContext.killPressure.pressureScore).toBe(plan.portfolioSignal.killPressure.pressureScore);
+    expect(plan.advisoryContext.summary).toContain("Revenue Engine scoring is attached as advisory finance context");
     expect(plan.portfolioSignal.killPressure).toMatchObject({
       advisoryOnly: true,
       assets: [],
@@ -1573,6 +1582,13 @@ describe("Revenue Engine", () => {
       assetId: rejectedProduct.id,
       recommendation: "kill"
     });
+    expect(plan.advisoryContext).toMatchObject({
+      advisoryOnly: true,
+      posture: "defensive_hold",
+      signal: "defensive_hold",
+      source: "revenue_engine_scored_portfolio"
+    });
+    expect(plan.advisoryContext.killPressure.pressureScore).toBe(plan.portfolioSignal.killPressure.pressureScore);
     expect(plan.totals.portfolioKillPressure).toBe(plan.portfolioSignal.killPressure.pressureScore);
     expect(scalingBucket).toMatchObject({
       amount: 60,

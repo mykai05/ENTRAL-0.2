@@ -3851,7 +3851,18 @@ export type FinancialPortfolioSignal = {
   trackedAssets: number;
 };
 
+export type FinancialAdvisoryContext = {
+  advisoryOnly: true;
+  killPressure: FinancialPortfolioPressure;
+  posture: "defensive_hold" | "scale_review" | "watch";
+  scalePressure: FinancialPortfolioPressure;
+  signal: FinancialPortfolioSignal["recommendation"];
+  source: "revenue_engine_scored_portfolio";
+  summary: string;
+};
+
 export type FinancialOrchestratorPlan = {
+  advisoryContext: FinancialAdvisoryContext;
   allocationBuckets: FinancialAllocationBucket[];
   auditEvents: string[];
   blockedExternalActions: string[];

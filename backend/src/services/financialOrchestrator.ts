@@ -196,7 +196,18 @@ export type FinancialPortfolioSignal = {
   trackedAssets: number;
 };
 
+export type FinancialAdvisoryContext = {
+  advisoryOnly: true;
+  killPressure: FinancialPortfolioPressure;
+  posture: "defensive_hold" | "scale_review" | "watch";
+  scalePressure: FinancialPortfolioPressure;
+  signal: FinancialPortfolioSignal["recommendation"];
+  source: "revenue_engine_scored_portfolio";
+  summary: string;
+};
+
 export type FinancialOrchestratorPlan = {
+  advisoryContext: FinancialAdvisoryContext;
   allocationBuckets: FinancialAllocationBucket[];
   auditEvents: string[];
   blockedExternalActions: string[];
@@ -551,6 +562,24 @@ function portfolioSignalFor(portfolio: RevenueAssetPortfolio | undefined): Finan
   };
 }
 
+function advisoryContextFor(portfolioSignal: FinancialPortfolioSignal): FinancialAdvisoryContext {
+  const posture: FinancialAdvisoryContext["posture"] = portfolioSignal.recommendation === "defensive_hold"
+    ? "defensive_hold"
+    : portfolioSignal.recommendation === "scale_reinvestment_review"
+      ? "scale_review"
+      : "watch";
+
+  return {
+    advisoryOnly: true,
+    killPressure: portfolioSignal.killPressure,
+    posture,
+    scalePressure: portfolioSignal.scalePressure,
+    signal: portfolioSignal.recommendation,
+    source: "revenue_engine_scored_portfolio",
+    summary: `Revenue Engine scoring is attached as advisory finance context: ${portfolioSignal.scalePressure.level} scale pressure at ${portfolioSignal.scalePressure.pressureScore}/100 and ${portfolioSignal.killPressure.level} kill pressure at ${portfolioSignal.killPressure.pressureScore}/100. ${portfolioSignal.reason}`
+  };
+}
+
 function pressureLevel(score: number): FinancialPortfolioPressureLevel {
   if (score <= 0) return "none";
   if (score >= 75) return "high";
@@ -818,6 +847,7 @@ export function buildFinancialOrchestratorPlan(input: {
   const policyStatus = totalPercent === 100 ? "balanced" : "blocked";
   const policyChecks = policyChecksFor(options, totalPercent, input.snapshots);
   const portfolioSignal = portfolioSignalFor(input.assetPortfolio);
+  const advisoryContext = advisoryContextFor(portfolioSignal);
   const portfolioDefensiveHold = portfolioSignal.recommendation === "defensive_hold";
 
   const allocationBuckets: FinancialAllocationBucket[] = (["scaling", "personal", "buffer"] as const).map((category) => {
@@ -900,6 +930,7 @@ export function buildFinancialOrchestratorPlan(input: {
   const storeIds = new Set(input.snapshots.map((snapshot) => snapshot.storeId));
 
   return {
+    advisoryContext,
     allocationBuckets,
     auditEvents: [
       "Financial Orchestrator plan generated from internal revenue performance snapshots.",

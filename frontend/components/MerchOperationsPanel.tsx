@@ -3430,21 +3430,31 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
               </div>
               <div>
                 <dt>Portfolio Signal</dt>
-                <dd>{financialPlan.portfolioSignal.recommendation.replace(/_/g, " ")}</dd>
+                <dd>{financialPlan.advisoryContext.signal.replace(/_/g, " ")}</dd>
               </div>
               <div>
                 <dt>Scale Pressure</dt>
-                <dd>{financialPlan.portfolioSignal.scalePressure.level} {financialPlan.portfolioSignal.scalePressure.pressureScore}/100</dd>
+                <dd>{financialPlan.advisoryContext.scalePressure.level} {financialPlan.advisoryContext.scalePressure.pressureScore}/100</dd>
               </div>
               <div>
                 <dt>Kill Pressure</dt>
-                <dd>{financialPlan.portfolioSignal.killPressure.level} {financialPlan.portfolioSignal.killPressure.pressureScore}/100</dd>
+                <dd>{financialPlan.advisoryContext.killPressure.level} {financialPlan.advisoryContext.killPressure.pressureScore}/100</dd>
               </div>
               <div>
                 <dt>Asset Commands</dt>
                 <dd>{financialPlan.totals.portfolioAssetCommandsReady}</dd>
               </div>
             </dl>
+
+            <section className="revenue-engine-list" aria-label="Financial advisory context">
+              <h4>Advisory Context</h4>
+              <article>
+                <span>{financialPlan.advisoryContext.posture.replace(/_/g, " ")} / advisory only</span>
+                <strong>Revenue Engine scoring context</strong>
+                <p>{financialPlan.advisoryContext.summary}</p>
+                <small>{financialPlan.advisoryContext.source.replace(/_/g, " ")}</small>
+              </article>
+            </section>
 
             <section className="revenue-engine-list" aria-label="Financial portfolio signal">
               <h4>Portfolio Signal</h4>
@@ -3459,8 +3469,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             <section className="revenue-engine-list" aria-label="Financial portfolio pressure">
               <h4>Portfolio Pressure</h4>
               {[
-                { label: "Scale pressure", pressure: financialPlan.portfolioSignal.scalePressure },
-                { label: "Kill pressure", pressure: financialPlan.portfolioSignal.killPressure }
+                { label: "Scale pressure", pressure: financialPlan.advisoryContext.scalePressure },
+                { label: "Kill pressure", pressure: financialPlan.advisoryContext.killPressure }
               ].map(({ label, pressure }) => (
                 <article key={label}>
                   <span>{pressure.level} / {pressure.pressureScore}/100 / advisory only</span>

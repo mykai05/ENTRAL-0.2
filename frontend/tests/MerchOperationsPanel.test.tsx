@@ -3153,6 +3153,52 @@ const financialPlan: FinancialOrchestratorPlan = {
     scaleRecommendations: 2,
     trackedAssets: 2
   },
+  advisoryContext: {
+    advisoryOnly: true,
+    killPressure: {
+      advisoryOnly: true,
+      assets: [],
+      level: "none",
+      pressureScore: 0,
+      reason: "No scored assets currently create kill pressure for finance allocation.",
+      source: "revenue_engine_scored_portfolio"
+    },
+    posture: "scale_review",
+    scalePressure: {
+      advisoryOnly: true,
+      assets: [
+        {
+          assetId: "product-1",
+          assetName: "Core Tee",
+          assetType: "product",
+          finalRank: 88,
+          profitVelocity: 28.57,
+          reason: "Validated scale asset with excellent rank 88 and 28.57 daily profit velocity.",
+          recommendation: "scale",
+          riskLevel: "low",
+          scoreBand: "excellent"
+        },
+        {
+          assetId: "store-1",
+          assetName: "Iron House Gym",
+          assetType: "store",
+          finalRank: 76,
+          profitVelocity: 14.29,
+          reason: "Validated scale asset with healthy rank 76 and 14.29 daily profit velocity.",
+          recommendation: "scale",
+          riskLevel: "low",
+          scoreBand: "healthy"
+        }
+      ],
+      level: "high",
+      pressureScore: 86,
+      reason: "2 scored assets are pressing for scaling review; top asset Core Tee ranks 88/100 with $28.57/day profit velocity.",
+      source: "revenue_engine_scored_portfolio"
+    },
+    signal: "scale_reinvestment_review",
+    source: "revenue_engine_scored_portfolio",
+    summary: "Revenue Engine scoring is attached as advisory finance context: high scale pressure at 86/100 and none kill pressure at 0/100. 2 scored assets can use scaling capital review with $42.86 daily profit velocity. Scale pressure is high at 86/100."
+  },
   riskFlags: [],
   scalingBudgetQueue: [
     {
@@ -5242,6 +5288,9 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText((content) => content.includes("Core Tee") && content.includes("$60.00"))).toBeInTheDocument();
     expect(screen.getAllByText("Portfolio Signal").length).toBeGreaterThan(0);
     expect(screen.getAllByText("scale reinvestment review").length).toBeGreaterThan(0);
+    expect(screen.getByText("Advisory Context")).toBeInTheDocument();
+    expect(screen.getByText("Revenue Engine scoring context")).toBeInTheDocument();
+    expect(screen.getByText(/Revenue Engine scoring is attached as advisory finance context/)).toBeInTheDocument();
     expect(screen.getByText("Portfolio Pressure")).toBeInTheDocument();
     expect(screen.getByText("Scale pressure")).toBeInTheDocument();
     expect(screen.getByText("Kill pressure")).toBeInTheDocument();
