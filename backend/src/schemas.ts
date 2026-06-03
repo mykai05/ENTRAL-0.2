@@ -146,6 +146,7 @@ export const revenueBusinessFleetGapAccelerationConfirmation = "RUN INTERNAL BUS
 export const revenueBusinessFleetLiveLaunchPackageConfirmation = "RECORD INTERNAL BUSINESS FLEET LIVE LAUNCH PACKAGE";
 export const revenueBusinessFleetProviderApprovalReviewConfirmation = "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS";
 export const revenueMoneyArmyBatchPipelineConfirmation = "RUN INTERNAL MONEY ARMY BATCH PIPELINE";
+export const revenueMoneyArmyGenerateScoreBatchConfirmation = "RECORD INTERNAL MONEY ARMY GENERATE SCORE BATCH";
 export const revenueLaunchChecklistActionBridgeConfirmation = "DISPATCH INTERNAL REVENUE LAUNCH CHECKLIST ACTIONS";
 export const revenueLaunchSprintConfirmation = "RUN INTERNAL REVENUE LAUNCH SPRINT";
 export const revenueFirstCashSprintConfirmation = "RUN INTERNAL FIRST CASH SPRINT";
@@ -463,7 +464,28 @@ export const applyRevenueMoneyArmyBatchPipelineSchema = z.object({
   packetIds: z.array(z.string().trim().min(1).max(160)).max(50).default([]),
   podProvider: merchPodProviderSchema.default("Printify"),
   sourceKeys: z.array(z.string().trim().min(1).max(160)).max(100).default([]),
-  stage: z.enum(["batch_creation", "batch_acceleration", "launch_package", "approval", "deployment"]).optional()
+  stage: z.enum(["generate_score_batch", "batch_creation", "batch_acceleration", "launch_package", "approval", "deployment"]).optional()
+});
+
+const revenueMoneyArmyGenerateScoreBatchFields = {
+  ...revenueEngineThresholdFields,
+  candidateCount: z.coerce.number().int().min(10).max(50).default(25),
+  priceRange: z.object({
+    max: moneyAmountSchema.default(64),
+    min: moneyAmountSchema.default(18)
+  }).default({ max: 64, min: 18 }).refine((range) => range.max >= range.min, "Maximum price must be greater than or equal to minimum price."),
+  productTypes: revenueBusinessFleetSourceKeysQuerySchema.pipe(z.array(z.string().trim().min(1).max(80)).max(12).default([])),
+  riskTolerance: productBatchRiskToleranceSchema.default("Low"),
+  storeIds: revenueBusinessFleetSourceKeysQuerySchema.pipe(z.array(z.string().trim().min(1).max(160)).max(50).default([]))
+};
+
+export const revenueMoneyArmyGenerateScoreBatchQuerySchema = z.object(revenueMoneyArmyGenerateScoreBatchFields);
+
+export const applyRevenueMoneyArmyGenerateScoreBatchSchema = z.object({
+  ...revenueMoneyArmyGenerateScoreBatchFields,
+  confirm: z.literal(revenueMoneyArmyGenerateScoreBatchConfirmation),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500)
 });
 
 export const revenueAssetControlLedgerQuerySchema = z.object({
@@ -1647,6 +1669,8 @@ export type RevenueBusinessFleetProviderApprovalReviewQueryInput = z.infer<typeo
 export type ApplyRevenueBusinessFleetProviderApprovalReviewInput = z.infer<typeof applyRevenueBusinessFleetProviderApprovalReviewSchema>;
 export type RevenueMoneyArmyBatchPipelineQueryInput = z.infer<typeof revenueMoneyArmyBatchPipelineQuerySchema>;
 export type ApplyRevenueMoneyArmyBatchPipelineInput = z.infer<typeof applyRevenueMoneyArmyBatchPipelineSchema>;
+export type RevenueMoneyArmyGenerateScoreBatchQueryInput = z.infer<typeof revenueMoneyArmyGenerateScoreBatchQuerySchema>;
+export type ApplyRevenueMoneyArmyGenerateScoreBatchInput = z.infer<typeof applyRevenueMoneyArmyGenerateScoreBatchSchema>;
 export type RevenueAssetControlLedgerQueryInput = z.infer<typeof revenueAssetControlLedgerQuerySchema>;
 export type RevenueAssetControlRecoveryQueryInput = z.infer<typeof revenueAssetControlRecoveryQuerySchema>;
 export type RevenueAssetReviewQueueQueryInput = z.infer<typeof revenueAssetReviewQueueQuerySchema>;

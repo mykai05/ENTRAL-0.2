@@ -146,6 +146,14 @@ describe("Financial Orchestrator", () => {
     expect(plan.adGrowthAllocation.mode).toBe("organic_first");
     expect(plan.adGrowthAllocation.organicFirstAmount).toBe(75);
     expect(plan.adGrowthAllocation.paidScaleReviewAmount).toBe(0);
+    expect(plan.adGrowthAllocation.pressureDecision).toMatchObject({
+      advisoryOnly: true,
+      decision: "organic_first",
+      killPressureScore: plan.portfolioSignal.killPressure.pressureScore,
+      recommendedSpendPriority: "no_spend",
+      scalePressureScore: plan.portfolioSignal.scalePressure.pressureScore,
+      source: "revenue_engine_scored_portfolio"
+    });
     expect(plan.scalingBudgetQueue[0]).toMatchObject({
       allocationLane: "organic_growth",
       organicFirst: true,

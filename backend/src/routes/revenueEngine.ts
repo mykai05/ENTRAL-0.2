@@ -12,6 +12,7 @@ import {
   applyRevenueBusinessFleetProviderApprovalReviewSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
+  applyRevenueMoneyArmyGenerateScoreBatchSchema,
   applyRevenueMoneyArmyBatchPipelineSchema,
   applyRevenueDigitalProductSchema,
   applyRevenueListingOptimizationSchema,
@@ -59,6 +60,7 @@ import {
   revenueBusinessFleetSchedulerQuerySchema,
   revenueBusinessFleetLaunchGateQuerySchema,
   revenueBusinessFleetProviderApprovalReviewQuerySchema,
+  revenueMoneyArmyGenerateScoreBatchQuerySchema,
   revenueMoneyArmyBatchPipelineQuerySchema,
   revenueEngineQuerySchema,
   revenuePerformanceQuerySchema,
@@ -102,6 +104,7 @@ import {
   type ApplyRevenueBusinessFleetProviderApprovalReviewInput,
   type ApplyRevenueBusinessFleetSeedGapInput,
   type ApplyRevenueBusinessFleetLaunchWaveInput,
+  type ApplyRevenueMoneyArmyGenerateScoreBatchInput,
   type ApplyRevenueMoneyArmyBatchPipelineInput,
   type ApplyFacelessContentPipelineInput,
   type ApplyPortfolioCommandCenterInput,
@@ -147,6 +150,7 @@ import {
   type RevenueBusinessFleetSchedulerQueryInput,
   type RevenueBusinessFleetLaunchGateQueryInput,
   type RevenueBusinessFleetProviderApprovalReviewQueryInput,
+  type RevenueMoneyArmyGenerateScoreBatchQueryInput,
   type RevenueMoneyArmyBatchPipelineQueryInput,
   type RevenueEngineQueryInput,
   type RevenuePerformanceQueryInput,
@@ -258,6 +262,10 @@ import {
   type RevenueMoneyArmyBatchPipelinePlan,
   type RevenueMoneyArmyBatchPipelineStageName
 } from "../services/revenueBusinessFleetScheduler.js";
+import {
+  buildRevenueMoneyArmyGenerateScoreBatchPlan,
+  type RevenueMoneyArmyGenerateScoreBatchPlan
+} from "../services/revenueMoneyArmyGenerateScoreBatch.js";
 import {
   buildRevenueAssetControlRecoveryPlan,
   buildRevenueAssetControlLedgerPlan,
@@ -1810,6 +1818,27 @@ async function buildRevenueMoneyArmyBatchPipelineForUser(
   };
 }
 
+async function buildRevenueMoneyArmyGenerateScoreBatchForUser(
+  userId: string,
+  input: RevenueMoneyArmyGenerateScoreBatchQueryInput | ApplyRevenueMoneyArmyGenerateScoreBatchInput
+): Promise<{ plan: RevenueMoneyArmyGenerateScoreBatchPlan }> {
+  const [stores, currentPortfolio] = await Promise.all([
+    loadPortfolioForUser(userId),
+    buildAssetPortfolioForUser(userId, revenueEngineQuerySchema.parse(input))
+  ]);
+  const storeSnapshots = stores.map((store) => storeSnapshot(store));
+  const productSnapshots = stores.flatMap((store) => store.products.map(productSnapshot));
+
+  return {
+    plan: buildRevenueMoneyArmyGenerateScoreBatchPlan({
+      currentPortfolio,
+      options: input,
+      products: productSnapshots,
+      stores: storeSnapshots
+    })
+  };
+}
+
 function nextMoneyArmyStage(
   pipeline: RevenueMoneyArmyBatchPipelinePlan,
   requestedStage?: RevenueMoneyArmyBatchPipelineStageName
@@ -1912,6 +1941,156 @@ function moneyArmyBatchRunSnapshot(record: {
     sourceKeys: parseSecureJson<string[]>(record.sourceKeysJson) ?? [],
     stage: record.stage as RevenueMoneyArmyBatchPipelineStageName,
     status: record.status
+  };
+}
+
+function moneyArmyGenerateScoreBatchTotals(plan: RevenueMoneyArmyGenerateScoreBatchPlan): RevenueMoneyArmyBatchPipelinePlan["totals"] {
+  return {
+    approvablePackets: 0,
+    approvedPackets: 0,
+    blockedStages: plan.totals.pause + plan.totals.kill,
+    currentBusinesses: plan.totals.sourceStores,
+    launchWaveGap: Math.max(0, plan.totals.requested - plan.totals.generated),
+    pendingApprovalPackets: plan.totals.generated,
+    readyDeploymentBusinesses: plan.totals.scale,
+    readyStages: plan.totals.scale + plan.totals.watch,
+    repairRequired: plan.totals.pause + plan.totals.kill,
+    seedCandidates: plan.totals.generated,
+    selectedSourceKeys: plan.totals.sourceStores,
+    stages: 1,
+    targetBusinesses: plan.totals.requested,
+    targetLaunchWave: plan.totals.requested
+  };
+}
+
+function moneyArmyGenerateScoreBatchKey(input: {
+  plan: RevenueMoneyArmyGenerateScoreBatchPlan;
+  sourceKeys: string[];
+  userId: string;
+}) {
+  return createHash("sha256").update(JSON.stringify({
+    candidateIds: input.plan.candidates.map((candidate) => candidate.candidateId),
+    generatedAt: input.plan.generatedAt,
+    sourceKeys: [...input.sourceKeys].sort(),
+    stage: "generate_score_batch",
+    totals: input.plan.totals,
+    userId: input.userId
+  })).digest("hex");
+}
+
+async function applyRevenueMoneyArmyGenerateScoreBatch(userId: string, input: ApplyRevenueMoneyArmyGenerateScoreBatchInput) {
+  const { plan } = await buildRevenueMoneyArmyGenerateScoreBatchForUser(userId, input);
+  const sourceKeys = Array.from(new Set(plan.candidates.map((candidate) => candidate.sourceStoreId)));
+  const afterTotals = moneyArmyGenerateScoreBatchTotals(plan);
+  const beforeTotals: RevenueMoneyArmyBatchPipelinePlan["totals"] = {
+    ...afterTotals,
+    blockedStages: 0,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 0,
+    repairRequired: 0,
+    seedCandidates: 0
+  };
+  const appliedSummary = input.dryRun
+    ? `Money Army generate-score preview completed for ${plan.totals.generated} candidate${plan.totals.generated === 1 ? "" : "s"}.`
+    : `Money Army generate-score batch recorded internally for ${plan.totals.generated} candidate${plan.totals.generated === 1 ? "" : "s"}.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        batchRunId: null,
+        dryRun: true,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        stage: "generate_score_batch" as const,
+        summary: appliedSummary
+      },
+      batchRun: null,
+      plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.money_army_generate_score_batch.recorded",
+    actorUserId: userId,
+    metadata: {
+      blockedExternalActions: plan.blockedExternalActions,
+      candidateIds: plan.candidates.map((candidate) => candidate.candidateId),
+      dryRun: false,
+      externalExecution: false,
+      killPressure: plan.killPressure,
+      note: input.note ?? null,
+      providerContacted: false,
+      rotationSummary: plan.rotationSummary,
+      scalePressure: plan.scalePressure,
+      sourceKeys,
+      summary: plan.summary,
+      totals: plan.totals
+    },
+    outcome: "success",
+    severity: plan.totals.kill > 0 || plan.totals.pause > 0 ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_money_army_generate_score_batch"
+  });
+  const batchKey = moneyArmyGenerateScoreBatchKey({
+    plan,
+    sourceKeys,
+    userId
+  });
+  const batchRun = await prisma.revenueMoneyArmyBatchRun.upsert({
+    create: {
+      afterTotalsJson: stringifySecureJson(afterTotals),
+      auditLogId: auditLog.id,
+      batchKey,
+      beforeTotalsJson: stringifySecureJson(beforeTotals),
+      dryRun: false,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson({
+        candidateIds: plan.candidates.map((candidate) => candidate.candidateId),
+        killPressure: plan.killPressure,
+        rotationSummary: plan.rotationSummary,
+        scalePressure: plan.scalePressure,
+        totals: plan.totals
+      }),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(sourceKeys),
+      stage: "generate_score_batch",
+      status: "recorded",
+      userId
+    },
+    update: {
+      afterTotalsJson: stringifySecureJson(afterTotals),
+      auditLogId: auditLog.id,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson({
+        candidateIds: plan.candidates.map((candidate) => candidate.candidateId),
+        killPressure: plan.killPressure,
+        rotationSummary: plan.rotationSummary,
+        scalePressure: plan.scalePressure,
+        totals: plan.totals
+      }),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(sourceKeys),
+      status: "recorded"
+    },
+    where: { batchKey }
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      batchRunId: batchRun.id,
+      dryRun: false,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      stage: "generate_score_batch" as const,
+      summary: appliedSummary
+    },
+    batchRun: moneyArmyBatchRunSnapshot(batchRun),
+    plan
   };
 }
 
@@ -8679,6 +8858,25 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
     });
   });
 
+  app.get("/merch/revenue-engine/money-army/generate-score-batch", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueMoneyArmyGenerateScoreBatchQuerySchema.parse(request.query);
+    const [response, recentRuns] = await Promise.all([
+      buildRevenueMoneyArmyGenerateScoreBatchForUser(currentUser.sub, query),
+      listRevenueMoneyArmyBatchRuns(currentUser.sub)
+    ]);
+
+    return reply.send({
+      ...response,
+      recentRuns
+    });
+  });
+
   app.post("/merch/revenue-engine/money-army/batches/apply", { preHandler: requireAuth }, async (request, reply) => {
     const currentUser = request.user;
 
@@ -8688,6 +8886,19 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
 
     const input = applyRevenueMoneyArmyBatchPipelineSchema.parse(request.body);
     const response = await applyRevenueMoneyArmyBatchPipeline(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/money-army/generate-score-batch/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueMoneyArmyGenerateScoreBatchSchema.parse(request.body);
+    const response = await applyRevenueMoneyArmyGenerateScoreBatch(currentUser.sub, input);
 
     return reply.send(response);
   });

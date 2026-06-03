@@ -90,6 +90,9 @@ import {
   type RevenueBusinessFleetPlan,
   type RevenueBusinessFleetSchedulerResponse,
   type RevenueMoneyArmyBatchPipelineApplyResponse,
+  type RevenueMoneyArmyGenerateScoreBatchApplyResponse,
+  type RevenueMoneyArmyGenerateScoreBatchPlan,
+  type RevenueMoneyArmyGenerateScoreBatchResponse,
   type RevenueMoneyArmyBatchPipelinePlan,
   type RevenueMoneyArmyBatchPipelineResponse,
   type RevenueMoneyArmyBatchRun,
@@ -298,12 +301,16 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [businessFleetWaveReceipt, setBusinessFleetWaveReceipt] = useState<RevenueBusinessFleetLaunchWaveApplyResponse["dispatched"] | null>(null);
   const [moneyArmyPipeline, setMoneyArmyPipeline] = useState<RevenueMoneyArmyBatchPipelinePlan | null>(null);
   const [moneyArmyPipelineReceipt, setMoneyArmyPipelineReceipt] = useState<RevenueMoneyArmyBatchPipelineApplyResponse["applied"] | null>(null);
+  const [moneyArmyGenerateScoreBatch, setMoneyArmyGenerateScoreBatch] = useState<RevenueMoneyArmyGenerateScoreBatchPlan | null>(null);
+  const [moneyArmyGenerateScoreBatchReceipt, setMoneyArmyGenerateScoreBatchReceipt] = useState<RevenueMoneyArmyGenerateScoreBatchApplyResponse["applied"] | null>(null);
   const [moneyArmyBatchRuns, setMoneyArmyBatchRuns] = useState<RevenueMoneyArmyBatchRun[]>([]);
   const [isLoadingBusinessFleet, setIsLoadingBusinessFleet] = useState(false);
   const [isLoadingBusinessFleetGap, setIsLoadingBusinessFleetGap] = useState(false);
   const [isLoadingMoneyArmyPipeline, setIsLoadingMoneyArmyPipeline] = useState(false);
   const [isPreviewingMoneyArmyPipeline, setIsPreviewingMoneyArmyPipeline] = useState(false);
   const [isRunningMoneyArmyPipeline, setIsRunningMoneyArmyPipeline] = useState(false);
+  const [isGeneratingMoneyArmyScoreBatch, setIsGeneratingMoneyArmyScoreBatch] = useState(false);
+  const [isRecordingMoneyArmyScoreBatch, setIsRecordingMoneyArmyScoreBatch] = useState(false);
   const [isPreviewingBusinessFleetGapSeeds, setIsPreviewingBusinessFleetGapSeeds] = useState(false);
   const [isCreatingBusinessFleetGapSeeds, setIsCreatingBusinessFleetGapSeeds] = useState(false);
   const [isPreviewingBusinessFleetGapAcceleration, setIsPreviewingBusinessFleetGapAcceleration] = useState(false);
@@ -866,6 +873,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setBusinessFleetWaveReceipt(null);
       setMoneyArmyPipeline(null);
       setMoneyArmyPipelineReceipt(null);
+      setMoneyArmyGenerateScoreBatch(null);
+      setMoneyArmyGenerateScoreBatchReceipt(null);
       setBusinessFleetMessage(null);
       onEvent?.(`Business Fleet Scheduler scored ${response.plan.totals.businesses} businesses: ${response.plan.totals.readyParallel} ready parallel, ${response.plan.totals.launchNow} launch-now, ${response.plan.totals.qualityRepair} repair.`);
     } catch (caught) {
@@ -892,6 +901,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setBusinessFleetProviderApprovalReceipt(null);
       setMoneyArmyPipeline(null);
       setMoneyArmyPipelineReceipt(null);
+      setMoneyArmyGenerateScoreBatch(null);
+      setMoneyArmyGenerateScoreBatchReceipt(null);
       setMoneyArmyBatchRuns([]);
       onEvent?.(`Business Fleet launch gap planner found ${response.plan.totals.launchWaveGap} missing first-wave lane${response.plan.totals.launchWaveGap === 1 ? "" : "s"}: ${response.plan.totals.repairActions} repair action${response.plan.totals.repairActions === 1 ? "" : "s"}, ${response.plan.totals.createOpportunityShells} new seed${response.plan.totals.createOpportunityShells === 1 ? "" : "s"}.`);
     } catch (caught) {
@@ -990,6 +1001,63 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setError(caught instanceof Error ? caught.message : "Money Army batch pipeline apply failed.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function loadMoneyArmyGenerateScoreBatch() {
+    setIsGeneratingMoneyArmyScoreBatch(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueMoneyArmyGenerateScoreBatchResponse>("/merch/revenue-engine/money-army/generate-score-batch?candidateCount=25");
+
+      setMoneyArmyGenerateScoreBatch(response.plan);
+      setMoneyArmyGenerateScoreBatchReceipt(null);
+      setMoneyArmyBatchRuns(response.recentRuns);
+      setBusinessFleetMessage(`Generate-score batch ready: ${response.plan.totals.generated} candidates, scale pressure ${response.plan.scalePressure.pressureScore}/100, kill pressure ${response.plan.killPressure.pressureScore}/100.`);
+      onEvent?.(`Money Army generated and scored ${response.plan.totals.generated} internal candidates.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Money Army generate-score batch failed.");
+    } finally {
+      setIsGeneratingMoneyArmyScoreBatch(false);
+    }
+  }
+
+  async function recordMoneyArmyGenerateScoreBatch() {
+    if (!moneyArmyGenerateScoreBatch) return;
+
+    setIsRecordingMoneyArmyScoreBatch(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueMoneyArmyGenerateScoreBatchApplyResponse>("/merch/revenue-engine/money-army/generate-score-batch/apply", {
+        json: {
+          candidateCount: moneyArmyGenerateScoreBatch.totals.requested,
+          confirm: "RECORD INTERNAL MONEY ARMY GENERATE SCORE BATCH",
+          dryRun: false,
+          note: "Recorded from Money Army generate-score dashboard controls.",
+          riskTolerance: "Low"
+        },
+        method: "POST"
+      });
+
+      setMoneyArmyGenerateScoreBatch(response.plan);
+      setMoneyArmyGenerateScoreBatchReceipt(response.applied);
+      if (response.batchRun) {
+        const batchRun = response.batchRun;
+        setMoneyArmyBatchRuns((currentRuns) => [
+          batchRun,
+          ...currentRuns.filter((run) => run.id !== batchRun.id)
+        ].slice(0, 10));
+      }
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(response.applied.summary);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Money Army generate-score record failed.");
+    } finally {
+      setIsRecordingMoneyArmyScoreBatch(false);
     }
   }
 
@@ -2634,6 +2702,14 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             {isLoadingMoneyArmyPipeline ? <Loader2 aria-hidden="true" size={15} /> : <Rocket aria-hidden="true" size={15} />}
             Load Money Army
           </button>
+          <button type="button" className="primary" onClick={() => void loadMoneyArmyGenerateScoreBatch()} disabled={isGeneratingMoneyArmyScoreBatch}>
+            {isGeneratingMoneyArmyScoreBatch ? <Loader2 aria-hidden="true" size={15} /> : <Gauge aria-hidden="true" size={15} />}
+            Generate score batch
+          </button>
+          <button type="button" onClick={() => void recordMoneyArmyGenerateScoreBatch()} disabled={isRecordingMoneyArmyScoreBatch || !moneyArmyGenerateScoreBatch || moneyArmyGenerateScoreBatch.totals.generated === 0}>
+            {isRecordingMoneyArmyScoreBatch ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record score batch
+          </button>
           <button type="button" onClick={() => void runMoneyArmyPipeline(true)} disabled={isPreviewingMoneyArmyPipeline || !moneyArmyPipeline || !moneyArmyPipeline.nextStage}>
             {isPreviewingMoneyArmyPipeline ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
             Preview batch stage
@@ -3664,6 +3740,12 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 <small>
                   organic {formatMerchCurrency(financialPlan.adGrowthAllocation.organicFirstAmount)} / paid review {formatMerchCurrency(financialPlan.adGrowthAllocation.paidScaleReviewAmount)} / retained {formatMerchCurrency(financialPlan.adGrowthAllocation.retainedAmount)}
                 </small>
+              </article>
+              <article>
+                <span>{financialPlan.adGrowthAllocation.pressureDecision.decision.replace(/_/g, " ")} / {financialPlan.adGrowthAllocation.pressureDecision.recommendedSpendPriority.replace(/_/g, " ")}</span>
+                <strong>Pressure decision</strong>
+                <p>{financialPlan.adGrowthAllocation.pressureDecision.reason}</p>
+                <small>scale {financialPlan.adGrowthAllocation.pressureDecision.scalePressureScore}/100 / kill {financialPlan.adGrowthAllocation.pressureDecision.killPressureScore}/100 / {financialPlan.adGrowthAllocation.pressureDecision.source.replace(/_/g, " ")}</small>
               </article>
             </section>
 
@@ -4727,6 +4809,165 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             <div className="growth-blocked-actions">
               <strong>Dashboard remains internal</strong>
               {revenueDashboard.blockedExternalActions.slice(0, 3).map((action) => <span key={action}>{action}</span>)}
+            </div>
+          </section>
+        ) : null}
+
+        {moneyArmyGenerateScoreBatch ? (
+          <section className="revenue-engine-result" aria-label="Money Army generate and score batch">
+            <div className="revenue-engine-summary">
+              <strong>{moneyArmyGenerateScoreBatch.mode}</strong>
+              <p>{moneyArmyGenerateScoreBatch.summary}</p>
+            </div>
+
+            <dl className="revenue-engine-metrics">
+              <div>
+                <dt>Candidates</dt>
+                <dd>{moneyArmyGenerateScoreBatch.totals.generated}/{moneyArmyGenerateScoreBatch.totals.requested}</dd>
+              </div>
+              <div>
+                <dt>Portfolio Assets</dt>
+                <dd>{moneyArmyGenerateScoreBatch.currentPortfolio.totals.assets}</dd>
+              </div>
+              <div>
+                <dt>Scale Pressure</dt>
+                <dd>{moneyArmyGenerateScoreBatch.scalePressure.level} {moneyArmyGenerateScoreBatch.scalePressure.pressureScore}/100</dd>
+              </div>
+              <div>
+                <dt>Kill Pressure</dt>
+                <dd>{moneyArmyGenerateScoreBatch.killPressure.level} {moneyArmyGenerateScoreBatch.killPressure.pressureScore}/100</dd>
+              </div>
+              <div>
+                <dt>Scale/Watch</dt>
+                <dd>{moneyArmyGenerateScoreBatch.totals.scale}/{moneyArmyGenerateScoreBatch.totals.watch}</dd>
+              </div>
+              <div>
+                <dt>Pause/Kill</dt>
+                <dd>{moneyArmyGenerateScoreBatch.totals.pause}/{moneyArmyGenerateScoreBatch.totals.kill}</dd>
+              </div>
+              <div>
+                <dt>Stores</dt>
+                <dd>{moneyArmyGenerateScoreBatch.totals.sourceStores}</dd>
+              </div>
+              <div>
+                <dt>Source Products</dt>
+                <dd>{moneyArmyGenerateScoreBatch.totals.sourceProducts}</dd>
+              </div>
+            </dl>
+
+            {moneyArmyGenerateScoreBatchReceipt ? (
+              <section className="revenue-engine-list" aria-label="Money Army generate score receipt">
+                <h4>Generate Score Receipt</h4>
+                <article>
+                  <span>{moneyArmyGenerateScoreBatchReceipt.stage.replace(/_/g, " ")} / {moneyArmyGenerateScoreBatchReceipt.dryRun ? "preview" : "recorded"}</span>
+                  <strong>{moneyArmyGenerateScoreBatchReceipt.providerContacted ? "Provider contacted" : "Provider locked"}</strong>
+                  <p>{moneyArmyGenerateScoreBatchReceipt.summary}</p>
+                  <small>external execution {moneyArmyGenerateScoreBatchReceipt.externalExecution ? "enabled" : "locked"} / audit {moneyArmyGenerateScoreBatchReceipt.auditLogId ?? "preview only"} / run {moneyArmyGenerateScoreBatchReceipt.batchRunId ?? "not recorded"}</small>
+                </article>
+              </section>
+            ) : null}
+
+            <section className="revenue-engine-list" aria-label="Money Army current portfolio scoring">
+              <h4>Current Portfolio Scoring</h4>
+              <article>
+                <span>scale {moneyArmyGenerateScoreBatch.currentPortfolio.totals.scale} / watch {moneyArmyGenerateScoreBatch.currentPortfolio.totals.watch} / pause {moneyArmyGenerateScoreBatch.currentPortfolio.totals.pause} / kill {moneyArmyGenerateScoreBatch.currentPortfolio.totals.kill}</span>
+                <strong>{moneyArmyGenerateScoreBatch.currentPortfolio.summary}</strong>
+                <p>{formatMerchCurrency(moneyArmyGenerateScoreBatch.currentPortfolio.totals.estimatedProfit)} estimated profit / {formatMerchCurrency(moneyArmyGenerateScoreBatch.currentPortfolio.totals.profitVelocity)} daily profit velocity / {moneyArmyGenerateScoreBatch.currentPortfolio.totals.trackedAssets} tracked assets</p>
+                <small>portfolio scored {new Date(moneyArmyGenerateScoreBatch.currentPortfolio.generatedAt).toLocaleString()}</small>
+              </article>
+              {moneyArmyGenerateScoreBatch.currentPortfolio.rotationRecommendations.slice(0, 5).map((item) => (
+                <article key={`${item.assetType}-${item.assetId}`}>
+                  <span>{item.recommendation} / score {item.score} / {item.scoreBand}</span>
+                  <strong>{item.assetName}</strong>
+                  <p>{item.reason}</p>
+                  <small>{item.storeName} / current {item.currentState} / next {item.nextInternalState ?? "no state change"}</small>
+                </article>
+              ))}
+            </section>
+
+            {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage ? (
+              <section className="revenue-engine-list" aria-label="Money Army first business launch package">
+                <h4>First Business Launch Package</h4>
+                <article>
+                  <span>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.status.replace(/_/g, " ")} / {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.store.storePlatform}</span>
+                  <strong>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.store.businessName}</strong>
+                  <p>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.summary}</p>
+                  <small>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.store.industry} / {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.store.audience}</small>
+                </article>
+                {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.products.slice(0, 5).map((product) => (
+                  <article key={product.candidateId}>
+                    <span>{product.approvalState.replace(/_/g, " ")} / {product.recommendation} / score {product.score}</span>
+                    <strong>{product.productName}</strong>
+                    <p>{product.rotationReason}</p>
+                    <small>{product.productType} / {formatMerchCurrency(product.retailPrice)} / {product.profitMargin}% margin / source {product.sourceProductName ?? "generated lane"}</small>
+                  </article>
+                ))}
+                {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.contentIdeas.slice(0, 4).map((idea) => (
+                  <article key={idea.id}>
+                    <span>{idea.channel.replace(/_/g, " ")} / {idea.status.replace(/_/g, " ")}</span>
+                    <strong>{idea.productName}</strong>
+                    <p>{idea.hook}</p>
+                    <small>{idea.scriptAngle}</small>
+                  </article>
+                ))}
+                <article>
+                  <span>organic first / no spend</span>
+                  <strong>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.totals.organicMoves} organic moves queued</strong>
+                  <p>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.organicFirstMoves.slice(0, 3).map((move) => move.title).join(" / ")}</p>
+                  <small>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.organicFirstMoves.slice(0, 3).map((move) => move.channel.replace(/_/g, " ")).join(" / ")}</small>
+                </article>
+                <article>
+                  <span>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.manualApprovalGates.length} approval gates</span>
+                  <strong>Approval-gated package</strong>
+                  <p>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.manualApprovalGates.slice(0, 3).join(" ")}</p>
+                  <small>external execution locked / provider contacted false</small>
+                </article>
+              </section>
+            ) : null}
+
+            <section className="revenue-engine-list" aria-label="Money Army generated candidate next actions">
+              <h4>Recommended Next Actions</h4>
+              {moneyArmyGenerateScoreBatch.candidates.slice(0, 10).map((candidate) => (
+                <article key={candidate.candidateId}>
+                  <span>{candidate.recommendation} / score {candidate.score} / {candidate.scoreBand} / {candidate.riskLevel}</span>
+                  <strong>{candidate.productName}</strong>
+                  <p>{candidate.rotationReason}</p>
+                  <small>{candidate.sourceStoreName} / {candidate.productType} / {formatMerchCurrency(candidate.retailPrice)} / {candidate.profitMargin}% margin / {candidate.organicContentTieIn.channel.replace(/_/g, " ")}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="Money Army pressure signals">
+              <h4>Scale/Kill Pressure Signals</h4>
+              {[moneyArmyGenerateScoreBatch.scalePressure, moneyArmyGenerateScoreBatch.killPressure].map((pressure) => (
+                <article key={`${pressure.level}-${pressure.pressureScore}-${pressure.reason}`}>
+                  <span>{pressure.level} / {pressure.pressureScore}/100</span>
+                  <strong>{pressure.reason}</strong>
+                  <p>{pressure.assets.slice(0, 4).map((asset) => `${asset.assetName}: ${asset.recommendation} ${asset.score}`).join(" / ") || "No pressure assets in this lane."}</p>
+                  <small>signals are advisory only; ad spend and external execution remain locked</small>
+                </article>
+              ))}
+            </section>
+
+            {moneyArmyBatchRuns.length > 0 ? (
+              <section className="revenue-engine-list" aria-label="Money Army generate score batch run ledger">
+                <h4>Batch Run History</h4>
+                {moneyArmyBatchRuns.map((run) => (
+                  <article key={run.id}>
+                    <span>{run.status} / {run.stage.replace(/_/g, " ")}</span>
+                    <strong>{run.resultSummary}</strong>
+                    <p>
+                      {run.sourceKeys.length} source key{run.sourceKeys.length === 1 ? "" : "s"} / candidates {run.beforeTotals.seedCandidates} to {run.afterTotals.seedCandidates} / ready {run.beforeTotals.readyStages} to {run.afterTotals.readyStages}
+                    </p>
+                    <small>audit {run.auditLogId ?? "none"} / run {run.id} / key {run.batchKey.slice(0, 12)}</small>
+                  </article>
+                ))}
+              </section>
+            ) : null}
+
+            <div className="growth-blocked-actions">
+              <strong>Generate-score stays internal</strong>
+              {moneyArmyGenerateScoreBatch.blockedExternalActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
             </div>
           </section>
         ) : null}

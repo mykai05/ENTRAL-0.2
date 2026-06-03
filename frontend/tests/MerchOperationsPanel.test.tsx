@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -1151,6 +1151,285 @@ const moneyArmyBatchRun: RevenueMoneyArmyBatchRun = {
   sourceKeys: businessFleetGapPlan.opportunitySeeds.slice(0, 2).map((seed) => seed.sourceKey),
   stage: "batch_creation",
   status: "recorded"
+};
+
+const moneyArmyGenerateScoreBatchPlan: RevenueMoneyArmyGenerateScoreBatchPlan = {
+  auditEvents: [
+    "Money Army Generate & Score Batch created internal-only candidate drafts from existing store and product records.",
+    "Every generated candidate was scored by the Revenue Engine and reduced to scale, watch, pause, or kill."
+  ],
+  blockedExternalActions: [
+    "Creating live marketplace listings",
+    "Posting faceless content externally",
+    "Starting, increasing, or moving ad spend"
+  ],
+  candidates: [
+    {
+      assetScore: {
+        economicsScore: 40,
+        finalRank: 76,
+        readinessScore: 30,
+        riskPenalty: 0,
+        velocity: 0
+      },
+      auditOnly: true,
+      candidateId: "money_army_candidate_store_1_001",
+      confidence: 84,
+      designConcept: "Original operator tee concept.",
+      externalExecution: false,
+      listingTitle: "Iron House Operator Tee",
+      nextInternalState: null,
+      organicContentTieIn: {
+        approvalState: "internal_draft_only",
+        channel: "youtube_shorts",
+        hook: "Show the Iron House Operator Tee idea through a short organic story.",
+        path: "organic_first"
+      },
+      productName: "Iron House Operator Tee Candidate 1",
+      productType: "T-shirt",
+      profitMargin: 42,
+      providerContacted: false,
+      recommendation: "watch",
+      retailPrice: 38,
+      riskLevel: "low",
+      rotationDecision: "watch",
+      rotationReason: "Product is in the normal approval or design pipeline and should be watched until the next decision point.",
+      score: 76,
+      scoreBand: "healthy",
+      sourceProductId: "product-1",
+      sourceProductName: "Core Tee",
+      sourceStoreId: "store-1",
+      sourceStoreName: "Iron House Gym",
+      status: "Awaiting Approval",
+      tags: ["fitness", "money army candidate"]
+    }
+  ],
+  currentPortfolio: {
+    generatedAt: "2026-06-02T12:00:00.000Z",
+    rotationRecommendations: portfolioFromPlan(revenuePlan).assets.map((asset) => ({
+      assetId: asset.assetId,
+      assetName: asset.assetName,
+      assetType: asset.assetType,
+      currentState: String(asset.readiness.status),
+      externalExecution: false,
+      nextInternalState: asset.nextInternalState,
+      providerContacted: false,
+      reason: asset.reason,
+      recommendation: asset.recommendation,
+      riskLevel: asset.riskLevel,
+      score: asset.score,
+      scoreBand: asset.scoreBand,
+      storeId: asset.storeId,
+      storeName: asset.storeName
+    })),
+    summary: portfolioFromPlan(revenuePlan).summary,
+    totals: portfolioFromPlan(revenuePlan).totals
+  },
+  externalExecution: false,
+  generatedAt: "2026-06-02T12:30:00.000Z",
+  killPressure: {
+    assets: [],
+    level: "none",
+    pressureScore: 0,
+    reason: "No generated candidates require kill or pause pressure."
+  },
+  mode: "Money Army Generate & Score Batch",
+  providerContacted: false,
+  firstBusinessLaunchPackage: {
+    auditEvents: [
+      "First Business Launch Package generated from top scored Money Army candidates.",
+      "No provider, marketplace, ad, social, banking, upload, browser, or payment write action was executed."
+    ],
+    blockedExternalActions: [
+      "Publishing marketplace listings or changing storefront settings",
+      "Creating provider-side products, uploading artwork, or contacting POD providers"
+    ],
+    contentIdeas: [{
+      approvalGate: {
+        externalExecutionLocked: true,
+        humanApprovalRequired: true,
+        reason: "Faceless content idea is an internal draft. Script, caption, disclosure, and channel package require approval before posting.",
+        status: "Required"
+      },
+      candidateId: "money_army_candidate_store_1_001",
+      channel: "youtube_shorts",
+      externalExecution: false,
+      hook: "Show the Iron House Operator Tee idea through a short organic story.",
+      id: "first_business_content_money_army_candidate_store_1_001_1",
+      productName: "Iron House Operator Tee Candidate 1",
+      providerContacted: false,
+      scriptAngle: "Show the product problem, the visual idea, and a simple store CTA for Iron House Gym; keep it original and no-spend.",
+      status: "internal_draft_only"
+    }],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:30:00.000Z",
+    killPressure: {
+      assets: [],
+      level: "none",
+      pressureScore: 0,
+      reason: "No generated candidates require kill or pause pressure."
+    },
+    manualApprovalGates: [
+      "Approve store, product candidates, pricing notes, listing copy, tags, and compliance notes before provider or marketplace work.",
+      "Approve faceless content scripts, captions, disclosure, and channel packages before any posting.",
+      "Approve any Ad/Growth spend separately in Financial Orchestrator. This launch package starts organic-first and no-spend."
+    ],
+    mode: "First Business Launch Package",
+    organicFirstMoves: [{
+      approvalGate: {
+        externalExecutionLocked: true,
+        humanApprovalRequired: true,
+        reason: "Organic move is queued as internal preparation only. Manual approval is required before publication, upload, spend, or provider work.",
+        status: "Required"
+      },
+      channel: "listing",
+      expectedInternalEffect: "Prepare listing title, description, tags, pricing notes, and proof checklist for Iron House Operator Tee Candidate 1.",
+      externalExecution: false,
+      id: "organic_iron_house_gym_listing",
+      providerContacted: false,
+      title: "Prepare approval-ready listing proof"
+    }],
+    packageId: "first_business_launch_package_store_1_2026_06_02t12_30_00_000z",
+    products: [{
+      approvalState: "ready_to_approve",
+      candidateId: "money_army_candidate_store_1_001",
+      designConcept: "Original operator tee concept.",
+      listingTitle: "Iron House Operator Tee",
+      productName: "Iron House Operator Tee Candidate 1",
+      productType: "T-shirt",
+      profitMargin: 42,
+      recommendation: "watch",
+      retailPrice: 38,
+      rotationReason: "Product is in the normal approval or design pipeline and should be watched until the next decision point.",
+      score: 76,
+      scoreBand: "healthy",
+      sourceProductId: "product-1",
+      sourceProductName: "Core Tee",
+      tags: ["fitness", "money army candidate"]
+    }],
+    providerContacted: false,
+    scalePressure: {
+      assets: [{
+        assetId: "money_army_candidate_store_1_001",
+        assetName: "Iron House Operator Tee Candidate 1",
+        recommendation: "watch",
+        score: 76,
+        storeId: "store-1",
+        storeName: "Iron House Gym"
+      }],
+      level: "medium",
+      pressureScore: 49,
+      reason: "1 generated candidate shows internal scale pressure before any external spend is allowed."
+    },
+    status: "ready_for_approval",
+    store: {
+      audience: "independent gym members",
+      businessName: "Iron House Gym",
+      industry: "fitness",
+      launchStatus: "Awaiting Approval",
+      sourceStoreId: "store-1",
+      storePlatform: "Shopify"
+    },
+    summary: "Iron House Gym launch package is ready for approval with 1 product candidate, 1 faceless content idea, and 1 organic-first move. Scale pressure medium 49/100; kill pressure none 0/100.",
+    totals: {
+      contentIdeas: 1,
+      manualApprovalGates: 3,
+      organicMoves: 1,
+      products: 1,
+      scaleCandidates: 0,
+      watchCandidates: 1
+    }
+  },
+  rotationRecommendations: [{
+    assetId: "money_army_candidate_store_1_001",
+    assetName: "Iron House Operator Tee Candidate 1",
+    assetType: "product",
+    currentState: "Awaiting Approval",
+    externalExecution: false,
+    nextInternalState: null,
+    providerContacted: false,
+    reason: "Product is in the normal approval or design pipeline and should be watched until the next decision point.",
+    recommendation: "watch",
+    riskLevel: "low",
+    score: 76,
+    scoreBand: "healthy",
+    storeId: "store-1",
+    storeName: "Iron House Gym"
+  }],
+  rotationSummary: {
+    kill: 0,
+    pause: 0,
+    scale: 0,
+    watch: 1
+  },
+  scalePressure: {
+    assets: [{
+      assetId: "money_army_candidate_store_1_001",
+      assetName: "Iron House Operator Tee Candidate 1",
+      recommendation: "watch",
+      score: 76,
+      storeId: "store-1",
+      storeName: "Iron House Gym"
+    }],
+    level: "medium",
+    pressureScore: 49,
+    reason: "1 generated candidate shows internal scale pressure before any external spend is allowed."
+  },
+  summary: "1 Money Army candidate generated and scored from 1 source store: 0 scale, 1 watch, 0 pause, 0 kill. External execution remains locked.",
+  totals: {
+    generated: 1,
+    kill: 0,
+    pause: 0,
+    requested: 25,
+    scale: 0,
+    sourceProducts: 1,
+    sourceStores: 1,
+    watch: 1
+  }
+};
+
+const moneyArmyGenerateScoreBatchRun: RevenueMoneyArmyBatchRun = {
+  afterTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    readyStages: 1,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 25,
+    targetLaunchWave: 25
+  },
+  auditLogId: "audit-money-army-score-1",
+  batchKey: "money-army-score-batch-key-1",
+  beforeTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    readyStages: 0,
+    seedCandidates: 0,
+    stages: 1,
+    targetBusinesses: 25,
+    targetLaunchWave: 25
+  },
+  createdAt: "2026-06-02T12:30:00.000Z",
+  dryRun: false,
+  externalExecution: false,
+  id: "money-army-score-run-1",
+  providerContacted: false,
+  resultSummary: "Money Army generate-score batch recorded internally for 1 candidate.",
+  sourceKeys: ["store-1"],
+  stage: "generate_score_batch",
+  status: "recorded"
+};
+
+const moneyArmyGenerateScoreBatchApplyResponse: RevenueMoneyArmyGenerateScoreBatchApplyResponse = {
+  applied: {
+    auditLogId: "audit-money-army-score-1",
+    batchRunId: moneyArmyGenerateScoreBatchRun.id,
+    dryRun: false,
+    externalExecution: false,
+    providerContacted: false,
+    stage: "generate_score_batch",
+    summary: "Money Army generate-score batch recorded internally for 1 candidate."
+  },
+  batchRun: moneyArmyGenerateScoreBatchRun,
+  plan: moneyArmyGenerateScoreBatchPlan
 };
 
 function moneyArmyPipelineApplyResponse(dryRun: boolean): RevenueMoneyArmyBatchPipelineApplyResponse {
@@ -3425,6 +3704,16 @@ const financialPlan: FinancialOrchestratorPlan = {
     mode: "organic_first",
     organicFirstAmount: 60,
     paidScaleReviewAmount: 0,
+    pressureDecision: {
+      advisoryOnly: true,
+      decision: "organic_first",
+      guardrail: "The 25% Ad/Growth bucket is advisory-only; pressure signals can queue internal packets, retain capital, or require review, but cannot spend or call providers.",
+      killPressureScore: 0,
+      reason: "Scale pressure 86/100 supports organic-first growth packets. Kill pressure 0/100 does not block, but paid spend remains locked.",
+      recommendedSpendPriority: "no_spend",
+      scalePressureScore: 86,
+      source: "revenue_engine_scored_portfolio"
+    },
     retainedAmount: 15,
     scalePressure: {
       advisoryOnly: true,
@@ -5054,6 +5343,46 @@ describe("MerchOperationsPanel", () => {
     expect(onRefreshStores).toHaveBeenCalledTimes(1);
   });
 
+  it("generates, scores, and records a Money Army candidate batch through the dashboard", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce({ plan: moneyArmyGenerateScoreBatchPlan, recentRuns: [] })
+      .mockResolvedValueOnce(moneyArmyGenerateScoreBatchApplyResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /generate score batch/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/generate-score-batch?candidateCount=25");
+    const region = await screen.findByRole("region", { name: /money army generate and score batch/i });
+    expect(within(region).getByText("Money Army Generate & Score Batch")).toBeInTheDocument();
+    expect(within(region).getByText("Current Portfolio Scoring")).toBeInTheDocument();
+    expect(within(region).getByText("First Business Launch Package")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym launch package is ready for approval with 1 product candidate, 1 faceless content idea, and 1 organic-first move. Scale pressure medium 49/100; kill pressure none 0/100.")).toBeInTheDocument();
+    expect(within(region).getByText("Prepare approval-ready listing proof")).toBeInTheDocument();
+    expect(within(region).getByText("Approval-gated package")).toBeInTheDocument();
+    expect(within(region).getByText("Recommended Next Actions")).toBeInTheDocument();
+    expect(within(region).getByText("Scale/Kill Pressure Signals")).toBeInTheDocument();
+    expect(within(region).getAllByText("Iron House Operator Tee Candidate 1").length).toBeGreaterThan(0);
+    expect(within(region).getByText("Generate-score stays internal")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /record score batch/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/generate-score-batch/apply", {
+      json: {
+        candidateCount: 25,
+        confirm: "RECORD INTERNAL MONEY ARMY GENERATE SCORE BATCH",
+        dryRun: false,
+        note: "Recorded from Money Army generate-score dashboard controls.",
+        riskTolerance: "Low"
+      },
+      method: "POST"
+    });
+    expect(await screen.findAllByText("Money Army generate-score batch recorded internally for 1 candidate.")).toHaveLength(2);
+    expect(within(region).getByText("Generate Score Receipt")).toBeInTheDocument();
+    expect(within(region).getByText("Batch Run History")).toBeInTheDocument();
+    expect(within(region).getAllByText(/audit audit-money-army-score-1/)).toHaveLength(2);
+  });
+
   it("runs the Revenue Engine and applies internal rotation only after preview", async () => {
     const onRefreshStores = vi.fn();
 
@@ -5648,6 +5977,8 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("Portfolio Pressure")).toBeInTheDocument();
     expect(screen.getByText("Ad/Growth pressure")).toBeInTheDocument();
     expect(screen.getByText("Kill pressure")).toBeInTheDocument();
+    expect(screen.getByText("Pressure decision")).toBeInTheDocument();
+    expect(screen.getByText("Scale pressure 86/100 supports organic-first growth packets. Kill pressure 0/100 does not block, but paid spend remains locked.")).toBeInTheDocument();
     expect(screen.getByText("2 scored assets are pressing for scaling review; top asset Core Tee ranks 88/100 with $28.57/day profit velocity.")).toBeInTheDocument();
     expect(screen.getByText("No scored assets currently create kill pressure for finance allocation.")).toBeInTheDocument();
     expect(screen.getByText("Core Tee 88/100 $28.57/day | Iron House Gym 76/100 $14.29/day")).toBeInTheDocument();

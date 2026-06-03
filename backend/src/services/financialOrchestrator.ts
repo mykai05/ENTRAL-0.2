@@ -135,6 +135,16 @@ export type FinancialAdGrowthAllocationPlan = {
   mode: "organic_first" | "paid_scale_review" | "defensive_hold" | "watch";
   organicFirstAmount: number;
   paidScaleReviewAmount: number;
+  pressureDecision: {
+    advisoryOnly: true;
+    decision: "retain_for_defense" | "organic_first" | "paid_scale_review" | "watch";
+    guardrail: string;
+    killPressureScore: number;
+    reason: string;
+    recommendedSpendPriority: FinancialScalingBudgetPacket["spendPriority"] | "none";
+    scalePressureScore: number;
+    source: "revenue_engine_scored_portfolio";
+  };
   retainedAmount: number;
   scalePressure: FinancialPortfolioPressure;
   summary: string;
@@ -940,6 +950,35 @@ function adGrowthAllocationPlanFor(input: {
       : organicFirstAmount > 0
         ? "organic_first"
         : "watch";
+  const strongestSpendPriority = input.packets.some((packet) => packet.spendPriority === "scale_test")
+    ? "scale_test"
+    : input.packets.some((packet) => packet.spendPriority === "low_test")
+      ? "low_test"
+      : input.packets.some((packet) => packet.spendPriority === "no_spend")
+        ? "no_spend"
+        : "none";
+  const pressureDecision: FinancialAdGrowthAllocationPlan["pressureDecision"] = {
+    advisoryOnly: true,
+    decision: mode === "defensive_hold"
+      ? "retain_for_defense"
+      : mode === "paid_scale_review"
+        ? "paid_scale_review"
+        : mode === "organic_first"
+          ? "organic_first"
+          : "watch",
+    guardrail: "The 25% Ad/Growth bucket is advisory-only; pressure signals can queue internal packets, retain capital, or require review, but cannot spend or call providers.",
+    killPressureScore: input.portfolioSignal.killPressure.pressureScore,
+    reason: mode === "defensive_hold"
+      ? `Kill pressure ${input.portfolioSignal.killPressure.pressureScore}/100 blocks Ad/Growth release and retains the bucket. ${input.portfolioSignal.killPressure.reason}`
+      : mode === "paid_scale_review"
+        ? `Scale pressure ${input.portfolioSignal.scalePressure.pressureScore}/100 supports paid scale-review packets while spend stays approval-gated. ${input.portfolioSignal.scalePressure.reason}`
+        : mode === "organic_first"
+          ? `Scale pressure ${input.portfolioSignal.scalePressure.pressureScore}/100 supports organic-first growth packets. Kill pressure ${input.portfolioSignal.killPressure.pressureScore}/100 does not block, but paid spend remains locked.`
+          : `Scale pressure ${input.portfolioSignal.scalePressure.pressureScore}/100 and kill pressure ${input.portfolioSignal.killPressure.pressureScore}/100 do not justify a release packet yet.`,
+    recommendedSpendPriority: strongestSpendPriority,
+    scalePressureScore: input.portfolioSignal.scalePressure.pressureScore,
+    source: "revenue_engine_scored_portfolio"
+  };
 
   return {
     advisoryOnly: true,
@@ -954,6 +993,7 @@ function adGrowthAllocationPlanFor(input: {
     mode,
     organicFirstAmount,
     paidScaleReviewAmount,
+    pressureDecision,
     retainedAmount,
     scalePressure: input.portfolioSignal.scalePressure,
     summary: mode === "defensive_hold"
@@ -1094,6 +1134,7 @@ export function buildFinancialOrchestratorPlan(input: {
       "Financial Orchestrator plan generated from internal revenue performance snapshots.",
       "Exact 25/25/50 policy applied: 25% Ad/Growth, 25% Entral technology and operations, 50% owner income.",
       `Revenue Engine scored portfolio attached as advisory scale and kill pressure for Ad/Growth allocation; ${adGrowthAllocation.mode.replace(/_/g, " ")} mode selected and no money movement is authorized.`,
+      `Ad/Growth pressure decision ${adGrowthAllocation.pressureDecision.decision.replace(/_/g, " ")} came from scale pressure ${adGrowthAllocation.pressureDecision.scalePressureScore}/100 and kill pressure ${adGrowthAllocation.pressureDecision.killPressureScore}/100.`,
       ...(portfolioDefensiveHold ? ["Portfolio defensive hold retained Ad/Growth capital instead of creating a reinvestment payout intent."] : []),
       ...(scalingBudgetQueue.length > 0 ? [`${scalingBudgetQueue.length} Ad/Growth budget packet${scalingBudgetQueue.length === 1 ? "" : "s"} queued for validated scale assets.`] : []),
       "Payout intents are approval-required records only; no provider or bank was contacted."

@@ -1226,6 +1226,7 @@ export type RevenueBusinessFleetLaunchWaveApplyResponse = {
 };
 
 export type RevenueMoneyArmyBatchPipelineStageName =
+  | "generate_score_batch"
   | "batch_creation"
   | "batch_acceleration"
   | "launch_package"
@@ -1312,6 +1313,209 @@ export type RevenueMoneyArmyBatchPipelineApplyResponse = {
   batchRun: RevenueMoneyArmyBatchRun | null;
   before: RevenueMoneyArmyBatchPipelinePlan;
   result: unknown;
+};
+
+export type RevenueMoneyArmyPressureSignal = {
+  assets: Array<{
+    assetId: string;
+    assetName: string;
+    recommendation: RevenueAssetRotationDecision;
+    score: number;
+    storeId: string;
+    storeName: string;
+  }>;
+  level: "none" | "low" | "medium" | "high";
+  pressureScore: number;
+  reason: string;
+};
+
+export type RevenueMoneyArmyRotationRecommendation = {
+  assetId: string;
+  assetName: string;
+  assetType: "product" | "store";
+  currentState: string;
+  externalExecution: false;
+  nextInternalState: string | null;
+  providerContacted: false;
+  reason: string;
+  recommendation: RevenueAssetRotationDecision;
+  riskLevel: "low" | "medium" | "high";
+  score: number;
+  scoreBand: RevenueAssetScoreBand;
+  storeId: string;
+  storeName: string;
+};
+
+export type RevenueMoneyArmyGeneratedAssetCandidate = {
+  assetScore: RevenueAssetScoreBreakdown;
+  auditOnly: true;
+  candidateId: string;
+  confidence: number;
+  designConcept: string;
+  externalExecution: false;
+  listingTitle: string;
+  nextInternalState: string | null;
+  organicContentTieIn: {
+    approvalState: "internal_draft_only";
+    channel: "youtube_shorts" | "tiktok" | "instagram_reels";
+    hook: string;
+    path: "organic_first";
+  };
+  productName: string;
+  productType: string;
+  profitMargin: number;
+  providerContacted: false;
+  recommendation: RevenueAssetRotationDecision;
+  retailPrice: number;
+  riskLevel: "low" | "medium" | "high";
+  rotationDecision: RevenueAssetRotationDecision;
+  rotationReason: string;
+  score: number;
+  scoreBand: RevenueAssetScoreBand;
+  sourceProductId: string | null;
+  sourceProductName: string | null;
+  sourceStoreId: string;
+  sourceStoreName: string;
+  status: PodProductStatus;
+  tags: string[];
+};
+
+export type RevenueFirstBusinessLaunchPackageStatus = "ready_for_approval" | "manual_gate" | "blocked";
+
+export type RevenueFirstBusinessLaunchPackageProductCandidate = {
+  approvalState: "ready_to_approve" | "needs_manual_review" | "blocked";
+  candidateId: string;
+  designConcept: string;
+  listingTitle: string;
+  productName: string;
+  productType: string;
+  profitMargin: number;
+  recommendation: RevenueAssetRotationDecision;
+  retailPrice: number;
+  rotationReason: string;
+  score: number;
+  scoreBand: RevenueAssetScoreBand;
+  sourceProductId: string | null;
+  sourceProductName: string | null;
+  tags: string[];
+};
+
+export type RevenueFirstBusinessLaunchPackageContentIdea = {
+  approvalGate: {
+    externalExecutionLocked: true;
+    humanApprovalRequired: true;
+    reason: string;
+    status: "Required";
+  };
+  candidateId: string;
+  channel: "youtube_shorts" | "tiktok" | "instagram_reels";
+  externalExecution: false;
+  hook: string;
+  id: string;
+  productName: string;
+  providerContacted: false;
+  scriptAngle: string;
+  status: "internal_draft_only";
+};
+
+export type RevenueFirstBusinessLaunchPackageOrganicMove = {
+  approvalGate: {
+    externalExecutionLocked: true;
+    humanApprovalRequired: true;
+    reason: string;
+    status: "Required";
+  };
+  channel: "listing" | "youtube_shorts" | "tiktok" | "instagram_reels" | "manual_signal_tracking";
+  expectedInternalEffect: string;
+  externalExecution: false;
+  id: string;
+  providerContacted: false;
+  title: string;
+};
+
+export type RevenueMoneyArmyFirstBusinessLaunchPackage = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  contentIdeas: RevenueFirstBusinessLaunchPackageContentIdea[];
+  externalExecution: false;
+  generatedAt: string;
+  manualApprovalGates: string[];
+  mode: "First Business Launch Package";
+  organicFirstMoves: RevenueFirstBusinessLaunchPackageOrganicMove[];
+  packageId: string;
+  products: RevenueFirstBusinessLaunchPackageProductCandidate[];
+  providerContacted: false;
+  scalePressure: RevenueMoneyArmyPressureSignal;
+  killPressure: RevenueMoneyArmyPressureSignal;
+  status: RevenueFirstBusinessLaunchPackageStatus;
+  store: {
+    audience: string;
+    businessName: string;
+    industry: string;
+    launchStatus: string;
+    sourceStoreId: string;
+    storePlatform: string;
+  };
+  summary: string;
+  totals: {
+    contentIdeas: number;
+    manualApprovalGates: number;
+    organicMoves: number;
+    products: number;
+    scaleCandidates: number;
+    watchCandidates: number;
+  };
+};
+
+export type RevenueMoneyArmyGenerateScoreBatchPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  candidates: RevenueMoneyArmyGeneratedAssetCandidate[];
+  currentPortfolio: {
+    generatedAt: string;
+    rotationRecommendations: RevenueMoneyArmyRotationRecommendation[];
+    summary: string;
+    totals: RevenueAssetPortfolio["totals"];
+  };
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Money Army Generate & Score Batch";
+  providerContacted: false;
+  firstBusinessLaunchPackage: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  rotationRecommendations: RevenueMoneyArmyRotationRecommendation[];
+  rotationSummary: Record<RevenueAssetRotationDecision, number>;
+  scalePressure: RevenueMoneyArmyPressureSignal;
+  killPressure: RevenueMoneyArmyPressureSignal;
+  summary: string;
+  totals: {
+    generated: number;
+    kill: number;
+    pause: number;
+    requested: number;
+    scale: number;
+    sourceProducts: number;
+    sourceStores: number;
+    watch: number;
+  };
+};
+
+export type RevenueMoneyArmyGenerateScoreBatchResponse = {
+  plan: RevenueMoneyArmyGenerateScoreBatchPlan;
+  recentRuns: RevenueMoneyArmyBatchRun[];
+};
+
+export type RevenueMoneyArmyGenerateScoreBatchApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    batchRunId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    stage: "generate_score_batch";
+    summary: string;
+  };
+  batchRun: RevenueMoneyArmyBatchRun | null;
+  plan: RevenueMoneyArmyGenerateScoreBatchPlan;
 };
 
 export type RevenuePortfolioDashboardNextAction = {
@@ -3972,6 +4176,16 @@ export type FinancialAdGrowthAllocationPlan = {
   mode: "organic_first" | "paid_scale_review" | "defensive_hold" | "watch";
   organicFirstAmount: number;
   paidScaleReviewAmount: number;
+  pressureDecision: {
+    advisoryOnly: true;
+    decision: "retain_for_defense" | "organic_first" | "paid_scale_review" | "watch";
+    guardrail: string;
+    killPressureScore: number;
+    reason: string;
+    recommendedSpendPriority: FinancialScalingBudgetPacket["spendPriority"] | "none";
+    scalePressureScore: number;
+    source: "revenue_engine_scored_portfolio";
+  };
   retainedAmount: number;
   scalePressure: FinancialPortfolioPressure;
   summary: string;

@@ -1430,7 +1430,13 @@ describe("Revenue Engine", () => {
     expect(plan.adGrowthAllocation).toMatchObject({
       mode: "organic_first",
       organicFirstAmount: 75,
-      paidScaleReviewAmount: 0
+      paidScaleReviewAmount: 0,
+      pressureDecision: {
+        decision: "organic_first",
+        killPressureScore: 0,
+        scalePressureScore: plan.portfolioSignal.scalePressure.pressureScore,
+        source: "revenue_engine_scored_portfolio"
+      }
     });
     expect(plan.scalingBudgetQueue.every((packet) => packet.externalExecution === false && packet.providerContacted === false)).toBe(true);
     expect(plan.scalingBudgetQueue[0]).toMatchObject({
@@ -1614,6 +1620,12 @@ describe("Revenue Engine", () => {
     expect(plan.payoutIntents.map((intent) => intent.category)).toEqual(["personal", "buffer"]);
     expect(plan.scalingBudgetQueue).toHaveLength(0);
     expect(plan.totals.scalingBudgetPackets).toBe(0);
+    expect(plan.adGrowthAllocation.pressureDecision).toMatchObject({
+      decision: "retain_for_defense",
+      killPressureScore: plan.portfolioSignal.killPressure.pressureScore,
+      recommendedSpendPriority: "none",
+      source: "revenue_engine_scored_portfolio"
+    });
     expect(plan.auditEvents).toContain("Portfolio defensive hold retained Ad/Growth capital instead of creating a reinvestment payout intent.");
     expect(plan.summary).toContain("Ad/Growth capital is retained");
   });
