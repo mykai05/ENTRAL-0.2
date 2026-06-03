@@ -7,7 +7,9 @@ import {
   applyRevenueBusinessFleetLiveLaunchPackageSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
+  applyRevenueFirstBusinessInternalLaunchSchema,
   applyRevenueFirstBusinessLaunchPackageSchema,
+  applyRevenueFirstStorePrepareSchema,
   applyRevenueMoneyArmyGenerateScoreBatchSchema,
   applyRevenueMoneyArmyBatchPipelineSchema,
   createClientMerchStoreSchema,
@@ -639,6 +641,18 @@ describe("validation schemas", () => {
       dryRun: false,
       maxProducts: 10
     });
+    const firstStorePrepareApply = applyRevenueFirstStorePrepareSchema.parse({
+      candidateCount: 25,
+      confirm: "APPROVE AND PREPARE FIRST STORE",
+      dryRun: false,
+      maxProducts: 10
+    });
+    const firstBusinessInternalLaunchApply = applyRevenueFirstBusinessInternalLaunchSchema.parse({
+      candidateCount: 25,
+      confirm: "LAUNCH FIRST BUSINESS INTERNALLY",
+      dryRun: false,
+      maxProducts: 10
+    });
 
     expect(query).toMatchObject({
       launchWaveSize: 10,
@@ -675,6 +689,8 @@ describe("validation schemas", () => {
     expect(moneyArmyGenerateScoreApply.dryRun).toBe(false);
     expect(firstBusinessPackage.maxProducts).toBe(10);
     expect(firstBusinessPackageApply.dryRun).toBe(false);
+    expect(firstStorePrepareApply.dryRun).toBe(false);
+    expect(firstBusinessInternalLaunchApply.dryRun).toBe(false);
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ shardCount: "300" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
@@ -714,6 +730,12 @@ describe("validation schemas", () => {
     })).toThrow();
     expect(() => applyRevenueFirstBusinessLaunchPackageSchema.parse({
       confirm: "RECORD INTERNAL MONEY ARMY GENERATE SCORE BATCH"
+    })).toThrow();
+    expect(() => applyRevenueFirstStorePrepareSchema.parse({
+      confirm: "RECORD INTERNAL FIRST BUSINESS LAUNCH PACKAGE"
+    })).toThrow();
+    expect(() => applyRevenueFirstBusinessInternalLaunchSchema.parse({
+      confirm: "APPROVE AND PREPARE FIRST STORE"
     })).toThrow();
   });
 

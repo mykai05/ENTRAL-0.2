@@ -1228,6 +1228,8 @@ export type RevenueBusinessFleetLaunchWaveApplyResponse = {
 export type RevenueMoneyArmyBatchPipelineStageName =
   | "generate_score_batch"
   | "first_business_launch_package"
+  | "prepare_first_store"
+  | "launch_first_business"
   | "batch_creation"
   | "batch_acceleration"
   | "launch_package"
@@ -1570,6 +1572,161 @@ export type RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse = {
   };
   batchRun: RevenueMoneyArmyBatchRun | null;
   package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+};
+
+export type RevenueFirstStorePreparationPlan = {
+  approval: {
+    approvedAt: string;
+    approvedBy: "operator";
+    auditOnly: true;
+    externalExecution: false;
+    note: string | null;
+    packageId: string;
+    providerContacted: false;
+    status: "approved_internal";
+  };
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  contentPlan: Array<RevenueFirstBusinessLaunchPackageContentIdea & {
+    executionState: "approved_internal_ready";
+  }>;
+  externalExecution: false;
+  generatedAt: string;
+  guardrails: string[];
+  mode: "Prepare First Store";
+  organicTrafficPlan: Array<RevenueFirstBusinessLaunchPackageOrganicMove & {
+    executionState: "approved_internal_ready";
+  }>;
+  preparationId: string;
+  products: Array<RevenueFirstBusinessLaunchPackageProductCandidate & {
+    executionState: "approved_internal_ready";
+  }>;
+  providerContacted: false;
+  status: "ready_to_execute_internal" | "blocked";
+  storeConfig: {
+    audience: string;
+    businessName: string;
+    externalExecution: false;
+    industry: string;
+    launchStatus: string;
+    preparationChecklist: string[];
+    providerContacted: false;
+    sourceStoreId: string;
+    storePlatform: string;
+  };
+  summary: string;
+  totals: {
+    approvalChecklist: number;
+    blockedExternalActions: number;
+    contentIdeas: number;
+    organicMoves: number;
+    products: number;
+    readyInternalSteps: number;
+  };
+};
+
+export type RevenueFirstStorePrepareApplyResponse = {
+  approval: {
+    approved: boolean;
+    auditLogId: string | null;
+    batchRunId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    packageId: string | null;
+    preparationId: string | null;
+    providerContacted: false;
+    stage: "prepare_first_store";
+    status: "approved_internal" | "blocked";
+    summary: string;
+  };
+  batchRun: RevenueMoneyArmyBatchRun | null;
+  package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  preparation: RevenueFirstStorePreparationPlan | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+};
+
+export type RevenueFirstBusinessInternalLaunchPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  contentDraftQueue: Array<RevenueFirstStorePreparationPlan["contentPlan"][number] & {
+    executionLocked: true;
+    launchState: "queued_internal_content_draft";
+    sequence: number;
+  }>;
+  evidenceLedgerFields: string[];
+  externalExecution: false;
+  generatedAt: string;
+  guardrails: string[];
+  launchApproval: {
+    approvedAt: string;
+    approvedBy: "operator";
+    auditOnly: true;
+    externalExecution: false;
+    note: string | null;
+    packageId: string;
+    preparationId: string;
+    providerContacted: false;
+    status: "launch_ready_internal";
+  };
+  launchId: string;
+  launchSequence: Array<{
+    externalExecution: false;
+    id: string;
+    order: number;
+    providerContacted: false;
+    state: "ready_internal";
+    title: string;
+  }>;
+  mode: "Launch First Business";
+  organicMoveQueue: Array<RevenueFirstStorePreparationPlan["organicTrafficPlan"][number] & {
+    executionLocked: true;
+    launchState: "queued_internal_organic_move";
+    sequence: number;
+  }>;
+  productSetupQueue: Array<RevenueFirstStorePreparationPlan["products"][number] & {
+    executionLocked: true;
+    launchState: "queued_internal_product_setup";
+    sequence: number;
+  }>;
+  providerContacted: false;
+  status: "launch_ready_internal" | "blocked";
+  storeSetup: RevenueFirstStorePreparationPlan["storeConfig"] & {
+    launchState: "queued_internal_store_setup";
+    setupQueue: string[];
+  };
+  summary: string;
+  totals: {
+    blockedExternalActions: number;
+    contentDrafts: number;
+    evidenceFields: number;
+    launchSequenceSteps: number;
+    organicMoves: number;
+    products: number;
+    readyExecutionItems: number;
+    storeSetupSteps: number;
+  };
+};
+
+export type RevenueFirstBusinessInternalLaunchApplyResponse = {
+  batchRun: RevenueMoneyArmyBatchRun | null;
+  launch: RevenueFirstBusinessInternalLaunchPlan | null;
+  launched: {
+    auditLogId: string | null;
+    batchRunId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    launched: boolean;
+    launchId: string | null;
+    packageId: string | null;
+    preparationId: string | null;
+    providerContacted: false;
+    stage: "launch_first_business";
+    status: "launch_ready_internal" | "blocked";
+    summary: string;
+  };
+  package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  preparation: RevenueFirstStorePreparationPlan | null;
   sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
 };
 

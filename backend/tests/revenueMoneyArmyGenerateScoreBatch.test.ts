@@ -6,6 +6,10 @@ import {
   type RevenueEngineStoreSnapshot
 } from "../src/services/revenueEngine.js";
 import { buildRevenueMoneyArmyGenerateScoreBatchPlan } from "../src/services/revenueMoneyArmyGenerateScoreBatch.js";
+import {
+  buildRevenueFirstBusinessInternalLaunchPlan,
+  buildRevenueFirstStorePreparationPlan
+} from "../src/services/revenueFirstStorePreparation.js";
 
 const store: RevenueEngineStoreSnapshot = {
   approvalStatus: "Launch Approved",
@@ -107,6 +111,49 @@ describe("Revenue Money Army Generate & Score Batch", () => {
     expect(plan.firstBusinessLaunchPackage?.organicFirstMoves.length).toBeGreaterThan(0);
     expect(plan.firstBusinessLaunchPackage?.approvalChecklist.map((item) => item.category)).toContain("designs");
     expect(plan.firstBusinessLaunchPackage?.manualApprovalGates.join(" ")).toContain("Approve");
+    const preparation = buildRevenueFirstStorePreparationPlan({
+      approvedAt: "2026-06-02T12:45:00.000Z",
+      note: "Approved internally from test.",
+      packagePlan: plan.firstBusinessLaunchPackage!
+    });
+    expect(preparation).toMatchObject({
+      externalExecution: false,
+      mode: "Prepare First Store",
+      providerContacted: false,
+      status: "ready_to_execute_internal"
+    });
+    expect(preparation.approval).toMatchObject({
+      auditOnly: true,
+      externalExecution: false,
+      providerContacted: false,
+      status: "approved_internal"
+    });
+    expect(preparation.products.length).toBe(plan.firstBusinessLaunchPackage?.products.length);
+    expect(preparation.products.every((product) => product.executionState === "approved_internal_ready")).toBe(true);
+    expect(preparation.blockedExternalActions.join(" ")).toContain("marketplace");
+    const internalLaunch = buildRevenueFirstBusinessInternalLaunchPlan({
+      launchedAt: "2026-06-02T13:00:00.000Z",
+      note: "Launch First Business internal packet created from dashboard controls.",
+      preparationPlan: preparation
+    });
+    expect(internalLaunch).toMatchObject({
+      externalExecution: false,
+      mode: "Launch First Business",
+      providerContacted: false,
+      status: "launch_ready_internal"
+    });
+    expect(internalLaunch.launchApproval).toMatchObject({
+      auditOnly: true,
+      externalExecution: false,
+      providerContacted: false,
+      status: "launch_ready_internal"
+    });
+    expect(internalLaunch.productSetupQueue.length).toBe(preparation.products.length);
+    expect(internalLaunch.productSetupQueue.every((product) => product.launchState === "queued_internal_product_setup")).toBe(true);
+    expect(internalLaunch.contentDraftQueue.every((idea) => idea.executionLocked)).toBe(true);
+    expect(internalLaunch.organicMoveQueue.every((move) => move.launchState === "queued_internal_organic_move")).toBe(true);
+    expect(internalLaunch.evidenceLedgerFields).toContain("manualNetProfit");
+    expect(internalLaunch.blockedExternalActions.join(" ")).toContain("Publishing a live store");
     expect(plan.scalePressure.pressureScore).toBeGreaterThanOrEqual(0);
     expect(plan.killPressure.pressureScore).toBeGreaterThanOrEqual(0);
     expect(plan.blockedExternalActions).toContain("Posting faceless content externally");

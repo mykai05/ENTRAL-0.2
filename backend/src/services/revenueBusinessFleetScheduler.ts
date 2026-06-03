@@ -221,6 +221,8 @@ export type RevenueBusinessFleetLaunchGapPlan = {
 export type RevenueMoneyArmyBatchPipelineStageName =
   | "generate_score_batch"
   | "first_business_launch_package"
+  | "prepare_first_store"
+  | "launch_first_business"
   | "batch_creation"
   | "batch_acceleration"
   | "launch_package"
