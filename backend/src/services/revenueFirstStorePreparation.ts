@@ -6,7 +6,48 @@ import type {
 } from "./revenueFirstBusinessLaunchPackage.js";
 
 export type RevenueFirstStorePreparationStatus = "ready_to_execute_internal" | "blocked";
-export type RevenueFirstBusinessInternalLaunchStatus = "launch_ready_internal" | "blocked";
+export type RevenueFirstBusinessInternalLaunchStatus = "approved_for_launch_internal" | "blocked";
+export type RevenueFirstBusinessExecutionStatus = "ready_to_launch_first_business" | "blocked";
+export type RevenueFirstBusinessAutonomousLaunchStatus = "autonomous_ready_payment_gated" | "blocked";
+export type RevenueFirstBusinessReadinessGateStatus = "ready_for_manual_launch_approval" | "blocked";
+export type RevenueFirstBusinessReadinessGateCategory =
+  | "store"
+  | "products"
+  | "listings"
+  | "designs"
+  | "content"
+  | "traffic"
+  | "finance"
+  | "evidence"
+  | "external_lock";
+
+export type RevenueFirstBusinessListingProductPackItem = {
+  approvalChecklist: string[];
+  candidateId: string;
+  designSpec: {
+    externalGeneration: false;
+    mockupDirection: string;
+    negativePrompt: string;
+    palette: string[];
+    placement: string;
+    prompt: string;
+    providerContacted: false;
+    typography: string;
+  };
+  externalExecution: false;
+  listingBullets: string[];
+  listingDescription: string;
+  listingTitle: string;
+  productName: string;
+  productType: string;
+  profitMargin: number;
+  providerContacted: false;
+  retailPrice: number;
+  seoKeywords: string[];
+  status: "ready_internal";
+  storefrontCollection: string;
+  tags: string[];
+};
 
 export type RevenueFirstStorePreparationPlan = {
   approval: {
@@ -80,7 +121,7 @@ export type RevenueFirstBusinessInternalLaunchPlan = {
     packageId: string;
     preparationId: string;
     providerContacted: false;
-    status: "launch_ready_internal";
+    status: "approved_for_launch_internal";
   };
   launchId: string;
   launchSequence: Array<{
@@ -104,6 +145,18 @@ export type RevenueFirstBusinessInternalLaunchPlan = {
   }>;
   providerContacted: false;
   status: RevenueFirstBusinessInternalLaunchStatus;
+  finalExecutionPacket: {
+    approvalState: "approved_for_launch_internal";
+    blockedExternalActions: string[];
+    evidenceLedgerFields: string[];
+    executionChecklist: string[];
+    externalExecution: false;
+    facelessContentIdeas: RevenueFirstBusinessInternalLaunchPlan["contentDraftQueue"];
+    organicMoves: RevenueFirstBusinessInternalLaunchPlan["organicMoveQueue"];
+    products: RevenueFirstBusinessInternalLaunchPlan["productSetupQueue"];
+    providerContacted: false;
+    store: RevenueFirstBusinessInternalLaunchPlan["storeSetup"];
+  };
   storeSetup: RevenueFirstStorePreparationPlan["storeConfig"] & {
     launchState: "queued_internal_store_setup";
     setupQueue: string[];
@@ -118,6 +171,287 @@ export type RevenueFirstBusinessInternalLaunchPlan = {
     products: number;
     readyExecutionItems: number;
     storeSetupSteps: number;
+  };
+};
+
+export type RevenueFirstBusinessExecutionPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  executionApproval: {
+    approvedAt: string;
+    approvedBy: "operator";
+    auditOnly: true;
+    externalExecution: false;
+    launchId: string;
+    note: string | null;
+    providerContacted: false;
+    status: "ready_to_launch_first_business";
+  };
+  executionId: string;
+  externalExecution: false;
+  firstLaunchReadinessGate: {
+    externalExecution: false;
+    generatedAt: string;
+    items: Array<{
+      category: RevenueFirstBusinessReadinessGateCategory;
+      detail: string;
+      externalExecution: false;
+      providerContacted: false;
+      required: true;
+      status: "ready" | "blocked";
+      title: string;
+    }>;
+    label: "First Launch Readiness Gate";
+    providerContacted: false;
+    status: RevenueFirstBusinessReadinessGateStatus;
+    summary: string;
+    totals: {
+      blocked: number;
+      ready: number;
+      required: number;
+    };
+  };
+  finalExecutionPacket: RevenueFirstBusinessInternalLaunchPlan["finalExecutionPacket"];
+  firstWeekTrackingPlan: {
+    checkIns: Array<{
+      day: 0 | 1 | 3 | 7;
+      requiredEvidence: string[];
+      title: string;
+    }>;
+    externalExecution: false;
+    metricFields: Array<{
+      cadence: "twice_daily" | "daily" | "end_of_week";
+      id: string;
+      label: string;
+    }>;
+    providerContacted: false;
+    rotationReview: {
+      day: 7;
+      inputs: string[];
+      output: "feed_revenue_engine_scale_watch_pause_kill";
+    };
+  };
+  generatedAt: string;
+  guardrails: string[];
+  launchHandoffPacket: {
+    blockedExternalActions: string[];
+    contentCalendar: Array<{
+      captionDraft: string;
+      channel: RevenueFirstBusinessLaunchPackageContentIdea["channel"];
+      contentIdeaId: string;
+      externalExecution: false;
+      hook: string;
+      providerContacted: false;
+      scriptDraft: string;
+      sequence: number;
+      status: "ready_internal";
+    }>;
+    explicitLiveApprovalRequired: true;
+    externalExecution: false;
+    handoffId: string;
+    manualExecutionChecklist: string[];
+    organicLaunchMoves: Array<RevenueFirstBusinessInternalLaunchPlan["organicMoveQueue"][number] & {
+      manualExecutionNote: string;
+      status: "ready_internal";
+    }>;
+    products: RevenueFirstBusinessListingProductPackItem[];
+    providerContacted: false;
+    status: "ready_for_operator_review" | "blocked";
+    store: RevenueFirstBusinessInternalLaunchPlan["finalExecutionPacket"]["store"] & {
+      manualSetupInstructions: string[];
+    };
+    summary: string;
+  };
+  listingProductPack: RevenueFirstBusinessListingProductPackItem[];
+  manualLaunchRunbook: Array<{
+    externalExecution: false;
+    id: string;
+    order: number;
+    packetSection: "store" | "products" | "content" | "organic" | "evidence" | "review";
+    providerContacted: false;
+    status: "ready_manual";
+    title: string;
+  }>;
+  mode: "Execute First Business";
+  providerContacted: false;
+  readyState: {
+    externalExecution: false;
+    label: "Ready to Launch First Business";
+    manualLaunchReady: boolean;
+    providerContacted: false;
+    semiAutomatedPreparationReady: boolean;
+  };
+  revenueStartPlan: {
+    first24Hours: string[];
+    first72Hours: string[];
+    organicFirst: true;
+    paidSpendLocked: true;
+  };
+  semiAutomatedPreparationQueue: Array<{
+    externalExecution: false;
+    id: string;
+    providerContacted: false;
+    status: "ready_internal";
+    title: string;
+  }>;
+  sourceLaunchId: string;
+  status: RevenueFirstBusinessExecutionStatus;
+  summary: string;
+  totals: {
+    blockedExternalActions: number;
+    finalProducts: number;
+    firstWeekMetricFields: number;
+    handoffProducts: number;
+    manualSteps: number;
+    organicMoves: number;
+    readyLaunchItems: number;
+    readinessBlocked: number;
+    readinessReady: number;
+    semiAutomatedSteps: number;
+  };
+};
+
+export type RevenueFirstBusinessAutonomousLaunchLane =
+  | "store_build"
+  | "product_creation"
+  | "supplier_selection"
+  | "supplier_connection"
+  | "content_launch"
+  | "organic_traffic"
+  | "ad_campaign_drafting"
+  | "ad_spend_activation"
+  | "tracking";
+
+export type RevenueFirstBusinessAutonomousLaunchPlan = {
+  adCampaignDrafts: Array<{
+    audience: string;
+    budgetApprovalRequired: true;
+    campaignName: string;
+    dailyBudgetCap: number;
+    externalExecution: false;
+    objective: "organic_amplification" | "product_validation" | "retargeting_seed";
+    paymentExecution: false;
+    productNames: string[];
+    providerContacted: false;
+    spendState: "payment_required";
+    status: "draft_locked";
+  }>;
+  auditEvents: string[];
+  autonomousLaunchId: string;
+  autonomousUntilPayment: true;
+  autonomyMatrix: Array<{
+    autonomyPercent: number;
+    commander: string;
+    externalExecution: false;
+    hardStop: string | null;
+    lane: RevenueFirstBusinessAutonomousLaunchLane;
+    nextInternalAction: string;
+    ownerApprovalRequired: boolean;
+    providerContacted: false;
+    status: "autonomous_ready" | "connector_gated" | "payment_gated" | "blocked";
+  }>;
+  blockedExternalActions: string[];
+  chainOfCommand: Array<{
+    lane: RevenueFirstBusinessAutonomousLaunchLane;
+    owns: string[];
+    rank: "marshal" | "general" | "commander" | "soldier";
+    status: "ready_internal" | "owner_gate_required";
+    title: string;
+  }>;
+  connectionPlan: {
+    connectorManifests: Array<{
+      approvalRequired: true;
+      credentialScopes: string[];
+      externalExecution: false;
+      payloadState: "prepared_not_sent";
+      provider: "Shopify" | "Etsy" | "Printify" | "Printful" | "Meta" | "Google Analytics";
+      providerContacted: false;
+      purpose: string;
+    }>;
+    externalExecution: false;
+    providerContacted: false;
+    status: "connector_ready_owner_gated" | "blocked";
+    summary: string;
+  };
+  executionPacket: RevenueFirstBusinessExecutionPlan;
+  externalExecution: false;
+  finalOperatorGate: {
+    externalExecution: false;
+    paymentExecution: false;
+    providerContacted: false;
+    requiredApprovals: string[];
+    status: "owner_payment_and_provider_approval_required" | "blocked";
+    summary: string;
+  };
+  generatedAt: string;
+  guardrails: string[];
+  mode: "Autonomous First Business Launch Prep";
+  paymentApprovalQueue: Array<{
+    approvalType: "provider_account" | "supplier_order" | "ad_spend" | "payment_processor" | "marketplace_fee";
+    estimatedAmount: number;
+    externalExecution: false;
+    paymentExecution: false;
+    providerContacted: false;
+    reason: string;
+    status: "owner_approval_required";
+    title: string;
+  }>;
+  paymentExecution: false;
+  productCreationPlan: Array<RevenueFirstBusinessListingProductPackItem & {
+    connectorPayloadStatus: "prepared_not_sent";
+    creationLane: "autonomous_internal_ready";
+    supplierCandidateId: string;
+  }>;
+  providerContacted: false;
+  status: RevenueFirstBusinessAutonomousLaunchStatus;
+  storeBuildPlan: {
+    businessName: string;
+    collectionPlan: string[];
+    externalExecution: false;
+    navigationPlan: string[];
+    policyDrafts: string[];
+    providerContacted: false;
+    seoPlan: {
+      description: string;
+      title: string;
+    };
+    setupPayloadState: "prepared_not_sent";
+    status: "autonomous_internal_ready" | "blocked";
+    storePlatform: string;
+  };
+  supplierPlan: {
+    candidates: Array<{
+      estimatedBaseCost: number;
+      externalExecution: false;
+      provider: "Printify" | "Printful" | "Other";
+      providerContacted: false;
+      reasons: string[];
+      selectionScore: number;
+      status: "candidate_internal";
+      supplierCandidateId: string;
+    }>;
+    externalExecution: false;
+    providerContacted: false;
+    selectedSupplier: {
+      estimatedBaseCost: number;
+      externalExecution: false;
+      provider: "Printify" | "Printful" | "Other";
+      providerContacted: false;
+      selectionScore: number;
+      supplierCandidateId: string;
+    };
+    status: "selected_internal_owner_gated" | "blocked";
+    summary: string;
+  };
+  summary: string;
+  totals: {
+    adDrafts: number;
+    autonomousReadyLanes: number;
+    blockedExternalActions: number;
+    connectorManifests: number;
+    paymentApprovals: number;
+    productPayloads: number;
+    supplierCandidates: number;
   };
 };
 
@@ -308,28 +642,63 @@ function firstBusinessLaunchSequence(preparationPlan: RevenueFirstStorePreparati
   ];
 }
 
+function firstLaunchProductScore(product: RevenueFirstStorePreparationPlan["products"][number]) {
+  const approvalBoost = product.approvalState === "ready_to_approve" ? 60
+    : product.approvalState === "needs_manual_review" ? 20
+      : -80;
+  const recommendationBoost = product.recommendation === "scale" ? 45
+    : product.recommendation === "watch" ? 25
+      : product.recommendation === "pause" ? -20 : -80;
+
+  return approvalBoost + recommendationBoost + product.score + product.profitMargin;
+}
+
+function selectFirstLaunchProducts(preparationPlan: RevenueFirstStorePreparationPlan) {
+  return [...preparationPlan.products]
+    .sort((left, right) => (
+      firstLaunchProductScore(right) - firstLaunchProductScore(left)
+      || right.score - left.score
+      || right.profitMargin - left.profitMargin
+    ))
+    .slice(0, 5);
+}
+
+function selectContentDraftsForProducts(
+  preparationPlan: RevenueFirstStorePreparationPlan,
+  productSetupQueue: RevenueFirstBusinessInternalLaunchPlan["productSetupQueue"]
+) {
+  const selectedCandidateIds = new Set(productSetupQueue.map((product) => product.candidateId));
+  const productContent = preparationPlan.contentPlan.filter((idea) => selectedCandidateIds.has(idea.candidateId));
+  const fallbackContent = preparationPlan.contentPlan.filter((idea) => !selectedCandidateIds.has(idea.candidateId));
+
+  return [...productContent, ...fallbackContent]
+    .slice(0, Math.max(3, Math.min(5, productSetupQueue.length)))
+    .map((idea, index) => ({
+      ...idea,
+      executionLocked: true as const,
+      launchState: "queued_internal_content_draft" as const,
+      sequence: index + 1
+    }));
+}
+
 export function buildRevenueFirstBusinessInternalLaunchPlan(input: {
   launchedAt?: string;
   note?: string | null;
   preparationPlan: RevenueFirstStorePreparationPlan;
 }): RevenueFirstBusinessInternalLaunchPlan {
   const launchedAt = input.launchedAt ?? new Date().toISOString();
-  const status: RevenueFirstBusinessInternalLaunchStatus = input.preparationPlan.status === "ready_to_execute_internal"
-    ? "launch_ready_internal"
-    : "blocked";
-  const productSetupQueue = input.preparationPlan.products.map((product, index) => ({
+  const selectedProducts = selectFirstLaunchProducts(input.preparationPlan);
+  const productSetupQueue = selectedProducts.map((product, index) => ({
     ...product,
     executionLocked: true as const,
     launchState: "queued_internal_product_setup" as const,
     sequence: index + 1
   }));
-  const contentDraftQueue = input.preparationPlan.contentPlan.map((idea, index) => ({
-    ...idea,
-    executionLocked: true as const,
-    launchState: "queued_internal_content_draft" as const,
-    sequence: index + 1
-  }));
-  const organicMoveQueue = input.preparationPlan.organicTrafficPlan.map((move, index) => ({
+  const status: RevenueFirstBusinessInternalLaunchStatus = input.preparationPlan.status === "ready_to_execute_internal" && productSetupQueue.length >= 3
+    ? "approved_for_launch_internal"
+    : "blocked";
+  const contentDraftQueue = selectContentDraftsForProducts(input.preparationPlan, productSetupQueue);
+  const organicMoveQueue = input.preparationPlan.organicTrafficPlan.slice(0, 6).map((move, index) => ({
     ...move,
     executionLocked: true as const,
     launchState: "queued_internal_organic_move" as const,
@@ -379,7 +748,7 @@ export function buildRevenueFirstBusinessInternalLaunchPlan(input: {
       packageId: input.preparationPlan.approval.packageId,
       preparationId: input.preparationPlan.preparationId,
       providerContacted: false,
-      status: "launch_ready_internal"
+      status: "approved_for_launch_internal"
     },
     launchId: `launch_first_business_${safeId(input.preparationPlan.storeConfig.sourceStoreId)}_${safeId(launchedAt)}`,
     launchSequence,
@@ -388,12 +757,35 @@ export function buildRevenueFirstBusinessInternalLaunchPlan(input: {
     productSetupQueue,
     providerContacted: false,
     status,
+    finalExecutionPacket: {
+      approvalState: "approved_for_launch_internal",
+      blockedExternalActions,
+      evidenceLedgerFields,
+      executionChecklist: [
+        "Review final internal store setup packet.",
+        "Review 3-5 selected product setup packets.",
+        "Review linked faceless content drafts.",
+        "Review organic-first traffic move queue.",
+        "Attach manual evidence fields before any performance rotation.",
+        "Request separate explicit live-execution approval before any external action."
+      ],
+      externalExecution: false,
+      facelessContentIdeas: contentDraftQueue,
+      organicMoves: organicMoveQueue,
+      products: productSetupQueue,
+      providerContacted: false,
+      store: {
+        ...input.preparationPlan.storeConfig,
+        launchState: "queued_internal_store_setup",
+        setupQueue
+      }
+    },
     storeSetup: {
       ...input.preparationPlan.storeConfig,
       launchState: "queued_internal_store_setup",
       setupQueue
     },
-    summary: `${input.preparationPlan.storeConfig.businessName} is launch-ready internally with ${productSetupQueue.length} product setup packet${productSetupQueue.length === 1 ? "" : "s"}, ${contentDraftQueue.length} faceless content draft${contentDraftQueue.length === 1 ? "" : "s"}, ${organicMoveQueue.length} organic move${organicMoveQueue.length === 1 ? "" : "s"}, and ${launchSequence.length} internal launch step${launchSequence.length === 1 ? "" : "s"}. External execution remains locked until explicit live approval.`,
+    summary: `${input.preparationPlan.storeConfig.businessName} is approved for launch internally with ${productSetupQueue.length} selected product setup packet${productSetupQueue.length === 1 ? "" : "s"}, ${contentDraftQueue.length} linked faceless content draft${contentDraftQueue.length === 1 ? "" : "s"}, ${organicMoveQueue.length} organic-first move${organicMoveQueue.length === 1 ? "" : "s"}, and ${launchSequence.length} internal launch step${launchSequence.length === 1 ? "" : "s"}. External execution remains locked until explicit live approval.`,
     totals: {
       blockedExternalActions: blockedExternalActions.length,
       contentDrafts: contentDraftQueue.length,
@@ -403,6 +795,1078 @@ export function buildRevenueFirstBusinessInternalLaunchPlan(input: {
       products: productSetupQueue.length,
       readyExecutionItems: setupQueue.length + productSetupQueue.length + contentDraftQueue.length + organicMoveQueue.length + launchSequence.length + evidenceLedgerFields.length,
       storeSetupSteps: setupQueue.length
+    }
+  };
+}
+
+function firstBusinessManualRunbook(launchPlan: RevenueFirstBusinessInternalLaunchPlan): RevenueFirstBusinessExecutionPlan["manualLaunchRunbook"] {
+  const storeSlug = safeId(launchPlan.storeSetup.sourceStoreId);
+
+  return [
+    {
+      externalExecution: false,
+      id: `execute_${storeSlug}_store`,
+      order: 1,
+      packetSection: "store",
+      providerContacted: false,
+      status: "ready_manual",
+      title: "Manually create or update the store shell from the approved store packet"
+    },
+    {
+      externalExecution: false,
+      id: `execute_${storeSlug}_products`,
+      order: 2,
+      packetSection: "products",
+      providerContacted: false,
+      status: "ready_manual",
+      title: `Manually create ${launchPlan.finalExecutionPacket.products.length} approved product listing draft${launchPlan.finalExecutionPacket.products.length === 1 ? "" : "s"}`
+    },
+    {
+      externalExecution: false,
+      id: `execute_${storeSlug}_content`,
+      order: 3,
+      packetSection: "content",
+      providerContacted: false,
+      status: "ready_manual",
+      title: "Prepare approved faceless content drafts for manual posting review"
+    },
+    {
+      externalExecution: false,
+      id: `execute_${storeSlug}_organic`,
+      order: 4,
+      packetSection: "organic",
+      providerContacted: false,
+      status: "ready_manual",
+      title: "Run organic-first launch moves manually after live approval"
+    },
+    {
+      externalExecution: false,
+      id: `execute_${storeSlug}_evidence`,
+      order: 5,
+      packetSection: "evidence",
+      providerContacted: false,
+      status: "ready_manual",
+      title: "Record first traffic, sales, and content evidence into the manual ledger"
+    },
+    {
+      externalExecution: false,
+      id: `execute_${storeSlug}_review`,
+      order: 6,
+      packetSection: "review",
+      providerContacted: false,
+      status: "ready_manual",
+      title: "Review first revenue signals before scale, spend, or rotation changes"
+    }
+  ];
+}
+
+function firstBusinessSemiAutomatedQueue(launchPlan: RevenueFirstBusinessInternalLaunchPlan): RevenueFirstBusinessExecutionPlan["semiAutomatedPreparationQueue"] {
+  const storeSlug = safeId(launchPlan.storeSetup.sourceStoreId);
+
+  return [
+    {
+      externalExecution: false,
+      id: `semi_${storeSlug}_copy_packet`,
+      providerContacted: false,
+      status: "ready_internal",
+      title: "Prepare copy/paste store setup packet for operator review"
+    },
+    {
+      externalExecution: false,
+      id: `semi_${storeSlug}_product_rows`,
+      providerContacted: false,
+      status: "ready_internal",
+      title: "Prepare product setup rows for manual import or copy/paste"
+    },
+    {
+      externalExecution: false,
+      id: `semi_${storeSlug}_content_rows`,
+      providerContacted: false,
+      status: "ready_internal",
+      title: "Prepare faceless content rows for manual review"
+    },
+    {
+      externalExecution: false,
+      id: `semi_${storeSlug}_organic_rows`,
+      providerContacted: false,
+      status: "ready_internal",
+      title: "Prepare organic move checklist for manual execution"
+    }
+  ];
+}
+
+function uniqueText(values: string[]) {
+  const seen = new Set<string>();
+
+  return values
+    .map((value) => value.trim())
+    .filter((value) => {
+      const key = value.toLowerCase();
+      if (!key || seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+}
+
+function wordsFrom(value: string) {
+  return value
+    .split(/[^A-Za-z0-9]+/g)
+    .map((word) => word.trim().toLowerCase())
+    .filter((word) => word.length >= 3);
+}
+
+function firstBusinessSeoKeywords(
+  product: RevenueFirstBusinessInternalLaunchPlan["productSetupQueue"][number],
+  store: RevenueFirstBusinessInternalLaunchPlan["storeSetup"]
+) {
+  return uniqueText([
+    ...product.tags,
+    product.productName,
+    product.productType,
+    store.businessName,
+    store.industry,
+    store.audience,
+    ...wordsFrom(product.designTheme),
+    ...wordsFrom(product.designConcept),
+    "original merch",
+    "gift",
+    "organic launch"
+  ]).slice(0, 14);
+}
+
+function firstBusinessListingBullets(
+  product: RevenueFirstBusinessInternalLaunchPlan["productSetupQueue"][number],
+  store: RevenueFirstBusinessInternalLaunchPlan["storeSetup"]
+) {
+  return [
+    `${product.productName} is prepared for ${store.audience}.`,
+    `${product.designConcept} with ${product.internalDesignDraft.typography} typography.`,
+    `${product.productType} listing draft priced at $${product.retailPrice.toFixed(2)} with ${product.profitMargin}% target margin.`,
+    `Internal design prompt and mockup direction are ready for manual approval before any external generation.`,
+    "Provider, upload, marketplace, and paid traffic actions remain locked."
+  ];
+}
+
+function buildListingProductPack(launchPlan: RevenueFirstBusinessInternalLaunchPlan): RevenueFirstBusinessListingProductPackItem[] {
+  return launchPlan.finalExecutionPacket.products.map((product) => ({
+    approvalChecklist: [
+      "Approve final listing title, description, and price.",
+      "Approve design prompt, negative prompt, mockup direction, placement, palette, and typography.",
+      "Confirm original-work and trademark review before any artwork generation or provider upload.",
+      "Confirm product can be created manually only after explicit live approval.",
+      "Confirm first-week tracking fields are ready before launch."
+    ],
+    candidateId: product.candidateId,
+    designSpec: {
+      externalGeneration: false,
+      mockupDirection: product.internalDesignDraft.mockupDirection,
+      negativePrompt: product.internalDesignDraft.negativePrompt,
+      palette: product.internalDesignDraft.palette,
+      placement: product.internalDesignDraft.placement,
+      prompt: product.internalDesignDraft.prompt,
+      providerContacted: false,
+      typography: product.internalDesignDraft.typography
+    },
+    externalExecution: false,
+    listingBullets: firstBusinessListingBullets(product, launchPlan.storeSetup),
+    listingDescription: product.listingDescription,
+    listingTitle: product.listingTitle,
+    productName: product.productName,
+    productType: product.productType,
+    profitMargin: product.profitMargin,
+    providerContacted: false,
+    retailPrice: product.retailPrice,
+    seoKeywords: firstBusinessSeoKeywords(product, launchPlan.storeSetup),
+    status: "ready_internal",
+    storefrontCollection: `${launchPlan.storeSetup.businessName} First Drop`,
+    tags: product.tags
+  }));
+}
+
+function buildFirstWeekTrackingPlan(): RevenueFirstBusinessExecutionPlan["firstWeekTrackingPlan"] {
+  return {
+    checkIns: [
+      {
+        day: 0,
+        requiredEvidence: ["storeUrl", "productUrls", "launchTimestamp", "operatorNotes"],
+        title: "Launch day proof"
+      },
+      {
+        day: 1,
+        requiredEvidence: ["manualVisits", "contentViews", "clicks", "unitsSold", "grossRevenue"],
+        title: "First 24 hour signal check"
+      },
+      {
+        day: 3,
+        requiredEvidence: ["trafficSources", "bestContentHook", "productPageNotes", "conversionNotes"],
+        title: "First 72 hour optimization check"
+      },
+      {
+        day: 7,
+        requiredEvidence: ["manualNetProfit", "topProduct", "weakestProduct", "rotationRecommendation"],
+        title: "First week Revenue Engine review"
+      }
+    ],
+    externalExecution: false,
+    metricFields: [
+      { cadence: "twice_daily", id: "manualVisits", label: "Manual visits" },
+      { cadence: "twice_daily", id: "manualUnitsSold", label: "Units sold" },
+      { cadence: "daily", id: "manualGrossRevenue", label: "Gross revenue" },
+      { cadence: "daily", id: "manualNetProfit", label: "Net profit" },
+      { cadence: "daily", id: "manualContentViews", label: "Content views" },
+      { cadence: "daily", id: "manualClicks", label: "Content or listing clicks" },
+      { cadence: "daily", id: "manualConversionNotes", label: "Conversion notes" },
+      { cadence: "end_of_week", id: "manualRotationRecommendation", label: "Scale/watch/pause/kill recommendation" }
+    ],
+    providerContacted: false,
+    rotationReview: {
+      day: 7,
+      inputs: [
+        "manualVisits",
+        "manualUnitsSold",
+        "manualGrossRevenue",
+        "manualNetProfit",
+        "manualContentViews",
+        "manualConversionNotes",
+        "manualRotationRecommendation"
+      ],
+      output: "feed_revenue_engine_scale_watch_pause_kill"
+    }
+  };
+}
+
+function buildFirstLaunchReadinessGate(input: {
+  executionStatus: RevenueFirstBusinessExecutionStatus;
+  generatedAt: string;
+  launchPlan: RevenueFirstBusinessInternalLaunchPlan;
+  listingProductPack: RevenueFirstBusinessListingProductPackItem[];
+}): RevenueFirstBusinessExecutionPlan["firstLaunchReadinessGate"] {
+  const productCount = input.launchPlan.finalExecutionPacket.products.length;
+  const contentCount = input.launchPlan.finalExecutionPacket.facelessContentIdeas.length;
+  const organicMoveCount = input.launchPlan.finalExecutionPacket.organicMoves.length;
+  const items: RevenueFirstBusinessExecutionPlan["firstLaunchReadinessGate"]["items"] = [
+    {
+      category: "store",
+      detail: `${input.launchPlan.storeSetup.businessName} store setup packet has ${input.launchPlan.storeSetup.setupQueue.length} internal setup step${input.launchPlan.storeSetup.setupQueue.length === 1 ? "" : "s"}.`,
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: input.executionStatus === "ready_to_launch_first_business" && input.launchPlan.storeSetup.setupQueue.length > 0 ? "ready" : "blocked",
+      title: "Store config ready"
+    },
+    {
+      category: "products",
+      detail: `${productCount} selected product setup packet${productCount === 1 ? "" : "s"} are inside the final execution packet.`,
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: productCount >= 3 && productCount <= 5 ? "ready" : "blocked",
+      title: "3-5 products selected"
+    },
+    {
+      category: "listings",
+      detail: `${input.listingProductPack.length} listing-ready product row${input.listingProductPack.length === 1 ? "" : "s"} include title, description, bullets, SEO keywords, price, and margin.`,
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: input.listingProductPack.length === productCount && input.listingProductPack.every((product) => product.seoKeywords.length > 0 && product.listingBullets.length > 0) ? "ready" : "blocked",
+      title: "Listing pack complete"
+    },
+    {
+      category: "designs",
+      detail: "Each product has an internal prompt, negative prompt, mockup direction, placement, palette, and typography spec.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: input.listingProductPack.every((product) => product.designSpec.prompt.length > 0 && product.designSpec.externalGeneration === false) ? "ready" : "blocked",
+      title: "Design specs ready internally"
+    },
+    {
+      category: "content",
+      detail: `${contentCount} faceless content draft${contentCount === 1 ? "" : "s"} are linked to the first products.`,
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: contentCount >= 3 ? "ready" : "blocked",
+      title: "Faceless content hooks ready"
+    },
+    {
+      category: "traffic",
+      detail: `${organicMoveCount} organic-first move${organicMoveCount === 1 ? "" : "s"} are prepared. Paid spend stays locked.`,
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: organicMoveCount > 0 ? "ready" : "blocked",
+      title: "Organic traffic path ready"
+    },
+    {
+      category: "finance",
+      detail: "Paid spend, provider charges, cards, banking, payout, and budget movement remain locked behind separate approval.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "Financial guardrail active"
+    },
+    {
+      category: "evidence",
+      detail: `${input.launchPlan.finalExecutionPacket.evidenceLedgerFields.length} first-week evidence field${input.launchPlan.finalExecutionPacket.evidenceLedgerFields.length === 1 ? "" : "s"} are ready for manual tracking.`,
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: input.launchPlan.finalExecutionPacket.evidenceLedgerFields.length > 0 ? "ready" : "blocked",
+      title: "Evidence ledger ready"
+    },
+    {
+      category: "external_lock",
+      detail: "Provider calls, browser work, uploads, ad spend, marketplace publishing, social posting, bank, and payment actions are still blocked.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: input.launchPlan.externalExecution === false && input.launchPlan.providerContacted === false ? "ready" : "blocked",
+      title: "External action lock verified"
+    }
+  ];
+  const ready = items.filter((item) => item.status === "ready").length;
+  const blocked = items.length - ready;
+  const status: RevenueFirstBusinessReadinessGateStatus = blocked === 0 && input.executionStatus === "ready_to_launch_first_business"
+    ? "ready_for_manual_launch_approval"
+    : "blocked";
+
+  return {
+    externalExecution: false,
+    generatedAt: input.generatedAt,
+    items,
+    label: "First Launch Readiness Gate",
+    providerContacted: false,
+    status,
+    summary: status === "ready_for_manual_launch_approval"
+      ? `${input.launchPlan.storeSetup.businessName} passes the First Launch Readiness Gate with ${ready}/${items.length} required checks ready. Live external action still requires explicit approval.`
+      : `${input.launchPlan.storeSetup.businessName} is blocked at the First Launch Readiness Gate with ${blocked} unresolved check${blocked === 1 ? "" : "s"}.`,
+    totals: {
+      blocked,
+      ready,
+      required: items.length
+    }
+  };
+}
+
+function buildContentCalendar(launchPlan: RevenueFirstBusinessInternalLaunchPlan): RevenueFirstBusinessExecutionPlan["launchHandoffPacket"]["contentCalendar"] {
+  return launchPlan.finalExecutionPacket.facelessContentIdeas.map((idea, index) => ({
+    captionDraft: `${idea.hook} ${idea.productName} is ready for the first organic launch wave. Link goes live only after approval.`,
+    channel: idea.channel,
+    contentIdeaId: idea.id,
+    externalExecution: false,
+    hook: idea.hook,
+    providerContacted: false,
+    scriptDraft: `${idea.hook} Show the problem, reveal the product angle, call out ${idea.productName}, and ask viewers to save or comment. ${idea.scriptAngle}`,
+    sequence: index + 1,
+    status: "ready_internal"
+  }));
+}
+
+function buildLaunchHandoffPacket(input: {
+  executionId: string;
+  executionStatus: RevenueFirstBusinessExecutionStatus;
+  launchPlan: RevenueFirstBusinessInternalLaunchPlan;
+  listingProductPack: RevenueFirstBusinessListingProductPackItem[];
+}): RevenueFirstBusinessExecutionPlan["launchHandoffPacket"] {
+  const contentCalendar = buildContentCalendar(input.launchPlan);
+  const organicLaunchMoves = input.launchPlan.finalExecutionPacket.organicMoves.map((move) => ({
+    ...move,
+    manualExecutionNote: "Execute manually only after explicit live approval; no browser, upload, social, provider, or marketplace action is authorized by this packet.",
+    status: "ready_internal" as const
+  }));
+  const manualExecutionChecklist = [
+    "Review and approve the First Launch Readiness Gate.",
+    "Review store setup instructions, policies, navigation, collection naming, SEO title, and evidence fields.",
+    "Review each listing-ready product row for title, description, bullets, SEO keywords, price, margin, tags, and design spec.",
+    "Approve designs manually before any external AI generation, mockup creation, provider upload, or marketplace work.",
+    "Review faceless content captions and scripts for manual organic posting.",
+    "Review organic launch moves and keep paid spend locked.",
+    "Grant separate explicit live approval outside this packet before any external action.",
+    "Record launch-day and first-week evidence into the manual tracking fields."
+  ];
+
+  return {
+    blockedExternalActions: input.launchPlan.finalExecutionPacket.blockedExternalActions,
+    contentCalendar,
+    explicitLiveApprovalRequired: true,
+    externalExecution: false,
+    handoffId: `handoff_${safeId(input.executionId)}`,
+    manualExecutionChecklist,
+    organicLaunchMoves,
+    products: input.listingProductPack,
+    providerContacted: false,
+    status: input.executionStatus === "ready_to_launch_first_business" ? "ready_for_operator_review" : "blocked",
+    store: {
+      ...input.launchPlan.finalExecutionPacket.store,
+      manualSetupInstructions: input.launchPlan.finalExecutionPacket.store.setupQueue
+    },
+    summary: `${input.launchPlan.storeSetup.businessName} handoff packet is ready for operator review with ${input.listingProductPack.length} listing-ready products, ${contentCalendar.length} content drafts, and ${organicLaunchMoves.length} organic moves. External execution remains locked.`
+  };
+}
+
+export function buildRevenueFirstBusinessExecutionPlan(input: {
+  executedAt?: string;
+  launchPlan: RevenueFirstBusinessInternalLaunchPlan;
+  note?: string | null;
+}): RevenueFirstBusinessExecutionPlan {
+  const executedAt = input.executedAt ?? new Date().toISOString();
+  const status: RevenueFirstBusinessExecutionStatus = input.launchPlan.status === "approved_for_launch_internal"
+    ? "ready_to_launch_first_business"
+    : "blocked";
+  const manualLaunchRunbook = firstBusinessManualRunbook(input.launchPlan);
+  const semiAutomatedPreparationQueue = firstBusinessSemiAutomatedQueue(input.launchPlan);
+  const executionId = `execute_first_business_${safeId(input.launchPlan.storeSetup.sourceStoreId)}_${safeId(executedAt)}`;
+  const listingProductPack = buildListingProductPack(input.launchPlan);
+  const firstLaunchReadinessGate = buildFirstLaunchReadinessGate({
+    executionStatus: status,
+    generatedAt: executedAt,
+    launchPlan: input.launchPlan,
+    listingProductPack
+  });
+  const firstWeekTrackingPlan = buildFirstWeekTrackingPlan();
+  const launchHandoffPacket = buildLaunchHandoffPacket({
+    executionId,
+    executionStatus: status,
+    launchPlan: input.launchPlan,
+    listingProductPack
+  });
+  const blockedExternalActions = Array.from(new Set([
+    ...input.launchPlan.blockedExternalActions,
+    "Manual launch may proceed only after explicit live approval outside this internal packet",
+    "Semi-automated preparation may generate internal rows only; no provider, browser, upload, marketplace, social, ad, bank, or payment action is allowed"
+  ]));
+
+  return {
+    auditEvents: [
+      "Execute First Business packet prepared from the approved final execution packet.",
+      "Manual and semi-automated launch preparation queues were assembled internally.",
+      "No provider, marketplace, browser, upload, ad, social, banking, payment, payout, or external AI action was executed."
+    ],
+    blockedExternalActions,
+    executionApproval: {
+      approvedAt: executedAt,
+      approvedBy: "operator",
+      auditOnly: true,
+      externalExecution: false,
+      launchId: input.launchPlan.launchId,
+      note: input.note ?? null,
+      providerContacted: false,
+      status: "ready_to_launch_first_business"
+    },
+    executionId,
+    externalExecution: false,
+    firstLaunchReadinessGate,
+    finalExecutionPacket: input.launchPlan.finalExecutionPacket,
+    firstWeekTrackingPlan,
+    generatedAt: executedAt,
+    guardrails: [
+      "Execute First Business prepares manual and semi-automated launch work only.",
+      "Manual launch work is ready for the operator, but live external execution remains blocked until explicit approval.",
+      "Semi-automated preparation may assemble rows, checklists, and copy packets only; it may not call providers, upload files, run browsers, spend money, or publish content.",
+      "First revenue collection starts organic-first, with paid spend locked behind Financial Orchestrator controls."
+    ],
+    launchHandoffPacket,
+    listingProductPack,
+    manualLaunchRunbook,
+    mode: "Execute First Business",
+    providerContacted: false,
+    readyState: {
+      externalExecution: false,
+      label: "Ready to Launch First Business",
+      manualLaunchReady: status === "ready_to_launch_first_business",
+      providerContacted: false,
+      semiAutomatedPreparationReady: status === "ready_to_launch_first_business"
+    },
+    revenueStartPlan: {
+      first24Hours: [
+        "Manually publish approved store and product setup only after live approval.",
+        "Manually post or queue the first approved organic content draft only after live approval.",
+        "Record visits, units, gross revenue, net profit, and content response manually."
+      ],
+      first72Hours: [
+        "Collect manual evidence twice daily.",
+        "Keep paid spend locked until Financial Orchestrator scale packet approval.",
+        "Feed first sales and content signals back into Revenue Engine rotation."
+      ],
+      organicFirst: true,
+      paidSpendLocked: true
+    },
+    semiAutomatedPreparationQueue,
+    sourceLaunchId: input.launchPlan.launchId,
+    status,
+    summary: `${input.launchPlan.storeSetup.businessName} is Ready to Launch First Business internally with ${input.launchPlan.finalExecutionPacket.products.length} product${input.launchPlan.finalExecutionPacket.products.length === 1 ? "" : "s"}, ${input.launchPlan.finalExecutionPacket.facelessContentIdeas.length} faceless content idea${input.launchPlan.finalExecutionPacket.facelessContentIdeas.length === 1 ? "" : "s"}, and ${input.launchPlan.finalExecutionPacket.organicMoves.length} organic move${input.launchPlan.finalExecutionPacket.organicMoves.length === 1 ? "" : "s"}. Manual and semi-automated launch prep are ready; external execution remains locked until explicit live approval.`,
+    totals: {
+      blockedExternalActions: blockedExternalActions.length,
+      finalProducts: input.launchPlan.finalExecutionPacket.products.length,
+      firstWeekMetricFields: firstWeekTrackingPlan.metricFields.length,
+      handoffProducts: launchHandoffPacket.products.length,
+      manualSteps: manualLaunchRunbook.length,
+      organicMoves: input.launchPlan.finalExecutionPacket.organicMoves.length,
+      readyLaunchItems: input.launchPlan.finalExecutionPacket.products.length
+        + input.launchPlan.finalExecutionPacket.facelessContentIdeas.length
+        + input.launchPlan.finalExecutionPacket.organicMoves.length
+        + manualLaunchRunbook.length
+        + semiAutomatedPreparationQueue.length,
+      readinessBlocked: firstLaunchReadinessGate.totals.blocked,
+      readinessReady: firstLaunchReadinessGate.totals.ready,
+      semiAutomatedSteps: semiAutomatedPreparationQueue.length
+    }
+  };
+}
+
+function averageRetailPrice(products: RevenueFirstBusinessListingProductPackItem[]) {
+  if (products.length === 0) return 35;
+
+  return products.reduce((sum, product) => sum + product.retailPrice, 0) / products.length;
+}
+
+function buildAutonomousSupplierPlan(
+  executionPlan: RevenueFirstBusinessExecutionPlan
+): RevenueFirstBusinessAutonomousLaunchPlan["supplierPlan"] {
+  const productTypes = Array.from(new Set(executionPlan.listingProductPack.map((product) => product.productType)));
+  const averageRetail = averageRetailPrice(executionPlan.listingProductPack);
+  const candidates: RevenueFirstBusinessAutonomousLaunchPlan["supplierPlan"]["candidates"] = [
+    {
+      estimatedBaseCost: Number(Math.max(8, averageRetail * 0.36).toFixed(2)),
+      externalExecution: false,
+      provider: "Printify",
+      providerContacted: false,
+      reasons: [
+        "Broad POD catalog coverage for first-store validation.",
+        `Supports ${productTypes.slice(0, 3).join(", ") || "core merch"} launch products.`,
+        "Good fit for fast internal payload preparation before owner-approved connector setup."
+      ],
+      selectionScore: executionPlan.finalExecutionPacket.store.storePlatform === "Shopify" ? 94 : 90,
+      status: "candidate_internal",
+      supplierCandidateId: "supplier_printify_first_drop"
+    },
+    {
+      estimatedBaseCost: Number(Math.max(9, averageRetail * 0.39).toFixed(2)),
+      externalExecution: false,
+      provider: "Printful",
+      providerContacted: false,
+      reasons: [
+        "Reliable backup supplier candidate for quality-sensitive products.",
+        "Useful fallback if primary connector scope is not approved.",
+        "Prepared internally only; no provider account was contacted."
+      ],
+      selectionScore: 84,
+      status: "candidate_internal",
+      supplierCandidateId: "supplier_printful_backup"
+    },
+    {
+      estimatedBaseCost: Number(Math.max(10, averageRetail * 0.42).toFixed(2)),
+      externalExecution: false,
+      provider: "Other",
+      providerContacted: false,
+      reasons: [
+        "Manual fallback lane if approved POD providers are unavailable.",
+        "Keeps first-store package launchable even while connectors are pending.",
+        "Requires owner-selected supplier before any live order or upload."
+      ],
+      selectionScore: 68,
+      status: "candidate_internal",
+      supplierCandidateId: "supplier_manual_backup"
+    }
+  ];
+
+  candidates.sort((left, right) => right.selectionScore - left.selectionScore);
+  const selected = candidates[0] ?? candidates[2];
+
+  return {
+    candidates,
+    externalExecution: false,
+    providerContacted: false,
+    selectedSupplier: {
+      estimatedBaseCost: selected.estimatedBaseCost,
+      externalExecution: false,
+      provider: selected.provider,
+      providerContacted: false,
+      selectionScore: selected.selectionScore,
+      supplierCandidateId: selected.supplierCandidateId
+    },
+    status: executionPlan.status === "ready_to_launch_first_business" ? "selected_internal_owner_gated" : "blocked",
+    summary: `${selected.provider} is selected internally for ${executionPlan.finalExecutionPacket.store.businessName} with score ${selected.selectionScore}/100. No supplier was contacted; account, upload, and order actions need owner approval.`
+  };
+}
+
+function buildAutonomousStoreBuildPlan(
+  executionPlan: RevenueFirstBusinessExecutionPlan
+): RevenueFirstBusinessAutonomousLaunchPlan["storeBuildPlan"] {
+  const store = executionPlan.finalExecutionPacket.store;
+  const collectionName = executionPlan.listingProductPack[0]?.storefrontCollection ?? `${store.businessName} First Drop`;
+
+  return {
+    businessName: store.businessName,
+    collectionPlan: [
+      collectionName,
+      `${store.industry} New Arrivals`,
+      "Best Sellers",
+      "Launch Week"
+    ],
+    externalExecution: false,
+    navigationPlan: [
+      "Home",
+      collectionName,
+      "About",
+      "Contact",
+      "Policies"
+    ],
+    policyDrafts: [
+      "Draft production partner disclosure for POD fulfillment.",
+      "Draft returns and shipping policy for owner review.",
+      "Draft AI/design disclosure note where required by marketplace rules."
+    ],
+    providerContacted: false,
+    seoPlan: {
+      description: `${store.businessName} first private launch drop for ${store.audience}. Original ${store.industry} products prepared by ENTRAL.`,
+      title: `${store.businessName} | ${collectionName}`
+    },
+    setupPayloadState: "prepared_not_sent",
+    status: executionPlan.status === "ready_to_launch_first_business" ? "autonomous_internal_ready" : "blocked",
+    storePlatform: store.storePlatform
+  };
+}
+
+function buildAutonomousProductCreationPlan(
+  executionPlan: RevenueFirstBusinessExecutionPlan,
+  supplierCandidateId: string
+): RevenueFirstBusinessAutonomousLaunchPlan["productCreationPlan"] {
+  return executionPlan.listingProductPack.map((product) => ({
+    ...product,
+    connectorPayloadStatus: "prepared_not_sent",
+    creationLane: "autonomous_internal_ready",
+    supplierCandidateId
+  }));
+}
+
+function buildAutonomousConnectionPlan(
+  executionPlan: RevenueFirstBusinessExecutionPlan,
+  supplierProvider: "Printify" | "Printful" | "Other"
+): RevenueFirstBusinessAutonomousLaunchPlan["connectionPlan"] {
+  const storefrontProvider: "Shopify" | "Etsy" = executionPlan.finalExecutionPacket.store.storePlatform === "Shopify"
+    ? "Shopify"
+    : "Etsy";
+  const supplierConnector: "Printify" | "Printful" = supplierProvider === "Printful" ? "Printful" : "Printify";
+  const connectorManifests: RevenueFirstBusinessAutonomousLaunchPlan["connectionPlan"]["connectorManifests"] = [
+    {
+      approvalRequired: true,
+      credentialScopes: storefrontProvider === "Shopify"
+        ? ["products:write", "collections:write", "themes:read", "orders:read"]
+        : ["listings:write", "shops:read", "transactions:read"],
+      externalExecution: false,
+      payloadState: "prepared_not_sent",
+      provider: storefrontProvider,
+      providerContacted: false,
+      purpose: "Create store shell, product listing drafts, collections, SEO metadata, and launch-day tracking fields."
+    },
+    {
+      approvalRequired: true,
+      credentialScopes: ["catalog:read", "products:write", "uploads:write", "orders:read"],
+      externalExecution: false,
+      payloadState: "prepared_not_sent",
+      provider: supplierConnector,
+      providerContacted: false,
+      purpose: "Prepare POD products, variants, mockup slots, production partner notes, and supplier mapping."
+    },
+    {
+      approvalRequired: true,
+      credentialScopes: ["campaigns:write", "ads:write", "pixels:read"],
+      externalExecution: false,
+      payloadState: "prepared_not_sent",
+      provider: "Meta",
+      providerContacted: false,
+      purpose: "Keep paid campaign drafts ready for later owner-approved Ad/Growth activation."
+    },
+    {
+      approvalRequired: true,
+      credentialScopes: ["analytics:read", "events:read"],
+      externalExecution: false,
+      payloadState: "prepared_not_sent",
+      provider: "Google Analytics",
+      providerContacted: false,
+      purpose: "Prepare read-only launch performance tracking after owner-approved connection."
+    }
+  ];
+
+  return {
+    connectorManifests,
+    externalExecution: false,
+    providerContacted: false,
+    status: executionPlan.status === "ready_to_launch_first_business" ? "connector_ready_owner_gated" : "blocked",
+    summary: `${connectorManifests.length} connector manifests are prepared but not sent. Credentials, API calls, uploads, tracking installs, and store writes remain owner-gated.`
+  };
+}
+
+function buildAutonomousAdCampaignDrafts(
+  executionPlan: RevenueFirstBusinessExecutionPlan
+): RevenueFirstBusinessAutonomousLaunchPlan["adCampaignDrafts"] {
+  const products = executionPlan.listingProductPack.slice(0, 5);
+  const productNames = products.map((product) => product.productName);
+  const audience = executionPlan.finalExecutionPacket.store.audience;
+
+  return [
+    {
+      audience,
+      budgetApprovalRequired: true,
+      campaignName: `${executionPlan.finalExecutionPacket.store.businessName} Organic Proof Amplifier`,
+      dailyBudgetCap: 5,
+      externalExecution: false,
+      objective: "organic_amplification",
+      paymentExecution: false,
+      productNames,
+      providerContacted: false,
+      spendState: "payment_required",
+      status: "draft_locked"
+    },
+    {
+      audience,
+      budgetApprovalRequired: true,
+      campaignName: `${executionPlan.finalExecutionPacket.store.businessName} First Product Validation`,
+      dailyBudgetCap: 10,
+      externalExecution: false,
+      objective: "product_validation",
+      paymentExecution: false,
+      productNames: productNames.slice(0, 3),
+      providerContacted: false,
+      spendState: "payment_required",
+      status: "draft_locked"
+    }
+  ];
+}
+
+function buildAutonomousPaymentApprovalQueue(
+  executionPlan: RevenueFirstBusinessExecutionPlan,
+  supplierPlan: RevenueFirstBusinessAutonomousLaunchPlan["supplierPlan"],
+  adCampaignDrafts: RevenueFirstBusinessAutonomousLaunchPlan["adCampaignDrafts"]
+): RevenueFirstBusinessAutonomousLaunchPlan["paymentApprovalQueue"] {
+  const supplierEstimate = Number((supplierPlan.selectedSupplier.estimatedBaseCost * executionPlan.listingProductPack.length).toFixed(2));
+  const adEstimate = adCampaignDrafts.reduce((sum, draft) => sum + draft.dailyBudgetCap, 0);
+  const marketplaceEstimate = executionPlan.finalExecutionPacket.store.storePlatform === "Etsy" ? 0.2 * executionPlan.listingProductPack.length : 0;
+
+  return [
+    {
+      approvalType: "provider_account",
+      estimatedAmount: 0,
+      externalExecution: false,
+      paymentExecution: false,
+      providerContacted: false,
+      reason: "Owner must approve and provide any live storefront or supplier credentials before ENTRAL can connect accounts.",
+      status: "owner_approval_required",
+      title: "Approve provider account connection"
+    },
+    {
+      approvalType: "supplier_order",
+      estimatedAmount: supplierEstimate,
+      externalExecution: false,
+      paymentExecution: false,
+      providerContacted: false,
+      reason: "POD product creation, samples, paid mockups, or first supplier-side orders can create charges.",
+      status: "owner_approval_required",
+      title: "Approve supplier-side product creation charges"
+    },
+    {
+      approvalType: "ad_spend",
+      estimatedAmount: adEstimate,
+      externalExecution: false,
+      paymentExecution: false,
+      providerContacted: false,
+      reason: "Paid campaign drafts are ready, but every Ad/Growth dollar remains locked behind Financial Orchestrator approval.",
+      status: "owner_approval_required",
+      title: "Approve first paid traffic test"
+    },
+    {
+      approvalType: "payment_processor",
+      estimatedAmount: 0,
+      externalExecution: false,
+      paymentExecution: false,
+      providerContacted: false,
+      reason: "Payment processing, payout settings, cards, banking, and tax settings require owner control.",
+      status: "owner_approval_required",
+      title: "Approve payment and payout configuration"
+    },
+    {
+      approvalType: "marketplace_fee",
+      estimatedAmount: Number(marketplaceEstimate.toFixed(2)),
+      externalExecution: false,
+      paymentExecution: false,
+      providerContacted: false,
+      reason: "Listing fees, app fees, subscription fees, and marketplace charges are not executed automatically.",
+      status: "owner_approval_required",
+      title: "Approve storefront or marketplace fee exposure"
+    }
+  ];
+}
+
+function buildAutonomousChainOfCommand(
+  paymentApprovals: RevenueFirstBusinessAutonomousLaunchPlan["paymentApprovalQueue"]
+): RevenueFirstBusinessAutonomousLaunchPlan["chainOfCommand"] {
+  return [
+    {
+      lane: "store_build",
+      owns: ["store setup payload", "navigation", "collections", "SEO", "policy drafts"],
+      rank: "general",
+      status: "ready_internal",
+      title: "Store Setup General"
+    },
+    {
+      lane: "product_creation",
+      owns: ["product rows", "listing copy", "design specs", "mockup directions"],
+      rank: "commander",
+      status: "ready_internal",
+      title: "Product Factory Commander"
+    },
+    {
+      lane: "supplier_selection",
+      owns: ["supplier scoring", "primary supplier choice", "backup supplier lane"],
+      rank: "commander",
+      status: "ready_internal",
+      title: "Supplier Commander"
+    },
+    {
+      lane: "supplier_connection",
+      owns: ["connector manifest", "credential scopes", "supplier payload draft"],
+      rank: "commander",
+      status: "owner_gate_required",
+      title: "Supplier Connector Commander"
+    },
+    {
+      lane: "content_launch",
+      owns: ["faceless scripts", "caption drafts", "channel calendar"],
+      rank: "commander",
+      status: "owner_gate_required",
+      title: "Content Launch Commander"
+    },
+    {
+      lane: "organic_traffic",
+      owns: ["organic first moves", "community outreach scripts", "traffic evidence"],
+      rank: "soldier",
+      status: "ready_internal",
+      title: "Organic Traffic Soldier"
+    },
+    {
+      lane: "ad_campaign_drafting",
+      owns: ["ad drafts", "audience draft", "creative angles", "budget guardrails"],
+      rank: "commander",
+      status: "ready_internal",
+      title: "Growth Commander"
+    },
+    {
+      lane: "ad_spend_activation",
+      owns: paymentApprovals.filter((approval) => approval.approvalType === "ad_spend").map((approval) => approval.title),
+      rank: "marshal",
+      status: "owner_gate_required",
+      title: "Financial Orchestrator Marshal"
+    },
+    {
+      lane: "tracking",
+      owns: ["first-week evidence ledger", "read-only metrics scope", "rotation feedback"],
+      rank: "soldier",
+      status: "owner_gate_required",
+      title: "Evidence Soldier"
+    }
+  ];
+}
+
+function buildAutonomousMatrix(
+  executionPlan: RevenueFirstBusinessExecutionPlan
+): RevenueFirstBusinessAutonomousLaunchPlan["autonomyMatrix"] {
+  const ready = executionPlan.status === "ready_to_launch_first_business";
+
+  return [
+    {
+      autonomyPercent: ready ? 100 : 0,
+      commander: "Store Setup General",
+      externalExecution: false,
+      hardStop: null,
+      lane: "store_build",
+      nextInternalAction: "Prepare storefront payload and copy/paste setup packet.",
+      ownerApprovalRequired: false,
+      providerContacted: false,
+      status: ready ? "autonomous_ready" : "blocked"
+    },
+    {
+      autonomyPercent: ready ? 100 : 0,
+      commander: "Product Factory Commander",
+      externalExecution: false,
+      hardStop: null,
+      lane: "product_creation",
+      nextInternalAction: "Prepare product payload rows, listing copy, and design specs.",
+      ownerApprovalRequired: false,
+      providerContacted: false,
+      status: ready ? "autonomous_ready" : "blocked"
+    },
+    {
+      autonomyPercent: ready ? 100 : 0,
+      commander: "Supplier Commander",
+      externalExecution: false,
+      hardStop: null,
+      lane: "supplier_selection",
+      nextInternalAction: "Select primary and backup supplier candidates internally.",
+      ownerApprovalRequired: false,
+      providerContacted: false,
+      status: ready ? "autonomous_ready" : "blocked"
+    },
+    {
+      autonomyPercent: ready ? 85 : 0,
+      commander: "Supplier Connector Commander",
+      externalExecution: false,
+      hardStop: "Owner must approve credentials and live provider connection.",
+      lane: "supplier_connection",
+      nextInternalAction: "Prepare connector manifest and supplier payload draft.",
+      ownerApprovalRequired: true,
+      providerContacted: false,
+      status: ready ? "connector_gated" : "blocked"
+    },
+    {
+      autonomyPercent: ready ? 90 : 0,
+      commander: "Content Launch Commander",
+      externalExecution: false,
+      hardStop: "Owner must approve any live posting, upload, scheduling, or browser action.",
+      lane: "content_launch",
+      nextInternalAction: "Prepare scripts, captions, and channel calendar.",
+      ownerApprovalRequired: true,
+      providerContacted: false,
+      status: ready ? "connector_gated" : "blocked"
+    },
+    {
+      autonomyPercent: ready ? 100 : 0,
+      commander: "Organic Traffic Soldier",
+      externalExecution: false,
+      hardStop: null,
+      lane: "organic_traffic",
+      nextInternalAction: "Prepare organic-first traffic move checklist and evidence fields.",
+      ownerApprovalRequired: false,
+      providerContacted: false,
+      status: ready ? "autonomous_ready" : "blocked"
+    },
+    {
+      autonomyPercent: ready ? 100 : 0,
+      commander: "Growth Commander",
+      externalExecution: false,
+      hardStop: null,
+      lane: "ad_campaign_drafting",
+      nextInternalAction: "Draft paid campaign structure with spend locked.",
+      ownerApprovalRequired: false,
+      providerContacted: false,
+      status: ready ? "autonomous_ready" : "blocked"
+    },
+    {
+      autonomyPercent: ready ? 50 : 0,
+      commander: "Financial Orchestrator Marshal",
+      externalExecution: false,
+      hardStop: "Owner approval and payment authorization are required before any ad spend.",
+      lane: "ad_spend_activation",
+      nextInternalAction: "Hold campaign drafts in payment-gated queue.",
+      ownerApprovalRequired: true,
+      providerContacted: false,
+      status: ready ? "payment_gated" : "blocked"
+    },
+    {
+      autonomyPercent: ready ? 85 : 0,
+      commander: "Evidence Soldier",
+      externalExecution: false,
+      hardStop: "Owner must approve any read-only analytics connector before automatic data import.",
+      lane: "tracking",
+      nextInternalAction: "Prepare first-week ledger and rotation feedback loop.",
+      ownerApprovalRequired: true,
+      providerContacted: false,
+      status: ready ? "connector_gated" : "blocked"
+    }
+  ];
+}
+
+export function buildRevenueFirstBusinessAutonomousLaunchPlan(input: {
+  executedAt?: string;
+  executionPlan: RevenueFirstBusinessExecutionPlan;
+  note?: string | null;
+}): RevenueFirstBusinessAutonomousLaunchPlan {
+  const generatedAt = input.executedAt ?? new Date().toISOString();
+  const ready = input.executionPlan.status === "ready_to_launch_first_business"
+    && input.executionPlan.firstLaunchReadinessGate.status === "ready_for_manual_launch_approval";
+  const autonomousLaunchId = `autonomous_first_business_${safeId(input.executionPlan.finalExecutionPacket.store.sourceStoreId)}_${safeId(generatedAt)}`;
+  const supplierPlan = buildAutonomousSupplierPlan(input.executionPlan);
+  const storeBuildPlan = buildAutonomousStoreBuildPlan(input.executionPlan);
+  const productCreationPlan = buildAutonomousProductCreationPlan(
+    input.executionPlan,
+    supplierPlan.selectedSupplier.supplierCandidateId
+  );
+  const connectionPlan = buildAutonomousConnectionPlan(input.executionPlan, supplierPlan.selectedSupplier.provider);
+  const adCampaignDrafts = buildAutonomousAdCampaignDrafts(input.executionPlan);
+  const paymentApprovalQueue = buildAutonomousPaymentApprovalQueue(input.executionPlan, supplierPlan, adCampaignDrafts);
+  const chainOfCommand = buildAutonomousChainOfCommand(paymentApprovalQueue);
+  const autonomyMatrix = buildAutonomousMatrix(input.executionPlan);
+  const blockedExternalActions = Array.from(new Set([
+    ...input.executionPlan.blockedExternalActions,
+    "Autonomous live provider calls remain blocked until owner-approved credentials are connected",
+    "Autonomous store publishing, listing publishing, product upload, content upload, and browser work remain blocked",
+    "Autonomous ad activation, ad spend, card charges, supplier orders, marketplace fees, banking, payouts, and payment processor changes remain blocked"
+  ]));
+  const requiredApprovals = [
+    "Approve live storefront connector credentials",
+    "Approve supplier connector credentials and any supplier-side charges",
+    "Approve payment processor, card, payout, banking, and tax configuration",
+    "Approve public publishing or posting actions",
+    "Approve any Ad/Growth spend activation through Financial Orchestrator"
+  ];
+  const status: RevenueFirstBusinessAutonomousLaunchStatus = ready ? "autonomous_ready_payment_gated" : "blocked";
+
+  return {
+    adCampaignDrafts,
+    auditEvents: [
+      "Autonomous First Business Launch Prep assembled store, product, supplier, connector, content, organic, ad, and tracking plans internally.",
+      "Chain of command ownership was assigned across store build, product factory, supplier, growth, finance, and evidence lanes.",
+      "No provider, marketplace, browser, upload, social, ad, bank, payout, payment, card, or external AI action was executed."
+    ],
+    autonomousLaunchId,
+    autonomousUntilPayment: true,
+    autonomyMatrix,
+    blockedExternalActions,
+    chainOfCommand,
+    connectionPlan,
+    executionPacket: input.executionPlan,
+    externalExecution: false,
+    finalOperatorGate: {
+      externalExecution: false,
+      paymentExecution: false,
+      providerContacted: false,
+      requiredApprovals,
+      status: ready ? "owner_payment_and_provider_approval_required" : "blocked",
+      summary: ready
+        ? "ENTRAL can continue autonomously through internal preparation. Live launch, provider calls, account connections, public publishing, and spend require owner approval."
+        : "Autonomous launch prep is blocked because the execution packet is not ready."
+    },
+    generatedAt,
+    guardrails: [
+      "ENTRAL may prepare internal payloads, checklists, copy, drafts, supplier choices, connector manifests, and evidence fields.",
+      "ENTRAL may not call providers, browse accounts, upload files, publish listings, post content, activate ads, spend money, or change payment settings without explicit approval.",
+      "Organic-first work is prioritized until the Financial Orchestrator approves Ad/Growth budget activation.",
+      "Every autonomous lane is audit-only until credentials, payment approval, and public launch approval are granted."
+    ],
+    mode: "Autonomous First Business Launch Prep",
+    paymentApprovalQueue,
+    paymentExecution: false,
+    productCreationPlan,
+    providerContacted: false,
+    status,
+    storeBuildPlan,
+    supplierPlan,
+    summary: status === "autonomous_ready_payment_gated"
+      ? `${input.executionPlan.finalExecutionPacket.store.businessName} is autonomous-ready until payment: ENTRAL has prepared the store build, ${productCreationPlan.length} product payload${productCreationPlan.length === 1 ? "" : "s"}, supplier selection, connector manifests, faceless content, organic moves, ad drafts, and tracking plan. Owner approval is still required for providers, payments, publishing, uploads, browser actions, and ad spend.`
+      : `${input.executionPlan.finalExecutionPacket.store.businessName} is not ready for autonomous first-business launch prep.`,
+    totals: {
+      adDrafts: adCampaignDrafts.length,
+      autonomousReadyLanes: autonomyMatrix.filter((item) => item.status === "autonomous_ready").length,
+      blockedExternalActions: blockedExternalActions.length,
+      connectorManifests: connectionPlan.connectorManifests.length,
+      paymentApprovals: paymentApprovalQueue.length,
+      productPayloads: productCreationPlan.length,
+      supplierCandidates: supplierPlan.candidates.length
     }
   };
 }

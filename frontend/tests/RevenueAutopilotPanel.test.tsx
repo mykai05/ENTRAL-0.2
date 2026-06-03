@@ -148,10 +148,49 @@ const plan: RevenueAutopilotPlan = {
     }
   ],
   auditEvents: ["Revenue Autopilot generated a cross-module internal command plan."],
+  automationProfile: {
+    automatedWorkPercent: 90,
+    externalExecution: false,
+    internalAutopilotWorkItems: 45,
+    ownerApprovalPercent: 10,
+    ownerApprovalWorkItems: 5,
+    providerContacted: false,
+    summary: "ENTRAL can handle 90% of the current revenue workload internally; owner attention is reserved for 5 approval gates.",
+    targetAutomationPercent: 90
+  },
   blockedExternalActions: [
     "Publishing marketplace listings",
     "Using browser stealth, anti-detection, proxy rotation, fingerprint spoofing, account warmup, or platform evasion automation"
   ],
+  chainOfCommand: [{
+    actionCount: 1,
+    actions: ["Run first-business launch path"],
+    blockedActions: 0,
+    commander: "First Launch Commander",
+    externalExecution: false,
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    phase: "first_business_launch",
+    providerContacted: false,
+    readyActions: 1,
+    soldier: "Launch Packet Soldier",
+    status: "ready",
+    summary: "First Launch Commander owns 1 internal autopilot command with 1 ready."
+  }, {
+    actionCount: 2,
+    actions: ["Seed launch product drafts", "Queue launch approval packets"],
+    blockedActions: 0,
+    commander: "Product Factory Commander",
+    externalExecution: false,
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    phase: "product_factory",
+    providerContacted: false,
+    readyActions: 2,
+    soldier: "Product Draft Soldier",
+    status: "ready",
+    summary: "Product Factory Commander owns 2 internal autopilot commands with 2 ready."
+  }],
   externalExecution: false,
   generatedAt: "2026-06-02T12:00:00.000Z",
   mode: "Internal Revenue Autopilot",
@@ -163,6 +202,31 @@ const plan: RevenueAutopilotPlan = {
     mode: "balanced",
     windowDays: 30
   },
+  ownerApprovalQueue: [{
+    actionIds: ["autopilot:first_business_launch:portfolio:store_1:run_first_business_launch"],
+    approvalType: "browser_or_marketplace",
+    externalExecution: false,
+    id: "owner_approval:first_business_launch:browser_or_marketplace:waiting_owner",
+    phase: "first_business_launch",
+    providerContacted: false,
+    rank: "Owner",
+    reason: "1 autopilot command needs browser or marketplace review before any external work.",
+    riskLevel: "medium",
+    status: "waiting_owner",
+    title: "First business launch: browser or marketplace approval"
+  }, {
+    actionIds: ["autopilot:product_factory:portfolio:revenue_launch_pipeline:seed_launch_products", "autopilot:product_factory:store:launch_approval_queue:queue_launch_approval"],
+    approvalType: "browser_or_marketplace",
+    externalExecution: false,
+    id: "owner_approval:product_factory:browser_or_marketplace:waiting_owner",
+    phase: "product_factory",
+    providerContacted: false,
+    rank: "Owner",
+    reason: "2 autopilot commands need browser or marketplace review before any external work.",
+    riskLevel: "medium",
+    status: "waiting_owner",
+    title: "POD launch factory: browser or marketplace approval"
+  }],
   phases: [
     {
       actionCount: 1,
@@ -544,6 +608,13 @@ describe("RevenueAutopilotPanel", () => {
 
     await waitFor(() => expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining("/merch/revenue-engine/autopilot?")));
     expect(await screen.findByText("Internal Revenue Autopilot")).toBeInTheDocument();
+    expect(screen.getByText("ENTRAL Work")).toBeInTheDocument();
+    expect(screen.getByText("90%")).toBeInTheDocument();
+    expect(screen.getByText("Chain Of Command")).toBeInTheDocument();
+    expect(screen.getByText("Owner Approval Queue")).toBeInTheDocument();
+    expect(screen.getByText("First Launch Commander")).toBeInTheDocument();
+    expect(screen.getByText("Money Army Marshal / First Business General / Launch Packet Soldier")).toBeInTheDocument();
+    expect(screen.getByText("First business launch: browser or marketplace approval")).toBeInTheDocument();
     expect(screen.getByText("Run first-business launch path")).toBeInTheDocument();
     expect(screen.getByText("Run first-cash sprint")).toBeInTheDocument();
     expect(screen.getByText("Seed launch product drafts")).toBeInTheDocument();

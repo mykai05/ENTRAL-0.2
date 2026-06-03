@@ -100,6 +100,10 @@ import {
   type RevenueMoneyArmyBatchPipelineResponse,
   type RevenueMoneyArmyBatchRun,
   type RevenueEnginePortfolioResponse,
+  type RevenueFirstBusinessAutonomousLaunchApplyResponse,
+  type RevenueFirstBusinessAutonomousLaunchPlan,
+  type RevenueFirstBusinessExecuteApplyResponse,
+  type RevenueFirstBusinessExecutionPlan,
   type RevenueFirstBusinessInternalLaunchApplyResponse,
   type RevenueFirstBusinessInternalLaunchPlan,
   type RevenueFirstStorePreparationPlan,
@@ -316,6 +320,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [firstStorePrepareReceipt, setFirstStorePrepareReceipt] = useState<RevenueFirstStorePrepareApplyResponse["approval"] | null>(null);
   const [firstBusinessInternalLaunch, setFirstBusinessInternalLaunch] = useState<RevenueFirstBusinessInternalLaunchPlan | null>(null);
   const [firstBusinessInternalLaunchReceipt, setFirstBusinessInternalLaunchReceipt] = useState<RevenueFirstBusinessInternalLaunchApplyResponse["launched"] | null>(null);
+  const [firstBusinessExecution, setFirstBusinessExecution] = useState<RevenueFirstBusinessExecutionPlan | null>(null);
+  const [firstBusinessExecutionReceipt, setFirstBusinessExecutionReceipt] = useState<RevenueFirstBusinessExecuteApplyResponse["executed"] | null>(null);
+  const [firstBusinessAutonomousLaunch, setFirstBusinessAutonomousLaunch] = useState<RevenueFirstBusinessAutonomousLaunchPlan | null>(null);
+  const [firstBusinessAutonomousLaunchReceipt, setFirstBusinessAutonomousLaunchReceipt] = useState<RevenueFirstBusinessAutonomousLaunchApplyResponse["autonomous"] | null>(null);
   const [moneyArmyBatchRuns, setMoneyArmyBatchRuns] = useState<RevenueMoneyArmyBatchRun[]>([]);
   const [isLoadingBusinessFleet, setIsLoadingBusinessFleet] = useState(false);
   const [isLoadingBusinessFleetGap, setIsLoadingBusinessFleetGap] = useState(false);
@@ -328,6 +336,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [isRecordingFirstBusinessPackage, setIsRecordingFirstBusinessPackage] = useState(false);
   const [isApprovingFirstStorePreparation, setIsApprovingFirstStorePreparation] = useState(false);
   const [isLaunchingFirstBusinessInternal, setIsLaunchingFirstBusinessInternal] = useState(false);
+  const [isExecutingFirstBusiness, setIsExecutingFirstBusiness] = useState(false);
+  const [isPreparingAutonomousFirstBusinessLaunch, setIsPreparingAutonomousFirstBusinessLaunch] = useState(false);
   const [isPreviewingBusinessFleetGapSeeds, setIsPreviewingBusinessFleetGapSeeds] = useState(false);
   const [isCreatingBusinessFleetGapSeeds, setIsCreatingBusinessFleetGapSeeds] = useState(false);
   const [isPreviewingBusinessFleetGapAcceleration, setIsPreviewingBusinessFleetGapAcceleration] = useState(false);
@@ -898,6 +908,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstStorePrepareReceipt(null);
       setFirstBusinessInternalLaunch(null);
       setFirstBusinessInternalLaunchReceipt(null);
+      setFirstBusinessExecution(null);
+      setFirstBusinessExecutionReceipt(null);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
       setBusinessFleetMessage(null);
       onEvent?.(`Business Fleet Scheduler scored ${response.plan.totals.businesses} businesses: ${response.plan.totals.readyParallel} ready parallel, ${response.plan.totals.launchNow} launch-now, ${response.plan.totals.qualityRepair} repair.`);
     } catch (caught) {
@@ -932,6 +946,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstStorePrepareReceipt(null);
       setFirstBusinessInternalLaunch(null);
       setFirstBusinessInternalLaunchReceipt(null);
+      setFirstBusinessExecution(null);
+      setFirstBusinessExecutionReceipt(null);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
       setMoneyArmyBatchRuns([]);
       onEvent?.(`Business Fleet launch gap planner found ${response.plan.totals.launchWaveGap} missing first-wave lane${response.plan.totals.launchWaveGap === 1 ? "" : "s"}: ${response.plan.totals.repairActions} repair action${response.plan.totals.repairActions === 1 ? "" : "s"}, ${response.plan.totals.createOpportunityShells} new seed${response.plan.totals.createOpportunityShells === 1 ? "" : "s"}.`);
     } catch (caught) {
@@ -1049,6 +1067,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstStorePrepareReceipt(null);
       setFirstBusinessInternalLaunch(null);
       setFirstBusinessInternalLaunchReceipt(null);
+      setFirstBusinessExecution(null);
+      setFirstBusinessExecutionReceipt(null);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
       setMoneyArmyBatchRuns(response.recentRuns);
       setBusinessFleetMessage(`Generate-score batch ready: ${response.plan.totals.generated} candidates, scale pressure ${response.plan.scalePressure.pressureScore}/100, kill pressure ${response.plan.killPressure.pressureScore}/100.`);
       onEvent?.(`Money Army generated and scored ${response.plan.totals.generated} internal candidates.`);
@@ -1085,6 +1107,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstStorePrepareReceipt(null);
       setFirstBusinessInternalLaunch(null);
       setFirstBusinessInternalLaunchReceipt(null);
+      setFirstBusinessExecution(null);
+      setFirstBusinessExecutionReceipt(null);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
       if (response.batchRun) {
         const batchRun = response.batchRun;
         setMoneyArmyBatchRuns((currentRuns) => [
@@ -1115,6 +1141,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstStorePrepareReceipt(null);
       setFirstBusinessInternalLaunch(null);
       setFirstBusinessInternalLaunchReceipt(null);
+      setFirstBusinessExecution(null);
+      setFirstBusinessExecutionReceipt(null);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       setMoneyArmyGenerateScoreBatchReceipt(null);
       setMoneyArmyBatchRuns(response.recentRuns);
@@ -1157,6 +1187,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstStorePrepareReceipt(null);
       setFirstBusinessInternalLaunch(null);
       setFirstBusinessInternalLaunchReceipt(null);
+      setFirstBusinessExecution(null);
+      setFirstBusinessExecutionReceipt(null);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -1199,6 +1233,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstStorePrepareReceipt(response.approval);
       setFirstBusinessInternalLaunch(null);
       setFirstBusinessInternalLaunchReceipt(null);
+      setFirstBusinessExecution(null);
+      setFirstBusinessExecutionReceipt(null);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -1229,8 +1267,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
           candidateCount: 25,
           confirm: "LAUNCH FIRST BUSINESS INTERNALLY",
           dryRun: false,
-          maxProducts: 10,
-          note: "Launch First Business internal packet created from dashboard controls.",
+          maxProducts: 5,
+          note: "Approved for Launch and final internal execution packet created from dashboard controls.",
           riskTolerance: "Low"
         },
         method: "POST"
@@ -1240,6 +1278,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstStorePreparation(response.preparation);
       setFirstBusinessInternalLaunch(response.launch);
       setFirstBusinessInternalLaunchReceipt(response.launched);
+      setFirstBusinessExecution(null);
+      setFirstBusinessExecutionReceipt(null);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -1254,6 +1296,93 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setError(caught instanceof Error ? caught.message : "Launch First Business failed.");
     } finally {
       setIsLaunchingFirstBusinessInternal(false);
+    }
+  }
+
+  async function executeFirstBusiness() {
+    if (!firstBusinessInternalLaunch || firstBusinessInternalLaunch.status !== "approved_for_launch_internal") return;
+
+    setIsExecutingFirstBusiness(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueFirstBusinessExecuteApplyResponse>("/merch/revenue-engine/money-army/first-business/execute", {
+        json: {
+          candidateCount: 25,
+          confirm: "EXECUTE FIRST BUSINESS INTERNALLY",
+          dryRun: false,
+          maxProducts: 5,
+          note: "Execute First Business manual and semi-automated launch prep created from dashboard controls.",
+          riskTolerance: "Low"
+        },
+        method: "POST"
+      });
+
+      setFirstBusinessPackage(response.package);
+      setFirstStorePreparation(response.preparation);
+      setFirstBusinessInternalLaunch(response.launch);
+      setFirstBusinessExecution(response.execution);
+      setFirstBusinessExecutionReceipt(response.executed);
+      setFirstBusinessAutonomousLaunch(null);
+      setFirstBusinessAutonomousLaunchReceipt(null);
+      setMoneyArmyGenerateScoreBatch(response.sourceBatch);
+      if (response.batchRun) {
+        const batchRun = response.batchRun;
+        setMoneyArmyBatchRuns((currentRuns) => [
+          batchRun,
+          ...currentRuns.filter((run) => run.id !== batchRun.id)
+        ].slice(0, 10));
+      }
+      setBusinessFleetMessage(response.executed.summary);
+      onEvent?.(response.executed.summary);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Execute First Business failed.");
+    } finally {
+      setIsExecutingFirstBusiness(false);
+    }
+  }
+
+  async function prepareAutonomousFirstBusinessLaunch() {
+    if (!firstBusinessExecution || firstBusinessExecution.status !== "ready_to_launch_first_business") return;
+
+    setIsPreparingAutonomousFirstBusinessLaunch(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueFirstBusinessAutonomousLaunchApplyResponse>("/merch/revenue-engine/money-army/first-business/autonomous-launch", {
+        json: {
+          candidateCount: 25,
+          confirm: "RUN AUTONOMOUS FIRST BUSINESS LAUNCH PREP",
+          dryRun: false,
+          maxProducts: 5,
+          note: "Autonomous first-business launch prep created from dashboard controls.",
+          riskTolerance: "Low"
+        },
+        method: "POST"
+      });
+
+      setFirstBusinessPackage(response.package);
+      setFirstStorePreparation(response.preparation);
+      setFirstBusinessInternalLaunch(response.launch);
+      setFirstBusinessExecution(response.execution);
+      setFirstBusinessAutonomousLaunch(response.autonomousLaunch);
+      setFirstBusinessAutonomousLaunchReceipt(response.autonomous);
+      setMoneyArmyGenerateScoreBatch(response.sourceBatch);
+      if (response.batchRun) {
+        const batchRun = response.batchRun;
+        setMoneyArmyBatchRuns((currentRuns) => [
+          batchRun,
+          ...currentRuns.filter((run) => run.id !== batchRun.id)
+        ].slice(0, 10));
+      }
+      setBusinessFleetMessage(response.autonomous.summary);
+      onEvent?.(response.autonomous.summary);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Autonomous First Business Launch Prep failed.");
+    } finally {
+      setIsPreparingAutonomousFirstBusinessLaunch(false);
     }
   }
 
@@ -2920,7 +3049,15 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
           </button>
           <button type="button" className="primary" onClick={() => void launchFirstBusinessInternal()} disabled={isLaunchingFirstBusinessInternal || !firstStorePreparation || firstStorePreparation.status === "blocked"}>
             {isLaunchingFirstBusinessInternal ? <Loader2 aria-hidden="true" size={15} /> : <Rocket aria-hidden="true" size={15} />}
-            Launch First Business
+            Approve for Launch
+          </button>
+          <button type="button" className="primary" onClick={() => void executeFirstBusiness()} disabled={isExecutingFirstBusiness || !firstBusinessInternalLaunch || firstBusinessInternalLaunch.status !== "approved_for_launch_internal"}>
+            {isExecutingFirstBusiness ? <Loader2 aria-hidden="true" size={15} /> : <Rocket aria-hidden="true" size={15} />}
+            Execute First Business
+          </button>
+          <button type="button" className="primary" onClick={() => void prepareAutonomousFirstBusinessLaunch()} disabled={isPreparingAutonomousFirstBusinessLaunch || !firstBusinessExecution || firstBusinessExecution.status !== "ready_to_launch_first_business"}>
+            {isPreparingAutonomousFirstBusinessLaunch ? <Loader2 aria-hidden="true" size={15} /> : <Gauge aria-hidden="true" size={15} />}
+            Autonomous Launch Prep
           </button>
           <button type="button" onClick={() => void runMoneyArmyPipeline(true)} disabled={isPreviewingMoneyArmyPipeline || !moneyArmyPipeline || !moneyArmyPipeline.nextStage}>
             {isPreviewingMoneyArmyPipeline ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
@@ -5211,7 +5348,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 {firstBusinessInternalLaunchReceipt ? (
                   <article>
                     <span>{firstBusinessInternalLaunchReceipt.status.replace(/_/g, " ")} / {firstBusinessInternalLaunchReceipt.stage.replace(/_/g, " ")}</span>
-                    <strong>{firstBusinessInternalLaunchReceipt.launched ? "First business launch-ready internally" : "First business launch blocked"}</strong>
+                    <strong>{firstBusinessInternalLaunchReceipt.launched ? "Approved for Launch internally" : "First business launch blocked"}</strong>
                     <p>{firstBusinessInternalLaunchReceipt.summary}</p>
                     <small>external execution {firstBusinessInternalLaunchReceipt.externalExecution ? "enabled" : "locked"} / provider {firstBusinessInternalLaunchReceipt.providerContacted ? "contacted" : "locked"} / audit {firstBusinessInternalLaunchReceipt.auditLogId ?? "preview only"}</small>
                   </article>
@@ -5223,12 +5360,20 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                   <small>{firstBusinessInternalLaunch.totals.readyExecutionItems} internal execution item{firstBusinessInternalLaunch.totals.readyExecutionItems === 1 ? "" : "s"} / launch {firstBusinessInternalLaunch.launchId}</small>
                 </article>
                 <article>
+                  <span>{firstBusinessInternalLaunch.finalExecutionPacket.approvalState.replace(/_/g, " ")} / final packet</span>
+                  <strong>Final execution packet ready</strong>
+                  <p>
+                    {firstBusinessInternalLaunch.finalExecutionPacket.products.length} product setup packet{firstBusinessInternalLaunch.finalExecutionPacket.products.length === 1 ? "" : "s"} / {firstBusinessInternalLaunch.finalExecutionPacket.facelessContentIdeas.length} faceless content idea{firstBusinessInternalLaunch.finalExecutionPacket.facelessContentIdeas.length === 1 ? "" : "s"} / {firstBusinessInternalLaunch.finalExecutionPacket.organicMoves.length} organic move{firstBusinessInternalLaunch.finalExecutionPacket.organicMoves.length === 1 ? "" : "s"}
+                  </p>
+                  <small>{firstBusinessInternalLaunch.finalExecutionPacket.executionChecklist.slice(0, 3).join(" / ")}</small>
+                </article>
+                <article>
                   <span>{firstBusinessInternalLaunch.storeSetup.setupQueue.length} setup steps</span>
                   <strong>Store setup queued internally</strong>
                   <p>{firstBusinessInternalLaunch.storeSetup.setupQueue.slice(0, 4).join(" ")}</p>
                   <small>storefront writes and marketplace publishing remain locked</small>
                 </article>
-                {firstBusinessInternalLaunch.productSetupQueue.slice(0, 10).map((product) => (
+                {firstBusinessInternalLaunch.productSetupQueue.slice(0, 5).map((product) => (
                   <article key={`${product.candidateId}-launch`}>
                     <span>{product.launchState.replace(/_/g, " ")} / step {product.sequence}</span>
                     <strong>{product.productName}</strong>
@@ -5259,6 +5404,202 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 <div className="growth-blocked-actions">
                   <strong>External launch remains locked</strong>
                   {firstBusinessInternalLaunch.blockedExternalActions.slice(0, 5).map((action) => <span key={action}>{action}</span>)}
+                </div>
+              </section>
+            ) : null}
+
+            {firstBusinessExecution ? (
+              <section className="revenue-engine-list" aria-label="Execute First Business">
+                <h4>Execute First Business</h4>
+                {firstBusinessExecutionReceipt ? (
+                  <article>
+                    <span>{firstBusinessExecutionReceipt.status.replace(/_/g, " ")} / {firstBusinessExecutionReceipt.stage.replace(/_/g, " ")}</span>
+                    <strong>{firstBusinessExecutionReceipt.executed ? "Ready to Launch First Business" : "First business execution blocked"}</strong>
+                    <p>{firstBusinessExecutionReceipt.summary}</p>
+                    <small>external execution {firstBusinessExecutionReceipt.externalExecution ? "enabled" : "locked"} / provider {firstBusinessExecutionReceipt.providerContacted ? "contacted" : "locked"} / audit {firstBusinessExecutionReceipt.auditLogId ?? "preview only"}</small>
+                  </article>
+                ) : null}
+                <article>
+                  <span>{firstBusinessExecution.readyState.label} / {firstBusinessExecution.status.replace(/_/g, " ")}</span>
+                  <strong>{firstBusinessExecution.finalExecutionPacket.store.businessName}</strong>
+                  <p>{firstBusinessExecution.summary}</p>
+                  <small>manual {firstBusinessExecution.readyState.manualLaunchReady ? "ready" : "blocked"} / semi-automated prep {firstBusinessExecution.readyState.semiAutomatedPreparationReady ? "ready" : "blocked"} / execution {firstBusinessExecution.executionId}</small>
+                </article>
+                <article>
+                  <span>{firstBusinessExecution.firstLaunchReadinessGate.status.replace(/_/g, " ")} / {firstBusinessExecution.firstLaunchReadinessGate.totals.ready}/{firstBusinessExecution.firstLaunchReadinessGate.totals.required} ready</span>
+                  <strong>{firstBusinessExecution.firstLaunchReadinessGate.label}</strong>
+                  <p>{firstBusinessExecution.firstLaunchReadinessGate.summary}</p>
+                  <small>{firstBusinessExecution.firstLaunchReadinessGate.items.map((item) => `${item.category.replace(/_/g, " ")}: ${item.status}`).join(" / ")}</small>
+                </article>
+                {firstBusinessExecution.listingProductPack.slice(0, 5).map((product) => (
+                  <article key={`${product.candidateId}-listing-pack`}>
+                    <span>{product.status.replace(/_/g, " ")} / {formatMerchCurrency(product.retailPrice)} / {product.profitMargin}% margin</span>
+                    <strong>{product.listingTitle}</strong>
+                    <p>{product.listingBullets.slice(0, 2).join(" ")}</p>
+                    <small>{product.storefrontCollection} / SEO {product.seoKeywords.slice(0, 6).join(", ")}</small>
+                  </article>
+                ))}
+                <article>
+                  <span>{firstBusinessExecution.launchHandoffPacket.status.replace(/_/g, " ")} / handoff packet</span>
+                  <strong>Launch handoff packet</strong>
+                  <p>{firstBusinessExecution.launchHandoffPacket.summary}</p>
+                  <small>{firstBusinessExecution.launchHandoffPacket.manualExecutionChecklist.slice(0, 4).join(" / ")}</small>
+                </article>
+                {firstBusinessExecution.launchHandoffPacket.contentCalendar.slice(0, 3).map((draft) => (
+                  <article key={`${draft.contentIdeaId}-handoff-content`}>
+                    <span>{draft.channel.replace(/_/g, " ")} / sequence {draft.sequence}</span>
+                    <strong>{draft.hook}</strong>
+                    <p>{draft.captionDraft}</p>
+                    <small>{draft.scriptDraft}</small>
+                  </article>
+                ))}
+                <article>
+                  <span>{firstBusinessExecution.finalExecutionPacket.products.length} products / {firstBusinessExecution.finalExecutionPacket.facelessContentIdeas.length} content drafts / {firstBusinessExecution.finalExecutionPacket.organicMoves.length} organic moves</span>
+                  <strong>Full execution packet visible</strong>
+                  <p>{firstBusinessExecution.finalExecutionPacket.executionChecklist.join(" ")}</p>
+                  <small>{firstBusinessExecution.finalExecutionPacket.evidenceLedgerFields.slice(0, 6).join(" / ")}</small>
+                </article>
+                {firstBusinessExecution.manualLaunchRunbook.map((step) => (
+                  <article key={step.id}>
+                    <span>{step.packetSection} / step {step.order} / {step.status.replace(/_/g, " ")}</span>
+                    <strong>{step.title}</strong>
+                    <p>Manual launch prep is ready internally; live execution remains approval-gated.</p>
+                    <small>external execution {step.externalExecution ? "enabled" : "locked"} / provider {step.providerContacted ? "contacted" : "locked"}</small>
+                  </article>
+                ))}
+                <article>
+                  <span>{firstBusinessExecution.semiAutomatedPreparationQueue.length} semi-automated prep items</span>
+                  <strong>Semi-automated preparation queue</strong>
+                  <p>{firstBusinessExecution.semiAutomatedPreparationQueue.map((item) => item.title).join(" / ")}</p>
+                  <small>internal rows, copy packets, and checklists only</small>
+                </article>
+                <article>
+                  <span>organic first / paid spend locked</span>
+                  <strong>First revenue start plan</strong>
+                  <p>{firstBusinessExecution.revenueStartPlan.first24Hours.join(" ")}</p>
+                  <small>{firstBusinessExecution.revenueStartPlan.first72Hours.join(" / ")}</small>
+                </article>
+                <article>
+                  <span>{firstBusinessExecution.firstWeekTrackingPlan.metricFields.length} tracking fields / day {firstBusinessExecution.firstWeekTrackingPlan.rotationReview.day} review</span>
+                  <strong>First-week tracking plan</strong>
+                  <p>{firstBusinessExecution.firstWeekTrackingPlan.checkIns.map((checkIn) => `Day ${checkIn.day}: ${checkIn.title}`).join(" / ")}</p>
+                  <small>{firstBusinessExecution.firstWeekTrackingPlan.metricFields.slice(0, 6).map((field) => field.label).join(" / ")}</small>
+                </article>
+                <div className="growth-blocked-actions">
+                  <strong>Execution stays private</strong>
+                  {firstBusinessExecution.blockedExternalActions.slice(0, 5).map((action) => <span key={action}>{action}</span>)}
+                </div>
+              </section>
+            ) : null}
+
+            {firstBusinessAutonomousLaunch ? (
+              <section className="revenue-engine-list" aria-label="Autonomous First Business Launch">
+                <h4>Autonomous First Business Launch</h4>
+                {firstBusinessAutonomousLaunchReceipt ? (
+                  <article>
+                    <span>{firstBusinessAutonomousLaunchReceipt.status.replace(/_/g, " ")} / {firstBusinessAutonomousLaunchReceipt.stage.replace(/_/g, " ")}</span>
+                    <strong>{firstBusinessAutonomousLaunchReceipt.autonomousPrepared ? "Autonomous until payment" : "Autonomous prep blocked"}</strong>
+                    <p>{firstBusinessAutonomousLaunchReceipt.summary}</p>
+                    <small>external execution {firstBusinessAutonomousLaunchReceipt.externalExecution ? "enabled" : "locked"} / provider {firstBusinessAutonomousLaunchReceipt.providerContacted ? "contacted" : "locked"} / payment {firstBusinessAutonomousLaunchReceipt.paymentExecution ? "enabled" : "locked"} / audit {firstBusinessAutonomousLaunchReceipt.auditLogId ?? "preview only"}</small>
+                  </article>
+                ) : null}
+                <article>
+                  <span>{firstBusinessAutonomousLaunch.status.replace(/_/g, " ")} / {firstBusinessAutonomousLaunch.autonomousUntilPayment ? "autonomous until payment" : "manual required"}</span>
+                  <strong>{firstBusinessAutonomousLaunch.mode}</strong>
+                  <p>{firstBusinessAutonomousLaunch.summary}</p>
+                  <small>{firstBusinessAutonomousLaunch.totals.autonomousReadyLanes} autonomous lanes / {firstBusinessAutonomousLaunch.totals.paymentApprovals} owner approvals / launch {firstBusinessAutonomousLaunch.autonomousLaunchId}</small>
+                </article>
+                <article>
+                  <span>{firstBusinessAutonomousLaunch.storeBuildPlan.status.replace(/_/g, " ")} / {firstBusinessAutonomousLaunch.storeBuildPlan.storePlatform}</span>
+                  <strong>Store build plan</strong>
+                  <p>{firstBusinessAutonomousLaunch.storeBuildPlan.collectionPlan.join(" / ")}</p>
+                  <small>{firstBusinessAutonomousLaunch.storeBuildPlan.seoPlan.title} / {firstBusinessAutonomousLaunch.storeBuildPlan.setupPayloadState.replace(/_/g, " ")}</small>
+                </article>
+                {firstBusinessAutonomousLaunch.productCreationPlan.slice(0, 5).map((product) => (
+                  <article key={`${product.candidateId}-autonomous-product`}>
+                    <span>{product.creationLane.replace(/_/g, " ")} / {product.connectorPayloadStatus.replace(/_/g, " ")}</span>
+                    <strong>{product.productName}</strong>
+                    <p>{product.listingTitle}</p>
+                    <small>{product.supplierCandidateId} / {formatMerchCurrency(product.retailPrice)} / {product.profitMargin}% margin</small>
+                  </article>
+                ))}
+                <article>
+                  <span>{firstBusinessAutonomousLaunch.supplierPlan.status.replace(/_/g, " ")} / supplier selection</span>
+                  <strong>Supplier selection</strong>
+                  <p>{firstBusinessAutonomousLaunch.supplierPlan.summary}</p>
+                  <small>{firstBusinessAutonomousLaunch.supplierPlan.candidates.map((candidate) => `${candidate.provider} ${candidate.selectionScore}/100`).join(" / ")}</small>
+                </article>
+                <article>
+                  <span>{firstBusinessAutonomousLaunch.connectionPlan.status.replace(/_/g, " ")} / {firstBusinessAutonomousLaunch.connectionPlan.connectorManifests.length} manifests</span>
+                  <strong>Connector plan</strong>
+                  <p>{firstBusinessAutonomousLaunch.connectionPlan.summary}</p>
+                  <small>{firstBusinessAutonomousLaunch.connectionPlan.connectorManifests.map((manifest) => `${manifest.provider}: ${manifest.payloadState.replace(/_/g, " ")}`).join(" / ")}</small>
+                </article>
+                <section className="revenue-engine-table-wrap" aria-label="Autonomous launch matrix">
+                  <table className="revenue-engine-table">
+                    <thead>
+                      <tr>
+                        <th>Lane</th>
+                        <th>Owner</th>
+                        <th>Autonomy</th>
+                        <th>Status</th>
+                        <th>Next</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {firstBusinessAutonomousLaunch.autonomyMatrix.map((item) => (
+                        <tr key={item.lane}>
+                          <td>{item.lane.replace(/_/g, " ")}</td>
+                          <td>{item.commander}</td>
+                          <td>{item.autonomyPercent}%</td>
+                          <td>{item.status.replace(/_/g, " ")}</td>
+                          <td>{item.hardStop ?? item.nextInternalAction}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+                <section className="revenue-engine-list" aria-label="Autonomous chain of command">
+                  <h4>Chain Of Command</h4>
+                  {firstBusinessAutonomousLaunch.chainOfCommand.map((command) => (
+                    <article key={`${command.lane}-${command.title}`}>
+                      <span>{command.rank} / {command.status.replace(/_/g, " ")} / {command.lane.replace(/_/g, " ")}</span>
+                      <strong>{command.title}</strong>
+                      <p>{command.owns.join(" / ")}</p>
+                    </article>
+                  ))}
+                </section>
+                <section className="revenue-engine-list" aria-label="Autonomous ad campaign drafts">
+                  <h4>Ad Campaign Drafts</h4>
+                  {firstBusinessAutonomousLaunch.adCampaignDrafts.map((draft) => (
+                    <article key={draft.campaignName}>
+                      <span>{draft.objective.replace(/_/g, " ")} / {draft.status.replace(/_/g, " ")} / {draft.spendState.replace(/_/g, " ")}</span>
+                      <strong>{draft.campaignName}</strong>
+                      <p>{draft.audience}</p>
+                      <small>cap {formatMerchCurrency(draft.dailyBudgetCap)} daily / {draft.productNames.join(", ")}</small>
+                    </article>
+                  ))}
+                </section>
+                <section className="revenue-engine-list warning" aria-label="Autonomous payment approval queue">
+                  <h4>Payment Approval Queue</h4>
+                  {firstBusinessAutonomousLaunch.paymentApprovalQueue.map((approval) => (
+                    <article key={`${approval.approvalType}-${approval.title}`}>
+                      <span>{approval.approvalType.replace(/_/g, " ")} / {approval.status.replace(/_/g, " ")}</span>
+                      <strong>{approval.title}: {formatMerchCurrency(approval.estimatedAmount)}</strong>
+                      <p>{approval.reason}</p>
+                      <small>external execution {approval.externalExecution ? "enabled" : "locked"} / payment {approval.paymentExecution ? "enabled" : "locked"} / provider {approval.providerContacted ? "contacted" : "locked"}</small>
+                    </article>
+                  ))}
+                </section>
+                <article>
+                  <span>{firstBusinessAutonomousLaunch.finalOperatorGate.status.replace(/_/g, " ")}</span>
+                  <strong>Final owner gate</strong>
+                  <p>{firstBusinessAutonomousLaunch.finalOperatorGate.summary}</p>
+                  <small>{firstBusinessAutonomousLaunch.finalOperatorGate.requiredApprovals.join(" / ")}</small>
+                </article>
+                <div className="growth-blocked-actions">
+                  <strong>Autonomous launch remains private</strong>
+                  {firstBusinessAutonomousLaunch.blockedExternalActions.slice(0, 5).map((action) => <span key={action}>{action}</span>)}
                 </div>
               </section>
             ) : null}

@@ -16,6 +16,8 @@ import {
   applyRevenueFirstBusinessLaunchPackageSchema,
   applyRevenueFirstStorePrepareSchema,
   applyRevenueFirstBusinessInternalLaunchSchema,
+  applyRevenueFirstBusinessExecuteSchema,
+  applyRevenueFirstBusinessAutonomousLaunchSchema,
   applyRevenueMoneyArmyBatchPipelineSchema,
   applyRevenueDigitalProductSchema,
   applyRevenueListingOptimizationSchema,
@@ -112,6 +114,8 @@ import {
   type ApplyRevenueFirstBusinessLaunchPackageInput,
   type ApplyRevenueFirstStorePrepareInput,
   type ApplyRevenueFirstBusinessInternalLaunchInput,
+  type ApplyRevenueFirstBusinessExecuteInput,
+  type ApplyRevenueFirstBusinessAutonomousLaunchInput,
   type ApplyRevenueMoneyArmyBatchPipelineInput,
   type ApplyFacelessContentPipelineInput,
   type ApplyPortfolioCommandCenterInput,
@@ -276,8 +280,12 @@ import {
 } from "../services/revenueMoneyArmyGenerateScoreBatch.js";
 import type { RevenueFirstBusinessLaunchPackagePlan } from "../services/revenueFirstBusinessLaunchPackage.js";
 import {
+  buildRevenueFirstBusinessAutonomousLaunchPlan,
+  buildRevenueFirstBusinessExecutionPlan,
   buildRevenueFirstBusinessInternalLaunchPlan,
   buildRevenueFirstStorePreparationPlan,
+  type RevenueFirstBusinessAutonomousLaunchPlan,
+  type RevenueFirstBusinessExecutionPlan,
   type RevenueFirstBusinessInternalLaunchPlan,
   type RevenueFirstStorePreparationPlan
 } from "../services/revenueFirstStorePreparation.js";
@@ -2098,8 +2106,8 @@ function firstBusinessInternalLaunchTotals(
     blockedStages: launch?.status === "blocked" ? 1 : 0,
     launchWaveGap: launch ? 0 : 1,
     pendingApprovalPackets: launch?.totals.readyExecutionItems ?? 0,
-    readyDeploymentBusinesses: launch?.status === "launch_ready_internal" ? 1 : 0,
-    readyStages: launch?.status === "launch_ready_internal" ? 1 : 0,
+    readyDeploymentBusinesses: launch?.status === "approved_for_launch_internal" ? 1 : 0,
+    readyStages: launch?.status === "approved_for_launch_internal" ? 1 : 0,
     repairRequired: launch?.status === "blocked" ? 1 : 0,
     selectedSourceKeys: launch ? 1 : 0,
     stages: 1,
@@ -2121,6 +2129,80 @@ function firstBusinessInternalLaunchKey(input: {
     sourceStoreId: input.launch?.storeSetup.sourceStoreId ?? null,
     stage: "launch_first_business",
     totals: input.launch?.totals ?? null,
+    userId: input.userId
+  })).digest("hex");
+}
+
+function firstBusinessExecutionTotals(
+  execution: RevenueFirstBusinessExecutionPlan | null,
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan
+): RevenueMoneyArmyBatchPipelinePlan["totals"] {
+  const base = moneyArmyGenerateScoreBatchTotals(sourceBatch);
+
+  return {
+    ...base,
+    blockedStages: execution?.status === "blocked" ? 1 : 0,
+    launchWaveGap: execution ? 0 : 1,
+    pendingApprovalPackets: execution?.totals.readyLaunchItems ?? 0,
+    readyDeploymentBusinesses: execution?.status === "ready_to_launch_first_business" ? 1 : 0,
+    readyStages: execution?.status === "ready_to_launch_first_business" ? 1 : 0,
+    repairRequired: execution?.status === "blocked" ? 1 : 0,
+    selectedSourceKeys: execution ? 1 : 0,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  };
+}
+
+function firstBusinessExecutionKey(input: {
+  execution: RevenueFirstBusinessExecutionPlan | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+  userId: string;
+}) {
+  return createHash("sha256").update(JSON.stringify({
+    executionId: input.execution?.executionId ?? null,
+    generatedAt: input.sourceBatch.generatedAt,
+    sourceLaunchId: input.execution?.sourceLaunchId ?? null,
+    sourceStoreId: input.execution?.finalExecutionPacket.store.sourceStoreId ?? null,
+    stage: "execute_first_business",
+    totals: input.execution?.totals ?? null,
+    userId: input.userId
+  })).digest("hex");
+}
+
+function firstBusinessAutonomousLaunchTotals(
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan | null,
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan
+): RevenueMoneyArmyBatchPipelinePlan["totals"] {
+  const base = moneyArmyGenerateScoreBatchTotals(sourceBatch);
+
+  return {
+    ...base,
+    blockedStages: autonomousLaunch?.status === "blocked" ? 1 : 0,
+    launchWaveGap: autonomousLaunch ? 0 : 1,
+    pendingApprovalPackets: autonomousLaunch?.totals.paymentApprovals ?? 0,
+    readyDeploymentBusinesses: autonomousLaunch?.status === "autonomous_ready_payment_gated" ? 1 : 0,
+    readyStages: autonomousLaunch?.status === "autonomous_ready_payment_gated" ? 1 : 0,
+    repairRequired: autonomousLaunch?.status === "blocked" ? 1 : 0,
+    selectedSourceKeys: autonomousLaunch ? 1 : 0,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  };
+}
+
+function firstBusinessAutonomousLaunchKey(input: {
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+  userId: string;
+}) {
+  return createHash("sha256").update(JSON.stringify({
+    autonomousLaunchId: input.autonomousLaunch?.autonomousLaunchId ?? null,
+    executionId: input.autonomousLaunch?.executionPacket.executionId ?? null,
+    generatedAt: input.sourceBatch.generatedAt,
+    sourceStoreId: input.autonomousLaunch?.executionPacket.finalExecutionPacket.store.sourceStoreId ?? null,
+    stage: "autonomous_first_business_launch",
+    totals: input.autonomousLaunch?.totals ?? null,
     userId: input.userId
   })).digest("hex");
 }
@@ -2520,13 +2602,13 @@ async function applyRevenueFirstBusinessInternalLaunch(userId: string, input: Ap
     readyStages: 0,
     repairRequired: 0
   };
-  const launched = Boolean(launch);
+  const launched = launch?.status === "approved_for_launch_internal";
   const appliedSummary = input.dryRun
-    ? launch
+    ? launched
       ? `Launch First Business preview completed for ${launch.storeSetup.businessName}.`
       : "Launch First Business preview found no eligible prepared package."
-    : launch
-      ? `${launch.storeSetup.businessName} is launch-ready internally. External execution remains locked.`
+    : launched
+      ? `${launch.storeSetup.businessName} is approved for launch internally. External execution remains locked.`
       : "Launch First Business could not prepare a launch-ready internal packet.";
   const launchReceipt = {
     auditLogId: null as string | null,
@@ -2539,7 +2621,7 @@ async function applyRevenueFirstBusinessInternalLaunch(userId: string, input: Ap
     preparationId: preparation?.preparationId ?? null,
     providerContacted: false as const,
     stage: "launch_first_business" as const,
-    status: launched ? "launch_ready_internal" as const : "blocked" as const,
+    status: launched ? "approved_for_launch_internal" as const : "blocked" as const,
     summary: appliedSummary
   };
 
@@ -2609,7 +2691,7 @@ async function applyRevenueFirstBusinessInternalLaunch(userId: string, input: Ap
       resultSummary: appliedSummary,
       sourceKeysJson: stringifySecureJson(sourceKeys),
       stage: "launch_first_business",
-      status: launched ? "launch_ready_internal" : "blocked",
+      status: launched ? "approved_for_launch_internal" : "blocked",
       userId
     },
     update: {
@@ -2629,7 +2711,7 @@ async function applyRevenueFirstBusinessInternalLaunch(userId: string, input: Ap
       }),
       resultSummary: appliedSummary,
       sourceKeysJson: stringifySecureJson(sourceKeys),
-      status: launched ? "launch_ready_internal" : "blocked"
+      status: launched ? "approved_for_launch_internal" : "blocked"
     },
     where: { batchKey }
   });
@@ -2642,6 +2724,355 @@ async function applyRevenueFirstBusinessInternalLaunch(userId: string, input: Ap
       auditLogId: auditLog.id,
       batchRunId: batchRun.id
     },
+    package: launchPackage,
+    preparation,
+    sourceBatch
+  };
+}
+
+async function applyRevenueFirstBusinessExecute(userId: string, input: ApplyRevenueFirstBusinessExecuteInput) {
+  const { package: launchPackage, sourceBatch } = await buildRevenueFirstBusinessLaunchPackageForUser(userId, input);
+  const preparation = launchPackage && launchPackage.status !== "blocked"
+    ? buildRevenueFirstStorePreparationPlan({
+      note: input.note ?? null,
+      packagePlan: launchPackage
+    })
+    : null;
+  const launch = preparation && preparation.status === "ready_to_execute_internal"
+    ? buildRevenueFirstBusinessInternalLaunchPlan({
+      note: input.note ?? null,
+      preparationPlan: preparation
+    })
+    : null;
+  const execution = launch && launch.status === "approved_for_launch_internal"
+    ? buildRevenueFirstBusinessExecutionPlan({
+      launchPlan: launch,
+      note: input.note ?? null
+    })
+    : null;
+  const sourceKeys = execution ? [execution.finalExecutionPacket.store.sourceStoreId] : [];
+  const afterTotals = firstBusinessExecutionTotals(execution, sourceBatch);
+  const beforeTotals: RevenueMoneyArmyBatchPipelinePlan["totals"] = {
+    ...afterTotals,
+    blockedStages: 0,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 0,
+    repairRequired: 0
+  };
+  const executed = execution?.status === "ready_to_launch_first_business";
+  const appliedSummary = input.dryRun
+    ? executed
+      ? `Execute First Business preview completed for ${execution.finalExecutionPacket.store.businessName}.`
+      : "Execute First Business preview found no approved final execution packet."
+    : executed
+      ? `${execution.finalExecutionPacket.store.businessName} is Ready to Launch First Business. Manual and semi-automated launch prep are ready; external execution remains locked.`
+      : "Execute First Business could not prepare a ready-to-launch internal packet.";
+  const executionReceipt = {
+    auditLogId: null as string | null,
+    batchRunId: null as string | null,
+    dryRun: input.dryRun,
+    executed,
+    executionId: execution?.executionId ?? null,
+    externalExecution: false as const,
+    launchId: launch?.launchId ?? null,
+    providerContacted: false as const,
+    stage: "execute_first_business" as const,
+    status: executed ? "ready_to_launch_first_business" as const : "blocked" as const,
+    summary: appliedSummary
+  };
+
+  if (input.dryRun) {
+    return {
+      batchRun: null,
+      executed: executionReceipt,
+      execution,
+      launch,
+      package: launchPackage,
+      preparation,
+      sourceBatch
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: executed
+      ? "revenue.first_business.execute_first_business_internal"
+      : "revenue.first_business.execute_first_business_blocked",
+    actorUserId: userId,
+    metadata: {
+      blockedExternalActions: execution?.blockedExternalActions ?? launch?.blockedExternalActions ?? preparation?.blockedExternalActions ?? [],
+      dryRun: false,
+      execution,
+      executionId: execution?.executionId ?? null,
+      externalExecution: false,
+      finalExecutionPacket: execution?.finalExecutionPacket ?? launch?.finalExecutionPacket ?? null,
+      firstLaunchReadinessGate: execution?.firstLaunchReadinessGate ?? null,
+      firstWeekTrackingPlan: execution?.firstWeekTrackingPlan ?? null,
+      guardrails: execution?.guardrails ?? [],
+      launchHandoffPacket: execution?.launchHandoffPacket ?? null,
+      launchId: launch?.launchId ?? null,
+      listingProductPack: execution?.listingProductPack ?? [],
+      manualLaunchRunbook: execution?.manualLaunchRunbook ?? [],
+      note: input.note ?? null,
+      productCandidateIds: execution?.finalExecutionPacket.products.map((product) => product.candidateId) ?? [],
+      providerContacted: false,
+      readyState: execution?.readyState ?? null,
+      semiAutomatedPreparationQueue: execution?.semiAutomatedPreparationQueue ?? [],
+      sourceBatchTotals: sourceBatch.totals,
+      sourceKeys,
+      status: execution?.status ?? launch?.status ?? preparation?.status ?? launchPackage?.status ?? "blocked",
+      summary: execution?.summary ?? appliedSummary,
+      totals: execution?.totals ?? null
+    },
+    outcome: executed ? "success" : "failure",
+    severity: executed ? "low" : "medium",
+    targetId: execution?.executionId ?? launch?.launchId ?? preparation?.preparationId ?? launchPackage?.packageId ?? null,
+    targetType: "revenue_execute_first_business"
+  });
+  const batchKey = firstBusinessExecutionKey({
+    execution,
+    sourceBatch,
+    userId
+  });
+  const batchRun = await prisma.revenueMoneyArmyBatchRun.upsert({
+    create: {
+      afterTotalsJson: stringifySecureJson(afterTotals),
+      auditLogId: auditLog.id,
+      batchKey,
+      beforeTotalsJson: stringifySecureJson(beforeTotals),
+      dryRun: false,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson({
+        executed: {
+          ...executionReceipt,
+          auditLogId: auditLog.id
+        },
+        execution,
+        launch,
+        package: launchPackage,
+        preparation,
+        sourceBatchTotals: sourceBatch.totals
+      }),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(sourceKeys),
+      stage: "execute_first_business",
+      status: executed ? "ready_to_launch_first_business" : "blocked",
+      userId
+    },
+    update: {
+      afterTotalsJson: stringifySecureJson(afterTotals),
+      auditLogId: auditLog.id,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson({
+        executed: {
+          ...executionReceipt,
+          auditLogId: auditLog.id
+        },
+        execution,
+        launch,
+        package: launchPackage,
+        preparation,
+        sourceBatchTotals: sourceBatch.totals
+      }),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(sourceKeys),
+      status: executed ? "ready_to_launch_first_business" : "blocked"
+    },
+    where: { batchKey }
+  });
+
+  return {
+    batchRun: moneyArmyBatchRunSnapshot(batchRun),
+    executed: {
+      ...executionReceipt,
+      auditLogId: auditLog.id,
+      batchRunId: batchRun.id
+    },
+    execution,
+    launch,
+    package: launchPackage,
+    preparation,
+    sourceBatch
+  };
+}
+
+async function applyRevenueFirstBusinessAutonomousLaunch(userId: string, input: ApplyRevenueFirstBusinessAutonomousLaunchInput) {
+  const { package: launchPackage, sourceBatch } = await buildRevenueFirstBusinessLaunchPackageForUser(userId, input);
+  const preparation = launchPackage && launchPackage.status !== "blocked"
+    ? buildRevenueFirstStorePreparationPlan({
+      note: input.note ?? null,
+      packagePlan: launchPackage
+    })
+    : null;
+  const launch = preparation && preparation.status === "ready_to_execute_internal"
+    ? buildRevenueFirstBusinessInternalLaunchPlan({
+      note: input.note ?? null,
+      preparationPlan: preparation
+    })
+    : null;
+  const execution = launch && launch.status === "approved_for_launch_internal"
+    ? buildRevenueFirstBusinessExecutionPlan({
+      launchPlan: launch,
+      note: input.note ?? null
+    })
+    : null;
+  const autonomousLaunch = execution && execution.status === "ready_to_launch_first_business"
+    ? buildRevenueFirstBusinessAutonomousLaunchPlan({
+      executionPlan: execution,
+      note: input.note ?? null
+    })
+    : null;
+  const sourceKeys = autonomousLaunch ? [autonomousLaunch.executionPacket.finalExecutionPacket.store.sourceStoreId] : [];
+  const afterTotals = firstBusinessAutonomousLaunchTotals(autonomousLaunch, sourceBatch);
+  const beforeTotals: RevenueMoneyArmyBatchPipelinePlan["totals"] = {
+    ...afterTotals,
+    blockedStages: 0,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 0,
+    repairRequired: 0
+  };
+  const autonomousPrepared = autonomousLaunch?.status === "autonomous_ready_payment_gated";
+  const appliedSummary = input.dryRun
+    ? autonomousPrepared
+      ? `Autonomous First Business Launch Prep preview completed for ${autonomousLaunch.executionPacket.finalExecutionPacket.store.businessName}.`
+      : "Autonomous First Business Launch Prep preview found no ready execution packet."
+    : autonomousPrepared
+      ? `${autonomousLaunch.executionPacket.finalExecutionPacket.store.businessName} is autonomous-ready until payment. ENTRAL prepared the launch packet; provider, payment, publishing, upload, browser, and spend actions remain locked.`
+      : "Autonomous First Business Launch Prep could not prepare a payment-gated autonomous packet.";
+  const autonomousReceipt = {
+    auditLogId: null as string | null,
+    autonomousLaunchId: autonomousLaunch?.autonomousLaunchId ?? null,
+    autonomousPrepared,
+    batchRunId: null as string | null,
+    dryRun: input.dryRun,
+    executionId: execution?.executionId ?? null,
+    externalExecution: false as const,
+    paymentExecution: false as const,
+    providerContacted: false as const,
+    stage: "autonomous_first_business_launch" as const,
+    status: autonomousPrepared ? "autonomous_ready_payment_gated" as const : "blocked" as const,
+    summary: appliedSummary
+  };
+
+  if (input.dryRun) {
+    return {
+      autonomous: autonomousReceipt,
+      autonomousLaunch,
+      batchRun: null,
+      execution,
+      launch,
+      package: launchPackage,
+      preparation,
+      sourceBatch
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: autonomousPrepared
+      ? "revenue.first_business.autonomous_launch_prepared"
+      : "revenue.first_business.autonomous_launch_blocked",
+    actorUserId: userId,
+    metadata: {
+      adCampaignDrafts: autonomousLaunch?.adCampaignDrafts ?? [],
+      autonomyMatrix: autonomousLaunch?.autonomyMatrix ?? [],
+      autonomousLaunch,
+      autonomousLaunchId: autonomousLaunch?.autonomousLaunchId ?? null,
+      blockedExternalActions: autonomousLaunch?.blockedExternalActions ?? execution?.blockedExternalActions ?? launch?.blockedExternalActions ?? [],
+      chainOfCommand: autonomousLaunch?.chainOfCommand ?? [],
+      connectionPlan: autonomousLaunch?.connectionPlan ?? null,
+      dryRun: false,
+      executionId: execution?.executionId ?? null,
+      externalExecution: false,
+      finalOperatorGate: autonomousLaunch?.finalOperatorGate ?? null,
+      guardrails: autonomousLaunch?.guardrails ?? [],
+      note: input.note ?? null,
+      packageId: launchPackage?.packageId ?? null,
+      paymentApprovalQueue: autonomousLaunch?.paymentApprovalQueue ?? [],
+      paymentExecution: false,
+      productCreationPlan: autonomousLaunch?.productCreationPlan ?? [],
+      providerContacted: false,
+      sourceBatchTotals: sourceBatch.totals,
+      sourceKeys,
+      status: autonomousLaunch?.status ?? execution?.status ?? launch?.status ?? preparation?.status ?? launchPackage?.status ?? "blocked",
+      storeBuildPlan: autonomousLaunch?.storeBuildPlan ?? null,
+      summary: autonomousLaunch?.summary ?? appliedSummary,
+      supplierPlan: autonomousLaunch?.supplierPlan ?? null,
+      totals: autonomousLaunch?.totals ?? null
+    },
+    outcome: autonomousPrepared ? "success" : "failure",
+    severity: autonomousPrepared ? "medium" : "high",
+    targetId: autonomousLaunch?.autonomousLaunchId ?? execution?.executionId ?? launch?.launchId ?? preparation?.preparationId ?? launchPackage?.packageId ?? null,
+    targetType: "revenue_autonomous_first_business_launch"
+  });
+  const batchKey = firstBusinessAutonomousLaunchKey({
+    autonomousLaunch,
+    sourceBatch,
+    userId
+  });
+  const batchRun = await prisma.revenueMoneyArmyBatchRun.upsert({
+    create: {
+      afterTotalsJson: stringifySecureJson(afterTotals),
+      auditLogId: auditLog.id,
+      batchKey,
+      beforeTotalsJson: stringifySecureJson(beforeTotals),
+      dryRun: false,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson({
+        autonomous: {
+          ...autonomousReceipt,
+          auditLogId: auditLog.id
+        },
+        autonomousLaunch,
+        execution,
+        launch,
+        package: launchPackage,
+        preparation,
+        sourceBatchTotals: sourceBatch.totals
+      }),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(sourceKeys),
+      stage: "autonomous_first_business_launch",
+      status: autonomousPrepared ? "autonomous_ready_payment_gated" : "blocked",
+      userId
+    },
+    update: {
+      afterTotalsJson: stringifySecureJson(afterTotals),
+      auditLogId: auditLog.id,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson({
+        autonomous: {
+          ...autonomousReceipt,
+          auditLogId: auditLog.id
+        },
+        autonomousLaunch,
+        execution,
+        launch,
+        package: launchPackage,
+        preparation,
+        sourceBatchTotals: sourceBatch.totals
+      }),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(sourceKeys),
+      status: autonomousPrepared ? "autonomous_ready_payment_gated" : "blocked"
+    },
+    where: { batchKey }
+  });
+
+  return {
+    autonomous: {
+      ...autonomousReceipt,
+      auditLogId: auditLog.id,
+      batchRunId: batchRun.id
+    },
+    autonomousLaunch,
+    batchRun: moneyArmyBatchRunSnapshot(batchRun),
+    execution,
+    launch,
     package: launchPackage,
     preparation,
     sourceBatch
@@ -6844,9 +7275,12 @@ async function applyRevenueAutopilot(userId: string, plan: RevenueAutopilotPlan)
     metadata: {
       actions: plan.actions.length,
       auditEvents: plan.auditEvents,
+      automationProfile: plan.automationProfile,
       blockedExternalActions: plan.blockedExternalActions,
+      chainOfCommand: plan.chainOfCommand,
       externalExecution: false,
       options: plan.options,
+      ownerApprovalQueue: plan.ownerApprovalQueue,
       phases: plan.phases.map((phase) => ({
         actionCount: phase.actionCount,
         name: phase.name,
@@ -6876,7 +7310,9 @@ async function applyRevenueAutopilot(userId: string, plan: RevenueAutopilotPlan)
           externalExecution: false,
           phase: item.phase,
           providerContacted: false,
-          sourceModule: item.sourceModule
+          sourceModule: item.sourceModule,
+          chainOfCommand: plan.chainOfCommand.find((lane) => lane.phase === item.phase) ?? null,
+          ownerApprovalQueue: plan.ownerApprovalQueue.filter((approval) => approval.actionIds.includes(item.commandHash))
         }),
         externalExecution: false,
         priority: item.priority,
@@ -7403,11 +7839,14 @@ async function executeRevenueAutopilot(userId: string, input: ExecuteRevenueAuto
     actorUserId: userId,
     metadata: {
       blockedExternalActions: context.plan.blockedExternalActions,
+      automationProfile: context.plan.automationProfile,
+      chainOfCommand: context.plan.chainOfCommand,
       externalExecution: false,
       includeAssetBatchActions: input.includeAssetBatchActions,
       includeDraftCreation: input.includeDraftCreation,
       includeLaunchApprovalPackets: input.includeLaunchApprovalPackets,
       options: context.plan.options,
+      ownerApprovalQueue: context.plan.ownerApprovalQueue,
       providerContacted: false,
       selectedActions: results.filter((step) => step.executionStatus === "executed").map((step) => step.action),
       selectionTotals: selection.totals,
@@ -9511,6 +9950,32 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
 
     const input = applyRevenueFirstBusinessInternalLaunchSchema.parse(request.body);
     const response = await applyRevenueFirstBusinessInternalLaunch(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/money-army/first-business/execute", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueFirstBusinessExecuteSchema.parse(request.body);
+    const response = await applyRevenueFirstBusinessExecute(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/money-army/first-business/autonomous-launch", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueFirstBusinessAutonomousLaunchSchema.parse(request.body);
+    const response = await applyRevenueFirstBusinessAutonomousLaunch(currentUser.sub, input);
 
     return reply.send(response);
   });

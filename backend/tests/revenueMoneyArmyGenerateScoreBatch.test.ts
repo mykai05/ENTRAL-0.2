@@ -7,6 +7,8 @@ import {
 } from "../src/services/revenueEngine.js";
 import { buildRevenueMoneyArmyGenerateScoreBatchPlan } from "../src/services/revenueMoneyArmyGenerateScoreBatch.js";
 import {
+  buildRevenueFirstBusinessAutonomousLaunchPlan,
+  buildRevenueFirstBusinessExecutionPlan,
   buildRevenueFirstBusinessInternalLaunchPlan,
   buildRevenueFirstStorePreparationPlan
 } from "../src/services/revenueFirstStorePreparation.js";
@@ -133,27 +135,102 @@ describe("Revenue Money Army Generate & Score Batch", () => {
     expect(preparation.blockedExternalActions.join(" ")).toContain("marketplace");
     const internalLaunch = buildRevenueFirstBusinessInternalLaunchPlan({
       launchedAt: "2026-06-02T13:00:00.000Z",
-      note: "Launch First Business internal packet created from dashboard controls.",
+      note: "Approved for Launch and final internal execution packet created from dashboard controls.",
       preparationPlan: preparation
     });
     expect(internalLaunch).toMatchObject({
       externalExecution: false,
       mode: "Launch First Business",
       providerContacted: false,
-      status: "launch_ready_internal"
+      status: "approved_for_launch_internal"
     });
     expect(internalLaunch.launchApproval).toMatchObject({
       auditOnly: true,
       externalExecution: false,
       providerContacted: false,
-      status: "launch_ready_internal"
+      status: "approved_for_launch_internal"
     });
-    expect(internalLaunch.productSetupQueue.length).toBe(preparation.products.length);
+    expect(internalLaunch.productSetupQueue.length).toBeGreaterThanOrEqual(3);
+    expect(internalLaunch.productSetupQueue.length).toBeLessThanOrEqual(5);
     expect(internalLaunch.productSetupQueue.every((product) => product.launchState === "queued_internal_product_setup")).toBe(true);
+    expect(internalLaunch.finalExecutionPacket).toMatchObject({
+      approvalState: "approved_for_launch_internal",
+      externalExecution: false,
+      providerContacted: false
+    });
+    expect(internalLaunch.finalExecutionPacket.products.length).toBe(internalLaunch.productSetupQueue.length);
     expect(internalLaunch.contentDraftQueue.every((idea) => idea.executionLocked)).toBe(true);
     expect(internalLaunch.organicMoveQueue.every((move) => move.launchState === "queued_internal_organic_move")).toBe(true);
     expect(internalLaunch.evidenceLedgerFields).toContain("manualNetProfit");
     expect(internalLaunch.blockedExternalActions.join(" ")).toContain("Publishing a live store");
+    const execution = buildRevenueFirstBusinessExecutionPlan({
+      executedAt: "2026-06-02T13:15:00.000Z",
+      launchPlan: internalLaunch,
+      note: "Execute First Business manual and semi-automated launch prep created from dashboard controls."
+    });
+    expect(execution).toMatchObject({
+      externalExecution: false,
+      mode: "Execute First Business",
+      providerContacted: false,
+      status: "ready_to_launch_first_business"
+    });
+    expect(execution.readyState).toMatchObject({
+      externalExecution: false,
+      label: "Ready to Launch First Business",
+      manualLaunchReady: true,
+      providerContacted: false,
+      semiAutomatedPreparationReady: true
+    });
+    expect(execution.finalExecutionPacket.products.length).toBe(internalLaunch.finalExecutionPacket.products.length);
+    expect(execution.firstLaunchReadinessGate).toMatchObject({
+      externalExecution: false,
+      label: "First Launch Readiness Gate",
+      providerContacted: false,
+      status: "ready_for_manual_launch_approval"
+    });
+    expect(execution.firstLaunchReadinessGate.totals.blocked).toBe(0);
+    expect(execution.listingProductPack).toHaveLength(execution.finalExecutionPacket.products.length);
+    expect(execution.listingProductPack[0]).toMatchObject({
+      externalExecution: false,
+      providerContacted: false,
+      status: "ready_internal"
+    });
+    expect(execution.listingProductPack[0]?.seoKeywords.length).toBeGreaterThan(0);
+    expect(execution.launchHandoffPacket).toMatchObject({
+      explicitLiveApprovalRequired: true,
+      externalExecution: false,
+      providerContacted: false,
+      status: "ready_for_operator_review"
+    });
+    expect(execution.launchHandoffPacket.products).toHaveLength(execution.listingProductPack.length);
+    expect(execution.firstWeekTrackingPlan.metricFields.map((field) => field.id)).toContain("manualNetProfit");
+    expect(execution.firstWeekTrackingPlan.rotationReview.output).toBe("feed_revenue_engine_scale_watch_pause_kill");
+    expect(execution.manualLaunchRunbook.every((step) => step.status === "ready_manual")).toBe(true);
+    expect(execution.semiAutomatedPreparationQueue.every((step) => step.externalExecution === false)).toBe(true);
+    expect(execution.revenueStartPlan.paidSpendLocked).toBe(true);
+    const autonomousLaunch = buildRevenueFirstBusinessAutonomousLaunchPlan({
+      executedAt: "2026-06-02T13:30:00.000Z",
+      executionPlan: execution,
+      note: "Autonomous first-business launch prep created from dashboard controls."
+    });
+    expect(autonomousLaunch).toMatchObject({
+      autonomousUntilPayment: true,
+      externalExecution: false,
+      mode: "Autonomous First Business Launch Prep",
+      paymentExecution: false,
+      providerContacted: false,
+      status: "autonomous_ready_payment_gated"
+    });
+    expect(autonomousLaunch.storeBuildPlan.status).toBe("autonomous_internal_ready");
+    expect(autonomousLaunch.productCreationPlan).toHaveLength(execution.listingProductPack.length);
+    expect(autonomousLaunch.productCreationPlan.every((product) => product.connectorPayloadStatus === "prepared_not_sent")).toBe(true);
+    expect(autonomousLaunch.supplierPlan.candidates.length).toBeGreaterThan(1);
+    expect(autonomousLaunch.supplierPlan.selectedSupplier.providerContacted).toBe(false);
+    expect(autonomousLaunch.connectionPlan.connectorManifests.every((manifest) => manifest.providerContacted === false)).toBe(true);
+    expect(autonomousLaunch.adCampaignDrafts.every((draft) => draft.spendState === "payment_required" && draft.budgetApprovalRequired)).toBe(true);
+    expect(autonomousLaunch.paymentApprovalQueue.map((approval) => approval.approvalType)).toContain("ad_spend");
+    expect(autonomousLaunch.autonomyMatrix.map((item) => item.lane)).toContain("ad_spend_activation");
+    expect(autonomousLaunch.finalOperatorGate.requiredApprovals.join(" ")).toContain("Ad/Growth");
     expect(plan.scalePressure.pressureScore).toBeGreaterThanOrEqual(0);
     expect(plan.killPressure.pressureScore).toBeGreaterThanOrEqual(0);
     expect(plan.blockedExternalActions).toContain("Posting faceless content externally");

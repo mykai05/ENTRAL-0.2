@@ -68,6 +68,15 @@ export type RevenueAutopilotSelectionSource =
   | "explicit_action"
   | "launch_approval_opt_in"
   | "not_selected";
+export type RevenueAutopilotOwnerApprovalType =
+  | "external_launch"
+  | "provider_upload"
+  | "content_publish"
+  | "ad_spend"
+  | "finance_release"
+  | "browser_or_marketplace"
+  | "manual_review";
+export type RevenueAutopilotCommandRank = "ENTRAL" | "Marshal" | "General" | "Commander" | "Soldier" | "Owner";
 
 export type RevenueAutopilotOptions = {
   includeContent: boolean;
@@ -123,11 +132,49 @@ export type RevenueAutopilotAction = {
 export type RevenueAutopilotPlan = {
   actions: RevenueAutopilotAction[];
   auditEvents: string[];
+  automationProfile: {
+    automatedWorkPercent: number;
+    externalExecution: false;
+    internalAutopilotWorkItems: number;
+    ownerApprovalPercent: number;
+    ownerApprovalWorkItems: number;
+    providerContacted: false;
+    summary: string;
+    targetAutomationPercent: 90;
+  };
   blockedExternalActions: string[];
+  chainOfCommand: Array<{
+    actionCount: number;
+    actions: string[];
+    blockedActions: number;
+    commander: string;
+    externalExecution: false;
+    general: string;
+    marshal: string;
+    phase: RevenueAutopilotPhaseName;
+    providerContacted: false;
+    readyActions: number;
+    soldier: string;
+    status: RevenueAutopilotActionStatus;
+    summary: string;
+  }>;
   externalExecution: false;
   generatedAt: string;
   mode: "Internal Revenue Autopilot";
   options: RevenueAutopilotOptions;
+  ownerApprovalQueue: Array<{
+    actionIds: string[];
+    approvalType: RevenueAutopilotOwnerApprovalType;
+    externalExecution: false;
+    id: string;
+    phase: RevenueAutopilotPhaseName;
+    providerContacted: false;
+    rank: Extract<RevenueAutopilotCommandRank, "Owner">;
+    reason: string;
+    riskLevel: RevenueAutopilotRiskLevel;
+    status: "waiting_owner" | "not_ready";
+    title: string;
+  }>;
   phases: RevenueAutopilotPhase[];
   providerContacted: false;
   summary: string;
@@ -490,6 +537,196 @@ function action(input: Omit<RevenueAutopilotAction, "approvalGate" | "blockedExt
     commandHash: commandHash(input),
     externalExecution: false,
     providerContacted: false
+  };
+}
+
+const chainAssignment: Record<RevenueAutopilotPhaseName, {
+  commander: string;
+  general: string;
+  marshal: string;
+  soldier: string;
+}> = {
+  content_factory: {
+    commander: "Faceless Content Commander",
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    soldier: "Script and Caption Soldier"
+  },
+  digital_factory: {
+    commander: "Digital Product Commander",
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    soldier: "Digital Draft Soldier"
+  },
+  finance_governance: {
+    commander: "Financial Orchestrator Commander",
+    general: "Operations General",
+    marshal: "Money Army Marshal",
+    soldier: "Ledger Control Soldier"
+  },
+  first_business_launch: {
+    commander: "First Launch Commander",
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    soldier: "Launch Packet Soldier"
+  },
+  first_cash_sprint: {
+    commander: "First Cash Commander",
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    soldier: "Fast Cash Action Soldier"
+  },
+  listing_factory: {
+    commander: "Listing Optimization Commander",
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    soldier: "Listing Copy Soldier"
+  },
+  portfolio_command: {
+    commander: "Rotation Commander",
+    general: "Operations General",
+    marshal: "Money Army Marshal",
+    soldier: "Asset Control Soldier"
+  },
+  product_factory: {
+    commander: "Product Factory Commander",
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    soldier: "Product Draft Soldier"
+  },
+  signal_intake: {
+    commander: "Signal Intake Commander",
+    general: "Operations General",
+    marshal: "Money Army Marshal",
+    soldier: "Evidence Soldier"
+  },
+  store_setup: {
+    commander: "Store Setup Commander",
+    general: "First Business General",
+    marshal: "Money Army Marshal",
+    soldier: "Store Runbook Soldier"
+  }
+};
+
+function ownerApprovalTypeFor(actionItem: RevenueAutopilotAction): RevenueAutopilotOwnerApprovalType {
+  const blockedText = actionItem.blockedExternalActions.join(" ").toLowerCase();
+
+  if (actionItem.phase === "finance_governance" || blockedText.includes("money") || blockedText.includes("payout") || blockedText.includes("bank")) {
+    return "finance_release";
+  }
+
+  if (blockedText.includes("ad spend") || blockedText.includes("campaign")) {
+    return "ad_spend";
+  }
+
+  if (blockedText.includes("video") || blockedText.includes("social") || blockedText.includes("posting")) {
+    return "content_publish";
+  }
+
+  if (blockedText.includes("provider") || blockedText.includes("uploading pod") || blockedText.includes("artwork")) {
+    return "provider_upload";
+  }
+
+  if (blockedText.includes("browser") || blockedText.includes("marketplace") || blockedText.includes("storefront")) {
+    return "browser_or_marketplace";
+  }
+
+  if (actionItem.phase === "first_business_launch" || actionItem.phase === "first_cash_sprint" || actionItem.phase === "store_setup") {
+    return "external_launch";
+  }
+
+  return "manual_review";
+}
+
+function buildOwnerApprovalQueue(actions: RevenueAutopilotAction[]): RevenueAutopilotPlan["ownerApprovalQueue"] {
+  const queue = new Map<string, RevenueAutopilotPlan["ownerApprovalQueue"][number]>();
+
+  for (const item of actions) {
+    const approvalType = ownerApprovalTypeFor(item);
+    const status = item.status === "blocked" ? "not_ready" : "waiting_owner";
+    const key = `${item.phase}:${approvalType}:${status}`;
+    const current = queue.get(key);
+
+    if (current) {
+      current.actionIds.push(item.commandHash);
+      current.riskLevel = current.riskLevel === "high" || item.riskLevel === "high"
+        ? "high"
+        : current.riskLevel === "medium" || item.riskLevel === "medium" ? "medium" : "low";
+      current.reason = `${current.actionIds.length} autopilot command${current.actionIds.length === 1 ? "" : "s"} need ${approvalType.replace(/_/g, " ")} review before any external work.`;
+      continue;
+    }
+
+    queue.set(key, {
+      actionIds: [item.commandHash],
+      approvalType,
+      externalExecution: false,
+      id: `owner_approval:${key}`.toLowerCase().replace(/[^a-z0-9:_-]+/g, "_"),
+      phase: item.phase,
+      providerContacted: false,
+      rank: "Owner",
+      reason: `1 autopilot command needs ${approvalType.replace(/_/g, " ")} review before any external work.`,
+      riskLevel: item.riskLevel,
+      status,
+      title: `${phaseDefinitions[item.phase].title}: ${approvalType.replace(/_/g, " ")} approval`
+    });
+  }
+
+  return Array.from(queue.values())
+    .sort((left, right) => (
+      riskWeight[left.riskLevel] - riskWeight[right.riskLevel]
+      || left.phase.localeCompare(right.phase)
+      || left.approvalType.localeCompare(right.approvalType)
+    ));
+}
+
+function buildChainOfCommand(actions: RevenueAutopilotAction[]): RevenueAutopilotPlan["chainOfCommand"] {
+  return (Object.keys(chainAssignment) as RevenueAutopilotPhaseName[])
+    .map((phase) => {
+      const phaseActions = actions.filter((item) => item.phase === phase);
+      const readyActions = phaseActions.filter((item) => item.status === "ready").length;
+      const blockedActions = phaseActions.filter((item) => item.status === "blocked").length;
+      const status: RevenueAutopilotActionStatus = blockedActions > 0
+        ? "blocked"
+        : readyActions > 0 ? "ready" : phaseActions.length > 0 ? "watch" : "watch";
+      const assignment = chainAssignment[phase];
+
+      return {
+        actionCount: phaseActions.length,
+        actions: phaseActions.map((item) => item.title),
+        blockedActions,
+        commander: assignment.commander,
+        externalExecution: false as const,
+        general: assignment.general,
+        marshal: assignment.marshal,
+        phase,
+        providerContacted: false as const,
+        readyActions,
+        soldier: assignment.soldier,
+        status,
+        summary: phaseActions.length > 0
+          ? `${assignment.commander} owns ${phaseActions.length} internal autopilot command${phaseActions.length === 1 ? "" : "s"} with ${readyActions} ready.`
+          : `${assignment.commander} is standing by.`
+      };
+    })
+    .filter((lane) => lane.actionCount > 0);
+}
+
+function buildAutomationProfile(actions: RevenueAutopilotAction[], ownerApprovalQueue: RevenueAutopilotPlan["ownerApprovalQueue"]): RevenueAutopilotPlan["automationProfile"] {
+  const internalAutopilotWorkItems = actions.filter((item) => item.status === "ready" || item.status === "watch").length * 9;
+  const ownerApprovalWorkItems = ownerApprovalQueue.filter((item) => item.status === "waiting_owner").length;
+  const totalWorkItems = internalAutopilotWorkItems + ownerApprovalWorkItems;
+  const automatedWorkPercent = totalWorkItems === 0 ? 100 : Math.round((internalAutopilotWorkItems / totalWorkItems) * 100);
+  const ownerApprovalPercent = Math.max(0, 100 - automatedWorkPercent);
+
+  return {
+    automatedWorkPercent,
+    externalExecution: false,
+    internalAutopilotWorkItems,
+    ownerApprovalPercent,
+    ownerApprovalWorkItems,
+    providerContacted: false,
+    summary: `ENTRAL can handle ${automatedWorkPercent}% of the current revenue workload internally; owner attention is reserved for ${ownerApprovalWorkItems} approval gate${ownerApprovalWorkItems === 1 ? "" : "s"}.`,
+    targetAutomationPercent: 90
   };
 }
 
@@ -937,6 +1174,9 @@ export function buildRevenueAutopilotPlan(input: {
     .slice(0, options.maxActions);
   const metricsByPhase = phaseMetrics(input);
   const phases = buildPhases(selectedActions, metricsByPhase);
+  const ownerApprovalQueue = buildOwnerApprovalQueue(selectedActions);
+  const chainOfCommand = buildChainOfCommand(selectedActions);
+  const automationProfile = buildAutomationProfile(selectedActions, ownerApprovalQueue);
   const blocked = blockedActions(
     input.revenuePlan.blockedExternalActions,
     input.launchPlan.blockedExternalActions,
@@ -960,14 +1200,17 @@ export function buildRevenueAutopilotPlan(input: {
       "Apply mode records queued command records and an audit log only; it does not publish, upload, contact providers, move money, or run browser automation.",
       "Narrow module apply controls and human approval gates remain required before any internal record creation beyond autopilot command records."
     ],
+    automationProfile,
     blockedExternalActions: blocked,
+    chainOfCommand,
     externalExecution: false,
     generatedAt: input.generatedAt ?? new Date().toISOString(),
     mode: "Internal Revenue Autopilot",
     options,
+    ownerApprovalQueue,
     phases,
     providerContacted: false,
-    summary: `${selectedActions.length} internal autopilot command${selectedActions.length === 1 ? "" : "s"} prioritized in ${options.mode} mode across ${input.revenuePlan.totals.stores} store${input.revenuePlan.totals.stores === 1 ? "" : "s"}, ${input.revenuePlan.totals.products} product${input.revenuePlan.totals.products === 1 ? "" : "s"}, ${money(input.launchPlan.totals.estimatedDraftProfit + input.digitalPlan.totals.estimatedDraftProfit)} estimated draft profit, ${money(profitVelocity)} daily profit velocity, and ${rotationChanges} performance-aware rotation change${rotationChanges === 1 ? "" : "s"}. External execution remains locked.`,
+    summary: `${selectedActions.length} internal autopilot command${selectedActions.length === 1 ? "" : "s"} prioritized in ${options.mode} mode across ${input.revenuePlan.totals.stores} store${input.revenuePlan.totals.stores === 1 ? "" : "s"}, ${input.revenuePlan.totals.products} product${input.revenuePlan.totals.products === 1 ? "" : "s"}, ${money(input.launchPlan.totals.estimatedDraftProfit + input.digitalPlan.totals.estimatedDraftProfit)} estimated draft profit, ${money(profitVelocity)} daily profit velocity, and ${rotationChanges} performance-aware rotation change${rotationChanges === 1 ? "" : "s"}. ${automationProfile.summary} External execution remains locked.`,
     totals: {
       actions: selectedActions.length,
       blockedActions: selectedActions.filter((item) => item.status === "blocked").length,

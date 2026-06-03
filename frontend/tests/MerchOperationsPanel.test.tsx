@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -1667,6 +1667,58 @@ const firstStorePrepareApplyResponse: RevenueFirstStorePrepareApplyResponse = {
   sourceBatch: moneyArmyGenerateScoreBatchPlan
 };
 
+const firstLaunchProducts = Array.from({ length: 3 }, (_, index) => ({
+  ...firstStorePreparationPlan.products[0],
+  candidateId: `money_army_candidate_store_1_00${index + 1}`,
+  executionLocked: true as const,
+  launchState: "queued_internal_product_setup" as const,
+  listingTitle: `Iron House Operator Tee ${index + 1}`,
+  productName: `Iron House Operator Tee Candidate ${index + 1}`,
+  sequence: index + 1,
+  sourceProductId: `product-${index + 1}`
+}));
+
+const firstLaunchContentDrafts = Array.from({ length: 3 }, (_, index) => ({
+  ...firstStorePreparationPlan.contentPlan[0],
+  candidateId: `money_army_candidate_store_1_00${index + 1}`,
+  executionLocked: true as const,
+  id: `first_business_content_money_army_candidate_store_1_00${index + 1}_${index + 1}`,
+  launchState: "queued_internal_content_draft" as const,
+  productName: `Iron House Operator Tee Candidate ${index + 1}`,
+  sequence: index + 1
+}));
+
+const firstLaunchOrganicMoves = [
+  ...firstStorePreparationPlan.organicTrafficPlan,
+  {
+    ...firstStorePreparationPlan.organicTrafficPlan[0],
+    channel: "youtube_shorts" as const,
+    id: "organic_iron_house_gym_youtube_shorts",
+    title: "Prepare youtube shorts product story"
+  },
+  {
+    ...firstStorePreparationPlan.organicTrafficPlan[0],
+    channel: "storefront_seo" as const,
+    id: "organic_iron_house_gym_storefront_seo",
+    title: "Prepare storefront SEO map"
+  }
+].map((move, index) => ({
+  ...move,
+  executionLocked: true as const,
+  launchState: "queued_internal_organic_move" as const,
+  sequence: index + 1
+}));
+
+const firstLaunchStoreSetup = {
+  ...firstStorePreparationPlan.storeConfig,
+  launchState: "queued_internal_store_setup" as const,
+  setupQueue: [
+    "Lock internal launch lane for Iron House Gym.",
+    "Prepare Shopify store settings checklist: brand name, audience, navigation, collection plan, policies, SEO title, and manual proof fields.",
+    "Prepare internal storefront content rows only; live storefront writes remain blocked."
+  ]
+};
+
 const firstBusinessInternalLaunchPlan: RevenueFirstBusinessInternalLaunchPlan = {
   auditEvents: [
     "Launch First Business internal packet assembled from the approved Prepare First Store packet.",
@@ -1680,12 +1732,7 @@ const firstBusinessInternalLaunchPlan: RevenueFirstBusinessInternalLaunchPlan = 
     "Starting paid campaigns, moving Ad/Growth budget, charging cards, transferring money, or changing payout settings",
     "Using browser automation, account warmup, stealth, proxies, CAPTCHA handling, or platform-evasion workflows"
   ],
-  contentDraftQueue: firstStorePreparationPlan.contentPlan.map((idea, index) => ({
-    ...idea,
-    executionLocked: true,
-    launchState: "queued_internal_content_draft",
-    sequence: index + 1
-  })),
+  contentDraftQueue: firstLaunchContentDrafts,
   evidenceLedgerFields: [
     "manualVisits",
     "manualUnitsSold",
@@ -1706,11 +1753,11 @@ const firstBusinessInternalLaunchPlan: RevenueFirstBusinessInternalLaunchPlan = 
     approvedBy: "operator",
     auditOnly: true,
     externalExecution: false,
-    note: "Launch First Business internal packet created from dashboard controls.",
+    note: "Approved for Launch and final internal execution packet created from dashboard controls.",
     packageId: firstBusinessPackagePlan.packageId,
     preparationId: firstStorePreparationPlan.preparationId,
     providerContacted: false,
-    status: "launch_ready_internal"
+    status: "approved_for_launch_internal"
   },
   launchId: "launch_first_business_store_1_2026_06_02t13_00_00_000z",
   launchSequence: [
@@ -1732,38 +1779,48 @@ const firstBusinessInternalLaunchPlan: RevenueFirstBusinessInternalLaunchPlan = 
     }
   ],
   mode: "Launch First Business",
-  organicMoveQueue: firstStorePreparationPlan.organicTrafficPlan.map((move, index) => ({
-    ...move,
-    executionLocked: true,
-    launchState: "queued_internal_organic_move",
-    sequence: index + 1
-  })),
-  productSetupQueue: firstStorePreparationPlan.products.map((product, index) => ({
-    ...product,
-    executionLocked: true,
-    launchState: "queued_internal_product_setup",
-    sequence: index + 1
-  })),
+  organicMoveQueue: firstLaunchOrganicMoves,
+  productSetupQueue: firstLaunchProducts,
   providerContacted: false,
-  status: "launch_ready_internal",
-  storeSetup: {
-    ...firstStorePreparationPlan.storeConfig,
-    launchState: "queued_internal_store_setup",
-    setupQueue: [
-      "Lock internal launch lane for Iron House Gym.",
-      "Prepare Shopify store settings checklist: brand name, audience, navigation, collection plan, policies, SEO title, and manual proof fields.",
-      "Prepare internal storefront content rows only; live storefront writes remain blocked."
-    ]
+  status: "approved_for_launch_internal",
+  finalExecutionPacket: {
+    approvalState: "approved_for_launch_internal",
+    blockedExternalActions: [
+      "Publishing a live store, listing, product, collection, SEO page, or marketplace record",
+      "Uploading files, mockups, artwork, videos, captions, scripts, or thumbnails to any provider or platform",
+      "Calling POD, marketplace, social, email, ad, browser, banking, payment, or external AI providers"
+    ],
+    evidenceLedgerFields: [
+      "manualVisits",
+      "manualUnitsSold",
+      "manualGrossRevenue",
+      "manualNetProfit",
+      "manualContentViews",
+      "manualSavesOrShares"
+    ],
+    executionChecklist: [
+      "Review final internal store setup packet.",
+      "Review 3-5 selected product setup packets.",
+      "Review linked faceless content drafts.",
+      "Review organic-first traffic move queue."
+    ],
+    externalExecution: false,
+    facelessContentIdeas: firstLaunchContentDrafts,
+    organicMoves: firstLaunchOrganicMoves,
+    products: firstLaunchProducts,
+    providerContacted: false,
+    store: firstLaunchStoreSetup
   },
-  summary: "Iron House Gym is launch-ready internally with 1 product setup packet, 1 faceless content draft, 1 organic move, and 2 internal launch steps. External execution remains locked until explicit live approval.",
+  storeSetup: firstLaunchStoreSetup,
+  summary: "Iron House Gym is approved for launch internally with 3 selected product setup packets, 3 linked faceless content drafts, 3 organic-first moves, and 2 internal launch steps. External execution remains locked until explicit live approval.",
   totals: {
     blockedExternalActions: 5,
-    contentDrafts: 1,
+    contentDrafts: 3,
     evidenceFields: 6,
     launchSequenceSteps: 2,
-    organicMoves: 1,
-    products: 1,
-    readyExecutionItems: 13,
+    organicMoves: 3,
+    products: 3,
+    readyExecutionItems: 17,
     storeSetupSteps: 3
   }
 };
@@ -1796,10 +1853,10 @@ const firstBusinessInternalLaunchRun: RevenueMoneyArmyBatchRun = {
   externalExecution: false,
   id: "first-business-launch-run-1",
   providerContacted: false,
-  resultSummary: "Iron House Gym is launch-ready internally. External execution remains locked.",
+  resultSummary: "Iron House Gym is approved for launch internally. External execution remains locked.",
   sourceKeys: ["store-1"],
   stage: "launch_first_business",
-  status: "launch_ready_internal"
+  status: "approved_for_launch_internal"
 };
 
 const firstBusinessInternalLaunchApplyResponse: RevenueFirstBusinessInternalLaunchApplyResponse = {
@@ -1816,9 +1873,662 @@ const firstBusinessInternalLaunchApplyResponse: RevenueFirstBusinessInternalLaun
     preparationId: firstStorePreparationPlan.preparationId,
     providerContacted: false,
     stage: "launch_first_business",
-    status: "launch_ready_internal",
-    summary: "Iron House Gym is launch-ready internally. External execution remains locked."
+    status: "approved_for_launch_internal",
+    summary: "Iron House Gym is approved for launch internally. External execution remains locked."
   },
+  package: firstBusinessPackagePlan,
+  preparation: firstStorePreparationPlan,
+  sourceBatch: moneyArmyGenerateScoreBatchPlan
+};
+
+const firstBusinessListingProductPack = firstLaunchProducts.map((product) => ({
+  approvalChecklist: [
+    "Approve final listing title, description, and price.",
+    "Approve design prompt, negative prompt, mockup direction, placement, palette, and typography.",
+    "Confirm original-work and trademark review before any artwork generation or provider upload."
+  ],
+  candidateId: product.candidateId,
+  designSpec: {
+    externalGeneration: false as const,
+    mockupDirection: product.internalDesignDraft.mockupDirection,
+    negativePrompt: product.internalDesignDraft.negativePrompt,
+    palette: product.internalDesignDraft.palette,
+    placement: product.internalDesignDraft.placement,
+    prompt: product.internalDesignDraft.prompt,
+    providerContacted: false as const,
+    typography: product.internalDesignDraft.typography
+  },
+  externalExecution: false as const,
+  listingBullets: [
+    `${product.productName} is prepared for independent gym members.`,
+    `${product.designConcept} with bold typography.`,
+    "Provider, upload, marketplace, and paid traffic actions remain locked."
+  ],
+  listingDescription: product.listingDescription,
+  listingTitle: product.listingTitle,
+  productName: product.productName,
+  productType: product.productType,
+  profitMargin: product.profitMargin,
+  providerContacted: false as const,
+  retailPrice: product.retailPrice,
+  seoKeywords: ["fitness", "gym", "operator", "tee", "original merch", "organic launch"],
+  status: "ready_internal" as const,
+  storefrontCollection: "Iron House Gym First Drop",
+  tags: product.tags
+}));
+
+const firstBusinessFirstWeekTrackingPlan: RevenueFirstBusinessExecutionPlan["firstWeekTrackingPlan"] = {
+  checkIns: [{
+    day: 0,
+    requiredEvidence: ["storeUrl", "productUrls", "launchTimestamp", "operatorNotes"],
+    title: "Launch day proof"
+  }, {
+    day: 1,
+    requiredEvidence: ["manualVisits", "contentViews", "clicks", "unitsSold", "grossRevenue"],
+    title: "First 24 hour signal check"
+  }, {
+    day: 3,
+    requiredEvidence: ["trafficSources", "bestContentHook", "productPageNotes", "conversionNotes"],
+    title: "First 72 hour optimization check"
+  }, {
+    day: 7,
+    requiredEvidence: ["manualNetProfit", "topProduct", "weakestProduct", "rotationRecommendation"],
+    title: "First week Revenue Engine review"
+  }],
+  externalExecution: false,
+  metricFields: [
+    { cadence: "twice_daily", id: "manualVisits", label: "Manual visits" },
+    { cadence: "twice_daily", id: "manualUnitsSold", label: "Units sold" },
+    { cadence: "daily", id: "manualGrossRevenue", label: "Gross revenue" },
+    { cadence: "daily", id: "manualNetProfit", label: "Net profit" },
+    { cadence: "daily", id: "manualContentViews", label: "Content views" },
+    { cadence: "daily", id: "manualClicks", label: "Content or listing clicks" },
+    { cadence: "daily", id: "manualConversionNotes", label: "Conversion notes" },
+    { cadence: "end_of_week", id: "manualRotationRecommendation", label: "Scale/watch/pause/kill recommendation" }
+  ],
+  providerContacted: false,
+  rotationReview: {
+    day: 7,
+    inputs: ["manualVisits", "manualUnitsSold", "manualGrossRevenue", "manualNetProfit", "manualContentViews", "manualConversionNotes", "manualRotationRecommendation"],
+    output: "feed_revenue_engine_scale_watch_pause_kill"
+  }
+};
+
+const firstBusinessExecutionPlan: RevenueFirstBusinessExecutionPlan = {
+  auditEvents: [
+    "Execute First Business packet prepared from the approved final execution packet.",
+    "Manual and semi-automated launch preparation queues were assembled internally.",
+    "No provider, marketplace, browser, upload, ad, social, banking, payment, payout, or external AI action was executed."
+  ],
+  blockedExternalActions: [
+    "Publishing a live store, listing, product, collection, SEO page, or marketplace record",
+    "Manual launch may proceed only after explicit live approval outside this internal packet",
+    "Semi-automated preparation may generate internal rows only; no provider, browser, upload, marketplace, social, ad, bank, or payment action is allowed"
+  ],
+  executionApproval: {
+    approvedAt: "2026-06-02T13:15:00.000Z",
+    approvedBy: "operator",
+    auditOnly: true,
+    externalExecution: false,
+    launchId: firstBusinessInternalLaunchPlan.launchId,
+    note: "Execute First Business manual and semi-automated launch prep created from dashboard controls.",
+    providerContacted: false,
+    status: "ready_to_launch_first_business"
+  },
+  executionId: "execute_first_business_store_1_2026_06_02t13_15_00_000z",
+  externalExecution: false,
+  firstLaunchReadinessGate: {
+    externalExecution: false,
+    generatedAt: "2026-06-02T13:15:00.000Z",
+    items: [{
+      category: "store",
+      detail: "Iron House Gym store setup packet has 3 internal setup steps.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "Store config ready"
+    }, {
+      category: "products",
+      detail: "3 selected product setup packets are inside the final execution packet.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "3-5 products selected"
+    }, {
+      category: "listings",
+      detail: "3 listing-ready product rows include title, description, bullets, SEO keywords, price, and margin.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "Listing pack complete"
+    }, {
+      category: "designs",
+      detail: "Each product has an internal prompt, negative prompt, mockup direction, placement, palette, and typography spec.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "Design specs ready internally"
+    }, {
+      category: "content",
+      detail: "3 faceless content drafts are linked to the first products.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "Faceless content hooks ready"
+    }, {
+      category: "traffic",
+      detail: "3 organic-first moves are prepared. Paid spend stays locked.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "Organic traffic path ready"
+    }, {
+      category: "finance",
+      detail: "Paid spend, provider charges, cards, banking, payout, and budget movement remain locked behind separate approval.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "Financial guardrail active"
+    }, {
+      category: "evidence",
+      detail: "6 first-week evidence fields are ready for manual tracking.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "Evidence ledger ready"
+    }, {
+      category: "external_lock",
+      detail: "Provider calls, browser work, uploads, ad spend, marketplace publishing, social posting, bank, and payment actions are still blocked.",
+      externalExecution: false,
+      providerContacted: false,
+      required: true,
+      status: "ready",
+      title: "External action lock verified"
+    }],
+    label: "First Launch Readiness Gate",
+    providerContacted: false,
+    status: "ready_for_manual_launch_approval",
+    summary: "Iron House Gym passes the First Launch Readiness Gate with 9/9 required checks ready. Live external action still requires explicit approval.",
+    totals: {
+      blocked: 0,
+      ready: 9,
+      required: 9
+    }
+  },
+  finalExecutionPacket: firstBusinessInternalLaunchPlan.finalExecutionPacket,
+  firstWeekTrackingPlan: firstBusinessFirstWeekTrackingPlan,
+  generatedAt: "2026-06-02T13:15:00.000Z",
+  guardrails: [
+    "Execute First Business prepares manual and semi-automated launch work only.",
+    "Manual launch work is ready for the operator, but live external execution remains blocked until explicit approval.",
+    "Semi-automated preparation may assemble rows, checklists, and copy packets only; it may not call providers, upload files, run browsers, spend money, or publish content."
+  ],
+  launchHandoffPacket: {
+    blockedExternalActions: firstBusinessInternalLaunchPlan.finalExecutionPacket.blockedExternalActions,
+    contentCalendar: firstLaunchContentDrafts.map((draft, index) => ({
+      captionDraft: `${draft.hook} ${draft.productName} is ready for the first organic launch wave. Link goes live only after approval.`,
+      channel: draft.channel,
+      contentIdeaId: draft.id,
+      externalExecution: false,
+      hook: draft.hook,
+      providerContacted: false,
+      scriptDraft: `${draft.hook} Show the problem, reveal the product angle, call out ${draft.productName}, and ask viewers to save or comment. ${draft.scriptAngle}`,
+      sequence: index + 1,
+      status: "ready_internal"
+    })),
+    explicitLiveApprovalRequired: true,
+    externalExecution: false,
+    handoffId: "handoff_execute_first_business_store_1_2026_06_02t13_15_00_000z",
+    manualExecutionChecklist: [
+      "Review and approve the First Launch Readiness Gate.",
+      "Review store setup instructions, policies, navigation, collection naming, SEO title, and evidence fields.",
+      "Review each listing-ready product row for title, description, bullets, SEO keywords, price, margin, tags, and design spec.",
+      "Grant separate explicit live approval outside this packet before any external action."
+    ],
+    organicLaunchMoves: firstLaunchOrganicMoves.map((move) => ({
+      ...move,
+      manualExecutionNote: "Execute manually only after explicit live approval; no browser, upload, social, provider, or marketplace action is authorized by this packet.",
+      status: "ready_internal"
+    })),
+    products: firstBusinessListingProductPack,
+    providerContacted: false,
+    status: "ready_for_operator_review",
+    store: {
+      ...firstBusinessInternalLaunchPlan.finalExecutionPacket.store,
+      manualSetupInstructions: firstBusinessInternalLaunchPlan.finalExecutionPacket.store.setupQueue
+    },
+    summary: "Iron House Gym handoff packet is ready for operator review with 3 listing-ready products, 3 content drafts, and 3 organic moves. External execution remains locked."
+  },
+  listingProductPack: firstBusinessListingProductPack,
+  manualLaunchRunbook: [{
+    externalExecution: false,
+    id: "execute_store_1_store",
+    order: 1,
+    packetSection: "store",
+    providerContacted: false,
+    status: "ready_manual",
+    title: "Manually create or update the store shell from the approved store packet"
+  }, {
+    externalExecution: false,
+    id: "execute_store_1_products",
+    order: 2,
+    packetSection: "products",
+    providerContacted: false,
+    status: "ready_manual",
+    title: "Manually create 3 approved product listing drafts"
+  }, {
+    externalExecution: false,
+    id: "execute_store_1_evidence",
+    order: 3,
+    packetSection: "evidence",
+    providerContacted: false,
+    status: "ready_manual",
+    title: "Record first traffic, sales, and content evidence into the manual ledger"
+  }],
+  mode: "Execute First Business",
+  providerContacted: false,
+  readyState: {
+    externalExecution: false,
+    label: "Ready to Launch First Business",
+    manualLaunchReady: true,
+    providerContacted: false,
+    semiAutomatedPreparationReady: true
+  },
+  revenueStartPlan: {
+    first24Hours: [
+      "Manually publish approved store and product setup only after live approval.",
+      "Manually post or queue the first approved organic content draft only after live approval.",
+      "Record visits, units, gross revenue, net profit, and content response manually."
+    ],
+    first72Hours: [
+      "Collect manual evidence twice daily.",
+      "Keep paid spend locked until Financial Orchestrator scale packet approval.",
+      "Feed first sales and content signals back into Revenue Engine rotation."
+    ],
+    organicFirst: true,
+    paidSpendLocked: true
+  },
+  semiAutomatedPreparationQueue: [{
+    externalExecution: false,
+    id: "semi_store_1_copy_packet",
+    providerContacted: false,
+    status: "ready_internal",
+    title: "Prepare copy/paste store setup packet for operator review"
+  }, {
+    externalExecution: false,
+    id: "semi_store_1_product_rows",
+    providerContacted: false,
+    status: "ready_internal",
+    title: "Prepare product setup rows for manual import or copy/paste"
+  }],
+  sourceLaunchId: firstBusinessInternalLaunchPlan.launchId,
+  status: "ready_to_launch_first_business",
+  summary: "Iron House Gym is Ready to Launch First Business internally with 3 products, 3 faceless content ideas, and 3 organic moves. Manual and semi-automated launch prep are ready; external execution remains locked until explicit live approval.",
+  totals: {
+    blockedExternalActions: 3,
+    finalProducts: 3,
+    firstWeekMetricFields: 8,
+    handoffProducts: 3,
+    manualSteps: 3,
+    organicMoves: 3,
+    readyLaunchItems: 11,
+    readinessBlocked: 0,
+    readinessReady: 9,
+    semiAutomatedSteps: 2
+  }
+};
+
+const firstBusinessExecutionRun: RevenueMoneyArmyBatchRun = {
+  afterTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    pendingApprovalPackets: 11,
+    readyDeploymentBusinesses: 1,
+    readyStages: 1,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  },
+  auditLogId: "audit-first-business-execute-1",
+  batchKey: "first-business-execute-key-1",
+  beforeTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 0,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  },
+  createdAt: "2026-06-02T13:15:00.000Z",
+  dryRun: false,
+  externalExecution: false,
+  id: "first-business-execute-run-1",
+  providerContacted: false,
+  resultSummary: "Iron House Gym is Ready to Launch First Business. Manual and semi-automated launch prep are ready; external execution remains locked.",
+  sourceKeys: ["store-1"],
+  stage: "execute_first_business",
+  status: "ready_to_launch_first_business"
+};
+
+const firstBusinessExecutionApplyResponse: RevenueFirstBusinessExecuteApplyResponse = {
+  batchRun: firstBusinessExecutionRun,
+  executed: {
+    auditLogId: "audit-first-business-execute-1",
+    batchRunId: firstBusinessExecutionRun.id,
+    dryRun: false,
+    executed: true,
+    executionId: firstBusinessExecutionPlan.executionId,
+    externalExecution: false,
+    launchId: firstBusinessInternalLaunchPlan.launchId,
+    providerContacted: false,
+    stage: "execute_first_business",
+    status: "ready_to_launch_first_business",
+    summary: "Iron House Gym is Ready to Launch First Business. Manual and semi-automated launch prep are ready; external execution remains locked."
+  },
+  execution: firstBusinessExecutionPlan,
+  launch: firstBusinessInternalLaunchPlan,
+  package: firstBusinessPackagePlan,
+  preparation: firstStorePreparationPlan,
+  sourceBatch: moneyArmyGenerateScoreBatchPlan
+};
+
+const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPlan = {
+  adCampaignDrafts: [{
+    audience: "independent gym members",
+    budgetApprovalRequired: true,
+    campaignName: "Iron House Gym Organic Proof Amplifier",
+    dailyBudgetCap: 5,
+    externalExecution: false,
+    objective: "organic_amplification",
+    paymentExecution: false,
+    productNames: ["Iron House Operator Tee 1", "Iron House Operator Tee 2"],
+    providerContacted: false,
+    spendState: "payment_required",
+    status: "draft_locked"
+  }, {
+    audience: "independent gym members",
+    budgetApprovalRequired: true,
+    campaignName: "Iron House Gym First Product Validation",
+    dailyBudgetCap: 10,
+    externalExecution: false,
+    objective: "product_validation",
+    paymentExecution: false,
+    productNames: ["Iron House Operator Tee 1"],
+    providerContacted: false,
+    spendState: "payment_required",
+    status: "draft_locked"
+  }],
+  auditEvents: [
+    "Autonomous First Business Launch Prep assembled store, product, supplier, connector, content, organic, ad, and tracking plans internally.",
+    "No provider, marketplace, browser, upload, social, ad, bank, payout, payment, card, or external AI action was executed."
+  ],
+  autonomousLaunchId: "autonomous_first_business_store_1_2026_06_02t13_30_00_000z",
+  autonomousUntilPayment: true,
+  autonomyMatrix: [{
+    autonomyPercent: 100,
+    commander: "Store Setup General",
+    externalExecution: false,
+    hardStop: null,
+    lane: "store_build",
+    nextInternalAction: "Prepare storefront payload and copy/paste setup packet.",
+    ownerApprovalRequired: false,
+    providerContacted: false,
+    status: "autonomous_ready"
+  }, {
+    autonomyPercent: 100,
+    commander: "Product Factory Commander",
+    externalExecution: false,
+    hardStop: null,
+    lane: "product_creation",
+    nextInternalAction: "Prepare product payload rows, listing copy, and design specs.",
+    ownerApprovalRequired: false,
+    providerContacted: false,
+    status: "autonomous_ready"
+  }, {
+    autonomyPercent: 85,
+    commander: "Supplier Connector Commander",
+    externalExecution: false,
+    hardStop: "Owner must approve credentials and live provider connection.",
+    lane: "supplier_connection",
+    nextInternalAction: "Prepare connector manifest and supplier payload draft.",
+    ownerApprovalRequired: true,
+    providerContacted: false,
+    status: "connector_gated"
+  }, {
+    autonomyPercent: 50,
+    commander: "Financial Orchestrator Marshal",
+    externalExecution: false,
+    hardStop: "Owner approval and payment authorization are required before any ad spend.",
+    lane: "ad_spend_activation",
+    nextInternalAction: "Hold campaign drafts in payment-gated queue.",
+    ownerApprovalRequired: true,
+    providerContacted: false,
+    status: "payment_gated"
+  }],
+  blockedExternalActions: [
+    "Autonomous live provider calls remain blocked until owner-approved credentials are connected",
+    "Autonomous store publishing, listing publishing, product upload, content upload, and browser work remain blocked",
+    "Autonomous ad activation, ad spend, card charges, supplier orders, marketplace fees, banking, payouts, and payment processor changes remain blocked"
+  ],
+  chainOfCommand: [{
+    lane: "store_build",
+    owns: ["store setup payload", "navigation", "collections", "SEO", "policy drafts"],
+    rank: "general",
+    status: "ready_internal",
+    title: "Store Setup General"
+  }, {
+    lane: "product_creation",
+    owns: ["product rows", "listing copy", "design specs", "mockup directions"],
+    rank: "commander",
+    status: "ready_internal",
+    title: "Product Factory Commander"
+  }, {
+    lane: "supplier_connection",
+    owns: ["connector manifest", "credential scopes", "supplier payload draft"],
+    rank: "commander",
+    status: "owner_gate_required",
+    title: "Supplier Connector Commander"
+  }, {
+    lane: "ad_spend_activation",
+    owns: ["Approve first paid traffic test"],
+    rank: "marshal",
+    status: "owner_gate_required",
+    title: "Financial Orchestrator Marshal"
+  }],
+  connectionPlan: {
+    connectorManifests: [{
+      approvalRequired: true,
+      credentialScopes: ["products:write", "collections:write"],
+      externalExecution: false,
+      payloadState: "prepared_not_sent",
+      provider: "Shopify",
+      providerContacted: false,
+      purpose: "Create store shell, product listing drafts, collections, SEO metadata, and launch-day tracking fields."
+    }, {
+      approvalRequired: true,
+      credentialScopes: ["catalog:read", "products:write", "uploads:write"],
+      externalExecution: false,
+      payloadState: "prepared_not_sent",
+      provider: "Printify",
+      providerContacted: false,
+      purpose: "Prepare POD products, variants, mockup slots, production partner notes, and supplier mapping."
+    }],
+    externalExecution: false,
+    providerContacted: false,
+    status: "connector_ready_owner_gated",
+    summary: "2 connector manifests are prepared but not sent. Credentials, API calls, uploads, tracking installs, and store writes remain owner-gated."
+  },
+  executionPacket: firstBusinessExecutionPlan,
+  externalExecution: false,
+  finalOperatorGate: {
+    externalExecution: false,
+    paymentExecution: false,
+    providerContacted: false,
+    requiredApprovals: [
+      "Approve live storefront connector credentials",
+      "Approve supplier connector credentials and any supplier-side charges",
+      "Approve any Ad/Growth spend activation through Financial Orchestrator"
+    ],
+    status: "owner_payment_and_provider_approval_required",
+    summary: "ENTRAL can continue autonomously through internal preparation. Live launch, provider calls, account connections, public publishing, and spend require owner approval."
+  },
+  generatedAt: "2026-06-02T13:30:00.000Z",
+  guardrails: [
+    "ENTRAL may prepare internal payloads, checklists, copy, drafts, supplier choices, connector manifests, and evidence fields.",
+    "ENTRAL may not call providers, upload files, publish listings, post content, activate ads, spend money, or change payment settings without explicit approval."
+  ],
+  mode: "Autonomous First Business Launch Prep",
+  paymentApprovalQueue: [{
+    approvalType: "provider_account",
+    estimatedAmount: 0,
+    externalExecution: false,
+    paymentExecution: false,
+    providerContacted: false,
+    reason: "Owner must approve and provide any live storefront or supplier credentials before ENTRAL can connect accounts.",
+    status: "owner_approval_required",
+    title: "Approve provider account connection"
+  }, {
+    approvalType: "ad_spend",
+    estimatedAmount: 15,
+    externalExecution: false,
+    paymentExecution: false,
+    providerContacted: false,
+    reason: "Paid campaign drafts are ready, but every Ad/Growth dollar remains locked behind Financial Orchestrator approval.",
+    status: "owner_approval_required",
+    title: "Approve first paid traffic test"
+  }],
+  paymentExecution: false,
+  productCreationPlan: firstBusinessListingProductPack.map((product) => ({
+    ...product,
+    connectorPayloadStatus: "prepared_not_sent",
+    creationLane: "autonomous_internal_ready",
+    supplierCandidateId: "supplier_printify_first_drop"
+  })),
+  providerContacted: false,
+  status: "autonomous_ready_payment_gated",
+  storeBuildPlan: {
+    businessName: "Iron House Gym",
+    collectionPlan: ["Iron House Gym First Drop", "fitness New Arrivals", "Best Sellers"],
+    externalExecution: false,
+    navigationPlan: ["Home", "Iron House Gym First Drop", "About", "Contact", "Policies"],
+    policyDrafts: ["Draft production partner disclosure for POD fulfillment."],
+    providerContacted: false,
+    seoPlan: {
+      description: "Iron House Gym first private launch drop for independent gym members.",
+      title: "Iron House Gym | Iron House Gym First Drop"
+    },
+    setupPayloadState: "prepared_not_sent",
+    status: "autonomous_internal_ready",
+    storePlatform: "Shopify"
+  },
+  supplierPlan: {
+    candidates: [{
+      estimatedBaseCost: 12.5,
+      externalExecution: false,
+      provider: "Printify",
+      providerContacted: false,
+      reasons: ["Broad POD catalog coverage for first-store validation."],
+      selectionScore: 94,
+      status: "candidate_internal",
+      supplierCandidateId: "supplier_printify_first_drop"
+    }, {
+      estimatedBaseCost: 13.25,
+      externalExecution: false,
+      provider: "Printful",
+      providerContacted: false,
+      reasons: ["Reliable backup supplier candidate for quality-sensitive products."],
+      selectionScore: 84,
+      status: "candidate_internal",
+      supplierCandidateId: "supplier_printful_backup"
+    }],
+    externalExecution: false,
+    providerContacted: false,
+    selectedSupplier: {
+      estimatedBaseCost: 12.5,
+      externalExecution: false,
+      provider: "Printify",
+      providerContacted: false,
+      selectionScore: 94,
+      supplierCandidateId: "supplier_printify_first_drop"
+    },
+    status: "selected_internal_owner_gated",
+    summary: "Printify is selected internally for Iron House Gym with score 94/100. No supplier was contacted; account, upload, and order actions need owner approval."
+  },
+  summary: "Iron House Gym is autonomous-ready until payment: ENTRAL has prepared the store build, 3 product payloads, supplier selection, connector manifests, faceless content, organic moves, ad drafts, and tracking plan. Owner approval is still required for providers, payments, publishing, uploads, browser actions, and ad spend.",
+  totals: {
+    adDrafts: 2,
+    autonomousReadyLanes: 2,
+    blockedExternalActions: 3,
+    connectorManifests: 2,
+    paymentApprovals: 2,
+    productPayloads: 3,
+    supplierCandidates: 2
+  }
+};
+
+const firstBusinessAutonomousLaunchRun: RevenueMoneyArmyBatchRun = {
+  afterTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    pendingApprovalPackets: 2,
+    readyDeploymentBusinesses: 1,
+    readyStages: 1,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  },
+  auditLogId: "audit-first-business-autonomous-1",
+  batchKey: "first-business-autonomous-key-1",
+  beforeTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 0,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  },
+  createdAt: "2026-06-02T13:30:00.000Z",
+  dryRun: false,
+  externalExecution: false,
+  id: "first-business-autonomous-run-1",
+  providerContacted: false,
+  resultSummary: "Iron House Gym is autonomous-ready until payment. ENTRAL prepared the launch packet; provider, payment, publishing, upload, browser, and spend actions remain locked.",
+  sourceKeys: ["store-1"],
+  stage: "autonomous_first_business_launch",
+  status: "autonomous_ready_payment_gated"
+};
+
+const firstBusinessAutonomousLaunchApplyResponse: RevenueFirstBusinessAutonomousLaunchApplyResponse = {
+  autonomous: {
+    auditLogId: "audit-first-business-autonomous-1",
+    autonomousLaunchId: firstBusinessAutonomousLaunchPlan.autonomousLaunchId,
+    autonomousPrepared: true,
+    batchRunId: firstBusinessAutonomousLaunchRun.id,
+    dryRun: false,
+    executionId: firstBusinessExecutionPlan.executionId,
+    externalExecution: false,
+    paymentExecution: false,
+    providerContacted: false,
+    stage: "autonomous_first_business_launch",
+    status: "autonomous_ready_payment_gated",
+    summary: "Iron House Gym is autonomous-ready until payment. ENTRAL prepared the launch packet; provider, payment, publishing, upload, browser, and spend actions remain locked."
+  },
+  autonomousLaunch: firstBusinessAutonomousLaunchPlan,
+  batchRun: firstBusinessAutonomousLaunchRun,
+  execution: firstBusinessExecutionPlan,
+  launch: firstBusinessInternalLaunchPlan,
   package: firstBusinessPackagePlan,
   preparation: firstStorePreparationPlan,
   sourceBatch: moneyArmyGenerateScoreBatchPlan
@@ -5781,7 +6491,9 @@ describe("MerchOperationsPanel", () => {
       .mockResolvedValueOnce(firstBusinessPackageResponse)
       .mockResolvedValueOnce(firstBusinessPackageApplyResponse)
       .mockResolvedValueOnce(firstStorePrepareApplyResponse)
-      .mockResolvedValueOnce(firstBusinessInternalLaunchApplyResponse);
+      .mockResolvedValueOnce(firstBusinessInternalLaunchApplyResponse)
+      .mockResolvedValueOnce(firstBusinessExecutionApplyResponse)
+      .mockResolvedValueOnce(firstBusinessAutonomousLaunchApplyResponse);
 
     render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
 
@@ -5830,26 +6542,82 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("Live execution remains locked")).toBeInTheDocument();
     expect(within(region).getAllByText(/audit audit-first-store-prepare-1/)).toHaveLength(2);
 
-    await userEvent.click(screen.getByRole("button", { name: /launch first business/i }));
+    await userEvent.click(screen.getByRole("button", { name: /approve for launch/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/first-business/launch", {
       json: {
         candidateCount: 25,
         confirm: "LAUNCH FIRST BUSINESS INTERNALLY",
         dryRun: false,
-        maxProducts: 10,
-        note: "Launch First Business internal packet created from dashboard controls.",
+        maxProducts: 5,
+        note: "Approved for Launch and final internal execution packet created from dashboard controls.",
         riskTolerance: "Low"
       },
       method: "POST"
     });
-    expect(await screen.findAllByText("Iron House Gym is launch-ready internally. External execution remains locked.")).toHaveLength(2);
+    expect(await screen.findAllByText("Iron House Gym is approved for launch internally. External execution remains locked.")).toHaveLength(2);
     expect(within(region).getByText("Launch First Business")).toBeInTheDocument();
+    expect(within(region).getByText("Final execution packet ready")).toBeInTheDocument();
+    expect(within(region).getByText(/3 product setup packets \/ 3 faceless content ideas \/ 3 organic moves/)).toBeInTheDocument();
     expect(within(region).getByText("Store setup queued internally")).toBeInTheDocument();
     expect(within(region).getByText("Organic-first launch moves queued")).toBeInTheDocument();
     expect(within(region).getByText("Execution sequence ready internally")).toBeInTheDocument();
     expect(within(region).getByText("External launch remains locked")).toBeInTheDocument();
     expect(within(region).getAllByText(/audit audit-first-business-launch-1/)).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole("button", { name: /execute first business/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/first-business/execute", {
+      json: {
+        candidateCount: 25,
+        confirm: "EXECUTE FIRST BUSINESS INTERNALLY",
+        dryRun: false,
+        maxProducts: 5,
+        note: "Execute First Business manual and semi-automated launch prep created from dashboard controls.",
+        riskTolerance: "Low"
+      },
+      method: "POST"
+    });
+    expect(await screen.findAllByText("Iron House Gym is Ready to Launch First Business. Manual and semi-automated launch prep are ready; external execution remains locked.")).toHaveLength(2);
+    expect(within(region).getByText("Execute First Business")).toBeInTheDocument();
+    expect(within(region).getByText("Ready to Launch First Business")).toBeInTheDocument();
+    expect(within(region).getByText("First Launch Readiness Gate")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Operator Tee 1")).toBeInTheDocument();
+    expect(within(region).getAllByText(/Iron House Gym First Drop/).length).toBeGreaterThan(0);
+    expect(within(region).getByText("Launch handoff packet")).toBeInTheDocument();
+    expect(within(region).getByText("Full execution packet visible")).toBeInTheDocument();
+    expect(within(region).getByText("Semi-automated preparation queue")).toBeInTheDocument();
+    expect(within(region).getByText("First revenue start plan")).toBeInTheDocument();
+    expect(within(region).getByText("First-week tracking plan")).toBeInTheDocument();
+    expect(within(region).getByText("Execution stays private")).toBeInTheDocument();
+    expect(within(region).getAllByText(/audit audit-first-business-execute-1/)).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole("button", { name: /autonomous launch prep/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/first-business/autonomous-launch", {
+      json: {
+        candidateCount: 25,
+        confirm: "RUN AUTONOMOUS FIRST BUSINESS LAUNCH PREP",
+        dryRun: false,
+        maxProducts: 5,
+        note: "Autonomous first-business launch prep created from dashboard controls.",
+        riskTolerance: "Low"
+      },
+      method: "POST"
+    });
+    expect(await screen.findAllByText("Iron House Gym is autonomous-ready until payment. ENTRAL prepared the launch packet; provider, payment, publishing, upload, browser, and spend actions remain locked.")).toHaveLength(2);
+    expect(within(region).getByText("Autonomous First Business Launch")).toBeInTheDocument();
+    expect(within(region).getByText("Autonomous First Business Launch Prep")).toBeInTheDocument();
+    expect(within(region).getByText("Autonomous until payment")).toBeInTheDocument();
+    expect(within(region).getByText("Store build plan")).toBeInTheDocument();
+    expect(within(region).getByText("Supplier selection")).toBeInTheDocument();
+    expect(within(region).getByText("Connector plan")).toBeInTheDocument();
+    expect(within(region).getByText("Chain Of Command")).toBeInTheDocument();
+    expect(within(region).getByText("Ad Campaign Drafts")).toBeInTheDocument();
+    expect(within(region).getByText("Payment Approval Queue")).toBeInTheDocument();
+    expect(within(region).getByText("Final owner gate")).toBeInTheDocument();
+    expect(within(region).getByText("Autonomous launch remains private")).toBeInTheDocument();
+    expect(within(region).getAllByText(/audit audit-first-business-autonomous-1/)).toHaveLength(2);
   });
 
   it("runs the Revenue Engine and applies internal rotation only after preview", async () => {

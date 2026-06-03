@@ -223,6 +223,8 @@ export type RevenueMoneyArmyBatchPipelineStageName =
   | "first_business_launch_package"
   | "prepare_first_store"
   | "launch_first_business"
+  | "execute_first_business"
+  | "autonomous_first_business_launch"
   | "batch_creation"
   | "batch_acceleration"
   | "launch_package"

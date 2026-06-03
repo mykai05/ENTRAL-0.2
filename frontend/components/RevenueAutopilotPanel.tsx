@@ -357,6 +357,11 @@ export function RevenueAutopilotPanel({ autoLoad = true, onApplied }: RevenueAut
         <>
           <div className="command-health-grid">
             <article>
+              <span>ENTRAL Work</span>
+              <strong>{plan.automationProfile.automatedWorkPercent}%</strong>
+              <small>target {plan.automationProfile.targetAutomationPercent}% / owner {plan.automationProfile.ownerApprovalPercent}%</small>
+            </article>
+            <article>
               <span>Ready</span>
               <strong>{plan.totals.readyActions}</strong>
               <small>{plan.totals.actions} total commands</small>
@@ -398,6 +403,36 @@ export function RevenueAutopilotPanel({ autoLoad = true, onApplied }: RevenueAut
               <strong>{plan.mode}</strong>
               <p>{plan.summary}</p>
             </div>
+
+            <section className="revenue-engine-list" aria-label="Revenue autopilot chain of command">
+              <h3>Chain Of Command</h3>
+              {plan.chainOfCommand.slice(0, 8).map((lane) => (
+                <article key={lane.phase}>
+                  <span>{label(lane.status)} / {lane.readyActions} ready / {lane.actionCount} command{lane.actionCount === 1 ? "" : "s"}</span>
+                  <strong>{lane.commander}</strong>
+                  <p>{lane.summary}</p>
+                  <small>{lane.marshal} / {lane.general} / {lane.soldier}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="Revenue autopilot owner approval queue">
+              <h3>Owner Approval Queue</h3>
+              {plan.ownerApprovalQueue.length > 0 ? plan.ownerApprovalQueue.slice(0, 8).map((approval) => (
+                <article key={approval.id}>
+                  <span>{label(approval.status)} / {label(approval.approvalType)} / {label(approval.riskLevel)} risk</span>
+                  <strong>{approval.title}</strong>
+                  <p>{approval.reason}</p>
+                  <small>{approval.actionIds.length} command{approval.actionIds.length === 1 ? "" : "s"} / external execution locked / provider locked</small>
+                </article>
+              )) : (
+                <article>
+                  <span>clear / owner queue</span>
+                  <strong>No owner approvals waiting</strong>
+                  <p>ENTRAL has no external-action approval gates ready for your attention right now.</p>
+                </article>
+              )}
+            </section>
 
             <section className="revenue-engine-list" aria-label="Revenue autopilot phases">
               <h3>Phases</h3>

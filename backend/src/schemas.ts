@@ -150,6 +150,8 @@ export const revenueMoneyArmyGenerateScoreBatchConfirmation = "RECORD INTERNAL M
 export const revenueFirstBusinessLaunchPackageConfirmation = "RECORD INTERNAL FIRST BUSINESS LAUNCH PACKAGE";
 export const revenueFirstStorePrepareConfirmation = "APPROVE AND PREPARE FIRST STORE";
 export const revenueFirstBusinessInternalLaunchConfirmation = "LAUNCH FIRST BUSINESS INTERNALLY";
+export const revenueFirstBusinessExecuteConfirmation = "EXECUTE FIRST BUSINESS INTERNALLY";
+export const revenueFirstBusinessAutonomousLaunchConfirmation = "RUN AUTONOMOUS FIRST BUSINESS LAUNCH PREP";
 export const revenueLaunchChecklistActionBridgeConfirmation = "DISPATCH INTERNAL REVENUE LAUNCH CHECKLIST ACTIONS";
 export const revenueLaunchSprintConfirmation = "RUN INTERNAL REVENUE LAUNCH SPRINT";
 export const revenueFirstCashSprintConfirmation = "RUN INTERNAL FIRST CASH SPRINT";
@@ -467,7 +469,7 @@ export const applyRevenueMoneyArmyBatchPipelineSchema = z.object({
   packetIds: z.array(z.string().trim().min(1).max(160)).max(50).default([]),
   podProvider: merchPodProviderSchema.default("Printify"),
   sourceKeys: z.array(z.string().trim().min(1).max(160)).max(100).default([]),
-  stage: z.enum(["generate_score_batch", "first_business_launch_package", "prepare_first_store", "launch_first_business", "batch_creation", "batch_acceleration", "launch_package", "approval", "deployment"]).optional()
+  stage: z.enum(["generate_score_batch", "first_business_launch_package", "prepare_first_store", "launch_first_business", "execute_first_business", "autonomous_first_business_launch", "batch_creation", "batch_acceleration", "launch_package", "approval", "deployment"]).optional()
 });
 
 const revenueMoneyArmyGenerateScoreBatchFields = {
@@ -511,6 +513,20 @@ export const applyRevenueFirstStorePrepareSchema = z.object({
 export const applyRevenueFirstBusinessInternalLaunchSchema = z.object({
   ...revenueMoneyArmyGenerateScoreBatchFields,
   confirm: z.literal(revenueFirstBusinessInternalLaunchConfirmation),
+  dryRun: z.boolean().default(false),
+  note: optionalTrimmedString(500)
+});
+
+export const applyRevenueFirstBusinessExecuteSchema = z.object({
+  ...revenueMoneyArmyGenerateScoreBatchFields,
+  confirm: z.literal(revenueFirstBusinessExecuteConfirmation),
+  dryRun: z.boolean().default(false),
+  note: optionalTrimmedString(500)
+});
+
+export const applyRevenueFirstBusinessAutonomousLaunchSchema = z.object({
+  ...revenueMoneyArmyGenerateScoreBatchFields,
+  confirm: z.literal(revenueFirstBusinessAutonomousLaunchConfirmation),
   dryRun: z.boolean().default(false),
   note: optionalTrimmedString(500)
 });
@@ -1702,6 +1718,8 @@ export type RevenueFirstBusinessLaunchPackageQueryInput = z.infer<typeof revenue
 export type ApplyRevenueFirstBusinessLaunchPackageInput = z.infer<typeof applyRevenueFirstBusinessLaunchPackageSchema>;
 export type ApplyRevenueFirstStorePrepareInput = z.infer<typeof applyRevenueFirstStorePrepareSchema>;
 export type ApplyRevenueFirstBusinessInternalLaunchInput = z.infer<typeof applyRevenueFirstBusinessInternalLaunchSchema>;
+export type ApplyRevenueFirstBusinessExecuteInput = z.infer<typeof applyRevenueFirstBusinessExecuteSchema>;
+export type ApplyRevenueFirstBusinessAutonomousLaunchInput = z.infer<typeof applyRevenueFirstBusinessAutonomousLaunchSchema>;
 export type RevenueAssetControlLedgerQueryInput = z.infer<typeof revenueAssetControlLedgerQuerySchema>;
 export type RevenueAssetControlRecoveryQueryInput = z.infer<typeof revenueAssetControlRecoveryQuerySchema>;
 export type RevenueAssetReviewQueueQueryInput = z.infer<typeof revenueAssetReviewQueueQuerySchema>;

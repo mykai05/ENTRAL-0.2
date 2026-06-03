@@ -1230,6 +1230,8 @@ export type RevenueMoneyArmyBatchPipelineStageName =
   | "first_business_launch_package"
   | "prepare_first_store"
   | "launch_first_business"
+  | "execute_first_business"
+  | "autonomous_first_business_launch"
   | "batch_creation"
   | "batch_acceleration"
   | "launch_package"
@@ -1667,7 +1669,7 @@ export type RevenueFirstBusinessInternalLaunchPlan = {
     packageId: string;
     preparationId: string;
     providerContacted: false;
-    status: "launch_ready_internal";
+    status: "approved_for_launch_internal";
   };
   launchId: string;
   launchSequence: Array<{
@@ -1690,7 +1692,19 @@ export type RevenueFirstBusinessInternalLaunchPlan = {
     sequence: number;
   }>;
   providerContacted: false;
-  status: "launch_ready_internal" | "blocked";
+  status: "approved_for_launch_internal" | "blocked";
+  finalExecutionPacket: {
+    approvalState: "approved_for_launch_internal";
+    blockedExternalActions: string[];
+    evidenceLedgerFields: string[];
+    executionChecklist: string[];
+    externalExecution: false;
+    facelessContentIdeas: RevenueFirstBusinessInternalLaunchPlan["contentDraftQueue"];
+    organicMoves: RevenueFirstBusinessInternalLaunchPlan["organicMoveQueue"];
+    products: RevenueFirstBusinessInternalLaunchPlan["productSetupQueue"];
+    providerContacted: false;
+    store: RevenueFirstBusinessInternalLaunchPlan["storeSetup"];
+  };
   storeSetup: RevenueFirstStorePreparationPlan["storeConfig"] & {
     launchState: "queued_internal_store_setup";
     setupQueue: string[];
@@ -1722,9 +1736,375 @@ export type RevenueFirstBusinessInternalLaunchApplyResponse = {
     preparationId: string | null;
     providerContacted: false;
     stage: "launch_first_business";
-    status: "launch_ready_internal" | "blocked";
+    status: "approved_for_launch_internal" | "blocked";
     summary: string;
   };
+  package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  preparation: RevenueFirstStorePreparationPlan | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+};
+
+export type RevenueFirstBusinessReadinessGateCategory =
+  | "store"
+  | "products"
+  | "listings"
+  | "designs"
+  | "content"
+  | "traffic"
+  | "finance"
+  | "evidence"
+  | "external_lock";
+
+export type RevenueFirstBusinessListingProductPackItem = {
+  approvalChecklist: string[];
+  candidateId: string;
+  designSpec: {
+    externalGeneration: false;
+    mockupDirection: string;
+    negativePrompt: string;
+    palette: string[];
+    placement: string;
+    prompt: string;
+    providerContacted: false;
+    typography: string;
+  };
+  externalExecution: false;
+  listingBullets: string[];
+  listingDescription: string;
+  listingTitle: string;
+  productName: string;
+  productType: string;
+  profitMargin: number;
+  providerContacted: false;
+  retailPrice: number;
+  seoKeywords: string[];
+  status: "ready_internal";
+  storefrontCollection: string;
+  tags: string[];
+};
+
+export type RevenueFirstBusinessExecutionPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  executionApproval: {
+    approvedAt: string;
+    approvedBy: "operator";
+    auditOnly: true;
+    externalExecution: false;
+    launchId: string;
+    note: string | null;
+    providerContacted: false;
+    status: "ready_to_launch_first_business";
+  };
+  executionId: string;
+  externalExecution: false;
+  firstLaunchReadinessGate: {
+    externalExecution: false;
+    generatedAt: string;
+    items: Array<{
+      category: RevenueFirstBusinessReadinessGateCategory;
+      detail: string;
+      externalExecution: false;
+      providerContacted: false;
+      required: true;
+      status: "ready" | "blocked";
+      title: string;
+    }>;
+    label: "First Launch Readiness Gate";
+    providerContacted: false;
+    status: "ready_for_manual_launch_approval" | "blocked";
+    summary: string;
+    totals: {
+      blocked: number;
+      ready: number;
+      required: number;
+    };
+  };
+  finalExecutionPacket: RevenueFirstBusinessInternalLaunchPlan["finalExecutionPacket"];
+  firstWeekTrackingPlan: {
+    checkIns: Array<{
+      day: 0 | 1 | 3 | 7;
+      requiredEvidence: string[];
+      title: string;
+    }>;
+    externalExecution: false;
+    metricFields: Array<{
+      cadence: "twice_daily" | "daily" | "end_of_week";
+      id: string;
+      label: string;
+    }>;
+    providerContacted: false;
+    rotationReview: {
+      day: 7;
+      inputs: string[];
+      output: "feed_revenue_engine_scale_watch_pause_kill";
+    };
+  };
+  generatedAt: string;
+  guardrails: string[];
+  launchHandoffPacket: {
+    blockedExternalActions: string[];
+    contentCalendar: Array<{
+      captionDraft: string;
+      channel: RevenueFirstBusinessLaunchPackageContentIdea["channel"];
+      contentIdeaId: string;
+      externalExecution: false;
+      hook: string;
+      providerContacted: false;
+      scriptDraft: string;
+      sequence: number;
+      status: "ready_internal";
+    }>;
+    explicitLiveApprovalRequired: true;
+    externalExecution: false;
+    handoffId: string;
+    manualExecutionChecklist: string[];
+    organicLaunchMoves: Array<RevenueFirstBusinessInternalLaunchPlan["organicMoveQueue"][number] & {
+      manualExecutionNote: string;
+      status: "ready_internal";
+    }>;
+    products: RevenueFirstBusinessListingProductPackItem[];
+    providerContacted: false;
+    status: "ready_for_operator_review" | "blocked";
+    store: RevenueFirstBusinessInternalLaunchPlan["finalExecutionPacket"]["store"] & {
+      manualSetupInstructions: string[];
+    };
+    summary: string;
+  };
+  listingProductPack: RevenueFirstBusinessListingProductPackItem[];
+  manualLaunchRunbook: Array<{
+    externalExecution: false;
+    id: string;
+    order: number;
+    packetSection: "store" | "products" | "content" | "organic" | "evidence" | "review";
+    providerContacted: false;
+    status: "ready_manual";
+    title: string;
+  }>;
+  mode: "Execute First Business";
+  providerContacted: false;
+  readyState: {
+    externalExecution: false;
+    label: "Ready to Launch First Business";
+    manualLaunchReady: boolean;
+    providerContacted: false;
+    semiAutomatedPreparationReady: boolean;
+  };
+  revenueStartPlan: {
+    first24Hours: string[];
+    first72Hours: string[];
+    organicFirst: true;
+    paidSpendLocked: true;
+  };
+  semiAutomatedPreparationQueue: Array<{
+    externalExecution: false;
+    id: string;
+    providerContacted: false;
+    status: "ready_internal";
+    title: string;
+  }>;
+  sourceLaunchId: string;
+  status: "ready_to_launch_first_business" | "blocked";
+  summary: string;
+  totals: {
+    blockedExternalActions: number;
+    finalProducts: number;
+    firstWeekMetricFields: number;
+    handoffProducts: number;
+    manualSteps: number;
+    organicMoves: number;
+    readyLaunchItems: number;
+    readinessBlocked: number;
+    readinessReady: number;
+    semiAutomatedSteps: number;
+  };
+};
+
+export type RevenueFirstBusinessExecuteApplyResponse = {
+  batchRun: RevenueMoneyArmyBatchRun | null;
+  executed: {
+    auditLogId: string | null;
+    batchRunId: string | null;
+    dryRun: boolean;
+    executed: boolean;
+    executionId: string | null;
+    externalExecution: false;
+    launchId: string | null;
+    providerContacted: false;
+    stage: "execute_first_business";
+    status: "ready_to_launch_first_business" | "blocked";
+    summary: string;
+  };
+  execution: RevenueFirstBusinessExecutionPlan | null;
+  launch: RevenueFirstBusinessInternalLaunchPlan | null;
+  package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  preparation: RevenueFirstStorePreparationPlan | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+};
+
+export type RevenueFirstBusinessAutonomousLaunchLane =
+  | "store_build"
+  | "product_creation"
+  | "supplier_selection"
+  | "supplier_connection"
+  | "content_launch"
+  | "organic_traffic"
+  | "ad_campaign_drafting"
+  | "ad_spend_activation"
+  | "tracking";
+
+export type RevenueFirstBusinessAutonomousLaunchPlan = {
+  adCampaignDrafts: Array<{
+    audience: string;
+    budgetApprovalRequired: true;
+    campaignName: string;
+    dailyBudgetCap: number;
+    externalExecution: false;
+    objective: "organic_amplification" | "product_validation" | "retargeting_seed";
+    paymentExecution: false;
+    productNames: string[];
+    providerContacted: false;
+    spendState: "payment_required";
+    status: "draft_locked";
+  }>;
+  auditEvents: string[];
+  autonomousLaunchId: string;
+  autonomousUntilPayment: true;
+  autonomyMatrix: Array<{
+    autonomyPercent: number;
+    commander: string;
+    externalExecution: false;
+    hardStop: string | null;
+    lane: RevenueFirstBusinessAutonomousLaunchLane;
+    nextInternalAction: string;
+    ownerApprovalRequired: boolean;
+    providerContacted: false;
+    status: "autonomous_ready" | "connector_gated" | "payment_gated" | "blocked";
+  }>;
+  blockedExternalActions: string[];
+  chainOfCommand: Array<{
+    lane: RevenueFirstBusinessAutonomousLaunchLane;
+    owns: string[];
+    rank: "marshal" | "general" | "commander" | "soldier";
+    status: "ready_internal" | "owner_gate_required";
+    title: string;
+  }>;
+  connectionPlan: {
+    connectorManifests: Array<{
+      approvalRequired: true;
+      credentialScopes: string[];
+      externalExecution: false;
+      payloadState: "prepared_not_sent";
+      provider: "Shopify" | "Etsy" | "Printify" | "Printful" | "Meta" | "Google Analytics";
+      providerContacted: false;
+      purpose: string;
+    }>;
+    externalExecution: false;
+    providerContacted: false;
+    status: "connector_ready_owner_gated" | "blocked";
+    summary: string;
+  };
+  executionPacket: RevenueFirstBusinessExecutionPlan;
+  externalExecution: false;
+  finalOperatorGate: {
+    externalExecution: false;
+    paymentExecution: false;
+    providerContacted: false;
+    requiredApprovals: string[];
+    status: "owner_payment_and_provider_approval_required" | "blocked";
+    summary: string;
+  };
+  generatedAt: string;
+  guardrails: string[];
+  mode: "Autonomous First Business Launch Prep";
+  paymentApprovalQueue: Array<{
+    approvalType: "provider_account" | "supplier_order" | "ad_spend" | "payment_processor" | "marketplace_fee";
+    estimatedAmount: number;
+    externalExecution: false;
+    paymentExecution: false;
+    providerContacted: false;
+    reason: string;
+    status: "owner_approval_required";
+    title: string;
+  }>;
+  paymentExecution: false;
+  productCreationPlan: Array<RevenueFirstBusinessListingProductPackItem & {
+    connectorPayloadStatus: "prepared_not_sent";
+    creationLane: "autonomous_internal_ready";
+    supplierCandidateId: string;
+  }>;
+  providerContacted: false;
+  status: "autonomous_ready_payment_gated" | "blocked";
+  storeBuildPlan: {
+    businessName: string;
+    collectionPlan: string[];
+    externalExecution: false;
+    navigationPlan: string[];
+    policyDrafts: string[];
+    providerContacted: false;
+    seoPlan: {
+      description: string;
+      title: string;
+    };
+    setupPayloadState: "prepared_not_sent";
+    status: "autonomous_internal_ready" | "blocked";
+    storePlatform: string;
+  };
+  supplierPlan: {
+    candidates: Array<{
+      estimatedBaseCost: number;
+      externalExecution: false;
+      provider: "Printify" | "Printful" | "Other";
+      providerContacted: false;
+      reasons: string[];
+      selectionScore: number;
+      status: "candidate_internal";
+      supplierCandidateId: string;
+    }>;
+    externalExecution: false;
+    providerContacted: false;
+    selectedSupplier: {
+      estimatedBaseCost: number;
+      externalExecution: false;
+      provider: "Printify" | "Printful" | "Other";
+      providerContacted: false;
+      selectionScore: number;
+      supplierCandidateId: string;
+    };
+    status: "selected_internal_owner_gated" | "blocked";
+    summary: string;
+  };
+  summary: string;
+  totals: {
+    adDrafts: number;
+    autonomousReadyLanes: number;
+    blockedExternalActions: number;
+    connectorManifests: number;
+    paymentApprovals: number;
+    productPayloads: number;
+    supplierCandidates: number;
+  };
+};
+
+export type RevenueFirstBusinessAutonomousLaunchApplyResponse = {
+  autonomous: {
+    auditLogId: string | null;
+    autonomousLaunchId: string | null;
+    autonomousPrepared: boolean;
+    batchRunId: string | null;
+    dryRun: boolean;
+    executionId: string | null;
+    externalExecution: false;
+    paymentExecution: false;
+    providerContacted: false;
+    stage: "autonomous_first_business_launch";
+    status: "autonomous_ready_payment_gated" | "blocked";
+    summary: string;
+  };
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan | null;
+  batchRun: RevenueMoneyArmyBatchRun | null;
+  execution: RevenueFirstBusinessExecutionPlan | null;
+  launch: RevenueFirstBusinessInternalLaunchPlan | null;
   package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
   preparation: RevenueFirstStorePreparationPlan | null;
   sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
@@ -5327,6 +5707,15 @@ export type RevenueAutopilotTargetType = "content" | "finance" | "portfolio" | "
 export type RevenueAutopilotActionStatus = "ready" | "watch" | "blocked";
 export type RevenueAutopilotExecutionStepStatus = "ready" | "skipped" | "blocked";
 export type RevenueAutopilotStepExecutionStatus = "executed" | "preview" | "skipped" | "blocked";
+export type RevenueAutopilotOwnerApprovalType =
+  | "external_launch"
+  | "provider_upload"
+  | "content_publish"
+  | "ad_spend"
+  | "finance_release"
+  | "browser_or_marketplace"
+  | "manual_review";
+export type RevenueAutopilotCommandRank = "ENTRAL" | "Marshal" | "General" | "Commander" | "Soldier" | "Owner";
 export type RevenueAutopilotSelectionSource =
   | "default_executor"
   | "draft_creation_opt_in"
@@ -5386,11 +5775,49 @@ export type RevenueAutopilotPhase = {
 export type RevenueAutopilotPlan = {
   actions: RevenueAutopilotAction[];
   auditEvents: string[];
+  automationProfile: {
+    automatedWorkPercent: number;
+    externalExecution: false;
+    internalAutopilotWorkItems: number;
+    ownerApprovalPercent: number;
+    ownerApprovalWorkItems: number;
+    providerContacted: false;
+    summary: string;
+    targetAutomationPercent: 90;
+  };
   blockedExternalActions: string[];
+  chainOfCommand: Array<{
+    actionCount: number;
+    actions: string[];
+    blockedActions: number;
+    commander: string;
+    externalExecution: false;
+    general: string;
+    marshal: string;
+    phase: RevenueAutopilotPhaseName;
+    providerContacted: false;
+    readyActions: number;
+    soldier: string;
+    status: RevenueAutopilotActionStatus;
+    summary: string;
+  }>;
   externalExecution: false;
   generatedAt: string;
   mode: "Internal Revenue Autopilot";
   options: RevenueAutopilotOptions;
+  ownerApprovalQueue: Array<{
+    actionIds: string[];
+    approvalType: RevenueAutopilotOwnerApprovalType;
+    externalExecution: false;
+    id: string;
+    phase: RevenueAutopilotPhaseName;
+    providerContacted: false;
+    rank: Extract<RevenueAutopilotCommandRank, "Owner">;
+    reason: string;
+    riskLevel: RevenueAutopilotRiskLevel;
+    status: "waiting_owner" | "not_ready";
+    title: string;
+  }>;
   phases: RevenueAutopilotPhase[];
   providerContacted: false;
   summary: string;

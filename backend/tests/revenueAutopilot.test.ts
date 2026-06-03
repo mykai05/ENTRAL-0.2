@@ -240,7 +240,20 @@ describe("Revenue Autopilot", () => {
     expect(plan.totals.firstCashSprintManualGates).toBe(1);
     expect(plan.totals.rotationChanges).toBe(1);
     expect(plan.totals.trackedAssets).toBe(3);
+    expect(plan.automationProfile).toMatchObject({
+      externalExecution: false,
+      providerContacted: false,
+      targetAutomationPercent: 90
+    });
+    expect(plan.automationProfile.automatedWorkPercent).toBeGreaterThanOrEqual(85);
+    expect(plan.automationProfile.ownerApprovalWorkItems).toBeGreaterThan(0);
+    expect(plan.chainOfCommand.map((lane) => lane.commander)).toContain("First Launch Commander");
+    expect(plan.chainOfCommand.map((lane) => lane.commander)).toContain("Financial Orchestrator Commander");
+    expect(plan.ownerApprovalQueue.length).toBeGreaterThan(0);
+    expect(plan.ownerApprovalQueue.every((item) => item.externalExecution === false && item.providerContacted === false)).toBe(true);
+    expect(plan.ownerApprovalQueue.map((item) => item.approvalType)).toContain("finance_release");
     expect(plan.summary).toContain("daily profit velocity");
+    expect(plan.summary).toContain("ENTRAL can handle");
     expect(plan.actions.find((item) => item.action === "run_first_business_launch")).toMatchObject({
       phase: "first_business_launch",
       recommendedStatus: "first_business_launch_ready",

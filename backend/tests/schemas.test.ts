@@ -7,6 +7,8 @@ import {
   applyRevenueBusinessFleetLiveLaunchPackageSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
+  applyRevenueFirstBusinessAutonomousLaunchSchema,
+  applyRevenueFirstBusinessExecuteSchema,
   applyRevenueFirstBusinessInternalLaunchSchema,
   applyRevenueFirstBusinessLaunchPackageSchema,
   applyRevenueFirstStorePrepareSchema,
@@ -653,6 +655,18 @@ describe("validation schemas", () => {
       dryRun: false,
       maxProducts: 10
     });
+    const firstBusinessExecuteApply = applyRevenueFirstBusinessExecuteSchema.parse({
+      candidateCount: 25,
+      confirm: "EXECUTE FIRST BUSINESS INTERNALLY",
+      dryRun: false,
+      maxProducts: 5
+    });
+    const firstBusinessAutonomousLaunchApply = applyRevenueFirstBusinessAutonomousLaunchSchema.parse({
+      candidateCount: 25,
+      confirm: "RUN AUTONOMOUS FIRST BUSINESS LAUNCH PREP",
+      dryRun: false,
+      maxProducts: 5
+    });
 
     expect(query).toMatchObject({
       launchWaveSize: 10,
@@ -691,6 +705,9 @@ describe("validation schemas", () => {
     expect(firstBusinessPackageApply.dryRun).toBe(false);
     expect(firstStorePrepareApply.dryRun).toBe(false);
     expect(firstBusinessInternalLaunchApply.dryRun).toBe(false);
+    expect(firstBusinessExecuteApply.maxProducts).toBe(5);
+    expect(firstBusinessAutonomousLaunchApply.maxProducts).toBe(5);
+    expect(firstBusinessAutonomousLaunchApply.dryRun).toBe(false);
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ shardCount: "300" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
@@ -736,6 +753,12 @@ describe("validation schemas", () => {
     })).toThrow();
     expect(() => applyRevenueFirstBusinessInternalLaunchSchema.parse({
       confirm: "APPROVE AND PREPARE FIRST STORE"
+    })).toThrow();
+    expect(() => applyRevenueFirstBusinessExecuteSchema.parse({
+      confirm: "LAUNCH FIRST BUSINESS INTERNALLY"
+    })).toThrow();
+    expect(() => applyRevenueFirstBusinessAutonomousLaunchSchema.parse({
+      confirm: "EXECUTE FIRST BUSINESS INTERNALLY"
     })).toThrow();
   });
 
