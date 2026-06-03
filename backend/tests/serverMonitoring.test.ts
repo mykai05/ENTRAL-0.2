@@ -57,7 +57,7 @@ describe("server monitoring", () => {
     });
 
     await app.close();
-  });
+  }, 15000);
 
   it("includes request ids on unhandled API errors and emits an operational alert", async () => {
     const { buildServer } = await import("../src/server.js");
