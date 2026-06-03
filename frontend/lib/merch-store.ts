@@ -1279,18 +1279,37 @@ export type RevenueMoneyArmyBatchPipelinePlan = {
 
 export type RevenueMoneyArmyBatchPipelineResponse = {
   plan: RevenueMoneyArmyBatchPipelinePlan;
+  recentRuns: RevenueMoneyArmyBatchRun[];
+};
+
+export type RevenueMoneyArmyBatchRun = {
+  afterTotals: RevenueMoneyArmyBatchPipelinePlan["totals"];
+  auditLogId: string | null;
+  batchKey: string;
+  beforeTotals: RevenueMoneyArmyBatchPipelinePlan["totals"];
+  createdAt: string;
+  dryRun: boolean;
+  externalExecution: false;
+  id: string;
+  providerContacted: false;
+  resultSummary: string;
+  sourceKeys: string[];
+  stage: RevenueMoneyArmyBatchPipelineStageName;
+  status: string;
 };
 
 export type RevenueMoneyArmyBatchPipelineApplyResponse = {
   after: RevenueMoneyArmyBatchPipelinePlan;
   applied: {
     auditLogId: string | null;
+    batchRunId: string | null;
     dryRun: boolean;
     externalExecution: false;
     providerContacted: false;
     stage: RevenueMoneyArmyBatchPipelineStageName | null;
     summary: string;
   };
+  batchRun: RevenueMoneyArmyBatchRun | null;
   before: RevenueMoneyArmyBatchPipelinePlan;
   result: unknown;
 };

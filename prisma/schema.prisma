@@ -30,6 +30,7 @@ model User {
   revenueOpportunities RevenueOpportunity[]
   revenuePerformanceSnapshots RevenuePerformanceSnapshot[]
   revenueAssetControlRecords RevenueAssetControlRecord[]
+  revenueMoneyArmyBatchRuns RevenueMoneyArmyBatchRun[]
   financialSplitPolicies FinancialSplitPolicy[]
   financialLedgerEntries FinancialLedgerEntry[]
   financialPayoutIntents FinancialPayoutIntent[]
@@ -357,6 +358,30 @@ model RevenueAssetControlRecord {
   @@index([productId])
   @@index([auditLogId])
   @@index([createdAt])
+}
+
+model RevenueMoneyArmyBatchRun {
+  id                  String   @id @default(cuid())
+  userId              String
+  batchKey            String   @unique
+  stage               String
+  status              String   @default("recorded")
+  dryRun              Boolean  @default(false)
+  sourceKeysJson      String
+  beforeTotalsJson    String
+  afterTotalsJson     String
+  resultSummary       String
+  resultJson          String?
+  externalExecution   Boolean  @default(false)
+  providerContacted   Boolean  @default(false)
+  auditLogId          String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, stage, status])
+  @@index([auditLogId])
 }
 
 model FinancialSplitPolicy {

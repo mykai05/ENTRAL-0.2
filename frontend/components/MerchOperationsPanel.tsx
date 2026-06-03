@@ -92,6 +92,7 @@ import {
   type RevenueMoneyArmyBatchPipelineApplyResponse,
   type RevenueMoneyArmyBatchPipelinePlan,
   type RevenueMoneyArmyBatchPipelineResponse,
+  type RevenueMoneyArmyBatchRun,
   type RevenueEnginePortfolioResponse,
   type RevenueFirstCashReadinessPlan,
   type RevenueFirstCashReadinessResponse,
@@ -297,6 +298,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [businessFleetWaveReceipt, setBusinessFleetWaveReceipt] = useState<RevenueBusinessFleetLaunchWaveApplyResponse["dispatched"] | null>(null);
   const [moneyArmyPipeline, setMoneyArmyPipeline] = useState<RevenueMoneyArmyBatchPipelinePlan | null>(null);
   const [moneyArmyPipelineReceipt, setMoneyArmyPipelineReceipt] = useState<RevenueMoneyArmyBatchPipelineApplyResponse["applied"] | null>(null);
+  const [moneyArmyBatchRuns, setMoneyArmyBatchRuns] = useState<RevenueMoneyArmyBatchRun[]>([]);
   const [isLoadingBusinessFleet, setIsLoadingBusinessFleet] = useState(false);
   const [isLoadingBusinessFleetGap, setIsLoadingBusinessFleetGap] = useState(false);
   const [isLoadingMoneyArmyPipeline, setIsLoadingMoneyArmyPipeline] = useState(false);
@@ -890,6 +892,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setBusinessFleetProviderApprovalReceipt(null);
       setMoneyArmyPipeline(null);
       setMoneyArmyPipelineReceipt(null);
+      setMoneyArmyBatchRuns([]);
       onEvent?.(`Business Fleet launch gap planner found ${response.plan.totals.launchWaveGap} missing first-wave lane${response.plan.totals.launchWaveGap === 1 ? "" : "s"}: ${response.plan.totals.repairActions} repair action${response.plan.totals.repairActions === 1 ? "" : "s"}, ${response.plan.totals.createOpportunityShells} new seed${response.plan.totals.createOpportunityShells === 1 ? "" : "s"}.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Business Fleet launch gap planner failed.");
@@ -932,6 +935,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
 
       setMoneyArmyPipeline(response.plan);
       setMoneyArmyPipelineReceipt(null);
+      setMoneyArmyBatchRuns(response.recentRuns);
       setBusinessFleetMessage(`Money Army pipeline loaded: ${response.plan.totals.readyStages} ready stage${response.plan.totals.readyStages === 1 ? "" : "s"}, next ${response.plan.nextStage?.title ?? "watch"}.`);
       onEvent?.(`Money Army batch pipeline loaded with ${response.plan.totals.readyStages} ready stage${response.plan.totals.readyStages === 1 ? "" : "s"}.`);
     } catch (caught) {
@@ -968,6 +972,13 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
 
       setMoneyArmyPipeline(response.after);
       setMoneyArmyPipelineReceipt(response.applied);
+      if (response.batchRun) {
+        const batchRun = response.batchRun;
+        setMoneyArmyBatchRuns((currentRuns) => [
+          batchRun,
+          ...currentRuns.filter((run) => run.id !== batchRun.id)
+        ].slice(0, 10));
+      }
       setBusinessFleetMessage(response.applied.summary);
       onEvent?.(response.applied.summary);
 
@@ -4706,8 +4717,24 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                   <span>{moneyArmyPipelineReceipt.dryRun ? "preview" : "run"} / {moneyArmyPipelineReceipt.stage?.replace(/_/g, " ") ?? "watch"}</span>
                   <strong>{moneyArmyPipelineReceipt.providerContacted ? "Provider contacted" : "Provider locked"}</strong>
                   <p>{moneyArmyPipelineReceipt.summary}</p>
-                  <small>external execution {moneyArmyPipelineReceipt.externalExecution ? "enabled" : "locked"} / audit {moneyArmyPipelineReceipt.auditLogId ?? "preview only"}</small>
+                  <small>external execution {moneyArmyPipelineReceipt.externalExecution ? "enabled" : "locked"} / audit {moneyArmyPipelineReceipt.auditLogId ?? "preview only"} / run {moneyArmyPipelineReceipt.batchRunId ?? "not recorded"}</small>
                 </article>
+              </section>
+            ) : null}
+
+            {moneyArmyBatchRuns.length > 0 ? (
+              <section className="revenue-engine-list" aria-label="Money Army batch run ledger">
+                <h4>Batch Run Ledger</h4>
+                {moneyArmyBatchRuns.map((run) => (
+                  <article key={run.id}>
+                    <span>{run.status} / {run.stage.replace(/_/g, " ")}</span>
+                    <strong>{run.resultSummary}</strong>
+                    <p>
+                      {run.sourceKeys.length} source key{run.sourceKeys.length === 1 ? "" : "s"} / ready stages {run.beforeTotals.readyStages} to {run.afterTotals.readyStages} / gap {run.beforeTotals.launchWaveGap} to {run.afterTotals.launchWaveGap}
+                    </p>
+                    <small>audit {run.auditLogId ?? "none"} / run {run.id} / key {run.batchKey.slice(0, 12)}</small>
+                  </article>
+                ))}
               </section>
             ) : null}
 

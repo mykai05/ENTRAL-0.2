@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -1131,11 +1131,34 @@ const moneyArmyPipelinePlan: RevenueMoneyArmyBatchPipelinePlan = {
 };
 moneyArmyPipelinePlan.nextStage = moneyArmyPipelinePlan.stages[0]!;
 
+const moneyArmyBatchRun: RevenueMoneyArmyBatchRun = {
+  afterTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    currentBusinesses: 10,
+    launchWaveGap: 0,
+    readyStages: 2,
+    selectedSourceKeys: 9
+  },
+  auditLogId: "audit-money-army-1",
+  batchKey: "money-army-batch-key-1",
+  beforeTotals: moneyArmyPipelinePlan.totals,
+  createdAt: "2026-06-02T12:10:00.000Z",
+  dryRun: false,
+  externalExecution: false,
+  id: "money-army-run-1",
+  providerContacted: false,
+  resultSummary: "Money Army batch creation recorded internally.",
+  sourceKeys: businessFleetGapPlan.opportunitySeeds.slice(0, 2).map((seed) => seed.sourceKey),
+  stage: "batch_creation",
+  status: "recorded"
+};
+
 function moneyArmyPipelineApplyResponse(dryRun: boolean): RevenueMoneyArmyBatchPipelineApplyResponse {
   return {
     after: moneyArmyPipelinePlan,
     applied: {
       auditLogId: dryRun ? null : "audit-money-army-1",
+      batchRunId: dryRun ? null : moneyArmyBatchRun.id,
       dryRun,
       externalExecution: false,
       providerContacted: false,
@@ -1144,6 +1167,7 @@ function moneyArmyPipelineApplyResponse(dryRun: boolean): RevenueMoneyArmyBatchP
         ? "Money Army batch creation preview completed."
         : "Money Army batch creation recorded internally."
     },
+    batchRun: dryRun ? null : moneyArmyBatchRun,
     before: moneyArmyPipelinePlan,
     result: businessFleetGapSeedResponse(dryRun)
   };
@@ -4843,7 +4867,7 @@ describe("MerchOperationsPanel", () => {
 
     vi.mocked(apiFetch)
       .mockResolvedValueOnce({ plan: businessFleetGapPlan })
-      .mockResolvedValueOnce({ plan: moneyArmyPipelinePlan })
+      .mockResolvedValueOnce({ plan: moneyArmyPipelinePlan, recentRuns: [] })
       .mockResolvedValueOnce(moneyArmyPipelineApplyResponse(true))
       .mockResolvedValueOnce(moneyArmyPipelineApplyResponse(false))
       .mockResolvedValueOnce({ portfolio: portfolioFromPlan(revenuePlan) });
@@ -4898,7 +4922,9 @@ describe("MerchOperationsPanel", () => {
       method: "POST"
     });
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio");
-    expect(await screen.findByText("Money Army batch creation recorded internally.")).toBeInTheDocument();
+    expect(await screen.findAllByText("Money Army batch creation recorded internally.")).toHaveLength(2);
+    expect(within(region).getByText("Batch Run Ledger")).toBeInTheDocument();
+    expect(within(region).getAllByText(/audit audit-money-army-1/)).toHaveLength(2);
     expect(onRefreshStores).toHaveBeenCalledTimes(1);
   });
 

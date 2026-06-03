@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
@@ -1803,6 +1804,108 @@ function nextMoneyArmyStage(
   return pipeline.nextStage?.name ?? null;
 }
 
+type RevenueMoneyArmyBatchRunSnapshot = {
+  afterTotals: RevenueMoneyArmyBatchPipelinePlan["totals"];
+  auditLogId: string | null;
+  batchKey: string;
+  beforeTotals: RevenueMoneyArmyBatchPipelinePlan["totals"];
+  createdAt: string;
+  dryRun: boolean;
+  externalExecution: false;
+  id: string;
+  providerContacted: false;
+  resultSummary: string;
+  sourceKeys: string[];
+  stage: RevenueMoneyArmyBatchPipelineStageName;
+  status: string;
+};
+
+function moneyArmyBatchKey(input: {
+  beforeTotals: RevenueMoneyArmyBatchPipelinePlan["totals"];
+  sourceKeys: string[];
+  stage: RevenueMoneyArmyBatchPipelineStageName;
+  userId: string;
+}) {
+  return createHash("sha256").update(JSON.stringify({
+    beforeTotals: input.beforeTotals,
+    sourceKeys: [...input.sourceKeys].sort(),
+    stage: input.stage,
+    userId: input.userId
+  })).digest("hex");
+}
+
+function moneyArmyBatchRunSnapshot(record: {
+  afterTotalsJson: string;
+  auditLogId: string | null;
+  batchKey: string;
+  beforeTotalsJson: string;
+  createdAt: Date;
+  dryRun: boolean;
+  externalExecution: boolean;
+  id: string;
+  providerContacted: boolean;
+  resultSummary: string;
+  sourceKeysJson: string;
+  stage: string;
+  status: string;
+}): RevenueMoneyArmyBatchRunSnapshot {
+  return {
+    afterTotals: parseSecureJson<RevenueMoneyArmyBatchPipelinePlan["totals"]>(record.afterTotalsJson) ?? {
+      approvablePackets: 0,
+      approvedPackets: 0,
+      blockedStages: 0,
+      currentBusinesses: 0,
+      launchWaveGap: 0,
+      pendingApprovalPackets: 0,
+      readyDeploymentBusinesses: 0,
+      readyStages: 0,
+      repairRequired: 0,
+      seedCandidates: 0,
+      selectedSourceKeys: 0,
+      stages: 0,
+      targetBusinesses: 0,
+      targetLaunchWave: 0
+    },
+    auditLogId: record.auditLogId,
+    batchKey: record.batchKey,
+    beforeTotals: parseSecureJson<RevenueMoneyArmyBatchPipelinePlan["totals"]>(record.beforeTotalsJson) ?? {
+      approvablePackets: 0,
+      approvedPackets: 0,
+      blockedStages: 0,
+      currentBusinesses: 0,
+      launchWaveGap: 0,
+      pendingApprovalPackets: 0,
+      readyDeploymentBusinesses: 0,
+      readyStages: 0,
+      repairRequired: 0,
+      seedCandidates: 0,
+      selectedSourceKeys: 0,
+      stages: 0,
+      targetBusinesses: 0,
+      targetLaunchWave: 0
+    },
+    createdAt: record.createdAt.toISOString(),
+    dryRun: record.dryRun,
+    externalExecution: false,
+    id: record.id,
+    providerContacted: false,
+    resultSummary: record.resultSummary,
+    sourceKeys: parseSecureJson<string[]>(record.sourceKeysJson) ?? [],
+    stage: record.stage as RevenueMoneyArmyBatchPipelineStageName,
+    status: record.status
+  };
+}
+
+async function listRevenueMoneyArmyBatchRuns(userId: string, limit = 10): Promise<RevenueMoneyArmyBatchRunSnapshot[]> {
+  const runs = await prisma.revenueMoneyArmyBatchRun.findMany({
+    orderBy: { createdAt: "desc" },
+    take: Math.min(Math.max(limit, 1), 25),
+    where: { userId }
+  });
+
+  return runs.map(moneyArmyBatchRunSnapshot);
+}
+
 async function applyRevenueMoneyArmyBatchPipeline(userId: string, input: ApplyRevenueMoneyArmyBatchPipelineInput) {
   const before = await buildRevenueMoneyArmyBatchPipelineForUser(userId, input);
   const stage = nextMoneyArmyStage(before.plan, input.stage);
@@ -1811,6 +1914,7 @@ async function applyRevenueMoneyArmyBatchPipeline(userId: string, input: ApplyRe
     return {
       applied: {
         auditLogId: null,
+        batchRunId: null,
         dryRun: input.dryRun,
         externalExecution: false as const,
         providerContacted: false as const,
@@ -1819,6 +1923,7 @@ async function applyRevenueMoneyArmyBatchPipeline(userId: string, input: ApplyRe
       },
       before: before.plan,
       after: before.plan,
+      batchRun: null,
       result: null
     };
   }
@@ -1872,19 +1977,56 @@ async function applyRevenueMoneyArmyBatchPipeline(userId: string, input: ApplyRe
     targetId: null,
     targetType: "revenue_money_army_batch_pipeline"
   });
+  const appliedSummary = input.dryRun
+    ? `Money Army ${stage.replace(/_/g, " ")} preview completed.`
+    : `Money Army ${stage.replace(/_/g, " ")} recorded internally.`;
+  const batchKey = moneyArmyBatchKey({
+    beforeTotals: before.plan.totals,
+    sourceKeys: input.sourceKeys,
+    stage,
+    userId
+  });
+  const batchRun = input.dryRun ? null : await prisma.revenueMoneyArmyBatchRun.upsert({
+    create: {
+      afterTotalsJson: stringifySecureJson(after.plan.totals),
+      auditLogId: auditLog?.id ?? null,
+      batchKey,
+      beforeTotalsJson: stringifySecureJson(before.plan.totals),
+      dryRun: false,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson(result),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(input.sourceKeys),
+      stage,
+      status: "recorded",
+      userId
+    },
+    update: {
+      afterTotalsJson: stringifySecureJson(after.plan.totals),
+      auditLogId: auditLog?.id ?? null,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson(result),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(input.sourceKeys),
+      status: "recorded"
+    },
+    where: { batchKey }
+  });
 
   return {
     applied: {
       auditLogId: auditLog?.id ?? null,
+      batchRunId: batchRun?.id ?? null,
       dryRun: input.dryRun,
       externalExecution: false as const,
       providerContacted: false as const,
       stage,
-      summary: input.dryRun
-        ? `Money Army ${stage.replace(/_/g, " ")} preview completed.`
-        : `Money Army ${stage.replace(/_/g, " ")} recorded internally.`
+      summary: appliedSummary
     },
     after: after.plan,
+    batchRun: batchRun ? moneyArmyBatchRunSnapshot(batchRun) : null,
     before: before.plan,
     result
   };
@@ -8486,9 +8628,15 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
     }
 
     const query = revenueMoneyArmyBatchPipelineQuerySchema.parse(request.query);
-    const response = await buildRevenueMoneyArmyBatchPipelineForUser(currentUser.sub, query);
+    const [response, recentRuns] = await Promise.all([
+      buildRevenueMoneyArmyBatchPipelineForUser(currentUser.sub, query),
+      listRevenueMoneyArmyBatchRuns(currentUser.sub)
+    ]);
 
-    return reply.send(response);
+    return reply.send({
+      ...response,
+      recentRuns
+    });
   });
 
   app.post("/merch/revenue-engine/money-army/batches/apply", { preHandler: requireAuth }, async (request, reply) => {
