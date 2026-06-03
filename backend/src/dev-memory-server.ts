@@ -516,6 +516,7 @@ type FinancialPayoutIntentRecord = {
 };
 
 type FinancialScalingBudgetPacketRecord = {
+  allocationLane: FinancialScalingBudgetPacket["allocationLane"];
   amount: number;
   approvalGate: FinancialScalingBudgetPacket["approvalGate"];
   approvalRequired: true;
@@ -531,15 +532,19 @@ type FinancialScalingBudgetPacketRecord = {
   externalExecution: false;
   id: string;
   metadata: Record<string, unknown>;
+  organicFirst: boolean;
+  performanceBasis: FinancialScalingBudgetPacket["performanceBasis"];
   priority: number;
   profitVelocity: number;
   providerContacted: false;
   reason: string;
+  recommendedChannel: FinancialScalingBudgetPacket["recommendedChannel"];
   reviewedAt?: string | null;
   reviewedById?: string | null;
   reviewNote?: string | null;
   score: number;
   scoreBand: FinancialScalingBudgetPacket["scoreBand"];
+  spendPriority: FinancialScalingBudgetPacket["spendPriority"];
   splitPolicyId: string | null;
   status: FinancialScalingBudgetPacketStatus | string;
   storeId: string;
@@ -2819,6 +2824,7 @@ function storeMemoryFinancialScalingBudgetPackets(
     if (state.financialScalingBudgetPackets.some((existing) => existing.userId === userId && existing.dedupeKey === packet.dedupeKey)) continue;
 
     state.financialScalingBudgetPackets.unshift({
+      allocationLane: packet.allocationLane,
       amount: packet.amount,
       approvalGate: packet.approvalGate,
       approvalRequired: true,
@@ -2834,19 +2840,28 @@ function storeMemoryFinancialScalingBudgetPackets(
       externalExecution: false,
       id: id("fin_scale_budget"),
       metadata: {
+        allocationLane: packet.allocationLane,
         budgetCap: packet.budgetCap,
+        organicFirst: packet.organicFirst,
+        performanceBasis: packet.performanceBasis,
+        recommendedChannel: packet.recommendedChannel,
         scoreBand: packet.scoreBand,
+        spendPriority: packet.spendPriority,
         source: "financial_orchestrator"
       },
+      organicFirst: packet.organicFirst,
+      performanceBasis: packet.performanceBasis,
       priority: packet.priority,
       profitVelocity: packet.profitVelocity,
       providerContacted: false,
       reason: packet.reason,
+      recommendedChannel: packet.recommendedChannel,
       reviewedAt: null,
       reviewedById: null,
       reviewNote: null,
       score: packet.score,
       scoreBand: packet.scoreBand,
+      spendPriority: packet.spendPriority,
       splitPolicyId: policyId,
       status: packet.status,
       storeId: packet.storeId,
@@ -2862,6 +2877,7 @@ function storeMemoryFinancialScalingBudgetPackets(
 
 function memoryFinancialScalingBudgetPacketSnapshot(packet: FinancialScalingBudgetPacketRecord): FinancialScalingBudgetPacketSnapshot {
   return {
+    allocationLane: packet.allocationLane,
     amount: packet.amount,
     approvalGate: packet.approvalGate,
     assetId: packet.assetId,
@@ -2876,15 +2892,19 @@ function memoryFinancialScalingBudgetPacketSnapshot(packet: FinancialScalingBudg
     externalExecution: false,
     id: packet.id,
     metadata: packet.metadata,
+    organicFirst: packet.organicFirst,
+    performanceBasis: packet.performanceBasis,
     priority: packet.priority,
     profitVelocity: packet.profitVelocity,
     providerContacted: false,
     reason: packet.reason,
+    recommendedChannel: packet.recommendedChannel,
     reviewedAt: packet.reviewedAt ?? null,
     reviewedById: packet.reviewedById ?? null,
     reviewNote: packet.reviewNote ?? null,
     score: packet.score,
     scoreBand: packet.scoreBand,
+    spendPriority: packet.spendPriority,
     splitPolicyId: packet.splitPolicyId,
     status: packet.status,
     storeId: packet.storeId,

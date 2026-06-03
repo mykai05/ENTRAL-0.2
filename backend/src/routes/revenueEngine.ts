@@ -913,7 +913,17 @@ function financialScalingBudgetPacketSnapshot(record: {
   totalScalingCapital: Decimalish;
   updatedAt: Date;
 }): FinancialScalingBudgetPacketSnapshot {
+  const metadata = parseSecureJson<Record<string, unknown>>(record.metadataJson) ?? {};
+  const allocationLane = metadata.allocationLane === "paid_scale_review" ? "paid_scale_review" : "organic_growth";
+  const spendPriority = metadata.spendPriority === "scale_test"
+    ? "scale_test"
+    : metadata.spendPriority === "low_test" ? "low_test" : "no_spend";
+  const recommendedChannel = metadata.recommendedChannel === "paid_ads"
+    ? "paid_ads"
+    : metadata.recommendedChannel === "marketplace_listing" ? "marketplace_listing" : "organic_content";
+
   return {
+    allocationLane,
     amount: decimalToNumber(record.amount),
     approvalGate: parseSecureJson<FinancialScalingBudgetPacketSnapshot["approvalGate"]>(record.approvalGateJson) ?? {
       externalExecutionLocked: true,
@@ -936,16 +946,25 @@ function financialScalingBudgetPacketSnapshot(record: {
     dedupeKey: record.dedupeKey,
     externalExecution: false,
     id: record.id,
-    metadata: parseSecureJson<Record<string, unknown>>(record.metadataJson) ?? {},
+    metadata,
+    organicFirst: metadata.organicFirst === false ? false : allocationLane === "organic_growth",
+    performanceBasis: parseSecureJson<FinancialScalingBudgetPacketSnapshot["performanceBasis"]>(stringifySecureJson(metadata.performanceBasis)) ?? {
+      evidenceGrade: "none",
+      killPressureScore: 0,
+      scalePressureScore: 0,
+      snapshots: 0
+    },
     priority: record.priority,
     profitVelocity: decimalToNumber(record.profitVelocity),
     providerContacted: false,
     reason: record.reason,
+    recommendedChannel,
     reviewedAt: record.reviewedAt?.toISOString() ?? null,
     reviewedById: record.reviewedById,
     reviewNote: record.reviewNote,
     score: record.score,
     scoreBand: record.scoreBand as FinancialScalingBudgetPacketSnapshot["scoreBand"],
+    spendPriority,
     splitPolicyId: record.splitPolicyId,
     status: record.status,
     storeId: record.storeId,
@@ -4231,10 +4250,12 @@ async function applyRevenueFirstCashSprint(userId: string, input: ApplyRevenueFi
 
 async function buildFirstBusinessLaunchForUser(userId: string, options: RevenueFirstBusinessLaunchQueryInput): Promise<{
   checklistPlan: RevenueLaunchChecklistPlan;
+  contentPlan: FacelessContentPipelinePlan;
   firstCashSprintContext: Awaited<ReturnType<typeof buildFirstCashSprintForUser>>;
   plan: RevenueFirstBusinessLaunchPlan;
 }> {
-  const [checklistPlan, firstCashSprintContext] = await Promise.all([
+  const [portfolioStores, checklistPlan, firstCashSprintContext, contentContext] = await Promise.all([
+    loadPortfolioForUser(userId),
     buildRevenueLaunchChecklistForUser(userId, revenueLaunchChecklistQuerySchema.parse({
       includeCompleted: true,
       maxItems: Math.max(25, options.maxCandidates * 4),
@@ -4246,16 +4267,30 @@ async function buildFirstBusinessLaunchForUser(userId: string, options: RevenueF
       maxCandidates: options.maxCandidates,
       maxSprintActions: Math.min(5, options.maxCandidates),
       targetDaysToFirstCash: 7
+    })),
+    buildFacelessContentPipelineForUser(userId, facelessContentPipelineQuerySchema.parse({
+      briefsPerStore: 2,
+      includeChannelPackages: true,
+      includeVideoSpecs: true,
+      includeVoiceoverSpecs: true,
+      maxStores: Math.min(options.maxCandidates, 5),
+      windowDays: 30
     }))
   ]);
+  const stores = portfolioStores.map((store) => storeSnapshot(store));
+  const products = portfolioStores.flatMap((store) => store.products.map(productSnapshot));
   const plan = buildRevenueFirstBusinessLaunchPlan({
     checklistPlan,
+    contentPlan: contentContext.plan,
     firstCashSprintPlan: firstCashSprintContext.plan,
-    maxCandidates: options.maxCandidates
+    maxCandidates: options.maxCandidates,
+    products,
+    stores
   });
 
   return {
     checklistPlan,
+    contentPlan: contentContext.plan,
     firstCashSprintContext,
     plan
   };
@@ -7537,8 +7572,13 @@ async function applyFinancialOrchestrator(userId: string, plan: FinancialOrchest
         externalExecution: false,
         maxPerAssetAmount: packet.budgetCap.maxPerAssetAmount,
         metadataJson: stringifySecureJson({
+          allocationLane: packet.allocationLane,
           budgetCap: packet.budgetCap,
+          organicFirst: packet.organicFirst,
+          performanceBasis: packet.performanceBasis,
+          recommendedChannel: packet.recommendedChannel,
           scoreBand: packet.scoreBand,
+          spendPriority: packet.spendPriority,
           source: "financial_orchestrator"
         }),
         priority: packet.priority,

@@ -2344,6 +2344,64 @@ const firstBusinessLaunchPlan: RevenueFirstBusinessLaunchPlan = {
   }],
   externalExecution: false,
   generatedAt: "2026-06-03T00:40:00.000Z",
+  launchPackage: {
+    batchStage: {
+      endpoint: "/merch/revenue-engine/money-army/batches/apply",
+      expectedInternalEffect: "Deploy the selected first-business lane through internal First Business Launch and First Cash Sprint bridge controls.",
+      name: "deployment",
+      requiredConfirmation: "RUN INTERNAL MONEY ARMY BATCH PIPELINE"
+    },
+    blockedExternalActions: [
+      "Publishing marketplace listings, creating provider-side products, uploading artwork or files, changing storefront settings, posting content, starting ads, or moving money"
+    ],
+    contentTieIns: [{
+      briefId: "faceless-store-1-product-1",
+      channelPackages: 3,
+      hook: "Nobody sees the system behind Core Tee.",
+      objective: "product_discovery",
+      productId: "product-1",
+      status: "draft_queued",
+      title: "Iron House Gym Core Tee faceless short"
+    }],
+    externalExecution: false,
+    manualApprovalGates: [
+      "Approve the selected store/product package before any provider or marketplace write action.",
+      "Approve faceless content script, caption, disclosure, and channel package before any posting.",
+      "Approve any Ad/Growth spend separately; this launch package starts with no-spend organic traffic.",
+      "Attach read-only performance evidence before scale rotation or budget release."
+    ],
+    organicTrafficPlan: {
+      channels: ["youtube_shorts", "tiktok", "instagram_reels"],
+      firstMoves: [
+        "Prepare Core Tee listing and proof assets for manual launch review.",
+        "Record and review Iron House Gym Core Tee faceless short for organic short-form distribution.",
+        "Use organic channels first: product story short, marketplace listing polish, owned social post, and manual signal tracking.",
+        "Queue read-only performance signal intake only after approved manual publication creates real metrics."
+      ],
+      noSpend: true,
+      paidSpendLocked: true,
+      summary: "4 organic-first moves prepared. Paid traffic stays locked until performance evidence and budget approval exist."
+    },
+    products: [{
+      estimatedProfit: 42,
+      listingTitle: "Core Tee",
+      productId: "product-1",
+      productName: "Core Tee",
+      productType: "T-Shirt",
+      profitMargin: 58,
+      status: "Approved"
+    }],
+    providerContacted: false,
+    store: {
+      audience: "Strength athletes",
+      businessName: "Iron House Gym",
+      industry: "Fitness",
+      launchStatus: "Building Store",
+      storeId: "store-1",
+      storePlatform: "Shopify"
+    },
+    summary: "Iron House Gym is packaged as the first practical revenue asset with 1 product candidate and 1 organic content tie-in."
+  },
   mode: "Revenue Engine First Business Launch Path",
   providerContacted: false,
   sprint: {
@@ -2355,7 +2413,10 @@ const firstBusinessLaunchPlan: RevenueFirstBusinessLaunchPlan = {
   totals: {
     blocked: 0,
     candidates: 2,
+    contentTieIns: 1,
     manualGates: 1,
+    organicTrafficMoves: 4,
+    productsPrepared: 1,
     readyInternal: 1,
     watch: 0
   }
@@ -3346,9 +3407,51 @@ const financialPlan: FinancialOrchestratorPlan = {
     source: "revenue_engine_scored_portfolio",
     summary: "Revenue Engine scoring is attached as advisory finance context: high scale pressure at 86/100 and none kill pressure at 0/100. 2 scored assets can use scaling capital review with $42.86 daily profit velocity. Scale pressure is high at 86/100."
   },
+  adGrowthAllocation: {
+    advisoryOnly: true,
+    bucketAmount: 75,
+    guardrails: [
+      "Organic content, listing, and marketplace optimization are prioritized before paid spend while capital is limited.",
+      "Every Ad/Growth packet is advisory-only until separate manual approval, spend cap, creative review, and outcome tracking exist."
+    ],
+    killPressure: {
+      advisoryOnly: true,
+      assets: [],
+      level: "none",
+      pressureScore: 0,
+      reason: "No scored assets currently create kill pressure for finance allocation.",
+      source: "revenue_engine_scored_portfolio"
+    },
+    mode: "organic_first",
+    organicFirstAmount: 60,
+    paidScaleReviewAmount: 0,
+    retainedAmount: 15,
+    scalePressure: {
+      advisoryOnly: true,
+      assets: [
+        {
+          assetId: "product-1",
+          assetName: "Core Tee",
+          assetType: "product",
+          finalRank: 88,
+          profitVelocity: 28.57,
+          reason: "Validated scale asset with excellent rank 88 and 28.57 daily profit velocity.",
+          recommendation: "scale",
+          riskLevel: "low",
+          scoreBand: "excellent"
+        }
+      ],
+      level: "high",
+      pressureScore: 86,
+      reason: "2 scored assets are pressing for scaling review; top asset Core Tee ranks 88/100 with $28.57/day profit velocity.",
+      source: "revenue_engine_scored_portfolio"
+    },
+    summary: "60.00 is queued for organic-first growth prep from the fixed 25% Ad/Growth bucket; paid spend remains locked."
+  },
   riskFlags: [],
   scalingBudgetQueue: [
     {
+      allocationLane: "organic_growth",
       amount: 30,
       approvalGate: {
         externalExecutionLocked: true,
@@ -3369,17 +3472,27 @@ const financialPlan: FinancialOrchestratorPlan = {
       dedupeKey: "dedupe-scale-product-1",
       externalExecution: false,
       id: "scale_budget_product_1",
+      organicFirst: true,
+      performanceBasis: {
+        evidenceGrade: "strong",
+        killPressureScore: 0,
+        scalePressureScore: 86,
+        snapshots: 4
+      },
       priority: 10,
       profitVelocity: 28.57,
       providerContacted: false,
       reason: "Validated scale asset with excellent rank 88 and 28.57 daily profit velocity.",
+      recommendedChannel: "organic_content",
       score: 88,
       scoreBand: "excellent",
+      spendPriority: "no_spend",
       status: "approval_required",
       storeId: "store-1",
       storeName: "Iron House Gym"
     },
     {
+      allocationLane: "organic_growth",
       amount: 30,
       approvalGate: {
         externalExecutionLocked: true,
@@ -3400,12 +3513,21 @@ const financialPlan: FinancialOrchestratorPlan = {
       dedupeKey: "dedupe-scale-store-1",
       externalExecution: false,
       id: "scale_budget_store_1",
+      organicFirst: true,
+      performanceBasis: {
+        evidenceGrade: "usable",
+        killPressureScore: 0,
+        scalePressureScore: 86,
+        snapshots: 3
+      },
       priority: 12,
       profitVelocity: 14.29,
       providerContacted: false,
       reason: "Validated scale asset with healthy rank 76 and 14.29 daily profit velocity.",
+      recommendedChannel: "organic_content",
       score: 76,
       scoreBand: "healthy",
+      spendPriority: "no_spend",
       status: "approval_required",
       storeId: "store-1",
       storeName: "Iron House Gym"
@@ -4679,8 +4801,12 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("Revenue Engine First Business Launch Path")).toBeInTheDocument();
     expect(within(region).getByText("Iron House Gym is the top first-business launch path: ready internal, rank 96/100, next Optimize listings.")).toBeInTheDocument();
     expect(within(region).getByRole("region", { name: /first business launch candidates/i })).toBeInTheDocument();
-    expect(within(region).getByText("Iron House Gym")).toBeInTheDocument();
+    expect(within(region).getAllByText("Iron House Gym").length).toBeGreaterThan(0);
     expect(within(region).getByText("ready internal")).toBeInTheDocument();
+    expect(within(region).getByText("First Practical Launch Package")).toBeInTheDocument();
+    expect(within(region).getAllByText("Core Tee").length).toBeGreaterThan(0);
+    expect(within(region).getByText("Iron House Gym Core Tee faceless short")).toBeInTheDocument();
+    expect(within(region).getByText("RUN INTERNAL MONEY ARMY BATCH PIPELINE")).toBeInTheDocument();
     expect(within(region).getByText("dispatch ready first cash bridge action")).toBeInTheDocument();
     expect(within(region).getByText("/merch/revenue-engine/listing-optimization/apply")).toBeInTheDocument();
     expect(within(region).getByText("First-business launch path remains internal")).toBeInTheDocument();

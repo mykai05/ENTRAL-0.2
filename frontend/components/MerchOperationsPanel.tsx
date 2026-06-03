@@ -3256,7 +3256,58 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 <dt>Sprint Ready</dt>
                 <dd>{firstBusinessLaunch.sprint.readyInternal}</dd>
               </div>
+              <div>
+                <dt>Products</dt>
+                <dd>{firstBusinessLaunch.totals.productsPrepared}</dd>
+              </div>
+              <div>
+                <dt>Content</dt>
+                <dd>{firstBusinessLaunch.totals.contentTieIns}</dd>
+              </div>
+              <div>
+                <dt>Organic Moves</dt>
+                <dd>{firstBusinessLaunch.totals.organicTrafficMoves}</dd>
+              </div>
             </dl>
+
+            {firstBusinessLaunch.launchPackage ? (
+              <section className="revenue-engine-list" aria-label="First practical launch package">
+                <h4>First Practical Launch Package</h4>
+                <article>
+                  <span>{firstBusinessLaunch.launchPackage.store.launchStatus} / {firstBusinessLaunch.launchPackage.store.storePlatform}</span>
+                  <strong>{firstBusinessLaunch.launchPackage.store.businessName}</strong>
+                  <p>{firstBusinessLaunch.launchPackage.summary}</p>
+                  <small>{firstBusinessLaunch.launchPackage.store.industry} / {firstBusinessLaunch.launchPackage.store.audience}</small>
+                </article>
+                {firstBusinessLaunch.launchPackage.products.slice(0, 3).map((product) => (
+                  <article key={product.productId}>
+                    <span>{product.status} / {product.productType}</span>
+                    <strong>{product.productName}</strong>
+                    <p>{product.listingTitle ?? "Listing title pending internal review."}</p>
+                    <small>{formatMerchCurrency(product.estimatedProfit)} estimated profit / {product.profitMargin}% margin</small>
+                  </article>
+                ))}
+                {firstBusinessLaunch.launchPackage.contentTieIns.slice(0, 3).map((tieIn) => (
+                  <article key={tieIn.briefId}>
+                    <span>{tieIn.objective.replace(/_/g, " ")} / {tieIn.status.replace(/_/g, " ")} / {tieIn.channelPackages} channels</span>
+                    <strong>{tieIn.title}</strong>
+                    <p>{tieIn.hook}</p>
+                  </article>
+                ))}
+                <article>
+                  <span>organic first / paid spend locked</span>
+                  <strong>{firstBusinessLaunch.launchPackage.organicTrafficPlan.summary}</strong>
+                  <p>{firstBusinessLaunch.launchPackage.organicTrafficPlan.firstMoves.slice(0, 3).join(" ")}</p>
+                  <small>{firstBusinessLaunch.launchPackage.organicTrafficPlan.channels.map((channel) => channel.replace(/_/g, " ")).join(" / ")}</small>
+                </article>
+                <article>
+                  <span>{firstBusinessLaunch.launchPackage.batchStage.name} / Money Army batch</span>
+                  <strong>{firstBusinessLaunch.launchPackage.batchStage.requiredConfirmation}</strong>
+                  <p>{firstBusinessLaunch.launchPackage.batchStage.expectedInternalEffect}</p>
+                  <small>{firstBusinessLaunch.launchPackage.batchStage.endpoint}</small>
+                </article>
+              </section>
+            ) : null}
 
             <section className="revenue-engine-table-wrap" aria-label="First business launch candidates">
               <table className="revenue-engine-table">
@@ -3604,6 +3655,18 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
               ))}
             </section>
 
+            <section className="revenue-engine-list" aria-label="Ad Growth allocation plan">
+              <h4>Ad/Growth Allocation</h4>
+              <article>
+                <span>{financialPlan.adGrowthAllocation.mode.replace(/_/g, " ")} / advisory only</span>
+                <strong>25% Ad/Growth Bucket: {formatMerchCurrency(financialPlan.adGrowthAllocation.bucketAmount)}</strong>
+                <p>{financialPlan.adGrowthAllocation.summary}</p>
+                <small>
+                  organic {formatMerchCurrency(financialPlan.adGrowthAllocation.organicFirstAmount)} / paid review {formatMerchCurrency(financialPlan.adGrowthAllocation.paidScaleReviewAmount)} / retained {formatMerchCurrency(financialPlan.adGrowthAllocation.retainedAmount)}
+                </small>
+              </article>
+            </section>
+
             <section className="revenue-engine-list" aria-label="Financial allocation buckets">
               <h4>Split Buckets</h4>
               {financialPlan.allocationBuckets.map((bucket) => (
@@ -3622,11 +3685,11 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 <h4>Ad/Growth Budgets</h4>
                 {financialPlan.scalingBudgetQueue.map((packet) => (
                   <article key={packet.id}>
-                    <span>{packet.assetType} / {packet.scoreBand} / locked</span>
+                    <span>{packet.allocationLane.replace(/_/g, " ")} / {packet.spendPriority.replace(/_/g, " ")} / {packet.recommendedChannel.replace(/_/g, " ")}</span>
                     <strong>{packet.assetName}: {formatMerchCurrency(packet.amount)}</strong>
                     <p>{packet.reason}</p>
                     <small>
-                      cap {formatMerchCurrency(packet.budgetCap.maxPerAssetAmount)} / retained {formatMerchCurrency(packet.budgetCap.retainedScalingCapital)} / velocity {formatMerchCurrency(packet.profitVelocity)}/day
+                      cap {formatMerchCurrency(packet.budgetCap.maxPerAssetAmount)} / retained {formatMerchCurrency(packet.budgetCap.retainedScalingCapital)} / velocity {formatMerchCurrency(packet.profitVelocity)}/day / evidence {packet.performanceBasis.evidenceGrade}
                     </small>
                   </article>
                 ))}

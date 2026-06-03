@@ -1424,16 +1424,24 @@ describe("Revenue Engine", () => {
     expect(plan.totals.portfolioAssetCommandsReady).toBeGreaterThan(0);
     expect(plan.totals.portfolioScalePressure).toBe(plan.portfolioSignal.scalePressure.pressureScore);
     expect(plan.totals.portfolioKillPressure).toBe(0);
-    expect(plan.totals.scalingBudgetAmount).toBe(60);
+    expect(plan.totals.scalingBudgetAmount).toBe(75);
     expect(plan.totals.scalingBudgetPackets).toBeGreaterThan(0);
-    expect(plan.totals.scalingBudgetRetainedAmount).toBe(15);
+    expect(plan.totals.scalingBudgetRetainedAmount).toBe(0);
+    expect(plan.adGrowthAllocation).toMatchObject({
+      mode: "organic_first",
+      organicFirstAmount: 75,
+      paidScaleReviewAmount: 0
+    });
     expect(plan.scalingBudgetQueue.every((packet) => packet.externalExecution === false && packet.providerContacted === false)).toBe(true);
     expect(plan.scalingBudgetQueue[0]).toMatchObject({
+      allocationLane: "organic_growth",
       approvalGate: {
         externalExecutionLocked: true,
         humanApprovalRequired: true,
         status: "Required"
       },
+      organicFirst: true,
+      spendPriority: "no_spend",
       status: "approval_required"
     });
     const scalingReviewPlan = buildFinancialScalingBudgetReviewPlan({

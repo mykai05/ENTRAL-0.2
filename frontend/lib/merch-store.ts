@@ -1593,12 +1593,64 @@ export type RevenueFirstBusinessLaunchCandidate = {
   summary: string;
 };
 
+export type RevenueFirstBusinessLaunchProduct = {
+  estimatedProfit: number;
+  listingTitle: string | null;
+  productId: string;
+  productName: string;
+  productType: string;
+  profitMargin: number;
+  status: string;
+};
+
+export type RevenueFirstBusinessContentTieIn = {
+  briefId: string;
+  channelPackages: number;
+  hook: string;
+  objective: "product_discovery" | "store_launch" | "conversion_repair" | "scale_remix";
+  productId: string | null;
+  status: "draft_queued" | "existing_record";
+  title: string;
+};
+
+export type RevenueFirstBusinessLaunchPackage = {
+  batchStage: {
+    endpoint: string;
+    expectedInternalEffect: string;
+    name: "deployment";
+    requiredConfirmation: "RUN INTERNAL MONEY ARMY BATCH PIPELINE";
+  };
+  blockedExternalActions: string[];
+  contentTieIns: RevenueFirstBusinessContentTieIn[];
+  externalExecution: false;
+  manualApprovalGates: string[];
+  organicTrafficPlan: {
+    channels: string[];
+    firstMoves: string[];
+    noSpend: true;
+    paidSpendLocked: true;
+    summary: string;
+  };
+  products: RevenueFirstBusinessLaunchProduct[];
+  providerContacted: false;
+  store: {
+    audience: string;
+    businessName: string;
+    industry: string;
+    launchStatus: string;
+    storeId: string;
+    storePlatform: string;
+  };
+  summary: string;
+};
+
 export type RevenueFirstBusinessLaunchPlan = {
   auditEvents: string[];
   blockedExternalActions: string[];
   candidates: RevenueFirstBusinessLaunchCandidate[];
   externalExecution: false;
   generatedAt: string;
+  launchPackage: RevenueFirstBusinessLaunchPackage | null;
   mode: "Revenue Engine First Business Launch Path";
   providerContacted: false;
   sprint: {
@@ -1610,7 +1662,10 @@ export type RevenueFirstBusinessLaunchPlan = {
   totals: {
     blocked: number;
     candidates: number;
+    contentTieIns: number;
     manualGates: number;
+    organicTrafficMoves: number;
+    productsPrepared: number;
     readyInternal: number;
     watch: number;
   };
@@ -3868,6 +3923,7 @@ export type FinancialPayoutIntentDraft = {
 };
 
 export type FinancialScalingBudgetPacket = {
+  allocationLane: "organic_growth" | "paid_scale_review";
   amount: number;
   approvalGate: {
     externalExecutionLocked: true;
@@ -3888,15 +3944,37 @@ export type FinancialScalingBudgetPacket = {
   dedupeKey: string;
   externalExecution: false;
   id: string;
+  organicFirst: boolean;
+  performanceBasis: {
+    evidenceGrade: "none" | "thin" | "usable" | "strong";
+    killPressureScore: number;
+    scalePressureScore: number;
+    snapshots: number;
+  };
   priority: number;
   profitVelocity: number;
   providerContacted: false;
   reason: string;
+  recommendedChannel: "organic_content" | "marketplace_listing" | "paid_ads";
   score: number;
   scoreBand: RevenueAssetScoreBand;
+  spendPriority: "no_spend" | "low_test" | "scale_test";
   status: "approval_required";
   storeId: string;
   storeName: string;
+};
+
+export type FinancialAdGrowthAllocationPlan = {
+  advisoryOnly: true;
+  bucketAmount: number;
+  guardrails: string[];
+  killPressure: FinancialPortfolioPressure;
+  mode: "organic_first" | "paid_scale_review" | "defensive_hold" | "watch";
+  organicFirstAmount: number;
+  paidScaleReviewAmount: number;
+  retainedAmount: number;
+  scalePressure: FinancialPortfolioPressure;
+  summary: string;
 };
 
 export type FinancialRiskFlag = {
@@ -3965,6 +4043,7 @@ export type FinancialOrchestratorPlan = {
   payoutIntents: FinancialPayoutIntentDraft[];
   policyChecks: FinancialPolicyCheck[];
   portfolioSignal: FinancialPortfolioSignal;
+  adGrowthAllocation: FinancialAdGrowthAllocationPlan;
   riskFlags: FinancialRiskFlag[];
   scalingBudgetQueue: FinancialScalingBudgetPacket[];
   splitPolicy: {

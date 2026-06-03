@@ -86,6 +86,7 @@ export type FinancialPayoutIntentDraft = {
 };
 
 export type FinancialScalingBudgetPacket = {
+  allocationLane: "organic_growth" | "paid_scale_review";
   amount: number;
   approvalGate: {
     externalExecutionLocked: true;
@@ -106,15 +107,37 @@ export type FinancialScalingBudgetPacket = {
   dedupeKey: string;
   externalExecution: false;
   id: string;
+  organicFirst: boolean;
+  performanceBasis: {
+    evidenceGrade: NonNullable<RevenueAssetPortfolio["assets"][number]["performance"]>["evidenceGrade"] | "none";
+    killPressureScore: number;
+    scalePressureScore: number;
+    snapshots: number;
+  };
   priority: number;
   profitVelocity: number;
   providerContacted: false;
   reason: string;
+  recommendedChannel: "organic_content" | "marketplace_listing" | "paid_ads";
   score: number;
   scoreBand: RevenueAssetPortfolio["assets"][number]["scoreBand"];
+  spendPriority: "no_spend" | "low_test" | "scale_test";
   status: "approval_required";
   storeId: string;
   storeName: string;
+};
+
+export type FinancialAdGrowthAllocationPlan = {
+  advisoryOnly: true;
+  bucketAmount: number;
+  guardrails: string[];
+  killPressure: FinancialPortfolioPressure;
+  mode: "organic_first" | "paid_scale_review" | "defensive_hold" | "watch";
+  organicFirstAmount: number;
+  paidScaleReviewAmount: number;
+  retainedAmount: number;
+  scalePressure: FinancialPortfolioPressure;
+  summary: string;
 };
 
 export type FinancialScalingBudgetPacketStatus = "approval_required" | "approved_manual_handoff" | "rejected" | "voided";
@@ -221,6 +244,7 @@ export type FinancialOrchestratorPlan = {
   payoutIntents: FinancialPayoutIntentDraft[];
   policyChecks: FinancialPolicyCheck[];
   portfolioSignal: FinancialPortfolioSignal;
+  adGrowthAllocation: FinancialAdGrowthAllocationPlan;
   riskFlags: FinancialRiskFlag[];
   scalingBudgetQueue: FinancialScalingBudgetPacket[];
   splitPolicy: {
@@ -757,10 +781,53 @@ function validatedScaleAssets(portfolio: RevenueAssetPortfolio | undefined) {
     .slice(0, 8);
 }
 
+function adGrowthSpendPriority(input: {
+  killPressureScore: number;
+  scalePressureScore: number;
+  scalingCapital: number;
+}): FinancialScalingBudgetPacket["spendPriority"] {
+  if (input.scalingCapital < 100 || input.killPressureScore >= 40 || input.scalePressureScore < 60) {
+    return "no_spend";
+  }
+
+  if (input.scalingCapital < 250 || input.scalePressureScore < 80) {
+    return "low_test";
+  }
+
+  return "scale_test";
+}
+
+function adGrowthAllocationLane(spendPriority: FinancialScalingBudgetPacket["spendPriority"]): FinancialScalingBudgetPacket["allocationLane"] {
+  return spendPriority === "no_spend" ? "organic_growth" : "paid_scale_review";
+}
+
+function adGrowthRecommendedChannel(
+  asset: RevenueAssetPortfolio["assets"][number],
+  spendPriority: FinancialScalingBudgetPacket["spendPriority"]
+): FinancialScalingBudgetPacket["recommendedChannel"] {
+  if (spendPriority === "no_spend") return "organic_content";
+  if (asset.assetType === "product" && asset.performance?.conversionRate && asset.performance.conversionRate >= 2) return "paid_ads";
+
+  return "marketplace_listing";
+}
+
+function adGrowthApprovalReason(spendPriority: FinancialScalingBudgetPacket["spendPriority"]) {
+  if (spendPriority === "no_spend") {
+    return "Ad/Growth allocation is organic-first and no-spend. Content prep, listing experiments, and distribution planning are internal only until a separate spend approval exists.";
+  }
+
+  if (spendPriority === "low_test") {
+    return "Ad/Growth allocation is limited to a small paid-test review packet. Spend remains blocked until separate approval, caps, creative review, and outcome tracking are attached.";
+  }
+
+  return "Ad/Growth allocation is eligible for scale-test review from validated performance. Spend remains blocked until separate approval, caps, creative review, and outcome tracking are attached.";
+}
+
 function buildScalingBudgetQueue(input: {
   generatedAt: string;
   ownerId: string;
   portfolio: RevenueAssetPortfolio | undefined;
+  portfolioSignal: FinancialPortfolioSignal;
   scalingCapital: number;
 }): FinancialScalingBudgetPacket[] {
   const eligibleAssets = validatedScaleAssets(input.portfolio);
@@ -769,7 +836,17 @@ function buildScalingBudgetQueue(input: {
     return [];
   }
 
-  const maxPerAssetAmount = money(Math.max(25, input.scalingCapital * 0.4));
+  const spendPriority = adGrowthSpendPriority({
+    killPressureScore: input.portfolioSignal.killPressure.pressureScore,
+    scalePressureScore: input.portfolioSignal.scalePressure.pressureScore,
+    scalingCapital: input.scalingCapital
+  });
+  const allocationLane = adGrowthAllocationLane(spendPriority);
+  const maxPerAssetAmount = money(spendPriority === "no_spend"
+    ? input.scalingCapital
+    : spendPriority === "low_test"
+      ? Math.min(input.scalingCapital * 0.35, 100)
+      : Math.min(input.scalingCapital * 0.5, 500));
   const packets: FinancialScalingBudgetPacket[] = [];
   let remaining = input.scalingCapital;
 
@@ -781,11 +858,12 @@ function buildScalingBudgetQueue(input: {
 
     remaining = money(remaining - amount);
     packets.push({
+      allocationLane,
       amount,
       approvalGate: {
         externalExecutionLocked: true,
         humanApprovalRequired: true,
-        reason: "Ad/Growth budget packet is an internal allocation only. Spend, payouts, provider calls, uploads, ads, and browser automation require separate approval.",
+        reason: adGrowthApprovalReason(spendPriority),
         status: "Required"
       },
       assetId: asset.assetId,
@@ -799,20 +877,31 @@ function buildScalingBudgetQueue(input: {
       },
       confidence: asset.confidence,
       dedupeKey: stableHash({
+        allocationLane,
         amount,
         assetId: asset.assetId,
         assetType: asset.assetType,
         ownerId: input.ownerId,
+        spendPriority,
         totalScalingCapital: input.scalingCapital
       }),
       externalExecution: false,
       id: `scale_budget_${safeId(input.ownerId)}_${safeId(asset.assetType)}_${safeId(asset.assetId)}_${safeId(input.generatedAt)}`,
+      organicFirst: allocationLane === "organic_growth",
+      performanceBasis: {
+        evidenceGrade: asset.performance?.evidenceGrade ?? "none",
+        killPressureScore: input.portfolioSignal.killPressure.pressureScore,
+        scalePressureScore: input.portfolioSignal.scalePressure.pressureScore,
+        snapshots: asset.performance?.snapshots ?? 0
+      },
       priority: asset.priority,
       profitVelocity: money(asset.performance?.profitVelocity ?? 0),
       providerContacted: false,
-      reason: `Validated scale asset competing for the 25% Ad/Growth bucket with ${asset.scoreBand} rank ${asset.assetScore.finalRank} and ${money(asset.performance?.profitVelocity ?? 0)} daily profit velocity. ${asset.reason}`,
+      reason: `${allocationLane === "organic_growth" ? "Organic-first" : "Paid scale-review"} Ad/Growth packet from the fixed 25% bucket. ${asset.scoreBand} rank ${asset.assetScore.finalRank}, ${asset.performance?.evidenceGrade ?? "no"} evidence, ${asset.performance?.snapshots ?? 0} snapshot${(asset.performance?.snapshots ?? 0) === 1 ? "" : "s"}, and ${money(asset.performance?.profitVelocity ?? 0)} daily profit velocity. ${asset.reason}`,
+      recommendedChannel: adGrowthRecommendedChannel(asset, spendPriority),
       score: asset.assetScore.finalRank,
       scoreBand: asset.scoreBand,
+      spendPriority,
       status: "approval_required",
       storeId: asset.storeId,
       storeName: asset.storeName
@@ -828,6 +917,53 @@ function buildScalingBudgetQueue(input: {
       retainedScalingCapital
     }
   }));
+}
+
+function adGrowthAllocationPlanFor(input: {
+  packets: FinancialScalingBudgetPacket[];
+  portfolioDefensiveHold: boolean;
+  portfolioSignal: FinancialPortfolioSignal;
+  scalingBucketAmount: number;
+}): FinancialAdGrowthAllocationPlan {
+  const packetAmount = money(input.packets.reduce((sum, packet) => sum + packet.amount, 0));
+  const organicFirstAmount = money(input.packets
+    .filter((packet) => packet.allocationLane === "organic_growth")
+    .reduce((sum, packet) => sum + packet.amount, 0));
+  const paidScaleReviewAmount = money(input.packets
+    .filter((packet) => packet.allocationLane === "paid_scale_review")
+    .reduce((sum, packet) => sum + packet.amount, 0));
+  const retainedAmount = money(Math.max(0, input.scalingBucketAmount - packetAmount));
+  const mode: FinancialAdGrowthAllocationPlan["mode"] = input.portfolioDefensiveHold
+    ? "defensive_hold"
+    : paidScaleReviewAmount > 0
+      ? "paid_scale_review"
+      : organicFirstAmount > 0
+        ? "organic_first"
+        : "watch";
+
+  return {
+    advisoryOnly: true,
+    bucketAmount: input.scalingBucketAmount,
+    guardrails: [
+      "Organic content, listing, and marketplace optimization are prioritized before paid spend while capital is limited.",
+      "Every Ad/Growth packet is advisory-only until separate manual approval, spend cap, creative review, and outcome tracking exist.",
+      "Kill pressure blocks or retains Ad/Growth capital before any scale review.",
+      "No provider, ad platform, marketplace, bank, social, upload, browser, or payment write action is authorized here."
+    ],
+    killPressure: input.portfolioSignal.killPressure,
+    mode,
+    organicFirstAmount,
+    paidScaleReviewAmount,
+    retainedAmount,
+    scalePressure: input.portfolioSignal.scalePressure,
+    summary: mode === "defensive_hold"
+      ? `The 25% Ad/Growth bucket is retained because kill pressure is ${input.portfolioSignal.killPressure.level} at ${input.portfolioSignal.killPressure.pressureScore}/100.`
+      : mode === "paid_scale_review"
+        ? `${paidScaleReviewAmount.toFixed(2)} is queued for paid scale-review packets and ${organicFirstAmount.toFixed(2)} for organic-first prep from the fixed 25% Ad/Growth bucket.`
+        : mode === "organic_first"
+          ? `${organicFirstAmount.toFixed(2)} is queued for organic-first growth prep from the fixed 25% Ad/Growth bucket; paid spend remains locked.`
+          : `The 25% Ad/Growth bucket has ${input.scalingBucketAmount.toFixed(2)} available but no validated performance packet is ready.`
+  };
 }
 
 export function buildFinancialOrchestratorPlan(input: {
@@ -928,9 +1064,16 @@ export function buildFinancialOrchestratorPlan(input: {
       generatedAt,
       ownerId: input.ownerId,
       portfolio: input.assetPortfolio,
+      portfolioSignal,
       scalingCapital: scalingBucket?.payoutIntentAmount ?? 0
     })
     : [];
+  const adGrowthAllocation = adGrowthAllocationPlanFor({
+    packets: scalingBudgetQueue,
+    portfolioDefensiveHold,
+    portfolioSignal,
+    scalingBucketAmount: scalingBucket?.amount ?? 0
+  });
 
   const riskFlags = riskFlagsFor({
     distributableProfit,
@@ -950,7 +1093,7 @@ export function buildFinancialOrchestratorPlan(input: {
     auditEvents: [
       "Financial Orchestrator plan generated from internal revenue performance snapshots.",
       "Exact 25/25/50 policy applied: 25% Ad/Growth, 25% Entral technology and operations, 50% owner income.",
-      "Revenue Engine scored portfolio attached as advisory scale and kill pressure for Ad/Growth allocation; no money movement is authorized.",
+      `Revenue Engine scored portfolio attached as advisory scale and kill pressure for Ad/Growth allocation; ${adGrowthAllocation.mode.replace(/_/g, " ")} mode selected and no money movement is authorized.`,
       ...(portfolioDefensiveHold ? ["Portfolio defensive hold retained Ad/Growth capital instead of creating a reinvestment payout intent."] : []),
       ...(scalingBudgetQueue.length > 0 ? [`${scalingBudgetQueue.length} Ad/Growth budget packet${scalingBudgetQueue.length === 1 ? "" : "s"} queued for validated scale assets.`] : []),
       "Payout intents are approval-required records only; no provider or bank was contacted."
@@ -966,6 +1109,7 @@ export function buildFinancialOrchestratorPlan(input: {
     payoutIntents,
     policyChecks,
     portfolioSignal,
+    adGrowthAllocation,
     riskFlags,
     scalingBudgetQueue,
     splitPolicy: {
@@ -981,7 +1125,7 @@ export function buildFinancialOrchestratorPlan(input: {
       status: policyStatus,
       totalPercent
     },
-    summary: `${input.snapshots.length} income snapshot${input.snapshots.length === 1 ? "" : "s"} evaluated. ${payoutIntents.length} payout intent${payoutIntents.length === 1 ? "" : "s"} prepared from exact 25/25/50 split: ${options.scalingPercent}% Ad/Growth, ${options.bufferPercent}% Entral operations, ${options.personalPercent}% owner income with ${options.currency} ${distributableProfit.toFixed(2)} distributable profit. ${scalingBudgetQueue.length} Ad/Growth budget packet${scalingBudgetQueue.length === 1 ? "" : "s"} queued for validated assets. Portfolio finance signal: ${portfolioSignal.recommendation.replace(/_/g, " ")} at ${money(portfolioSignal.profitVelocity)} daily profit velocity. Scale pressure ${portfolioSignal.scalePressure.level} ${portfolioSignal.scalePressure.pressureScore}/100; kill pressure ${portfolioSignal.killPressure.level} ${portfolioSignal.killPressure.pressureScore}/100.${portfolioDefensiveHold ? " Ad/Growth capital is retained until weak or risky assets are cleared." : ""}`,
+    summary: `${input.snapshots.length} income snapshot${input.snapshots.length === 1 ? "" : "s"} evaluated. ${payoutIntents.length} payout intent${payoutIntents.length === 1 ? "" : "s"} prepared from exact 25/25/50 split: ${options.scalingPercent}% Ad/Growth, ${options.bufferPercent}% Entral operations, ${options.personalPercent}% owner income with ${options.currency} ${distributableProfit.toFixed(2)} distributable profit. ${scalingBudgetQueue.length} Ad/Growth budget packet${scalingBudgetQueue.length === 1 ? "" : "s"} queued for validated assets. ${adGrowthAllocation.summary} Portfolio finance signal: ${portfolioSignal.recommendation.replace(/_/g, " ")} at ${money(portfolioSignal.profitVelocity)} daily profit velocity. Scale pressure ${portfolioSignal.scalePressure.level} ${portfolioSignal.scalePressure.pressureScore}/100; kill pressure ${portfolioSignal.killPressure.level} ${portfolioSignal.killPressure.pressureScore}/100.${portfolioDefensiveHold ? " Ad/Growth capital is retained until weak or risky assets are cleared." : ""}`,
     totals: {
       allocatableProfit,
       alreadyRecordedLedgerEntries: ledgerEntries.filter((entry) => entry.recordState === "already_recorded").length,
