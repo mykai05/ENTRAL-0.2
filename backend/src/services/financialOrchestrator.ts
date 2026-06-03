@@ -10,6 +10,7 @@ import type {
 } from "./revenuePerformance.js";
 
 export type FinancialSplitCategory = "scaling" | "personal" | "buffer";
+export type FinancialSplitRole = "ad_growth" | "entral_operations" | "owner_income";
 
 export type FinancialOrchestratorOptions = {
   bufferPercent: number;
@@ -53,10 +54,11 @@ export type FinancialLedgerEntryDraft = {
 export type FinancialAllocationBucket = {
   amount: number;
   category: FinancialSplitCategory;
-  destinationType: "scale_reinvestment" | "owner_distribution" | "operating_buffer";
+  destinationType: "ad_growth_budget" | "entral_tech_operations" | "owner_distribution";
   guardrailReason?: string;
   label: string;
   percent: number;
+  role: FinancialSplitRole;
   payoutIntentAmount: number;
   purpose: string;
   retainedAmount: number;
@@ -222,9 +224,12 @@ export type FinancialOrchestratorPlan = {
   riskFlags: FinancialRiskFlag[];
   scalingBudgetQueue: FinancialScalingBudgetPacket[];
   splitPolicy: {
+    adGrowthPercent: number;
     bufferPercent: number;
     currency: "USD";
+    entralOperationsPercent: number;
     minPayoutIntentAmount: number;
+    ownerPercent: number;
     personalPercent: number;
     reserveFloorAmount: number;
     scalingPercent: number;
@@ -235,11 +240,14 @@ export type FinancialOrchestratorPlan = {
   totals: {
     allocatableProfit: number;
     alreadyRecordedLedgerEntries: number;
+    adGrowthAmount: number;
     bufferAmount: number;
     distributableProfit: number;
+    entralOperationsAmount: number;
     grossRevenue: number;
     ledgerEntries: number;
     netProfit: number;
+    ownerAmount: number;
     payoutIntentAmount: number;
     payoutIntents: number;
     personalAmount: number;
@@ -263,28 +271,34 @@ export const defaultFinancialOrchestratorOptions: FinancialOrchestratorOptions =
   currency: "USD",
   includePayoutIntents: true,
   minPayoutIntentAmount: 25,
-  personalPercent: 25,
+  personalPercent: 50,
   reserveFloorAmount: 0,
-  scalingPercent: 50,
+  scalingPercent: 25,
   windowDays: 30
 };
 
 const categoryLabels: Record<FinancialSplitCategory, string> = {
-  buffer: "Operating buffer",
-  personal: "Personal income",
-  scaling: "Scaling capital"
+  buffer: "Entral operations",
+  personal: "Owner income",
+  scaling: "Ad/Growth bucket"
 };
 
 const categoryDestinations: Record<FinancialSplitCategory, FinancialAllocationBucket["destinationType"]> = {
-  buffer: "operating_buffer",
+  buffer: "entral_tech_operations",
   personal: "owner_distribution",
-  scaling: "scale_reinvestment"
+  scaling: "ad_growth_budget"
+};
+
+const categoryRoles: Record<FinancialSplitCategory, FinancialSplitRole> = {
+  buffer: "entral_operations",
+  personal: "owner_income",
+  scaling: "ad_growth"
 };
 
 const categoryPurposes: Record<FinancialSplitCategory, string> = {
-  buffer: "Keep downside reserve, refunds, software costs, and operating shock absorption funded.",
-  personal: "Reserve owner-income distribution until explicit payout approval exists.",
-  scaling: "Reinvest into product generation, testing, creative production, and validated scaling loops."
+  buffer: "Fund Entral technology, operations, infrastructure, tooling, and internal execution overhead.",
+  personal: "Reserve the fixed 50% owner-income distribution until explicit payout approval exists.",
+  scaling: "Fund advisory-only ad, growth, content distribution, creative testing, and validated scaling loops."
 };
 
 const financialBlockedExternalActions = [
@@ -364,13 +378,13 @@ function stableHash(value: unknown) {
 
 export function withFinancialOrchestratorOptions(input: Partial<FinancialOrchestratorOptions> = {}): FinancialOrchestratorOptions {
   return {
-    bufferPercent: clamp(finiteNumber(input.bufferPercent, defaultFinancialOrchestratorOptions.bufferPercent), 0, 100),
+    bufferPercent: defaultFinancialOrchestratorOptions.bufferPercent,
     currency: "USD",
     includePayoutIntents: input.includePayoutIntents ?? defaultFinancialOrchestratorOptions.includePayoutIntents,
     minPayoutIntentAmount: money(clamp(finiteNumber(input.minPayoutIntentAmount, defaultFinancialOrchestratorOptions.minPayoutIntentAmount), 0, 1_000_000)),
-    personalPercent: clamp(finiteNumber(input.personalPercent, defaultFinancialOrchestratorOptions.personalPercent), 0, 100),
+    personalPercent: defaultFinancialOrchestratorOptions.personalPercent,
     reserveFloorAmount: money(clamp(finiteNumber(input.reserveFloorAmount, defaultFinancialOrchestratorOptions.reserveFloorAmount), 0, 10_000_000)),
-    scalingPercent: clamp(finiteNumber(input.scalingPercent, defaultFinancialOrchestratorOptions.scalingPercent), 0, 100),
+    scalingPercent: defaultFinancialOrchestratorOptions.scalingPercent,
     source: input.source,
     storeId: input.storeId,
     windowDays: clamp(Math.round(finiteNumber(input.windowDays, defaultFinancialOrchestratorOptions.windowDays)), 1, 365)
@@ -381,10 +395,10 @@ function policyChecksFor(options: FinancialOrchestratorOptions, totalPercent: nu
   const checks: FinancialPolicyCheck[] = [
     {
       message: totalPercent === 100
-        ? "Scaling, personal, and buffer percentages add to exactly 100%."
+        ? "Owner income, Entral operations, and Ad/Growth percentages add to exactly 100%."
         : `Split percentages add to ${totalPercent}%. Adjust them to exactly 100% before applying.`,
       status: totalPercent === 100 ? "pass" : "block",
-      title: "Split balance"
+      title: "25/25/50 split balance"
     },
     {
       message: options.currency === "USD"
@@ -771,7 +785,7 @@ function buildScalingBudgetQueue(input: {
       approvalGate: {
         externalExecutionLocked: true,
         humanApprovalRequired: true,
-        reason: "Scaling budget packet is an internal allocation only. Spend, payouts, provider calls, uploads, ads, and browser automation require separate approval.",
+        reason: "Ad/Growth budget packet is an internal allocation only. Spend, payouts, provider calls, uploads, ads, and browser automation require separate approval.",
         status: "Required"
       },
       assetId: asset.assetId,
@@ -796,7 +810,7 @@ function buildScalingBudgetQueue(input: {
       priority: asset.priority,
       profitVelocity: money(asset.performance?.profitVelocity ?? 0),
       providerContacted: false,
-      reason: `Validated scale asset with ${asset.scoreBand} rank ${asset.assetScore.finalRank} and ${money(asset.performance?.profitVelocity ?? 0)} daily profit velocity. ${asset.reason}`,
+      reason: `Validated scale asset competing for the 25% Ad/Growth bucket with ${asset.scoreBand} rank ${asset.assetScore.finalRank} and ${money(asset.performance?.profitVelocity ?? 0)} daily profit velocity. ${asset.reason}`,
       score: asset.assetScore.finalRank,
       scoreBand: asset.scoreBand,
       status: "approval_required",
@@ -871,6 +885,7 @@ export function buildFinancialOrchestratorPlan(input: {
       percent,
       purpose: categoryPurposes[category],
       retainedAmount: status === "intent_ready" ? 0 : amount,
+      role: categoryRoles[category],
       status
     };
   });
@@ -934,10 +949,10 @@ export function buildFinancialOrchestratorPlan(input: {
     allocationBuckets,
     auditEvents: [
       "Financial Orchestrator plan generated from internal revenue performance snapshots.",
-      "Split policy checked before allocation.",
-      "Revenue Engine scored portfolio attached as advisory scale and kill pressure; no money movement is authorized.",
-      ...(portfolioDefensiveHold ? ["Portfolio defensive hold retained scaling capital instead of creating a reinvestment payout intent."] : []),
-      ...(scalingBudgetQueue.length > 0 ? [`${scalingBudgetQueue.length} scaling budget packet${scalingBudgetQueue.length === 1 ? "" : "s"} queued for validated scale assets.`] : []),
+      "Exact 25/25/50 policy applied: 25% Ad/Growth, 25% Entral technology and operations, 50% owner income.",
+      "Revenue Engine scored portfolio attached as advisory scale and kill pressure for Ad/Growth allocation; no money movement is authorized.",
+      ...(portfolioDefensiveHold ? ["Portfolio defensive hold retained Ad/Growth capital instead of creating a reinvestment payout intent."] : []),
+      ...(scalingBudgetQueue.length > 0 ? [`${scalingBudgetQueue.length} Ad/Growth budget packet${scalingBudgetQueue.length === 1 ? "" : "s"} queued for validated scale assets.`] : []),
       "Payout intents are approval-required records only; no provider or bank was contacted."
     ],
     blockedExternalActions: [
@@ -954,24 +969,30 @@ export function buildFinancialOrchestratorPlan(input: {
     riskFlags,
     scalingBudgetQueue,
     splitPolicy: {
+      adGrowthPercent: options.scalingPercent,
       bufferPercent: options.bufferPercent,
       currency: options.currency,
+      entralOperationsPercent: options.bufferPercent,
       minPayoutIntentAmount: options.minPayoutIntentAmount,
+      ownerPercent: options.personalPercent,
       personalPercent: options.personalPercent,
       reserveFloorAmount: options.reserveFloorAmount,
       scalingPercent: options.scalingPercent,
       status: policyStatus,
       totalPercent
     },
-    summary: `${input.snapshots.length} income snapshot${input.snapshots.length === 1 ? "" : "s"} evaluated. ${payoutIntents.length} payout intent${payoutIntents.length === 1 ? "" : "s"} prepared from ${options.scalingPercent}/${options.personalPercent}/${options.bufferPercent} split with ${options.currency} ${distributableProfit.toFixed(2)} distributable profit. ${scalingBudgetQueue.length} scaling budget packet${scalingBudgetQueue.length === 1 ? "" : "s"} queued for validated assets. Portfolio finance signal: ${portfolioSignal.recommendation.replace(/_/g, " ")} at ${money(portfolioSignal.profitVelocity)} daily profit velocity. Scale pressure ${portfolioSignal.scalePressure.level} ${portfolioSignal.scalePressure.pressureScore}/100; kill pressure ${portfolioSignal.killPressure.level} ${portfolioSignal.killPressure.pressureScore}/100.${portfolioDefensiveHold ? " Scaling capital is retained until weak or risky assets are cleared." : ""}`,
+    summary: `${input.snapshots.length} income snapshot${input.snapshots.length === 1 ? "" : "s"} evaluated. ${payoutIntents.length} payout intent${payoutIntents.length === 1 ? "" : "s"} prepared from exact 25/25/50 split: ${options.scalingPercent}% Ad/Growth, ${options.bufferPercent}% Entral operations, ${options.personalPercent}% owner income with ${options.currency} ${distributableProfit.toFixed(2)} distributable profit. ${scalingBudgetQueue.length} Ad/Growth budget packet${scalingBudgetQueue.length === 1 ? "" : "s"} queued for validated assets. Portfolio finance signal: ${portfolioSignal.recommendation.replace(/_/g, " ")} at ${money(portfolioSignal.profitVelocity)} daily profit velocity. Scale pressure ${portfolioSignal.scalePressure.level} ${portfolioSignal.scalePressure.pressureScore}/100; kill pressure ${portfolioSignal.killPressure.level} ${portfolioSignal.killPressure.pressureScore}/100.${portfolioDefensiveHold ? " Ad/Growth capital is retained until weak or risky assets are cleared." : ""}`,
     totals: {
       allocatableProfit,
       alreadyRecordedLedgerEntries: ledgerEntries.filter((entry) => entry.recordState === "already_recorded").length,
+      adGrowthAmount: allocationBuckets.find((bucket) => bucket.category === "scaling")?.amount ?? 0,
       bufferAmount: allocationBuckets.find((bucket) => bucket.category === "buffer")?.amount ?? 0,
       distributableProfit,
+      entralOperationsAmount: allocationBuckets.find((bucket) => bucket.category === "buffer")?.amount ?? 0,
       grossRevenue,
       ledgerEntries: ledgerEntries.length,
       netProfit,
+      ownerAmount: allocationBuckets.find((bucket) => bucket.category === "personal")?.amount ?? 0,
       payoutIntentAmount,
       payoutIntents: payoutIntents.length,
       personalAmount: allocationBuckets.find((bucket) => bucket.category === "personal")?.amount ?? 0,

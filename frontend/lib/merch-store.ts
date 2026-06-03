@@ -1225,6 +1225,76 @@ export type RevenueBusinessFleetLaunchWaveApplyResponse = {
   sprint: RevenueFirstCashSprintPlan;
 };
 
+export type RevenueMoneyArmyBatchPipelineStageName =
+  | "batch_creation"
+  | "batch_acceleration"
+  | "launch_package"
+  | "approval"
+  | "deployment";
+
+export type RevenueMoneyArmyBatchPipelineStageStatus = "ready" | "waiting" | "blocked" | "complete";
+
+export type RevenueMoneyArmyBatchPipelineStage = {
+  blockedExternalActions: string[];
+  endpoint: string;
+  expectedInternalEffect: string;
+  externalExecution: false;
+  name: RevenueMoneyArmyBatchPipelineStageName;
+  priority: number;
+  providerContacted: false;
+  reason: string;
+  requiredConfirmation: string;
+  status: RevenueMoneyArmyBatchPipelineStageStatus;
+  title: string;
+};
+
+export type RevenueMoneyArmyBatchPipelinePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Private Money Army Batch Pipeline";
+  nextStage: RevenueMoneyArmyBatchPipelineStage | null;
+  providerContacted: false;
+  selectedSourceKeys: string[];
+  stages: RevenueMoneyArmyBatchPipelineStage[];
+  summary: string;
+  totals: {
+    approvablePackets: number;
+    approvedPackets: number;
+    blockedStages: number;
+    currentBusinesses: number;
+    launchWaveGap: number;
+    pendingApprovalPackets: number;
+    readyDeploymentBusinesses: number;
+    readyStages: number;
+    repairRequired: number;
+    seedCandidates: number;
+    selectedSourceKeys: number;
+    stages: number;
+    targetBusinesses: number;
+    targetLaunchWave: number;
+  };
+};
+
+export type RevenueMoneyArmyBatchPipelineResponse = {
+  plan: RevenueMoneyArmyBatchPipelinePlan;
+};
+
+export type RevenueMoneyArmyBatchPipelineApplyResponse = {
+  after: RevenueMoneyArmyBatchPipelinePlan;
+  applied: {
+    auditLogId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    stage: RevenueMoneyArmyBatchPipelineStageName | null;
+    summary: string;
+  };
+  before: RevenueMoneyArmyBatchPipelinePlan;
+  result: unknown;
+};
+
 export type RevenuePortfolioDashboardNextAction = {
   actionLabel: string;
   assetId: string;
@@ -3703,6 +3773,7 @@ export type RevenueStoreSetupApplyResponse = {
 };
 
 export type FinancialSplitCategory = "scaling" | "personal" | "buffer";
+export type FinancialSplitRole = "ad_growth" | "entral_operations" | "owner_income";
 
 export type FinancialOrchestratorOptions = {
   bufferPercent: number;
@@ -3746,13 +3817,14 @@ export type FinancialLedgerEntryDraft = {
 export type FinancialAllocationBucket = {
   amount: number;
   category: FinancialSplitCategory;
-  destinationType: "scale_reinvestment" | "owner_distribution" | "operating_buffer";
+  destinationType: "ad_growth_budget" | "entral_tech_operations" | "owner_distribution";
   guardrailReason?: string;
   label: string;
   payoutIntentAmount: number;
   percent: number;
   purpose: string;
   retainedAmount: number;
+  role: FinancialSplitRole;
   status: "intent_ready" | "below_minimum" | "held";
 };
 
@@ -3877,9 +3949,12 @@ export type FinancialOrchestratorPlan = {
   riskFlags: FinancialRiskFlag[];
   scalingBudgetQueue: FinancialScalingBudgetPacket[];
   splitPolicy: {
+    adGrowthPercent: number;
     bufferPercent: number;
     currency: "USD";
+    entralOperationsPercent: number;
     minPayoutIntentAmount: number;
+    ownerPercent: number;
     personalPercent: number;
     reserveFloorAmount: number;
     scalingPercent: number;
@@ -3890,11 +3965,14 @@ export type FinancialOrchestratorPlan = {
   totals: {
     allocatableProfit: number;
     alreadyRecordedLedgerEntries: number;
+    adGrowthAmount: number;
     bufferAmount: number;
     distributableProfit: number;
+    entralOperationsAmount: number;
     grossRevenue: number;
     ledgerEntries: number;
     netProfit: number;
+    ownerAmount: number;
     payoutIntentAmount: number;
     payoutIntents: number;
     personalAmount: number;

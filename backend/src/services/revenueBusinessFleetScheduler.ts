@@ -218,6 +218,58 @@ export type RevenueBusinessFleetLaunchGapPlan = {
   };
 };
 
+export type RevenueMoneyArmyBatchPipelineStageName =
+  | "batch_creation"
+  | "batch_acceleration"
+  | "launch_package"
+  | "approval"
+  | "deployment";
+
+export type RevenueMoneyArmyBatchPipelineStageStatus = "ready" | "waiting" | "blocked" | "complete";
+
+export type RevenueMoneyArmyBatchPipelineStage = {
+  blockedExternalActions: string[];
+  endpoint: string;
+  expectedInternalEffect: string;
+  externalExecution: false;
+  name: RevenueMoneyArmyBatchPipelineStageName;
+  priority: number;
+  providerContacted: false;
+  reason: string;
+  requiredConfirmation: string;
+  status: RevenueMoneyArmyBatchPipelineStageStatus;
+  title: string;
+};
+
+export type RevenueMoneyArmyBatchPipelinePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Private Money Army Batch Pipeline";
+  nextStage: RevenueMoneyArmyBatchPipelineStage | null;
+  providerContacted: false;
+  selectedSourceKeys: string[];
+  stages: RevenueMoneyArmyBatchPipelineStage[];
+  summary: string;
+  totals: {
+    approvablePackets: number;
+    approvedPackets: number;
+    blockedStages: number;
+    currentBusinesses: number;
+    launchWaveGap: number;
+    pendingApprovalPackets: number;
+    readyDeploymentBusinesses: number;
+    readyStages: number;
+    repairRequired: number;
+    seedCandidates: number;
+    selectedSourceKeys: number;
+    stages: number;
+    targetBusinesses: number;
+    targetLaunchWave: number;
+  };
+};
+
 export const defaultRevenueBusinessFleetOptions: RevenueBusinessFleetOptions = {
   killPressureThreshold: 70,
   launchWaveSize: 10,
@@ -1119,6 +1171,185 @@ export function buildRevenueBusinessFleetLaunchGapPlan(input: {
       readyLaunchWaveBusinesses: readyLaunchWave.length,
       repairActions,
       runLaunchWaveActions: readyLaunchWave.length > 0 ? 1 : 0,
+      targetLaunchWave: input.plan.capacity.launchWaveSize
+    }
+  };
+}
+
+function pipelineStage(input: Omit<RevenueMoneyArmyBatchPipelineStage, "blockedExternalActions" | "externalExecution" | "providerContacted"> & {
+  blockedExternalActions?: string[];
+}): RevenueMoneyArmyBatchPipelineStage {
+  return {
+    ...input,
+    blockedExternalActions: unique([
+      ...(input.blockedExternalActions ?? []),
+      ...blockedFleetActions
+    ]),
+    externalExecution: false,
+    providerContacted: false
+  };
+}
+
+function firstReadyStage(stages: RevenueMoneyArmyBatchPipelineStage[]) {
+  return stages.find((stage) => stage.status === "ready") ?? null;
+}
+
+export function buildRevenueMoneyArmyBatchPipelinePlan(input: {
+  approvableApprovalPackets?: number;
+  approvedApprovalPackets?: number;
+  generatedAt?: string;
+  launchGate?: {
+    approvalNeeded: number;
+    blocked: number;
+    readyForManualLaunch: number;
+    repairRequired: number;
+  } | null;
+  plan: RevenueBusinessFleetPlan;
+  selectedSourceKeys?: string[];
+  pendingApprovalPackets?: number;
+  gapPlan?: RevenueBusinessFleetLaunchGapPlan;
+}): RevenueMoneyArmyBatchPipelinePlan {
+  const gapPlan = input.gapPlan ?? buildRevenueBusinessFleetLaunchGapPlan({
+    generatedAt: input.generatedAt,
+    plan: input.plan
+  });
+  const selectedSourceKeys = unique(input.selectedSourceKeys ?? []);
+  const readyDeploymentBusinesses = input.plan.launchWave.filter((business) => (
+    business.lane === "launch_now"
+    && business.scheduleState === "ready_parallel"
+    && business.qualityGate.status === "pass"
+  )).length;
+  const approvablePackets = input.approvableApprovalPackets ?? 0;
+  const approvedPackets = input.approvedApprovalPackets ?? 0;
+  const pendingApprovalPackets = input.pendingApprovalPackets ?? 0;
+  const launchGate = input.launchGate ?? null;
+  const hasSelectedBatch = selectedSourceKeys.length > 0;
+  const creationStatus: RevenueMoneyArmyBatchPipelineStageStatus = gapPlan.opportunitySeeds.length > 0
+    ? "ready"
+    : input.plan.capacity.currentBusinesses > 0 ? "complete" : "waiting";
+  const accelerationStatus: RevenueMoneyArmyBatchPipelineStageStatus = hasSelectedBatch
+    ? "ready"
+    : creationStatus === "ready" ? "waiting" : "complete";
+  const launchPackageStatus: RevenueMoneyArmyBatchPipelineStageStatus = hasSelectedBatch
+    ? "ready"
+    : "waiting";
+  const approvalStatus: RevenueMoneyArmyBatchPipelineStageStatus = approvablePackets > 0
+    ? "ready"
+    : pendingApprovalPackets > 0 ? "waiting" : approvedPackets > 0 ? "complete" : "waiting";
+  const deploymentBlocked = (launchGate?.blocked ?? 0) > 0 || (launchGate?.repairRequired ?? 0) > 0;
+  const deploymentStatus: RevenueMoneyArmyBatchPipelineStageStatus = deploymentBlocked
+    ? "blocked"
+    : readyDeploymentBusinesses > 0 ? "ready" : "waiting";
+
+  const stages: RevenueMoneyArmyBatchPipelineStage[] = [
+    pipelineStage({
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+      expectedInternalEffect: "Create private store shells and product drafts from selected gap seeds.",
+      name: "batch_creation",
+      priority: 1,
+      reason: gapPlan.opportunitySeeds.length > 0
+        ? `${gapPlan.opportunitySeeds.length} safe internal opportunity seed${gapPlan.opportunitySeeds.length === 1 ? "" : "s"} can be created for the launch-wave gap.`
+        : "No new opportunity seed is required by the current launch-wave gap.",
+      requiredConfirmation: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
+      status: creationStatus,
+      title: "Create private batch seeds",
+      blockedExternalActions: gapPlan.blockedExternalActions
+    }),
+    pipelineStage({
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/acceleration/apply",
+      expectedInternalEffect: "Run listing optimization, launch pipeline, and store setup records for selected private seed lanes.",
+      name: "batch_acceleration",
+      priority: 2,
+      reason: hasSelectedBatch
+        ? `${selectedSourceKeys.length} selected seed lane${selectedSourceKeys.length === 1 ? "" : "s"} can be accelerated through internal drafting and setup controls.`
+        : "Create or select seed lanes before acceleration can run.",
+      requiredConfirmation: "RUN INTERNAL BUSINESS FLEET GAP ACCELERATION",
+      status: accelerationStatus,
+      title: "Accelerate selected batch",
+      blockedExternalActions: gapPlan.blockedExternalActions
+    }),
+    pipelineStage({
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/live-package/apply",
+      expectedInternalEffect: "Prepare provider payload packages, operations packs, and launch handoff records for manual review.",
+      name: "launch_package",
+      priority: 3,
+      reason: hasSelectedBatch
+        ? "Selected lanes can be packaged for provider approval review and launch gate inspection."
+        : "Package creation waits for selected seed lanes.",
+      requiredConfirmation: "RECORD INTERNAL BUSINESS FLEET LIVE LAUNCH PACKAGE",
+      status: launchPackageStatus,
+      title: "Package launch assets",
+      blockedExternalActions: gapPlan.blockedExternalActions
+    }),
+    pipelineStage({
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/provider-approval-review/apply",
+      expectedInternalEffect: "Approve or reject provider payload packets as internal manual-handoff records only.",
+      name: "approval",
+      priority: 4,
+      reason: approvablePackets > 0
+        ? `${approvablePackets} provider approval packet${approvablePackets === 1 ? "" : "s"} can be reviewed for internal manual handoff.`
+        : pendingApprovalPackets > 0
+          ? `${pendingApprovalPackets} provider approval packet${pendingApprovalPackets === 1 ? "" : "s"} are pending but not currently approvable.`
+          : "No provider approval packet is waiting for review yet.",
+      requiredConfirmation: "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS",
+      status: approvalStatus,
+      title: "Approve batch handoff",
+      blockedExternalActions: gapPlan.blockedExternalActions
+    }),
+    pipelineStage({
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply",
+      expectedInternalEffect: "Dispatch ready businesses through First Business Launch and First Cash Sprint internal bridge controls.",
+      name: "deployment",
+      priority: 5,
+      reason: deploymentBlocked
+        ? `${(launchGate?.blocked ?? 0) + (launchGate?.repairRequired ?? 0)} packaged lane${(launchGate?.blocked ?? 0) + (launchGate?.repairRequired ?? 0) === 1 ? "" : "s"} need repair before deployment.`
+        : readyDeploymentBusinesses > 0
+          ? `${readyDeploymentBusinesses} launch-wave business${readyDeploymentBusinesses === 1 ? "" : "es"} can be dispatched internally.`
+          : "No business lane is ready for deployment yet.",
+      requiredConfirmation: "RUN INTERNAL BUSINESS FLEET LAUNCH WAVE",
+      status: deploymentStatus,
+      title: "Deploy internal launch wave",
+      blockedExternalActions: input.plan.blockedExternalActions
+    })
+  ];
+  const nextStage = firstReadyStage(stages);
+  const blockedExternalActions = unique([
+    ...input.plan.blockedExternalActions,
+    ...gapPlan.blockedExternalActions,
+    ...stages.flatMap((stage) => stage.blockedExternalActions)
+  ]);
+
+  return {
+    auditEvents: [
+      "Money Army batch pipeline assembled Business Fleet scheduling, launch gap seeds, launch package gates, provider approval review, and internal deployment stages.",
+      "Every stage is internal and approval-gated. External publishing, provider writes, ad spend, payouts, uploads, browser automation, and platform-evasion workflows remain blocked.",
+      "Pipeline stages are safe to run in dry-run mode before any internal record creation."
+    ],
+    blockedExternalActions,
+    externalExecution: false,
+    generatedAt: input.generatedAt ?? new Date().toISOString(),
+    mode: "Private Money Army Batch Pipeline",
+    nextStage,
+    providerContacted: false,
+    selectedSourceKeys,
+    stages,
+    summary: nextStage
+      ? `${stages.filter((stage) => stage.status === "ready").length} Money Army batch stage${stages.filter((stage) => stage.status === "ready").length === 1 ? "" : "s"} ready. Next: ${nextStage.title}. Current launch-wave gap is ${gapPlan.totals.launchWaveGap}; ${readyDeploymentBusinesses} deployment lane${readyDeploymentBusinesses === 1 ? "" : "s"} ready.`
+      : `Money Army batch pipeline is in watch mode. Current launch-wave gap is ${gapPlan.totals.launchWaveGap}; no stage is ready for internal execution.`,
+    totals: {
+      approvablePackets,
+      approvedPackets,
+      blockedStages: stages.filter((stage) => stage.status === "blocked").length,
+      currentBusinesses: input.plan.capacity.currentBusinesses,
+      launchWaveGap: gapPlan.totals.launchWaveGap,
+      pendingApprovalPackets,
+      readyDeploymentBusinesses,
+      readyStages: stages.filter((stage) => stage.status === "ready").length,
+      repairRequired: launchGate?.repairRequired ?? 0,
+      seedCandidates: gapPlan.opportunitySeeds.length,
+      selectedSourceKeys: selectedSourceKeys.length,
+      stages: stages.length,
+      targetBusinesses: input.plan.capacity.targetBusinesses,
       targetLaunchWave: input.plan.capacity.launchWaveSize
     }
   };

@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -535,12 +535,12 @@ const portfolioCommandPlan: PortfolioCommandCenterPlan = {
       externalExecution: false,
       priority: 12,
       providerContacted: false,
-      reason: "Personal income payout review requires manual handoff controls.",
+      reason: "Owner income payout review requires manual handoff controls.",
       recommendedStatus: null,
       riskLevel: "high",
       sourceModule: "financial_release_governance",
       targetId: "intent-personal",
-      targetName: "Personal income payout review",
+      targetName: "Owner income payout review",
       targetType: "finance"
     },
     {
@@ -556,12 +556,12 @@ const portfolioCommandPlan: PortfolioCommandCenterPlan = {
       externalExecution: false,
       priority: 24,
       providerContacted: false,
-      reason: "Core Tee has $60.00 pending scaling budget review from excellent asset score 88.",
+      reason: "Core Tee has $30.00 pending Ad/Growth budget review from excellent asset score 88.",
       recommendedStatus: null,
       riskLevel: "low",
       sourceModule: "financial_scaling_budget_review",
       targetId: "scale_budget_product_1",
-      targetName: "Core Tee scaling budget",
+      targetName: "Core Tee Ad/Growth budget",
       targetType: "finance"
     },
     {
@@ -1028,6 +1028,126 @@ const businessFleetGapPlan: RevenueBusinessFleetLaunchGapPlan = {
     targetLaunchWave: 10
   }
 };
+
+const moneyArmyPipelinePlan: RevenueMoneyArmyBatchPipelinePlan = {
+  auditEvents: [
+    "Money Army batch pipeline assembled Business Fleet scheduling, launch gap seeds, launch package gates, provider approval review, and internal deployment stages.",
+    "Every stage is internal and approval-gated."
+  ],
+  blockedExternalActions: [
+    "Publishing, provider creation, marketplace uploads, content posting, ad spend, payouts, bank movement, or external write actions without a separate approval gate",
+    "Launching browser automation, stealth, proxy rotation, fingerprint spoofing, CAPTCHA bypass, account warmup, or platform-evasion workflows"
+  ],
+  externalExecution: false,
+  generatedAt: "2026-06-02T12:05:00.000Z",
+  mode: "Private Money Army Batch Pipeline",
+  nextStage: null,
+  providerContacted: false,
+  selectedSourceKeys: businessFleetGapPlan.opportunitySeeds.slice(0, 2).map((seed) => seed.sourceKey),
+  stages: [
+    {
+      blockedExternalActions: ["Publishing, provider creation, marketplace uploads, content posting, ad spend, payouts, bank movement, or external write actions without a separate approval gate"],
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+      expectedInternalEffect: "Create private store shells and product drafts from approved internal opportunity seeds.",
+      externalExecution: false,
+      name: "batch_creation",
+      priority: 1,
+      providerContacted: false,
+      reason: "9 launch-wave gap seeds are ready for internal batch creation.",
+      requiredConfirmation: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
+      status: "ready",
+      title: "Create internal batch"
+    },
+    {
+      blockedExternalActions: ["Publishing, provider creation, marketplace uploads, content posting, ad spend, payouts, bank movement, or external write actions without a separate approval gate"],
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/acceleration/apply",
+      expectedInternalEffect: "Queue listing, launch-pipeline, and setup runbooks for selected source keys.",
+      externalExecution: false,
+      name: "batch_acceleration",
+      priority: 2,
+      providerContacted: false,
+      reason: "2 selected source keys can move through internal acceleration after creation.",
+      requiredConfirmation: "RUN INTERNAL BUSINESS FLEET GAP ACCELERATION",
+      status: "ready",
+      title: "Accelerate batch"
+    },
+    {
+      blockedExternalActions: ["Publishing, provider creation, marketplace uploads, content posting, ad spend, payouts, bank movement, or external write actions without a separate approval gate"],
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/live-package/apply",
+      expectedInternalEffect: "Record live launch packages, provider payload dossiers, and approval packets internally.",
+      externalExecution: false,
+      name: "launch_package",
+      priority: 3,
+      providerContacted: false,
+      reason: "Selected source keys can be packaged after acceleration.",
+      requiredConfirmation: "RECORD INTERNAL BUSINESS FLEET LIVE LAUNCH PACKAGE",
+      status: "ready",
+      title: "Package launch batch"
+    },
+    {
+      blockedExternalActions: ["Publishing, provider creation, marketplace uploads, content posting, ad spend, payouts, bank movement, or external write actions without a separate approval gate"],
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/provider-approval-review/apply",
+      expectedInternalEffect: "Approve or reject provider approval packets as internal records only.",
+      externalExecution: false,
+      name: "approval",
+      priority: 4,
+      providerContacted: false,
+      reason: "Provider approval packets wait for explicit internal review.",
+      requiredConfirmation: "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS",
+      status: "waiting",
+      title: "Review approvals"
+    },
+    {
+      blockedExternalActions: ["Launching browser automation, stealth, proxy rotation, fingerprint spoofing, CAPTCHA bypass, account warmup, or platform-evasion workflows"],
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply",
+      expectedInternalEffect: "Dispatch ready businesses into internal First Business Launch controls.",
+      externalExecution: false,
+      name: "deployment",
+      priority: 5,
+      providerContacted: false,
+      reason: "Deployment waits for approved launch gates.",
+      requiredConfirmation: "RUN INTERNAL BUSINESS FLEET LAUNCH WAVE",
+      status: "waiting",
+      title: "Deploy internal launch wave"
+    }
+  ],
+  summary: "3 Money Army batch stages ready. Next: Create internal batch. Current launch-wave gap is 9; 0 deployment lanes ready.",
+  totals: {
+    approvablePackets: 0,
+    approvedPackets: 0,
+    blockedStages: 0,
+    currentBusinesses: 1,
+    launchWaveGap: 9,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 3,
+    repairRequired: 0,
+    seedCandidates: 9,
+    selectedSourceKeys: 2,
+    stages: 5,
+    targetBusinesses: 1000,
+    targetLaunchWave: 10
+  }
+};
+moneyArmyPipelinePlan.nextStage = moneyArmyPipelinePlan.stages[0]!;
+
+function moneyArmyPipelineApplyResponse(dryRun: boolean): RevenueMoneyArmyBatchPipelineApplyResponse {
+  return {
+    after: moneyArmyPipelinePlan,
+    applied: {
+      auditLogId: dryRun ? null : "audit-money-army-1",
+      dryRun,
+      externalExecution: false,
+      providerContacted: false,
+      stage: "batch_creation",
+      summary: dryRun
+        ? "Money Army batch creation preview completed."
+        : "Money Army batch creation recorded internally."
+    },
+    before: moneyArmyPipelinePlan,
+    result: businessFleetGapSeedResponse(dryRun)
+  };
+}
 
 function businessFleetGapSeedResponse(dryRun: boolean): RevenueBusinessFleetLaunchGapSeedApplyResponse {
   return {
@@ -2952,36 +3072,39 @@ function storeSetupResponse(plan: RevenueStoreSetupPlan, dryRun: boolean): Reven
 const financialPlan: FinancialOrchestratorPlan = {
   allocationBuckets: [
     {
-      amount: 150,
+      amount: 75,
       category: "scaling",
-      destinationType: "scale_reinvestment",
-      label: "Scaling capital",
-      payoutIntentAmount: 150,
-      percent: 50,
-      purpose: "Reinvest into product generation, testing, creative production, and validated scaling loops.",
+      destinationType: "ad_growth_budget",
+      label: "Ad/Growth bucket",
+      payoutIntentAmount: 75,
+      percent: 25,
+      purpose: "Fund advisory-only ad, growth, content distribution, creative testing, and validated scaling loops.",
       retainedAmount: 0,
+      role: "ad_growth",
       status: "intent_ready"
     },
     {
-      amount: 60,
+      amount: 150,
       category: "personal",
       destinationType: "owner_distribution",
-      label: "Personal income",
-      payoutIntentAmount: 75,
-      percent: 25,
+      label: "Owner income",
+      payoutIntentAmount: 150,
+      percent: 50,
       purpose: "Reserve owner-income distribution until explicit payout approval exists.",
       retainedAmount: 0,
+      role: "owner_income",
       status: "intent_ready"
     },
     {
       amount: 75,
       category: "buffer",
-      destinationType: "operating_buffer",
-      label: "Operating buffer",
+      destinationType: "entral_tech_operations",
+      label: "Entral operations",
       payoutIntentAmount: 75,
       percent: 25,
-      purpose: "Keep downside reserve, refunds, software costs, and operating shock absorption funded.",
+      purpose: "Fund Entral technology, operations, infrastructure, tooling, and internal execution overhead.",
       retainedAmount: 0,
+      role: "entral_operations",
       status: "intent_ready"
     }
   ],
@@ -3001,8 +3124,8 @@ const financialPlan: FinancialOrchestratorPlan = {
       allocatableProfit: 300,
       allocation: {
         buffer: 75,
-        personal: 75,
-        scaling: 150
+        personal: 150,
+        scaling: 75
       },
       currency: "USD",
       externalExecution: false,
@@ -3027,14 +3150,14 @@ const financialPlan: FinancialOrchestratorPlan = {
     currency: "USD",
     includePayoutIntents: true,
     minPayoutIntentAmount: 25,
-    personalPercent: 25,
+    personalPercent: 50,
     reserveFloorAmount: 0,
-    scalingPercent: 50,
+    scalingPercent: 25,
     windowDays: 30
   },
   payoutIntents: [
     {
-      amount: 150,
+      amount: 75,
       approvalGate: {
         externalExecutionLocked: true,
         humanApprovalRequired: true,
@@ -3044,16 +3167,16 @@ const financialPlan: FinancialOrchestratorPlan = {
       category: "scaling",
       currency: "USD",
       dedupeKey: "dedupe-scaling",
-      destinationType: "scale_reinvestment",
+      destinationType: "ad_growth_budget",
       externalExecution: false,
-      id: "payout_scaling_150",
+      id: "payout_scaling_75",
       provider: "Stripe Treasury + Connect",
       sourceLedgerEntryIds: ["ledger_snapshot_profit_1"],
       status: "approval_required",
-      title: "Scaling capital payout intent"
+      title: "Ad/Growth bucket payout intent"
     },
     {
-      amount: 75,
+      amount: 150,
       approvalGate: {
         externalExecutionLocked: true,
         humanApprovalRequired: true,
@@ -3065,11 +3188,11 @@ const financialPlan: FinancialOrchestratorPlan = {
       dedupeKey: "dedupe-personal",
       destinationType: "owner_distribution",
       externalExecution: false,
-      id: "payout_personal_75",
+      id: "payout_personal_150",
       provider: "Stripe Treasury + Connect",
       sourceLedgerEntryIds: ["ledger_snapshot_profit_1"],
       status: "approval_required",
-      title: "Personal income payout intent"
+      title: "Owner income payout intent"
     },
     {
       amount: 75,
@@ -3082,20 +3205,20 @@ const financialPlan: FinancialOrchestratorPlan = {
       category: "buffer",
       currency: "USD",
       dedupeKey: "dedupe-buffer",
-      destinationType: "operating_buffer",
+      destinationType: "entral_tech_operations",
       externalExecution: false,
       id: "payout_buffer_75",
       provider: "Stripe Treasury + Connect",
       sourceLedgerEntryIds: ["ledger_snapshot_profit_1"],
       status: "approval_required",
-      title: "Operating buffer payout intent"
+      title: "Entral operations payout intent"
     }
   ],
   policyChecks: [
     {
-      message: "Scaling, personal, and buffer percentages add to exactly 100%.",
+      message: "Owner income, Entral operations, and Ad/Growth percentages add to exactly 100%.",
       status: "pass",
-      title: "Split balance"
+      title: "25/25/50 split balance"
     },
     {
       message: "Payout intents require at least $25.00 in a bucket.",
@@ -3202,11 +3325,11 @@ const financialPlan: FinancialOrchestratorPlan = {
   riskFlags: [],
   scalingBudgetQueue: [
     {
-      amount: 60,
+      amount: 30,
       approvalGate: {
         externalExecutionLocked: true,
         humanApprovalRequired: true,
-        reason: "Scaling budget packet is an internal allocation only. Spend, payouts, provider calls, uploads, ads, and browser automation require separate approval.",
+        reason: "Ad/Growth budget packet is an internal allocation only. Spend, payouts, provider calls, uploads, ads, and browser automation require separate approval.",
         status: "Required"
       },
       assetId: "product-1",
@@ -3214,9 +3337,9 @@ const financialPlan: FinancialOrchestratorPlan = {
       assetType: "product",
       blockedExternalActions: ["Moving money or issuing payouts"],
       budgetCap: {
-        maxPerAssetAmount: 60,
-        retainedScalingCapital: 30,
-        totalScalingCapital: 150
+        maxPerAssetAmount: 30,
+        retainedScalingCapital: 15,
+        totalScalingCapital: 75
       },
       confidence: 94,
       dedupeKey: "dedupe-scale-product-1",
@@ -3233,11 +3356,11 @@ const financialPlan: FinancialOrchestratorPlan = {
       storeName: "Iron House Gym"
     },
     {
-      amount: 60,
+      amount: 30,
       approvalGate: {
         externalExecutionLocked: true,
         humanApprovalRequired: true,
-        reason: "Scaling budget packet is an internal allocation only. Spend, payouts, provider calls, uploads, ads, and browser automation require separate approval.",
+        reason: "Ad/Growth budget packet is an internal allocation only. Spend, payouts, provider calls, uploads, ads, and browser automation require separate approval.",
         status: "Required"
       },
       assetId: "store-1",
@@ -3245,9 +3368,9 @@ const financialPlan: FinancialOrchestratorPlan = {
       assetType: "store",
       blockedExternalActions: ["Moving money or issuing payouts"],
       budgetCap: {
-        maxPerAssetAmount: 60,
-        retainedScalingCapital: 30,
-        totalScalingCapital: 150
+        maxPerAssetAmount: 30,
+        retainedScalingCapital: 15,
+        totalScalingCapital: 75
       },
       confidence: 90,
       dedupeKey: "dedupe-scale-store-1",
@@ -3265,37 +3388,43 @@ const financialPlan: FinancialOrchestratorPlan = {
     }
   ],
   splitPolicy: {
+    adGrowthPercent: 25,
     bufferPercent: 25,
     currency: "USD",
+    entralOperationsPercent: 25,
     minPayoutIntentAmount: 25,
-    personalPercent: 25,
+    ownerPercent: 50,
+    personalPercent: 50,
     reserveFloorAmount: 0,
-    scalingPercent: 50,
+    scalingPercent: 25,
     status: "balanced",
     totalPercent: 100
   },
-  summary: "1 income snapshot evaluated. 3 payout intents prepared from 50/25/25 split with USD 300.00 distributable profit.",
+  summary: "1 income snapshot evaluated. 3 payout intents prepared from exact 25/25/50 split: 25% Ad/Growth, 25% Entral operations, 50% owner income with USD 300.00 distributable profit.",
   totals: {
     allocatableProfit: 300,
     alreadyRecordedLedgerEntries: 0,
+    adGrowthAmount: 75,
     bufferAmount: 75,
     distributableProfit: 300,
+    entralOperationsAmount: 75,
     grossRevenue: 500,
     ledgerEntries: 1,
     netProfit: 300,
+    ownerAmount: 150,
     payoutIntentAmount: 300,
     payoutIntents: 3,
-    personalAmount: 75,
+    personalAmount: 150,
     portfolioAssetCommandsReady: 2,
     portfolioKillPressure: 0,
     portfolioProfitVelocity: 42.86,
     portfolioScalePressure: 86,
     portfolioScaleRecommendations: 2,
     reserveHeld: 0,
-    scalingBudgetAmount: 120,
+    scalingBudgetAmount: 60,
     scalingBudgetPackets: 2,
-    scalingBudgetRetainedAmount: 30,
-    scalingAmount: 150,
+    scalingBudgetRetainedAmount: 15,
+    scalingAmount: 75,
     snapshots: 1,
     storesTracked: 1
   }
@@ -3328,23 +3457,23 @@ const financialReviewPlan: FinancialPayoutReviewPlan = {
   ],
   budgetReleasePackets: [
     {
-      amount: 150,
+      amount: 75,
       approvalState: "approval_required",
       blockedActions: ["Moving money or issuing payouts"],
       category: "scaling",
-      controls: ["Verify the payout intent traces back to recorded internal ledger entries.", "Attach an approved scaling budget before spending this amount."],
+      controls: ["Verify the payout intent traces back to recorded internal ledger entries.", "Attach an approved Ad/Growth budget before spending this amount."],
       currency: "USD",
-      destinationType: "scale_reinvestment",
+      destinationType: "ad_growth_budget",
       externalExecution: false,
       id: "release-intent-scaling",
       intentId: "intent-scaling",
-      maxReleaseAmount: 150,
-      purpose: "Release scaling capital for approved product generation, listing tests, creative production, and validated growth loops only.",
+      maxReleaseAmount: 75,
+      purpose: "Release Ad/Growth bucket capital for approved creative testing, distribution experiments, and validated growth loops only.",
       releaseState: "locked_review",
-      title: "Scaling capital release packet"
+      title: "Ad/Growth bucket release packet"
     },
     {
-      amount: 75,
+      amount: 150,
       approvalState: "approval_required",
       blockedActions: ["Moving money or issuing payouts"],
       category: "personal",
@@ -3354,10 +3483,10 @@ const financialReviewPlan: FinancialPayoutReviewPlan = {
       externalExecution: false,
       id: "release-intent-personal",
       intentId: "intent-personal",
-      maxReleaseAmount: 75,
+      maxReleaseAmount: 150,
       purpose: "Prepare owner-income distribution evidence for manual review without initiating a transfer.",
       releaseState: "locked_review",
-      title: "Personal income release packet"
+      title: "Owner income release packet"
     }
   ],
   externalExecution: false,
@@ -3372,23 +3501,23 @@ const financialReviewPlan: FinancialPayoutReviewPlan = {
   },
   reviewQueue: [
     {
-      amount: 150,
+      amount: 75,
       approvalRequired: true,
       category: "scaling",
       createdAt: "2026-06-02T00:00:00.000Z",
       currency: "USD",
-      destinationType: "scale_reinvestment",
+      destinationType: "ad_growth_budget",
       externalExecution: false,
       id: "intent-scaling",
       provider: "Stripe Treasury + Connect",
       recommendedAction: "review",
       riskLevel: "medium",
       status: "approval_required",
-      title: "Scaling capital payout review",
+      title: "Ad/Growth bucket payout review",
       updatedAt: "2026-06-02T00:00:00.000Z"
     },
     {
-      amount: 75,
+      amount: 150,
       approvalRequired: true,
       category: "personal",
       createdAt: "2026-06-02T00:00:00.000Z",
@@ -3400,7 +3529,7 @@ const financialReviewPlan: FinancialPayoutReviewPlan = {
       recommendedAction: "review",
       riskLevel: "high",
       status: "approval_required",
-      title: "Personal income payout review",
+      title: "Owner income payout review",
       updatedAt: "2026-06-02T00:00:00.000Z"
     },
     {
@@ -3409,14 +3538,14 @@ const financialReviewPlan: FinancialPayoutReviewPlan = {
       category: "buffer",
       createdAt: "2026-06-02T00:00:00.000Z",
       currency: "USD",
-      destinationType: "operating_buffer",
+      destinationType: "entral_tech_operations",
       externalExecution: false,
       id: "intent-buffer",
       provider: "Stripe Treasury + Connect",
       recommendedAction: "review",
       riskLevel: "low",
       status: "approval_required",
-      title: "Operating buffer payout review",
+      title: "Entral operations payout review",
       updatedAt: "2026-06-02T00:00:00.000Z"
     }
   ],
@@ -3457,8 +3586,8 @@ const financialReviewPlan: FinancialPayoutReviewPlan = {
 const approvedFinancialReviewPlan: FinancialPayoutReviewPlan = {
   ...financialReviewPlan,
   reconciliation: {
-    approvedAmount: 150,
-    pendingAmount: 150,
+    approvedAmount: 75,
+    pendingAmount: 225,
     rejectedAmount: 0,
     totalAmount: 300,
     variance: 0
@@ -3473,9 +3602,9 @@ const approvedFinancialReviewPlan: FinancialPayoutReviewPlan = {
   summary: "3 payout intents reviewed. 2 pending, 1 approved for manual handoff, and 0 rejected or voided. External financial execution remains locked.",
   totals: {
     approved: 1,
-    approvedAmount: 150,
+    approvedAmount: 75,
     pending: 2,
-    pendingAmount: 150,
+    pendingAmount: 225,
     rejected: 0,
     rejectedAmount: 0,
     reviewItems: 3,
@@ -3487,13 +3616,13 @@ const financialReviewApplyResponse: FinancialPayoutReviewApplyResponse = {
   auditLogId: "audit-finance-review-1",
   externalExecution: false,
   intent: {
-    amount: 150,
+    amount: 75,
     approvalRequired: true,
     auditLogId: "audit-finance-review-1",
     category: "scaling",
     createdAt: "2026-06-02T00:00:00.000Z",
     currency: "USD",
-    destinationType: "scale_reinvestment",
+    destinationType: "ad_growth_budget",
     externalExecution: false,
     id: "intent-scaling",
     metadata: {},
@@ -3535,17 +3664,17 @@ const financialScalingBudgetReviewPlan: FinancialScalingBudgetReviewPlan = {
     updatedAt: "2026-06-02T00:00:00.000Z"
   })),
   providerContacted: false,
-  summary: "2 scaling budget packets reviewed. 2 pending, 0 approved for manual handoff, and 0 rejected or voided. External execution remains locked.",
+  summary: "2 Ad/Growth budget packets reviewed. 2 pending, 0 approved for manual handoff, and 0 rejected or voided. External execution remains locked.",
   totals: {
     approved: 0,
     approvedAmount: 0,
     pending: 2,
-    pendingAmount: 120,
+    pendingAmount: 60,
     rejected: 0,
     rejectedAmount: 0,
-    retainedAmount: 30,
+    retainedAmount: 15,
     reviewItems: 2,
-    totalAmount: 120
+    totalAmount: 60
   }
 };
 
@@ -3562,17 +3691,17 @@ const approvedFinancialScalingBudgetReviewPlan: FinancialScalingBudgetReviewPlan
       updatedAt: "2026-06-02T00:30:00.000Z"
     }
     : packet),
-  summary: "2 scaling budget packets reviewed. 1 pending, 1 approved for manual handoff, and 0 rejected or voided. External execution remains locked.",
+  summary: "2 Ad/Growth budget packets reviewed. 1 pending, 1 approved for manual handoff, and 0 rejected or voided. External execution remains locked.",
   totals: {
     approved: 1,
-    approvedAmount: 60,
+    approvedAmount: 30,
     pending: 1,
-    pendingAmount: 60,
+    pendingAmount: 30,
     rejected: 0,
     rejectedAmount: 0,
-    retainedAmount: 30,
+    retainedAmount: 15,
     reviewItems: 2,
-    totalAmount: 120
+    totalAmount: 60
   }
 };
 
@@ -4700,6 +4829,79 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("1 first-business launch action previewed from the fleet wave.")).toBeInTheDocument();
   });
 
+  it("loads and applies the private Money Army batch pipeline through the dashboard", async () => {
+    const onRefreshStores = vi.fn();
+    const moneyArmyParams = new URLSearchParams();
+
+    moneyArmyParams.set("launchWaveSize", "10");
+    moneyArmyParams.set("maxPackets", "25");
+    moneyArmyParams.set("maxSeeds", "10");
+    moneyArmyParams.set("maxStores", "10");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      moneyArmyParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce({ plan: businessFleetGapPlan })
+      .mockResolvedValueOnce({ plan: moneyArmyPipelinePlan })
+      .mockResolvedValueOnce(moneyArmyPipelineApplyResponse(true))
+      .mockResolvedValueOnce(moneyArmyPipelineApplyResponse(false))
+      .mockResolvedValueOnce({ portfolio: portfolioFromPlan(revenuePlan) });
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={onRefreshStores} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /load launch gap/i }));
+    await screen.findByRole("region", { name: /business fleet launch gap planner/i });
+
+    await userEvent.click(screen.getByRole("button", { name: /load money army/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/money-army/batches?${moneyArmyParams.toString()}`);
+    const region = await screen.findByRole("region", { name: /private money army batch pipeline/i });
+    expect(within(region).getByText("Private Money Army Batch Pipeline")).toBeInTheDocument();
+    expect(within(region).getByText("Batch Stages")).toBeInTheDocument();
+    expect(within(region).getAllByText("Create internal batch").length).toBeGreaterThan(0);
+    expect(within(region).getByText("Money Army stays private")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview batch stage/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/batches/apply", {
+      json: {
+        confirm: "RUN INTERNAL MONEY ARMY BATCH PIPELINE",
+        dryRun: true,
+        launchWaveSize: 10,
+        maxPackets: 25,
+        maxSeeds: 10,
+        maxStores: 10,
+        note: "Previewed from Money Army batch pipeline dashboard controls.",
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey),
+        stage: "batch_creation"
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Money Army batch creation preview completed.")).toBeInTheDocument();
+    expect(within(region).getByText("Batch Receipt")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /run batch stage/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/money-army/batches/apply", {
+      json: {
+        confirm: "RUN INTERNAL MONEY ARMY BATCH PIPELINE",
+        dryRun: false,
+        launchWaveSize: 10,
+        maxPackets: 25,
+        maxSeeds: 10,
+        maxStores: 10,
+        note: "Ran from Money Army batch pipeline dashboard controls.",
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey),
+        stage: "batch_creation"
+      },
+      method: "POST"
+    });
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio");
+    expect(await screen.findByText("Money Army batch creation recorded internally.")).toBeInTheDocument();
+    expect(onRefreshStores).toHaveBeenCalledTimes(1);
+  });
+
   it("runs the Revenue Engine and applies internal rotation only after preview", async () => {
     const onRefreshStores = vi.fn();
 
@@ -5018,8 +5220,8 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("Asset Commands")).toBeInTheDocument();
     expect(screen.getByText(/revenue_engine \+ performance_velocity/i)).toBeInTheDocument();
     expect(screen.getAllByText("Weak Tee").length).toBeGreaterThan(0);
-    expect(screen.getByText("Personal income payout review")).toBeInTheDocument();
-    expect(screen.getByText("Core Tee scaling budget")).toBeInTheDocument();
+    expect(screen.getByText("Owner income payout review")).toBeInTheDocument();
+    expect(screen.getByText("Core Tee Ad/Growth budget")).toBeInTheDocument();
     expect(screen.getByText("Scale Budget")).toBeInTheDocument();
     expect(screen.getByText("Scale Outcomes")).toBeInTheDocument();
     expect(screen.getByText("0 next / 0 stop")).toBeInTheDocument();
@@ -5283,22 +5485,22 @@ describe("MerchOperationsPanel", () => {
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/financial-orchestrator/plan");
     expect(await screen.findByText("Internal Financial Orchestrator")).toBeInTheDocument();
-    expect(screen.getByText("Scaling capital: $150.00")).toBeInTheDocument();
-    expect(screen.getByText("Scaling Budgets")).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes("Core Tee") && content.includes("$60.00"))).toBeInTheDocument();
+    expect(screen.getByText("Ad/Growth bucket: $75.00")).toBeInTheDocument();
+    expect(screen.getByText("Ad/Growth Budgets")).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes("Core Tee") && content.includes("$30.00"))).toBeInTheDocument();
     expect(screen.getAllByText("Portfolio Signal").length).toBeGreaterThan(0);
     expect(screen.getAllByText("scale reinvestment review").length).toBeGreaterThan(0);
     expect(screen.getByText("Advisory Context")).toBeInTheDocument();
     expect(screen.getByText("Revenue Engine scoring context")).toBeInTheDocument();
     expect(screen.getByText(/Revenue Engine scoring is attached as advisory finance context/)).toBeInTheDocument();
     expect(screen.getByText("Portfolio Pressure")).toBeInTheDocument();
-    expect(screen.getByText("Scale pressure")).toBeInTheDocument();
+    expect(screen.getByText("Ad/Growth pressure")).toBeInTheDocument();
     expect(screen.getByText("Kill pressure")).toBeInTheDocument();
     expect(screen.getByText("2 scored assets are pressing for scaling review; top asset Core Tee ranks 88/100 with $28.57/day profit velocity.")).toBeInTheDocument();
     expect(screen.getByText("No scored assets currently create kill pressure for finance allocation.")).toBeInTheDocument();
     expect(screen.getByText("Core Tee 88/100 $28.57/day | Iron House Gym 76/100 $14.29/day")).toBeInTheDocument();
-    expect(screen.getByText("Personal income payout intent: $75.00")).toBeInTheDocument();
-    expect(screen.getByText("Split balance")).toBeInTheDocument();
+    expect(screen.getByText("Owner income payout intent: $150.00")).toBeInTheDocument();
+    expect(screen.getByText("25/25/50 split balance")).toBeInTheDocument();
     expect(screen.getByText("Financial execution remains blocked")).toBeInTheDocument();
     expect(screen.getByText("Calling Stripe Treasury, Stripe Connect, bank, card, or payment write APIs")).toBeInTheDocument();
 
@@ -5311,7 +5513,7 @@ describe("MerchOperationsPanel", () => {
       },
       method: "POST"
     });
-    expect(await screen.findByText("Financial preview ready: 1 ledger entry, 3 payout intents and 2 scaling budget packets identified.")).toBeInTheDocument();
+    expect(await screen.findByText("Financial preview ready: 1 ledger entry, 3 payout intents and 2 Ad/Growth budget packets identified.")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /apply finance records/i }));
 
@@ -5322,7 +5524,7 @@ describe("MerchOperationsPanel", () => {
       },
       method: "POST"
     });
-    expect(await screen.findByText("Financial Orchestrator applied: 1 ledger entry, 3 payout intents and 2 scaling budget packets recorded. Audit log audit-finance-1.")).toBeInTheDocument();
+    expect(await screen.findByText("Financial Orchestrator applied: 1 ledger entry, 3 payout intents and 2 Ad/Growth budget packets recorded. Audit log audit-finance-1.")).toBeInTheDocument();
   });
 
   it("loads and reviews Financial Orchestrator payout intents", async () => {
@@ -5336,8 +5538,8 @@ describe("MerchOperationsPanel", () => {
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/financial-orchestrator/payout-intents/review");
     expect(await screen.findByText("Internal Payout Review Center")).toBeInTheDocument();
-    expect(screen.getByText("Scaling capital payout review: $150.00")).toBeInTheDocument();
-    expect(screen.getByText("Scaling capital release packet")).toBeInTheDocument();
+    expect(screen.getByText("Ad/Growth bucket payout review: $75.00")).toBeInTheDocument();
+    expect(screen.getByText("Ad/Growth bucket release packet")).toBeInTheDocument();
     expect(screen.getByText("treasury.outbound_payments.write")).toBeInTheDocument();
     expect(screen.getByText("Payout execution remains blocked")).toBeInTheDocument();
 
@@ -5366,7 +5568,7 @@ describe("MerchOperationsPanel", () => {
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/financial-orchestrator/scaling-budgets/review");
     expect(await screen.findByText("Internal Scaling Budget Review")).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes("Core Tee") && content.includes("$60.00"))).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes("Core Tee") && content.includes("$30.00"))).toBeInTheDocument();
     expect(screen.getByText("Scaling execution remains blocked")).toBeInTheDocument();
     expect(screen.getByText("Increasing ad spend, procurement spend, or product spend without a separate approved scaling budget")).toBeInTheDocument();
 

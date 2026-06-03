@@ -9,7 +9,7 @@ export type FinancialPayoutIntentSnapshot = {
   category: FinancialSplitCategory;
   createdAt: string;
   currency: "USD";
-  destinationType: "scale_reinvestment" | "owner_distribution" | "operating_buffer" | string;
+  destinationType: "ad_growth_budget" | "entral_tech_operations" | "owner_distribution" | string;
   externalExecution: false;
   id: string;
   metadata: Record<string, unknown>;
@@ -104,9 +104,9 @@ function money(value: number) {
 }
 
 function categoryTitle(category: FinancialSplitCategory) {
-  if (category === "scaling") return "Scaling capital";
-  if (category === "personal") return "Personal income";
-  return "Operating buffer";
+  if (category === "scaling") return "Ad/Growth bucket";
+  if (category === "personal") return "Owner income";
+  return "Entral operations";
 }
 
 function titleForIntent(intent: FinancialPayoutIntentSnapshot) {
@@ -115,14 +115,14 @@ function titleForIntent(intent: FinancialPayoutIntentSnapshot) {
 
 function releasePurpose(intent: FinancialPayoutIntentSnapshot) {
   if (intent.category === "scaling") {
-    return "Release scaling capital for approved product generation, listing tests, creative production, and validated growth loops only.";
+    return "Release Ad/Growth bucket capital for approved creative testing, distribution experiments, and validated growth loops only.";
   }
 
   if (intent.category === "personal") {
     return "Prepare owner-income distribution evidence for manual review without initiating a transfer.";
   }
 
-  return "Hold operating buffer for refunds, software, reserves, and downside protection.";
+  return "Hold Entral operations funding for technology, infrastructure, tooling, refunds, software, reserves, and downside protection.";
 }
 
 function controlsForIntent(intent: FinancialPayoutIntentSnapshot) {
@@ -136,7 +136,7 @@ function controlsForIntent(intent: FinancialPayoutIntentSnapshot) {
   if (intent.category === "scaling") {
     return [
       ...common,
-      "Attach an approved scaling budget before spending this amount.",
+      "Attach an approved Ad/Growth budget before spending this amount.",
       "Cap release amount at the recorded payout intent amount."
     ];
   }
@@ -150,7 +150,7 @@ function controlsForIntent(intent: FinancialPayoutIntentSnapshot) {
 
   return [
     ...common,
-    "Confirm reserve floor and refund exposure before reducing buffer."
+    "Confirm reserve floor, infrastructure needs, and refund exposure before reducing Entral operations funding."
   ];
 }
 

@@ -110,7 +110,8 @@ export type RevenuePipelineAction = {
   title: string;
 };
 
-export type RevenueAssetRotationDecision = "scale" | "watch" | "pause" | "kill";
+export const revenueAssetRotationDecisionValues = ["scale", "watch", "pause", "kill"] as const;
+export type RevenueAssetRotationDecision = typeof revenueAssetRotationDecisionValues[number];
 export type RevenueAssetScoreBand = "excellent" | "healthy" | "watch" | "weak" | "critical";
 
 export type RevenueRotationChange = {
@@ -410,6 +411,7 @@ const rotationPriority: Record<RevenueAssetRotationDecision, number> = {
   scale: 3,
   watch: 4
 };
+const revenueAssetRotationDecisionSet = new Set<RevenueAssetRotationDecision>(revenueAssetRotationDecisionValues);
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -508,6 +510,10 @@ function productRotationDecision(input: {
   return "watch";
 }
 
+function lockedRotationDecision(decision: RevenueAssetRotationDecision): RevenueAssetRotationDecision {
+  return revenueAssetRotationDecisionSet.has(decision) ? decision : "watch";
+}
+
 function productAssetScore(input: {
   decision: RevenueProductDecision;
   product: RevenueEngineProductSnapshot;
@@ -519,10 +525,10 @@ function productAssetScore(input: {
   const penalty = riskPenalty(input.decision.riskLevel);
   const velocity = 0;
   const finalRank = clamp(Math.round(economicsScore + readinessScore + velocity - penalty), 0, 100);
-  const rotationDecision = productRotationDecision({
+  const rotationDecision = lockedRotationDecision(productRotationDecision({
     decision: input.decision,
     product: input.product
-  });
+  }));
   const storeName = input.store?.businessName ?? "Unassigned Store";
   const nextInternalState = input.decision.recommendedInternalStatus ?? null;
 
@@ -626,7 +632,7 @@ function storeAssetScore(input: {
   const velocity = input.store.revenue > 0 ? money(input.store.revenue / 30) : 0;
   const velocityScore = clamp(velocity / 20, 0, 15);
   const finalRank = clamp(Math.round(economicsScore + readinessScore + velocityScore - penalty), 0, 100);
-  const rotationDecision = storeRotationDecision(input.decision);
+  const rotationDecision = lockedRotationDecision(storeRotationDecision(input.decision));
   const approvedProducts = input.products.filter(approvedProduct).length;
   const nextInternalState = input.decision.recommendedLaunchStatus ?? null;
 
@@ -1079,6 +1085,7 @@ export function buildRevenueEnginePlan(input: {
     assetScores,
     auditEvents: [
       "Revenue Engine portfolio evaluated internally.",
+      "Asset rotation is locked to scale, watch, pause, or kill; all other Revenue Engine actions are converted into these internal review states.",
       "No external commerce, POD, ad, social, banking, or browser automation system was contacted.",
       "Rotation changes modify ENTRAL internal records only and require the apply endpoint confirmation."
     ],

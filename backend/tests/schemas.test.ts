@@ -7,6 +7,7 @@ import {
   applyRevenueBusinessFleetLiveLaunchPackageSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
+  applyRevenueMoneyArmyBatchPipelineSchema,
   createClientMerchStoreSchema,
   createAutomationJobSchema,
   createAgentSchema,
@@ -68,6 +69,7 @@ import {
   revenueAssetControlLedgerQuerySchema,
   revenueAssetReviewQueueQuerySchema,
   revenueBusinessFleetLaunchGateQuerySchema,
+  revenueMoneyArmyBatchPipelineQuerySchema,
   revenueBusinessFleetSchedulerQuerySchema,
   revenueEngineQuerySchema,
   revenuePerformanceQuerySchema,
@@ -599,6 +601,18 @@ describe("validation schemas", () => {
       maxStores: "10",
       sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
     });
+    const moneyArmyQuery = revenueMoneyArmyBatchPipelineQuerySchema.parse({
+      launchWaveSize: "10",
+      maxPackets: "25",
+      maxSeeds: "10",
+      maxStores: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
+    });
+    const moneyArmyApply = applyRevenueMoneyArmyBatchPipelineSchema.parse({
+      confirm: "RUN INTERNAL MONEY ARMY BATCH PIPELINE",
+      dryRun: true,
+      stage: "batch_creation"
+    });
 
     expect(query).toMatchObject({
       launchWaveSize: 10,
@@ -624,6 +638,10 @@ describe("validation schemas", () => {
     expect(livePackage.maxStores).toBe(10);
     expect(launchGate.maxStores).toBe(10);
     expect(launchGate.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(moneyArmyQuery.maxPackets).toBe(25);
+    expect(moneyArmyQuery.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(moneyArmyApply.dryRun).toBe(true);
+    expect(moneyArmyApply.stage).toBe("batch_creation");
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ shardCount: "300" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
@@ -644,6 +662,11 @@ describe("validation schemas", () => {
       maxStores: 26
     })).toThrow();
     expect(() => revenueBusinessFleetLaunchGateQuerySchema.parse({ maxStores: 26 })).toThrow();
+    expect(() => applyRevenueMoneyArmyBatchPipelineSchema.parse({ confirm: "RUN" })).toThrow();
+    expect(() => applyRevenueMoneyArmyBatchPipelineSchema.parse({
+      confirm: "RUN INTERNAL MONEY ARMY BATCH PIPELINE",
+      maxSeeds: 26
+    })).toThrow();
   });
 
   it("validates revenue asset control ledger filters", () => {
@@ -1231,12 +1254,12 @@ describe("validation schemas", () => {
 
   it("validates financial orchestrator split policy and confirmation", () => {
     const query = financialOrchestratorQuerySchema.parse({
-      bufferPercent: "20",
+      bufferPercent: "25",
       includePayoutIntents: "false",
       minPayoutIntentAmount: "50",
-      personalPercent: "30",
+      personalPercent: "50",
       reserveFloorAmount: "100",
-      scalingPercent: "50",
+      scalingPercent: "25",
       windowDays: "14"
     });
     const apply = applyFinancialOrchestratorSchema.parse({
@@ -1244,17 +1267,22 @@ describe("validation schemas", () => {
       dryRun: true
     });
 
-    expect(query.bufferPercent).toBe(20);
+    expect(query.bufferPercent).toBe(25);
     expect(query.includePayoutIntents).toBe(false);
     expect(query.minPayoutIntentAmount).toBe(50);
-    expect(query.personalPercent).toBe(30);
+    expect(query.personalPercent).toBe(50);
     expect(query.reserveFloorAmount).toBe(100);
-    expect(query.scalingPercent).toBe(50);
+    expect(query.scalingPercent).toBe(25);
     expect(query.windowDays).toBe(14);
     expect(apply.dryRun).toBe(true);
-    expect(apply.scalingPercent).toBe(50);
-    expect(apply.personalPercent).toBe(25);
+    expect(apply.scalingPercent).toBe(25);
+    expect(apply.personalPercent).toBe(50);
     expect(apply.bufferPercent).toBe(25);
+    expect(() => financialOrchestratorQuerySchema.parse({
+      bufferPercent: "25",
+      personalPercent: "25",
+      scalingPercent: "50"
+    })).toThrow();
     expect(() => applyFinancialOrchestratorSchema.parse({
       bufferPercent: 10,
       confirm: "APPLY INTERNAL FINANCIAL ORCHESTRATOR",

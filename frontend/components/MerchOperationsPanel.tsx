@@ -89,6 +89,9 @@ import {
   type RevenueBusinessFleetLaunchWavePlan,
   type RevenueBusinessFleetPlan,
   type RevenueBusinessFleetSchedulerResponse,
+  type RevenueMoneyArmyBatchPipelineApplyResponse,
+  type RevenueMoneyArmyBatchPipelinePlan,
+  type RevenueMoneyArmyBatchPipelineResponse,
   type RevenueEnginePortfolioResponse,
   type RevenueFirstCashReadinessPlan,
   type RevenueFirstCashReadinessResponse,
@@ -292,8 +295,13 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [businessFleetProviderApprovalReceipt, setBusinessFleetProviderApprovalReceipt] = useState<RevenueBusinessFleetProviderApprovalReviewApplyResponse["applied"] | null>(null);
   const [businessFleetWaveSelection, setBusinessFleetWaveSelection] = useState<RevenueBusinessFleetLaunchWavePlan | null>(null);
   const [businessFleetWaveReceipt, setBusinessFleetWaveReceipt] = useState<RevenueBusinessFleetLaunchWaveApplyResponse["dispatched"] | null>(null);
+  const [moneyArmyPipeline, setMoneyArmyPipeline] = useState<RevenueMoneyArmyBatchPipelinePlan | null>(null);
+  const [moneyArmyPipelineReceipt, setMoneyArmyPipelineReceipt] = useState<RevenueMoneyArmyBatchPipelineApplyResponse["applied"] | null>(null);
   const [isLoadingBusinessFleet, setIsLoadingBusinessFleet] = useState(false);
   const [isLoadingBusinessFleetGap, setIsLoadingBusinessFleetGap] = useState(false);
+  const [isLoadingMoneyArmyPipeline, setIsLoadingMoneyArmyPipeline] = useState(false);
+  const [isPreviewingMoneyArmyPipeline, setIsPreviewingMoneyArmyPipeline] = useState(false);
+  const [isRunningMoneyArmyPipeline, setIsRunningMoneyArmyPipeline] = useState(false);
   const [isPreviewingBusinessFleetGapSeeds, setIsPreviewingBusinessFleetGapSeeds] = useState(false);
   const [isCreatingBusinessFleetGapSeeds, setIsCreatingBusinessFleetGapSeeds] = useState(false);
   const [isPreviewingBusinessFleetGapAcceleration, setIsPreviewingBusinessFleetGapAcceleration] = useState(false);
@@ -854,6 +862,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setBusinessFleetProviderApprovalReceipt(null);
       setBusinessFleetWaveSelection(null);
       setBusinessFleetWaveReceipt(null);
+      setMoneyArmyPipeline(null);
+      setMoneyArmyPipelineReceipt(null);
       setBusinessFleetMessage(null);
       onEvent?.(`Business Fleet Scheduler scored ${response.plan.totals.businesses} businesses: ${response.plan.totals.readyParallel} ready parallel, ${response.plan.totals.launchNow} launch-now, ${response.plan.totals.qualityRepair} repair.`);
     } catch (caught) {
@@ -878,11 +888,97 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setBusinessFleetLaunchGate(null);
       setBusinessFleetProviderApprovalReview(null);
       setBusinessFleetProviderApprovalReceipt(null);
+      setMoneyArmyPipeline(null);
+      setMoneyArmyPipelineReceipt(null);
       onEvent?.(`Business Fleet launch gap planner found ${response.plan.totals.launchWaveGap} missing first-wave lane${response.plan.totals.launchWaveGap === 1 ? "" : "s"}: ${response.plan.totals.repairActions} repair action${response.plan.totals.repairActions === 1 ? "" : "s"}, ${response.plan.totals.createOpportunityShells} new seed${response.plan.totals.createOpportunityShells === 1 ? "" : "s"}.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Business Fleet launch gap planner failed.");
     } finally {
       setIsLoadingBusinessFleetGap(false);
+    }
+  }
+
+  function moneyArmyBatchSourceKeys() {
+    const appliedSourceKeys = businessFleetGapSeedResults.map((result) => result.sourceKey);
+
+    if (appliedSourceKeys.length > 0) {
+      return appliedSourceKeys;
+    }
+
+    return businessFleetGapPlan?.opportunitySeeds.slice(0, 10).map((seed) => seed.sourceKey) ?? [];
+  }
+
+  function moneyArmyPipelineEndpoint() {
+    const params = new URLSearchParams();
+
+    params.set("launchWaveSize", "10");
+    params.set("maxPackets", "25");
+    params.set("maxSeeds", "10");
+    params.set("maxStores", "10");
+    for (const sourceKey of moneyArmyBatchSourceKeys()) {
+      params.append("sourceKeys", sourceKey);
+    }
+
+    return `/merch/revenue-engine/money-army/batches?${params.toString()}`;
+  }
+
+  async function loadMoneyArmyPipeline() {
+    setIsLoadingMoneyArmyPipeline(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueMoneyArmyBatchPipelineResponse>(moneyArmyPipelineEndpoint());
+
+      setMoneyArmyPipeline(response.plan);
+      setMoneyArmyPipelineReceipt(null);
+      setBusinessFleetMessage(`Money Army pipeline loaded: ${response.plan.totals.readyStages} ready stage${response.plan.totals.readyStages === 1 ? "" : "s"}, next ${response.plan.nextStage?.title ?? "watch"}.`);
+      onEvent?.(`Money Army batch pipeline loaded with ${response.plan.totals.readyStages} ready stage${response.plan.totals.readyStages === 1 ? "" : "s"}.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Money Army batch pipeline failed.");
+    } finally {
+      setIsLoadingMoneyArmyPipeline(false);
+    }
+  }
+
+  async function runMoneyArmyPipeline(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingMoneyArmyPipeline : setIsRunningMoneyArmyPipeline;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueMoneyArmyBatchPipelineApplyResponse>("/merch/revenue-engine/money-army/batches/apply", {
+        json: {
+          confirm: "RUN INTERNAL MONEY ARMY BATCH PIPELINE",
+          dryRun,
+          launchWaveSize: 10,
+          maxPackets: 25,
+          maxSeeds: 10,
+          maxStores: 10,
+          note: dryRun
+            ? "Previewed from Money Army batch pipeline dashboard controls."
+            : "Ran from Money Army batch pipeline dashboard controls.",
+          sourceKeys: moneyArmyBatchSourceKeys(),
+          stage: moneyArmyPipeline?.nextStage?.name
+        },
+        method: "POST"
+      });
+
+      setMoneyArmyPipeline(response.after);
+      setMoneyArmyPipelineReceipt(response.applied);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(response.applied.summary);
+
+      if (!dryRun) {
+        await onRefreshStores();
+        await loadRevenueEnginePortfolio();
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Money Army batch pipeline apply failed.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -1689,7 +1785,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       const response = await apiFetch<FinancialOrchestratorResponse>("/merch/financial-orchestrator/plan");
       setFinancialPlan(response.plan);
       setFinancialMessage(null);
-      onEvent?.(`Financial Orchestrator prepared ${response.plan.totals.payoutIntents} payout intent${response.plan.totals.payoutIntents === 1 ? "" : "s"} and ${response.plan.totals.scalingBudgetPackets} scaling budget packet${response.plan.totals.scalingBudgetPackets === 1 ? "" : "s"} from ${formatMerchCurrency(response.plan.totals.distributableProfit)} distributable profit.`);
+      onEvent?.(`Financial Orchestrator prepared ${response.plan.totals.payoutIntents} payout intent${response.plan.totals.payoutIntents === 1 ? "" : "s"} and ${response.plan.totals.scalingBudgetPackets} Ad/Growth budget packet${response.plan.totals.scalingBudgetPackets === 1 ? "" : "s"} from ${formatMerchCurrency(response.plan.totals.distributableProfit)} distributable profit.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Financial Orchestrator check failed.");
     } finally {
@@ -1712,13 +1808,13 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
         method: "POST"
       });
       setFinancialPlan(response.plan);
-      const budgetText = ` and ${response.applied.scalingBudgetPackets} scaling budget packet${response.applied.scalingBudgetPackets === 1 ? "" : "s"}`;
+      const budgetText = ` and ${response.applied.scalingBudgetPackets} Ad/Growth budget packet${response.applied.scalingBudgetPackets === 1 ? "" : "s"}`;
       setFinancialMessage(dryRun
         ? `Financial preview ready: ${response.applied.ledgerEntriesCreated} ledger entr${response.applied.ledgerEntriesCreated === 1 ? "y" : "ies"}, ${response.applied.payoutIntentsCreated} payout intent${response.applied.payoutIntentsCreated === 1 ? "" : "s"}${budgetText} identified.`
         : `Financial Orchestrator applied: ${response.applied.ledgerEntriesCreated} ledger entr${response.applied.ledgerEntriesCreated === 1 ? "y" : "ies"}, ${response.applied.payoutIntentsCreated} payout intent${response.applied.payoutIntentsCreated === 1 ? "" : "s"}${budgetText} recorded. Audit log ${response.applied.auditLogId ?? "not created"}.`);
       onEvent?.(dryRun
-        ? `Financial Orchestrator previewed ${response.applied.payoutIntentsCreated} approval-locked payout intent${response.applied.payoutIntentsCreated === 1 ? "" : "s"} and ${response.applied.scalingBudgetPackets} scaling budget packet${response.applied.scalingBudgetPackets === 1 ? "" : "s"}.`
-        : `Financial Orchestrator recorded ${response.applied.payoutIntentsCreated} approval-locked payout intent${response.applied.payoutIntentsCreated === 1 ? "" : "s"} and ${response.applied.scalingBudgetPackets} scaling budget packet${response.applied.scalingBudgetPackets === 1 ? "" : "s"}. No money was moved.`);
+        ? `Financial Orchestrator previewed ${response.applied.payoutIntentsCreated} approval-locked payout intent${response.applied.payoutIntentsCreated === 1 ? "" : "s"} and ${response.applied.scalingBudgetPackets} Ad/Growth budget packet${response.applied.scalingBudgetPackets === 1 ? "" : "s"}.`
+        : `Financial Orchestrator recorded ${response.applied.payoutIntentsCreated} approval-locked payout intent${response.applied.payoutIntentsCreated === 1 ? "" : "s"} and ${response.applied.scalingBudgetPackets} Ad/Growth budget packet${response.applied.scalingBudgetPackets === 1 ? "" : "s"}. No money was moved.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Financial Orchestrator apply failed.");
     } finally {
@@ -2522,6 +2618,18 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
           <button type="button" onClick={() => void loadBusinessFleetLaunchGap()} disabled={isLoadingBusinessFleetGap}>
             {isLoadingBusinessFleetGap ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
             Load launch gap
+          </button>
+          <button type="button" className="primary" onClick={() => void loadMoneyArmyPipeline()} disabled={isLoadingMoneyArmyPipeline}>
+            {isLoadingMoneyArmyPipeline ? <Loader2 aria-hidden="true" size={15} /> : <Rocket aria-hidden="true" size={15} />}
+            Load Money Army
+          </button>
+          <button type="button" onClick={() => void runMoneyArmyPipeline(true)} disabled={isPreviewingMoneyArmyPipeline || !moneyArmyPipeline || !moneyArmyPipeline.nextStage}>
+            {isPreviewingMoneyArmyPipeline ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview batch stage
+          </button>
+          <button type="button" onClick={() => void runMoneyArmyPipeline(false)} disabled={isRunningMoneyArmyPipeline || !moneyArmyPipeline || !moneyArmyPipeline.nextStage}>
+            {isRunningMoneyArmyPipeline ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Run batch stage
           </button>
           <button type="button" onClick={() => void runBusinessFleetGapSeeds(true)} disabled={isPreviewingBusinessFleetGapSeeds || !businessFleetGapPlan || businessFleetGapPlan.opportunitySeeds.length === 0}>
             {isPreviewingBusinessFleetGapSeeds ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
@@ -3405,20 +3513,20 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 <dd>{formatMerchCurrency(financialPlan.totals.distributableProfit)}</dd>
               </div>
               <div>
-                <dt>Scaling</dt>
-                <dd>{formatMerchCurrency(financialPlan.totals.scalingAmount)}</dd>
+                <dt>Ad/Growth</dt>
+                <dd>{formatMerchCurrency(financialPlan.totals.adGrowthAmount)}</dd>
               </div>
               <div>
-                <dt>Scale Budgets</dt>
+                <dt>Ad Budgets</dt>
                 <dd>{financialPlan.totals.scalingBudgetPackets}</dd>
               </div>
               <div>
-                <dt>Personal</dt>
-                <dd>{formatMerchCurrency(financialPlan.totals.personalAmount)}</dd>
+                <dt>Owner</dt>
+                <dd>{formatMerchCurrency(financialPlan.totals.ownerAmount)}</dd>
               </div>
               <div>
-                <dt>Buffer</dt>
-                <dd>{formatMerchCurrency(financialPlan.totals.bufferAmount)}</dd>
+                <dt>Entral Ops</dt>
+                <dd>{formatMerchCurrency(financialPlan.totals.entralOperationsAmount)}</dd>
               </div>
               <div>
                 <dt>Payout Intents</dt>
@@ -3469,7 +3577,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             <section className="revenue-engine-list" aria-label="Financial portfolio pressure">
               <h4>Portfolio Pressure</h4>
               {[
-                { label: "Scale pressure", pressure: financialPlan.advisoryContext.scalePressure },
+                { label: "Ad/Growth pressure", pressure: financialPlan.advisoryContext.scalePressure },
                 { label: "Kill pressure", pressure: financialPlan.advisoryContext.killPressure }
               ].map(({ label, pressure }) => (
                 <article key={label}>
@@ -3500,7 +3608,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
 
             {financialPlan.scalingBudgetQueue.length > 0 ? (
               <section className="revenue-engine-list" aria-label="Scaling budget queue">
-                <h4>Scaling Budgets</h4>
+                <h4>Ad/Growth Budgets</h4>
                 {financialPlan.scalingBudgetQueue.map((packet) => (
                   <article key={packet.id}>
                     <span>{packet.assetType} / {packet.scoreBand} / locked</span>
@@ -3513,7 +3621,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 ))}
               </section>
             ) : (
-              <p className="revenue-engine-clear">No validated scaling budget packets are queued.</p>
+              <p className="revenue-engine-clear">No validated Ad/Growth budget packets are queued.</p>
             )}
 
             {financialPlan.payoutIntents.length > 0 ? (
@@ -4545,6 +4653,79 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             <div className="growth-blocked-actions">
               <strong>Dashboard remains internal</strong>
               {revenueDashboard.blockedExternalActions.slice(0, 3).map((action) => <span key={action}>{action}</span>)}
+            </div>
+          </section>
+        ) : null}
+
+        {moneyArmyPipeline ? (
+          <section className="revenue-engine-result" aria-label="Private Money Army batch pipeline">
+            <div className="revenue-engine-summary">
+              <strong>{moneyArmyPipeline.mode}</strong>
+              <p>{moneyArmyPipeline.summary}</p>
+            </div>
+
+            <dl className="revenue-engine-metrics">
+              <div>
+                <dt>Ready Stages</dt>
+                <dd>{moneyArmyPipeline.totals.readyStages}/{moneyArmyPipeline.totals.stages}</dd>
+              </div>
+              <div>
+                <dt>Next Stage</dt>
+                <dd>{moneyArmyPipeline.nextStage?.title ?? "Watch"}</dd>
+              </div>
+              <div>
+                <dt>Seeds</dt>
+                <dd>{moneyArmyPipeline.totals.seedCandidates}</dd>
+              </div>
+              <div>
+                <dt>Selected</dt>
+                <dd>{moneyArmyPipeline.totals.selectedSourceKeys}</dd>
+              </div>
+              <div>
+                <dt>Approvals</dt>
+                <dd>{moneyArmyPipeline.totals.approvablePackets}</dd>
+              </div>
+              <div>
+                <dt>Deployment</dt>
+                <dd>{moneyArmyPipeline.totals.readyDeploymentBusinesses}</dd>
+              </div>
+              <div>
+                <dt>Gap</dt>
+                <dd>{moneyArmyPipeline.totals.launchWaveGap}</dd>
+              </div>
+              <div>
+                <dt>Blocked</dt>
+                <dd>{moneyArmyPipeline.totals.blockedStages}</dd>
+              </div>
+            </dl>
+
+            {moneyArmyPipelineReceipt ? (
+              <section className="revenue-engine-list" aria-label="Money Army batch pipeline receipt">
+                <h4>Batch Receipt</h4>
+                <article>
+                  <span>{moneyArmyPipelineReceipt.dryRun ? "preview" : "run"} / {moneyArmyPipelineReceipt.stage?.replace(/_/g, " ") ?? "watch"}</span>
+                  <strong>{moneyArmyPipelineReceipt.providerContacted ? "Provider contacted" : "Provider locked"}</strong>
+                  <p>{moneyArmyPipelineReceipt.summary}</p>
+                  <small>external execution {moneyArmyPipelineReceipt.externalExecution ? "enabled" : "locked"} / audit {moneyArmyPipelineReceipt.auditLogId ?? "preview only"}</small>
+                </article>
+              </section>
+            ) : null}
+
+            <section className="revenue-engine-list" aria-label="Money Army pipeline stages">
+              <h4>Batch Stages</h4>
+              {moneyArmyPipeline.stages.map((stage) => (
+                <article key={stage.name}>
+                  <span>{stage.status} / priority {stage.priority}</span>
+                  <strong>{stage.title}</strong>
+                  <p>{stage.reason}</p>
+                  <small>{stage.endpoint} / {stage.expectedInternalEffect}</small>
+                </article>
+              ))}
+            </section>
+
+            <div className="growth-blocked-actions">
+              <strong>Money Army stays private</strong>
+              {moneyArmyPipeline.blockedExternalActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
             </div>
           </section>
         ) : null}

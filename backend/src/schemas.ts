@@ -145,6 +145,7 @@ export const revenueBusinessFleetSeedGapConfirmation = "CREATE INTERNAL BUSINESS
 export const revenueBusinessFleetGapAccelerationConfirmation = "RUN INTERNAL BUSINESS FLEET GAP ACCELERATION";
 export const revenueBusinessFleetLiveLaunchPackageConfirmation = "RECORD INTERNAL BUSINESS FLEET LIVE LAUNCH PACKAGE";
 export const revenueBusinessFleetProviderApprovalReviewConfirmation = "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS";
+export const revenueMoneyArmyBatchPipelineConfirmation = "RUN INTERNAL MONEY ARMY BATCH PIPELINE";
 export const revenueLaunchChecklistActionBridgeConfirmation = "DISPATCH INTERNAL REVENUE LAUNCH CHECKLIST ACTIONS";
 export const revenueLaunchSprintConfirmation = "RUN INTERNAL REVENUE LAUNCH SPRINT";
 export const revenueFirstCashSprintConfirmation = "RUN INTERNAL FIRST CASH SPRINT";
@@ -442,6 +443,29 @@ export const applyRevenueBusinessFleetProviderApprovalReviewSchema = z.object({
   sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
 });
 
+export const revenueMoneyArmyBatchPipelineQuerySchema = z.object({
+  ...revenueBusinessFleetSchedulerFields,
+  maxPackets: z.coerce.number().int().min(1).max(50).default(25),
+  maxSeeds: z.coerce.number().int().min(1).max(25).default(10),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
+});
+
+export const applyRevenueMoneyArmyBatchPipelineSchema = z.object({
+  ...revenueBusinessFleetSchedulerFields,
+  action: z.enum(["approve", "reject"]).default("approve"),
+  confirm: z.literal(revenueMoneyArmyBatchPipelineConfirmation),
+  dryRun: z.boolean().default(true),
+  maxPackets: z.coerce.number().int().min(1).max(50).default(25),
+  maxSeeds: z.coerce.number().int().min(1).max(25).default(10),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  note: optionalTrimmedString(500),
+  packetIds: z.array(z.string().trim().min(1).max(160)).max(50).default([]),
+  podProvider: merchPodProviderSchema.default("Printify"),
+  sourceKeys: z.array(z.string().trim().min(1).max(160)).max(100).default([]),
+  stage: z.enum(["batch_creation", "batch_acceleration", "launch_package", "approval", "deployment"]).optional()
+});
+
 export const revenueAssetControlLedgerQuerySchema = z.object({
   action: revenueAssetRotationDecisionSchema.optional(),
   assetId: z.string().trim().min(1).max(160).optional(),
@@ -618,24 +642,26 @@ const financialOrchestratorFields = {
   currency: z.literal("USD").default("USD"),
   includePayoutIntents: z.preprocess((value) => value !== false && value !== "false", z.boolean()).default(true),
   minPayoutIntentAmount: moneyAmountSchema.default(25),
-  personalPercent: percentAmountSchema.default(25),
+  personalPercent: percentAmountSchema.default(50),
   reserveFloorAmount: moneyAmountSchema.default(0),
-  scalingPercent: percentAmountSchema.default(50),
+  scalingPercent: percentAmountSchema.default(25),
   source: revenuePerformanceSourceSchema.optional(),
   storeId: z.string().cuid().optional(),
   windowDays: z.coerce.number().int().min(1).max(365).default(30)
 };
 
-function splitPolicyTotalsToOneHundred(input: {
+function splitPolicyMatchesExactMoneyArmyPolicy(input: {
   bufferPercent: number;
   personalPercent: number;
   scalingPercent: number;
 }) {
-  return Math.round((input.bufferPercent + input.personalPercent + input.scalingPercent) * 100) === 10_000;
+  return Math.round(input.scalingPercent * 100) === 2_500
+    && Math.round(input.bufferPercent * 100) === 2_500
+    && Math.round(input.personalPercent * 100) === 5_000;
 }
 
-export const financialOrchestratorQuerySchema = z.object(financialOrchestratorFields).refine(splitPolicyTotalsToOneHundred, {
-  message: "Financial split percentages must add to exactly 100.",
+export const financialOrchestratorQuerySchema = z.object(financialOrchestratorFields).refine(splitPolicyMatchesExactMoneyArmyPolicy, {
+  message: "Financial split is locked to 25% Ad/Growth, 25% Entral operations, and 50% owner income.",
   path: ["scalingPercent"]
 });
 
@@ -643,8 +669,8 @@ export const applyFinancialOrchestratorSchema = z.object({
   ...financialOrchestratorFields,
   confirm: z.literal(financialOrchestratorConfirmation),
   dryRun: z.boolean().default(false)
-}).refine(splitPolicyTotalsToOneHundred, {
-  message: "Financial split percentages must add to exactly 100.",
+}).refine(splitPolicyMatchesExactMoneyArmyPolicy, {
+  message: "Financial split is locked to 25% Ad/Growth, 25% Entral operations, and 50% owner income.",
   path: ["scalingPercent"]
 });
 
@@ -1619,6 +1645,8 @@ export type ApplyRevenueBusinessFleetLiveLaunchPackageInput = z.infer<typeof app
 export type RevenueBusinessFleetLaunchGateQueryInput = z.infer<typeof revenueBusinessFleetLaunchGateQuerySchema>;
 export type RevenueBusinessFleetProviderApprovalReviewQueryInput = z.infer<typeof revenueBusinessFleetProviderApprovalReviewQuerySchema>;
 export type ApplyRevenueBusinessFleetProviderApprovalReviewInput = z.infer<typeof applyRevenueBusinessFleetProviderApprovalReviewSchema>;
+export type RevenueMoneyArmyBatchPipelineQueryInput = z.infer<typeof revenueMoneyArmyBatchPipelineQuerySchema>;
+export type ApplyRevenueMoneyArmyBatchPipelineInput = z.infer<typeof applyRevenueMoneyArmyBatchPipelineSchema>;
 export type RevenueAssetControlLedgerQueryInput = z.infer<typeof revenueAssetControlLedgerQuerySchema>;
 export type RevenueAssetControlRecoveryQueryInput = z.infer<typeof revenueAssetControlRecoveryQuerySchema>;
 export type RevenueAssetReviewQueueQueryInput = z.infer<typeof revenueAssetReviewQueueQuerySchema>;

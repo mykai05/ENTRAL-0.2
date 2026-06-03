@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildRevenueBusinessFleetLaunchGapPlan,
   buildRevenueBusinessFleetSchedulerPlan,
+  buildRevenueMoneyArmyBatchPipelinePlan,
   selectRevenueBusinessFleetLaunchWave,
   type RevenueBusinessFleetPlan
 } from "../src/services/revenueBusinessFleetScheduler.js";
@@ -291,5 +292,60 @@ describe("Revenue Business Fleet Scheduler", () => {
     expect(gapPlan.actions.every((action) => action.externalExecution === false)).toBe(true);
     expect(gapPlan.opportunitySeeds).toHaveLength(8);
     expect(gapPlan.summary).toBe("1/10 businesses are ready for the first wave. Gap 9: 1 repair action and 8 new opportunity seeds queued internally.");
+  });
+
+  it("assembles a private Money Army batch pipeline with approval-gated internal stages", () => {
+    const readyAsset = asset({
+      assetId: "store-ready",
+      assetName: "Ready Store"
+    });
+    const plan = buildRevenueBusinessFleetSchedulerPlan({
+      assetPortfolio: portfolio([readyAsset]),
+      firstBusinessLaunchPlan: firstBusinessPlan([launchCandidate(readyAsset.storeId, 1)]),
+      options: {
+        launchWaveSize: 10,
+        maxParallelLaunches: 10,
+        shardCount: 4,
+        targetBusinesses: 1_000
+      }
+    });
+    const gapPlan = buildRevenueBusinessFleetLaunchGapPlan({
+      generatedAt: "2026-06-02T12:00:00.000Z",
+      plan
+    });
+    const pipeline = buildRevenueMoneyArmyBatchPipelinePlan({
+      approvableApprovalPackets: 2,
+      approvedApprovalPackets: 0,
+      gapPlan,
+      generatedAt: "2026-06-02T12:05:00.000Z",
+      pendingApprovalPackets: 2,
+      plan,
+      selectedSourceKeys: gapPlan.opportunitySeeds.slice(0, 2).map((seed) => seed.sourceKey)
+    });
+
+    expect(pipeline).toMatchObject({
+      externalExecution: false,
+      mode: "Private Money Army Batch Pipeline",
+      providerContacted: false,
+      totals: {
+        approvablePackets: 2,
+        currentBusinesses: 1,
+        seedCandidates: 9,
+        selectedSourceKeys: 2,
+        stages: 5,
+        targetBusinesses: 1_000
+      }
+    });
+    expect(pipeline.stages.map((stage) => stage.name)).toEqual([
+      "batch_creation",
+      "batch_acceleration",
+      "launch_package",
+      "approval",
+      "deployment"
+    ]);
+    expect(pipeline.stages.every((stage) => stage.externalExecution === false && stage.providerContacted === false)).toBe(true);
+    expect(pipeline.nextStage?.name).toBe("batch_creation");
+    expect(pipeline.blockedExternalActions).toContain("Launching browser automation, stealth, proxy rotation, fingerprint spoofing, CAPTCHA bypass, account warmup, or platform-evasion workflows");
+    expect(pipeline.auditEvents.join(" ")).toContain("Every stage is internal and approval-gated");
   });
 });

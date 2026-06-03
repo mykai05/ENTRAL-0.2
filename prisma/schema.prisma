@@ -363,8 +363,8 @@ model FinancialSplitPolicy {
   id                    String                  @id @default(cuid())
   userId                String
   name                  String                  @default("Default Financial Orchestrator Split")
-  scalingPercent        Decimal                 @default(50) @db.Decimal(5, 2)
-  personalPercent       Decimal                 @default(25) @db.Decimal(5, 2)
+  scalingPercent        Decimal                 @default(25) @db.Decimal(5, 2)
+  personalPercent       Decimal                 @default(50) @db.Decimal(5, 2)
   bufferPercent         Decimal                 @default(25) @db.Decimal(5, 2)
   minPayoutIntentAmount Decimal                 @default(25) @db.Decimal(12, 2)
   reserveFloorAmount    Decimal                 @default(0) @db.Decimal(12, 2)

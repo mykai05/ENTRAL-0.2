@@ -11,6 +11,7 @@ import {
   applyRevenueBusinessFleetProviderApprovalReviewSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
+  applyRevenueMoneyArmyBatchPipelineSchema,
   applyRevenueDigitalProductSchema,
   applyRevenueListingOptimizationSchema,
   applyRevenueLaunchPipelineSchema,
@@ -57,6 +58,7 @@ import {
   revenueBusinessFleetSchedulerQuerySchema,
   revenueBusinessFleetLaunchGateQuerySchema,
   revenueBusinessFleetProviderApprovalReviewQuerySchema,
+  revenueMoneyArmyBatchPipelineQuerySchema,
   revenueEngineQuerySchema,
   revenuePerformanceQuerySchema,
   signalIntakeQuerySchema,
@@ -99,6 +101,7 @@ import {
   type ApplyRevenueBusinessFleetProviderApprovalReviewInput,
   type ApplyRevenueBusinessFleetSeedGapInput,
   type ApplyRevenueBusinessFleetLaunchWaveInput,
+  type ApplyRevenueMoneyArmyBatchPipelineInput,
   type ApplyFacelessContentPipelineInput,
   type ApplyPortfolioCommandCenterInput,
   type ApplyRevenueAutopilotInput,
@@ -143,6 +146,7 @@ import {
   type RevenueBusinessFleetSchedulerQueryInput,
   type RevenueBusinessFleetLaunchGateQueryInput,
   type RevenueBusinessFleetProviderApprovalReviewQueryInput,
+  type RevenueMoneyArmyBatchPipelineQueryInput,
   type RevenueEngineQueryInput,
   type RevenuePerformanceQueryInput,
   type SignalIntakeQueryInput,
@@ -243,12 +247,15 @@ import {
   type RevenueStoreLaunchStatus
 } from "../services/revenueEngine.js";
 import {
+  buildRevenueMoneyArmyBatchPipelinePlan,
   buildRevenueBusinessFleetLaunchGapPlan,
   buildRevenueBusinessFleetSchedulerPlan,
   selectRevenueBusinessFleetLaunchWave,
   type RevenueBusinessFleetLaunchGapPlan,
   type RevenueBusinessFleetOpportunitySeed,
-  type RevenueBusinessFleetPlan
+  type RevenueBusinessFleetPlan,
+  type RevenueMoneyArmyBatchPipelinePlan,
+  type RevenueMoneyArmyBatchPipelineStageName
 } from "../services/revenueBusinessFleetScheduler.js";
 import {
   buildRevenueAssetControlRecoveryPlan,
@@ -1724,6 +1731,162 @@ async function buildRevenueBusinessFleetLaunchGapForUser(userId: string, options
     plan: buildRevenueBusinessFleetLaunchGapPlan({
       plan: context.plan
     })
+  };
+}
+
+function moneyArmySchedulerOptions(input: RevenueMoneyArmyBatchPipelineQueryInput | ApplyRevenueMoneyArmyBatchPipelineInput): RevenueBusinessFleetSchedulerQueryInput {
+  return revenueBusinessFleetSchedulerQuerySchema.parse({
+    killPressureThreshold: input.killPressureThreshold,
+    launchWaveSize: input.launchWaveSize,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    targetBusinesses: input.targetBusinesses
+  });
+}
+
+async function buildRevenueMoneyArmyBatchPipelineForUser(
+  userId: string,
+  input: RevenueMoneyArmyBatchPipelineQueryInput | ApplyRevenueMoneyArmyBatchPipelineInput
+): Promise<{ plan: RevenueMoneyArmyBatchPipelinePlan }> {
+  const context = await buildRevenueBusinessFleetSchedulerForUser(userId, moneyArmySchedulerOptions(input));
+  const gapPlan = buildRevenueBusinessFleetLaunchGapPlan({
+    plan: context.plan
+  });
+  const sourceKeys = input.sourceKeys ?? [];
+  const [launchGate, providerApprovalReview] = sourceKeys.length > 0
+    ? await Promise.all([
+      buildRevenueBusinessFleetLaunchGateForUser(userId, revenueBusinessFleetLaunchGateQuerySchema.parse({
+        maxStores: input.maxStores,
+        sourceKeys
+      })),
+      buildRevenueBusinessFleetProviderApprovalReviewForUser(userId, revenueBusinessFleetProviderApprovalReviewQuerySchema.parse({
+        maxPackets: input.maxPackets,
+        maxStores: input.maxStores,
+        sourceKeys,
+        status: "all"
+      }))
+    ])
+    : [null, null] as const;
+
+  return {
+    plan: buildRevenueMoneyArmyBatchPipelinePlan({
+      approvableApprovalPackets: providerApprovalReview?.plan.totals.approvable ?? 0,
+      approvedApprovalPackets: providerApprovalReview?.plan.totals.approved ?? 0,
+      gapPlan,
+      launchGate: launchGate
+        ? {
+          approvalNeeded: launchGate.plan.totals.approvalNeeded,
+          blocked: launchGate.plan.totals.blocked,
+          readyForManualLaunch: launchGate.plan.totals.readyForManualLaunch,
+          repairRequired: launchGate.plan.totals.repairRequired
+        }
+        : null,
+      pendingApprovalPackets: providerApprovalReview?.plan.totals.pending ?? 0,
+      plan: context.plan,
+      selectedSourceKeys: sourceKeys
+    })
+  };
+}
+
+function nextMoneyArmyStage(
+  pipeline: RevenueMoneyArmyBatchPipelinePlan,
+  requestedStage?: RevenueMoneyArmyBatchPipelineStageName
+): RevenueMoneyArmyBatchPipelineStageName | null {
+  if (requestedStage) {
+    const requested = pipeline.stages.find((stage) => stage.name === requestedStage);
+
+    return requested?.status === "ready" ? requested.name : null;
+  }
+
+  return pipeline.nextStage?.name ?? null;
+}
+
+async function applyRevenueMoneyArmyBatchPipeline(userId: string, input: ApplyRevenueMoneyArmyBatchPipelineInput) {
+  const before = await buildRevenueMoneyArmyBatchPipelineForUser(userId, input);
+  const stage = nextMoneyArmyStage(before.plan, input.stage);
+
+  if (!stage) {
+    return {
+      applied: {
+        auditLogId: null,
+        dryRun: input.dryRun,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        stage: null,
+        summary: "No Money Army batch pipeline stage is ready for internal execution."
+      },
+      before: before.plan,
+      after: before.plan,
+      result: null
+    };
+  }
+
+  const result = stage === "batch_creation"
+    ? await applyRevenueBusinessFleetLaunchGapSeeds(userId, applyRevenueBusinessFleetSeedGapSchema.parse({
+      ...input,
+      confirm: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
+      maxSeeds: input.maxSeeds,
+      podProvider: input.podProvider
+    }))
+    : stage === "batch_acceleration"
+      ? await applyRevenueBusinessFleetGapAcceleration(userId, applyRevenueBusinessFleetGapAccelerationSchema.parse({
+        ...input,
+        confirm: "RUN INTERNAL BUSINESS FLEET GAP ACCELERATION"
+      }))
+      : stage === "launch_package"
+        ? await applyRevenueBusinessFleetLiveLaunchPackage(userId, applyRevenueBusinessFleetLiveLaunchPackageSchema.parse({
+          ...input,
+          confirm: "RECORD INTERNAL BUSINESS FLEET LIVE LAUNCH PACKAGE"
+        }))
+        : stage === "approval"
+          ? await applyRevenueBusinessFleetProviderApprovalReview(userId, applyRevenueBusinessFleetProviderApprovalReviewSchema.parse({
+            ...input,
+            confirm: "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS"
+          }))
+          : await applyRevenueBusinessFleetLaunchWave(userId, applyRevenueBusinessFleetLaunchWaveSchema.parse({
+            ...input,
+            confirm: "RUN INTERNAL BUSINESS FLEET LAUNCH WAVE"
+          }));
+  const after = input.dryRun
+    ? before
+    : await buildRevenueMoneyArmyBatchPipelineForUser(userId, input);
+  const auditLog = input.dryRun ? null : await recordAuditLog({
+    action: "revenue.money_army_batch_pipeline.stage_applied",
+    actorUserId: userId,
+    metadata: {
+      after: after.plan.totals,
+      before: before.plan.totals,
+      dryRun: false,
+      externalExecution: false,
+      note: input.note ?? null,
+      providerContacted: false,
+      result,
+      selectedSourceKeys: input.sourceKeys,
+      stage,
+      summary: after.plan.summary
+    },
+    outcome: "success",
+    severity: stage === "deployment" || stage === "approval" ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_money_army_batch_pipeline"
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog?.id ?? null,
+      dryRun: input.dryRun,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      stage,
+      summary: input.dryRun
+        ? `Money Army ${stage.replace(/_/g, " ")} preview completed.`
+        : `Money Army ${stage.replace(/_/g, " ")} recorded internally.`
+    },
+    after: after.plan,
+    before: before.plan,
+    result
   };
 }
 
@@ -8313,6 +8476,32 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
     const { plan } = await buildRevenueBusinessFleetLaunchGapForUser(currentUser.sub, query);
 
     return reply.send({ plan });
+  });
+
+  app.get("/merch/revenue-engine/money-army/batches", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueMoneyArmyBatchPipelineQuerySchema.parse(request.query);
+    const response = await buildRevenueMoneyArmyBatchPipelineForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/money-army/batches/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueMoneyArmyBatchPipelineSchema.parse(request.body);
+    const response = await applyRevenueMoneyArmyBatchPipeline(currentUser.sub, input);
+
+    return reply.send(response);
   });
 
   app.post("/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply", { preHandler: requireAuth }, async (request, reply) => {

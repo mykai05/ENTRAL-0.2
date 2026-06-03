@@ -1375,16 +1375,22 @@ describe("Revenue Engine", () => {
     expect(plan.mode).toBe("Internal Financial Orchestrator");
     expect(plan.externalExecution).toBe(false);
     expect(plan.splitPolicy).toMatchObject({
+      adGrowthPercent: 25,
       bufferPercent: 25,
-      personalPercent: 25,
-      scalingPercent: 50,
+      entralOperationsPercent: 25,
+      ownerPercent: 50,
+      personalPercent: 50,
+      scalingPercent: 25,
       status: "balanced",
       totalPercent: 100
     });
     expect(plan.totals.distributableProfit).toBe(300);
-    expect(plan.totals.scalingAmount).toBe(150);
-    expect(plan.totals.personalAmount).toBe(75);
+    expect(plan.totals.scalingAmount).toBe(75);
+    expect(plan.totals.adGrowthAmount).toBe(75);
+    expect(plan.totals.personalAmount).toBe(150);
+    expect(plan.totals.ownerAmount).toBe(150);
     expect(plan.totals.bufferAmount).toBe(75);
+    expect(plan.totals.entralOperationsAmount).toBe(75);
     expect(plan.portfolioSignal).toMatchObject({
       recommendation: "scale_reinvestment_review",
       scaleRecommendations: expect.any(Number)
@@ -1418,9 +1424,9 @@ describe("Revenue Engine", () => {
     expect(plan.totals.portfolioAssetCommandsReady).toBeGreaterThan(0);
     expect(plan.totals.portfolioScalePressure).toBe(plan.portfolioSignal.scalePressure.pressureScore);
     expect(plan.totals.portfolioKillPressure).toBe(0);
-    expect(plan.totals.scalingBudgetAmount).toBe(120);
+    expect(plan.totals.scalingBudgetAmount).toBe(60);
     expect(plan.totals.scalingBudgetPackets).toBeGreaterThan(0);
-    expect(plan.totals.scalingBudgetRetainedAmount).toBe(30);
+    expect(plan.totals.scalingBudgetRetainedAmount).toBe(15);
     expect(plan.scalingBudgetQueue.every((packet) => packet.externalExecution === false && packet.providerContacted === false)).toBe(true);
     expect(plan.scalingBudgetQueue[0]).toMatchObject({
       approvalGate: {
@@ -1591,17 +1597,17 @@ describe("Revenue Engine", () => {
     expect(plan.advisoryContext.killPressure.pressureScore).toBe(plan.portfolioSignal.killPressure.pressureScore);
     expect(plan.totals.portfolioKillPressure).toBe(plan.portfolioSignal.killPressure.pressureScore);
     expect(scalingBucket).toMatchObject({
-      amount: 60,
+      amount: 30,
       guardrailReason: expect.stringContaining("kill"),
       payoutIntentAmount: 0,
-      retainedAmount: 60,
+      retainedAmount: 30,
       status: "held"
     });
     expect(plan.payoutIntents.map((intent) => intent.category)).toEqual(["personal", "buffer"]);
     expect(plan.scalingBudgetQueue).toHaveLength(0);
     expect(plan.totals.scalingBudgetPackets).toBe(0);
-    expect(plan.auditEvents).toContain("Portfolio defensive hold retained scaling capital instead of creating a reinvestment payout intent.");
-    expect(plan.summary).toContain("Scaling capital is retained");
+    expect(plan.auditEvents).toContain("Portfolio defensive hold retained Ad/Growth capital instead of creating a reinvestment payout intent.");
+    expect(plan.summary).toContain("Ad/Growth capital is retained");
   });
 
   it("builds payout review packets and Stripe readiness without money movement", () => {
@@ -1615,7 +1621,7 @@ describe("Revenue Engine", () => {
           category: "scaling",
           createdAt: "2026-06-02T12:00:00.000Z",
           currency: "USD",
-          destinationType: "scale_reinvestment",
+          destinationType: "ad_growth_budget",
           externalExecution: false,
           id: "intent_scaling",
           metadata: {},
@@ -1681,7 +1687,7 @@ describe("Revenue Engine", () => {
           category: "scaling",
           createdAt: "2026-06-02T12:00:00.000Z",
           currency: "USD",
-          destinationType: "scale_reinvestment",
+          destinationType: "ad_growth_budget",
           externalExecution: false,
           id: "intent_scaling",
           metadata: {},
