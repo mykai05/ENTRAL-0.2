@@ -10,6 +10,7 @@ import {
   buildRevenueFirstBusinessAutonomousLaunchPlan,
   buildRevenueFirstBusinessExecutionPlan,
   buildRevenueFirstBusinessInternalLaunchPlan,
+  buildRevenueFirstBusinessLiveExecutorPlan,
   buildRevenueFirstStorePreparationPlan
 } from "../src/services/revenueFirstStorePreparation.js";
 
@@ -231,6 +232,52 @@ describe("Revenue Money Army Generate & Score Batch", () => {
     expect(autonomousLaunch.paymentApprovalQueue.map((approval) => approval.approvalType)).toContain("ad_spend");
     expect(autonomousLaunch.autonomyMatrix.map((item) => item.lane)).toContain("ad_spend_activation");
     expect(autonomousLaunch.finalOperatorGate.requiredApprovals.join(" ")).toContain("Ad/Growth");
+    const liveExecutor = buildRevenueFirstBusinessLiveExecutorPlan({
+      autonomousLaunch,
+      generatedAt: "2026-06-02T13:45:00.000Z",
+      liveUnlockPhraseAccepted: false,
+      note: "Controlled live executor prepared from dashboard controls."
+    });
+    expect(liveExecutor).toMatchObject({
+      actualExternalActionsExecuted: false,
+      externalExecution: false,
+      mode: "Controlled Live First Business Executor",
+      paymentExecution: false,
+      providerContacted: false,
+      status: "ready_for_owner_unlock"
+    });
+    expect(liveExecutor.ownerUnlock).toMatchObject({
+      connectorApproval: false,
+      externalExecution: false,
+      paymentExecution: false,
+      phraseAccepted: false,
+      providerContacted: false,
+      publicLaunchApproval: false,
+      status: "waiting_owner"
+    });
+    expect(liveExecutor.credentialReadiness.length).toBeGreaterThan(0);
+    expect(liveExecutor.providerActionManifests.every((manifest) => manifest.payloadState === "prepared_not_sent" && manifest.providerContacted === false)).toBe(true);
+    expect(liveExecutor.liveRunbook.some((step) => step.executionState === "blocked_owner_unlock")).toBe(true);
+    expect(liveExecutor.paymentLockedQueue.length).toBeGreaterThan(0);
+    expect(liveExecutor.blockedExternalActions.join(" ")).toContain("Payment processor");
+    const armedLiveExecutor = buildRevenueFirstBusinessLiveExecutorPlan({
+      adDraftApproval: true,
+      autonomousLaunch,
+      connectorApproval: true,
+      generatedAt: "2026-06-02T13:50:00.000Z",
+      liveUnlockPhraseAccepted: true,
+      publicLaunchApproval: true
+    });
+    expect(armedLiveExecutor.status).toBe("armed_non_payment_live_run");
+    expect(armedLiveExecutor.actualExternalActionsExecuted).toBe(false);
+    expect(armedLiveExecutor.externalExecution).toBe(false);
+    expect(armedLiveExecutor.providerContacted).toBe(false);
+    expect(armedLiveExecutor.paymentExecution).toBe(false);
+    expect(armedLiveExecutor.ownerUnlock.status).toBe("accepted_non_payment");
+    expect(armedLiveExecutor.liveRunbook.some((step) => step.executionState === "ready_live_non_payment")).toBe(true);
+    expect(armedLiveExecutor.liveRunbook.some((step) => step.executionState === "payment_locked")).toBe(true);
+    expect(armedLiveExecutor.totals.paymentLockedSteps).toBeGreaterThan(0);
+    expect(armedLiveExecutor.rollbackPlan.length).toBeGreaterThan(0);
     expect(plan.scalePressure.pressureScore).toBeGreaterThanOrEqual(0);
     expect(plan.killPressure.pressureScore).toBeGreaterThanOrEqual(0);
     expect(plan.blockedExternalActions).toContain("Posting faceless content externally");

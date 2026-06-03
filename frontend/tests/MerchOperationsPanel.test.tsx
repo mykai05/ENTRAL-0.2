@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -2529,6 +2529,231 @@ const firstBusinessAutonomousLaunchApplyResponse: RevenueFirstBusinessAutonomous
   batchRun: firstBusinessAutonomousLaunchRun,
   execution: firstBusinessExecutionPlan,
   launch: firstBusinessInternalLaunchPlan,
+  package: firstBusinessPackagePlan,
+  preparation: firstStorePreparationPlan,
+  sourceBatch: moneyArmyGenerateScoreBatchPlan
+};
+
+const firstBusinessLiveExecutorPlan: RevenueFirstBusinessLiveExecutorPlan = {
+  actualExternalActionsExecuted: false,
+  auditEvents: [
+    "Controlled Live First Business Executor packet prepared from the autonomous first-business launch plan.",
+    "Owner unlock gates are incomplete; live provider, storefront, public launch, and ad draft actions remain blocked.",
+    "Payment, ad spend activation, supplier charges, banking, payout, card, and marketplace-fee actions remain locked."
+  ],
+  blockedExternalActions: [
+    "Live external calls are not executed by this packet; approved connectors must be invoked by the controlled executor runtime only after owner unlock",
+    "Payment processor setup, supplier charges, ad spend activation, card charges, marketplace fees, banking, payouts, and transfers remain payment locked"
+  ],
+  credentialReadiness: [{
+    approvalStatus: "owner_required",
+    credentialRefs: ["SHOPIFY_ADMIN_TOKEN", "SHOPIFY_STORE_DOMAIN"],
+    externalExecution: false,
+    provider: "Shopify",
+    providerContacted: false,
+    status: "missing_owner_unlock"
+  }, {
+    approvalStatus: "owner_required",
+    credentialRefs: ["PRINTIFY_API_TOKEN", "PRINTIFY_SHOP_ID"],
+    externalExecution: false,
+    provider: "Printify",
+    providerContacted: false,
+    status: "missing_owner_unlock"
+  }, {
+    approvalStatus: "owner_required",
+    credentialRefs: ["META_AD_ACCOUNT_ID", "META_ACCESS_TOKEN"],
+    externalExecution: false,
+    provider: "Meta",
+    providerContacted: false,
+    status: "missing_owner_unlock"
+  }],
+  externalExecution: false,
+  generatedAt: "2026-06-02T13:45:00.000Z",
+  guardrails: [
+    "This executor produces a controlled live-run packet and does not call any provider directly.",
+    "Non-payment live actions require the exact owner unlock phrase plus connector and public launch approval.",
+    "Payment-bearing actions never become executable from this packet; they remain routed to Financial Orchestrator and owner payment approval."
+  ],
+  liveExecutorId: "live_executor_store_1_2026_06_02t13_45_00_000z",
+  liveRunbook: [{
+    approvalRequired: true,
+    executionState: "blocked_owner_unlock",
+    externalExecution: false,
+    id: "live-runbook-storefront-draft",
+    kind: "connect_storefront",
+    lane: "store_build",
+    paymentRequired: false,
+    provider: "Shopify",
+    providerContacted: false,
+    rollback: "Revert storefront draft and unpublished product payloads.",
+    sequence: 1,
+    title: "Create storefront shell draft"
+  }, {
+    approvalRequired: true,
+    executionState: "blocked_owner_unlock",
+    externalExecution: false,
+    id: "live-runbook-supplier-products",
+    kind: "create_supplier_product",
+    lane: "product_creation",
+    paymentRequired: false,
+    provider: "Printify",
+    providerContacted: false,
+    rollback: "Archive supplier product drafts and detach unpublished variants.",
+    sequence: 2,
+    title: "Create supplier product drafts"
+  }, {
+    approvalRequired: true,
+    executionState: "payment_locked",
+    externalExecution: false,
+    id: "live-runbook-ad-spend",
+    kind: "activate_ad_spend",
+    lane: "ad_spend_activation",
+    paymentRequired: true,
+    provider: "Meta",
+    providerContacted: false,
+    rollback: "Keep campaign paused and leave spend disabled.",
+    sequence: 3,
+    title: "Hold first paid traffic activation"
+  }],
+  mode: "Controlled Live First Business Executor",
+  ownerUnlock: {
+    adDraftApproval: false,
+    connectorApproval: false,
+    externalExecution: false,
+    paymentExecution: false,
+    phraseAccepted: false,
+    providerContacted: false,
+    publicLaunchApproval: false,
+    status: "waiting_owner"
+  },
+  paymentExecution: false,
+  paymentLockedQueue: [{
+    amount: 15,
+    externalExecution: false,
+    paymentExecution: false,
+    provider: "Meta",
+    providerContacted: false,
+    reason: "First paid traffic test remains locked behind Financial Orchestrator approval.",
+    title: "Approve first paid traffic test"
+  }],
+  providerActionManifests: [{
+    approvalRequired: true,
+    externalExecution: false,
+    idempotencyKey: "store-1-shopify-storefront-draft",
+    method: "POST",
+    pathTemplate: "/admin/api/2026-01/products.json",
+    paymentRequired: false,
+    payloadState: "prepared_not_sent",
+    provider: "Shopify",
+    providerContacted: false,
+    purpose: "Create storefront and product listing drafts.",
+    rollbackKey: "rollback-shopify-storefront-draft"
+  }, {
+    approvalRequired: true,
+    externalExecution: false,
+    idempotencyKey: "store-1-printify-products",
+    method: "POST",
+    pathTemplate: "/v1/shops/{shopId}/products.json",
+    paymentRequired: false,
+    payloadState: "prepared_not_sent",
+    provider: "Printify",
+    providerContacted: false,
+    purpose: "Create supplier product drafts.",
+    rollbackKey: "rollback-printify-product-drafts"
+  }, {
+    approvalRequired: true,
+    externalExecution: false,
+    idempotencyKey: "store-1-meta-ad-spend",
+    method: "POST",
+    pathTemplate: "/act_{adAccountId}/campaigns",
+    paymentRequired: true,
+    payloadState: "prepared_not_sent",
+    provider: "Meta",
+    providerContacted: false,
+    purpose: "Keep first paid traffic campaign drafted and paused.",
+    rollbackKey: "rollback-meta-campaign-paused"
+  }],
+  providerContacted: false,
+  rollbackPlan: [{
+    externalExecution: false,
+    providerContacted: false,
+    step: "Revert storefront draft and unpublished product payloads."
+  }, {
+    externalExecution: false,
+    providerContacted: false,
+    step: "Archive supplier product drafts and detach unpublished variants."
+  }, {
+    externalExecution: false,
+    providerContacted: false,
+    step: "Keep campaign paused and leave spend disabled."
+  }],
+  sourceAutonomousLaunchId: firstBusinessAutonomousLaunchPlan.autonomousLaunchId,
+  status: "ready_for_owner_unlock",
+  summary: "Iron House Gym has a controlled live executor packet ready, but owner unlock gates are incomplete. Provider calls, public publishing, ad drafts, and payment actions remain locked.",
+  totals: {
+    armedNonPaymentSteps: 0,
+    blockedSteps: 2,
+    credentialChecks: 3,
+    paymentLockedSteps: 2,
+    providerManifests: 3,
+    rollbackSteps: 3
+  }
+};
+
+const firstBusinessLiveExecutorRun: RevenueMoneyArmyBatchRun = {
+  afterTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    pendingApprovalPackets: 2,
+    readyDeploymentBusinesses: 1,
+    readyStages: 1,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  },
+  auditLogId: "audit-first-business-live-executor-1",
+  batchKey: "first-business-live-executor-key-1",
+  beforeTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 0,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  },
+  createdAt: "2026-06-02T13:45:00.000Z",
+  dryRun: false,
+  externalExecution: false,
+  id: "first-business-live-executor-run-1",
+  providerContacted: false,
+  resultSummary: "Iron House Gym controlled live executor prepared. Owner unlock, connector approval, public launch approval, or ad draft approval is still incomplete.",
+  sourceKeys: ["store-1"],
+  stage: "controlled_live_executor",
+  status: "ready_for_owner_unlock"
+};
+
+const firstBusinessLiveExecutorApplyResponse: RevenueFirstBusinessLiveExecutorApplyResponse = {
+  autonomousLaunch: firstBusinessAutonomousLaunchPlan,
+  batchRun: firstBusinessLiveExecutorRun,
+  execution: firstBusinessExecutionPlan,
+  launch: firstBusinessInternalLaunchPlan,
+  live: {
+    actualExternalActionsExecuted: false,
+    auditLogId: "audit-first-business-live-executor-1",
+    batchRunId: firstBusinessLiveExecutorRun.id,
+    dryRun: false,
+    externalExecution: false,
+    liveExecutorId: firstBusinessLiveExecutorPlan.liveExecutorId,
+    paymentExecution: false,
+    providerContacted: false,
+    stage: "controlled_live_executor",
+    status: "ready_for_owner_unlock",
+    summary: "Iron House Gym controlled live executor prepared. Owner unlock, connector approval, public launch approval, or ad draft approval is still incomplete.",
+    unlockAccepted: false
+  },
+  liveExecutor: firstBusinessLiveExecutorPlan,
   package: firstBusinessPackagePlan,
   preparation: firstStorePreparationPlan,
   sourceBatch: moneyArmyGenerateScoreBatchPlan
@@ -6493,7 +6718,8 @@ describe("MerchOperationsPanel", () => {
       .mockResolvedValueOnce(firstStorePrepareApplyResponse)
       .mockResolvedValueOnce(firstBusinessInternalLaunchApplyResponse)
       .mockResolvedValueOnce(firstBusinessExecutionApplyResponse)
-      .mockResolvedValueOnce(firstBusinessAutonomousLaunchApplyResponse);
+      .mockResolvedValueOnce(firstBusinessAutonomousLaunchApplyResponse)
+      .mockResolvedValueOnce(firstBusinessLiveExecutorApplyResponse);
 
     render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
 
@@ -6618,6 +6844,33 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("Final owner gate")).toBeInTheDocument();
     expect(within(region).getByText("Autonomous launch remains private")).toBeInTheDocument();
     expect(within(region).getAllByText(/audit audit-first-business-autonomous-1/)).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole("button", { name: /build live executor/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/first-business/live-executor", {
+      json: {
+        adDraftApproval: false,
+        candidateCount: 25,
+        confirm: "PREPARE CONTROLLED LIVE FIRST BUSINESS EXECUTOR",
+        connectorApproval: false,
+        dryRun: false,
+        maxProducts: 5,
+        note: "Controlled live executor prepared from dashboard controls.",
+        publicLaunchApproval: false,
+        riskTolerance: "Low"
+      },
+      method: "POST"
+    });
+    expect(await screen.findAllByText("Iron House Gym controlled live executor prepared. Owner unlock, connector approval, public launch approval, or ad draft approval is still incomplete.")).toHaveLength(2);
+    expect(within(region).getAllByText("Controlled Live First Business Executor").length).toBeGreaterThan(0);
+    expect(within(region).getAllByText(/ready for owner unlock/i).length).toBeGreaterThan(0);
+    expect(within(region).getByText("Credential Readiness")).toBeInTheDocument();
+    expect(within(region).getByText("Provider Action Manifests")).toBeInTheDocument();
+    expect(within(region).getByText("Live Runbook")).toBeInTheDocument();
+    expect(within(region).getByText("Payment Locked Queue")).toBeInTheDocument();
+    expect(within(region).getByText("Rollback Plan")).toBeInTheDocument();
+    expect(within(region).getByText("Live executor remains controlled")).toBeInTheDocument();
+    expect(within(region).getAllByText(/audit audit-first-business-live-executor-1/)).toHaveLength(2);
   });
 
   it("runs the Revenue Engine and applies internal rotation only after preview", async () => {

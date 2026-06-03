@@ -10,6 +10,7 @@ import {
   applyRevenueFirstBusinessAutonomousLaunchSchema,
   applyRevenueFirstBusinessExecuteSchema,
   applyRevenueFirstBusinessInternalLaunchSchema,
+  applyRevenueFirstBusinessLiveExecutorSchema,
   applyRevenueFirstBusinessLaunchPackageSchema,
   applyRevenueFirstStorePrepareSchema,
   applyRevenueMoneyArmyGenerateScoreBatchSchema,
@@ -619,7 +620,7 @@ describe("validation schemas", () => {
     const moneyArmyApply = applyRevenueMoneyArmyBatchPipelineSchema.parse({
       confirm: "RUN INTERNAL MONEY ARMY BATCH PIPELINE",
       dryRun: true,
-      stage: "batch_creation"
+      stage: "controlled_live_executor"
     });
     const moneyArmyGenerateScore = revenueMoneyArmyGenerateScoreBatchQuerySchema.parse({
       candidateCount: "50",
@@ -667,6 +668,16 @@ describe("validation schemas", () => {
       dryRun: false,
       maxProducts: 5
     });
+    const firstBusinessLiveExecutorApply = applyRevenueFirstBusinessLiveExecutorSchema.parse({
+      adDraftApproval: true,
+      candidateCount: 25,
+      confirm: "PREPARE CONTROLLED LIVE FIRST BUSINESS EXECUTOR",
+      connectorApproval: true,
+      dryRun: false,
+      liveUnlockPhrase: "I APPROVE ENTRAL LIVE LAUNCH EXECUTION",
+      maxProducts: 5,
+      publicLaunchApproval: true
+    });
 
     expect(query).toMatchObject({
       launchWaveSize: 10,
@@ -695,7 +706,7 @@ describe("validation schemas", () => {
     expect(moneyArmyQuery.maxPackets).toBe(25);
     expect(moneyArmyQuery.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
     expect(moneyArmyApply.dryRun).toBe(true);
-    expect(moneyArmyApply.stage).toBe("batch_creation");
+    expect(moneyArmyApply.stage).toBe("controlled_live_executor");
     expect(moneyArmyGenerateScore.candidateCount).toBe(50);
     expect(moneyArmyGenerateScore.maxProducts).toBe(10);
     expect(moneyArmyGenerateScore.productTypes).toEqual(["T-shirt", "Hoodie"]);
@@ -708,6 +719,8 @@ describe("validation schemas", () => {
     expect(firstBusinessExecuteApply.maxProducts).toBe(5);
     expect(firstBusinessAutonomousLaunchApply.maxProducts).toBe(5);
     expect(firstBusinessAutonomousLaunchApply.dryRun).toBe(false);
+    expect(firstBusinessLiveExecutorApply.connectorApproval).toBe(true);
+    expect(firstBusinessLiveExecutorApply.liveUnlockPhrase).toBe("I APPROVE ENTRAL LIVE LAUNCH EXECUTION");
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ shardCount: "300" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
@@ -759,6 +772,9 @@ describe("validation schemas", () => {
     })).toThrow();
     expect(() => applyRevenueFirstBusinessAutonomousLaunchSchema.parse({
       confirm: "EXECUTE FIRST BUSINESS INTERNALLY"
+    })).toThrow();
+    expect(() => applyRevenueFirstBusinessLiveExecutorSchema.parse({
+      confirm: "RUN AUTONOMOUS FIRST BUSINESS LAUNCH PREP"
     })).toThrow();
   });
 

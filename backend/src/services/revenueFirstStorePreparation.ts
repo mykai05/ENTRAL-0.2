@@ -9,6 +9,10 @@ export type RevenueFirstStorePreparationStatus = "ready_to_execute_internal" | "
 export type RevenueFirstBusinessInternalLaunchStatus = "approved_for_launch_internal" | "blocked";
 export type RevenueFirstBusinessExecutionStatus = "ready_to_launch_first_business" | "blocked";
 export type RevenueFirstBusinessAutonomousLaunchStatus = "autonomous_ready_payment_gated" | "blocked";
+export type RevenueFirstBusinessLiveExecutorStatus =
+  | "ready_for_owner_unlock"
+  | "armed_non_payment_live_run"
+  | "blocked";
 export type RevenueFirstBusinessReadinessGateStatus = "ready_for_manual_launch_approval" | "blocked";
 export type RevenueFirstBusinessReadinessGateCategory =
   | "store"
@@ -452,6 +456,114 @@ export type RevenueFirstBusinessAutonomousLaunchPlan = {
     paymentApprovals: number;
     productPayloads: number;
     supplierCandidates: number;
+  };
+};
+
+export type RevenueFirstBusinessLiveExecutorProvider =
+  | "Shopify"
+  | "Etsy"
+  | "Printify"
+  | "Printful"
+  | "Meta"
+  | "Google Analytics"
+  | "Manual";
+
+export type RevenueFirstBusinessLiveExecutorStepKind =
+  | "connect_storefront"
+  | "connect_supplier"
+  | "create_supplier_product"
+  | "create_storefront_product"
+  | "publish_storefront_product"
+  | "prepare_content_upload"
+  | "prepare_ad_campaign"
+  | "activate_ad_spend"
+  | "connect_tracking"
+  | "record_first_week_evidence";
+
+export type RevenueFirstBusinessLiveExecutorPlan = {
+  actualExternalActionsExecuted: false;
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  credentialReadiness: Array<{
+    approvalStatus: "owner_approved" | "owner_required";
+    credentialRefs: string[];
+    externalExecution: false;
+    provider: RevenueFirstBusinessLiveExecutorProvider;
+    providerContacted: false;
+    status: "ready_after_owner_connection" | "missing_owner_unlock";
+  }>;
+  externalExecution: false;
+  generatedAt: string;
+  guardrails: string[];
+  liveExecutorId: string;
+  liveRunbook: Array<{
+    approvalRequired: boolean;
+    executionState:
+      | "ready_live_non_payment"
+      | "blocked_owner_unlock"
+      | "payment_locked"
+      | "internal_tracking_ready";
+    externalExecution: false;
+    id: string;
+    kind: RevenueFirstBusinessLiveExecutorStepKind;
+    lane: RevenueFirstBusinessAutonomousLaunchLane;
+    paymentRequired: boolean;
+    provider: RevenueFirstBusinessLiveExecutorProvider;
+    providerContacted: false;
+    rollback: string;
+    sequence: number;
+    title: string;
+  }>;
+  mode: "Controlled Live First Business Executor";
+  ownerUnlock: {
+    adDraftApproval: boolean;
+    connectorApproval: boolean;
+    externalExecution: false;
+    paymentExecution: false;
+    phraseAccepted: boolean;
+    providerContacted: false;
+    publicLaunchApproval: boolean;
+    status: "accepted_non_payment" | "waiting_owner";
+  };
+  paymentExecution: false;
+  paymentLockedQueue: Array<{
+    amount: number;
+    externalExecution: false;
+    paymentExecution: false;
+    provider: RevenueFirstBusinessLiveExecutorProvider;
+    providerContacted: false;
+    reason: string;
+    title: string;
+  }>;
+  providerActionManifests: Array<{
+    approvalRequired: boolean;
+    externalExecution: false;
+    idempotencyKey: string;
+    method: "POST" | "PUT";
+    pathTemplate: string;
+    payloadState: "prepared_not_sent";
+    paymentRequired: boolean;
+    provider: RevenueFirstBusinessLiveExecutorProvider;
+    providerContacted: false;
+    purpose: string;
+    rollbackKey: string;
+  }>;
+  providerContacted: false;
+  rollbackPlan: Array<{
+    externalExecution: false;
+    providerContacted: false;
+    step: string;
+  }>;
+  sourceAutonomousLaunchId: string;
+  status: RevenueFirstBusinessLiveExecutorStatus;
+  summary: string;
+  totals: {
+    armedNonPaymentSteps: number;
+    blockedSteps: number;
+    credentialChecks: number;
+    paymentLockedSteps: number;
+    providerManifests: number;
+    rollbackSteps: number;
   };
 };
 
@@ -1867,6 +1979,401 @@ export function buildRevenueFirstBusinessAutonomousLaunchPlan(input: {
       paymentApprovals: paymentApprovalQueue.length,
       productPayloads: productCreationPlan.length,
       supplierCandidates: supplierPlan.candidates.length
+    }
+  };
+}
+
+function liveProviderFromManifestProvider(
+  provider: RevenueFirstBusinessAutonomousLaunchPlan["connectionPlan"]["connectorManifests"][number]["provider"]
+): RevenueFirstBusinessLiveExecutorProvider {
+  return provider;
+}
+
+function credentialRefsForProvider(provider: RevenueFirstBusinessLiveExecutorProvider) {
+  const refs: Record<RevenueFirstBusinessLiveExecutorProvider, string[]> = {
+    Etsy: ["ETSY_CONNECTOR_CLIENT_ID", "ETSY_CONNECTOR_REFRESH_TOKEN"],
+    "Google Analytics": ["GOOGLE_ANALYTICS_PROPERTY_ID", "GOOGLE_ANALYTICS_READONLY_TOKEN"],
+    Manual: [],
+    Meta: ["META_AD_ACCOUNT_ID", "META_CONNECTOR_ACCESS_TOKEN"],
+    Printful: ["PRINTFUL_CONNECTOR_TOKEN"],
+    Printify: ["PRINTIFY_CONNECTOR_TOKEN", "PRINTIFY_SHOP_ID"],
+    Shopify: ["SHOPIFY_STORE_DOMAIN", "SHOPIFY_CONNECTOR_ADMIN_TOKEN"]
+  };
+
+  return refs[provider];
+}
+
+function buildLiveExecutorCredentialReadiness(input: {
+  approved: boolean;
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan;
+}): RevenueFirstBusinessLiveExecutorPlan["credentialReadiness"] {
+  const providers = new Set<RevenueFirstBusinessLiveExecutorProvider>();
+
+  for (const manifest of input.autonomousLaunch.connectionPlan.connectorManifests) {
+    providers.add(liveProviderFromManifestProvider(manifest.provider));
+  }
+  providers.add("Manual");
+
+  return Array.from(providers).map((provider) => ({
+    approvalStatus: input.approved ? "owner_approved" : "owner_required",
+    credentialRefs: credentialRefsForProvider(provider),
+    externalExecution: false,
+    provider,
+    providerContacted: false,
+    status: input.approved ? "ready_after_owner_connection" : "missing_owner_unlock"
+  }));
+}
+
+function buildLiveProviderActionManifests(
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan
+): RevenueFirstBusinessLiveExecutorPlan["providerActionManifests"] {
+  const storeProvider = autonomousLaunch.connectionPlan.connectorManifests.find((manifest) => (
+    manifest.provider === "Shopify" || manifest.provider === "Etsy"
+  ))?.provider ?? "Shopify";
+  const supplierProvider = autonomousLaunch.supplierPlan.selectedSupplier.provider === "Printful" ? "Printful" : "Printify";
+  const manifests: RevenueFirstBusinessLiveExecutorPlan["providerActionManifests"] = [
+    {
+      approvalRequired: true,
+      externalExecution: false,
+      idempotencyKey: `store_${safeId(autonomousLaunch.autonomousLaunchId)}`,
+      method: "POST",
+      pathTemplate: storeProvider === "Shopify" ? "/admin/api/products.json" : "/v3/application/shops/{shop_id}/listings",
+      payloadState: "prepared_not_sent",
+      paymentRequired: false,
+      provider: storeProvider,
+      providerContacted: false,
+      purpose: "Create storefront product drafts from the approved first-business product payloads.",
+      rollbackKey: "remove_storefront_product_drafts"
+    },
+    {
+      approvalRequired: true,
+      externalExecution: false,
+      idempotencyKey: `supplier_${safeId(autonomousLaunch.autonomousLaunchId)}`,
+      method: "POST",
+      pathTemplate: supplierProvider === "Printify" ? "/v1/shops/{shop_id}/products.json" : "/store/products",
+      payloadState: "prepared_not_sent",
+      paymentRequired: false,
+      provider: supplierProvider,
+      providerContacted: false,
+      purpose: "Create supplier-side draft products and variant mappings without placing paid orders.",
+      rollbackKey: "archive_supplier_product_drafts"
+    },
+    {
+      approvalRequired: true,
+      externalExecution: false,
+      idempotencyKey: `tracking_${safeId(autonomousLaunch.autonomousLaunchId)}`,
+      method: "POST",
+      pathTemplate: "/properties/{property_id}/events",
+      payloadState: "prepared_not_sent",
+      paymentRequired: false,
+      provider: "Google Analytics",
+      providerContacted: false,
+      purpose: "Prepare read-only launch event and evidence tracking after analytics connector approval.",
+      rollbackKey: "remove_tracking_draft"
+    },
+    {
+      approvalRequired: true,
+      externalExecution: false,
+      idempotencyKey: `ad_draft_${safeId(autonomousLaunch.autonomousLaunchId)}`,
+      method: "POST",
+      pathTemplate: "/act_{ad_account_id}/campaigns",
+      payloadState: "prepared_not_sent",
+      paymentRequired: false,
+      provider: "Meta",
+      providerContacted: false,
+      purpose: "Create campaign drafts with spend disabled and activation locked.",
+      rollbackKey: "archive_ad_campaign_drafts"
+    },
+    {
+      approvalRequired: true,
+      externalExecution: false,
+      idempotencyKey: `ad_spend_${safeId(autonomousLaunch.autonomousLaunchId)}`,
+      method: "PUT",
+      pathTemplate: "/act_{ad_account_id}/campaigns/{campaign_id}",
+      payloadState: "prepared_not_sent",
+      paymentRequired: true,
+      provider: "Meta",
+      providerContacted: false,
+      purpose: "Activate paid traffic only after Financial Orchestrator and owner payment approval.",
+      rollbackKey: "disable_ad_spend"
+    }
+  ];
+
+  return manifests;
+}
+
+function buildLiveRunbook(input: {
+  adDraftApproval: boolean;
+  armed: boolean;
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan;
+  connectorApproval: boolean;
+  publicLaunchApproval: boolean;
+}): RevenueFirstBusinessLiveExecutorPlan["liveRunbook"] {
+  const supplierProvider: RevenueFirstBusinessLiveExecutorProvider = input.autonomousLaunch.supplierPlan.selectedSupplier.provider === "Printful"
+    ? "Printful"
+    : "Printify";
+  const storeProvider: RevenueFirstBusinessLiveExecutorProvider = input.autonomousLaunch.storeBuildPlan.storePlatform === "Shopify"
+    ? "Shopify"
+    : input.autonomousLaunch.storeBuildPlan.storePlatform === "Etsy" ? "Etsy" : "Manual";
+  const connectorReady = input.armed && input.connectorApproval;
+  const publicReady = connectorReady && input.publicLaunchApproval;
+  const adDraftReady = input.armed && input.adDraftApproval;
+
+  return [
+    {
+      approvalRequired: true,
+      executionState: connectorReady ? "ready_live_non_payment" : "blocked_owner_unlock",
+      externalExecution: false,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_connect_storefront`,
+      kind: "connect_storefront",
+      lane: "store_build",
+      paymentRequired: false,
+      provider: storeProvider,
+      providerContacted: false,
+      rollback: "Disconnect storefront connector and archive draft payloads.",
+      sequence: 1,
+      title: "Connect storefront connector for draft-only product setup"
+    },
+    {
+      approvalRequired: true,
+      executionState: connectorReady ? "ready_live_non_payment" : "blocked_owner_unlock",
+      externalExecution: false,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_connect_supplier`,
+      kind: "connect_supplier",
+      lane: "supplier_connection",
+      paymentRequired: false,
+      provider: supplierProvider,
+      providerContacted: false,
+      rollback: "Disconnect supplier connector and archive draft supplier mappings.",
+      sequence: 2,
+      title: "Connect supplier connector for draft-only POD product setup"
+    },
+    ...input.autonomousLaunch.productCreationPlan.map((product, index) => ({
+      approvalRequired: true,
+      executionState: connectorReady ? "ready_live_non_payment" as const : "blocked_owner_unlock" as const,
+      externalExecution: false as const,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_supplier_product_${index + 1}`,
+      kind: "create_supplier_product" as const,
+      lane: "product_creation" as const,
+      paymentRequired: false,
+      provider: supplierProvider,
+      providerContacted: false as const,
+      rollback: `Archive supplier draft for ${product.productName}.`,
+      sequence: index + 3,
+      title: `Create supplier draft product for ${product.productName}`
+    })),
+    ...input.autonomousLaunch.productCreationPlan.map((product, index) => ({
+      approvalRequired: true,
+      executionState: publicReady ? "ready_live_non_payment" as const : "blocked_owner_unlock" as const,
+      externalExecution: false as const,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_storefront_product_${index + 1}`,
+      kind: "create_storefront_product" as const,
+      lane: "store_build" as const,
+      paymentRequired: false,
+      provider: storeProvider,
+      providerContacted: false as const,
+      rollback: `Unpublish or archive storefront draft for ${product.productName}.`,
+      sequence: input.autonomousLaunch.productCreationPlan.length + index + 3,
+      title: `Create storefront product draft for ${product.productName}`
+    })),
+    {
+      approvalRequired: true,
+      executionState: publicReady ? "ready_live_non_payment" : "blocked_owner_unlock",
+      externalExecution: false,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_publish_storefront`,
+      kind: "publish_storefront_product",
+      lane: "store_build",
+      paymentRequired: false,
+      provider: storeProvider,
+      providerContacted: false,
+      rollback: "Unpublish launch collection and return storefront to draft mode.",
+      sequence: input.autonomousLaunch.productCreationPlan.length * 2 + 3,
+      title: "Publish approved first-drop collection"
+    },
+    {
+      approvalRequired: true,
+      executionState: publicReady ? "ready_live_non_payment" : "blocked_owner_unlock",
+      externalExecution: false,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_content_upload`,
+      kind: "prepare_content_upload",
+      lane: "content_launch",
+      paymentRequired: false,
+      provider: "Manual",
+      providerContacted: false,
+      rollback: "Remove or unschedule launch content drafts if owner cancels.",
+      sequence: input.autonomousLaunch.productCreationPlan.length * 2 + 4,
+      title: "Prepare approved organic content uploads"
+    },
+    {
+      approvalRequired: true,
+      executionState: adDraftReady ? "ready_live_non_payment" : "blocked_owner_unlock",
+      externalExecution: false,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_ad_campaign_draft`,
+      kind: "prepare_ad_campaign",
+      lane: "ad_campaign_drafting",
+      paymentRequired: false,
+      provider: "Meta",
+      providerContacted: false,
+      rollback: "Archive ad campaign drafts before spend activation.",
+      sequence: input.autonomousLaunch.productCreationPlan.length * 2 + 5,
+      title: "Create paid campaign drafts with spend disabled"
+    },
+    {
+      approvalRequired: true,
+      executionState: "payment_locked",
+      externalExecution: false,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_ad_spend`,
+      kind: "activate_ad_spend",
+      lane: "ad_spend_activation",
+      paymentRequired: true,
+      provider: "Meta",
+      providerContacted: false,
+      rollback: "Disable campaigns and record spend stop evidence.",
+      sequence: input.autonomousLaunch.productCreationPlan.length * 2 + 6,
+      title: "Activate first paid traffic only after payment approval"
+    },
+    {
+      approvalRequired: false,
+      executionState: "internal_tracking_ready",
+      externalExecution: false,
+      id: `live_${safeId(input.autonomousLaunch.autonomousLaunchId)}_evidence`,
+      kind: "record_first_week_evidence",
+      lane: "tracking",
+      paymentRequired: false,
+      provider: "Manual",
+      providerContacted: false,
+      rollback: "Keep evidence ledger read-only and append correction notes.",
+      sequence: input.autonomousLaunch.productCreationPlan.length * 2 + 7,
+      title: "Record first-week evidence into Revenue Engine"
+    }
+  ];
+}
+
+function buildLivePaymentLockedQueue(
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan
+): RevenueFirstBusinessLiveExecutorPlan["paymentLockedQueue"] {
+  return autonomousLaunch.paymentApprovalQueue.map((approval) => ({
+    amount: approval.estimatedAmount,
+    externalExecution: false,
+    paymentExecution: false,
+    provider: approval.approvalType === "ad_spend" ? "Meta" : approval.approvalType === "supplier_order"
+      ? autonomousLaunch.supplierPlan.selectedSupplier.provider === "Printful" ? "Printful" : "Printify"
+      : approval.approvalType === "payment_processor" ? "Manual" : "Manual",
+    providerContacted: false,
+    reason: approval.reason,
+    title: approval.title
+  }));
+}
+
+function buildLiveRollbackPlan(
+  runbook: RevenueFirstBusinessLiveExecutorPlan["liveRunbook"]
+): RevenueFirstBusinessLiveExecutorPlan["rollbackPlan"] {
+  return [
+    ...runbook.map((step) => ({
+      externalExecution: false as const,
+      providerContacted: false as const,
+      step: step.rollback
+    })),
+    {
+      externalExecution: false,
+      providerContacted: false,
+      step: "Freeze all launch evidence, record the rollback audit note, and feed outcome back into Revenue Engine rotation."
+    }
+  ];
+}
+
+export function buildRevenueFirstBusinessLiveExecutorPlan(input: {
+  adDraftApproval?: boolean;
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan;
+  connectorApproval?: boolean;
+  generatedAt?: string;
+  liveUnlockPhraseAccepted?: boolean;
+  note?: string | null;
+  publicLaunchApproval?: boolean;
+}): RevenueFirstBusinessLiveExecutorPlan {
+  const generatedAt = input.generatedAt ?? new Date().toISOString();
+  const connectorApproval = input.connectorApproval ?? false;
+  const publicLaunchApproval = input.publicLaunchApproval ?? false;
+  const adDraftApproval = input.adDraftApproval ?? false;
+  const phraseAccepted = input.liveUnlockPhraseAccepted ?? false;
+  const readySource = input.autonomousLaunch.status === "autonomous_ready_payment_gated";
+  const armed = readySource && phraseAccepted && connectorApproval && publicLaunchApproval;
+  const status: RevenueFirstBusinessLiveExecutorStatus = !readySource
+    ? "blocked"
+    : armed ? "armed_non_payment_live_run" : "ready_for_owner_unlock";
+  const liveExecutorId = `live_executor_${safeId(input.autonomousLaunch.executionPacket.finalExecutionPacket.store.sourceStoreId)}_${safeId(generatedAt)}`;
+  const credentialReadiness = buildLiveExecutorCredentialReadiness({
+    approved: phraseAccepted && connectorApproval,
+    autonomousLaunch: input.autonomousLaunch
+  });
+  const providerActionManifests = buildLiveProviderActionManifests(input.autonomousLaunch);
+  const liveRunbook = buildLiveRunbook({
+    adDraftApproval,
+    armed,
+    autonomousLaunch: input.autonomousLaunch,
+    connectorApproval,
+    publicLaunchApproval
+  });
+  const paymentLockedQueue = buildLivePaymentLockedQueue(input.autonomousLaunch);
+  const rollbackPlan = buildLiveRollbackPlan(liveRunbook);
+  const blockedExternalActions = Array.from(new Set([
+    ...input.autonomousLaunch.blockedExternalActions,
+    "Live external calls are not executed by this packet; approved connectors must be invoked by the controlled executor runtime only after owner unlock",
+    "Payment processor setup, supplier charges, ad spend activation, card charges, marketplace fees, banking, payouts, and transfers remain payment locked",
+    "Any provider failure, duplicate idempotency key, missing credential, policy warning, or rollback signal must halt the live run"
+  ]));
+
+  return {
+    actualExternalActionsExecuted: false,
+    auditEvents: [
+      "Controlled Live First Business Executor packet prepared from the autonomous first-business launch plan.",
+      armed
+        ? "Owner unlock gates are present for non-payment provider, storefront, and public launch preparation. No live call was executed by this packet."
+        : "Owner unlock gates are incomplete; live provider, storefront, public launch, and ad draft actions remain blocked.",
+      "Payment, ad spend activation, supplier charges, banking, payout, card, and marketplace-fee actions remain locked."
+    ],
+    blockedExternalActions,
+    credentialReadiness,
+    externalExecution: false,
+    generatedAt,
+    guardrails: [
+      "This executor produces a controlled live-run packet and does not call any provider directly.",
+      "Non-payment live actions require the exact owner unlock phrase plus connector and public launch approval.",
+      "Payment-bearing actions never become executable from this packet; they remain routed to Financial Orchestrator and owner payment approval.",
+      "Every provider action has an idempotency key and rollback step before any future executor runtime can use it."
+    ],
+    liveExecutorId,
+    liveRunbook,
+    mode: "Controlled Live First Business Executor",
+    ownerUnlock: {
+      adDraftApproval,
+      connectorApproval,
+      externalExecution: false,
+      paymentExecution: false,
+      phraseAccepted,
+      providerContacted: false,
+      publicLaunchApproval,
+      status: armed ? "accepted_non_payment" : "waiting_owner"
+    },
+    paymentExecution: false,
+    paymentLockedQueue,
+    providerActionManifests,
+    providerContacted: false,
+    rollbackPlan,
+    sourceAutonomousLaunchId: input.autonomousLaunch.autonomousLaunchId,
+    status,
+    summary: status === "armed_non_payment_live_run"
+      ? `${input.autonomousLaunch.executionPacket.finalExecutionPacket.store.businessName} has a controlled live executor armed for non-payment launch steps. Provider writes, storefront publishing, content preparation, and ad drafts are manifest-ready, but no external action has executed here and all payment/ad spend remains locked.`
+      : status === "ready_for_owner_unlock"
+        ? `${input.autonomousLaunch.executionPacket.finalExecutionPacket.store.businessName} has a controlled live executor packet ready, but owner unlock gates are incomplete. Provider calls, public publishing, ad drafts, and payment actions remain locked.`
+        : `${input.autonomousLaunch.executionPacket.finalExecutionPacket.store.businessName} cannot build a controlled live executor until the autonomous launch packet is ready.`,
+    totals: {
+      armedNonPaymentSteps: liveRunbook.filter((step) => step.executionState === "ready_live_non_payment").length,
+      blockedSteps: liveRunbook.filter((step) => step.executionState === "blocked_owner_unlock").length,
+      credentialChecks: credentialReadiness.length,
+      paymentLockedSteps: liveRunbook.filter((step) => step.paymentRequired).length + paymentLockedQueue.length,
+      providerManifests: providerActionManifests.length,
+      rollbackSteps: rollbackPlan.length
     }
   };
 }

@@ -1232,6 +1232,7 @@ export type RevenueMoneyArmyBatchPipelineStageName =
   | "launch_first_business"
   | "execute_first_business"
   | "autonomous_first_business_launch"
+  | "controlled_live_executor"
   | "batch_creation"
   | "batch_acceleration"
   | "launch_package"
@@ -2105,6 +2106,139 @@ export type RevenueFirstBusinessAutonomousLaunchApplyResponse = {
   batchRun: RevenueMoneyArmyBatchRun | null;
   execution: RevenueFirstBusinessExecutionPlan | null;
   launch: RevenueFirstBusinessInternalLaunchPlan | null;
+  package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  preparation: RevenueFirstStorePreparationPlan | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+};
+
+export type RevenueFirstBusinessLiveExecutorProvider =
+  | "Shopify"
+  | "Etsy"
+  | "Printify"
+  | "Printful"
+  | "Meta"
+  | "Google Analytics"
+  | "Manual";
+
+export type RevenueFirstBusinessLiveExecutorStepKind =
+  | "connect_storefront"
+  | "connect_supplier"
+  | "create_supplier_product"
+  | "create_storefront_product"
+  | "publish_storefront_product"
+  | "prepare_content_upload"
+  | "prepare_ad_campaign"
+  | "activate_ad_spend"
+  | "connect_tracking"
+  | "record_first_week_evidence";
+
+export type RevenueFirstBusinessLiveExecutorPlan = {
+  actualExternalActionsExecuted: false;
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  credentialReadiness: Array<{
+    approvalStatus: "owner_approved" | "owner_required";
+    credentialRefs: string[];
+    externalExecution: false;
+    provider: RevenueFirstBusinessLiveExecutorProvider;
+    providerContacted: false;
+    status: "ready_after_owner_connection" | "missing_owner_unlock";
+  }>;
+  externalExecution: false;
+  generatedAt: string;
+  guardrails: string[];
+  liveExecutorId: string;
+  liveRunbook: Array<{
+    approvalRequired: boolean;
+    executionState:
+      | "ready_live_non_payment"
+      | "blocked_owner_unlock"
+      | "payment_locked"
+      | "internal_tracking_ready";
+    externalExecution: false;
+    id: string;
+    kind: RevenueFirstBusinessLiveExecutorStepKind;
+    lane: RevenueFirstBusinessAutonomousLaunchLane;
+    paymentRequired: boolean;
+    provider: RevenueFirstBusinessLiveExecutorProvider;
+    providerContacted: false;
+    rollback: string;
+    sequence: number;
+    title: string;
+  }>;
+  mode: "Controlled Live First Business Executor";
+  ownerUnlock: {
+    adDraftApproval: boolean;
+    connectorApproval: boolean;
+    externalExecution: false;
+    paymentExecution: false;
+    phraseAccepted: boolean;
+    providerContacted: false;
+    publicLaunchApproval: boolean;
+    status: "accepted_non_payment" | "waiting_owner";
+  };
+  paymentExecution: false;
+  paymentLockedQueue: Array<{
+    amount: number;
+    externalExecution: false;
+    paymentExecution: false;
+    provider: RevenueFirstBusinessLiveExecutorProvider;
+    providerContacted: false;
+    reason: string;
+    title: string;
+  }>;
+  providerActionManifests: Array<{
+    approvalRequired: boolean;
+    externalExecution: false;
+    idempotencyKey: string;
+    method: "POST" | "PUT";
+    pathTemplate: string;
+    payloadState: "prepared_not_sent";
+    paymentRequired: boolean;
+    provider: RevenueFirstBusinessLiveExecutorProvider;
+    providerContacted: false;
+    purpose: string;
+    rollbackKey: string;
+  }>;
+  providerContacted: false;
+  rollbackPlan: Array<{
+    externalExecution: false;
+    providerContacted: false;
+    step: string;
+  }>;
+  sourceAutonomousLaunchId: string;
+  status: "ready_for_owner_unlock" | "armed_non_payment_live_run" | "blocked";
+  summary: string;
+  totals: {
+    armedNonPaymentSteps: number;
+    blockedSteps: number;
+    credentialChecks: number;
+    paymentLockedSteps: number;
+    providerManifests: number;
+    rollbackSteps: number;
+  };
+};
+
+export type RevenueFirstBusinessLiveExecutorApplyResponse = {
+  autonomousLaunch: RevenueFirstBusinessAutonomousLaunchPlan | null;
+  batchRun: RevenueMoneyArmyBatchRun | null;
+  execution: RevenueFirstBusinessExecutionPlan | null;
+  launch: RevenueFirstBusinessInternalLaunchPlan | null;
+  live: {
+    actualExternalActionsExecuted: false;
+    auditLogId: string | null;
+    batchRunId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    liveExecutorId: string | null;
+    paymentExecution: false;
+    providerContacted: false;
+    stage: "controlled_live_executor";
+    status: "ready_for_owner_unlock" | "armed_non_payment_live_run" | "blocked";
+    summary: string;
+    unlockAccepted: boolean;
+  };
+  liveExecutor: RevenueFirstBusinessLiveExecutorPlan | null;
   package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
   preparation: RevenueFirstStorePreparationPlan | null;
   sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;

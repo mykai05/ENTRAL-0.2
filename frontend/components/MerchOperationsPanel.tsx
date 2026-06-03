@@ -106,6 +106,8 @@ import {
   type RevenueFirstBusinessExecutionPlan,
   type RevenueFirstBusinessInternalLaunchApplyResponse,
   type RevenueFirstBusinessInternalLaunchPlan,
+  type RevenueFirstBusinessLiveExecutorApplyResponse,
+  type RevenueFirstBusinessLiveExecutorPlan,
   type RevenueFirstStorePreparationPlan,
   type RevenueFirstStorePrepareApplyResponse,
   type RevenueFirstCashReadinessPlan,
@@ -324,6 +326,12 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [firstBusinessExecutionReceipt, setFirstBusinessExecutionReceipt] = useState<RevenueFirstBusinessExecuteApplyResponse["executed"] | null>(null);
   const [firstBusinessAutonomousLaunch, setFirstBusinessAutonomousLaunch] = useState<RevenueFirstBusinessAutonomousLaunchPlan | null>(null);
   const [firstBusinessAutonomousLaunchReceipt, setFirstBusinessAutonomousLaunchReceipt] = useState<RevenueFirstBusinessAutonomousLaunchApplyResponse["autonomous"] | null>(null);
+  const [firstBusinessLiveExecutor, setFirstBusinessLiveExecutor] = useState<RevenueFirstBusinessLiveExecutorPlan | null>(null);
+  const [firstBusinessLiveExecutorReceipt, setFirstBusinessLiveExecutorReceipt] = useState<RevenueFirstBusinessLiveExecutorApplyResponse["live"] | null>(null);
+  const [liveExecutorUnlockPhrase, setLiveExecutorUnlockPhrase] = useState("");
+  const [liveExecutorConnectorApproval, setLiveExecutorConnectorApproval] = useState(false);
+  const [liveExecutorPublicLaunchApproval, setLiveExecutorPublicLaunchApproval] = useState(false);
+  const [liveExecutorAdDraftApproval, setLiveExecutorAdDraftApproval] = useState(false);
   const [moneyArmyBatchRuns, setMoneyArmyBatchRuns] = useState<RevenueMoneyArmyBatchRun[]>([]);
   const [isLoadingBusinessFleet, setIsLoadingBusinessFleet] = useState(false);
   const [isLoadingBusinessFleetGap, setIsLoadingBusinessFleetGap] = useState(false);
@@ -338,6 +346,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [isLaunchingFirstBusinessInternal, setIsLaunchingFirstBusinessInternal] = useState(false);
   const [isExecutingFirstBusiness, setIsExecutingFirstBusiness] = useState(false);
   const [isPreparingAutonomousFirstBusinessLaunch, setIsPreparingAutonomousFirstBusinessLaunch] = useState(false);
+  const [isPreparingFirstBusinessLiveExecutor, setIsPreparingFirstBusinessLiveExecutor] = useState(false);
   const [isPreviewingBusinessFleetGapSeeds, setIsPreviewingBusinessFleetGapSeeds] = useState(false);
   const [isCreatingBusinessFleetGapSeeds, setIsCreatingBusinessFleetGapSeeds] = useState(false);
   const [isPreviewingBusinessFleetGapAcceleration, setIsPreviewingBusinessFleetGapAcceleration] = useState(false);
@@ -558,6 +567,11 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
     const available = new Set(assetReviewQueue.queue.map(revenueAssetReviewQueueKey));
     setSelectedReviewQueueKeys((current) => current.filter((key) => available.has(key)));
   }, [assetReviewQueue]);
+
+  function clearFirstBusinessLiveExecutor() {
+    setFirstBusinessLiveExecutor(null);
+    setFirstBusinessLiveExecutorReceipt(null);
+  }
 
   function updateAutomationLevel(nextLevel: MerchAutomationLevel) {
     setAutomationLevel(nextLevel);
@@ -912,6 +926,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(null);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       setBusinessFleetMessage(null);
       onEvent?.(`Business Fleet Scheduler scored ${response.plan.totals.businesses} businesses: ${response.plan.totals.readyParallel} ready parallel, ${response.plan.totals.launchNow} launch-now, ${response.plan.totals.qualityRepair} repair.`);
     } catch (caught) {
@@ -950,6 +965,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(null);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       setMoneyArmyBatchRuns([]);
       onEvent?.(`Business Fleet launch gap planner found ${response.plan.totals.launchWaveGap} missing first-wave lane${response.plan.totals.launchWaveGap === 1 ? "" : "s"}: ${response.plan.totals.repairActions} repair action${response.plan.totals.repairActions === 1 ? "" : "s"}, ${response.plan.totals.createOpportunityShells} new seed${response.plan.totals.createOpportunityShells === 1 ? "" : "s"}.`);
     } catch (caught) {
@@ -1071,6 +1087,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(null);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       setMoneyArmyBatchRuns(response.recentRuns);
       setBusinessFleetMessage(`Generate-score batch ready: ${response.plan.totals.generated} candidates, scale pressure ${response.plan.scalePressure.pressureScore}/100, kill pressure ${response.plan.killPressure.pressureScore}/100.`);
       onEvent?.(`Money Army generated and scored ${response.plan.totals.generated} internal candidates.`);
@@ -1111,6 +1128,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(null);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       if (response.batchRun) {
         const batchRun = response.batchRun;
         setMoneyArmyBatchRuns((currentRuns) => [
@@ -1145,6 +1163,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(null);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       setMoneyArmyGenerateScoreBatchReceipt(null);
       setMoneyArmyBatchRuns(response.recentRuns);
@@ -1191,6 +1210,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(null);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -1237,6 +1257,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(null);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -1282,6 +1303,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(null);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -1326,6 +1348,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecutionReceipt(response.executed);
       setFirstBusinessAutonomousLaunch(null);
       setFirstBusinessAutonomousLaunchReceipt(null);
+      clearFirstBusinessLiveExecutor();
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -1369,6 +1392,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessExecution(response.execution);
       setFirstBusinessAutonomousLaunch(response.autonomousLaunch);
       setFirstBusinessAutonomousLaunchReceipt(response.autonomous);
+      clearFirstBusinessLiveExecutor();
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -1383,6 +1407,56 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setError(caught instanceof Error ? caught.message : "Autonomous First Business Launch Prep failed.");
     } finally {
       setIsPreparingAutonomousFirstBusinessLaunch(false);
+    }
+  }
+
+  async function prepareControlledLiveExecutor() {
+    if (!firstBusinessAutonomousLaunch || firstBusinessAutonomousLaunch.status !== "autonomous_ready_payment_gated") return;
+
+    setIsPreparingFirstBusinessLiveExecutor(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    const unlockPhrase = liveExecutorUnlockPhrase.trim();
+
+    try {
+      const response = await apiFetch<RevenueFirstBusinessLiveExecutorApplyResponse>("/merch/revenue-engine/money-army/first-business/live-executor", {
+        json: {
+          adDraftApproval: liveExecutorAdDraftApproval,
+          candidateCount: 25,
+          confirm: "PREPARE CONTROLLED LIVE FIRST BUSINESS EXECUTOR",
+          connectorApproval: liveExecutorConnectorApproval,
+          dryRun: false,
+          maxProducts: 5,
+          note: "Controlled live executor prepared from dashboard controls.",
+          publicLaunchApproval: liveExecutorPublicLaunchApproval,
+          riskTolerance: "Low",
+          ...(unlockPhrase ? { liveUnlockPhrase: unlockPhrase } : {})
+        },
+        method: "POST"
+      });
+
+      setFirstBusinessPackage(response.package);
+      setFirstStorePreparation(response.preparation);
+      setFirstBusinessInternalLaunch(response.launch);
+      setFirstBusinessExecution(response.execution);
+      setFirstBusinessAutonomousLaunch(response.autonomousLaunch);
+      setFirstBusinessLiveExecutor(response.liveExecutor);
+      setFirstBusinessLiveExecutorReceipt(response.live);
+      setMoneyArmyGenerateScoreBatch(response.sourceBatch);
+      if (response.batchRun) {
+        const batchRun = response.batchRun;
+        setMoneyArmyBatchRuns((currentRuns) => [
+          batchRun,
+          ...currentRuns.filter((run) => run.id !== batchRun.id)
+        ].slice(0, 10));
+      }
+      setBusinessFleetMessage(response.live.summary);
+      onEvent?.(response.live.summary);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Controlled Live First Business Executor failed.");
+    } finally {
+      setIsPreparingFirstBusinessLiveExecutor(false);
     }
   }
 
@@ -3059,6 +3133,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             {isPreparingAutonomousFirstBusinessLaunch ? <Loader2 aria-hidden="true" size={15} /> : <Gauge aria-hidden="true" size={15} />}
             Autonomous Launch Prep
           </button>
+          <button type="button" className="primary" onClick={() => void prepareControlledLiveExecutor()} disabled={isPreparingFirstBusinessLiveExecutor || !firstBusinessAutonomousLaunch || firstBusinessAutonomousLaunch.status !== "autonomous_ready_payment_gated"}>
+            {isPreparingFirstBusinessLiveExecutor ? <Loader2 aria-hidden="true" size={15} /> : <ShieldAlert aria-hidden="true" size={15} />}
+            Build Live Executor
+          </button>
           <button type="button" onClick={() => void runMoneyArmyPipeline(true)} disabled={isPreviewingMoneyArmyPipeline || !moneyArmyPipeline || !moneyArmyPipeline.nextStage}>
             {isPreviewingMoneyArmyPipeline ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
             Preview batch stage
@@ -3135,6 +3213,24 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             {isLoadingAssetReviewQueue ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
             Load asset review queue
           </button>
+        </div>
+        <div className="merch-ops-grid compact" aria-label="Controlled live executor owner gates">
+          <label>
+            <span>Live Unlock Phrase</span>
+            <input value={liveExecutorUnlockPhrase} onChange={(event) => setLiveExecutorUnlockPhrase(event.target.value)} placeholder="Owner phrase required to arm" />
+          </label>
+          <label>
+            <span>Connectors Approved</span>
+            <input type="checkbox" checked={liveExecutorConnectorApproval} onChange={(event) => setLiveExecutorConnectorApproval(event.target.checked)} />
+          </label>
+          <label>
+            <span>Public Launch Approved</span>
+            <input type="checkbox" checked={liveExecutorPublicLaunchApproval} onChange={(event) => setLiveExecutorPublicLaunchApproval(event.target.checked)} />
+          </label>
+          <label>
+            <span>Ad Drafts Approved</span>
+            <input type="checkbox" checked={liveExecutorAdDraftApproval} onChange={(event) => setLiveExecutorAdDraftApproval(event.target.checked)} />
+          </label>
         </div>
         <div className="merch-ops-grid compact">
           <label>
@@ -5600,6 +5696,102 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 <div className="growth-blocked-actions">
                   <strong>Autonomous launch remains private</strong>
                   {firstBusinessAutonomousLaunch.blockedExternalActions.slice(0, 5).map((action) => <span key={action}>{action}</span>)}
+                </div>
+              </section>
+            ) : null}
+
+            {firstBusinessLiveExecutor ? (
+              <section className="revenue-engine-list" aria-label="Controlled Live First Business Executor">
+                <h4>Controlled Live First Business Executor</h4>
+                {firstBusinessLiveExecutorReceipt ? (
+                  <article>
+                    <span>{firstBusinessLiveExecutorReceipt.status.replace(/_/g, " ")} / {firstBusinessLiveExecutorReceipt.stage.replace(/_/g, " ")}</span>
+                    <strong>{firstBusinessLiveExecutorReceipt.unlockAccepted ? "Owner unlock accepted" : "Waiting for owner unlock"}</strong>
+                    <p>{firstBusinessLiveExecutorReceipt.summary}</p>
+                    <small>external execution {firstBusinessLiveExecutorReceipt.externalExecution ? "enabled" : "locked"} / provider {firstBusinessLiveExecutorReceipt.providerContacted ? "contacted" : "locked"} / payment {firstBusinessLiveExecutorReceipt.paymentExecution ? "enabled" : "locked"} / audit {firstBusinessLiveExecutorReceipt.auditLogId ?? "preview only"}</small>
+                  </article>
+                ) : null}
+                <article>
+                  <span>{firstBusinessLiveExecutor.status.replace(/_/g, " ")} / {firstBusinessLiveExecutor.ownerUnlock.status.replace(/_/g, " ")}</span>
+                  <strong>{firstBusinessLiveExecutor.mode}</strong>
+                  <p>{firstBusinessLiveExecutor.summary}</p>
+                  <small>{firstBusinessLiveExecutor.totals.armedNonPaymentSteps} armed steps / {firstBusinessLiveExecutor.totals.blockedSteps} blocked / {firstBusinessLiveExecutor.totals.paymentLockedSteps} payment locked / executor {firstBusinessLiveExecutor.liveExecutorId}</small>
+                </article>
+                <article>
+                  <span>phrase {firstBusinessLiveExecutor.ownerUnlock.phraseAccepted ? "accepted" : "waiting"} / connectors {firstBusinessLiveExecutor.ownerUnlock.connectorApproval ? "approved" : "waiting"} / public {firstBusinessLiveExecutor.ownerUnlock.publicLaunchApproval ? "approved" : "waiting"}</span>
+                  <strong>Owner unlock gate</strong>
+                  <p>Ad drafts {firstBusinessLiveExecutor.ownerUnlock.adDraftApproval ? "approved" : "waiting"}; payment execution remains locked.</p>
+                  <small>external execution {firstBusinessLiveExecutor.ownerUnlock.externalExecution ? "enabled" : "locked"} / payment {firstBusinessLiveExecutor.ownerUnlock.paymentExecution ? "enabled" : "locked"} / provider {firstBusinessLiveExecutor.ownerUnlock.providerContacted ? "contacted" : "locked"}</small>
+                </article>
+                <section className="revenue-engine-list" aria-label="Live executor credential readiness">
+                  <h4>Credential Readiness</h4>
+                  {firstBusinessLiveExecutor.credentialReadiness.map((credential) => (
+                    <article key={`${credential.provider}-${credential.status}`}>
+                      <span>{credential.status.replace(/_/g, " ")} / {credential.approvalStatus.replace(/_/g, " ")}</span>
+                      <strong>{credential.provider}</strong>
+                      <p>{credential.credentialRefs.join(" / ")}</p>
+                      <small>provider {credential.providerContacted ? "contacted" : "locked"} / external execution {credential.externalExecution ? "enabled" : "locked"}</small>
+                    </article>
+                  ))}
+                </section>
+                <section className="revenue-engine-list" aria-label="Live executor provider action manifests">
+                  <h4>Provider Action Manifests</h4>
+                  {firstBusinessLiveExecutor.providerActionManifests.slice(0, 8).map((manifest) => (
+                    <article key={manifest.idempotencyKey}>
+                      <span>{manifest.provider} / {manifest.method} / {manifest.payloadState.replace(/_/g, " ")}</span>
+                      <strong>{manifest.purpose}</strong>
+                      <p>{manifest.pathTemplate}</p>
+                      <small>approval {manifest.approvalRequired ? "required" : "not required"} / payment {manifest.paymentRequired ? "locked" : "not required"} / rollback {manifest.rollbackKey}</small>
+                    </article>
+                  ))}
+                </section>
+                <section className="revenue-engine-table-wrap" aria-label="Live executor runbook">
+                  <h4>Live Runbook</h4>
+                  <table className="revenue-engine-table">
+                    <thead>
+                      <tr>
+                        <th>Step</th>
+                        <th>Provider</th>
+                        <th>State</th>
+                        <th>Rollback</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {firstBusinessLiveExecutor.liveRunbook.map((step) => (
+                        <tr key={step.id}>
+                          <td>{step.sequence}. {step.title}</td>
+                          <td>{step.provider}</td>
+                          <td>{step.executionState.replace(/_/g, " ")}</td>
+                          <td>{step.rollback}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+                <section className="revenue-engine-list warning" aria-label="Live executor payment locked queue">
+                  <h4>Payment Locked Queue</h4>
+                  {firstBusinessLiveExecutor.paymentLockedQueue.map((payment) => (
+                    <article key={`${payment.provider}-${payment.title}`}>
+                      <span>{payment.provider} / payment locked</span>
+                      <strong>{payment.title}: {formatMerchCurrency(payment.amount)}</strong>
+                      <p>{payment.reason}</p>
+                      <small>external execution {payment.externalExecution ? "enabled" : "locked"} / payment {payment.paymentExecution ? "enabled" : "locked"} / provider {payment.providerContacted ? "contacted" : "locked"}</small>
+                    </article>
+                  ))}
+                </section>
+                <section className="revenue-engine-list" aria-label="Live executor rollback plan">
+                  <h4>Rollback Plan</h4>
+                  {firstBusinessLiveExecutor.rollbackPlan.map((item) => (
+                    <article key={item.step}>
+                      <span>rollback / provider {item.providerContacted ? "contacted" : "locked"}</span>
+                      <strong>{item.step}</strong>
+                      <p>External execution {item.externalExecution ? "enabled" : "locked"}.</p>
+                    </article>
+                  ))}
+                </section>
+                <div className="growth-blocked-actions">
+                  <strong>Live executor remains controlled</strong>
+                  {firstBusinessLiveExecutor.blockedExternalActions.slice(0, 5).map((action) => <span key={action}>{action}</span>)}
                 </div>
               </section>
             ) : null}

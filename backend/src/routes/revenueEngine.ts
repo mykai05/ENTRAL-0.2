@@ -18,6 +18,7 @@ import {
   applyRevenueFirstBusinessInternalLaunchSchema,
   applyRevenueFirstBusinessExecuteSchema,
   applyRevenueFirstBusinessAutonomousLaunchSchema,
+  applyRevenueFirstBusinessLiveExecutorSchema,
   applyRevenueMoneyArmyBatchPipelineSchema,
   applyRevenueDigitalProductSchema,
   applyRevenueListingOptimizationSchema,
@@ -94,6 +95,7 @@ import {
   revenueLaunchReadinessQuerySchema,
   revenueLaunchChecklistActionBridgeConfirmation,
   revenueFirstBusinessLaunchConfirmation,
+  revenueFirstBusinessLiveExecutorUnlockPhrase,
   applyRevenueFirstBusinessLaunchSchema,
   applyRevenueFirstCashSprintSchema,
   revenueOpportunityFactoryConfirmation,
@@ -116,6 +118,7 @@ import {
   type ApplyRevenueFirstBusinessInternalLaunchInput,
   type ApplyRevenueFirstBusinessExecuteInput,
   type ApplyRevenueFirstBusinessAutonomousLaunchInput,
+  type ApplyRevenueFirstBusinessLiveExecutorInput,
   type ApplyRevenueMoneyArmyBatchPipelineInput,
   type ApplyFacelessContentPipelineInput,
   type ApplyPortfolioCommandCenterInput,
@@ -283,10 +286,12 @@ import {
   buildRevenueFirstBusinessAutonomousLaunchPlan,
   buildRevenueFirstBusinessExecutionPlan,
   buildRevenueFirstBusinessInternalLaunchPlan,
+  buildRevenueFirstBusinessLiveExecutorPlan,
   buildRevenueFirstStorePreparationPlan,
   type RevenueFirstBusinessAutonomousLaunchPlan,
   type RevenueFirstBusinessExecutionPlan,
   type RevenueFirstBusinessInternalLaunchPlan,
+  type RevenueFirstBusinessLiveExecutorPlan,
   type RevenueFirstStorePreparationPlan
 } from "../services/revenueFirstStorePreparation.js";
 import {
@@ -2207,6 +2212,45 @@ function firstBusinessAutonomousLaunchKey(input: {
   })).digest("hex");
 }
 
+function firstBusinessLiveExecutorTotals(
+  liveExecutor: RevenueFirstBusinessLiveExecutorPlan | null,
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan
+): RevenueMoneyArmyBatchPipelinePlan["totals"] {
+  const base = moneyArmyGenerateScoreBatchTotals(sourceBatch);
+
+  return {
+    ...base,
+    blockedStages: liveExecutor?.status === "blocked" ? 1 : 0,
+    launchWaveGap: liveExecutor ? 0 : 1,
+    pendingApprovalPackets: liveExecutor?.status === "armed_non_payment_live_run"
+      ? liveExecutor.totals.paymentLockedSteps
+      : (liveExecutor?.totals.blockedSteps ?? 0) + (liveExecutor?.paymentLockedQueue.length ?? 0),
+    readyDeploymentBusinesses: liveExecutor?.status === "armed_non_payment_live_run" ? 1 : 0,
+    readyStages: liveExecutor?.status === "armed_non_payment_live_run" ? 1 : 0,
+    repairRequired: liveExecutor?.status === "blocked" ? 1 : 0,
+    selectedSourceKeys: liveExecutor ? 1 : 0,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  };
+}
+
+function firstBusinessLiveExecutorKey(input: {
+  liveExecutor: RevenueFirstBusinessLiveExecutorPlan | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+  userId: string;
+}) {
+  return createHash("sha256").update(JSON.stringify({
+    generatedAt: input.sourceBatch.generatedAt,
+    liveExecutorId: input.liveExecutor?.liveExecutorId ?? null,
+    sourceAutonomousLaunchId: input.liveExecutor?.sourceAutonomousLaunchId ?? null,
+    stage: "controlled_live_executor",
+    status: input.liveExecutor?.status ?? null,
+    totals: input.liveExecutor?.totals ?? null,
+    userId: input.userId
+  })).digest("hex");
+}
+
 async function applyRevenueMoneyArmyGenerateScoreBatch(userId: string, input: ApplyRevenueMoneyArmyGenerateScoreBatchInput) {
   const { plan } = await buildRevenueMoneyArmyGenerateScoreBatchForUser(userId, input);
   const sourceKeys = Array.from(new Set(plan.candidates.map((candidate) => candidate.sourceStoreId)));
@@ -3073,6 +3117,210 @@ async function applyRevenueFirstBusinessAutonomousLaunch(userId: string, input: 
     batchRun: moneyArmyBatchRunSnapshot(batchRun),
     execution,
     launch,
+    package: launchPackage,
+    preparation,
+    sourceBatch
+  };
+}
+
+async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: ApplyRevenueFirstBusinessLiveExecutorInput) {
+  const { package: launchPackage, sourceBatch } = await buildRevenueFirstBusinessLaunchPackageForUser(userId, input);
+  const preparation = launchPackage && launchPackage.status !== "blocked"
+    ? buildRevenueFirstStorePreparationPlan({
+      note: input.note ?? null,
+      packagePlan: launchPackage
+    })
+    : null;
+  const launch = preparation && preparation.status === "ready_to_execute_internal"
+    ? buildRevenueFirstBusinessInternalLaunchPlan({
+      note: input.note ?? null,
+      preparationPlan: preparation
+    })
+    : null;
+  const execution = launch && launch.status === "approved_for_launch_internal"
+    ? buildRevenueFirstBusinessExecutionPlan({
+      launchPlan: launch,
+      note: input.note ?? null
+    })
+    : null;
+  const autonomousLaunch = execution && execution.status === "ready_to_launch_first_business"
+    ? buildRevenueFirstBusinessAutonomousLaunchPlan({
+      executionPlan: execution,
+      note: input.note ?? null
+    })
+    : null;
+  const phraseAccepted = input.liveUnlockPhrase === revenueFirstBusinessLiveExecutorUnlockPhrase;
+  const liveExecutor = autonomousLaunch
+    ? buildRevenueFirstBusinessLiveExecutorPlan({
+      adDraftApproval: input.adDraftApproval,
+      autonomousLaunch,
+      connectorApproval: input.connectorApproval,
+      liveUnlockPhraseAccepted: phraseAccepted,
+      note: input.note ?? null,
+      publicLaunchApproval: input.publicLaunchApproval
+    })
+    : null;
+  const sourceKeys = liveExecutor && autonomousLaunch
+    ? [autonomousLaunch.executionPacket.finalExecutionPacket.store.sourceStoreId]
+    : [];
+  const afterTotals = firstBusinessLiveExecutorTotals(liveExecutor, sourceBatch);
+  const beforeTotals: RevenueMoneyArmyBatchPipelinePlan["totals"] = {
+    ...afterTotals,
+    blockedStages: 0,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 0,
+    repairRequired: 0
+  };
+  const liveExecutorPrepared = Boolean(liveExecutor);
+  const appliedSummary = input.dryRun
+    ? liveExecutor
+      ? `Controlled Live First Business Executor preview completed for ${liveExecutor.sourceAutonomousLaunchId}.`
+      : "Controlled Live First Business Executor preview found no autonomous launch packet."
+    : liveExecutor?.status === "armed_non_payment_live_run"
+      ? `${execution?.finalExecutionPacket.store.businessName ?? "First business"} controlled live executor armed for non-payment launch steps. No external action executed; payment actions remain locked.`
+      : liveExecutor
+        ? `${execution?.finalExecutionPacket.store.businessName ?? "First business"} controlled live executor prepared. Owner unlock, connector approval, public launch approval, or ad draft approval is still incomplete.`
+        : "Controlled Live First Business Executor could not prepare a live-run packet.";
+  const liveReceipt = {
+    actualExternalActionsExecuted: false as const,
+    auditLogId: null as string | null,
+    batchRunId: null as string | null,
+    dryRun: input.dryRun,
+    externalExecution: false as const,
+    liveExecutorId: liveExecutor?.liveExecutorId ?? null,
+    paymentExecution: false as const,
+    providerContacted: false as const,
+    stage: "controlled_live_executor" as const,
+    status: liveExecutor?.status ?? ("blocked" as const),
+    summary: appliedSummary,
+    unlockAccepted: phraseAccepted
+  };
+
+  if (input.dryRun) {
+    return {
+      autonomousLaunch,
+      batchRun: null,
+      execution,
+      launch,
+      live: liveReceipt,
+      liveExecutor,
+      package: launchPackage,
+      preparation,
+      sourceBatch
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: liveExecutor?.status === "armed_non_payment_live_run"
+      ? "revenue.first_business.controlled_live_executor_armed"
+      : liveExecutorPrepared
+        ? "revenue.first_business.controlled_live_executor_prepared"
+        : "revenue.first_business.controlled_live_executor_blocked",
+    actorUserId: userId,
+    metadata: {
+      actualExternalActionsExecuted: false,
+      autonomousLaunchId: autonomousLaunch?.autonomousLaunchId ?? null,
+      blockedExternalActions: liveExecutor?.blockedExternalActions ?? autonomousLaunch?.blockedExternalActions ?? execution?.blockedExternalActions ?? [],
+      credentialReadiness: liveExecutor?.credentialReadiness ?? [],
+      dryRun: false,
+      externalExecution: false,
+      guardrails: liveExecutor?.guardrails ?? [],
+      liveExecutor,
+      liveExecutorId: liveExecutor?.liveExecutorId ?? null,
+      liveRunbook: liveExecutor?.liveRunbook ?? [],
+      note: input.note ?? null,
+      ownerUnlock: liveExecutor?.ownerUnlock ?? {
+        adDraftApproval: input.adDraftApproval,
+        connectorApproval: input.connectorApproval,
+        phraseAccepted,
+        publicLaunchApproval: input.publicLaunchApproval
+      },
+      paymentExecution: false,
+      paymentLockedQueue: liveExecutor?.paymentLockedQueue ?? [],
+      providerActionManifests: liveExecutor?.providerActionManifests ?? [],
+      providerContacted: false,
+      rollbackPlan: liveExecutor?.rollbackPlan ?? [],
+      sourceBatchTotals: sourceBatch.totals,
+      sourceKeys,
+      status: liveExecutor?.status ?? autonomousLaunch?.status ?? execution?.status ?? launch?.status ?? preparation?.status ?? launchPackage?.status ?? "blocked",
+      summary: liveExecutor?.summary ?? appliedSummary,
+      totals: liveExecutor?.totals ?? null
+    },
+    outcome: liveExecutorPrepared ? "success" : "failure",
+    severity: liveExecutor?.status === "armed_non_payment_live_run" ? "high" : liveExecutorPrepared ? "medium" : "high",
+    targetId: liveExecutor?.liveExecutorId ?? autonomousLaunch?.autonomousLaunchId ?? execution?.executionId ?? launch?.launchId ?? preparation?.preparationId ?? launchPackage?.packageId ?? null,
+    targetType: "revenue_controlled_live_first_business_executor"
+  });
+  const batchKey = firstBusinessLiveExecutorKey({
+    liveExecutor,
+    sourceBatch,
+    userId
+  });
+  const batchRun = await prisma.revenueMoneyArmyBatchRun.upsert({
+    create: {
+      afterTotalsJson: stringifySecureJson(afterTotals),
+      auditLogId: auditLog.id,
+      batchKey,
+      beforeTotalsJson: stringifySecureJson(beforeTotals),
+      dryRun: false,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson({
+        autonomousLaunch,
+        execution,
+        launch,
+        live: {
+          ...liveReceipt,
+          auditLogId: auditLog.id
+        },
+        liveExecutor,
+        package: launchPackage,
+        preparation,
+        sourceBatchTotals: sourceBatch.totals
+      }),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(sourceKeys),
+      stage: "controlled_live_executor",
+      status: liveExecutor?.status ?? "blocked",
+      userId
+    },
+    update: {
+      afterTotalsJson: stringifySecureJson(afterTotals),
+      auditLogId: auditLog.id,
+      externalExecution: false,
+      providerContacted: false,
+      resultJson: stringifySecureJson({
+        autonomousLaunch,
+        execution,
+        launch,
+        live: {
+          ...liveReceipt,
+          auditLogId: auditLog.id
+        },
+        liveExecutor,
+        package: launchPackage,
+        preparation,
+        sourceBatchTotals: sourceBatch.totals
+      }),
+      resultSummary: appliedSummary,
+      sourceKeysJson: stringifySecureJson(sourceKeys),
+      status: liveExecutor?.status ?? "blocked"
+    },
+    where: { batchKey }
+  });
+
+  return {
+    autonomousLaunch,
+    batchRun: moneyArmyBatchRunSnapshot(batchRun),
+    execution,
+    launch,
+    live: {
+      ...liveReceipt,
+      auditLogId: auditLog.id,
+      batchRunId: batchRun.id
+    },
+    liveExecutor,
     package: launchPackage,
     preparation,
     sourceBatch
@@ -9976,6 +10224,19 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
 
     const input = applyRevenueFirstBusinessAutonomousLaunchSchema.parse(request.body);
     const response = await applyRevenueFirstBusinessAutonomousLaunch(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/money-army/first-business/live-executor", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueFirstBusinessLiveExecutorSchema.parse(request.body);
+    const response = await applyRevenueFirstBusinessLiveExecutor(currentUser.sub, input);
 
     return reply.send(response);
   });
