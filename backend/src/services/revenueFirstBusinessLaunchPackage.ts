@@ -12,7 +12,29 @@ export type RevenueFirstBusinessLaunchPackageStatus = "ready_for_approval" | "ma
 export type RevenueFirstBusinessLaunchPackageProduct = {
   approvalState: "ready_to_approve" | "needs_manual_review" | "blocked";
   candidateId: string;
+  complianceNotes: string;
   designConcept: string;
+  designPrompt: string;
+  designTheme: string;
+  internalDesignDraft: {
+    aiProviderUsed: false;
+    approvalGate: {
+      externalExecutionLocked: true;
+      humanApprovalRequired: true;
+      reason: string;
+      status: "Required";
+    };
+    assetChecklist: string[];
+    externalGeneration: false;
+    mockupDirection: string;
+    negativePrompt: string;
+    palette: string[];
+    placement: string;
+    prompt: string;
+    providerContacted: false;
+    typography: string;
+  };
+  listingDescription: string;
   listingTitle: string;
   productName: string;
   productType: string;
@@ -52,7 +74,7 @@ export type RevenueFirstBusinessLaunchPackageOrganicMove = {
     reason: string;
     status: "Required";
   };
-  channel: "listing" | "youtube_shorts" | "tiktok" | "instagram_reels" | "manual_signal_tracking";
+  channel: "listing" | "youtube_shorts" | "tiktok" | "instagram_reels" | "manual_signal_tracking" | "storefront_seo" | "community_outreach" | "email_capture";
   expectedInternalEffect: string;
   externalExecution: false;
   id: string;
@@ -61,6 +83,12 @@ export type RevenueFirstBusinessLaunchPackageOrganicMove = {
 };
 
 export type RevenueFirstBusinessLaunchPackagePlan = {
+  approvalChecklist: Array<{
+    category: "store" | "products" | "designs" | "content" | "traffic" | "finance" | "evidence";
+    externalExecutionLocked: true;
+    required: true;
+    title: string;
+  }>;
   auditEvents: string[];
   blockedExternalActions: string[];
   contentIdeas: RevenueFirstBusinessLaunchPackageContentIdea[];
@@ -89,6 +117,7 @@ export type RevenueFirstBusinessLaunchPackagePlan = {
     manualApprovalGates: number;
     organicMoves: number;
     products: number;
+    readyToApproveProducts: number;
     scaleCandidates: number;
     watchCandidates: number;
   };
@@ -151,10 +180,47 @@ function selectLaunchStore(candidates: RevenueMoneyArmyGeneratedAssetCandidate[]
 }
 
 function productPackageFor(candidate: RevenueMoneyArmyGeneratedAssetCandidate): RevenueFirstBusinessLaunchPackageProduct {
+  const prompt = [
+    candidate.designPrompt,
+    `Create an original ${candidate.productType} design for ${candidate.sourceStoreName}.`,
+    `Audience: ${candidate.productName}; style theme: ${candidate.designTheme}; keep all copy and artwork original.`
+  ].filter(Boolean).join(" ");
+
   return {
     approvalState: approvalStateFor(candidate),
     candidateId: candidate.candidateId,
+    complianceNotes: candidate.complianceNotes,
     designConcept: candidate.designConcept,
+    designPrompt: candidate.designPrompt,
+    designTheme: candidate.designTheme,
+    internalDesignDraft: {
+      aiProviderUsed: false,
+      approvalGate: {
+        externalExecutionLocked: true,
+        humanApprovalRequired: true,
+        reason: "Design draft is an internal AI-ready prompt and production brief only. Explicit approval is required before any AI image provider, designer, POD provider, upload, or marketplace action.",
+        status: "Required"
+      },
+      assetChecklist: [
+        "Verify all words, symbols, and visual references are original or owned by the store.",
+        "Confirm production-safe placement, readable contrast, and product-type fit.",
+        "Create or approve final artwork files only after operator approval.",
+        "Attach mockup proof and compliance notes before provider or marketplace work."
+      ],
+      externalGeneration: false,
+      mockupDirection: `Prepare front-facing ${candidate.productType} mockup notes for ${candidate.sourceStoreName}; keep artwork centered, readable, and brand-consistent.`,
+      negativePrompt: "No protected logos, celebrity likenesses, copyrighted characters, trademarked slogans, copied artwork, misleading claims, or marketplace policy risks.",
+      palette: unique([
+        "store brand primary",
+        "high-contrast neutral",
+        candidate.riskLevel === "low" ? "single accent color" : "low-risk minimal palette"
+      ]),
+      placement: candidate.productType.toLowerCase().includes("hoodie") ? "front chest or center back" : "front chest center",
+      prompt,
+      providerContacted: false,
+      typography: candidate.designTheme || "bold original typography"
+    },
+    listingDescription: candidate.listingDescription,
     listingTitle: candidate.listingTitle,
     productName: candidate.productName,
     productType: candidate.productType,
@@ -235,6 +301,24 @@ function organicMovesFor(input: {
       id: `organic_${safeId(input.storeName)}_listing`,
       title: "Prepare approval-ready listing proof"
     }),
+    organicMove({
+      channel: "storefront_seo",
+      expectedInternalEffect: `Prepare internal SEO title, tags, collection placement, and search-intent notes for ${input.storeName}.`,
+      id: `organic_${safeId(input.storeName)}_seo`,
+      title: "Prepare storefront SEO map"
+    }),
+    organicMove({
+      channel: "community_outreach",
+      expectedInternalEffect: `Draft no-send outreach notes for organic communities, existing customers, or owned channels relevant to ${input.storeName}.`,
+      id: `organic_${safeId(input.storeName)}_community`,
+      title: "Draft organic community outreach"
+    }),
+    organicMove({
+      channel: "email_capture",
+      expectedInternalEffect: `Prepare internal email or waitlist capture copy for ${primaryProduct?.productName ?? input.storeName}; no email platform action is executed.`,
+      id: `organic_${safeId(input.storeName)}_email_capture`,
+      title: "Prepare owned-list capture copy"
+    }),
     ...channelMoves,
     organicMove({
       channel: "manual_signal_tracking",
@@ -242,6 +326,53 @@ function organicMovesFor(input: {
       id: `organic_${safeId(input.storeName)}_signals`,
       title: "Prepare manual signal tracking"
     })
+  ];
+}
+
+function approvalChecklistFor(): RevenueFirstBusinessLaunchPackagePlan["approvalChecklist"] {
+  return [
+    {
+      category: "store",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve selected store, platform fit, audience, brand positioning, and launch status."
+    },
+    {
+      category: "products",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve top product concepts, pricing, margin, source lanes, tags, and listing copy."
+    },
+    {
+      category: "designs",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve each internal design draft, AI-ready prompt, negative prompt, mockup direction, and compliance note before artwork generation."
+    },
+    {
+      category: "content",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve faceless content hooks, scripts, channel fit, captions, disclosure, and posting order."
+    },
+    {
+      category: "traffic",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve organic-first traffic moves before any post, email, outreach, browser work, or external upload."
+    },
+    {
+      category: "finance",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve any Ad/Growth spend separately in Financial Orchestrator; paid spend remains locked."
+    },
+    {
+      category: "evidence",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Attach manual evidence fields for visits, units, revenue, comments, saves, conversion notes, and rotation review."
+    }
   ];
 }
 
@@ -275,23 +406,19 @@ export function buildFirstBusinessLaunchPackageFromMoneyArmyCandidates(input: {
 
   const store = input.stores.find((item) => item.id === selectedStore.storeId);
   const generatedAt = input.generatedAt ?? new Date().toISOString();
+  const productLimit = Math.max(5, Math.min(input.maxProducts ?? 10, 10));
   const topCandidates = selectedStore.storeCandidates
     .sort((left, right) => candidatePriority(right) - candidatePriority(left) || right.score - left.score)
-    .slice(0, Math.max(1, Math.min(input.maxProducts ?? 5, 8)));
+    .slice(0, productLimit);
   const products = topCandidates.map(productPackageFor);
-  const contentIdeas = topCandidates.slice(0, 5).map(contentIdeaFor);
+  const contentIdeas = topCandidates.slice(0, 10).map(contentIdeaFor);
   const organicFirstMoves = organicMovesFor({
     contentIdeas,
     products,
     storeName: store?.businessName ?? selectedStore.storeCandidates[0]?.sourceStoreName ?? "First Business"
   });
-  const manualApprovalGates = [
-    "Approve store, product candidates, pricing notes, listing copy, tags, and compliance notes before provider or marketplace work.",
-    "Approve faceless content scripts, captions, disclosure, and channel packages before any posting.",
-    "Approve any Ad/Growth spend separately in Financial Orchestrator. This launch package starts organic-first and no-spend.",
-    "Attach read-only or manually recorded performance evidence before scale rotation, paid testing, or budget release.",
-    "Record operator approval in ENTRAL before creating live records outside the internal dashboard."
-  ];
+  const approvalChecklist = approvalChecklistFor();
+  const manualApprovalGates = approvalChecklist.map((item) => item.title);
   const status = statusFor({
     killPressure: input.killPressure,
     products
@@ -299,9 +426,10 @@ export function buildFirstBusinessLaunchPackageFromMoneyArmyCandidates(input: {
   const storeName = store?.businessName ?? topCandidates[0]?.sourceStoreName ?? "First Business";
 
   return {
+    approvalChecklist,
     auditEvents: [
       "First Business Launch Package generated from top scored Money Army candidates.",
-      "Store, product candidates, faceless content ideas, and organic-first moves are approval-gated internal records.",
+      "Selected store, product concepts, internal AI-ready design drafts, faceless content ideas, and organic-first moves are approval-gated internal records.",
       "No provider, marketplace, ad, social, banking, upload, browser, or payment write action was executed."
     ],
     blockedExternalActions: launchPackageBlockedActions,
@@ -325,12 +453,13 @@ export function buildFirstBusinessLaunchPackageFromMoneyArmyCandidates(input: {
       sourceStoreId: selectedStore.storeId,
       storePlatform: store?.storePlatform ?? "Other"
     },
-    summary: `${storeName} launch package is ${status.replace(/_/g, " ")} with ${products.length} product candidate${products.length === 1 ? "" : "s"}, ${contentIdeas.length} faceless content idea${contentIdeas.length === 1 ? "" : "s"}, and ${organicFirstMoves.length} organic-first move${organicFirstMoves.length === 1 ? "" : "s"}. Scale pressure ${input.scalePressure.level} ${input.scalePressure.pressureScore}/100; kill pressure ${input.killPressure.level} ${input.killPressure.pressureScore}/100.`,
+    summary: `${storeName} launch package is ${status.replace(/_/g, " ")} with ${products.length} product concept${products.length === 1 ? "" : "s"}, ${products.length} internal AI-ready design draft${products.length === 1 ? "" : "s"}, ${contentIdeas.length} faceless content idea${contentIdeas.length === 1 ? "" : "s"}, and ${organicFirstMoves.length} organic-first move${organicFirstMoves.length === 1 ? "" : "s"}. Scale pressure ${input.scalePressure.level} ${input.scalePressure.pressureScore}/100; kill pressure ${input.killPressure.level} ${input.killPressure.pressureScore}/100.`,
     totals: {
       contentIdeas: contentIdeas.length,
       manualApprovalGates: manualApprovalGates.length,
       organicMoves: organicFirstMoves.length,
       products: products.length,
+      readyToApproveProducts: products.filter((product) => product.approvalState === "ready_to_approve").length,
       scaleCandidates: products.filter((product) => product.recommendation === "scale").length,
       watchCandidates: products.filter((product) => product.recommendation === "watch").length
     }

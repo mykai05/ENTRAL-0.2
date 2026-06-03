@@ -90,6 +90,9 @@ import {
   type RevenueBusinessFleetPlan,
   type RevenueBusinessFleetSchedulerResponse,
   type RevenueMoneyArmyBatchPipelineApplyResponse,
+  type RevenueMoneyArmyFirstBusinessLaunchPackage,
+  type RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse,
+  type RevenueMoneyArmyFirstBusinessLaunchPackageResponse,
   type RevenueMoneyArmyGenerateScoreBatchApplyResponse,
   type RevenueMoneyArmyGenerateScoreBatchPlan,
   type RevenueMoneyArmyGenerateScoreBatchResponse,
@@ -303,6 +306,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [moneyArmyPipelineReceipt, setMoneyArmyPipelineReceipt] = useState<RevenueMoneyArmyBatchPipelineApplyResponse["applied"] | null>(null);
   const [moneyArmyGenerateScoreBatch, setMoneyArmyGenerateScoreBatch] = useState<RevenueMoneyArmyGenerateScoreBatchPlan | null>(null);
   const [moneyArmyGenerateScoreBatchReceipt, setMoneyArmyGenerateScoreBatchReceipt] = useState<RevenueMoneyArmyGenerateScoreBatchApplyResponse["applied"] | null>(null);
+  const [firstBusinessPackage, setFirstBusinessPackage] = useState<RevenueMoneyArmyFirstBusinessLaunchPackage | null>(null);
+  const [firstBusinessPackageReceipt, setFirstBusinessPackageReceipt] = useState<RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse["applied"] | null>(null);
   const [moneyArmyBatchRuns, setMoneyArmyBatchRuns] = useState<RevenueMoneyArmyBatchRun[]>([]);
   const [isLoadingBusinessFleet, setIsLoadingBusinessFleet] = useState(false);
   const [isLoadingBusinessFleetGap, setIsLoadingBusinessFleetGap] = useState(false);
@@ -311,6 +316,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [isRunningMoneyArmyPipeline, setIsRunningMoneyArmyPipeline] = useState(false);
   const [isGeneratingMoneyArmyScoreBatch, setIsGeneratingMoneyArmyScoreBatch] = useState(false);
   const [isRecordingMoneyArmyScoreBatch, setIsRecordingMoneyArmyScoreBatch] = useState(false);
+  const [isGeneratingFirstBusinessPackage, setIsGeneratingFirstBusinessPackage] = useState(false);
+  const [isRecordingFirstBusinessPackage, setIsRecordingFirstBusinessPackage] = useState(false);
   const [isPreviewingBusinessFleetGapSeeds, setIsPreviewingBusinessFleetGapSeeds] = useState(false);
   const [isCreatingBusinessFleetGapSeeds, setIsCreatingBusinessFleetGapSeeds] = useState(false);
   const [isPreviewingBusinessFleetGapAcceleration, setIsPreviewingBusinessFleetGapAcceleration] = useState(false);
@@ -875,6 +882,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setMoneyArmyPipelineReceipt(null);
       setMoneyArmyGenerateScoreBatch(null);
       setMoneyArmyGenerateScoreBatchReceipt(null);
+      setFirstBusinessPackage(null);
+      setFirstBusinessPackageReceipt(null);
       setBusinessFleetMessage(null);
       onEvent?.(`Business Fleet Scheduler scored ${response.plan.totals.businesses} businesses: ${response.plan.totals.readyParallel} ready parallel, ${response.plan.totals.launchNow} launch-now, ${response.plan.totals.qualityRepair} repair.`);
     } catch (caught) {
@@ -903,6 +912,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setMoneyArmyPipelineReceipt(null);
       setMoneyArmyGenerateScoreBatch(null);
       setMoneyArmyGenerateScoreBatchReceipt(null);
+      setFirstBusinessPackage(null);
+      setFirstBusinessPackageReceipt(null);
       setMoneyArmyBatchRuns([]);
       onEvent?.(`Business Fleet launch gap planner found ${response.plan.totals.launchWaveGap} missing first-wave lane${response.plan.totals.launchWaveGap === 1 ? "" : "s"}: ${response.plan.totals.repairActions} repair action${response.plan.totals.repairActions === 1 ? "" : "s"}, ${response.plan.totals.createOpportunityShells} new seed${response.plan.totals.createOpportunityShells === 1 ? "" : "s"}.`);
     } catch (caught) {
@@ -1014,6 +1025,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
 
       setMoneyArmyGenerateScoreBatch(response.plan);
       setMoneyArmyGenerateScoreBatchReceipt(null);
+      setFirstBusinessPackage(response.plan.firstBusinessLaunchPackage);
+      setFirstBusinessPackageReceipt(null);
       setMoneyArmyBatchRuns(response.recentRuns);
       setBusinessFleetMessage(`Generate-score batch ready: ${response.plan.totals.generated} candidates, scale pressure ${response.plan.scalePressure.pressureScore}/100, kill pressure ${response.plan.killPressure.pressureScore}/100.`);
       onEvent?.(`Money Army generated and scored ${response.plan.totals.generated} internal candidates.`);
@@ -1045,6 +1058,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
 
       setMoneyArmyGenerateScoreBatch(response.plan);
       setMoneyArmyGenerateScoreBatchReceipt(response.applied);
+      setFirstBusinessPackage(response.plan.firstBusinessLaunchPackage);
       if (response.batchRun) {
         const batchRun = response.batchRun;
         setMoneyArmyBatchRuns((currentRuns) => [
@@ -1058,6 +1072,71 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setError(caught instanceof Error ? caught.message : "Money Army generate-score record failed.");
     } finally {
       setIsRecordingMoneyArmyScoreBatch(false);
+    }
+  }
+
+  async function generateFirstBusinessPackage() {
+    setIsGeneratingFirstBusinessPackage(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueMoneyArmyFirstBusinessLaunchPackageResponse>("/merch/revenue-engine/money-army/first-business-package?candidateCount=25&maxProducts=10");
+
+      setFirstBusinessPackage(response.package);
+      setFirstBusinessPackageReceipt(null);
+      setMoneyArmyGenerateScoreBatch(response.sourceBatch);
+      setMoneyArmyGenerateScoreBatchReceipt(null);
+      setMoneyArmyBatchRuns(response.recentRuns);
+      setBusinessFleetMessage(response.package
+        ? `First Business Package ready: ${response.package.totals.products} product concepts, ${response.package.totals.contentIdeas} content ideas, ${response.package.totals.organicMoves} organic moves.`
+        : "First Business Package found no eligible internal package.");
+      onEvent?.(response.package
+        ? `Generated First Business Package for ${response.package.store.businessName}.`
+        : "Generated First Business Package found no eligible package.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "First Business Package generation failed.");
+    } finally {
+      setIsGeneratingFirstBusinessPackage(false);
+    }
+  }
+
+  async function recordFirstBusinessPackage() {
+    if (!firstBusinessPackage) return;
+
+    setIsRecordingFirstBusinessPackage(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse>("/merch/revenue-engine/money-army/first-business-package/apply", {
+        json: {
+          candidateCount: 25,
+          confirm: "RECORD INTERNAL FIRST BUSINESS LAUNCH PACKAGE",
+          dryRun: false,
+          maxProducts: 10,
+          note: "Recorded from First Business Package dashboard controls.",
+          riskTolerance: "Low"
+        },
+        method: "POST"
+      });
+
+      setFirstBusinessPackage(response.package);
+      setFirstBusinessPackageReceipt(response.applied);
+      setMoneyArmyGenerateScoreBatch(response.sourceBatch);
+      if (response.batchRun) {
+        const batchRun = response.batchRun;
+        setMoneyArmyBatchRuns((currentRuns) => [
+          batchRun,
+          ...currentRuns.filter((run) => run.id !== batchRun.id)
+        ].slice(0, 10));
+      }
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(response.applied.summary);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "First Business Package record failed.");
+    } finally {
+      setIsRecordingFirstBusinessPackage(false);
     }
   }
 
@@ -2709,6 +2788,14 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
           <button type="button" onClick={() => void recordMoneyArmyGenerateScoreBatch()} disabled={isRecordingMoneyArmyScoreBatch || !moneyArmyGenerateScoreBatch || moneyArmyGenerateScoreBatch.totals.generated === 0}>
             {isRecordingMoneyArmyScoreBatch ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
             Record score batch
+          </button>
+          <button type="button" className="primary" onClick={() => void generateFirstBusinessPackage()} disabled={isGeneratingFirstBusinessPackage}>
+            {isGeneratingFirstBusinessPackage ? <Loader2 aria-hidden="true" size={15} /> : <PackageCheck aria-hidden="true" size={15} />}
+            Generate first package
+          </button>
+          <button type="button" onClick={() => void recordFirstBusinessPackage()} disabled={isRecordingFirstBusinessPackage || !firstBusinessPackage}>
+            {isRecordingFirstBusinessPackage ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record first package
           </button>
           <button type="button" onClick={() => void runMoneyArmyPipeline(true)} disabled={isPreviewingMoneyArmyPipeline || !moneyArmyPipeline || !moneyArmyPipeline.nextStage}>
             {isPreviewingMoneyArmyPipeline ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
@@ -4888,21 +4975,37 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage ? (
               <section className="revenue-engine-list" aria-label="Money Army first business launch package">
                 <h4>First Business Launch Package</h4>
+                {firstBusinessPackageReceipt ? (
+                  <article>
+                    <span>{firstBusinessPackageReceipt.stage.replace(/_/g, " ")} / {firstBusinessPackageReceipt.dryRun ? "preview" : "recorded"}</span>
+                    <strong>{firstBusinessPackageReceipt.providerContacted ? "Provider contacted" : "Provider locked"}</strong>
+                    <p>{firstBusinessPackageReceipt.summary}</p>
+                    <small>external execution {firstBusinessPackageReceipt.externalExecution ? "enabled" : "locked"} / audit {firstBusinessPackageReceipt.auditLogId ?? "preview only"} / run {firstBusinessPackageReceipt.batchRunId ?? "not recorded"}</small>
+                  </article>
+                ) : null}
                 <article>
                   <span>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.status.replace(/_/g, " ")} / {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.store.storePlatform}</span>
                   <strong>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.store.businessName}</strong>
                   <p>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.summary}</p>
                   <small>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.store.industry} / {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.store.audience}</small>
                 </article>
-                {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.products.slice(0, 5).map((product) => (
+                {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.products.slice(0, 10).map((product) => (
                   <article key={product.candidateId}>
                     <span>{product.approvalState.replace(/_/g, " ")} / {product.recommendation} / score {product.score}</span>
                     <strong>{product.productName}</strong>
-                    <p>{product.rotationReason}</p>
-                    <small>{product.productType} / {formatMerchCurrency(product.retailPrice)} / {product.profitMargin}% margin / source {product.sourceProductName ?? "generated lane"}</small>
+                    <p>{product.designConcept}</p>
+                    <small>{product.productType} / {formatMerchCurrency(product.retailPrice)} / {product.profitMargin}% margin / source {product.sourceProductName ?? "generated lane"} / {product.listingTitle}</small>
                   </article>
                 ))}
-                {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.contentIdeas.slice(0, 4).map((idea) => (
+                {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.products.slice(0, 5).map((product) => (
+                  <article key={`${product.candidateId}-design`}>
+                    <span>AI-ready design draft / provider locked</span>
+                    <strong>{product.internalDesignDraft.mockupDirection}</strong>
+                    <p>{product.internalDesignDraft.prompt}</p>
+                    <small>{product.internalDesignDraft.placement} / {product.internalDesignDraft.typography} / avoid {product.internalDesignDraft.negativePrompt}</small>
+                  </article>
+                ))}
+                {moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.contentIdeas.slice(0, 10).map((idea) => (
                   <article key={idea.id}>
                     <span>{idea.channel.replace(/_/g, " ")} / {idea.status.replace(/_/g, " ")}</span>
                     <strong>{idea.productName}</strong>
@@ -4913,13 +5016,13 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 <article>
                   <span>organic first / no spend</span>
                   <strong>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.totals.organicMoves} organic moves queued</strong>
-                  <p>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.organicFirstMoves.slice(0, 3).map((move) => move.title).join(" / ")}</p>
-                  <small>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.organicFirstMoves.slice(0, 3).map((move) => move.channel.replace(/_/g, " ")).join(" / ")}</small>
+                  <p>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.organicFirstMoves.slice(0, 6).map((move) => move.title).join(" / ")}</p>
+                  <small>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.organicFirstMoves.slice(0, 6).map((move) => move.channel.replace(/_/g, " ")).join(" / ")}</small>
                 </article>
                 <article>
-                  <span>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.manualApprovalGates.length} approval gates</span>
+                  <span>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.approvalChecklist.length} approval gates</span>
                   <strong>Approval-gated package</strong>
-                  <p>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.manualApprovalGates.slice(0, 3).join(" ")}</p>
+                  <p>{moneyArmyGenerateScoreBatch.firstBusinessLaunchPackage.approvalChecklist.map((item) => item.title).slice(0, 4).join(" ")}</p>
                   <small>external execution locked / provider contacted false</small>
                 </article>
               </section>

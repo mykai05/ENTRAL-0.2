@@ -20,6 +20,7 @@ import {
 export type RevenueMoneyArmyGenerateScoreBatchOptions = Partial<RevenueEngineThresholds> & {
   candidateCount?: number;
   generatedAt?: string;
+  maxProducts?: number;
   priceRange?: {
     max: number;
     min: number;
@@ -65,8 +66,12 @@ export type RevenueMoneyArmyGeneratedAssetCandidate = {
   auditOnly: true;
   candidateId: string;
   confidence: number;
+  complianceNotes: string;
   designConcept: string;
+  designPrompt: string;
+  designTheme: string;
   externalExecution: false;
+  listingDescription: string;
   listingTitle: string;
   nextInternalState: string | null;
   organicContentTieIn: {
@@ -347,9 +352,13 @@ function candidateFromScore(input: {
     assetScore: input.score.assetScore,
     auditOnly: true,
     candidateId: input.score.assetId,
+    complianceNotes: input.generatedProduct.complianceNotes ?? "Internal candidate requires compliance review before any external launch work.",
     confidence: input.score.confidence,
     designConcept: input.generatedProduct.designConcept,
+    designPrompt: input.generatedProduct.designPrompt ?? input.generatedProduct.designConcept,
+    designTheme: input.generatedProduct.designTheme ?? input.store.brandStyle,
     externalExecution: false,
+    listingDescription: input.generatedProduct.listingDescription ?? "Internal listing draft requires approval before marketplace publication.",
     listingTitle: input.generatedProduct.listingTitle ?? input.generatedProduct.productName,
     nextInternalState: input.score.nextInternalState,
     organicContentTieIn: {
@@ -498,6 +507,7 @@ export function buildRevenueMoneyArmyGenerateScoreBatchPlan(input: {
     candidates,
     generatedAt,
     killPressure,
+    maxProducts: input.options?.maxProducts,
     products: input.products,
     scalePressure,
     stores: input.stores

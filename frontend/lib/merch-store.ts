@@ -1227,6 +1227,7 @@ export type RevenueBusinessFleetLaunchWaveApplyResponse = {
 
 export type RevenueMoneyArmyBatchPipelineStageName =
   | "generate_score_batch"
+  | "first_business_launch_package"
   | "batch_creation"
   | "batch_acceleration"
   | "launch_package"
@@ -1350,9 +1351,13 @@ export type RevenueMoneyArmyGeneratedAssetCandidate = {
   assetScore: RevenueAssetScoreBreakdown;
   auditOnly: true;
   candidateId: string;
+  complianceNotes: string;
   confidence: number;
   designConcept: string;
+  designPrompt: string;
+  designTheme: string;
   externalExecution: false;
+  listingDescription: string;
   listingTitle: string;
   nextInternalState: string | null;
   organicContentTieIn: {
@@ -1385,7 +1390,29 @@ export type RevenueFirstBusinessLaunchPackageStatus = "ready_for_approval" | "ma
 export type RevenueFirstBusinessLaunchPackageProductCandidate = {
   approvalState: "ready_to_approve" | "needs_manual_review" | "blocked";
   candidateId: string;
+  complianceNotes: string;
   designConcept: string;
+  designPrompt: string;
+  designTheme: string;
+  internalDesignDraft: {
+    aiProviderUsed: false;
+    approvalGate: {
+      externalExecutionLocked: true;
+      humanApprovalRequired: true;
+      reason: string;
+      status: "Required";
+    };
+    assetChecklist: string[];
+    externalGeneration: false;
+    mockupDirection: string;
+    negativePrompt: string;
+    palette: string[];
+    placement: string;
+    prompt: string;
+    providerContacted: false;
+    typography: string;
+  };
+  listingDescription: string;
   listingTitle: string;
   productName: string;
   productType: string;
@@ -1425,7 +1452,7 @@ export type RevenueFirstBusinessLaunchPackageOrganicMove = {
     reason: string;
     status: "Required";
   };
-  channel: "listing" | "youtube_shorts" | "tiktok" | "instagram_reels" | "manual_signal_tracking";
+  channel: "listing" | "youtube_shorts" | "tiktok" | "instagram_reels" | "manual_signal_tracking" | "storefront_seo" | "community_outreach" | "email_capture";
   expectedInternalEffect: string;
   externalExecution: false;
   id: string;
@@ -1434,6 +1461,12 @@ export type RevenueFirstBusinessLaunchPackageOrganicMove = {
 };
 
 export type RevenueMoneyArmyFirstBusinessLaunchPackage = {
+  approvalChecklist: Array<{
+    category: "store" | "products" | "designs" | "content" | "traffic" | "finance" | "evidence";
+    externalExecutionLocked: true;
+    required: true;
+    title: string;
+  }>;
   auditEvents: string[];
   blockedExternalActions: string[];
   contentIdeas: RevenueFirstBusinessLaunchPackageContentIdea[];
@@ -1462,6 +1495,7 @@ export type RevenueMoneyArmyFirstBusinessLaunchPackage = {
     manualApprovalGates: number;
     organicMoves: number;
     products: number;
+    readyToApproveProducts: number;
     scaleCandidates: number;
     watchCandidates: number;
   };
@@ -1516,6 +1550,27 @@ export type RevenueMoneyArmyGenerateScoreBatchApplyResponse = {
   };
   batchRun: RevenueMoneyArmyBatchRun | null;
   plan: RevenueMoneyArmyGenerateScoreBatchPlan;
+};
+
+export type RevenueMoneyArmyFirstBusinessLaunchPackageResponse = {
+  package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  recentRuns: RevenueMoneyArmyBatchRun[];
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
+};
+
+export type RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    batchRunId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    stage: "first_business_launch_package";
+    summary: string;
+  };
+  batchRun: RevenueMoneyArmyBatchRun | null;
+  package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
+  sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
 };
 
 export type RevenuePortfolioDashboardNextAction = {

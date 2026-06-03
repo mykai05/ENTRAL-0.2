@@ -147,6 +147,7 @@ export const revenueBusinessFleetLiveLaunchPackageConfirmation = "RECORD INTERNA
 export const revenueBusinessFleetProviderApprovalReviewConfirmation = "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS";
 export const revenueMoneyArmyBatchPipelineConfirmation = "RUN INTERNAL MONEY ARMY BATCH PIPELINE";
 export const revenueMoneyArmyGenerateScoreBatchConfirmation = "RECORD INTERNAL MONEY ARMY GENERATE SCORE BATCH";
+export const revenueFirstBusinessLaunchPackageConfirmation = "RECORD INTERNAL FIRST BUSINESS LAUNCH PACKAGE";
 export const revenueLaunchChecklistActionBridgeConfirmation = "DISPATCH INTERNAL REVENUE LAUNCH CHECKLIST ACTIONS";
 export const revenueLaunchSprintConfirmation = "RUN INTERNAL REVENUE LAUNCH SPRINT";
 export const revenueFirstCashSprintConfirmation = "RUN INTERNAL FIRST CASH SPRINT";
@@ -470,6 +471,7 @@ export const applyRevenueMoneyArmyBatchPipelineSchema = z.object({
 const revenueMoneyArmyGenerateScoreBatchFields = {
   ...revenueEngineThresholdFields,
   candidateCount: z.coerce.number().int().min(10).max(50).default(25),
+  maxProducts: z.coerce.number().int().min(5).max(10).default(10),
   priceRange: z.object({
     max: moneyAmountSchema.default(64),
     min: moneyAmountSchema.default(18)
@@ -484,6 +486,15 @@ export const revenueMoneyArmyGenerateScoreBatchQuerySchema = z.object(revenueMon
 export const applyRevenueMoneyArmyGenerateScoreBatchSchema = z.object({
   ...revenueMoneyArmyGenerateScoreBatchFields,
   confirm: z.literal(revenueMoneyArmyGenerateScoreBatchConfirmation),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500)
+});
+
+export const revenueFirstBusinessLaunchPackageQuerySchema = z.object(revenueMoneyArmyGenerateScoreBatchFields);
+
+export const applyRevenueFirstBusinessLaunchPackageSchema = z.object({
+  ...revenueMoneyArmyGenerateScoreBatchFields,
+  confirm: z.literal(revenueFirstBusinessLaunchPackageConfirmation),
   dryRun: z.boolean().default(true),
   note: optionalTrimmedString(500)
 });
@@ -1671,6 +1682,8 @@ export type RevenueMoneyArmyBatchPipelineQueryInput = z.infer<typeof revenueMone
 export type ApplyRevenueMoneyArmyBatchPipelineInput = z.infer<typeof applyRevenueMoneyArmyBatchPipelineSchema>;
 export type RevenueMoneyArmyGenerateScoreBatchQueryInput = z.infer<typeof revenueMoneyArmyGenerateScoreBatchQuerySchema>;
 export type ApplyRevenueMoneyArmyGenerateScoreBatchInput = z.infer<typeof applyRevenueMoneyArmyGenerateScoreBatchSchema>;
+export type RevenueFirstBusinessLaunchPackageQueryInput = z.infer<typeof revenueFirstBusinessLaunchPackageQuerySchema>;
+export type ApplyRevenueFirstBusinessLaunchPackageInput = z.infer<typeof applyRevenueFirstBusinessLaunchPackageSchema>;
 export type RevenueAssetControlLedgerQueryInput = z.infer<typeof revenueAssetControlLedgerQuerySchema>;
 export type RevenueAssetControlRecoveryQueryInput = z.infer<typeof revenueAssetControlRecoveryQuerySchema>;
 export type RevenueAssetReviewQueueQueryInput = z.infer<typeof revenueAssetReviewQueueQuerySchema>;

@@ -7,6 +7,7 @@ import {
   applyRevenueBusinessFleetLiveLaunchPackageSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
+  applyRevenueFirstBusinessLaunchPackageSchema,
   applyRevenueMoneyArmyGenerateScoreBatchSchema,
   applyRevenueMoneyArmyBatchPipelineSchema,
   createClientMerchStoreSchema,
@@ -70,6 +71,7 @@ import {
   revenueAssetControlLedgerQuerySchema,
   revenueAssetReviewQueueQuerySchema,
   revenueBusinessFleetLaunchGateQuerySchema,
+  revenueFirstBusinessLaunchPackageQuerySchema,
   revenueMoneyArmyGenerateScoreBatchQuerySchema,
   revenueMoneyArmyBatchPipelineQuerySchema,
   revenueBusinessFleetSchedulerQuerySchema,
@@ -626,6 +628,17 @@ describe("validation schemas", () => {
       confirm: "RECORD INTERNAL MONEY ARMY GENERATE SCORE BATCH",
       dryRun: false
     });
+    const firstBusinessPackage = revenueFirstBusinessLaunchPackageQuerySchema.parse({
+      candidateCount: "25",
+      maxProducts: "10",
+      riskTolerance: "Low"
+    });
+    const firstBusinessPackageApply = applyRevenueFirstBusinessLaunchPackageSchema.parse({
+      candidateCount: 25,
+      confirm: "RECORD INTERNAL FIRST BUSINESS LAUNCH PACKAGE",
+      dryRun: false,
+      maxProducts: 10
+    });
 
     expect(query).toMatchObject({
       launchWaveSize: 10,
@@ -656,9 +669,12 @@ describe("validation schemas", () => {
     expect(moneyArmyApply.dryRun).toBe(true);
     expect(moneyArmyApply.stage).toBe("batch_creation");
     expect(moneyArmyGenerateScore.candidateCount).toBe(50);
+    expect(moneyArmyGenerateScore.maxProducts).toBe(10);
     expect(moneyArmyGenerateScore.productTypes).toEqual(["T-shirt", "Hoodie"]);
     expect(moneyArmyGenerateScore.storeIds).toEqual(["store-1", "store-2"]);
     expect(moneyArmyGenerateScoreApply.dryRun).toBe(false);
+    expect(firstBusinessPackage.maxProducts).toBe(10);
+    expect(firstBusinessPackageApply.dryRun).toBe(false);
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ shardCount: "300" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
@@ -692,6 +708,12 @@ describe("validation schemas", () => {
     })).toThrow();
     expect(() => applyRevenueMoneyArmyGenerateScoreBatchSchema.parse({
       confirm: "RUN INTERNAL MONEY ARMY BATCH PIPELINE"
+    })).toThrow();
+    expect(() => revenueFirstBusinessLaunchPackageQuerySchema.parse({
+      maxProducts: 11
+    })).toThrow();
+    expect(() => applyRevenueFirstBusinessLaunchPackageSchema.parse({
+      confirm: "RECORD INTERNAL MONEY ARMY GENERATE SCORE BATCH"
     })).toThrow();
   });
 

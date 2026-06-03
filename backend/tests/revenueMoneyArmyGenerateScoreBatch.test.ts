@@ -95,9 +95,17 @@ describe("Revenue Money Army Generate & Score Batch", () => {
       providerContacted: false,
       status: expect.any(String)
     });
-    expect(plan.firstBusinessLaunchPackage?.products.length).toBeGreaterThan(0);
+    expect(plan.firstBusinessLaunchPackage?.products.length).toBeGreaterThanOrEqual(5);
+    expect(plan.firstBusinessLaunchPackage?.products.length).toBeLessThanOrEqual(10);
+    expect(plan.firstBusinessLaunchPackage?.products[0]?.internalDesignDraft).toMatchObject({
+      aiProviderUsed: false,
+      externalGeneration: false,
+      providerContacted: false
+    });
+    expect(plan.firstBusinessLaunchPackage?.products[0]?.internalDesignDraft.assetChecklist.length).toBeGreaterThan(0);
     expect(plan.firstBusinessLaunchPackage?.contentIdeas.length).toBeGreaterThan(0);
     expect(plan.firstBusinessLaunchPackage?.organicFirstMoves.length).toBeGreaterThan(0);
+    expect(plan.firstBusinessLaunchPackage?.approvalChecklist.map((item) => item.category)).toContain("designs");
     expect(plan.firstBusinessLaunchPackage?.manualApprovalGates.join(" ")).toContain("Approve");
     expect(plan.scalePressure.pressureScore).toBeGreaterThanOrEqual(0);
     expect(plan.killPressure.pressureScore).toBeGreaterThanOrEqual(0);

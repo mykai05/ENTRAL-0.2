@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessLaunchPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -1174,9 +1174,13 @@ const moneyArmyGenerateScoreBatchPlan: RevenueMoneyArmyGenerateScoreBatchPlan = 
       },
       auditOnly: true,
       candidateId: "money_army_candidate_store_1_001",
+      complianceNotes: "Original internal merch draft. Verify trademarks before publishing.",
       confidence: 84,
       designConcept: "Original operator tee concept.",
+      designPrompt: "Create original operator-style gym typography with no protected marks.",
+      designTheme: "Original operator series",
       externalExecution: false,
+      listingDescription: "Original product listing for internal review.",
       listingTitle: "Iron House Operator Tee",
       nextInternalState: null,
       organicContentTieIn: {
@@ -1236,6 +1240,27 @@ const moneyArmyGenerateScoreBatchPlan: RevenueMoneyArmyGenerateScoreBatchPlan = 
   mode: "Money Army Generate & Score Batch",
   providerContacted: false,
   firstBusinessLaunchPackage: {
+    approvalChecklist: [{
+      category: "store",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve selected store, platform fit, audience, brand positioning, and launch status."
+    }, {
+      category: "products",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve top product concepts, pricing, margin, source lanes, tags, and listing copy."
+    }, {
+      category: "designs",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve each internal design draft, AI-ready prompt, negative prompt, mockup direction, and compliance note before artwork generation."
+    }, {
+      category: "content",
+      externalExecutionLocked: true,
+      required: true,
+      title: "Approve faceless content hooks, scripts, channel fit, captions, disclosure, and posting order."
+    }],
     auditEvents: [
       "First Business Launch Package generated from top scored Money Army candidates.",
       "No provider, marketplace, ad, social, banking, upload, browser, or payment write action was executed."
@@ -1293,7 +1318,32 @@ const moneyArmyGenerateScoreBatchPlan: RevenueMoneyArmyGenerateScoreBatchPlan = 
     products: [{
       approvalState: "ready_to_approve",
       candidateId: "money_army_candidate_store_1_001",
+      complianceNotes: "Original internal merch draft. Verify trademarks before publishing.",
       designConcept: "Original operator tee concept.",
+      designPrompt: "Create original operator-style gym typography with no protected marks.",
+      designTheme: "Original operator series",
+      internalDesignDraft: {
+        aiProviderUsed: false,
+        approvalGate: {
+          externalExecutionLocked: true,
+          humanApprovalRequired: true,
+          reason: "Design draft is an internal AI-ready prompt and production brief only. Explicit approval is required before any AI image provider, designer, POD provider, upload, or marketplace action.",
+          status: "Required"
+        },
+        assetChecklist: [
+          "Verify all words, symbols, and visual references are original or owned by the store.",
+          "Confirm production-safe placement, readable contrast, and product-type fit."
+        ],
+        externalGeneration: false,
+        mockupDirection: "Prepare front-facing T-shirt mockup notes for Iron House Gym; keep artwork centered, readable, and brand-consistent.",
+        negativePrompt: "No protected logos, celebrity likenesses, copyrighted characters, trademarked slogans, copied artwork, misleading claims, or marketplace policy risks.",
+        palette: ["store brand primary", "high-contrast neutral", "single accent color"],
+        placement: "front chest center",
+        prompt: "Create original operator-style gym typography with no protected marks. Create an original T-shirt design for Iron House Gym.",
+        providerContacted: false,
+        typography: "Original operator series"
+      },
+      listingDescription: "Original product listing for internal review.",
       listingTitle: "Iron House Operator Tee",
       productName: "Iron House Operator Tee Candidate 1",
       productType: "T-shirt",
@@ -1330,12 +1380,13 @@ const moneyArmyGenerateScoreBatchPlan: RevenueMoneyArmyGenerateScoreBatchPlan = 
       sourceStoreId: "store-1",
       storePlatform: "Shopify"
     },
-    summary: "Iron House Gym launch package is ready for approval with 1 product candidate, 1 faceless content idea, and 1 organic-first move. Scale pressure medium 49/100; kill pressure none 0/100.",
+    summary: "Iron House Gym launch package is ready for approval with 1 product concept, 1 internal AI-ready design draft, 1 faceless content idea, and 1 organic-first move. Scale pressure medium 49/100; kill pressure none 0/100.",
     totals: {
       contentIdeas: 1,
       manualApprovalGates: 3,
       organicMoves: 1,
       products: 1,
+      readyToApproveProducts: 1,
       scaleCandidates: 0,
       watchCandidates: 1
     }
@@ -1430,6 +1481,61 @@ const moneyArmyGenerateScoreBatchApplyResponse: RevenueMoneyArmyGenerateScoreBat
   },
   batchRun: moneyArmyGenerateScoreBatchRun,
   plan: moneyArmyGenerateScoreBatchPlan
+};
+
+const firstBusinessPackageRun: RevenueMoneyArmyBatchRun = {
+  afterTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    pendingApprovalPackets: 10,
+    readyDeploymentBusinesses: 1,
+    readyStages: 1,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  },
+  auditLogId: "audit-first-package-1",
+  batchKey: "first-business-package-key-1",
+  beforeTotals: {
+    ...moneyArmyPipelinePlan.totals,
+    pendingApprovalPackets: 0,
+    readyDeploymentBusinesses: 0,
+    readyStages: 0,
+    seedCandidates: 1,
+    stages: 1,
+    targetBusinesses: 1,
+    targetLaunchWave: 1
+  },
+  createdAt: "2026-06-02T12:45:00.000Z",
+  dryRun: false,
+  externalExecution: false,
+  id: "first-business-package-run-1",
+  providerContacted: false,
+  resultSummary: "First Business Launch Package recorded internally for Iron House Gym.",
+  sourceKeys: ["store-1"],
+  stage: "first_business_launch_package",
+  status: "recorded"
+};
+
+const firstBusinessPackageResponse: RevenueMoneyArmyFirstBusinessLaunchPackageResponse = {
+  package: moneyArmyGenerateScoreBatchPlan.firstBusinessLaunchPackage,
+  recentRuns: [],
+  sourceBatch: moneyArmyGenerateScoreBatchPlan
+};
+
+const firstBusinessPackageApplyResponse: RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse = {
+  applied: {
+    auditLogId: "audit-first-package-1",
+    batchRunId: firstBusinessPackageRun.id,
+    dryRun: false,
+    externalExecution: false,
+    providerContacted: false,
+    stage: "first_business_launch_package",
+    summary: "First Business Launch Package recorded internally for Iron House Gym."
+  },
+  batchRun: firstBusinessPackageRun,
+  package: moneyArmyGenerateScoreBatchPlan.firstBusinessLaunchPackage,
+  sourceBatch: moneyArmyGenerateScoreBatchPlan
 };
 
 function moneyArmyPipelineApplyResponse(dryRun: boolean): RevenueMoneyArmyBatchPipelineApplyResponse {
@@ -5357,7 +5463,8 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("Money Army Generate & Score Batch")).toBeInTheDocument();
     expect(within(region).getByText("Current Portfolio Scoring")).toBeInTheDocument();
     expect(within(region).getByText("First Business Launch Package")).toBeInTheDocument();
-    expect(within(region).getByText("Iron House Gym launch package is ready for approval with 1 product candidate, 1 faceless content idea, and 1 organic-first move. Scale pressure medium 49/100; kill pressure none 0/100.")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym launch package is ready for approval with 1 product concept, 1 internal AI-ready design draft, 1 faceless content idea, and 1 organic-first move. Scale pressure medium 49/100; kill pressure none 0/100.")).toBeInTheDocument();
+    expect(within(region).getByText("AI-ready design draft / provider locked")).toBeInTheDocument();
     expect(within(region).getByText("Prepare approval-ready listing proof")).toBeInTheDocument();
     expect(within(region).getByText("Approval-gated package")).toBeInTheDocument();
     expect(within(region).getByText("Recommended Next Actions")).toBeInTheDocument();
@@ -5381,6 +5488,39 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("Generate Score Receipt")).toBeInTheDocument();
     expect(within(region).getByText("Batch Run History")).toBeInTheDocument();
     expect(within(region).getAllByText(/audit audit-money-army-score-1/)).toHaveLength(2);
+  });
+
+  it("generates and records a First Business Package through the dashboard", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(firstBusinessPackageResponse)
+      .mockResolvedValueOnce(firstBusinessPackageApplyResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /generate first package/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/first-business-package?candidateCount=25&maxProducts=10");
+    const region = await screen.findByRole("region", { name: /money army generate and score batch/i });
+    expect(within(region).getByText("First Business Launch Package")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym launch package is ready for approval with 1 product concept, 1 internal AI-ready design draft, 1 faceless content idea, and 1 organic-first move. Scale pressure medium 49/100; kill pressure none 0/100.")).toBeInTheDocument();
+    expect(within(region).getByText("AI-ready design draft / provider locked")).toBeInTheDocument();
+    expect(within(region).getByText((text) => text.includes("Approve each internal design draft, AI-ready prompt, negative prompt, mockup direction, and compliance note before artwork generation."))).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /record first package/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/money-army/first-business-package/apply", {
+      json: {
+        candidateCount: 25,
+        confirm: "RECORD INTERNAL FIRST BUSINESS LAUNCH PACKAGE",
+        dryRun: false,
+        maxProducts: 10,
+        note: "Recorded from First Business Package dashboard controls.",
+        riskTolerance: "Low"
+      },
+      method: "POST"
+    });
+    expect(await screen.findAllByText("First Business Launch Package recorded internally for Iron House Gym.")).toHaveLength(2);
+    expect(within(region).getAllByText(/audit audit-first-package-1/)).toHaveLength(2);
   });
 
   it("runs the Revenue Engine and applies internal rotation only after preview", async () => {
