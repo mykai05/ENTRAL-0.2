@@ -37,7 +37,7 @@ export type GrowthPlan = {
 
 export type GrowthApprovalAction = {
   approvalStatus: "Pending human approval";
-  channel: "Social" | "Shopify" | "Ads" | "Analytics";
+  channel: "Social" | "Shopify" | "Ads" | "Analytics" | "Provider";
   executionState: "Locked - no external action";
   id: string;
   requiredControls: string[];
@@ -273,6 +273,7 @@ export function buildGrowthOrchestrationPreview(packet: GrowthApprovalPacket): G
     const channelGuardrails: Record<GrowthApprovalAction["channel"], string> = {
       Ads: "Paid media remains a campaign brief only. Budget, platform, targeting, and creative require a separate final approval before spend.",
       Analytics: "Analytics work remains a read-only connection plan. No customer, sales, traffic, or ad data is imported.",
+      Provider: "Provider payload work remains a credential-scope and request-body review. No provider API request is sent.",
       Shopify: "Storefront work remains a setup checklist. No Shopify or marketplace listing is created, changed, or launched.",
       Social: "Social work remains a prepared caption and schedule note. No post is published or queued on a platform."
     };

@@ -115,25 +115,34 @@ async function runScrapeTask(payload: ScrapePayload, logStep: LogStep): Promise<
     });
 
     try {
-      const page = await browser.newPage();
+      await logStep("Creating isolated browser context without proxy, stealth, or fingerprint overrides");
+      const context = await browser.newContext();
+
       await logStep("Opening target URL");
-      await page.goto(payload.url, { waitUntil: "domcontentloaded", timeout: 15000 });
 
-      const title = await page.title().catch(() => "");
-      const content = payload.selector
-        ? await page.locator(payload.selector).first().textContent({ timeout: 8000 })
-        : await page.locator("body").innerText({ timeout: 8000 });
+      try {
+        const page = await context.newPage();
+        await page.goto(payload.url, { waitUntil: "domcontentloaded", timeout: 15000 });
 
-      await logStep("Scrape completed");
+        const title = await page.title().catch(() => "");
+        const content = payload.selector
+          ? await page.locator(payload.selector).first().textContent({ timeout: 8000 })
+          : await page.locator("body").innerText({ timeout: 8000 });
 
-      return {
-        engine: "playwright",
-        url: payload.url,
-        selector: payload.selector ?? null,
-        title,
-        content: (content ?? "").slice(0, 10000),
-        durationMs: Date.now() - startedAt
-      };
+        await logStep("Scrape completed");
+
+        return {
+          engine: "playwright",
+          url: payload.url,
+          selector: payload.selector ?? null,
+          title,
+          content: (content ?? "").slice(0, 10000),
+          durationMs: Date.now() - startedAt,
+          isolationModel: "ephemeral-browser-context"
+        };
+      } finally {
+        await context.close();
+      }
     } finally {
       await browser.close();
     }

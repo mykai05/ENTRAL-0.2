@@ -1560,6 +1560,126 @@ textarea:focus-visible {
   margin: 0;
 }
 
+.command-health-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  padding: 1rem;
+}
+
+.command-health-grid article {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  min-height: 6.5rem;
+  padding: 0.9rem;
+}
+
+.command-health-grid span,
+.command-health-grid small {
+  color: var(--muted);
+}
+
+.command-health-grid strong {
+  font-size: 1.35rem;
+}
+
+.signal-intake-fields {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  padding: 0 1rem 1rem;
+}
+
+.signal-intake-fields label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.signal-intake-fields span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.signal-intake-fields input {
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  min-height: 2.35rem;
+  padding: 0.55rem 0.65rem;
+}
+
+.autopilot-controls {
+  align-items: center;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(16rem, 1.5fr) repeat(3, minmax(6rem, auto)) minmax(8rem, 0.7fr);
+  padding: 1rem;
+}
+
+.autopilot-controls label {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  gap: 0.45rem;
+  min-height: 2.35rem;
+}
+
+.autopilot-controls label:last-child {
+  align-items: stretch;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.autopilot-controls input[type="checkbox"] {
+  accent-color: var(--brand);
+  min-height: 1rem;
+  min-width: 1rem;
+}
+
+.autopilot-controls input[type="number"] {
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  min-height: 2.35rem;
+  padding: 0.55rem 0.65rem;
+  width: 100%;
+}
+
+.autopilot-mode {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0.25rem;
+}
+
+.autopilot-mode button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  min-height: 2rem;
+  padding: 0.35rem 0.5rem;
+  text-transform: capitalize;
+}
+
+.autopilot-mode button[aria-pressed="true"] {
+  background: rgba(var(--neon-accent-rgb), 0.12);
+  border-color: rgba(var(--neon-accent-rgb), 0.32);
+  color: var(--ink);
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -6996,7 +7116,7 @@ body:has(.command-center-page) .palette-trigger {
 
 .merch-ops-actions.split {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
 }
 
 .merch-ops-actions button {
@@ -7033,6 +7153,7 @@ body:has(.command-center-page) .palette-trigger {
 }
 
 .merch-pricing-card,
+.merch-revenue-card,
 .merch-report-card,
 .merch-growth-card {
   background: rgba(0, 0, 0, 0.2);
@@ -7041,6 +7162,204 @@ body:has(.command-center-page) .palette-trigger {
   display: grid;
   gap: 0.62rem;
   padding: 0.64rem;
+}
+
+.revenue-engine-result {
+  display: grid;
+  gap: 0.58rem;
+}
+
+.revenue-engine-summary,
+.revenue-engine-list,
+.revenue-engine-clear {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.1);
+  border-radius: 13px;
+  display: grid;
+  gap: 0.34rem;
+  margin: 0;
+  padding: 0.58rem;
+}
+
+.revenue-engine-summary strong,
+.revenue-engine-list h4,
+.revenue-engine-list strong {
+  color: var(--ink);
+}
+
+.revenue-engine-summary p,
+.revenue-engine-list p,
+.revenue-engine-clear {
+  color: rgba(255, 255, 240, 0.78);
+  font-size: 0.74rem;
+  line-height: 1.42;
+}
+
+.revenue-engine-metrics {
+  display: grid;
+  gap: 0.46rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.revenue-engine-metrics div {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.1);
+  border-radius: 13px;
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+  padding: 0.54rem;
+}
+
+.revenue-engine-metrics dt {
+  color: rgba(255, 255, 240, 0.54);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.revenue-engine-metrics dd {
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 900;
+  margin: 0;
+}
+
+.revenue-decision-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.34rem;
+}
+
+.revenue-decision-counts span {
+  background: rgba(var(--neon-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.14);
+  border-radius: 999px;
+  color: rgba(225, 255, 250, 0.82);
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 0.28rem 0.46rem;
+  text-transform: capitalize;
+}
+
+.revenue-engine-table-wrap {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.1);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.revenue-engine-table {
+  border-collapse: collapse;
+  min-width: 920px;
+  width: 100%;
+}
+
+.revenue-engine-table th,
+.revenue-engine-table td {
+  border-bottom: 1px solid rgba(255, 255, 240, 0.08);
+  padding: 0.52rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.revenue-engine-table th {
+  color: rgba(255, 255, 240, 0.54);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.revenue-engine-table td {
+  color: rgba(255, 255, 240, 0.78);
+  font-size: 0.72rem;
+  line-height: 1.38;
+}
+
+.revenue-engine-table strong,
+.revenue-engine-table span {
+  display: block;
+}
+
+.revenue-engine-table strong {
+  color: var(--ink);
+  font-size: 0.74rem;
+  text-transform: capitalize;
+}
+
+.revenue-engine-table span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  margin-top: 0.14rem;
+}
+
+.revenue-asset-controls {
+  align-items: center;
+  display: flex;
+  gap: 0.36rem;
+  flex-wrap: wrap;
+}
+
+.revenue-asset-controls button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 240, 0.1);
+  border-radius: 8px;
+  color: var(--ink);
+  display: inline-flex;
+  font-size: 0.66rem;
+  font-weight: 800;
+  gap: 0.24rem;
+  justify-content: center;
+  min-height: 2rem;
+  min-width: 4.15rem;
+  padding: 0.34rem 0.44rem;
+  text-transform: capitalize;
+}
+
+.revenue-asset-controls button.recommended {
+  background: rgba(var(--neon-accent-rgb), 0.12);
+  border-color: rgba(var(--neon-accent-rgb), 0.28);
+}
+
+.revenue-asset-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.revenue-engine-list.warning {
+  border-color: rgba(255, 191, 0, 0.18);
+}
+
+.revenue-engine-list h4 {
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.revenue-engine-list article {
+  border-top: 1px solid rgba(255, 255, 240, 0.08);
+  display: grid;
+  gap: 0.22rem;
+  padding-top: 0.42rem;
+}
+
+.revenue-engine-list article:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.revenue-engine-list span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-transform: capitalize;
+}
+
+.revenue-engine-list strong {
+  font-size: 0.78rem;
 }
 
 .merch-tool-title {
@@ -7060,6 +7379,7 @@ body:has(.command-center-page) .palette-trigger {
 
 .merch-pricing-results div,
 .merch-launch-package-result,
+.provider-payload-result,
 .merch-report-result {
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(var(--neon-accent-rgb), 0.1);
@@ -7086,11 +7406,39 @@ body:has(.command-center-page) .palette-trigger {
 
 .merch-launch-package-result p,
 .merch-launch-package-result span,
+.provider-payload-result p,
+.provider-payload-result span,
+.provider-payload-result small,
 .merch-report-result p,
 .merch-report-result span {
   color: var(--muted);
   font-size: 0.72rem;
   line-height: 1.42;
+}
+
+.provider-payload-result header {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.provider-payload-result header strong,
+.provider-payload-grid strong {
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+
+.provider-payload-grid {
+  display: grid;
+  gap: 0.46rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.provider-payload-grid article {
+  border-top: 1px solid rgba(255, 255, 240, 0.08);
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-top: 0.42rem;
 }
 
 .merch-report-result div {
@@ -8694,10 +9042,12 @@ body:has(.command-center-page) .palette-trigger {
   .product-approval-actions,
   .product-batch-actions,
   .product-batch-grid,
+  .autopilot-controls,
   .merch-ops-actions.split,
   .merch-ops-grid,
   .growth-plan-grid,
   .merch-pricing-results,
+  .provider-payload-grid,
   .entral-identity div,
   .command-capability-grid,
   .command-metrics {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ApiError, apiFetch } from "../lib/api";
 import { AutomationForm } from "./AutomationForm";
 import { AutomationList, type AutomationJob } from "./AutomationList";
+import { BrowserOperationsPanel } from "./BrowserOperationsPanel";
 import { CurlSnippet } from "./CurlSnippet";
 import { useToast } from "./ToastProvider";
 
@@ -95,6 +96,7 @@ export function AutomationConsole() {
 
   return (
     <section className="automation-console" aria-label="Automation workspace">
+      <BrowserOperationsPanel onRecovered={loadJobs} />
       <AutomationForm onCreated={loadJobs} />
       <CurlSnippet
         body={{

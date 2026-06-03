@@ -8,6 +8,8 @@ import {
   createClientMerchStoreSchema,
   growthApprovalPacketParamsSchema,
   merchReportParamsSchema,
+  providerPayloadQuerySchema,
+  requestProviderPayloadApprovalSchema,
   requestGrowthApprovalSchema,
   reviewGrowthApprovalSchema,
   updateClientMerchStoreSchema,
@@ -17,6 +19,7 @@ import {
 import { buildGrowthApprovalPacket, buildGrowthOrchestrationPreview, buildGrowthPlan, type GrowthApprovalPacket } from "../services/growthPlans.js";
 import { recordAuditLog } from "../services/audit.js";
 import { buildLaunchPackage, buildMerchReport, type MerchProductSnapshot } from "../services/merchReports.js";
+import { buildProviderHandoffBundle, buildProviderPayloadApprovalPacket, buildProviderPayloadPackage, isProviderPayloadApprovalPacket } from "../services/merchProviderPayloads.js";
 import { parseSecureJson, stringifySecureJson } from "../services/secureJson.js";
 
 const storePlatformToDb = {
@@ -200,6 +203,7 @@ function merchStoreSnapshot(store: ClientMerchStoreRecord) {
     notes: store.notes,
     commandMarshalName: store.commandMarshalName,
     commandGeneralName: store.commandGeneralName,
+    podProvider: podProviderFromDb[store.podProvider],
     productTypes: store.productTypes,
     revenue: decimalToNumber(store.revenue),
     storePlatform: storePlatformFromDb[store.storePlatform]
@@ -422,6 +426,130 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     const products = store.products.map((product) => merchProductSnapshot(product));
     return reply.send({ package: buildLaunchPackage(merchStoreSnapshot(store), products) });
+  });
+
+  app.get("/merch/stores/:storeId/provider-payloads", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = clientMerchStoreIdParamsSchema.parse(request.params);
+    const query = providerPayloadQuerySchema.parse(request.query);
+    const store = await prisma.clientMerchStore.findFirst({
+      where: {
+        id: params.storeId,
+        userId: currentUser.sub
+      },
+      include: {
+        products: {
+          orderBy: { updatedAt: "desc" }
+        }
+      }
+    });
+
+    if (!store) {
+      return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+    }
+
+    const products = store.products.map((product) => merchProductSnapshot(product));
+    const providerPackage = buildProviderPayloadPackage({
+      options: query,
+      products,
+      store: merchStoreSnapshot(store),
+      storeId: store.id
+    });
+
+    return reply.send({ package: providerPackage });
+  });
+
+  app.post("/merch/stores/:storeId/provider-payloads/approval-request", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = clientMerchStoreIdParamsSchema.parse(request.params);
+    const input = requestProviderPayloadApprovalSchema.parse(request.body ?? {});
+    const store = await prisma.clientMerchStore.findFirst({
+      where: {
+        id: params.storeId,
+        userId: currentUser.sub
+      },
+      include: {
+        products: {
+          orderBy: { updatedAt: "desc" }
+        }
+      }
+    });
+
+    if (!store) {
+      return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+    }
+
+    const products = store.products.map((product) => merchProductSnapshot(product));
+    const providerPackage = buildProviderPayloadPackage({
+      options: input,
+      products,
+      store: merchStoreSnapshot(store),
+      storeId: store.id
+    });
+    const packet = buildProviderPayloadApprovalPacket({
+      note: input.note,
+      package: providerPackage,
+      scheduledFor: input.scheduledFor ?? null,
+      storeId: store.id
+    });
+    const record = await prisma.growthApprovalPacket.create({
+      data: {
+        mode: packet.mode,
+        packetJson: stringifySecureJson(packet),
+        scheduledFor: packet.scheduledFor ? new Date(packet.scheduledFor) : null,
+        status: "pending",
+        storeId: store.id,
+        userId: currentUser.sub
+      }
+    });
+    const auditLog = await recordAuditLog({
+      action: "provider_payload.approval.requested",
+      actorUserId: currentUser.sub,
+      metadata: {
+        packet,
+        packetId: record.id,
+        providerPackage: {
+          adapterCoverage: providerPackage.adapterCoverage,
+          payloadCount: providerPackage.payloadCount,
+          providerContacted: providerPackage.providerContacted,
+          readinessScore: providerPackage.readinessScore
+        },
+        store: {
+          businessName: store.businessName,
+          platform: storePlatformFromDb[store.storePlatform],
+          podProvider: podProviderFromDb[store.podProvider]
+        }
+      },
+      outcome: "success",
+      severity: providerPackage.payloadCount > 0 ? "medium" : "low",
+      targetId: store.id,
+      targetType: "provider_payload_package"
+    });
+    const approval = await prisma.growthApprovalPacket.update({
+      data: {
+        requestAuditLogId: auditLog.id
+      },
+      where: {
+        id: record.id
+      }
+    });
+
+    return reply.code(201).send({
+      approval: publicGrowthApprovalPacket(approval),
+      auditLogId: auditLog.id,
+      packet,
+      providerPackage
+    });
   });
 
   app.get("/merch/stores/:storeId/growth-plan", { preHandler: requireAuth }, async (request, reply) => {
@@ -683,6 +811,96 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     return reply.send({
       auditLogId: auditLog.id,
       preview
+    });
+  });
+
+  app.get("/merch/stores/:storeId/growth-approvals/:packetId/provider-handoff", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = growthApprovalPacketParamsSchema.parse(request.params);
+    const existing = await prisma.growthApprovalPacket.findFirst({
+      where: {
+        id: params.packetId,
+        storeId: params.storeId,
+        userId: currentUser.sub
+      }
+    });
+
+    if (!existing) {
+      return reply.code(404).send({ error: "Not Found", message: "Growth approval packet was not found." });
+    }
+
+    if (existing.status !== "approved") {
+      return reply.code(409).send({
+        error: "Conflict",
+        message: "Approve the provider payload packet before building a handoff bundle."
+      });
+    }
+
+    const packet = parseSecureJson<GrowthApprovalPacket>(existing.packetJson);
+
+    if (!packet) {
+      return reply.code(500).send({ error: "Internal Server Error", message: "Growth approval packet payload is unreadable." });
+    }
+
+    if (!isProviderPayloadApprovalPacket(packet)) {
+      return reply.code(400).send({
+        error: "Bad Request",
+        message: "Only provider payload approval packets can produce provider handoff bundles."
+      });
+    }
+
+    const store = await prisma.clientMerchStore.findFirst({
+      where: {
+        id: params.storeId,
+        userId: currentUser.sub
+      },
+      include: {
+        products: {
+          orderBy: { updatedAt: "desc" }
+        }
+      }
+    });
+
+    if (!store) {
+      return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+    }
+
+    const products = store.products.map((product) => merchProductSnapshot(product));
+    const providerPackage = buildProviderPayloadPackage({
+      products,
+      store: merchStoreSnapshot(store),
+      storeId: store.id
+    });
+    const bundle = buildProviderHandoffBundle({
+      approvalId: existing.id,
+      package: providerPackage,
+      packet,
+      reviewedAt: existing.reviewedAt?.toISOString() ?? null,
+      reviewAuditLogId: existing.reviewAuditLogId
+    });
+    const auditLog = await recordAuditLog({
+      action: "provider_payload.handoff.generated",
+      actorUserId: currentUser.sub,
+      metadata: {
+        bundle,
+        externalExecution: false,
+        packetId: existing.id,
+        providerContacted: false
+      },
+      outcome: "success",
+      severity: bundle.connectorReadiness.status === "Ready for manual handoff" ? "low" : "medium",
+      targetId: existing.id,
+      targetType: "provider_payload_handoff"
+    });
+
+    return reply.send({
+      auditLogId: auditLog.id,
+      bundle
     });
   });
 

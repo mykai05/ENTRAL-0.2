@@ -16,6 +16,7 @@ import { connectionRoutes } from "./routes/connections.js";
 import { agentRoutes } from "./routes/agents.js";
 import { merchStoreRoutes } from "./routes/merchStores.js";
 import { podProductRoutes } from "./routes/podProducts.js";
+import { revenueEngineRoutes } from "./routes/revenueEngine.js";
 import { adminRoutes } from "./routes/admin.js";
 import { env } from "./env.js";
 import type { AiService } from "./services/openaiService.js";
@@ -107,6 +108,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(commandOSRoutes, { prefix: "/api/v1" });
   await app.register(connectionRoutes, { prefix: "/api/v1" });
   await app.register(agentRoutes, { prefix: "/api/v1" });
+  await app.register(revenueEngineRoutes, { prefix: "/api/v1" });
   await app.register(merchStoreRoutes, { prefix: "/api/v1" });
   await app.register(podProductRoutes, { prefix: "/api/v1" });
   await app.register(adminRoutes, { prefix: "/api/v1" });

@@ -3,10 +3,21 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import {
   automationJobIdParamsSchema,
+  applyBrowserOperationsRecoverySchema,
+  browserOperationsQuerySchema,
+  type ApplyBrowserOperationsRecoveryInput,
+  type BrowserOperationsQueryInput,
   createAutomationJobSchema
 } from "../schemas.js";
 import { assertAllowedAutomationUrl } from "../services/automationExecutor.js";
 import { enqueueAutomationJob } from "../services/automationQueue.js";
+import {
+  buildBrowserOperationsPlan,
+  type BrowserOperationConfig,
+  type BrowserOperationJobSnapshot,
+  type BrowserOperationsPlan
+} from "../services/browserOperations.js";
+import { env } from "../env.js";
 
 function publicAutomationJob(job: {
   id: string;
@@ -46,6 +57,71 @@ function publicAutomationJob(job: {
   };
 }
 
+function parsePayload(payloadJson: string): { selector?: string; url?: string } {
+  try {
+    const parsed = JSON.parse(payloadJson) as { selector?: unknown; url?: unknown };
+
+    return {
+      selector: typeof parsed.selector === "string" ? parsed.selector : undefined,
+      url: typeof parsed.url === "string" ? parsed.url : undefined
+    };
+  } catch {
+    return {};
+  }
+}
+
+function parseResultEngine(resultJson: string | null) {
+  if (!resultJson) return null;
+
+  try {
+    const parsed = JSON.parse(resultJson) as { engine?: unknown };
+    return typeof parsed.engine === "string" ? parsed.engine : null;
+  } catch {
+    return null;
+  }
+}
+
+function automationJobSnapshot(job: {
+  completedAt: Date | null;
+  createdAt: Date;
+  error: string | null;
+  id: string;
+  logs?: Array<{ id: string }>;
+  payloadJson: string;
+  resultJson: string | null;
+  scheduledAt: Date | null;
+  startedAt: Date | null;
+  status: string;
+  type: string;
+  updatedAt: Date;
+}): BrowserOperationJobSnapshot {
+  return {
+    completedAt: job.completedAt?.toISOString() ?? null,
+    createdAt: job.createdAt.toISOString(),
+    error: job.error,
+    id: job.id,
+    logCount: job.logs?.length ?? 0,
+    payload: parsePayload(job.payloadJson),
+    resultEngine: parseResultEngine(job.resultJson),
+    scheduledAt: job.scheduledAt?.toISOString() ?? null,
+    startedAt: job.startedAt?.toISOString() ?? null,
+    status: job.status,
+    type: job.type,
+    updatedAt: job.updatedAt.toISOString()
+  };
+}
+
+function browserOperationConfig(): BrowserOperationConfig {
+  return {
+    allowedDomains: env.AUTOMATION_ALLOWED_DOMAINS.split(",").map((host) => host.trim()).filter(Boolean),
+    featureEnabled: env.AUTOMATION_FEATURE_ENABLED,
+    localFallbackEnabled: env.AUTOMATION_LOCAL_FALLBACK,
+    maxConcurrency: env.AUTOMATION_MAX_CONCURRENCY,
+    playwrightConfigured: Boolean(env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH),
+    workerEnabled: env.AUTOMATION_WORKER_ENABLED
+  };
+}
+
 async function findOwnedJob(jobId: string, userId: string) {
   return prisma.automationJob.findFirst({
     where: {
@@ -58,6 +134,99 @@ async function findOwnedJob(jobId: string, userId: string) {
       }
     }
   });
+}
+
+async function buildBrowserOperationsForUser(userId: string, options: BrowserOperationsQueryInput): Promise<BrowserOperationsPlan> {
+  const jobs = await prisma.automationJob.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 250,
+    include: {
+      logs: {
+        select: { id: true }
+      }
+    }
+  });
+
+  return buildBrowserOperationsPlan({
+    config: browserOperationConfig(),
+    jobs: jobs.map(automationJobSnapshot),
+    options
+  });
+}
+
+async function applyBrowserOperationsRecovery(userId: string, plan: BrowserOperationsPlan, input: ApplyBrowserOperationsRecoveryInput, logger: Parameters<typeof enqueueAutomationJob>[2]) {
+  const recoveryRunbooks = plan.runbooks.filter((runbook) => (
+    (runbook.action === "retry_failed_job" || runbook.action === "recover_stale_running_job")
+    && runbook.targetId
+  )).slice(0, input.maxRecoveryJobs);
+  const requeuedJobIds: string[] = [];
+  const staleRecoveredJobIds: string[] = [];
+
+  for (const runbook of recoveryRunbooks) {
+    if (!runbook.targetId) continue;
+
+    if (runbook.action === "recover_stale_running_job") {
+      const updated = await prisma.automationJob.updateMany({
+        where: {
+          id: runbook.targetId,
+          status: "running",
+          userId
+        },
+        data: {
+          status: "failed",
+          error: "Recovered by Browser Operations Layer after exceeding stale running threshold.",
+          completedAt: new Date()
+        }
+      });
+
+      if (updated.count === 1) {
+        staleRecoveredJobIds.push(runbook.targetId);
+        await prisma.automationLog.create({
+          data: {
+            jobId: runbook.targetId,
+            level: "warn",
+            message: "Browser Operations Layer marked this stale running job as failed for deliberate retry."
+          }
+        });
+      }
+    }
+
+    if (runbook.action === "retry_failed_job") {
+      const updated = await prisma.automationJob.updateMany({
+        where: {
+          id: runbook.targetId,
+          status: { in: ["failed", "canceled"] },
+          userId
+        },
+        data: {
+          completedAt: null,
+          error: null,
+          resultJson: null,
+          scheduledAt: null,
+          startedAt: null,
+          status: "pending"
+        }
+      });
+
+      if (updated.count === 1) {
+        requeuedJobIds.push(runbook.targetId);
+        await prisma.automationLog.create({
+          data: {
+            jobId: runbook.targetId,
+            message: "Browser Operations Layer requeued this job through internal recovery."
+          }
+        });
+        enqueueAutomationJob(runbook.targetId, 0, logger);
+      }
+    }
+  }
+
+  return {
+    recoveryRunbooks: recoveryRunbooks.length,
+    requeuedJobIds,
+    staleRecoveredJobIds
+  };
 }
 
 function validateAutomationTarget(url: string, reply: FastifyReply) {
@@ -74,6 +243,61 @@ function validateAutomationTarget(url: string, reply: FastifyReply) {
 }
 
 export async function automationRoutes(app: FastifyInstance) {
+  app.get("/automation/browser-operations", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = browserOperationsQuerySchema.parse(request.query);
+    const plan = await buildBrowserOperationsForUser(currentUser.sub, query);
+
+    return reply.send({ plan });
+  });
+
+  app.post("/automation/browser-operations/recovery/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyBrowserOperationsRecoverySchema.parse(request.body);
+    const plan = await buildBrowserOperationsForUser(currentUser.sub, input);
+    const recoveryRunbooks = plan.runbooks.filter((runbook) => (
+      (runbook.action === "retry_failed_job" || runbook.action === "recover_stale_running_job")
+      && runbook.targetId
+    )).slice(0, input.maxRecoveryJobs);
+
+    if (input.dryRun) {
+      return reply.send({
+        applied: {
+          dryRun: true,
+          externalExecution: false,
+          providerContacted: false,
+          recoveryRunbooks: recoveryRunbooks.length,
+          requeuedJobIds: recoveryRunbooks.filter((runbook) => runbook.action === "retry_failed_job").map((runbook) => runbook.targetId),
+          staleRecoveredJobIds: recoveryRunbooks.filter((runbook) => runbook.action === "recover_stale_running_job").map((runbook) => runbook.targetId)
+        },
+        plan
+      });
+    }
+
+    const applied = await applyBrowserOperationsRecovery(currentUser.sub, plan, input, request.log);
+    const refreshed = await buildBrowserOperationsForUser(currentUser.sub, input);
+
+    return reply.send({
+      applied: {
+        ...applied,
+        dryRun: false,
+        externalExecution: false,
+        providerContacted: false
+      },
+      plan: refreshed
+    });
+  });
+
   app.get("/automation/jobs", { preHandler: requireAuth }, async (request, reply) => {
     const currentUser = request.user;
 

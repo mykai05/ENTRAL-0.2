@@ -22,6 +22,7 @@ export type MerchStoreSnapshot = {
   industry: string;
   launchStatus: string;
   notes?: string | null;
+  podProvider?: string | null;
   productTypes: string[];
   revenue: number;
   storePlatform: string;

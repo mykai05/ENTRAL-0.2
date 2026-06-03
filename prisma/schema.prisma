@@ -27,6 +27,23 @@ model User {
   agentTasks  AgentTask[]
   agentSchedules AgentSchedule[]
   merchStores ClientMerchStore[]
+  revenueOpportunities RevenueOpportunity[]
+  revenuePerformanceSnapshots RevenuePerformanceSnapshot[]
+  revenueAssetControlRecords RevenueAssetControlRecord[]
+  financialSplitPolicies FinancialSplitPolicy[]
+  financialLedgerEntries FinancialLedgerEntry[]
+  financialPayoutIntents FinancialPayoutIntent[]
+  financialScalingBudgetPackets FinancialScalingBudgetPacket[]
+  financialScalingSpendPackets FinancialScalingSpendPacket[]
+  financialScalingExecutionEntries FinancialScalingExecutionEntry[]
+  financialBudgetReleasePackets FinancialBudgetReleasePacket[]
+  financialReconciliationReports FinancialReconciliationReport[]
+  facelessContentBriefs FacelessContentBrief[]
+  facelessContentPerformanceSnapshots FacelessContentPerformanceSnapshot[]
+  portfolioCommandActions PortfolioCommandAction[]
+  revenueLaunchHandoffPackets RevenueLaunchHandoffPacket[]
+  revenueSignalConnectorApprovals RevenueSignalConnectorApproval[]
+  revenueSignalImportJobs RevenueSignalImportJob[]
   commandSnapshot CommandOSSnapshot?
   commandReports CommandOSReport[]
   policiesCreated Policy[]      @relation("PolicyCreatedBy")
@@ -131,7 +148,15 @@ model ClientMerchStore {
   updatedAt       DateTime             @updatedAt
   user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   products        PodProduct[]
+  revenueOpportunities RevenueOpportunity[]
   growthApprovalPackets GrowthApprovalPacket[]
+  revenueLaunchHandoffPackets RevenueLaunchHandoffPacket[]
+  revenueAssetControlRecords RevenueAssetControlRecord[]
+  performanceSnapshots RevenuePerformanceSnapshot[]
+  financialScalingExecutionEntries FinancialScalingExecutionEntry[]
+  financialLedgerEntries FinancialLedgerEntry[]
+  facelessContentBriefs FacelessContentBrief[]
+  facelessContentPerformanceSnapshots FacelessContentPerformanceSnapshot[]
 
   @@index([userId, launchStatus])
   @@index([userId, approvalStatus])
@@ -139,6 +164,30 @@ model ClientMerchStore {
   @@index([userId, commandMarshalId])
   @@index([userId, commandGeneralId])
   @@index([email])
+}
+
+model RevenueOpportunity {
+  id                String            @id @default(cuid())
+  userId            String
+  storeId           String?
+  sourceKey         String
+  idea              String
+  businessName      String
+  status            String            @default("active")
+  planJson          String
+  totalsJson        String
+  externalExecution Boolean           @default(false)
+  providerContacted Boolean           @default(false)
+  auditLogId        String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store             ClientMerchStore? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, sourceKey])
+  @@index([userId, status])
+  @@index([storeId])
+  @@index([createdAt])
 }
 
 model GrowthApprovalPacket {
@@ -217,12 +266,550 @@ model PodProduct {
   createdAt                           DateTime         @default(now())
   updatedAt                           DateTime         @updatedAt
   store                               ClientMerchStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  performanceSnapshots                RevenuePerformanceSnapshot[]
+  revenueAssetControlRecords          RevenueAssetControlRecord[]
+  financialScalingExecutionEntries    FinancialScalingExecutionEntry[]
+  financialLedgerEntries              FinancialLedgerEntry[]
+  facelessContentBriefs                FacelessContentBrief[]
+  facelessContentPerformanceSnapshots  FacelessContentPerformanceSnapshot[]
 
   @@index([storeId, status])
   @@index([storeId, createdAt])
   @@index([commandMarshalId])
   @@index([commandGeneralId])
   @@index([productType])
+}
+
+model RevenuePerformanceSnapshot {
+  id                  String           @id @default(cuid())
+  userId              String
+  storeId             String
+  productId           String?
+  source              String           @default("manual")
+  periodStart         DateTime
+  periodEnd           DateTime
+  impressions         Int              @default(0)
+  visits              Int              @default(0)
+  unitsSold           Int              @default(0)
+  grossRevenue        Decimal          @default(0) @db.Decimal(12, 2)
+  refunds             Decimal          @default(0) @db.Decimal(12, 2)
+  discounts           Decimal          @default(0) @db.Decimal(12, 2)
+  platformFees        Decimal          @default(0) @db.Decimal(12, 2)
+  productionCost      Decimal          @default(0) @db.Decimal(12, 2)
+  shippingCost        Decimal          @default(0) @db.Decimal(12, 2)
+  adSpend             Decimal          @default(0) @db.Decimal(12, 2)
+  digitalDeliveryCost Decimal          @default(0) @db.Decimal(12, 2)
+  netProfit           Decimal          @default(0) @db.Decimal(12, 2)
+  notes               String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store               ClientMerchStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product             PodProduct?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  financialLedgerEntry FinancialLedgerEntry?
+
+  @@index([userId, periodEnd])
+  @@index([storeId, periodEnd])
+  @@index([productId, periodEnd])
+  @@index([source, periodEnd])
+}
+
+model RevenueAssetControlRecord {
+  id                    String   @id @default(cuid())
+  userId                String
+  storeId               String?
+  productId             String?
+  assetId               String
+  assetName             String
+  assetType             String
+  storeName             String
+  requestedAction       String
+  scoringRecommendation String
+  finalRank             Int      @default(0)
+  economicsScore        Int      @default(0)
+  readinessScore        Int      @default(0)
+  riskPenalty           Int      @default(0)
+  velocity              Int      @default(0)
+  scoreBand             String
+  riskLevel             String
+  reason                String
+  nextInternalState     String?
+  fromStatus            String?
+  toStatus              String?
+  statusChangeRequired  Boolean  @default(false)
+  auditOnly             Boolean  @default(true)
+  override              Boolean  @default(false)
+  warningsJson          String
+  controlJson           String
+  externalExecution     Boolean  @default(false)
+  providerContacted     Boolean  @default(false)
+  auditLogId            String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store                 ClientMerchStore? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  product               PodProduct?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([userId, requestedAction])
+  @@index([userId, scoringRecommendation])
+  @@index([userId, assetType, assetId])
+  @@index([userId, storeId])
+  @@index([productId])
+  @@index([auditLogId])
+  @@index([createdAt])
+}
+
+model FinancialSplitPolicy {
+  id                    String                  @id @default(cuid())
+  userId                String
+  name                  String                  @default("Default Financial Orchestrator Split")
+  scalingPercent        Decimal                 @default(50) @db.Decimal(5, 2)
+  personalPercent       Decimal                 @default(25) @db.Decimal(5, 2)
+  bufferPercent         Decimal                 @default(25) @db.Decimal(5, 2)
+  minPayoutIntentAmount Decimal                 @default(25) @db.Decimal(12, 2)
+  reserveFloorAmount    Decimal                 @default(0) @db.Decimal(12, 2)
+  currency              String                  @default("USD")
+  status                String                  @default("active")
+  externalExecution     Boolean                 @default(false)
+  metadataJson          String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payoutIntents         FinancialPayoutIntent[]
+  scalingBudgetPackets  FinancialScalingBudgetPacket[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+model FinancialLedgerEntry {
+  id                           String                     @id @default(cuid())
+  userId                       String
+  storeId                      String
+  productId                    String?
+  revenuePerformanceSnapshotId String                     @unique
+  source                       String
+  periodStart                  DateTime
+  periodEnd                    DateTime
+  grossRevenue                 Decimal                    @default(0) @db.Decimal(12, 2)
+  netProfit                    Decimal                    @default(0) @db.Decimal(12, 2)
+  allocatableProfit            Decimal                    @default(0) @db.Decimal(12, 2)
+  scalingAmount                Decimal                    @default(0) @db.Decimal(12, 2)
+  personalAmount               Decimal                    @default(0) @db.Decimal(12, 2)
+  bufferAmount                 Decimal                    @default(0) @db.Decimal(12, 2)
+  currency                     String                     @default("USD")
+  status                       String                     @default("recorded")
+  externalExecution            Boolean                    @default(false)
+  metadataJson                 String?
+  createdAt                    DateTime                   @default(now())
+  updatedAt                    DateTime                   @updatedAt
+  user                         User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store                        ClientMerchStore           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product                      PodProduct?                @relation(fields: [productId], references: [id], onDelete: SetNull)
+  revenuePerformanceSnapshot   RevenuePerformanceSnapshot @relation(fields: [revenuePerformanceSnapshotId], references: [id], onDelete: Cascade)
+
+  @@index([userId, periodEnd])
+  @@index([storeId, periodEnd])
+  @@index([productId, periodEnd])
+  @@index([source, periodEnd])
+}
+
+model FinancialPayoutIntent {
+  id                String                @id @default(cuid())
+  userId            String
+  splitPolicyId     String?
+  category          String
+  destinationType   String
+  provider          String                @default("Stripe Treasury + Connect")
+  amount            Decimal               @default(0) @db.Decimal(12, 2)
+  currency          String                @default("USD")
+  status            String                @default("approval_required")
+  externalExecution Boolean               @default(false)
+  approvalRequired  Boolean               @default(true)
+  dedupeKey         String                @unique
+  metadataJson      String?
+  auditLogId        String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  splitPolicy       FinancialSplitPolicy? @relation(fields: [splitPolicyId], references: [id], onDelete: SetNull)
+  budgetReleasePacket FinancialBudgetReleasePacket?
+
+  @@index([userId, status])
+  @@index([userId, category])
+  @@index([createdAt])
+}
+
+model FinancialBudgetReleasePacket {
+  id                String                @id @default(cuid())
+  userId            String
+  payoutIntentId    String                @unique
+  category          String
+  destinationType   String
+  amount            Decimal               @default(0) @db.Decimal(12, 2)
+  maxReleaseAmount  Decimal               @default(0) @db.Decimal(12, 2)
+  currency          String                @default("USD")
+  approvalState     String                @default("approval_required")
+  releaseState      String                @default("locked_review")
+  purpose           String
+  controlsJson      String
+  blockedActionsJson String
+  externalExecution Boolean               @default(false)
+  auditLogId        String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payoutIntent      FinancialPayoutIntent @relation(fields: [payoutIntentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, releaseState])
+  @@index([userId, category])
+  @@index([createdAt])
+}
+
+model FinancialScalingBudgetPacket {
+  id                    String                @id @default(cuid())
+  userId                String
+  splitPolicyId         String?
+  dedupeKey             String                @unique
+  assetId               String
+  assetName             String
+  assetType             String
+  storeId               String
+  storeName             String
+  amount                Decimal               @default(0) @db.Decimal(12, 2)
+  maxPerAssetAmount     Decimal               @default(0) @db.Decimal(12, 2)
+  retainedScalingCapital Decimal              @default(0) @db.Decimal(12, 2)
+  totalScalingCapital   Decimal               @default(0) @db.Decimal(12, 2)
+  profitVelocity        Decimal               @default(0) @db.Decimal(12, 2)
+  score                 Int                   @default(0)
+  scoreBand             String
+  confidence            Int                   @default(0)
+  priority              Int                   @default(0)
+  status                String                @default("approval_required")
+  approvalRequired      Boolean               @default(true)
+  externalExecution     Boolean               @default(false)
+  providerContacted     Boolean               @default(false)
+  reason                String
+  approvalGateJson      String
+  blockedActionsJson    String
+  metadataJson          String?
+  auditLogId            String?
+  reviewedAt            DateTime?
+  reviewedById          String?
+  reviewNote            String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  splitPolicy           FinancialSplitPolicy? @relation(fields: [splitPolicyId], references: [id], onDelete: SetNull)
+  spendPackets          FinancialScalingSpendPacket[]
+
+  @@index([userId, status])
+  @@index([userId, assetType, assetId])
+  @@index([userId, storeId])
+  @@index([createdAt])
+}
+
+model FinancialScalingSpendPacket {
+  id                    String                       @id @default(cuid())
+  userId                String
+  scalingBudgetPacketId String
+  dedupeKey             String                       @unique
+  category              String
+  assetId               String
+  assetName             String
+  assetType             String
+  storeId               String
+  storeName             String
+  amount                Decimal                      @default(0) @db.Decimal(12, 2)
+  maxSpendAmount        Decimal                      @default(0) @db.Decimal(12, 2)
+  currency              String                       @default("USD")
+  approvalState         String                       @default("approval_required")
+  releaseState          String                       @default("locked_review")
+  purpose               String
+  controlsJson          String
+  blockedActionsJson    String
+  score                 Int                          @default(0)
+  priority              Int                          @default(0)
+  externalExecution     Boolean                      @default(false)
+  providerContacted     Boolean                      @default(false)
+  auditLogId            String?
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  user                  User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scalingBudgetPacket   FinancialScalingBudgetPacket @relation(fields: [scalingBudgetPacketId], references: [id], onDelete: Cascade)
+  executionEntries      FinancialScalingExecutionEntry[]
+
+  @@index([userId, releaseState])
+  @@index([userId, category])
+  @@index([userId, assetType, assetId])
+  @@index([userId, storeId])
+  @@index([createdAt])
+}
+
+model FinancialScalingExecutionEntry {
+  id                    String                       @id @default(cuid())
+  userId                String
+  scalingSpendPacketId  String
+  storeId               String
+  productId             String?
+  assetId               String
+  assetName             String
+  assetType             String
+  storeName             String
+  category              String
+  amountSpent           Decimal                      @default(0) @db.Decimal(12, 2)
+  grossRevenue          Decimal                      @default(0) @db.Decimal(12, 2)
+  netProfit             Decimal                      @default(0) @db.Decimal(12, 2)
+  unitsSold             Int                          @default(0)
+  visits                Int                          @default(0)
+  periodStart           DateTime
+  periodEnd             DateTime
+  outcome               String                       @default("watch")
+  source                String                       @default("manual")
+  notes                 String?
+  externalExecution     Boolean                      @default(false)
+  providerContacted     Boolean                      @default(false)
+  auditLogId            String?
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  user                  User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scalingSpendPacket    FinancialScalingSpendPacket  @relation(fields: [scalingSpendPacketId], references: [id], onDelete: Cascade)
+  store                 ClientMerchStore             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product               PodProduct?                  @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([userId, outcome])
+  @@index([userId, category])
+  @@index([userId, assetType, assetId])
+  @@index([userId, storeId])
+  @@index([scalingSpendPacketId])
+  @@index([createdAt])
+}
+
+model FinancialReconciliationReport {
+  id                String   @id @default(cuid())
+  userId            String
+  source            String   @default("payout_review")
+  status            String   @default("recorded")
+  totalAmount       Decimal  @default(0) @db.Decimal(12, 2)
+  approvedAmount    Decimal  @default(0) @db.Decimal(12, 2)
+  pendingAmount     Decimal  @default(0) @db.Decimal(12, 2)
+  rejectedAmount    Decimal  @default(0) @db.Decimal(12, 2)
+  variance          Decimal  @default(0) @db.Decimal(12, 2)
+  reportJson        String
+  externalExecution Boolean  @default(false)
+  auditLogId        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  @@index([source, createdAt])
+}
+
+model FacelessContentBrief {
+  id                    String           @id @default(cuid())
+  userId                String
+  storeId               String
+  productId             String?
+  dedupeKey             String           @unique
+  title                 String
+  status                String           @default("draft_queued")
+  priority              Int              @default(0)
+  targetChannelsJson    String
+  conceptJson           String
+  scriptJson            String
+  storyboardJson        String
+  voiceoverJson         String
+  videoJson             String
+  uploadPackageJson     String
+  providerReadinessJson String
+  blockedActionsJson    String
+  externalExecution     Boolean          @default(false)
+  auditLogId            String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store                 ClientMerchStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product               PodProduct?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  performanceSnapshots  FacelessContentPerformanceSnapshot[]
+
+  @@index([userId, status])
+  @@index([storeId, createdAt])
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model FacelessContentPerformanceSnapshot {
+  id                String                 @id @default(cuid())
+  userId            String
+  contentBriefId    String?
+  storeId           String?
+  productId         String?
+  source            String                 @default("manual")
+  channel           String
+  periodStart       DateTime
+  periodEnd         DateTime
+  views             Int                    @default(0)
+  likes             Int                    @default(0)
+  comments          Int                    @default(0)
+  shares            Int                    @default(0)
+  saves             Int                    @default(0)
+  clicks            Int                    @default(0)
+  conversions       Int                    @default(0)
+  watchSeconds      Int                    @default(0)
+  revenue           Decimal                @default(0) @db.Decimal(12, 2)
+  cost              Decimal                @default(0) @db.Decimal(12, 2)
+  externalExecution Boolean                @default(false)
+  notes             String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentBrief      FacelessContentBrief?  @relation(fields: [contentBriefId], references: [id], onDelete: SetNull)
+  store             ClientMerchStore?      @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  product           PodProduct?            @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([userId, periodEnd])
+  @@index([contentBriefId, periodEnd])
+  @@index([storeId, periodEnd])
+  @@index([productId, periodEnd])
+  @@index([channel, periodEnd])
+  @@index([source, periodEnd])
+}
+
+model PortfolioCommandAction {
+  id                String   @id @default(cuid())
+  userId            String
+  targetType        String
+  targetId          String
+  targetName        String
+  action            String
+  sourceModule      String
+  status            String   @default("queued")
+  priority          Int      @default(0)
+  riskLevel         String   @default("low")
+  reason            String
+  recommendedStatus String?
+  commandHash       String
+  controlJson       String
+  externalExecution Boolean  @default(false)
+  providerContacted Boolean  @default(false)
+  auditLogId        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, targetType, targetId])
+  @@index([userId, action])
+  @@index([createdAt])
+}
+
+model RevenueLaunchHandoffPacket {
+  id                      String           @id @default(cuid())
+  userId                  String
+  storeId                 String
+  approvedPacketId        String?
+  dedupeKey               String           @unique
+  storeName               String
+  status                  String           @default("queued_review")
+  action                  String
+  riskLevel               String           @default("low")
+  connectorStatus         String?
+  connectorReadinessScore Int              @default(0)
+  launchReadinessScore    Int              @default(0)
+  providerReadinessScore  Int              @default(0)
+  manifestCount           Int              @default(0)
+  artifactSlotCount       Int              @default(0)
+  credentialScopesJson    String
+  providersJson           String
+  blockersJson            String
+  blockedActionsJson      String
+  bundleJson              String?
+  summary                 String
+  externalExecution       Boolean          @default(false)
+  providerContacted       Boolean          @default(false)
+  auditLogId              String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  user                    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store                   ClientMerchStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([storeId, status])
+  @@index([userId, action])
+  @@index([createdAt])
+}
+
+model RevenueSignalConnectorApproval {
+  id                    String   @id @default(cuid())
+  userId                String
+  dedupeKey             String
+  manifestId            String
+  lane                  String
+  provider              String
+  providerName          String
+  status                String   @default("pending_review")
+  riskLevel             String   @default("low")
+  readinessScore        Int      @default(0)
+  transformTarget       String
+  storeId               String?
+  storeName             String?
+  productId             String?
+  contentBriefId        String?
+  manifestJson          String
+  samplePayloadJson     String?
+  signalPreviewJson     String
+  blockedActionsJson    String
+  credentialEnvVarsJson String
+  readOnlyScopesJson    String
+  endpointTemplatesJson String
+  externalExecution     Boolean  @default(false)
+  providerContacted     Boolean  @default(false)
+  requestAuditLogId     String?
+  reviewAuditLogId      String?
+  reviewedAt            DateTime?
+  reviewedById          String?
+  reviewNote            String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  importJobs            RevenueSignalImportJob[]
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, status])
+  @@index([userId, lane])
+  @@index([userId, provider])
+  @@index([createdAt])
+}
+
+model RevenueSignalImportJob {
+  id                String                         @id @default(cuid())
+  userId            String
+  approvalId        String
+  manifestId        String
+  lane              String
+  provider          String
+  status            String                         @default("queued_review")
+  transformTarget   String
+  samplePayloadJson String?
+  signalPreviewJson String
+  externalExecution Boolean                        @default(false)
+  providerContacted Boolean                        @default(false)
+  auditLogId        String?
+  handoffAuditLogId String?
+  completedAt       DateTime?
+  intakeResultJson  String?
+  createdAt         DateTime                       @default(now())
+  updatedAt         DateTime                       @updatedAt
+  user              User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approval          RevenueSignalConnectorApproval @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, approvalId])
+  @@index([userId, status])
+  @@index([userId, lane])
+  @@index([userId, provider])
+  @@index([createdAt])
 }
 
 model Agent {
