@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueHundredStoreAppConnectionPacketsApplyResponse, RevenueHundredStoreAutonomyRunApplyResponse, RevenueHundredStoreConnectorActivationApplyResponse, RevenueHundredStoreDailySupervisorApplyResponse, RevenueHundredStoreDailySupervisorPlan, RevenueHundredStoreLaunchPacketsApplyResponse, RevenueHundredStoreMonitoringCycleApplyResponse, RevenueHundredStoreOperationsApplyResponse, RevenueHundredStoreOperationsPlan, RevenueHundredStoreOperationsResponse, RevenueHundredStoreProductDepthApplyResponse, RevenueHundredStoreWorkLeasesApplyResponse, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueHundredStoreAppConnectionPacketsApplyResponse, RevenueHundredStoreAutonomyRunApplyResponse, RevenueHundredStoreConnectorActivationApplyResponse, RevenueHundredStoreDailySupervisorApplyResponse, RevenueHundredStoreDailySupervisorPlan, RevenueHundredStoreLaunchPacketsApplyResponse, RevenueHundredStoreMonitoringCycleApplyResponse, RevenueHundredStoreOperationsApplyResponse, RevenueHundredStoreOperationsPlan, RevenueHundredStoreOperationsResponse, RevenueHundredStoreProductDepthApplyResponse, RevenueHundredStoreWorkLeasesApplyResponse, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse, RevenuePortfolioDashboardManualSignalCaptureApplyResponse, RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse, RevenuePortfolioDashboardPlan, RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -5450,6 +5450,11 @@ const emptyRevenueAssetReviewQueuePlan: RevenueAssetReviewQueuePlan = {
   }
 };
 
+const firstStoreCashLoopLockedActions = [
+  "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+  "Automatic clone execution, paid scale, payout movement, and provider writes"
+];
+
 const revenuePortfolioDashboard: RevenuePortfolioDashboardPlan = {
   blockedExternalActions: [
     "Publishing marketplace listings",
@@ -5462,6 +5467,1392 @@ const revenuePortfolioDashboard: RevenuePortfolioDashboardPlan = {
     statusChanges: 0
   },
   externalExecution: false,
+  firstStoreCashLoop: {
+    approvalGates: [
+      "Approve supplier, pricing, mockup, listing copy, connector setup, and launch timing before external execution.",
+      "Owner approval required before provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, or external API writes."
+    ],
+    connectionChecks: [{
+      category: "storefront",
+      label: "Storefront Marketplace",
+      nextInternalAction: "Prepare storefront setup runbook.",
+      ready: true,
+      reason: "Iron House Gym storefront setup is handoff ready.",
+      status: "ready"
+    }, {
+      category: "pod_supplier",
+      label: "POD Supplier",
+      nextInternalAction: "Prepare supplier payloads and provider approval evidence.",
+      ready: true,
+      reason: "5 payload drafts prepared; provider approval approved.",
+      status: "ready"
+    }, {
+      category: "payments_payouts",
+      label: "Payments And Payout Signals",
+      nextInternalAction: "Queue payment and payout readiness review.",
+      ready: true,
+      reason: "Payment readiness is live design ready; payouts remain owner approval-gated.",
+      status: "ready"
+    }, {
+      category: "content_channels",
+      label: "Faceless Content Channels",
+      nextInternalAction: "Prepare organic content channel checklist.",
+      ready: true,
+      reason: "1 content tie-in and 2 organic moves prepared.",
+      status: "ready"
+    }, {
+      category: "analytics_manual_import",
+      label: "Manual Signal Import",
+      nextInternalAction: "Keep manual revenue, traffic, content, and conversion import fields ready.",
+      ready: true,
+      reason: "Manual import remains the safe fallback until read-only analytics connectors are owner-approved.",
+      status: "watch"
+    }, {
+      category: "ads",
+      label: "Ads",
+      nextInternalAction: "Keep paid spend locked; only prepare advisory growth tests after organic proof.",
+      ready: false,
+      reason: "Ad spend is intentionally locked behind owner approval and Financial Orchestrator review.",
+      status: "approval_required"
+    }],
+    dailyChecklist: [{
+      evidence: "Iron House Gym: ready for manual launch. First sale ETA 2 days; automatic cash ETA 3 days.",
+      nextInternalAction: "final_operator_launch_review",
+      status: "approval_required",
+      title: "Final operator launch review"
+    }, {
+      evidence: "Iron House Gym is ready for internal first-business launch review.",
+      nextInternalAction: "Optimize listings",
+      status: "ready",
+      title: "First business launch path"
+    }, {
+      evidence: "Product has non-positive economics and should be archived before it consumes more attention.",
+      nextInternalAction: "Archive internally",
+      status: "blocked",
+      title: "kill Weak Tee"
+    }],
+    dailyRevenueLoop: {
+      advisoryAllocation: {
+        adGrowthAmount: 75,
+        adGrowthPercent: 25,
+        entralOperationsAmount: 75,
+        entralOperationsPercent: 25,
+        guardrail: "Ad/Growth allocation is advisory only and cannot spend money without Financial Orchestrator approval.",
+        mode: "organic_first",
+        ownerIncomeAmount: 150,
+        ownerIncomePercent: 50,
+        reserveHeld: 0,
+        scalingBudgetPackets: 1,
+        status: "balanced"
+      },
+      decision: {
+        killPressure: 28,
+        posture: "scale_review",
+        reason: "Portfolio is ready for scale reinvestment review from scored revenue assets.",
+        recommendation: "kill",
+        scalePressure: 74
+      },
+      nextActions: [{
+        detail: "T-Shirt at $32.00 with 42% target margin and 4 SEO keywords ready for review.",
+        lane: "product",
+        nextInternalAction: "review_listing_product_pack",
+        status: "approval_required",
+        title: "Review Iron House Core Tee"
+      }, {
+        detail: "tiktok draft is ready internally: Show the lift-before-work ritual",
+        lane: "content",
+        nextInternalAction: "review_first_week_content_calendar",
+        status: "approval_required",
+        title: "Review first organic content draft"
+      }, {
+        detail: "scalePressure 74/100 and killPressure 28/100; 25/25/50 allocation is advisory only, with no spend, payout, provider work, upload, publishing, marketplace change, browser action, or external write authorized. Freeze growth work, preserve the evidence trail, and prepare an internal rollback/archive review before the asset consumes more cash or attention.",
+        lane: "growth",
+        nextInternalAction: "prepare_internal_kill_or_rollback_review",
+        status: "blocked",
+        title: "Freeze growth and prepare kill review"
+      }],
+      signalIngest: {
+        manualSnapshots: 1,
+        performanceSnapshots: 3,
+        source: "financial_orchestrator",
+        status: "ready",
+        summary: "3 performance snapshots and 1 manual import snapshot are available for the daily revenue loop.",
+        trackedAssets: 2
+      }
+    },
+    evidenceLedger: {
+      externalExecution: false,
+      providerContacted: false,
+      receipts: [{
+        action: "revenue.first_store.manual_signal_snapshot.recorded",
+        auditLogId: "audit-first-store-signal",
+        createdAt: "2026-06-03T12:00:00.000Z",
+        entryHash: "hash-first-store-signal",
+        evidenceType: "manual_signal_snapshot",
+        externalExecution: false,
+        manualSignalDay: 7,
+        manualSignalRotationRecommendation: "scale",
+        providerContacted: false,
+        storeId: "store-1",
+        storeName: "Iron House Gym",
+        summary: "First-store manual signal snapshot recorded for Iron House Gym: 1 unit, 32 gross revenue, 13.44 net profit. External execution remains locked.",
+        targetId: "store-1",
+        targetType: "revenue_first_store_manual_signal_snapshot"
+      }, {
+        action: "revenue.first_store.manual_launch_evidence.recorded",
+        auditLogId: "audit-first-store-launch-evidence",
+        createdAt: "2026-06-03T10:00:00.000Z",
+        entryHash: "hash-first-store-launch-evidence",
+        evidenceType: "manual_launch_evidence",
+        externalExecution: false,
+        providerContacted: false,
+        storeId: "store-1",
+        storeName: "Iron House Gym",
+        summary: "First-store manual launch evidence recorded for Iron House Gym: storefront step 1. External execution remains locked.",
+        targetId: "store-1",
+        targetType: "revenue_first_store_manual_launch_evidence"
+      }, {
+        action: "revenue.first_store.owner_manual_launch_approval.recorded",
+        auditLogId: "audit-owner-launch-approval",
+        createdAt: "2026-06-03T09:00:00.000Z",
+        entryHash: "hash-owner-launch-approval",
+        evidenceType: "owner_launch_approval",
+        externalExecution: false,
+        providerContacted: false,
+        storeId: "store-1",
+        storeName: "Iron House Gym",
+        summary: "Owner manual live launch approval receipt recorded for Iron House Gym. External execution remains locked.",
+        targetId: "store-1",
+        targetType: "revenue_first_store_owner_launch_approval"
+      }, {
+        action: "revenue.first_store.winner_clone_packet_approval.recorded",
+        auditLogId: "audit-winner-clone-10",
+        createdAt: "2026-06-03T08:00:00.000Z",
+        entryHash: "hash-winner-clone-10",
+        evidenceType: "winner_clone_packet_approval",
+        externalExecution: false,
+        providerContacted: false,
+        storeId: "store-1",
+        storeName: "Iron House Gym",
+        summary: "10-store internal winner clone packet approval recorded for Iron House Gym with 9 private draft slots. External execution remains locked.",
+        targetId: "store-1",
+        targetStores: 10,
+        targetType: "revenue_winner_clone_packet_approval"
+      }],
+      summary: "4 persisted internal cash-loop receipts tracked; latest visible manual signal snapshot was recorded at 2026-06-03T12:00:00.000Z. External execution remains locked.",
+      selectedStore: {
+        firstWeekSignalCoverage: {
+          daySevenRecorded: true,
+          missingDays: [],
+          ready: true,
+          recordedDays: [0, 1, 3, 7],
+          requiredDays: [0, 1, 3, 7],
+          rotationRecommendation: "scale",
+          rotationRecommendationRecorded: true,
+          summary: "First-week manual signal coverage is complete for days 0, 1, 3, 7 with day-7 scale recommendation recorded."
+        },
+        launchEvidenceCoverage: {
+          missingCategories: [],
+          ready: true,
+          recordedCategories: ["storefront", "pod_supplier", "payments_payouts", "content_channels", "analytics_manual_import"],
+          requiredCategories: ["storefront", "pod_supplier", "payments_payouts", "content_channels", "analytics_manual_import"],
+          summary: "Required first-store launch evidence is covered for 5 core categories; ads remain approval-gated."
+        },
+        storeId: "store-1",
+        storeName: "Iron House Gym",
+        summary: "4 selected first-store cash-loop receipts tracked for Iron House Gym; latest manual signal snapshot was recorded at 2026-06-03T12:00:00.000Z. External execution remains locked.",
+        totals: {
+          cloneApprovals: 1,
+          cloneApprovalsByTarget: {
+            hundredStore: 0,
+            tenStore: 1,
+            twentyFiveStore: 0,
+            unscoped: 0
+          },
+          launchEvidence: 1,
+          manualSignals: 1,
+          ownerApprovals: 1,
+          receipts: 4
+        }
+      },
+      totals: {
+        cloneApprovals: 1,
+        cloneApprovalsByTarget: {
+          hundredStore: 0,
+          tenStore: 1,
+          twentyFiveStore: 0,
+          unscoped: 0
+        },
+        launchEvidence: 1,
+        manualSignals: 1,
+        ownerApprovals: 1,
+        receipts: 4
+      }
+    },
+    cashLoopStage: {
+      externalExecution: false,
+      firstRevenueCaptured: true,
+      label: "Monitor approved internal clone packet",
+      nextOwnerAction: {
+        label: "Monitor approved internal clone packet",
+        nextInternalAction: "maintain_private_clone_packet_audit",
+        reason: "A winner clone approval receipt is visible; keep clone execution private and approval-gated while monitoring first-store proof.",
+        source: "cash_loop_stage"
+      },
+      providerContacted: false,
+      receiptsNeeded: [],
+      receiptsRecorded: [
+        "Owner manual live-launch approval receipt",
+        "Manual first-store launch evidence receipt",
+        "Manual first-week revenue signal snapshot",
+        "Internal winner clone packet approval receipt"
+      ],
+      status: "scale_packet_approved",
+      summary: "4 cash-loop receipts recorded and 0 proof items still needed. A winner clone approval receipt is visible; keep clone execution private and approval-gated while monitoring first-store proof. External execution remains locked."
+    },
+    executionPacket: {
+      auditTrail: [
+        "Execute First Business packet prepared from the approved final execution packet.",
+        "First Business Launch Path joined Revenue Launch Checklist and First Cash Sprint evidence into one ranked launch target list.",
+        "First Cash Readiness aggregated launch readiness and live connector readiness into ranked cash-path candidates."
+      ],
+      contentIdeas: 1,
+      firstWeekMetricFields: 8,
+      label: "Iron House Gym final execution packet",
+      manualSteps: 6,
+      organicMoves: 2,
+      products: 1,
+      readinessBlocked: 0,
+      readinessReady: 6,
+      rollbackPlan: [
+        "Pause storefront/product/content/ad execution before any external change.",
+        "Archive internal draft payloads and keep all provider request manifests unsent."
+      ],
+      semiAutomatedSteps: 5,
+      source: "final_execution_packet",
+      status: "ready_from_final_execution_packet"
+    },
+    externalExecution: false,
+    firstCashStatus: {
+      automaticCashEtaDays: 3,
+      automaticCashReady: true,
+      cashReadinessScore: 90,
+      estimatedFirstSaleDays: 2,
+      manualLaunchReady: true,
+      nextActionReason: "The revenue path is close enough for final operator launch review.",
+      nextActionTitle: "Final operator launch review",
+      status: "ready_for_manual_launch",
+      storeId: "store-1",
+      storeName: "Iron House Gym"
+    },
+    launchReadiness: {
+      nextInternalAction: "generate_provider_handoff",
+      readinessScore: 94,
+      stage: "handoff_ready",
+      status: "ready",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym is ready for provider handoff review without external execution."
+    },
+    manualLaunchPacket: {
+      auditTrail: [
+        "Execute First Business packet prepared from the approved final execution packet.",
+        "Manual and semi-automated launch preparation queues were assembled internally."
+      ],
+      contentPlan: [{
+        channel: "tiktok",
+        hook: "Show the lift-before-work ritual",
+        status: "ready_internal"
+      }],
+      externalExecution: false,
+      listing: {
+        bullets: [
+          "Original gym launch tee for Iron House athletes.",
+          "Soft daily training fit.",
+          "Prepared as an internal listing draft only."
+        ],
+        description: "Iron House Core Tee is prepared for operator review with original artwork, SEO copy, and approval-gated POD fulfillment.",
+        seoKeywords: ["gym tee", "strength training", "iron house", "workout shirt"],
+        title: "Iron House Core Tee"
+      },
+      launchEvidenceChecklist: [{
+        blockedExternalActions: ["Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes"],
+        category: "storefront",
+        nextInternalAction: "maintain_storefront_launch_evidence_receipt",
+        ownerApprovalRequired: false,
+        requiredForFirstSignal: true,
+        requiredProof: [
+          "Iron House Gym storefront, collection, policies, navigation, and unpublished product placement are manually reviewed.",
+          "Record a manual note or screenshot reference; ENTRAL does not open the storefront or publish anything."
+        ],
+        status: "recorded",
+        title: "Storefront launch evidence"
+      }, {
+        blockedExternalActions: ["Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes"],
+        category: "pod_supplier",
+        nextInternalAction: "maintain_pod_supplier_launch_evidence_receipt",
+        ownerApprovalRequired: false,
+        requiredForFirstSignal: true,
+        requiredProof: [
+          "Iron House Core Tee POD supplier, blueprint, variant, mockup, shipping, and base-cost assumptions are manually reviewed.",
+          "Record the supplier readiness proof only; no provider call, upload, product creation, or order is authorized."
+        ],
+        status: "recorded",
+        title: "POD supplier launch evidence"
+      }, {
+        blockedExternalActions: ["Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes"],
+        category: "payments_payouts",
+        nextInternalAction: "maintain_payments_payouts_launch_evidence_receipt",
+        ownerApprovalRequired: false,
+        requiredForFirstSignal: true,
+        requiredProof: [
+          "Payment processor readiness, tax/fee assumptions, payout destination, and refund path are manually reviewed.",
+          "Record readiness evidence only; no payment setup, card charge, payout, transfer, or banking action is authorized."
+        ],
+        status: "recorded",
+        title: "Payments payouts launch evidence"
+      }, {
+        blockedExternalActions: ["Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes"],
+        category: "content_channels",
+        nextInternalAction: "maintain_content_channels_launch_evidence_receipt",
+        ownerApprovalRequired: false,
+        requiredForFirstSignal: true,
+        requiredProof: [
+          "Organic channel handles, posting permissions, first-week content drafts, and manual publishing owner are reviewed.",
+          "Record channel readiness only; no post, upload, browser action, or social account change is authorized."
+        ],
+        status: "recorded",
+        title: "Content channels launch evidence"
+      }, {
+        blockedExternalActions: ["Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes"],
+        category: "analytics_manual_import",
+        nextInternalAction: "maintain_analytics_manual_import_launch_evidence_receipt",
+        ownerApprovalRequired: false,
+        requiredForFirstSignal: true,
+        requiredProof: [
+          "Manual signal sheet fields for visits, units, revenue, profit, content views, saves/shares, and conversion notes are ready.",
+          "Record the import method only; no analytics connector write or external API action is authorized."
+        ],
+        status: "recorded",
+        title: "Analytics manual import launch evidence"
+      }, {
+        blockedExternalActions: ["Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes"],
+        category: "ads",
+        nextInternalAction: "hold_ads_until_owner_ad_spend_approval",
+        ownerApprovalRequired: true,
+        requiredForFirstSignal: false,
+        requiredProof: [
+          "Ad creative, spend cap, audience, and kill switch require a separate owner ad-spend approval.",
+          "Ads are not required before first-week manual signal capture and remain locked until explicit owner approval."
+        ],
+        status: "approval_required",
+        title: "Ads launch evidence"
+      }],
+      manualSteps: [
+        "Review and approve the First Launch Readiness Gate.",
+        "Review store setup instructions, policies, navigation, collection naming, SEO title, and evidence fields.",
+        "Review each listing-ready product row for title, description, bullets, SEO keywords, price, margin, tags, and design spec."
+      ],
+      organicFirstWeek: [{
+        day: 0,
+        evidence: ["Launch-day store checklist", "First organic post screenshot"],
+        title: "Launch day evidence"
+      }, {
+        day: 1,
+        evidence: ["Traffic", "Clicks", "Add-to-cart notes"],
+        title: "Day 1 signal check"
+      }, {
+        day: 3,
+        evidence: ["Revenue snapshot", "Content response"],
+        title: "Day 3 conversion check"
+      }, {
+        day: 7,
+        evidence: ["Scale/watch/pause/kill decision inputs"],
+        title: "Day 7 rotation review"
+      }],
+      product: {
+        marginPercent: 42,
+        name: "Iron House Core Tee",
+        retailPrice: 32,
+        storefrontCollection: "Iron House First Drop",
+        type: "T-Shirt"
+      },
+      providerContacted: false,
+      rollbackPlan: [
+        "Pause storefront/product/content/ad execution before any external change.",
+        "Archive internal draft payloads and keep all provider request manifests unsent."
+      ],
+      semiAutomatedSteps: [
+        "Prepare internal product payload row for Iron House Core Tee.",
+        "Prepare listing SEO row and content calendar row."
+      ],
+      status: "ready_for_operator_review",
+      store: {
+        name: "Iron House Gym",
+        platform: "Shopify"
+      },
+      supplier: {
+        estimatedBaseCost: 11.52,
+        provider: "Printify",
+        steps: [
+          "Review Printify internally as the first POD supplier candidate.",
+          "Confirm account, catalog, blueprint, shipping, production, and mockup requirements before approval."
+        ],
+        status: "selected_internal_owner_gated"
+      }
+    },
+    firstWeekRevenueLoop: {
+      checkIns: firstBusinessFirstWeekTrackingPlan.checkIns.map((checkIn) => ({
+        ...checkIn,
+        status: "ready_manual_capture"
+      })),
+      externalExecution: false,
+      metricFields: firstBusinessFirstWeekTrackingPlan.metricFields,
+      providerContacted: false,
+      rotationReview: {
+        ...firstBusinessFirstWeekTrackingPlan.rotationReview,
+        nextInternalAction: "record_manual_first_week_signals"
+      },
+      signalCaptureChecklist: firstBusinessFirstWeekTrackingPlan.checkIns.map((checkIn) => ({
+        blockedExternalActions: ["Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes"],
+        day: checkIn.day,
+        nextInternalAction: `maintain_day_${checkIn.day}_manual_signal_receipt`,
+        recorded: true,
+        requiredEvidence: checkIn.day === 7
+          ? [...checkIn.requiredEvidence, "Day 7 scale/watch/pause/kill recommendation"]
+          : checkIn.requiredEvidence,
+        requiredFields: checkIn.day === 7
+          ? [...firstBusinessFirstWeekTrackingPlan.metricFields.map((field) => field.label), "Scale/watch/pause/kill recommendation"]
+          : firstBusinessFirstWeekTrackingPlan.metricFields.map((field) => field.label),
+        rotationRecommendation: checkIn.day === 7 ? "scale" : null,
+        rotationRecommendationRequired: checkIn.day === 7,
+        status: "recorded",
+        title: checkIn.title
+      })),
+      status: "ready_for_manual_signal_capture",
+      summary: "Iron House Gym has 8 manual metric fields and 4 first-week check-ins ready to feed scale/watch/pause/kill review."
+    },
+    firstRevenueProof: {
+      evidence: [
+        "Iron House Gym is the selected first-store target.",
+        "$1200.00 gross revenue, $436.00 net profit, and $20.00/day revenue velocity are scoped to the selected first store.",
+        "3 store performance snapshots and 1 manual signal receipt are visible.",
+        "Evidence grade is usable; daily loop recommendation is kill."
+      ],
+      evidenceGrade: "usable",
+      externalExecution: false,
+      firstRevenueCaptured: true,
+      grossRevenue: 1200,
+      manualSignalReceipts: 1,
+      netProfit: 436,
+      nextInternalAction: "review_proven_winner_scale_gate",
+      providerContacted: false,
+      revenueVelocity: 20,
+      snapshots: 3,
+      status: "proven",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym has store-scoped first revenue proof: $1200.00 gross revenue, $436.00 net profit, 1 manual signal receipt, and 3 store snapshots. External execution remains locked."
+    },
+    ownerLaunchApproval: {
+      approvalMode: "manual_live_launch_review",
+      approvalPhrase: "APPROVE FIRST STORE MANUAL LIVE LAUNCH",
+      auditTrail: [
+        "Execute First Business packet prepared from the approved final execution packet.",
+        "Owner launch approval packet assembled for internal review only."
+      ],
+      blockedExternalActions: [
+        "Publishing a live store, listing, product, collection, SEO page, or marketplace record",
+        "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes remain locked until separate explicit owner approval."
+      ],
+      externalExecution: false,
+      liveApprovalRequired: true,
+      manualOnlyActions: [{
+        detail: "Manual operator action only; no provider, marketplace, browser, upload, social, ad, payment, payout, or external API action is authorized by this packet.",
+        status: "ready_for_owner_review",
+        title: "Review and approve the First Launch Readiness Gate."
+      }, {
+        detail: "Manual operator action only; no provider, marketplace, browser, upload, social, ad, payment, payout, or external API action is authorized by this packet.",
+        status: "ready_for_owner_review",
+        title: "Review store setup instructions, policies, navigation, collection naming, SEO title, and evidence fields."
+      }],
+      preflightChecks: [{
+        detail: "Iron House Gym passes the First Launch Readiness Gate with 9/9 required checks ready. Live external action still requires explicit approval.",
+        status: "ready",
+        title: "First Launch Readiness Gate"
+      }, {
+        detail: "Owner approval required before provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, or external API writes.",
+        status: "approval_required",
+        title: "Owner approval gates"
+      }, {
+        detail: "Iron House Gym storefront setup is handoff ready.",
+        status: "ready",
+        title: "Storefront Marketplace"
+      }, {
+        detail: "Ad spend is intentionally locked behind owner approval and Financial Orchestrator review.",
+        status: "approval_required",
+        title: "Ads"
+      }, {
+        detail: "Iron House Gym has 8 manual metric fields and 4 first-week check-ins ready to feed scale/watch/pause/kill review.",
+        status: "ready",
+        title: "First-week manual signal ledger"
+      }],
+      providerContacted: false,
+      rollbackPlan: [
+        "Pause storefront/product/content/ad execution before any external change.",
+        "Archive internal draft payloads and keep all provider request manifests unsent."
+      ],
+      status: "ready_for_owner_review",
+      summary: "Iron House Gym is ready for owner manual live launch review. Approval unlocks only operator-run manual launch steps; external automation, spend, payouts, provider writes, browser work, and API writes remain locked.",
+      unlockBoundary: {
+        nextInternalAction: "record_owner_manual_launch_review",
+        stillLocked: [
+          "Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes",
+          "Any automatic clone, scale, paid growth, or payout action after first launch"
+        ],
+        unlocks: [
+          "Operator may manually execute approved store/product/listing/content steps outside ENTRAL after explicit live approval.",
+          "Operator may manually record first-week revenue, profit, traffic, and content evidence back into ENTRAL."
+        ]
+      }
+    },
+    missingConnections: ["Ads"],
+    mode: "First Store Cash Loop Summary",
+    nextRevenuePriority: {
+      label: "Monitor approved internal clone packet",
+      reason: "A winner clone approval receipt is visible; keep clone execution private and approval-gated while monitoring first-store proof.",
+      source: "cash_loop_stage"
+    },
+    providerContacted: false,
+    ownerActionQueue: [{
+      actionLabel: "Approve first-store final execution packet",
+      blockedExternalActions: ["Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes"],
+      evidenceToRecord: [
+        "1 product and 6 manual launch steps.",
+        "6 readiness gates ready and 0 blocked.",
+        "Execute First Business packet prepared from the approved final execution packet."
+      ],
+      externalExecution: false,
+      nextInternalAction: "review_owner_manual_launch_approval",
+      order: 1,
+      providerContacted: false,
+      receiptType: "final_execution_packet",
+      source: "execution_packet",
+      status: "complete",
+      summary: "Iron House Gym final execution packet is ready as the first-store source packet."
+    }, {
+      actionLabel: "Record owner manual live-launch approval receipt",
+      blockedExternalActions: ["Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes"],
+      evidenceToRecord: [
+        "Approval phrase: APPROVE FIRST STORE MANUAL LIVE LAUNCH.",
+        "First Launch Readiness Gate: ready / Owner approval gates: approval required",
+        "Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes"
+      ],
+      externalExecution: false,
+      nextInternalAction: "record_owner_manual_launch_review",
+      order: 2,
+      providerContacted: false,
+      receiptType: "owner_launch_approval",
+      source: "owner_launch_approval",
+      status: "complete",
+      summary: "Owner manual live-launch approval receipt is persisted."
+    }, {
+      actionLabel: "Record first-store manual launch evidence",
+      blockedExternalActions: ["Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes"],
+      evidenceToRecord: [
+        "Review and approve the First Launch Readiness Gate.",
+        "Review Printify internally as the first POD supplier candidate.",
+        "Pause storefront/product/content/ad execution before any external change."
+      ],
+      externalExecution: false,
+      nextInternalAction: "record_manual_first_week_signals",
+      order: 3,
+      providerContacted: false,
+      receiptType: "manual_launch_evidence",
+      source: "manual_launch_packet",
+      status: "complete",
+      summary: "Manual first-store launch evidence receipt is persisted."
+    }, {
+      actionLabel: "Capture first-store manual revenue signals",
+      blockedExternalActions: ["Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes"],
+      evidenceToRecord: [
+        "Visits / Units sold / Gross revenue / Net profit",
+        "Launch-day store checklist / First organic post screenshot",
+        "3 performance snapshots and 1 manual import snapshot are available for the daily revenue loop."
+      ],
+      externalExecution: false,
+      nextInternalAction: "record_manual_first_week_signals",
+      order: 4,
+      providerContacted: false,
+      receiptType: "manual_signal_snapshot",
+      source: "first_week_revenue_loop",
+      status: "complete",
+      summary: "Manual first-week revenue signal receipt is persisted."
+    }, {
+      actionLabel: "Continue daily signal capture until first real revenue",
+      blockedExternalActions: ["Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes"],
+      evidenceToRecord: [
+        "First revenue milestone is achieved.",
+        "Selected first-store revenue is $1200.00 and net profit is $436.00.",
+        "kill recommendation with scalePressure 74/100 and killPressure 28/100."
+      ],
+      externalExecution: false,
+      nextInternalAction: "review_proven_winner_scale_gate",
+      order: 5,
+      providerContacted: false,
+      receiptType: "first_revenue_signal",
+      source: "daily_revenue_loop",
+      status: "complete",
+      summary: "First real revenue is visible in the internal revenue milestone path."
+    }, {
+      actionLabel: "Review internal winner clone packet",
+      blockedExternalActions: ["Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes"],
+      evidenceToRecord: [
+        "First revenue, profit, manual content signals, and launch packet source template are visible.",
+        "First-store revenue signal / First-week content signal / Owner approval for internal 10-store clone packet",
+        "APPROVE INTERNAL WINNER CLONE PACKET"
+      ],
+      externalExecution: false,
+      nextInternalAction: "Owner scale review: approve or reject the 10-store internal clone packet.",
+      order: 6,
+      providerContacted: false,
+      receiptType: "winner_clone_packet_approval",
+      source: "winner_scale_ladder",
+      status: "complete",
+      summary: "Internal winner clone packet approval receipt is persisted."
+    }, {
+      actionLabel: "Prepare 10/25/100 private scale readiness",
+      blockedExternalActions: ["Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes"],
+      evidenceToRecord: [
+        "10-store stage is approval required at 90%.",
+        "25-store bridge is approval required at 80%.",
+        "100-store readiness is 82/100 with 25 worker assignments ready."
+      ],
+      externalExecution: false,
+      nextInternalAction: "Optimize listings",
+      order: 7,
+      providerContacted: false,
+      receiptType: "none",
+      source: "winner_scale_ladder",
+      status: "current",
+      summary: "Clone approval is recorded; keep preparing private 10/25/100 readiness without external execution."
+    }],
+    proofChain: {
+      blockedExternalActions: firstStoreCashLoopLockedActions,
+      externalExecution: false,
+      nextInternalAction: "Optimize listings",
+      providerContacted: false,
+      stages: [{
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "Iron House Gym final execution packet is ready from final execution packet.",
+          "1 product, 6 manual steps, and 5 semi-auto steps are in the first-store packet.",
+          "6 launch readiness gates ready; 0 blocked."
+        ],
+        externalExecution: false,
+        label: "Approved first-store execution packet",
+        nextInternalAction: "review_owner_manual_launch_approval",
+        order: 1,
+        providerContacted: false,
+        receipts: ["Approved first-business final execution packet"],
+        status: "proven",
+        unlocks: ["Owner manual live-launch approval can be reviewed."]
+      }, {
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "Owner manual live-launch approval receipt is persisted.",
+          "Approval phrase: APPROVE FIRST STORE MANUAL LIVE LAUNCH.",
+          "1 owner approval receipt visible."
+        ],
+        externalExecution: false,
+        label: "Owner manual live-launch approval receipt",
+        nextInternalAction: "record_first_store_manual_launch_evidence",
+        order: 2,
+        providerContacted: false,
+        receipts: ["Owner manual live-launch approval receipt"],
+        status: "proven",
+        unlocks: ["Manual operator launch evidence can be recorded."]
+      }, {
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "Manual first-store launch evidence receipt is persisted.",
+          "Iron House Gym on Shopify.",
+          "Iron House Core Tee at $32.00 and 42% target margin."
+        ],
+        externalExecution: false,
+        label: "Manual first-store launch evidence",
+        nextInternalAction: "record_manual_first_week_signals",
+        order: 3,
+        providerContacted: false,
+        receipts: ["Manual first-store launch evidence receipt"],
+        status: "proven",
+        unlocks: ["First-week manual revenue and content signals can be captured."]
+      }, {
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "Manual first-week revenue signal receipt is persisted.",
+          "1 manual signal snapshot and 3 performance snapshots visible.",
+          "scalePressure 74/100 and killPressure 28/100."
+        ],
+        externalExecution: false,
+        label: "Manual first-week signal snapshot",
+        nextInternalAction: "continue_daily_first_store_signal_capture",
+        order: 4,
+        providerContacted: false,
+        receipts: ["Manual first-week revenue signal snapshot"],
+        status: "proven",
+        unlocks: ["Daily revenue loop can recommend scale/watch/pause/kill from recorded evidence."]
+      }, {
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "First real revenue is visible for the selected first store.",
+          "Selected first-store revenue is $1200.00 with $436.00 net profit and 1 manual signal receipt.",
+          "First revenue milestone is achieved."
+        ],
+        externalExecution: false,
+        label: "First real revenue proof",
+        nextInternalAction: "review_proven_winner_scale_gate",
+        order: 5,
+        providerContacted: false,
+        receipts: ["First real revenue signal with gross revenue and profit"],
+        status: "proven",
+        unlocks: ["Internal winner clone packet can be reviewed for owner scale approval."]
+      }, {
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "Internal winner clone packet approval receipt is persisted.",
+          "9 private 10-store clone draft slots prepared.",
+          "1 winner clone approval receipt visible."
+        ],
+        externalExecution: false,
+        label: "Internal winner clone packet approval",
+        nextInternalAction: "prepare_private_10_store_clone_readiness",
+        order: 6,
+        providerContacted: false,
+        receipts: ["Internal winner clone packet approval receipt"],
+        status: "proven",
+        unlocks: ["10-store private readiness can be prepared from the proven first-store template."]
+      }, {
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "10-store stage is approval required at 20%.",
+          "2/10 stores tracked; 8 store gap remains.",
+          "2 ready parallel stores and 2 scale-ready stores."
+        ],
+        externalExecution: false,
+        label: "10-store private clone readiness",
+        nextInternalAction: "Optimize listings",
+        order: 7,
+        providerContacted: false,
+        receipts: ["Internal winner clone packet approval receipt"],
+        status: "current",
+        unlocks: ["10-store readiness remains private and cannot execute externally."]
+      }, {
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "25-store bridge is approval required at 80%.",
+          "15 app templates, 12 product templates, 10 content templates, and 6 launch packets are ready.",
+          "2/25 stores tracked; 23 store gap remains."
+        ],
+        externalExecution: false,
+        label: "25-store private scale bridge",
+        nextInternalAction: "Build more parallel store shells",
+        order: 8,
+        providerContacted: false,
+        receipts: ["Internal winner clone packet approval receipt"],
+        status: "waiting_for_scale_proof",
+        unlocks: ["25-store readiness waits for 10-store proof and owner-gated clone evidence."]
+      }, {
+        blockedExternalActions: firstStoreCashLoopLockedActions,
+        evidence: [
+          "100-store readiness is 82/100 with 25 worker assignments ready.",
+          "5 gates pass, 4 watch, 0 blocked.",
+          "$10k/month is ready for owner review; $100k/month is waiting for 10k."
+        ],
+        externalExecution: false,
+        label: "100-store private operations readiness",
+        nextInternalAction: "Create the next 100-store batch",
+        order: 9,
+        providerContacted: false,
+        receipts: ["Internal winner clone packet approval receipt"],
+        status: "waiting_for_scale_proof",
+        unlocks: ["100-store scale waits for 10k/month proof, 25-store readiness, and owner-gated scale approvals."]
+      }],
+      status: "needs_scale_proof",
+      summary: "6/9 first-store-to-scale proof stages proven; 1 active, 0 need owner approval, 0 wait for the execution packet, 0 wait for live evidence, 2 wait for scale proof, and 0 are blocked. External execution remains locked.",
+      totals: {
+        blocked: 0,
+        current: 1,
+        ownerApprovalRequired: 0,
+        proven: 6,
+        stages: 9,
+        waitingForInternalPacket: 0,
+        waitingForLiveEvidence: 0,
+        waitingForScaleProof: 2
+      }
+    },
+    revenueSignals: {
+      estimatedProfit: 436,
+      killPressure: 28,
+      profitVelocity: 10.86,
+      recommendation: "kill",
+      revenueVelocity: 20,
+      scalePressure: 74,
+      totalRevenue: 1200
+    },
+    revenueMilestonePath: {
+      currentRunRate: {
+        dailyProfitVelocity: 10.86,
+        dailyRevenueVelocity: 20,
+        estimatedProfit: 436,
+        monthlyProfitRunRate: 325.8,
+        monthlyRevenueRunRate: 600,
+        totalRevenue: 1200
+      },
+      externalExecution: false,
+      milestones: [{
+        currentMonthlyRunRate: 600,
+        gapMonthlyRevenue: 0,
+        guardrail: "Milestone progress is advisory only; no provider calls, publishing, ad spend, payments, payouts, clone execution, browser work, marketplace writes, or external API writes are authorized.",
+        label: "First Real Revenue",
+        nextInternalAction: "record_first_revenue_evidence",
+        requiredEvidence: [
+          "Owner manual live-launch approval",
+          "First sale or no-sale manual snapshot",
+          "Gross revenue, units sold, net profit, and order/source evidence"
+        ],
+        status: "achieved",
+        targetMonthlyRevenue: 1
+      }, {
+        currentMonthlyRunRate: 600,
+        gapMonthlyRevenue: 9400,
+        guardrail: "Milestone progress is advisory only; no provider calls, publishing, ad spend, payments, payouts, clone execution, browser work, marketplace writes, or external API writes are authorized.",
+        label: "$10k/month",
+        nextInternalAction: "review_10_store_proven_winner_scale_packet",
+        requiredEvidence: [
+          "First-store revenue and net profit proof",
+          "Day 7 scale/watch/pause/kill review",
+          "Owner approval for internal 10-store clone packet",
+          "Manual or read-only signal tracking for every scaled store"
+        ],
+        status: "ready_for_owner_review",
+        targetMonthlyRevenue: 10000
+      }, {
+        currentMonthlyRunRate: 600,
+        gapMonthlyRevenue: 99400,
+        guardrail: "Milestone progress is advisory only; no provider calls, publishing, ad spend, payments, payouts, clone execution, browser work, marketplace writes, or external API writes are authorized.",
+        label: "$100k/month",
+        nextInternalAction: "reach_10k_month_before_100k_path",
+        requiredEvidence: [
+          "$10k/month operating proof",
+          "100-store worker assignment, monitoring, and launch packet readiness",
+          "Owner approval for each scale batch",
+          "25/25/50 advisory allocation reviewed without automatic spend or payouts"
+        ],
+        status: "waiting_for_10k",
+        targetMonthlyRevenue: 100000
+      }],
+      providerContacted: false,
+      summary: "20/day revenue velocity equals 600/month run-rate; next milestone action is review_10_store_proven_winner_scale_packet."
+    },
+    verificationAudit: {
+      externalExecution: false,
+      nextInternalAction: "reach_10k_month_before_100k_path",
+      providerContacted: false,
+      requirements: [{
+        evidence: [
+          "Iron House Gym final execution packet is ready from the approved final execution packet.",
+          "1 product, 6 manual steps, 5 semi-auto steps, 8 first-week metric fields.",
+          "6 readiness gates ready and 0 blocked."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "final_execution_packet",
+        label: "Approved First-Business Final Execution Packet",
+        nextInternalAction: "review_owner_manual_launch_approval",
+        ownerApprovalRequired: false,
+        status: "proven"
+      }, {
+        evidence: [
+          "6/6 required connection categories are represented.",
+          "0 missing or blocked connections; 1 owner-gated connection.",
+          "Storefront Marketplace: ready / POD Supplier: ready / Payments And Payout Signals: ready / Faceless Content Channels: ready / Manual Signal Import: watch / Ads: approval required"
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "launch_readiness_connections",
+        label: "Storefront, POD, Payments, Content, Analytics, Ads Readiness",
+        nextInternalAction: "Keep paid spend locked; only prepare advisory growth tests after organic proof.",
+        ownerApprovalRequired: true,
+        status: "owner_approval_required"
+      }, {
+        evidence: [
+          "Iron House Gym on Shopify.",
+          "Iron House Core Tee at $32.00 with 42% margin.",
+          "4 organic first-week checkpoints, 2 rollback items, and 2 audit events.",
+          "1 persisted manual launch evidence receipt visible."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "manual_launch_packet",
+        label: "Manual/Semi-Auto First Store Launch Packet",
+        nextInternalAction: "record_manual_first_week_signals",
+        ownerApprovalRequired: false,
+        status: "proven"
+      }, {
+        evidence: [
+          "Iron House Gym is ready for owner manual live launch review. Approval unlocks only operator-run manual launch steps; external automation, spend, payouts, provider writes, browser work, and API writes remain locked.",
+          "5 preflight checks and 2 manual-only actions are in the owner packet.",
+          "Approval phrase: APPROVE FIRST STORE MANUAL LIVE LAUNCH.",
+          "1 persisted owner launch approval receipt visible."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "owner_launch_approval",
+        label: "Owner Manual Live Launch Approval Gate",
+        nextInternalAction: "record_first_store_manual_launch_evidence",
+        ownerApprovalRequired: false,
+        status: "proven"
+      }, {
+        evidence: [
+          "Iron House Gym has 8 manual metric fields and 4 first-week check-ins ready to feed scale/watch/pause/kill review.",
+          "8 metric fields, 4 check-ins, and 1 manual snapshot are visible.",
+          "First revenue milestone is achieved.",
+          "1 persisted manual signal receipt visible."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "first_week_signal_capture",
+        label: "First-Week Manual Revenue Signal Capture",
+        nextInternalAction: "maintain_first_week_signal_ledger",
+        ownerApprovalRequired: false,
+        status: "proven"
+      }, {
+        evidence: [
+          "3 performance snapshots and 1 manual import snapshot are available for the daily revenue loop.",
+          "scalePressure 74/100, killPressure 28/100, recommendation kill.",
+          "25/25/50 advisory allocation; 3 next actions."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "daily_revenue_loop",
+        label: "Daily Revenue Loop And 25/25/50 Advisory Allocation",
+        nextInternalAction: "review_listing_product_pack",
+        ownerApprovalRequired: true,
+        status: "proven"
+      }, {
+        evidence: [
+          "4 persisted internal cash-loop receipts tracked; latest visible manual signal snapshot was recorded at 2026-06-03T12:00:00.000Z. External execution remains locked.",
+          "4 receipts total: owner 1, launch evidence 1, manual signals 1, clone approvals 1.",
+          "Recorded: Owner manual live-launch approval receipt / Manual first-store launch evidence receipt / Manual first-week revenue signal snapshot / Internal winner clone packet approval receipt.",
+          "No receipt-chain proof items remain in the current internal audit state."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "cash_loop_evidence_ledger",
+        label: "Persistent Cash Loop Receipt Chain",
+        nextInternalAction: "maintain_private_clone_packet_audit",
+        ownerApprovalRequired: false,
+        status: "proven"
+      }, {
+        evidence: [
+          "First-store proof is sufficient for owner scale review; cloning remains internal and approval-gated.",
+          "1200 tracked revenue, 436 estimated profit, and 1 manual snapshot are ready for owner scale review.",
+          "10 stores: approval required at 20% / 25 stores: approval required at 60% / 100 stores: approval required at 82%",
+          "1 persisted internal clone approval receipt visible."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "proven_winner_scale_ladder",
+        label: "Proven-Winner 10/25/100 Store Scale Ladder",
+        nextInternalAction: "maintain_private_clone_packet_audit",
+        ownerApprovalRequired: false,
+        status: "proven"
+      }, {
+        evidence: [
+          "20/day revenue velocity equals 600/month run-rate; next milestone action is review_10_store_proven_winner_scale_packet.",
+          "$10k/month is ready for owner review with gap $9400.00.",
+          "$100k/month is waiting for 10k with gap $99400.00."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "revenue_milestones",
+        label: "First Revenue To $10k/month To $100k/month Milestone Path",
+        nextInternalAction: "reach_10k_month_before_100k_path",
+        ownerApprovalRequired: true,
+        status: "waiting_for_scale_proof"
+      }, {
+        evidence: [
+          "4 worker assignments ready, 8 daily supervisor items selected.",
+          "5 gates pass, 4 watch, 0 blocked.",
+          "2/10 stores toward 10 and 2/25 stores toward 25."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "hundred_store_worker_assignments",
+        label: "100-Store Worker Assignment And Readiness Layer",
+        nextInternalAction: "Create the next 100-store batch",
+        ownerApprovalRequired: false,
+        status: "proven"
+      }, {
+        evidence: [
+          "Every first-store, signal, milestone, and scale audit artifact reports externalExecution false and providerContacted false.",
+          "Provider account creation, provider API calls, product uploads, mockup uploads, supplier orders, marketplace publishing, storefront publishing, social posting, browser automation, ad spend, payment setup, card charges, payouts, banking, and external API writes",
+          "Milestone progress is advisory only; no provider calls, publishing, ad spend, payments, payouts, clone execution, browser work, marketplace writes, or external API writes are authorized."
+        ],
+        externalActionsLocked: [
+          "Provider calls, uploads, publishing, ad spend, payments, payouts, marketplace changes, browser actions, and external API writes",
+          "Automatic clone execution, paid scale, payout movement, and provider writes"
+        ],
+        id: "safety_lock",
+        label: "Private Internal Approval-Gated Safety Lock",
+        nextInternalAction: "maintain_private_approval_gates",
+        ownerApprovalRequired: false,
+        status: "proven"
+      }],
+      status: "needs_scale_proof",
+      summary: "9/11 first-store-to-scale requirements are proven from current internal evidence; 1 need owner approval, 0 wait for live evidence, 1 wait for scale proof, and 0 are blocked. External execution remains locked.",
+      totals: {
+        blocked: 0,
+        ownerApprovalRequired: 1,
+        proven: 9,
+        requirements: 11,
+        waitingForLiveEvidence: 0,
+        waitingForScaleProof: 1
+      }
+    },
+    winnerScaleLadder: {
+      clonePackets: [{
+        approvalPhrase: "APPROVE INTERNAL WINNER CLONE PACKET",
+        auditTrail: [
+          "Uses the approved first-store final execution packet as the source template.",
+          "Requires first-store revenue/profit/content/rotation proof before owner scale approval.",
+          "Creates private internal draft tasks only; external clone execution remains locked."
+        ],
+        blockedExternalActions: [
+          "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+          "Scaling a product/store/content template before first-sale proof and owner scale approval"
+        ],
+        draftCloneSlots: 9,
+        draftSlots: [{
+          blockedExternalActions: [
+            "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+            "Scaling a product/store/content template before first-sale proof and owner scale approval"
+          ],
+          contentTemplate: "1 content draft and 2 organic moves are ready for clone adaptation.",
+          externalExecution: false,
+          listingTemplate: "Iron House Core Tee carries 4 SEO keywords and 3 listing bullets.",
+          nextInternalAction: "draft_private_clone_slot_2_for_10_store_stage",
+          productTemplate: "Iron House Core Tee at $32.00 with 42% target margin is the product template.",
+          providerContacted: false,
+          signalTemplate: "8 manual metric fields are ready before scale review.",
+          slot: 2,
+          status: "approval_required",
+          storeTemplate: "Iron House Gym storefront setup packet is the source template for private clone drafts.",
+          title: "10-store private clone slot 2"
+        }],
+        externalExecution: false,
+        nextInternalAction: "Owner scale review: approve or reject the 10-store internal clone packet.",
+        ownerApprovalRequired: true,
+        proofSummary: "1200 tracked revenue, 436 estimated profit, and 1 manual snapshot are ready for owner scale review.",
+        providerContacted: false,
+        readinessPercent: 20,
+        requiredProof: [
+          "Manual first sale or no-sale snapshot",
+          "Gross revenue, units sold, and net profit",
+          "Traffic, clicks, content views, and conversion notes",
+          "Day 7 scale/watch/pause/kill recommendation"
+        ],
+        sourceTemplate: "final_execution_packet",
+        status: "approval_required",
+        summary: "9 private clone draft slots can be reviewed for the 10-store stage. Owner approval is still required before any external clone action.",
+        targetStores: 10,
+        tasks: [{
+          category: "storefront",
+          detail: "Iron House Gym storefront setup packet is the source template for private clone drafts.",
+          nextInternalAction: "draft_storefront_clone_packet_for_10_store_stage",
+          status: "approval_required",
+          title: "10-store storefront clone task"
+        }, {
+          category: "product",
+          detail: "Iron House Core Tee at $32.00 with 42% target margin is the product template.",
+          nextInternalAction: "draft_product_clone_packet_for_10_store_stage",
+          status: "approval_required",
+          title: "10-store product clone task"
+        }, {
+          category: "listing",
+          detail: "Iron House Core Tee carries 4 SEO keywords and 3 listing bullets.",
+          nextInternalAction: "draft_listing_clone_packet_for_10_store_stage",
+          status: "approval_required",
+          title: "10-store listing clone task"
+        }, {
+          category: "content",
+          detail: "1 content draft and 2 organic moves are ready for clone adaptation.",
+          nextInternalAction: "draft_content_clone_packet_for_10_store_stage",
+          status: "approval_required",
+          title: "10-store content clone task"
+        }, {
+          category: "signal",
+          detail: "8 manual metric fields are ready before scale review.",
+          nextInternalAction: "draft_signal_clone_packet_for_10_store_stage",
+          status: "approval_required",
+          title: "10-store signal clone task"
+        }]
+      }, {
+        approvalPhrase: "APPROVE INTERNAL WINNER CLONE PACKET",
+        auditTrail: [
+          "Uses the approved first-store final execution packet as the source template.",
+          "Requires first-store revenue/profit/content/rotation proof before owner scale approval.",
+          "Creates private internal draft tasks only; external clone execution remains locked."
+        ],
+        blockedExternalActions: [
+          "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+          "Scaling a product/store/content template before first-sale proof and owner scale approval"
+        ],
+        draftCloneSlots: 24,
+        draftSlots: [{
+          blockedExternalActions: [
+            "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+            "Scaling a product/store/content template before first-sale proof and owner scale approval"
+          ],
+          contentTemplate: "1 content draft and 2 organic moves are ready for clone adaptation.",
+          externalExecution: false,
+          listingTemplate: "Iron House Core Tee carries 4 SEO keywords and 3 listing bullets.",
+          nextInternalAction: "draft_private_clone_slot_2_for_25_store_stage",
+          productTemplate: "Iron House Core Tee at $32.00 with 42% target margin is the product template.",
+          providerContacted: false,
+          signalTemplate: "8 manual metric fields are ready before scale review.",
+          slot: 2,
+          status: "approval_required",
+          storeTemplate: "Iron House Gym storefront setup packet is the source template for private clone drafts.",
+          title: "25-store private clone slot 2"
+        }],
+        externalExecution: false,
+        nextInternalAction: "Owner scale review: approve or reject the 25-store internal clone packet.",
+        ownerApprovalRequired: true,
+        proofSummary: "1200 tracked revenue, 436 estimated profit, and 1 manual snapshot are ready for owner scale review.",
+        providerContacted: false,
+        readinessPercent: 60,
+        requiredProof: [
+          "Manual first sale or no-sale snapshot",
+          "Gross revenue, units sold, and net profit",
+          "Traffic, clicks, content views, and conversion notes",
+          "Day 7 scale/watch/pause/kill recommendation"
+        ],
+        sourceTemplate: "final_execution_packet",
+        status: "approval_required",
+        summary: "24 private clone draft slots can be reviewed for the 25-store stage. Owner approval is still required before any external clone action.",
+        targetStores: 25,
+        tasks: [{
+          category: "storefront",
+          detail: "Iron House Gym storefront setup packet is the source template for private clone drafts.",
+          nextInternalAction: "draft_storefront_clone_packet_for_25_store_stage",
+          status: "approval_required",
+          title: "25-store storefront clone task"
+        }]
+      }, {
+        approvalPhrase: "APPROVE INTERNAL WINNER CLONE PACKET",
+        auditTrail: [
+          "Uses the approved first-store final execution packet as the source template.",
+          "Requires first-store revenue/profit/content/rotation proof before owner scale approval.",
+          "Creates private internal draft tasks only; external clone execution remains locked."
+        ],
+        blockedExternalActions: [
+          "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+          "Scaling a product/store/content template before first-sale proof and owner scale approval"
+        ],
+        draftCloneSlots: 99,
+        draftSlots: [{
+          blockedExternalActions: [
+            "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+            "Scaling a product/store/content template before first-sale proof and owner scale approval"
+          ],
+          contentTemplate: "1 content draft and 2 organic moves are ready for clone adaptation.",
+          externalExecution: false,
+          listingTemplate: "Iron House Core Tee carries 4 SEO keywords and 3 listing bullets.",
+          nextInternalAction: "draft_private_clone_slot_2_for_100_store_stage",
+          productTemplate: "Iron House Core Tee at $32.00 with 42% target margin is the product template.",
+          providerContacted: false,
+          signalTemplate: "8 manual metric fields are ready before scale review.",
+          slot: 2,
+          status: "approval_required",
+          storeTemplate: "100-store launch packets provide the source template for private clone drafts.",
+          title: "100-store private clone slot 2"
+        }],
+        externalExecution: false,
+        nextInternalAction: "Owner scale review: approve or reject the 100-store internal clone packet.",
+        ownerApprovalRequired: true,
+        proofSummary: "1200 tracked revenue, 436 estimated profit, and 1 manual snapshot are ready for owner scale review.",
+        providerContacted: false,
+        readinessPercent: 82,
+        requiredProof: [
+          "Manual first sale or no-sale snapshot",
+          "Gross revenue, units sold, and net profit",
+          "Traffic, clicks, content views, and conversion notes",
+          "Day 7 scale/watch/pause/kill recommendation"
+        ],
+        sourceTemplate: "hundred_store_launch_packets",
+        status: "approval_required",
+        summary: "99 private clone draft slots can be reviewed for the 100-store stage. Owner approval is still required before any external clone action.",
+        targetStores: 100,
+        tasks: [{
+          category: "storefront",
+          detail: "100-store launch packets provide the source template for private clone drafts.",
+          nextInternalAction: "draft_storefront_clone_packet_for_100_store_stage",
+          status: "approval_required",
+          title: "100-store storefront clone task"
+        }]
+      }],
+      cloneTemplates: [{
+        detail: "Iron House Gym storefront setup packet is the source template for private clone drafts.",
+        ready: true,
+        source: "final_execution_packet",
+        type: "storefront"
+      }, {
+        detail: "Iron House Core Tee at $32.00 with 42% target margin is the product template.",
+        ready: true,
+        source: "final_execution_packet",
+        type: "product"
+      }, {
+        detail: "Iron House Core Tee carries 4 SEO keywords and 3 listing bullets.",
+        ready: true,
+        source: "final_execution_packet",
+        type: "listing"
+      }, {
+        detail: "1 content draft and 2 organic moves are ready for clone adaptation.",
+        ready: true,
+        source: "final_execution_packet",
+        type: "content"
+      }, {
+        detail: "8 manual metric fields are ready before scale review.",
+        ready: true,
+        source: "first_week_loop",
+        type: "signal"
+      }],
+      externalExecution: false,
+      proofGate: {
+        evidenceSummary: "1200 tracked revenue, 436 estimated profit, and 1 manual snapshot are ready for owner scale review.",
+        nextInternalAction: "review_proven_winner_scale_gate",
+        requiredSignals: [
+          "Manual first sale or no-sale snapshot",
+          "Gross revenue, units sold, and net profit",
+          "Traffic, clicks, content views, and conversion notes",
+          "Day 7 scale/watch/pause/kill recommendation"
+        ],
+        status: "ready_for_owner_scale_review"
+      },
+      providerContacted: false,
+      stages: [{
+        allowedInternalActions: [
+          "Duplicate internal product, listing, storefront, and content templates into draft packets",
+          "Prepare manual signal fields and approval packets for owner review",
+          "Keep clone batches private until live launch approval is explicit"
+        ],
+        blockedExternalActions: [
+          "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+          "Scaling a product/store/content template before first-sale proof and owner scale approval"
+        ],
+        nextInternalAction: "Owner scale review: approve or reject the 10-store internal clone packet.",
+        proofRequired: "Manual first-sale proof, gross revenue, net profit, traffic/content response, and day-7 scale/watch/pause/kill review are required before clone approval.",
+        readinessPercent: 20,
+        status: "approval_required",
+        targetStores: 10,
+        templateSource: "final_execution_packet"
+      }, {
+        allowedInternalActions: [
+          "Duplicate internal product, listing, storefront, and content templates into draft packets",
+          "Prepare manual signal fields and approval packets for owner review",
+          "Keep clone batches private until live launch approval is explicit"
+        ],
+        blockedExternalActions: [
+          "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+          "Scaling a product/store/content template before first-sale proof and owner scale approval"
+        ],
+        nextInternalAction: "Owner scale review: approve or reject the 25-store internal clone packet.",
+        proofRequired: "Manual first-sale proof, gross revenue, net profit, traffic/content response, and day-7 scale/watch/pause/kill review are required before clone approval.",
+        readinessPercent: 60,
+        status: "approval_required",
+        targetStores: 25,
+        templateSource: "final_execution_packet"
+      }, {
+        allowedInternalActions: [
+          "Duplicate internal product, listing, storefront, and content templates into draft packets",
+          "Prepare manual signal fields and approval packets for owner review",
+          "Keep clone batches private until live launch approval is explicit"
+        ],
+        blockedExternalActions: [
+          "Creating live provider products, uploading artwork, publishing cloned listings, opening storefronts, posting content, spending money, moving payouts, or calling external APIs",
+          "Scaling a product/store/content template before first-sale proof and owner scale approval"
+        ],
+        nextInternalAction: "Owner scale review: approve or reject the 100-store internal clone packet.",
+        proofRequired: "Manual first-sale proof, gross revenue, net profit, traffic/content response, and day-7 scale/watch/pause/kill review are required before clone approval.",
+        readinessPercent: 82,
+        status: "approval_required",
+        targetStores: 100,
+        templateSource: "hundred_store_launch_packets"
+      }],
+      summary: "First-store proof is sufficient for owner scale review; cloning remains internal and approval-gated."
+    },
+    scalePath: {
+      tenStore: {
+        currentStores: 2,
+        gap: 8,
+        nextInternalAction: "Duplicate the winning product/store/content template after first-sale proof.",
+        readinessPercent: 20,
+        readyParallelStores: 1,
+        scaleReadyStores: 2,
+        targetStores: 10
+      },
+      twentyFiveStore: {
+        applicationTemplatesReady: 15,
+        contentTemplatesReady: 10,
+        currentStores: 2,
+        gap: 23,
+        launchPacketsReady: 6,
+        nextInternalAction: "Expand reusable launch packets, product drafts, content hooks, and app templates to cover 25 internal store slots.",
+        productTemplatesReady: 12,
+        readinessPercent: 60,
+        status: "approval_required",
+        targetStores: 25,
+        templateSource: "final_execution_packet"
+      },
+      hundredStore: {
+        currentStores: 2,
+        dailySupervisorSelected: 8,
+        gap: 98,
+        gatesBlocked: 0,
+        gatesPass: 5,
+        gatesWatch: 4,
+        nextInternalAction: "Create the next 100-store batch",
+        readinessScore: 82,
+        readyParallelStores: 1,
+        targetStores: 100,
+        workerAssignmentsReady: 4
+      }
+    },
+    status: "needs_approval",
+    summary: "Iron House Gym needs approval with first sale ETA 2 days, 1 missing or gated connection, and 2 approval gates."
+  },
   generatedAt: "2026-06-03T00:20:00.000Z",
   kpis: {
     assets: 4,
@@ -5531,6 +6922,155 @@ const revenuePortfolioDashboard: RevenuePortfolioDashboardPlan = {
   },
   summary: "4 scored assets with $10.86/day profit velocity, 1 review item, 5 command actions, and high operating risk."
 };
+
+function ownerLaunchApprovalReceiptResponse(dryRun: boolean): RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse {
+  return {
+    applied: {
+      allowed: true,
+      approvalPhrase: "APPROVE FIRST STORE MANUAL LIVE LAUNCH",
+      approvalStatus: "ready_for_owner_review",
+      approvalsPreviewed: dryRun ? 1 : 0,
+      approvalsRecorded: dryRun ? 0 : 1,
+      auditLogId: dryRun ? null : "audit-owner-launch-approval-1",
+      blockedExternalActions: revenuePortfolioDashboard.firstStoreCashLoop.ownerLaunchApproval.blockedExternalActions,
+      blockers: [],
+      dryRun,
+      externalExecution: false,
+      providerContacted: false,
+      stillLocked: revenuePortfolioDashboard.firstStoreCashLoop.ownerLaunchApproval.unlockBoundary.stillLocked,
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: dryRun
+        ? "Owner manual live launch approval receipt previewed for Iron House Gym. External execution remains locked."
+        : "Owner manual live launch approval receipt recorded for Iron House Gym. External execution remains locked.",
+      unlocks: revenuePortfolioDashboard.firstStoreCashLoop.ownerLaunchApproval.unlockBoundary.unlocks
+    },
+    dashboard: revenuePortfolioDashboard,
+    ownerLaunchApproval: revenuePortfolioDashboard.firstStoreCashLoop.ownerLaunchApproval
+  };
+}
+
+function manualLaunchEvidenceReceiptResponse(
+  dryRun: boolean,
+  overrides: {
+    evidenceCategory?: RevenuePortfolioDashboardPlan["firstStoreCashLoop"]["connectionChecks"][number]["category"];
+    evidenceNote?: string;
+    stepIndex?: number;
+  } = {}
+): RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse {
+  const evidenceCategory = overrides.evidenceCategory ?? "storefront";
+  const evidenceNote = overrides.evidenceNote ?? (dryRun
+    ? "Previewed owner/operator manual launch evidence from dashboard controls. ENTRAL did not perform the external step."
+    : "Recorded owner/operator manual launch evidence from dashboard controls. ENTRAL did not perform the external step.");
+  const stepIndex = overrides.stepIndex ?? 0;
+  const categoryLabel = evidenceCategory.replace(/_/g, " ");
+
+  return {
+    dashboard: revenuePortfolioDashboard,
+    manualLaunchEvidence: {
+      allowed: true,
+      approvalPhrase: "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP",
+      auditLogId: dryRun ? null : "audit-manual-launch-evidence-1",
+      blockedExternalActions: revenuePortfolioDashboard.firstStoreCashLoop.ownerLaunchApproval.blockedExternalActions,
+      blockers: [],
+      completedAt: "2026-06-03T00:30:00.000Z",
+      dryRun,
+      evidenceCategory,
+      evidenceNote,
+      evidencePreviewed: dryRun ? 1 : 0,
+      evidenceRecorded: dryRun ? 0 : 1,
+      externalExecution: false,
+      ownerCompletedManualStep: true,
+      providerContacted: false,
+      stepIndex,
+      stepTitle: revenuePortfolioDashboard.firstStoreCashLoop.manualLaunchPacket.manualSteps[stepIndex] ?? "Review and approve the First Launch Readiness Gate.",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: dryRun
+        ? `First-store manual launch evidence previewed for Iron House Gym: ${categoryLabel} step ${stepIndex + 1}. External execution remains locked.`
+        : `First-store manual launch evidence recorded for Iron House Gym: ${categoryLabel} step ${stepIndex + 1}. External execution remains locked.`
+    }
+  };
+}
+
+function winnerClonePacketApprovalResponse(dryRun: boolean): RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse {
+  const clonePacket = revenuePortfolioDashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets[0];
+
+  return {
+    cloneApproval: {
+      allowed: true,
+      approvalPhrase: clonePacket.approvalPhrase,
+      approvalStatus: clonePacket.status,
+      approvalsPreviewed: dryRun ? 1 : 0,
+      approvalsRecorded: dryRun ? 0 : 1,
+      auditLogId: dryRun ? null : "audit-winner-clone-approval-1",
+      blockedExternalActions: clonePacket.blockedExternalActions,
+      blockers: [],
+      draftCloneSlots: clonePacket.draftCloneSlots,
+      dryRun,
+      externalExecution: false,
+      ownerApprovalRequired: clonePacket.ownerApprovalRequired,
+      providerContacted: false,
+      requiredProof: clonePacket.requiredProof,
+      sourceTemplate: clonePacket.sourceTemplate,
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: dryRun
+        ? "10-store internal winner clone packet previewed for Iron House Gym with 9 private draft slots. External execution remains locked."
+        : "10-store internal winner clone packet approval recorded for Iron House Gym with 9 private draft slots. External execution remains locked.",
+      targetStores: 10,
+      taskCount: clonePacket.tasks.length
+    },
+    clonePacket,
+    dashboard: revenuePortfolioDashboard
+  };
+}
+
+function firstStoreManualSignalCaptureResponse(dryRun: boolean): RevenuePortfolioDashboardManualSignalCaptureApplyResponse {
+  const summary = dryRun
+    ? "First-store manual signal snapshot previewed for Iron House Gym: 0 units, 0 gross revenue, 0 net profit."
+    : "First-store manual signal snapshot recorded for Iron House Gym: 0 units, 0 gross revenue, 0 net profit.";
+
+  return {
+    capture: {
+      allowed: true,
+      auditLogId: dryRun ? null : "audit-first-store-signal-1",
+      blockers: [],
+      day: 0,
+      dryRun,
+      externalExecution: false,
+      grossRevenue: 0,
+      netProfit: 0,
+      providerContacted: false,
+      rotationRecommendation: "watch",
+      snapshotId: dryRun ? null : "snapshot-first-store-signal-1",
+      snapshotsPreviewed: dryRun ? 1 : 0,
+      snapshotsRecorded: dryRun ? 0 : 1,
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary,
+      unitsSold: 0,
+      visits: 0
+    },
+    dashboard: revenuePortfolioDashboard,
+    digest: performanceDigest,
+    snapshot: {
+      adSpend: 0,
+      grossRevenue: 0,
+      id: dryRun ? "preview-first-store-signal-1" : "snapshot-first-store-signal-1",
+      impressions: 0,
+      netProfit: 0,
+      notes: "First-store manual signal capture day 0.",
+      periodEnd: "2026-06-03T00:00:00.000Z",
+      periodStart: "2026-06-02T00:00:00.000Z",
+      productId: null,
+      source: "manual",
+      storeId: "store-1",
+      unitsSold: 0,
+      visits: 0
+    }
+  };
+}
 
 const firstCashReadinessPlan: RevenueFirstCashReadinessPlan = {
   auditEvents: [
@@ -8918,11 +10458,101 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getAllByText(/audit audit-first-business-live-executor-1/)).toHaveLength(2);
   });
 
+  it("keeps first-store cash loop actions locked when receipts only exist for another store", async () => {
+    const offStoreDashboard = JSON.parse(JSON.stringify(revenuePortfolioDashboard)) as RevenuePortfolioDashboardPlan;
+    offStoreDashboard.firstStoreCashLoop.evidenceLedger.receipts = offStoreDashboard.firstStoreCashLoop.evidenceLedger.receipts.map((receipt) => ({
+      ...receipt,
+      storeId: "store-2",
+      storeName: "Different Store",
+      targetId: receipt.targetId === "store-1" ? "store-2" : receipt.targetId
+    }));
+    offStoreDashboard.firstStoreCashLoop.evidenceLedger.selectedStore = {
+      ...offStoreDashboard.firstStoreCashLoop.evidenceLedger.selectedStore,
+      firstWeekSignalCoverage: {
+        daySevenRecorded: false,
+        missingDays: [0, 1, 3, 7],
+        ready: false,
+        recordedDays: [],
+        requiredDays: [0, 1, 3, 7],
+        rotationRecommendation: null,
+        rotationRecommendationRecorded: false,
+        summary: "0/4 required first-week signal days recorded; missing day 0, day 1, day 3, day 7; day-7 rotation recommendation missing."
+      },
+      launchEvidenceCoverage: {
+        missingCategories: ["storefront", "pod_supplier", "payments_payouts", "content_channels", "analytics_manual_import"],
+        ready: false,
+        recordedCategories: [],
+        requiredCategories: ["storefront", "pod_supplier", "payments_payouts", "content_channels", "analytics_manual_import"],
+        summary: "0/5 required first-store launch evidence categories recorded; missing storefront, pod supplier, payments payouts, content channels, analytics manual import. Ads remain approval-gated."
+      },
+      summary: "No selected first-store cash-loop receipts are recorded for Iron House Gym yet.",
+      totals: {
+        cloneApprovals: 0,
+        cloneApprovalsByTarget: {
+          hundredStore: 0,
+          tenStore: 0,
+          twentyFiveStore: 0,
+          unscoped: 0
+        },
+        launchEvidence: 0,
+        manualSignals: 0,
+        ownerApprovals: 0,
+        receipts: 0
+      }
+    };
+    offStoreDashboard.firstStoreCashLoop.firstRevenueProof = {
+      ...offStoreDashboard.firstStoreCashLoop.firstRevenueProof,
+      evidence: [
+        "Different Store has off-store first revenue proof.",
+        "Iron House Gym still needs selected-store owner approval, launch evidence, manual signals, and first revenue proof."
+      ],
+      storeId: "store-2",
+      storeName: "Different Store",
+      summary: "Different Store has off-store first revenue proof. Iron House Gym selected-store proof is still missing."
+    };
+
+    vi.mocked(apiFetch).mockResolvedValueOnce({ dashboard: offStoreDashboard });
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /load dashboard/i }));
+
+    expect(await screen.findByText("Selected First-Store Receipt Chain")).toBeInTheDocument();
+    expect(screen.getByText("No selected first-store cash-loop receipts are recorded for Iron House Gym yet.")).toBeInTheDocument();
+
+    const manualLaunchEvidenceRegion = screen.getByLabelText("First-store manual launch evidence controls");
+    expect(within(manualLaunchEvidenceRegion).getByRole("button", { name: /preview launch evidence/i })).toBeDisabled();
+    expect(within(manualLaunchEvidenceRegion).getByRole("button", { name: /record launch evidence/i })).toBeDisabled();
+
+    const firstWeekLoopRegion = screen.getByLabelText("First week manual revenue loop");
+    expect(within(firstWeekLoopRegion).getByRole("button", { name: /preview first-store signals/i })).toBeDisabled();
+    expect(within(firstWeekLoopRegion).getByRole("button", { name: /record first-store signals/i })).toBeDisabled();
+
+    const tenStoreClonePacketRegion = screen.getByLabelText("10-store winner clone packet controls");
+    expect(within(tenStoreClonePacketRegion).getByRole("button", { name: /preview clone packet/i })).toBeDisabled();
+    expect(within(tenStoreClonePacketRegion).getByRole("button", { name: /record clone approval/i })).toBeDisabled();
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("runs the Revenue Engine and applies internal rotation only after preview", async () => {
     const onRefreshStores = vi.fn();
+    const manualLaunchEvidenceNote = "Supplier setup evidence.";
+    const manualLaunchEvidenceOverrides = {
+      evidenceCategory: "pod_supplier" as const,
+      evidenceNote: manualLaunchEvidenceNote,
+      stepIndex: 1
+    };
 
     vi.mocked(apiFetch)
       .mockResolvedValueOnce({ dashboard: revenuePortfolioDashboard })
+      .mockResolvedValueOnce(ownerLaunchApprovalReceiptResponse(true))
+      .mockResolvedValueOnce(ownerLaunchApprovalReceiptResponse(false))
+      .mockResolvedValueOnce(manualLaunchEvidenceReceiptResponse(true, manualLaunchEvidenceOverrides))
+      .mockResolvedValueOnce(manualLaunchEvidenceReceiptResponse(false, manualLaunchEvidenceOverrides))
+      .mockResolvedValueOnce(firstStoreManualSignalCaptureResponse(true))
+      .mockResolvedValueOnce(firstStoreManualSignalCaptureResponse(false))
+      .mockResolvedValueOnce(winnerClonePacketApprovalResponse(true))
+      .mockResolvedValueOnce(winnerClonePacketApprovalResponse(false))
       .mockResolvedValueOnce(assetActionResponse(revenuePlan, "product-2", "kill", true))
       .mockResolvedValueOnce(assetActionResponse(revenuePlan, "product-2", "kill", false))
       .mockResolvedValueOnce({ dashboard: revenuePortfolioDashboard })
@@ -8946,6 +10576,251 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("4 scored assets with $10.86/day profit velocity, 1 review item, 5 command actions, and high operating risk.")).toBeInTheDocument();
     expect(screen.getByText("Risk")).toBeInTheDocument();
     expect(screen.getByText("high")).toBeInTheDocument();
+    expect(screen.getByText("First Store Cash Loop")).toBeInTheDocument();
+    expect(screen.getByText("Iron House Gym needs approval with first sale ETA 2 days, 1 missing or gated connection, and 2 approval gates.")).toBeInTheDocument();
+    expect(screen.getByText("Monitor approved internal clone packet")).toBeInTheDocument();
+    expect(screen.getByText(/source cash loop stage/)).toBeInTheDocument();
+    expect(screen.getByText(/scale packet approved \/ first revenue captured/)).toBeInTheDocument();
+    expect(screen.getByText(/recorded 4 \/ needed none/)).toBeInTheDocument();
+    expect(screen.getAllByText("clone approval targets 10 1 / 25 0 / 100 0 / unscoped 0")).toHaveLength(2);
+    expect(screen.getByText(/proven \/ evidence usable/)).toBeInTheDocument();
+    expect(screen.getByText("Iron House Gym has store-scoped first revenue proof: $1200.00 gross revenue, $436.00 net profit, 1 manual signal receipt, and 3 store snapshots. External execution remains locked.")).toBeInTheDocument();
+    expect(screen.getByText(/manual receipts \/ next review proven winner scale gate/)).toBeInTheDocument();
+    expect(screen.getByText("Iron House Gym final execution packet")).toBeInTheDocument();
+    expect(screen.getByText(/6 manual steps \/ 5 semi-auto steps/)).toBeInTheDocument();
+    const ownerActionQueueRegion = screen.getByLabelText("First-store owner action queue");
+    expect(within(ownerActionQueueRegion).getByText("Owner Action Queue")).toBeInTheDocument();
+    expect(within(ownerActionQueueRegion).getByText("Record owner manual live-launch approval receipt")).toBeInTheDocument();
+    expect(within(ownerActionQueueRegion).getByText("Prepare 10/25/100 private scale readiness")).toBeInTheDocument();
+    expect(within(ownerActionQueueRegion).getByText(/7 \/ current \/ none/)).toBeInTheDocument();
+    const proofChainRegion = screen.getByLabelText("First-store to scale proof chain");
+    expect(within(proofChainRegion).getByText("First-Store To Scale Proof Chain")).toBeInTheDocument();
+    expect(within(proofChainRegion).getByText("6/9 proof stages proven")).toBeInTheDocument();
+    expect(within(proofChainRegion).getByText(/6\/9 first-store-to-scale proof stages proven/)).toBeInTheDocument();
+    expect(within(proofChainRegion).getByText("10-store private clone readiness")).toBeInTheDocument();
+    expect(within(proofChainRegion).getByText("25-store private scale bridge")).toBeInTheDocument();
+    expect(within(proofChainRegion).getByText("100-store private operations readiness")).toBeInTheDocument();
+    expect(within(proofChainRegion).getByText(/7 \/ current \/ external execution locked/)).toBeInTheDocument();
+    expect(screen.getByText("approval readiness record 25-store clone approval first")).toBeInTheDocument();
+    const hundredStoreClonePacketRegion = screen.getByLabelText("100-store winner clone packet controls");
+    expect(within(hundredStoreClonePacketRegion).getByRole("button", { name: /preview clone packet/i })).toBeDisabled();
+    expect(within(hundredStoreClonePacketRegion).getByRole("button", { name: /record clone approval/i })).toBeDisabled();
+    expect(screen.getByText("Manual Launch Packet")).toBeInTheDocument();
+    expect(screen.getByText("Organic First 7 Days")).toBeInTheDocument();
+    expect(screen.getByText("Approval-Gated Prep")).toBeInTheDocument();
+    expect(screen.getByText(/Printify estimated base/)).toBeInTheDocument();
+    expect(screen.getAllByText(/provider contacted no/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/day 0: Launch day evidence/)).toBeInTheDocument();
+    expect(screen.getByText("POD supplier launch evidence")).toBeInTheDocument();
+    expect(screen.getByText("Analytics manual import launch evidence")).toBeInTheDocument();
+    expect(screen.getByText("Ads launch evidence")).toBeInTheDocument();
+    expect(screen.getByText(/hold ads until owner ad spend approval/)).toBeInTheDocument();
+    expect(screen.getByText("Owner Launch Approval")).toBeInTheDocument();
+    expect(screen.getByText("APPROVE FIRST STORE MANUAL LIVE LAUNCH")).toBeInTheDocument();
+    expect(screen.getByText("Manual Boundary")).toBeInTheDocument();
+    expect(screen.getByText("Approval Boundary")).toBeInTheDocument();
+    expect(screen.getByText(/explicit live approval required/)).toBeInTheDocument();
+    expect(screen.getByText("Cash Loop Evidence Ledger")).toBeInTheDocument();
+    expect(screen.getByText("Persisted Internal Receipts")).toBeInTheDocument();
+    expect(screen.getByText("Selected First-Store Receipt Chain")).toBeInTheDocument();
+    expect(screen.getAllByText(/4 persisted internal cash-loop receipts tracked/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/4 selected first-store cash-loop receipts tracked for Iron House Gym/)).toBeInTheDocument();
+    expect(screen.getAllByText(/owner 1 \/ launch evidence 1 \/ manual signals 1 \/ clone approvals 1/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Required first-store launch evidence is covered for 5 core categories; ads remain approval-gated.")).toBeInTheDocument();
+    expect(screen.getByText("First-week manual signal coverage is complete for days 0, 1, 3, 7 with day-7 scale recommendation recorded.")).toBeInTheDocument();
+    expect(screen.getByText(/manual signal snapshot \/ 2026-06-03T12:00:00.000Z/)).toBeInTheDocument();
+    expect(screen.getByText(/Audit audit-first-store-signal \/ hash hash-first-s/)).toBeInTheDocument();
+
+    const ownerLaunchApprovalRegion = screen.getByLabelText("Owner manual launch approval packet");
+    await userEvent.click(within(ownerLaunchApprovalRegion).getByRole("button", { name: /preview approval receipt/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/owner-launch-approval/apply", {
+      json: {
+        approvalPhrase: "APPROVE FIRST STORE MANUAL LIVE LAUNCH",
+        confirm: "RECORD OWNER MANUAL LIVE LAUNCH APPROVAL",
+        dryRun: true,
+        note: "Previewed owner manual live launch approval receipt from dashboard controls.",
+        storeId: "store-1"
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Owner manual live launch approval receipt previewed for Iron House Gym. External execution remains locked.")).toBeInTheDocument();
+
+    await userEvent.click(within(ownerLaunchApprovalRegion).getByRole("button", { name: /record approval receipt/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/owner-launch-approval/apply", {
+      json: {
+        approvalPhrase: "APPROVE FIRST STORE MANUAL LIVE LAUNCH",
+        confirm: "RECORD OWNER MANUAL LIVE LAUNCH APPROVAL",
+        dryRun: false,
+        note: "Recorded owner manual live launch approval receipt from dashboard controls.",
+        storeId: "store-1"
+      },
+      method: "POST"
+    });
+    expect((await screen.findAllByText("Owner manual live launch approval receipt recorded for Iron House Gym. External execution remains locked.")).length).toBeGreaterThanOrEqual(1);
+
+    const manualLaunchEvidenceRegion = screen.getByLabelText("First-store manual launch evidence controls");
+    const manualLaunchEvidenceFields = screen.getByLabelText("First-store manual launch evidence fields");
+    const evidenceCategorySelect = within(manualLaunchEvidenceFields).getByLabelText(/evidence category/i);
+    expect(within(manualLaunchEvidenceFields).queryByRole("option", { name: "ads" })).not.toBeInTheDocument();
+    await userEvent.selectOptions(evidenceCategorySelect, "pod_supplier");
+    const manualStepInput = within(manualLaunchEvidenceFields).getByLabelText(/manual step/i);
+    await userEvent.clear(manualStepInput);
+    await userEvent.type(manualStepInput, "2");
+    await userEvent.type(within(manualLaunchEvidenceFields).getByLabelText(/evidence note/i), manualLaunchEvidenceNote);
+    await userEvent.click(within(manualLaunchEvidenceRegion).getByRole("button", { name: /preview launch evidence/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/manual-launch-evidence/apply", {
+      json: {
+        approvalPhrase: "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP",
+        confirm: "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE",
+        dryRun: true,
+        evidenceCategory: "pod_supplier",
+        evidenceNote: manualLaunchEvidenceNote,
+        ownerCompletedManualStep: true,
+        stepIndex: 1,
+        storeId: "store-1"
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("First-store manual launch evidence previewed for Iron House Gym: pod supplier step 2. External execution remains locked.")).toBeInTheDocument();
+
+    await userEvent.click(within(manualLaunchEvidenceRegion).getByRole("button", { name: /record launch evidence/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/manual-launch-evidence/apply", {
+      json: {
+        approvalPhrase: "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP",
+        confirm: "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE",
+        dryRun: false,
+        evidenceCategory: "pod_supplier",
+        evidenceNote: manualLaunchEvidenceNote,
+        ownerCompletedManualStep: true,
+        stepIndex: 1,
+        storeId: "store-1"
+      },
+      method: "POST"
+    });
+    expect((await screen.findAllByText("First-store manual launch evidence recorded for Iron House Gym: pod supplier step 2. External execution remains locked.")).length).toBeGreaterThanOrEqual(1);
+
+    expect(screen.getByText("First-week manual signal ledger")).toBeInTheDocument();
+    expect(screen.getByText("First Week Revenue Loop")).toBeInTheDocument();
+    expect(screen.getByText("8 manual metric fields")).toBeInTheDocument();
+    expect(screen.getByText(/day 7 \/ recorded \/ receipt recorded/)).toBeInTheDocument();
+    expect(screen.getByText(/next maintain day 7 manual signal receipt \/ rotation scale/)).toBeInTheDocument();
+    expect(screen.getByText("Scale/Watch/Pause/Kill Input")).toBeInTheDocument();
+    expect(screen.getByText(/manualGrossRevenue/)).toBeInTheDocument();
+
+    const firstWeekLoopRegion = screen.getByLabelText("First week manual revenue loop");
+    await userEvent.click(within(firstWeekLoopRegion).getByRole("button", { name: /preview first-store signals/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/manual-signal-snapshot/apply", {
+      json: {
+        adSpend: 0,
+        confirm: "RECORD FIRST STORE MANUAL SIGNAL SNAPSHOT",
+        conversionNotes: "Manual first-week evidence captured from operator notes. No external import executed.",
+        day: 0,
+        dryRun: true,
+        grossRevenue: 0,
+        manualContentViews: 0,
+        manualSavesOrShares: 0,
+        netProfit: 0,
+        note: "Previewed first-store manual signal snapshot from dashboard controls.",
+        rotationRecommendation: "watch",
+        storeId: "store-1",
+        unitsSold: 0,
+        visits: 0
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("First-store manual signal snapshot previewed for Iron House Gym: 0 units, 0 gross revenue, 0 net profit.")).toBeInTheDocument();
+
+    await userEvent.click(within(firstWeekLoopRegion).getByRole("button", { name: /record first-store signals/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/manual-signal-snapshot/apply", {
+      json: {
+        adSpend: 0,
+        confirm: "RECORD FIRST STORE MANUAL SIGNAL SNAPSHOT",
+        conversionNotes: "Manual first-week evidence captured from operator notes. No external import executed.",
+        day: 0,
+        dryRun: false,
+        grossRevenue: 0,
+        manualContentViews: 0,
+        manualSavesOrShares: 0,
+        netProfit: 0,
+        note: "Recorded first-store manual signal snapshot from dashboard controls.",
+        rotationRecommendation: "watch",
+        storeId: "store-1",
+        unitsSold: 0,
+        visits: 0
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("First-store manual signal snapshot recorded for Iron House Gym: 0 units, 0 gross revenue, 0 net profit.")).toBeInTheDocument();
+
+    expect(screen.getByText("Daily Revenue Loop")).toBeInTheDocument();
+    expect(screen.getByText("25/25/50 advisory allocation")).toBeInTheDocument();
+    expect(screen.getByText("Review first organic content draft")).toBeInTheDocument();
+    expect(screen.getByText("Freeze growth and prepare kill review")).toBeInTheDocument();
+    expect(screen.getByText("Proven Winner Scale Ladder")).toBeInTheDocument();
+    expect(screen.getByText("Winner Proof Gate")).toBeInTheDocument();
+    expect(screen.getByText("10 Store Clone Stage")).toBeInTheDocument();
+    expect(screen.getByText("25 Store Clone Stage")).toBeInTheDocument();
+    expect(screen.getByText("100 Store Clone Stage")).toBeInTheDocument();
+    expect(screen.getByText("10 Store Internal Clone Packet")).toBeInTheDocument();
+    expect(screen.getByText("25 Store Internal Clone Packet")).toBeInTheDocument();
+    expect(screen.getByText("100 Store Internal Clone Packet")).toBeInTheDocument();
+    expect(screen.getByText(/^9 private clone draft slots can be reviewed/)).toBeInTheDocument();
+    expect(screen.getByText(/10-store private clone slot 2: approval required/)).toBeInTheDocument();
+    expect(screen.getAllByText(/APPROVE INTERNAL WINNER CLONE PACKET/).length).toBeGreaterThanOrEqual(1);
+
+    const tenStoreClonePacketRegion = screen.getByLabelText("10-store winner clone packet controls");
+    await userEvent.click(within(tenStoreClonePacketRegion).getByRole("button", { name: /preview clone packet/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/winner-clone-packet-approval/apply", {
+      json: {
+        approvalPhrase: "APPROVE INTERNAL WINNER CLONE PACKET",
+        confirm: "RECORD INTERNAL WINNER CLONE PACKET APPROVAL",
+        dryRun: true,
+        note: "Previewed 10-store internal winner clone packet approval from dashboard controls.",
+        storeId: "store-1",
+        targetStores: 10
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("10-store internal winner clone packet previewed for Iron House Gym with 9 private draft slots. External execution remains locked.")).toBeInTheDocument();
+
+    await userEvent.click(within(tenStoreClonePacketRegion).getByRole("button", { name: /record clone approval/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/winner-clone-packet-approval/apply", {
+      json: {
+        approvalPhrase: "APPROVE INTERNAL WINNER CLONE PACKET",
+        confirm: "RECORD INTERNAL WINNER CLONE PACKET APPROVAL",
+        dryRun: false,
+        note: "Recorded 10-store internal winner clone packet approval from dashboard controls.",
+        storeId: "store-1",
+        targetStores: 10
+      },
+      method: "POST"
+    });
+    expect((await screen.findAllByText("10-store internal winner clone packet approval recorded for Iron House Gym with 9 private draft slots. External execution remains locked.")).length).toBeGreaterThanOrEqual(1);
+
+    expect(screen.getAllByText(/Day 7 scale\/watch\/pause\/kill recommendation/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Revenue Milestone Path")).toBeInTheDocument();
+    expect(screen.getByText("First Real Revenue")).toBeInTheDocument();
+    expect(screen.getByText("$10k/month")).toBeInTheDocument();
+    expect(screen.getByText("$100k/month")).toBeInTheDocument();
+    expect(screen.getByText(/review 10 store proven winner scale packet/)).toBeInTheDocument();
+    expect(screen.getByText("Cash Loop Verification Audit")).toBeInTheDocument();
+    expect(screen.getByText("9/11 requirements proven")).toBeInTheDocument();
+    expect(screen.getByText("Persistent Cash Loop Receipt Chain")).toBeInTheDocument();
+    expect(screen.getByText("Approved First-Business Final Execution Packet")).toBeInTheDocument();
+    expect(screen.getByText("100-Store Worker Assignment And Readiness Layer")).toBeInTheDocument();
+    expect(screen.getAllByText(/External execution remains locked/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("25 Store Readiness")).toBeInTheDocument();
+    expect(screen.getByText(/15 app templates \/ 12 product templates \/ 10 content templates \/ 6 launch packets/)).toBeInTheDocument();
+    expect(screen.getByText("100 Store Readiness")).toBeInTheDocument();
+    expect(screen.getAllByText(/4 worker assignments/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Next Scored Moves")).toBeInTheDocument();
     expect(screen.getByText("Archive internally / Iron House Gym")).toBeInTheDocument();
 
@@ -8996,11 +10871,11 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getAllByText("Weak Tee").length).toBeGreaterThan(0);
     expect(screen.getAllByText("scale: 2").length).toBeGreaterThan(0);
     expect(screen.getAllByText("pause: 1").length).toBeGreaterThan(0);
-    expect(screen.getByText("Profit Velocity")).toBeInTheDocument();
+    expect(screen.getAllByText("Profit Velocity").length).toBeGreaterThan(0);
     expect(screen.getAllByText("$10.86/day").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Signals").length).toBeGreaterThan(0);
     expect(screen.getByText("2/3")).toBeInTheDocument();
-    expect(screen.getByText("Rotation")).toBeInTheDocument();
+    expect(screen.getAllByText("Rotation").length).toBeGreaterThan(0);
 
     await userEvent.click(screen.getByRole("button", { name: /select command-ready/i }));
     expect(screen.getByText("4 selected")).toBeInTheDocument();
@@ -9085,8 +10960,8 @@ describe("MerchOperationsPanel", () => {
       method: "POST"
     });
     expect(await screen.findByText("Internal rotation applied: 2 changes recorded. Audit log audit-revenue-1.")).toBeInTheDocument();
-    expect(onRefreshStores).toHaveBeenCalledTimes(4);
-  }, 15000);
+    expect(onRefreshStores).toHaveBeenCalledTimes(5);
+  }, 35000);
 
   it("loads the Revenue Engine asset control ledger", async () => {
     vi.mocked(apiFetch).mockResolvedValueOnce({ ledger: revenueAssetControlLedgerPlan });

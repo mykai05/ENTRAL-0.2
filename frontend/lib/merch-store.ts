@@ -1384,6 +1384,103 @@ export type RevenueHundredStoreWorkLeasePlan = {
   };
 };
 
+export type RevenueHundredStoreWorkerLane =
+  | "store_builder"
+  | "product_builder"
+  | "connector_planner"
+  | "launch_reviewer"
+  | "monitoring_analyst"
+  | "growth_allocator"
+  | "rotation_reviewer";
+
+export type RevenueHundredStoreWorkerAssignmentStatus =
+  | "ready_to_assign"
+  | "approval_hold"
+  | "waiting_dependency"
+  | "blocked";
+
+export type RevenueHundredStoreWorkerAssignment = {
+  approvalGate: string;
+  assignmentId: string;
+  blockedExternalActions: string[];
+  claimOrder: number;
+  dedupeKey: string;
+  dependencyRefs: string[];
+  expectedInternalEffect: string;
+  externalExecution: false;
+  idempotencyKey: string;
+  jobType: RevenueHundredStoreAutonomyJobType;
+  lane: RevenueHundredStoreWorkerLane;
+  leaseExpiresAt: string;
+  leaseId: string;
+  priority: number;
+  providerContacted: false;
+  shardId: string;
+  status: RevenueHundredStoreWorkerAssignmentStatus;
+  storeId: string | null;
+  storeName: string;
+  summary: string;
+  workerId: string;
+  workerName: string;
+};
+
+export type RevenueHundredStoreWorkerScaleCoverage = {
+  approvalHoldAssignments: number;
+  readyAssignments: number;
+  readyCoveragePercent: number;
+  requiredReadyAssignments: number;
+  safeCyclesRequired: number;
+  status: "ready" | "watch" | "blocked";
+  summary: string;
+  targetStores: 10 | 25 | 100;
+};
+
+export type RevenueHundredStoreWorkerLanePlan = {
+  assignments: RevenueHundredStoreWorkerAssignment[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  lane: RevenueHundredStoreWorkerLane;
+  laneCapacity: number;
+  nextInternalAction: string;
+  providerContacted: false;
+  status: "ready" | "approval_hold" | "waiting" | "blocked";
+  summary: string;
+  totals: {
+    approvalHold: number;
+    assigned: number;
+    blocked: number;
+    readyToAssign: number;
+    waitingDependency: number;
+  };
+  workerId: string;
+  workerName: string;
+};
+
+export type RevenueHundredStoreWorkerAssignmentPlan = {
+  assignments: RevenueHundredStoreWorkerAssignment[];
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  lanes: RevenueHundredStoreWorkerLanePlan[];
+  mode: "100 Store Chain Of Command Assignment Plan";
+  providerContacted: false;
+  scaleCoverage: RevenueHundredStoreWorkerScaleCoverage[];
+  summary: string;
+  totals: {
+    approvalHold: number;
+    assigned: number;
+    blocked: number;
+    duplicateDedupeKeys: number;
+    laneCount: number;
+    maxSelectableAssignments: number;
+    readyToAssign: number;
+    scaleCoverageReadyTargets: number;
+    targetStores: number;
+    waitingDependency: number;
+  };
+};
+
 export type RevenueHundredStoreDailyOperatingLoopPhase =
   | "safety_gate_snapshot"
   | "application_connection_packets"
@@ -1394,6 +1491,7 @@ export type RevenueHundredStoreDailyOperatingLoopPhase =
   | "launch_packet_review"
   | "autonomy_run_queue"
   | "work_lease_claims"
+  | "worker_assignment_claims"
   | "store_batch_creation"
   | "weak_lane_rotation";
 
@@ -1449,6 +1547,7 @@ export type RevenueHundredStoreDailySupervisorAction =
   | "record_launch_packets"
   | "record_autonomy_run_queue"
   | "record_work_leases"
+  | "record_worker_assignments"
   | "review_growth_allocation"
   | "run_money_army_step"
   | "manual_review"
@@ -1670,6 +1769,7 @@ export type RevenueHundredStoreOperationsPlan = {
     storeGap: number;
     targetStores: number;
   };
+  workerAssignmentPlan: RevenueHundredStoreWorkerAssignmentPlan;
   workLeasePlan: RevenueHundredStoreWorkLeasePlan;
 };
 
@@ -1692,6 +1792,7 @@ export type RevenueHundredStoreOperationsCommandAction =
   | "record_launch_packets"
   | "record_autonomy_run_queue"
   | "record_work_leases"
+  | "record_worker_assignments"
   | "manual_quality_review";
 
 export type RevenueHundredStoreOperationsCommand = {
@@ -3359,6 +3460,622 @@ export type RevenuePortfolioDashboardNextAction = {
   storeName: string;
 };
 
+export type RevenuePortfolioDashboardConnectionStatus = "ready" | "approval_required" | "missing" | "blocked" | "watch";
+
+export type RevenuePortfolioDashboardLaunchEvidenceCategory =
+  | "storefront"
+  | "pod_supplier"
+  | "payments_payouts"
+  | "content_channels"
+  | "analytics_manual_import"
+  | "ads";
+
+export type RevenuePortfolioDashboardConnectionCheck = {
+  category: RevenuePortfolioDashboardLaunchEvidenceCategory;
+  label: string;
+  nextInternalAction: string;
+  ready: boolean;
+  reason: string;
+  status: RevenuePortfolioDashboardConnectionStatus;
+};
+
+export type RevenuePortfolioDashboardDailyChecklistItem = {
+  evidence: string;
+  nextInternalAction: string;
+  status: "ready" | "approval_required" | "blocked" | "watch";
+  title: string;
+};
+
+export type RevenuePortfolioDashboardDailyRevenueLoopAction = {
+  detail: string;
+  lane: "product" | "content" | "growth";
+  nextInternalAction: string;
+  status: "ready" | "approval_required" | "blocked" | "watch";
+  title: string;
+};
+
+export type RevenuePortfolioDashboardDailyRevenueLoop = {
+  advisoryAllocation: {
+    adGrowthAmount: number;
+    adGrowthPercent: number;
+    entralOperationsAmount: number;
+    entralOperationsPercent: number;
+    guardrail: string;
+    mode: "organic_first" | "paid_scale_review" | "defensive_hold" | "watch" | "unavailable";
+    ownerIncomeAmount: number;
+    ownerIncomePercent: number;
+    reserveHeld: number;
+    scalingBudgetPackets: number;
+    status: "balanced" | "blocked" | "unavailable";
+  };
+  decision: {
+    killPressure: number;
+    posture: "defensive_hold" | "scale_review" | "watch" | "launch_review";
+    reason: string;
+    recommendation: RevenueAssetRotationDecision | "launch";
+    scalePressure: number;
+  };
+  nextActions: RevenuePortfolioDashboardDailyRevenueLoopAction[];
+  signalIngest: {
+    manualSnapshots: number;
+    performanceSnapshots: number;
+    source: "financial_orchestrator" | "portfolio_dashboard";
+    status: "ready" | "missing" | "watch";
+    summary: string;
+    trackedAssets: number;
+  };
+};
+
+export type RevenuePortfolioDashboardFirstWeekRevenueLoop = {
+  checkIns: Array<{
+    day: 0 | 1 | 3 | 7;
+    requiredEvidence: string[];
+    status: "ready_manual_capture" | "waiting_for_launch";
+    title: string;
+  }>;
+  externalExecution: false;
+  metricFields: Array<{
+    cadence: "twice_daily" | "daily" | "end_of_week";
+    id: string;
+    label: string;
+  }>;
+  providerContacted: false;
+  rotationReview: {
+    day: 7;
+    inputs: string[];
+    nextInternalAction: string;
+    output: "feed_revenue_engine_scale_watch_pause_kill";
+  };
+  signalCaptureChecklist: Array<{
+    blockedExternalActions: string[];
+    day: 0 | 1 | 3 | 7;
+    nextInternalAction: string;
+    recorded: boolean;
+    requiredEvidence: string[];
+    requiredFields: string[];
+    rotationRecommendation: RevenueAssetRotationDecision | null;
+    rotationRecommendationRequired: boolean;
+    status: "recorded" | "missing" | "needs_rotation_recommendation" | "waiting_for_launch";
+    title: string;
+  }>;
+  status: "ready_for_manual_signal_capture" | "waiting_for_final_execution_packet" | "blocked";
+  summary: string;
+};
+
+export type RevenuePortfolioDashboardWinnerScaleLadder = {
+  clonePackets: Array<{
+    approvalPhrase: "APPROVE INTERNAL WINNER CLONE PACKET";
+    auditTrail: string[];
+    blockedExternalActions: string[];
+    draftCloneSlots: number;
+    draftSlots: Array<{
+      blockedExternalActions: string[];
+      contentTemplate: string;
+      externalExecution: false;
+      listingTemplate: string;
+      nextInternalAction: string;
+      productTemplate: string;
+      providerContacted: false;
+      signalTemplate: string;
+      slot: number;
+      status: "approval_required" | "blocked" | "waiting_for_proof";
+      storeTemplate: string;
+      title: string;
+    }>;
+    externalExecution: false;
+    nextInternalAction: string;
+    ownerApprovalRequired: boolean;
+    proofSummary: string;
+    providerContacted: false;
+    readinessPercent: number;
+    requiredProof: string[];
+    sourceTemplate: "final_execution_packet" | "hundred_store_launch_packets" | "none";
+    status: "approval_required" | "blocked" | "waiting_for_proof";
+    summary: string;
+    targetStores: 10 | 25 | 100;
+    tasks: Array<{
+      category: "storefront" | "product" | "listing" | "content" | "signal";
+      detail: string;
+      nextInternalAction: string;
+      status: "approval_required" | "blocked" | "ready_internal" | "waiting_for_proof";
+      title: string;
+    }>;
+  }>;
+  cloneTemplates: Array<{
+    detail: string;
+    ready: boolean;
+    source: "final_execution_packet" | "first_week_loop" | "hundred_store_ops";
+    type: "storefront" | "product" | "listing" | "content" | "signal";
+  }>;
+  externalExecution: false;
+  proofGate: {
+    evidenceSummary: string;
+    nextInternalAction: string;
+    requiredSignals: string[];
+    status: "blocked" | "waiting_for_first_sale" | "ready_for_owner_scale_review";
+  };
+  providerContacted: false;
+  stages: Array<{
+    allowedInternalActions: string[];
+    blockedExternalActions: string[];
+    nextInternalAction: string;
+    proofRequired: string;
+    readinessPercent: number;
+    status: "approval_required" | "blocked" | "ready_internal" | "waiting_for_proof";
+    targetStores: 10 | 25 | 100;
+    templateSource: "final_execution_packet" | "hundred_store_launch_packets" | "none";
+  }>;
+  summary: string;
+};
+
+export type RevenuePortfolioDashboardOwnerLaunchApprovalPacket = {
+  approvalMode: "manual_live_launch_review";
+  approvalPhrase: "APPROVE FIRST STORE MANUAL LIVE LAUNCH";
+  auditTrail: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  liveApprovalRequired: true;
+  manualOnlyActions: Array<{
+    detail: string;
+    status: "ready_for_owner_review" | "blocked" | "waiting";
+    title: string;
+  }>;
+  preflightChecks: Array<{
+    detail: string;
+    status: "ready" | "approval_required" | "blocked" | "watch";
+    title: string;
+  }>;
+  providerContacted: false;
+  rollbackPlan: string[];
+  status: "ready_for_owner_review" | "blocked" | "waiting_for_final_execution_packet";
+  summary: string;
+  unlockBoundary: {
+    nextInternalAction: string;
+    stillLocked: string[];
+    unlocks: string[];
+  };
+};
+
+export type RevenuePortfolioDashboardRevenueMilestonePath = {
+  currentRunRate: {
+    dailyProfitVelocity: number;
+    dailyRevenueVelocity: number;
+    estimatedProfit: number;
+    monthlyProfitRunRate: number;
+    monthlyRevenueRunRate: number;
+    totalRevenue: number;
+  };
+  externalExecution: false;
+  milestones: Array<{
+    currentMonthlyRunRate: number;
+    gapMonthlyRevenue: number;
+    guardrail: string;
+    label: "First Real Revenue" | "$10k/month" | "$100k/month";
+    nextInternalAction: string;
+    requiredEvidence: string[];
+    status:
+      | "achieved"
+      | "ready_for_owner_review"
+      | "waiting_for_first_sale"
+      | "waiting_for_scale_proof"
+      | "waiting_for_10k"
+      | "blocked";
+    targetMonthlyRevenue: number;
+  }>;
+  providerContacted: false;
+  summary: string;
+};
+
+export type RevenuePortfolioDashboardFirstStoreRevenueProof = {
+  evidence: string[];
+  evidenceGrade: "none" | "thin" | "usable" | "strong";
+  externalExecution: false;
+  firstRevenueCaptured: boolean;
+  grossRevenue: number;
+  manualSignalReceipts: number;
+  netProfit: number;
+  nextInternalAction: string;
+  providerContacted: false;
+  revenueVelocity: number;
+  snapshots: number;
+  status: "proven" | "waiting_for_revenue" | "waiting_for_signal" | "waiting_for_store" | "blocked";
+  storeId: string | null;
+  storeName: string | null;
+  summary: string;
+};
+
+export type RevenuePortfolioDashboardCashLoopVerificationAudit = {
+  externalExecution: false;
+  nextInternalAction: string;
+  providerContacted: false;
+  requirements: Array<{
+    evidence: string[];
+    externalActionsLocked: string[];
+    id:
+      | "final_execution_packet"
+      | "launch_readiness_connections"
+      | "manual_launch_packet"
+      | "owner_launch_approval"
+      | "first_week_signal_capture"
+      | "daily_revenue_loop"
+      | "cash_loop_evidence_ledger"
+      | "proven_winner_scale_ladder"
+      | "revenue_milestones"
+      | "hundred_store_worker_assignments"
+      | "safety_lock";
+    label: string;
+    nextInternalAction: string;
+    ownerApprovalRequired: boolean;
+    status: "proven" | "owner_approval_required" | "waiting_for_live_evidence" | "waiting_for_scale_proof" | "blocked";
+  }>;
+  status: "verified_internal_ready" | "needs_owner_approval" | "needs_live_revenue_evidence" | "needs_scale_proof" | "blocked";
+  summary: string;
+  totals: {
+    blocked: number;
+    ownerApprovalRequired: number;
+    proven: number;
+    requirements: number;
+    waitingForLiveEvidence: number;
+    waitingForScaleProof: number;
+  };
+};
+
+export type RevenuePortfolioDashboardCashLoopEvidenceType =
+  | "owner_launch_approval"
+  | "manual_launch_evidence"
+  | "manual_signal_snapshot"
+  | "winner_clone_packet_approval";
+
+export type RevenuePortfolioDashboardCashLoopEvidenceReceipt = {
+  action: string;
+  auditLogId: string;
+  createdAt: string;
+  entryHash: string;
+  evidenceType: RevenuePortfolioDashboardCashLoopEvidenceType;
+  externalExecution: false;
+  launchEvidenceCategory?: RevenuePortfolioDashboardLaunchEvidenceCategory | null;
+  manualSignalDay?: number | null;
+  manualSignalRotationRecommendation?: RevenueAssetRotationDecision | null;
+  providerContacted: false;
+  storeId: string | null;
+  storeName: string | null;
+  summary: string;
+  targetId: string | null;
+  targetStores?: 10 | 25 | 100 | null;
+  targetType: string;
+};
+
+export type RevenuePortfolioDashboardCashLoopEvidenceTotals = {
+  cloneApprovals: number;
+  cloneApprovalsByTarget?: {
+    hundredStore: number;
+    tenStore: number;
+    twentyFiveStore: number;
+    unscoped: number;
+  };
+  launchEvidence: number;
+  manualSignals: number;
+  ownerApprovals: number;
+  receipts: number;
+};
+
+export type RevenuePortfolioDashboardLaunchEvidenceCoverage = {
+  missingCategories: RevenuePortfolioDashboardLaunchEvidenceCategory[];
+  ready: boolean;
+  recordedCategories: RevenuePortfolioDashboardLaunchEvidenceCategory[];
+  requiredCategories: RevenuePortfolioDashboardLaunchEvidenceCategory[];
+  summary: string;
+};
+
+export type RevenuePortfolioDashboardFirstWeekSignalCoverage = {
+  daySevenRecorded: boolean;
+  missingDays: number[];
+  ready: boolean;
+  recordedDays: number[];
+  requiredDays: number[];
+  rotationRecommendation: RevenueAssetRotationDecision | null;
+  rotationRecommendationRecorded: boolean;
+  summary: string;
+};
+
+export type RevenuePortfolioDashboardCashLoopEvidenceLedger = {
+  externalExecution: false;
+  providerContacted: false;
+  receipts: RevenuePortfolioDashboardCashLoopEvidenceReceipt[];
+  selectedStore: {
+    firstWeekSignalCoverage: RevenuePortfolioDashboardFirstWeekSignalCoverage;
+    launchEvidenceCoverage: RevenuePortfolioDashboardLaunchEvidenceCoverage;
+    storeId: string | null;
+    storeName: string | null;
+    summary: string;
+    totals: RevenuePortfolioDashboardCashLoopEvidenceTotals;
+  };
+  summary: string;
+  totals: RevenuePortfolioDashboardCashLoopEvidenceTotals;
+};
+
+export type RevenuePortfolioDashboardCashLoopStage = {
+  externalExecution: false;
+  firstRevenueCaptured: boolean;
+  label: string;
+  nextOwnerAction: {
+    label: string;
+    nextInternalAction: string;
+    reason: string;
+    source: "cash_loop_stage";
+  };
+  providerContacted: false;
+  receiptsNeeded: string[];
+  receiptsRecorded: string[];
+  status:
+    | "waiting_for_execution_packet"
+    | "waiting_for_owner_launch_approval"
+    | "waiting_for_manual_launch_evidence"
+    | "waiting_for_first_signal_snapshot"
+    | "waiting_for_first_revenue"
+    | "waiting_for_scale_packet_approval"
+    | "scale_packet_approved"
+    | "blocked";
+  summary: string;
+};
+
+export type RevenuePortfolioDashboardOwnerActionQueueItem = {
+  actionLabel: string;
+  blockedExternalActions: string[];
+  evidenceToRecord: string[];
+  externalExecution: false;
+  nextInternalAction: string;
+  order: number;
+  providerContacted: false;
+  receiptType: RevenuePortfolioDashboardCashLoopEvidenceType | "final_execution_packet" | "first_revenue_signal" | "none";
+  source:
+    | "cash_loop_stage"
+    | "execution_packet"
+    | "owner_launch_approval"
+    | "manual_launch_packet"
+    | "first_week_revenue_loop"
+    | "daily_revenue_loop"
+    | "winner_scale_ladder";
+  status: "complete" | "current" | "owner_approval_required" | "waiting" | "blocked";
+  summary: string;
+};
+
+export type RevenuePortfolioDashboardFirstStoreToScaleProofChain = {
+  blockedExternalActions: string[];
+  externalExecution: false;
+  nextInternalAction: string;
+  providerContacted: false;
+  stages: Array<{
+    blockedExternalActions: string[];
+    evidence: string[];
+    externalExecution: false;
+    label: string;
+    nextInternalAction: string;
+    order: number;
+    providerContacted: false;
+    receipts: string[];
+    status:
+      | "proven"
+      | "current"
+      | "owner_approval_required"
+      | "waiting_for_internal_packet"
+      | "waiting_for_live_evidence"
+      | "waiting_for_scale_proof"
+      | "blocked";
+    unlocks: string[];
+  }>;
+  status:
+    | "first_store_to_scale_verified"
+    | "in_private_scale_preparation"
+    | "needs_internal_packet"
+    | "needs_owner_approval"
+    | "needs_live_revenue_evidence"
+    | "needs_scale_proof"
+    | "blocked";
+  summary: string;
+  totals: {
+    blocked: number;
+    current: number;
+    ownerApprovalRequired: number;
+    proven: number;
+    stages: number;
+    waitingForInternalPacket: number;
+    waitingForLiveEvidence: number;
+    waitingForScaleProof: number;
+  };
+};
+
+export type RevenuePortfolioDashboardManualLaunchPacket = {
+  auditTrail: string[];
+  contentPlan: Array<{
+    channel: string;
+    hook: string;
+    status: "ready_internal";
+  }>;
+  externalExecution: false;
+  listing: {
+    bullets: string[];
+    description: string;
+    seoKeywords: string[];
+    title: string;
+  };
+  launchEvidenceChecklist: Array<{
+    blockedExternalActions: string[];
+    category: RevenuePortfolioDashboardLaunchEvidenceCategory;
+    nextInternalAction: string;
+    ownerApprovalRequired: boolean;
+    requiredForFirstSignal: boolean;
+    requiredProof: string[];
+    status: "recorded" | "missing" | "approval_required";
+    title: string;
+  }>;
+  manualSteps: string[];
+  organicFirstWeek: Array<{
+    day: number;
+    evidence: string[];
+    title: string;
+  }>;
+  product: {
+    marginPercent: number;
+    name: string;
+    retailPrice: number;
+    storefrontCollection: string;
+    type: string;
+  } | null;
+  providerContacted: false;
+  rollbackPlan: string[];
+  semiAutomatedSteps: string[];
+  status: "ready_for_operator_review" | "blocked" | "waiting_for_final_execution_packet";
+  store: {
+    name: string;
+    platform: string;
+  } | null;
+  supplier: {
+    estimatedBaseCost: number;
+    provider: "Printify" | "Printful" | "Other";
+    steps: string[];
+    status: "selected_internal_owner_gated" | "blocked" | "waiting";
+  };
+};
+
+export type RevenuePortfolioDashboardFirstStoreCashLoop = {
+  approvalGates: string[];
+  connectionChecks: RevenuePortfolioDashboardConnectionCheck[];
+  dailyChecklist: RevenuePortfolioDashboardDailyChecklistItem[];
+  dailyRevenueLoop: RevenuePortfolioDashboardDailyRevenueLoop;
+  evidenceLedger: RevenuePortfolioDashboardCashLoopEvidenceLedger;
+  cashLoopStage: RevenuePortfolioDashboardCashLoopStage;
+  executionPacket: {
+    auditTrail: string[];
+    contentIdeas: number;
+    firstWeekMetricFields: number;
+    label: string;
+    manualSteps: number;
+    organicMoves: number;
+    products: number;
+    readinessBlocked: number;
+    readinessReady: number;
+    rollbackPlan: string[];
+    semiAutomatedSteps: number;
+    source: "final_execution_packet" | "launch_package" | "none";
+    status: "ready_from_final_execution_packet" | "ready_for_final_execution_review" | "waiting_for_approved_package" | "blocked";
+  };
+  externalExecution: false;
+  firstCashStatus: {
+    automaticCashEtaDays: number | null;
+    automaticCashReady: boolean;
+    cashReadinessScore: number;
+    estimatedFirstSaleDays: number | null;
+    manualLaunchReady: boolean;
+    nextActionReason: string;
+    nextActionTitle: string;
+    status: string;
+    storeId: string;
+    storeName: string;
+  } | null;
+  launchReadiness: {
+    nextInternalAction: string;
+    readinessScore: number;
+    stage: string;
+    status: "ready" | "approval_required" | "blocked" | "watch";
+    storeId: string | null;
+    storeName: string | null;
+    summary: string;
+  };
+  manualLaunchPacket: RevenuePortfolioDashboardManualLaunchPacket;
+  firstWeekRevenueLoop: RevenuePortfolioDashboardFirstWeekRevenueLoop;
+  firstRevenueProof: RevenuePortfolioDashboardFirstStoreRevenueProof;
+  ownerLaunchApproval: RevenuePortfolioDashboardOwnerLaunchApprovalPacket;
+  missingConnections: string[];
+  mode: "First Store Cash Loop Summary";
+  nextRevenuePriority: {
+    label: string;
+    reason: string;
+    source: "cash_loop_stage" | "first_cash" | "dashboard" | "scale_path" | "launch_readiness";
+  };
+  providerContacted: false;
+  ownerActionQueue: RevenuePortfolioDashboardOwnerActionQueueItem[];
+  proofChain: RevenuePortfolioDashboardFirstStoreToScaleProofChain;
+  revenueSignals: {
+    estimatedProfit: number;
+    killPressure: number;
+    profitVelocity: number;
+    recommendation: RevenueAssetRotationDecision | "launch";
+    revenueVelocity: number;
+    scalePressure: number;
+    totalRevenue: number;
+  };
+  revenueMilestonePath: RevenuePortfolioDashboardRevenueMilestonePath;
+  verificationAudit: RevenuePortfolioDashboardCashLoopVerificationAudit;
+  winnerScaleLadder: RevenuePortfolioDashboardWinnerScaleLadder;
+  scalePath: {
+    tenStore: {
+      currentStores: number;
+      gap: number;
+      nextInternalAction: string;
+      readinessPercent: number;
+      readyParallelStores: number;
+      scaleReadyStores: number;
+      targetStores: number;
+    };
+    twentyFiveStore: {
+      applicationTemplatesReady: number;
+      contentTemplatesReady: number;
+      currentStores: number;
+      gap: number;
+      launchPacketsReady: number;
+      nextInternalAction: string;
+      productTemplatesReady: number;
+      readinessPercent: number;
+      status: "ready" | "approval_required" | "watch" | "blocked";
+      targetStores: 25;
+      templateSource: "final_execution_packet" | "hundred_store_launch_packets" | "none";
+    };
+    hundredStore: {
+      currentStores: number;
+      dailySupervisorSelected: number;
+      gap: number;
+      gatesBlocked: number;
+      gatesPass: number;
+      gatesWatch: number;
+      nextInternalAction: string;
+      readinessScore: number;
+      readyParallelStores: number;
+      targetStores: number;
+      workerAssignmentsReady: number;
+    } | null;
+  };
+  status:
+    | "cash_active"
+    | "ready_to_launch"
+    | "needs_approval"
+    | "needs_connections"
+    | "needs_products"
+    | "blocked"
+    | "watch";
+  summary: string;
+};
+
 export type RevenuePortfolioDashboardPlan = {
   blockedExternalActions: string[];
   controlLedger: {
@@ -3368,6 +4085,7 @@ export type RevenuePortfolioDashboardPlan = {
     statusChanges: number;
   };
   externalExecution: false;
+  firstStoreCashLoop: RevenuePortfolioDashboardFirstStoreCashLoop;
   generatedAt: string;
   kpis: {
     assets: number;
@@ -3408,6 +4126,112 @@ export type RevenuePortfolioDashboardPlan = {
 };
 
 export type RevenuePortfolioDashboardResponse = {
+  dashboard: RevenuePortfolioDashboardPlan;
+};
+
+export type RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse = {
+  applied: {
+    allowed: boolean;
+    approvalPhrase: RevenuePortfolioDashboardOwnerLaunchApprovalPacket["approvalPhrase"];
+    approvalStatus: RevenuePortfolioDashboardOwnerLaunchApprovalPacket["status"];
+    approvalsPreviewed: number;
+    approvalsRecorded: number;
+    auditLogId: string | null;
+    blockedExternalActions: string[];
+    blockers: string[];
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    stillLocked: string[];
+    storeId: string | null;
+    storeName: string | null;
+    summary: string;
+    unlocks: string[];
+  };
+  dashboard: RevenuePortfolioDashboardPlan;
+  ownerLaunchApproval: RevenuePortfolioDashboardOwnerLaunchApprovalPacket;
+};
+
+export type RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse = {
+  dashboard: RevenuePortfolioDashboardPlan;
+  manualLaunchEvidence: {
+    allowed: boolean;
+    approvalPhrase: "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP";
+    auditLogId: string | null;
+    blockedExternalActions: string[];
+    blockers: string[];
+    completedAt: string;
+    dryRun: boolean;
+    evidenceCategory: RevenuePortfolioDashboardConnectionCheck["category"];
+    evidenceNote: string | null;
+    evidencePreviewed: number;
+    evidenceRecorded: number;
+    externalExecution: false;
+    ownerCompletedManualStep: boolean;
+    providerContacted: false;
+    stepIndex: number;
+    stepTitle: string | null;
+    storeId: string | null;
+    storeName: string | null;
+    summary: string;
+  };
+};
+
+export type RevenuePortfolioDashboardManualSignalCaptureApplyResponse = {
+  capture: {
+    allowed: boolean;
+    auditLogId: string | null;
+    blockers: string[];
+    day?: number;
+    dryRun: boolean;
+    externalExecution: false;
+    grossRevenue?: number;
+    netProfit?: number;
+    providerContacted: false;
+    rotationRecommendation?: RevenueAssetRotationDecision;
+    snapshotId: string | null;
+    snapshotsPreviewed: number;
+    snapshotsRecorded: number;
+    storeId: string | null;
+    storeName: string | null;
+    summary: string;
+    unitsSold?: number;
+    visits?: number;
+  };
+  dashboard: RevenuePortfolioDashboardPlan;
+  digest: RevenuePerformanceDigest | null;
+  snapshot: (RevenuePerformanceSnapshotInput & {
+    id: string;
+    netProfit: number;
+    productId: string | null;
+    source: RevenuePerformanceSource;
+  }) | null;
+};
+
+export type RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse = {
+  cloneApproval: {
+    allowed: boolean;
+    approvalPhrase: RevenuePortfolioDashboardWinnerScaleLadder["clonePackets"][number]["approvalPhrase"];
+    approvalStatus: RevenuePortfolioDashboardWinnerScaleLadder["clonePackets"][number]["status"] | "blocked";
+    approvalsPreviewed: number;
+    approvalsRecorded: number;
+    auditLogId: string | null;
+    blockedExternalActions: string[];
+    blockers: string[];
+    draftCloneSlots: number;
+    dryRun: boolean;
+    externalExecution: false;
+    ownerApprovalRequired: boolean;
+    providerContacted: false;
+    requiredProof: string[];
+    sourceTemplate: RevenuePortfolioDashboardWinnerScaleLadder["clonePackets"][number]["sourceTemplate"];
+    storeId: string | null;
+    storeName: string | null;
+    summary: string;
+    targetStores: 10 | 25 | 100;
+    taskCount: number;
+  };
+  clonePacket: RevenuePortfolioDashboardWinnerScaleLadder["clonePackets"][number] | null;
   dashboard: RevenuePortfolioDashboardPlan;
 };
 

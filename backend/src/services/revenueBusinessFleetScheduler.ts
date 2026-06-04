@@ -884,6 +884,17 @@ export type RevenueHundredStoreWorkerAssignment = {
   workerName: string;
 };
 
+export type RevenueHundredStoreWorkerScaleCoverage = {
+  approvalHoldAssignments: number;
+  readyAssignments: number;
+  readyCoveragePercent: number;
+  requiredReadyAssignments: number;
+  safeCyclesRequired: number;
+  status: "ready" | "watch" | "blocked";
+  summary: string;
+  targetStores: 10 | 25 | 100;
+};
+
 export type RevenueHundredStoreWorkerLanePlan = {
   assignments: RevenueHundredStoreWorkerAssignment[];
   blockedExternalActions: string[];
@@ -914,6 +925,7 @@ export type RevenueHundredStoreWorkerAssignmentPlan = {
   lanes: RevenueHundredStoreWorkerLanePlan[];
   mode: "100 Store Chain Of Command Assignment Plan";
   providerContacted: false;
+  scaleCoverage: RevenueHundredStoreWorkerScaleCoverage[];
   summary: string;
   totals: {
     approvalHold: number;
@@ -923,6 +935,7 @@ export type RevenueHundredStoreWorkerAssignmentPlan = {
     laneCount: number;
     maxSelectableAssignments: number;
     readyToAssign: number;
+    scaleCoverageReadyTargets: number;
     targetStores: number;
     waitingDependency: number;
   };
@@ -4553,6 +4566,39 @@ function workerLaneCapacity(input: {
   return Math.max(1, Math.ceil(input.safeBatchSize * ratio));
 }
 
+function buildWorkerScaleCoverage(input: {
+  approvalHoldAssignments: number;
+  readyAssignments: number;
+  safeBatchSize: number;
+}): RevenueHundredStoreWorkerScaleCoverage[] {
+  const targets: Array<RevenueHundredStoreWorkerScaleCoverage["targetStores"]> = [10, 25, 100];
+
+  return targets.map((targetStores) => {
+    const requiredReadyAssignments = Math.min(targetStores, input.safeBatchSize);
+    const readyAssignments = Math.min(input.readyAssignments, requiredReadyAssignments);
+    const readyCoveragePercent = percent(readyAssignments, requiredReadyAssignments);
+    const safeCyclesRequired = Math.max(1, Math.ceil(targetStores / input.safeBatchSize));
+    const status: RevenueHundredStoreWorkerScaleCoverage["status"] = readyAssignments >= requiredReadyAssignments
+      ? "ready"
+      : input.readyAssignments + input.approvalHoldAssignments > 0 ? "watch" : "blocked";
+
+    return {
+      approvalHoldAssignments: input.approvalHoldAssignments,
+      readyAssignments,
+      readyCoveragePercent,
+      requiredReadyAssignments,
+      safeCyclesRequired,
+      status,
+      summary: status === "ready"
+        ? `${targetStores}-store worker coverage is ready for the next safe internal claim cycle with ${readyAssignments}/${requiredReadyAssignments} required assignment${requiredReadyAssignments === 1 ? "" : "s"}.`
+        : status === "watch"
+          ? `${targetStores}-store worker coverage is partial at ${readyAssignments}/${requiredReadyAssignments} required assignment${requiredReadyAssignments === 1 ? "" : "s"}; approval-held or waiting assignments must be cleared before scale review.`
+          : `${targetStores}-store worker coverage has no ready assignments for the next safe internal claim cycle.`,
+      targetStores
+    };
+  });
+}
+
 function buildRevenueHundredStoreWorkerAssignmentPlan(input: {
   generatedAt?: string;
   options: RevenueHundredStoreOperationsOptions;
@@ -4624,6 +4670,11 @@ function buildRevenueHundredStoreWorkerAssignmentPlan(input: {
     };
   });
   const statusCount = (status: RevenueHundredStoreWorkerAssignmentStatus) => assignments.filter((assignment) => assignment.status === status).length;
+  const scaleCoverage = buildWorkerScaleCoverage({
+    approvalHoldAssignments: statusCount("approval_hold"),
+    readyAssignments: statusCount("ready_to_assign"),
+    safeBatchSize: input.options.safeBatchSize
+  });
   const lanePlans = hundredStoreWorkerLaneDefinitions.map((definition) => {
     const laneAssignments = assignments.filter((assignment) => assignment.lane === definition.lane);
     const laneStatusCount = (status: RevenueHundredStoreWorkerAssignmentStatus) => laneAssignments.filter((assignment) => assignment.status === status).length;
@@ -4677,7 +4728,8 @@ function buildRevenueHundredStoreWorkerAssignmentPlan(input: {
     lanes: lanePlans,
     mode: "100 Store Chain Of Command Assignment Plan",
     providerContacted: false,
-    summary: `${statusCount("ready_to_assign")} worker assignment${statusCount("ready_to_assign") === 1 ? "" : "s"} ready across ${lanePlans.length} internal command lane${lanePlans.length === 1 ? "" : "s"} for the ${input.options.targetStores}-store floor; ${statusCount("approval_hold")} approval-held, ${statusCount("waiting_dependency")} waiting, and ${statusCount("blocked")} blocked. External execution remains locked.`,
+    scaleCoverage,
+    summary: `${statusCount("ready_to_assign")} worker assignment${statusCount("ready_to_assign") === 1 ? "" : "s"} ready across ${lanePlans.length} internal command lane${lanePlans.length === 1 ? "" : "s"} for the ${input.options.targetStores}-store floor; ${scaleCoverage.map((coverage) => `${coverage.targetStores}-store ${coverage.status} ${coverage.readyAssignments}/${coverage.requiredReadyAssignments}`).join(", ")}. ${statusCount("approval_hold")} approval-held, ${statusCount("waiting_dependency")} waiting, and ${statusCount("blocked")} blocked. External execution remains locked.`,
     totals: {
       approvalHold: statusCount("approval_hold"),
       assigned: statusCount("ready_to_assign"),
@@ -4686,6 +4738,7 @@ function buildRevenueHundredStoreWorkerAssignmentPlan(input: {
       laneCount: lanePlans.length,
       maxSelectableAssignments: Math.min(input.options.safeBatchSize, statusCount("ready_to_assign") + statusCount("approval_hold")),
       readyToAssign: statusCount("ready_to_assign"),
+      scaleCoverageReadyTargets: scaleCoverage.filter((coverage) => coverage.status === "ready").length,
       targetStores: input.options.targetStores,
       waitingDependency: statusCount("waiting_dependency")
     }
@@ -5129,13 +5182,12 @@ export function buildRevenueHundredStoreOperationsPlan(input: {
       evidence: [
         `${connectorActivationMatrix.totals.rows}/${options.targetStores * hundredStoreApplicationRequirements.length} connector activation row${connectorActivationMatrix.totals.rows === 1 ? "" : "s"} prepared.`,
         `${connectorActivationMatrix.totals.readyForConnectionDesign} ready for connection design, ${connectorActivationMatrix.totals.credentialCustodyRequired} need credential custody, and ${connectorActivationMatrix.totals.waitingForStoreShell} waiting for store shells.`,
+        `${connectorActivationMatrix.totals.blockedByQuality} connector row${connectorActivationMatrix.totals.blockedByQuality === 1 ? "" : "s"} remain quality-repair rows, not claimable live connection work.`,
         `${connectorActivationMatrix.totals.dryRunRequestMaps} dry-run request map${connectorActivationMatrix.totals.dryRunRequestMaps === 1 ? "" : "s"} and ${connectorActivationMatrix.totals.writeScopesBlocked} blocked write-scope reference${connectorActivationMatrix.totals.writeScopesBlocked === 1 ? "" : "s"} are recorded.`
       ],
-      status: connectorActivationMatrix.totals.blockedByQuality > 0
-        ? "block"
-        : connectorActivationMatrix.totals.rows >= options.targetStores * hundredStoreApplicationRequirements.length
-          ? connectorActivationMatrix.totals.credentialCustodyRequired > 0 ? "watch" : "pass"
-          : "watch",
+      status: connectorActivationMatrix.totals.rows >= options.targetStores * hundredStoreApplicationRequirements.length
+        ? connectorActivationMatrix.totals.credentialCustodyRequired > 0 || connectorActivationMatrix.totals.blockedByQuality > 0 ? "watch" : "pass"
+        : "watch",
       title: "Connector Activation Matrix"
     }),
     operationsGate({
@@ -5803,7 +5855,7 @@ export function buildRevenueHundredStoreDailySupervisorPlan(input: {
   operations: RevenueHundredStoreOperationsPlan;
 }): RevenueHundredStoreDailySupervisorPlan {
   const operatingMode = input.mode ?? "safe_internal_only";
-  const maxSteps = clamp(Math.round(input.maxSteps ?? 4), 1, 12);
+  const maxSteps = clamp(Math.round(input.maxSteps ?? 4), 1, 10);
   const steps = input.operations.dailyOperatingLoop.steps
     .map((step) => supervisorStep({
       mode: operatingMode,
@@ -5939,6 +5991,7 @@ function buildRevenueHundredStoreCapacityProof(input: {
       evidence: [
         `${input.connectorActivationMatrix.totals.rows}/${requiredApplicationBoundaries} connector activation row${requiredApplicationBoundaries === 1 ? "" : "s"} prepared across current and future stores.`,
         `${input.connectorActivationMatrix.totals.readyForConnectionDesign} ready for connection design and ${input.connectorActivationMatrix.totals.credentialCustodyRequired} waiting on credential custody review.`,
+        `${input.connectorActivationMatrix.totals.blockedByQuality} connector row${input.connectorActivationMatrix.totals.blockedByQuality === 1 ? "" : "s"} blocked by store quality stay in repair/watch and cannot be claimed.`,
         `${input.connectorActivationMatrix.totals.dryRunRequestMaps} dry-run request map${input.connectorActivationMatrix.totals.dryRunRequestMaps === 1 ? "" : "s"} prepared while ${input.connectorActivationMatrix.totals.writeScopesBlocked} write scope reference${input.connectorActivationMatrix.totals.writeScopesBlocked === 1 ? "" : "s"} remain blocked.`
       ],
       gap: Math.max(0, requiredApplicationBoundaries - input.connectorActivationMatrix.totals.rows),
@@ -5946,11 +5999,9 @@ function buildRevenueHundredStoreCapacityProof(input: {
         ? "Record connector activation rows and keep credential custody/read-only scopes separated from external execution."
         : "Prepare missing connector activation rows before claiming all required application boundaries are ready.",
       projectedLoad: requiredApplicationBoundaries,
-      status: input.connectorActivationMatrix.totals.blockedByQuality > 0
-        ? "block"
-        : input.connectorActivationMatrix.totals.rows >= requiredApplicationBoundaries
-          ? input.connectorActivationMatrix.totals.credentialCustodyRequired > 0 ? "watch" : "pass"
-          : "watch",
+      status: input.connectorActivationMatrix.totals.rows >= requiredApplicationBoundaries
+        ? input.connectorActivationMatrix.totals.credentialCustodyRequired > 0 || input.connectorActivationMatrix.totals.blockedByQuality > 0 ? "watch" : "pass"
+        : "watch",
       title: "Connector Activation Readiness"
     }),
     capacityProofCheck({

@@ -518,6 +518,7 @@ describe("Revenue Business Fleet Scheduler", () => {
       "launch_packet_review",
       "autonomy_run_queue",
       "work_lease_claims",
+      "worker_assignment_claims",
       "store_batch_creation",
       "weak_lane_rotation"
     ]);
@@ -605,7 +606,7 @@ describe("Revenue Business Fleet Scheduler", () => {
       externalExecution: false,
       mode: "100 Store Capacity Proof",
       providerContacted: false,
-      status: "block",
+      status: "watch",
       stressProfile: {
         applicationBoundaryCoveragePercent: 100,
         cleanSimultaneousStoreCapacity: 100,
@@ -616,7 +617,7 @@ describe("Revenue Business Fleet Scheduler", () => {
         targetStores: 100
       },
       totals: {
-        block: 1,
+        block: 0,
         cleanSimultaneousStoreCapacity: 100,
         targetStores: 100
       }
@@ -629,12 +630,13 @@ describe("Revenue Business Fleet Scheduler", () => {
       "Monitoring Throughput",
       "Daily Supervisor Control",
       "Work Lease Clean Claiming",
+      "Chain Of Command Assignment",
       "Batch And Product Depth",
       "Profit Routing Guardrails"
     ]);
-    expect(operations.capacityProof.checks.some((check) => check.status === "block")).toBe(true);
+    expect(operations.capacityProof.checks.some((check) => check.status === "block")).toBe(false);
     expect(operations.capacityProof.checks.every((check) => check.externalExecution === false && check.providerContacted === false)).toBe(true);
-    expect(operations.capacityProof.checks.find((check) => check.checkId === "connector_activation_readiness")?.status).toBe("block");
+    expect(operations.capacityProof.checks.find((check) => check.checkId === "connector_activation_readiness")?.status).toBe("watch");
     expect(operations.capacityProof.checks.find((check) => check.checkId === "batch_and_product_depth")?.status).toBe("watch");
     expect(operations.capacityProof.summary).toContain("100/100 clean simultaneous store slots");
     expect(operations.gates.map((gate) => gate.title)).toContain("Safety Envelope");
@@ -746,11 +748,12 @@ describe("Revenue Business Fleet Scheduler", () => {
     expect(safeSupervisor.blockedExternalActions.join(" ")).toContain("external write execution");
 
     const batchSupervisor = buildRevenueHundredStoreDailySupervisorPlan({
-      maxSteps: 9,
+      maxSteps: 10,
       mode: "include_batch_creation",
       operations
     });
 
+    expect(batchSupervisor.selectedSteps.map((step) => step.phase)).toContain("worker_assignment_claims");
     expect(batchSupervisor.selectedSteps.map((step) => step.phase)).toContain("store_batch_creation");
     expect(batchSupervisor.steps.every((step) => step.externalExecution === false && step.providerContacted === false)).toBe(true);
   });

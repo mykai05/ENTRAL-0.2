@@ -131,8 +131,13 @@ import {
   type RevenueFirstCashSprintPlan,
   type RevenueFirstCashSprintResponse,
   type RevenuePortfolioDashboardNextAction,
+  type RevenuePortfolioDashboardConnectionCheck,
+  type RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse,
+  type RevenuePortfolioDashboardManualSignalCaptureApplyResponse,
+  type RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse,
   type RevenuePortfolioDashboardPlan,
   type RevenuePortfolioDashboardResponse,
+  type RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse,
   type RevenueLaunchPipelineApplyResponse,
   type RevenueLaunchPipelinePlan,
   type RevenueLaunchPipelineResponse,
@@ -237,6 +242,26 @@ type PerformanceSnapshotForm = {
   visits: number;
 };
 
+type FirstStoreManualSignalForm = {
+  adSpend: number;
+  conversionNotes: string;
+  day: number;
+  grossRevenue: number;
+  manualContentViews: number;
+  manualSavesOrShares: number;
+  netProfit: number;
+  rotationRecommendation: RevenueAssetRotationDecision;
+  unitsSold: number;
+  visits: number;
+};
+
+type FirstStoreManualLaunchEvidenceForm = {
+  evidenceCategory: RevenuePortfolioDashboardConnectionCheck["category"];
+  evidenceNote: string;
+  ownerCompletedManualStep: boolean;
+  stepNumber: number;
+};
+
 type ScalingOutcomeForm = {
   amountSpent: number;
   grossRevenue: number;
@@ -251,6 +276,13 @@ type ScalingOutcomeForm = {
 
 const financialScalingExecutionOutcomeOptions: FinancialScalingExecutionOutcome[] = ["validated", "watch", "stopped", "scale_next"];
 const financialScalingExecutionSourceOptions: FinancialScalingExecutionSource[] = ["manual", "signal_intake", "operator_reconciliation", "other"];
+const firstStoreManualLaunchEvidenceCategories: RevenuePortfolioDashboardConnectionCheck["category"][] = [
+  "storefront",
+  "pod_supplier",
+  "payments_payouts",
+  "content_channels",
+  "analytics_manual_import"
+];
 
 function defaultPerformanceSnapshotForm(): PerformanceSnapshotForm {
   return {
@@ -260,6 +292,37 @@ function defaultPerformanceSnapshotForm(): PerformanceSnapshotForm {
     unitsSold: 6,
     visits: 210
   };
+}
+
+function defaultFirstStoreManualSignalForm(): FirstStoreManualSignalForm {
+  return {
+    adSpend: 0,
+    conversionNotes: "Manual first-week evidence captured from operator notes. No external import executed.",
+    day: 0,
+    grossRevenue: 0,
+    manualContentViews: 0,
+    manualSavesOrShares: 0,
+    netProfit: 0,
+    rotationRecommendation: "watch",
+    unitsSold: 0,
+    visits: 0
+  };
+}
+
+function defaultFirstStoreManualLaunchEvidenceForm(): FirstStoreManualLaunchEvidenceForm {
+  return {
+    evidenceCategory: "storefront",
+    evidenceNote: "",
+    ownerCompletedManualStep: true,
+    stepNumber: 1
+  };
+}
+
+function firstStoreCashLoopStoreId(dashboard: RevenuePortfolioDashboardPlan) {
+  return dashboard.firstStoreCashLoop.firstCashStatus?.storeId
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeId
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeId
+    ?? undefined;
 }
 
 function defaultScalingOutcomeForm(): ScalingOutcomeForm {
@@ -406,6 +469,17 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [revenuePlan, setRevenuePlan] = useState<RevenueAssetPortfolio | null>(null);
   const [revenueDashboard, setRevenueDashboard] = useState<RevenuePortfolioDashboardPlan | null>(null);
   const [isLoadingRevenueDashboard, setIsLoadingRevenueDashboard] = useState(false);
+  const [isPreviewingOwnerLaunchApproval, setIsPreviewingOwnerLaunchApproval] = useState(false);
+  const [isRecordingOwnerLaunchApproval, setIsRecordingOwnerLaunchApproval] = useState(false);
+  const [isPreviewingManualLaunchEvidence, setIsPreviewingManualLaunchEvidence] = useState(false);
+  const [isRecordingManualLaunchEvidence, setIsRecordingManualLaunchEvidence] = useState(false);
+  const [isPreviewingFirstStoreManualSignal, setIsPreviewingFirstStoreManualSignal] = useState(false);
+  const [isRecordingFirstStoreManualSignal, setIsRecordingFirstStoreManualSignal] = useState(false);
+  const [previewingWinnerCloneTarget, setPreviewingWinnerCloneTarget] = useState<number | null>(null);
+  const [recordingWinnerCloneTarget, setRecordingWinnerCloneTarget] = useState<number | null>(null);
+  const [firstStoreManualLaunchEvidenceForm, setFirstStoreManualLaunchEvidenceForm] = useState<FirstStoreManualLaunchEvidenceForm>(() => defaultFirstStoreManualLaunchEvidenceForm());
+  const [firstStoreManualSignalForm, setFirstStoreManualSignalForm] = useState<FirstStoreManualSignalForm>(() => defaultFirstStoreManualSignalForm());
+  const [revenueDashboardMessage, setRevenueDashboardMessage] = useState<string | null>(null);
   const [firstCashReadiness, setFirstCashReadiness] = useState<RevenueFirstCashReadinessPlan | null>(null);
   const [isLoadingFirstCashReadiness, setIsLoadingFirstCashReadiness] = useState(false);
   const [firstCashSprint, setFirstCashSprint] = useState<RevenueFirstCashSprintPlan | null>(null);
@@ -785,6 +859,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
     try {
       const response = await apiFetch<RevenuePortfolioDashboardResponse>("/merch/revenue-engine/dashboard");
       setRevenueDashboard(response.dashboard);
+      setRevenueDashboardMessage(null);
       if (!options.silent) {
         onEvent?.(`Revenue Portfolio Dashboard loaded: ${response.dashboard.kpis.assets} assets, ${formatMerchCurrency(response.dashboard.kpis.profitVelocity)}/day profit velocity, ${response.dashboard.risk.riskLevel} risk.`);
       }
@@ -792,6 +867,175 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setError(caught instanceof Error ? caught.message : "Revenue portfolio dashboard failed.");
     } finally {
       setIsLoadingRevenueDashboard(false);
+    }
+  }
+
+  async function runOwnerLaunchApprovalReceipt(dryRun: boolean) {
+    if (!revenueDashboard) return;
+
+    const setBusy = dryRun ? setIsPreviewingOwnerLaunchApproval : setIsRecordingOwnerLaunchApproval;
+    const selectedStoreId = firstStoreCashLoopStoreId(revenueDashboard);
+
+    setBusy(true);
+    setError(null);
+    setRevenueDashboardMessage(null);
+
+    try {
+      const response = await apiFetch<RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse>("/merch/revenue-engine/first-store-cash-loop/owner-launch-approval/apply", {
+        json: {
+          approvalPhrase: revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.approvalPhrase,
+          confirm: "RECORD OWNER MANUAL LIVE LAUNCH APPROVAL",
+          dryRun,
+          note: dryRun
+            ? "Previewed owner manual live launch approval receipt from dashboard controls."
+            : "Recorded owner manual live launch approval receipt from dashboard controls.",
+          ...(selectedStoreId ? { storeId: selectedStoreId } : {})
+        },
+        method: "POST"
+      });
+
+      setRevenueDashboard(response.dashboard);
+      setRevenueDashboardMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `Owner launch approval receipt previewed for ${response.applied.storeName ?? "the first store"}. External execution remains locked.`
+        : `Owner launch approval receipt recorded for ${response.applied.storeName ?? "the first store"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Owner launch approval receipt failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runManualLaunchEvidenceReceipt(dryRun: boolean) {
+    if (!revenueDashboard) return;
+
+    const setBusy = dryRun ? setIsPreviewingManualLaunchEvidence : setIsRecordingManualLaunchEvidence;
+    const selectedStoreId = firstStoreCashLoopStoreId(revenueDashboard);
+    const evidenceNote = firstStoreManualLaunchEvidenceForm.evidenceNote.trim() || (dryRun
+      ? "Previewed owner/operator manual launch evidence from dashboard controls. ENTRAL did not perform the external step."
+      : "Recorded owner/operator manual launch evidence from dashboard controls. ENTRAL did not perform the external step.");
+    const stepIndex = Math.max(0, Math.floor(firstStoreManualLaunchEvidenceForm.stepNumber) - 1);
+
+    setBusy(true);
+    setError(null);
+    setRevenueDashboardMessage(null);
+
+    try {
+      const response = await apiFetch<RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse>("/merch/revenue-engine/first-store-cash-loop/manual-launch-evidence/apply", {
+        json: {
+          approvalPhrase: "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP",
+          confirm: "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE",
+          dryRun,
+          evidenceCategory: firstStoreManualLaunchEvidenceForm.evidenceCategory,
+          evidenceNote,
+          ownerCompletedManualStep: firstStoreManualLaunchEvidenceForm.ownerCompletedManualStep,
+          stepIndex,
+          ...(selectedStoreId ? { storeId: selectedStoreId } : {})
+        },
+        method: "POST"
+      });
+
+      setRevenueDashboard(response.dashboard);
+      setRevenueDashboardMessage(response.manualLaunchEvidence.summary);
+      onEvent?.(dryRun
+        ? `First-store manual launch evidence previewed for ${response.manualLaunchEvidence.storeName ?? "the first store"}. External execution remains locked.`
+        : `First-store manual launch evidence recorded for ${response.manualLaunchEvidence.storeName ?? "the first store"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Manual launch evidence receipt failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runFirstStoreManualSignalCapture(dryRun: boolean) {
+    if (!revenueDashboard) return;
+
+    const setBusy = dryRun ? setIsPreviewingFirstStoreManualSignal : setIsRecordingFirstStoreManualSignal;
+    const selectedStoreId = firstStoreCashLoopStoreId(revenueDashboard);
+
+    setBusy(true);
+    setError(null);
+    setRevenueDashboardMessage(null);
+
+    try {
+      const response = await apiFetch<RevenuePortfolioDashboardManualSignalCaptureApplyResponse>("/merch/revenue-engine/first-store-cash-loop/manual-signal-snapshot/apply", {
+        json: {
+          adSpend: firstStoreManualSignalForm.adSpend,
+          confirm: "RECORD FIRST STORE MANUAL SIGNAL SNAPSHOT",
+          conversionNotes: firstStoreManualSignalForm.conversionNotes,
+          day: firstStoreManualSignalForm.day,
+          dryRun,
+          grossRevenue: firstStoreManualSignalForm.grossRevenue,
+          manualContentViews: firstStoreManualSignalForm.manualContentViews,
+          manualSavesOrShares: firstStoreManualSignalForm.manualSavesOrShares,
+          netProfit: firstStoreManualSignalForm.netProfit,
+          note: dryRun
+            ? "Previewed first-store manual signal snapshot from dashboard controls."
+            : "Recorded first-store manual signal snapshot from dashboard controls.",
+          rotationRecommendation: firstStoreManualSignalForm.rotationRecommendation,
+          ...(selectedStoreId ? { storeId: selectedStoreId } : {}),
+          unitsSold: firstStoreManualSignalForm.unitsSold,
+          visits: firstStoreManualSignalForm.visits
+        },
+        method: "POST"
+      });
+
+      setRevenueDashboard(response.dashboard);
+      if (response.digest) {
+        setPerformanceDigest(response.digest);
+      }
+      setRevenueDashboardMessage(response.capture.summary);
+      onEvent?.(dryRun
+        ? `First-store manual signal snapshot previewed for ${response.capture.storeName ?? "the first store"}. External execution remains locked.`
+        : `First-store manual signal snapshot recorded for ${response.capture.storeName ?? "the first store"}. No external systems were contacted.`);
+
+      if (!dryRun) {
+        onRefreshStores();
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "First-store manual signal capture failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runWinnerClonePacketApproval(targetStores: 10 | 25 | 100, dryRun: boolean) {
+    if (!revenueDashboard) return;
+
+    const packet = revenueDashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets.find((candidate) => candidate.targetStores === targetStores);
+    if (!packet) return;
+
+    const setBusy = dryRun ? setPreviewingWinnerCloneTarget : setRecordingWinnerCloneTarget;
+    const selectedStoreId = firstStoreCashLoopStoreId(revenueDashboard);
+
+    setBusy(targetStores);
+    setError(null);
+    setRevenueDashboardMessage(null);
+
+    try {
+      const response = await apiFetch<RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse>("/merch/revenue-engine/first-store-cash-loop/winner-clone-packet-approval/apply", {
+        json: {
+          approvalPhrase: packet.approvalPhrase,
+          confirm: "RECORD INTERNAL WINNER CLONE PACKET APPROVAL",
+          dryRun,
+          note: dryRun
+            ? `Previewed ${targetStores}-store internal winner clone packet approval from dashboard controls.`
+            : `Recorded ${targetStores}-store internal winner clone packet approval from dashboard controls.`,
+          ...(selectedStoreId ? { storeId: selectedStoreId } : {}),
+          targetStores
+        },
+        method: "POST"
+      });
+
+      setRevenueDashboard(response.dashboard);
+      setRevenueDashboardMessage(response.cloneApproval.summary);
+      onEvent?.(dryRun
+        ? `${targetStores}-store internal winner clone packet previewed. External execution remains locked.`
+        : `${targetStores}-store internal winner clone packet approval recorded. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Winner clone packet approval failed.");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -2695,6 +2939,14 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
     setPerformanceForm((current) => ({ ...current, [key]: value }));
   }
 
+  function updateFirstStoreManualSignalForm<K extends keyof FirstStoreManualSignalForm>(key: K, value: FirstStoreManualSignalForm[K]) {
+    setFirstStoreManualSignalForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateFirstStoreManualLaunchEvidenceForm<K extends keyof FirstStoreManualLaunchEvidenceForm>(key: K, value: FirstStoreManualLaunchEvidenceForm[K]) {
+    setFirstStoreManualLaunchEvidenceForm((current) => ({ ...current, [key]: value }));
+  }
+
   function updateScalingOutcomeForm<K extends keyof ScalingOutcomeForm>(key: K, value: ScalingOutcomeForm[K]) {
     setScalingOutcomeForm((current) => ({ ...current, [key]: value }));
   }
@@ -3462,6 +3714,60 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
     if (days === 0) return "active";
 
     return `${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  function cloneApprovalTargetSummary(totals: RevenuePortfolioDashboardPlan["firstStoreCashLoop"]["evidenceLedger"]["totals"] | null | undefined) {
+    const byTarget = totals?.cloneApprovalsByTarget ?? {
+      hundredStore: 0,
+      tenStore: 0,
+      twentyFiveStore: 0,
+      unscoped: totals?.cloneApprovals ?? 0
+    };
+
+    return `10 ${byTarget.tenStore} / 25 ${byTarget.twentyFiveStore} / 100 ${byTarget.hundredStore} / unscoped ${byTarget.unscoped}`;
+  }
+
+  const selectedCashLoopEvidenceTotals = revenueDashboard?.firstStoreCashLoop.evidenceLedger.selectedStore.totals ?? null;
+  const selectedLaunchEvidenceCoverage = revenueDashboard?.firstStoreCashLoop.evidenceLedger.selectedStore.launchEvidenceCoverage ?? null;
+  const selectedFirstWeekSignalCoverage = revenueDashboard?.firstStoreCashLoop.evidenceLedger.selectedStore.firstWeekSignalCoverage ?? null;
+  const hasOwnerLaunchApprovalReceipt = (selectedCashLoopEvidenceTotals?.ownerApprovals ?? 0) > 0;
+  const hasManualLaunchEvidenceReceipt = Boolean(selectedLaunchEvidenceCoverage?.ready);
+  const hasManualSignalReceipt = (selectedCashLoopEvidenceTotals?.manualSignals ?? 0) > 0;
+  const hasFirstWeekSignalCoverage = Boolean(selectedFirstWeekSignalCoverage?.ready);
+  const hasFirstStoreRevenueProof = Boolean(revenueDashboard?.firstStoreCashLoop.firstRevenueProof.firstRevenueCaptured);
+  const canRecordManualLaunchEvidence = hasOwnerLaunchApprovalReceipt
+    && revenueDashboard?.firstStoreCashLoop.manualLaunchPacket.status === "ready_for_operator_review";
+  const canRecordFirstStoreManualSignals = hasOwnerLaunchApprovalReceipt
+    && hasManualLaunchEvidenceReceipt
+    && revenueDashboard?.firstStoreCashLoop.firstWeekRevenueLoop.status === "ready_for_manual_signal_capture";
+  const canApproveWinnerClonePackets = hasOwnerLaunchApprovalReceipt
+    && hasManualLaunchEvidenceReceipt
+    && hasManualSignalReceipt
+    && hasFirstWeekSignalCoverage
+    && hasFirstStoreRevenueProof;
+  type WinnerClonePacket = RevenuePortfolioDashboardPlan["firstStoreCashLoop"]["winnerScaleLadder"]["clonePackets"][number];
+  const cloneApprovalTargets = selectedCashLoopEvidenceTotals?.cloneApprovalsByTarget ?? {
+    hundredStore: 0,
+    tenStore: 0,
+    twentyFiveStore: 0,
+    unscoped: 0
+  };
+  const tenKMilestoneAchieved = revenueDashboard?.firstStoreCashLoop.revenueMilestonePath.milestones.some((milestone) => (
+    milestone.label === "$10k/month" && milestone.status === "achieved"
+  )) ?? false;
+
+  function winnerClonePacketPrerequisite(packet: WinnerClonePacket) {
+    if (!canApproveWinnerClonePackets) return "first-store proof chain incomplete";
+    if (packet.targetStores === 25 && cloneApprovalTargets.tenStore <= 0) return "record 10-store clone approval first";
+    if (packet.targetStores === 100 && cloneApprovalTargets.tenStore <= 0) return "record 10-store clone approval first";
+    if (packet.targetStores === 100 && cloneApprovalTargets.twentyFiveStore <= 0) return "record 25-store clone approval first";
+    if (packet.targetStores === 100 && !tenKMilestoneAchieved) return "prove $10k/month before 100-store review";
+
+    return "ready for owner review";
+  }
+
+  function canApproveWinnerClonePacket(packet: WinnerClonePacket) {
+    return packet.status === "approval_required" && winnerClonePacketPrerequisite(packet) === "ready for owner review";
   }
 
   return (
@@ -5721,6 +6027,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
               <strong>{revenueDashboard.mode}</strong>
               <p>{revenueDashboard.summary}</p>
             </div>
+            {revenueDashboardMessage ? <p className="growth-approval-message" role="status">{revenueDashboardMessage}</p> : null}
 
             <dl className="revenue-engine-metrics">
               <div>
@@ -5765,6 +6072,505 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
               <span>untracked: {revenueDashboard.risk.untrackedAssets}</span>
               <span>overrides: {revenueDashboard.controlLedger.overrides}</span>
             </div>
+
+            <section className="revenue-engine-list" aria-label="First store cash loop dashboard">
+              <h4>First Store Cash Loop</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.status.replace(/_/g, " ")} / {revenueDashboard.firstStoreCashLoop.mode}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.firstCashStatus?.storeName ?? "First store not selected"}</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.summary}</p>
+                <small>
+                  next: {revenueDashboard.firstStoreCashLoop.nextRevenuePriority.label} / source {revenueDashboard.firstStoreCashLoop.nextRevenuePriority.source.replace(/_/g, " ")}
+                </small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.cashLoopStage.status.replace(/_/g, " ")} / first revenue {revenueDashboard.firstStoreCashLoop.cashLoopStage.firstRevenueCaptured ? "captured" : "pending"}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.cashLoopStage.label}</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.cashLoopStage.summary}</p>
+                <small>
+                  next: {revenueDashboard.firstStoreCashLoop.cashLoopStage.nextOwnerAction.label} / {revenueDashboard.firstStoreCashLoop.cashLoopStage.nextOwnerAction.nextInternalAction.replace(/_/g, " ")} / recorded {revenueDashboard.firstStoreCashLoop.cashLoopStage.receiptsRecorded.length} / needed {revenueDashboard.firstStoreCashLoop.cashLoopStage.receiptsNeeded.join(" / ") || "none"}
+                </small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.firstRevenueProof.status.replace(/_/g, " ")} / evidence {revenueDashboard.firstStoreCashLoop.firstRevenueProof.evidenceGrade}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.firstRevenueProof.storeName ?? "First store revenue proof"}</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.firstRevenueProof.summary}</p>
+                <small>
+                  {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.firstRevenueProof.grossRevenue)} revenue / {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.firstRevenueProof.netProfit)} profit / {revenueDashboard.firstStoreCashLoop.firstRevenueProof.snapshots} snapshots / {revenueDashboard.firstStoreCashLoop.firstRevenueProof.manualSignalReceipts} manual receipts / next {revenueDashboard.firstStoreCashLoop.firstRevenueProof.nextInternalAction.replace(/_/g, " ")}
+                </small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.launchReadiness.status.replace(/_/g, " ")} / {revenueDashboard.firstStoreCashLoop.launchReadiness.stage.replace(/_/g, " ")}</span>
+                <strong>Launch Readiness {revenueDashboard.firstStoreCashLoop.launchReadiness.readinessScore}/100</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.launchReadiness.summary}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.launchReadiness.nextInternalAction.replace(/_/g, " ")}</small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.executionPacket.status.replace(/_/g, " ")} / {revenueDashboard.firstStoreCashLoop.executionPacket.source.replace(/_/g, " ")}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.executionPacket.label}</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.executionPacket.products} products / {revenueDashboard.firstStoreCashLoop.executionPacket.contentIdeas} content ideas / {revenueDashboard.firstStoreCashLoop.executionPacket.organicMoves} organic moves / {revenueDashboard.firstStoreCashLoop.executionPacket.manualSteps} manual steps / {revenueDashboard.firstStoreCashLoop.executionPacket.semiAutomatedSteps} semi-auto steps</p>
+                <small>{revenueDashboard.firstStoreCashLoop.executionPacket.readinessReady} ready gates / {revenueDashboard.firstStoreCashLoop.executionPacket.readinessBlocked} blocked / {revenueDashboard.firstStoreCashLoop.executionPacket.firstWeekMetricFields} first-week metrics</small>
+                <small>{revenueDashboard.firstStoreCashLoop.executionPacket.rollbackPlan[0] ?? "Rollback remains internal and approval gated."}</small>
+              </article>
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First-store owner action queue">
+              <h4>Owner Action Queue</h4>
+              {revenueDashboard.firstStoreCashLoop.ownerActionQueue.map((item) => (
+                <article key={`owner-action-${item.order}`}>
+                  <span>{item.order} / {item.status.replace(/_/g, " ")} / {item.receiptType.replace(/_/g, " ")}</span>
+                  <strong>{item.actionLabel}</strong>
+                  <p>{item.summary}</p>
+                  <small>{item.evidenceToRecord.slice(0, 3).join(" / ") || "Evidence pending."}</small>
+                  <small>{item.nextInternalAction.replace(/_/g, " ")} / external execution {item.externalExecution ? "enabled" : "locked"}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First-store to scale proof chain">
+              <h4>First-Store To Scale Proof Chain</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.proofChain.status.replace(/_/g, " ")}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.proofChain.totals.proven}/{revenueDashboard.firstStoreCashLoop.proofChain.totals.stages} proof stages proven</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.proofChain.summary}</p>
+                <small>
+                  active {revenueDashboard.firstStoreCashLoop.proofChain.totals.current} / owner approval {revenueDashboard.firstStoreCashLoop.proofChain.totals.ownerApprovalRequired} / packet {revenueDashboard.firstStoreCashLoop.proofChain.totals.waitingForInternalPacket} / live evidence {revenueDashboard.firstStoreCashLoop.proofChain.totals.waitingForLiveEvidence} / scale proof {revenueDashboard.firstStoreCashLoop.proofChain.totals.waitingForScaleProof} / next {revenueDashboard.firstStoreCashLoop.proofChain.nextInternalAction.replace(/_/g, " ")}
+                </small>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.proofChain.stages.map((stage) => (
+                <article key={`first-store-scale-proof-${stage.order}`}>
+                  <span>{stage.order} / {stage.status.replace(/_/g, " ")} / external execution {stage.externalExecution ? "enabled" : "locked"}</span>
+                  <strong>{stage.label}</strong>
+                  <p>{stage.evidence.slice(0, 3).join(" / ")}</p>
+                  <small>{stage.receipts.join(" / ") || "Receipt pending"} / unlock: {stage.unlocks[0] ?? "Next proof remains gated."}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First store manual launch packet">
+              <h4>Manual Launch Packet</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.status.replace(/_/g, " ")} / {revenueDashboard.firstStoreCashLoop.manualLaunchPacket.supplier.status.replace(/_/g, " ")}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.store?.name ?? "First store packet pending"}</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.product ? `${revenueDashboard.firstStoreCashLoop.manualLaunchPacket.product.name} ${formatMerchCurrency(revenueDashboard.firstStoreCashLoop.manualLaunchPacket.product.retailPrice)} / ${revenueDashboard.firstStoreCashLoop.manualLaunchPacket.product.marginPercent}% margin / ${revenueDashboard.firstStoreCashLoop.manualLaunchPacket.product.storefrontCollection}` : "No product is ready in the manual launch packet yet."}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.supplier.provider} estimated base {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.manualLaunchPacket.supplier.estimatedBaseCost)} / provider contacted {revenueDashboard.firstStoreCashLoop.manualLaunchPacket.providerContacted ? "yes" : "no"}</small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.listing.seoKeywords.length} SEO keywords / {revenueDashboard.firstStoreCashLoop.manualLaunchPacket.listing.bullets.length} bullets</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.listing.title}</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.listing.description}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.listing.seoKeywords.slice(0, 6).join(" / ") || "SEO keywords pending"}</small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.contentPlan.length} content drafts / {revenueDashboard.firstStoreCashLoop.manualLaunchPacket.organicFirstWeek.length} first-week checkpoints</span>
+                <strong>Organic First 7 Days</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.contentPlan.map((item) => `${item.channel.replace(/_/g, " ")}: ${item.hook}`).join(" / ") || "Organic content plan pending."}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.organicFirstWeek.map((item) => `day ${item.day}: ${item.title}`).join(" / ") || "First-week evidence plan pending."}</small>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.manualLaunchPacket.launchEvidenceChecklist.map((item) => (
+                <article key={`manual-launch-evidence-check-${item.category}`}>
+                  <span>{item.status.replace(/_/g, " ")} / {item.requiredForFirstSignal ? "required before first signals" : "owner gated"}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.requiredProof.join(" / ")}</p>
+                  <small>{item.nextInternalAction.replace(/_/g, " ")} / owner approval {item.ownerApprovalRequired ? "required" : "recorded"} / locked: {item.blockedExternalActions[0]}</small>
+                </article>
+              ))}
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.manualSteps.length} manual steps / {revenueDashboard.firstStoreCashLoop.manualLaunchPacket.semiAutomatedSteps.length} semi-auto steps</span>
+                <strong>Approval-Gated Prep</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.manualSteps.slice(0, 3).join(" / ") || "Manual launch steps pending."}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.supplier.steps[0] ?? "Supplier steps pending."}</small>
+                <div className="merch-ops-grid compact" aria-label="First-store manual launch evidence fields">
+                  <label>
+                    <span>Evidence Category</span>
+                    <select value={firstStoreManualLaunchEvidenceForm.evidenceCategory} onChange={(event) => updateFirstStoreManualLaunchEvidenceForm("evidenceCategory", event.target.value as RevenuePortfolioDashboardConnectionCheck["category"])}>
+                      {firstStoreManualLaunchEvidenceCategories.map((category) => (
+                        <option key={`first-store-launch-evidence-${category}`} value={category}>{category.replace(/_/g, " ")}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Manual Step</span>
+                    <input type="number" min={1} max={Math.max(revenueDashboard.firstStoreCashLoop.manualLaunchPacket.manualSteps.length, 1)} step={1} value={firstStoreManualLaunchEvidenceForm.stepNumber} onChange={(event) => updateFirstStoreManualLaunchEvidenceForm("stepNumber", Number(event.target.value))} />
+                  </label>
+                  <label>
+                    <span>Owner Completed Step</span>
+                    <input type="checkbox" checked={firstStoreManualLaunchEvidenceForm.ownerCompletedManualStep} onChange={(event) => updateFirstStoreManualLaunchEvidenceForm("ownerCompletedManualStep", event.target.checked)} />
+                  </label>
+                  <label>
+                    <span>Evidence Note</span>
+                    <input type="text" value={firstStoreManualLaunchEvidenceForm.evidenceNote} onChange={(event) => updateFirstStoreManualLaunchEvidenceForm("evidenceNote", event.target.value)} />
+                  </label>
+                </div>
+                <div className="merch-ops-actions split" aria-label="First-store manual launch evidence controls">
+                  <button type="button" onClick={() => void runManualLaunchEvidenceReceipt(true)} disabled={isPreviewingManualLaunchEvidence || !canRecordManualLaunchEvidence}>
+                    {isPreviewingManualLaunchEvidence ? "Previewing..." : "Preview launch evidence"}
+                  </button>
+                  <button type="button" onClick={() => void runManualLaunchEvidenceReceipt(false)} disabled={isRecordingManualLaunchEvidence || !canRecordManualLaunchEvidence}>
+                    {isRecordingManualLaunchEvidence ? "Recording..." : "Record launch evidence"}
+                  </button>
+                </div>
+              </article>
+              <article>
+                <span>rollback / audit trail</span>
+                <strong>Launch Safety</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.rollbackPlan[0] ?? "Rollback remains approval-gated."}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.manualLaunchPacket.auditTrail[0] ?? "Audit trail pending."}</small>
+              </article>
+            </section>
+
+            <section className="revenue-engine-list" aria-label="Owner manual launch approval packet">
+              <h4>Owner Launch Approval</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.status.replace(/_/g, " ")} / {revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.approvalMode.replace(/_/g, " ")}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.approvalPhrase}</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.summary}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.liveApprovalRequired ? "explicit live approval required" : "approval not required"} / provider contacted {revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.providerContacted ? "yes" : "no"} / external execution {revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.externalExecution ? "enabled" : "locked"}</small>
+              </article>
+              <div className="merch-ops-actions split" aria-label="Owner launch approval receipt controls">
+                <button type="button" onClick={() => void runOwnerLaunchApprovalReceipt(true)} disabled={isPreviewingOwnerLaunchApproval || revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.status !== "ready_for_owner_review"}>
+                  {isPreviewingOwnerLaunchApproval ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+                  Preview approval receipt
+                </button>
+                <button type="button" onClick={() => void runOwnerLaunchApprovalReceipt(false)} disabled={isRecordingOwnerLaunchApproval || revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.status !== "ready_for_owner_review"}>
+                  {isRecordingOwnerLaunchApproval ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+                  Record approval receipt
+                </button>
+              </div>
+              {revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.preflightChecks.slice(0, 6).map((check) => (
+                <article key={`owner-launch-preflight-${check.title}`}>
+                  <span>{check.status.replace(/_/g, " ")}</span>
+                  <strong>{check.title}</strong>
+                  <p>{check.detail}</p>
+                </article>
+              ))}
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.manualOnlyActions.length} manual-only actions</span>
+                <strong>Manual Boundary</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.manualOnlyActions.map((action) => action.title).join(" / ") || "Manual actions are waiting for the final execution packet."}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.unlockBoundary.nextInternalAction.replace(/_/g, " ")}</small>
+              </article>
+              <article>
+                <span>still locked</span>
+                <strong>Approval Boundary</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.unlockBoundary.stillLocked[0] ?? "External actions remain locked."}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.rollbackPlan[0] ?? revenueDashboard.firstStoreCashLoop.ownerLaunchApproval.blockedExternalActions[0] ?? "Rollback remains internal."}</small>
+              </article>
+            </section>
+
+            <section className="revenue-engine-list" aria-label="Cash loop evidence ledger">
+              <h4>Cash Loop Evidence Ledger</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.evidenceLedger.totals.receipts} receipt{revenueDashboard.firstStoreCashLoop.evidenceLedger.totals.receipts === 1 ? "" : "s"} / external execution locked</span>
+                <strong>Persisted Internal Receipts</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.evidenceLedger.summary}</p>
+                <small>
+                  owner {revenueDashboard.firstStoreCashLoop.evidenceLedger.totals.ownerApprovals} / launch evidence {revenueDashboard.firstStoreCashLoop.evidenceLedger.totals.launchEvidence} / manual signals {revenueDashboard.firstStoreCashLoop.evidenceLedger.totals.manualSignals} / clone approvals {revenueDashboard.firstStoreCashLoop.evidenceLedger.totals.cloneApprovals} / provider contacted {revenueDashboard.firstStoreCashLoop.evidenceLedger.providerContacted ? "yes" : "no"}
+                </small>
+                <small>
+                  clone approval targets {cloneApprovalTargetSummary(revenueDashboard.firstStoreCashLoop.evidenceLedger.totals)}
+                </small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.totals.receipts} selected receipt{revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.totals.receipts === 1 ? "" : "s"} / {revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.storeName ?? "selected first store"}</span>
+                <strong>Selected First-Store Receipt Chain</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.summary}</p>
+                <small>
+                  owner {revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.totals.ownerApprovals} / launch evidence {revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.totals.launchEvidence} / manual signals {revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.totals.manualSignals} / clone approvals {revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.totals.cloneApprovals}
+                </small>
+                <small>
+                  clone approval targets {cloneApprovalTargetSummary(revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.totals)}
+                </small>
+                <small>
+                  {revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.launchEvidenceCoverage.summary}
+                </small>
+                <small>
+                  {revenueDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.firstWeekSignalCoverage.summary}
+                </small>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.evidenceLedger.receipts.length > 0 ? revenueDashboard.firstStoreCashLoop.evidenceLedger.receipts.map((receipt) => (
+                <article key={receipt.auditLogId}>
+                  <span>{receipt.evidenceType.replace(/_/g, " ")} / {receipt.createdAt}</span>
+                  <strong>{receipt.storeName ?? receipt.storeId ?? receipt.targetId ?? "First store receipt"}</strong>
+                  <p>{receipt.summary}</p>
+                  <small>Audit {receipt.auditLogId} / hash {receipt.entryHash.slice(0, 12)} / external execution {receipt.externalExecution ? "enabled" : "locked"}</small>
+                </article>
+              )) : (
+                <article>
+                  <span>waiting</span>
+                  <strong>No Receipts Recorded Yet</strong>
+                  <p>Owner approvals, manual launch evidence, manual signal snapshots, and clone packet approvals will appear here after they are recorded.</p>
+                </article>
+              )}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First store missing connections">
+              <h4>Missing Connections</h4>
+              {revenueDashboard.firstStoreCashLoop.connectionChecks.map((check) => (
+                <article key={check.category}>
+                  <span>{check.status.replace(/_/g, " ")} / {check.ready ? "ready" : "gated"}</span>
+                  <strong>{check.label}</strong>
+                  <p>{check.reason}</p>
+                  <small>{check.nextInternalAction}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First store approval gates">
+              <h4>Approval Gates</h4>
+              {revenueDashboard.firstStoreCashLoop.approvalGates.slice(0, 5).map((gate) => (
+                <article key={gate}>
+                  <span>approval gated</span>
+                  <strong>{gate}</strong>
+                  <p>External execution remains locked until the owner explicitly approves the live step.</p>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First store daily revenue checklist">
+              <h4>Daily Checklist</h4>
+              {revenueDashboard.firstStoreCashLoop.dailyChecklist.map((item) => (
+                <article key={`${item.title}-${item.nextInternalAction}`}>
+                  <span>{item.status.replace(/_/g, " ")}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.evidence}</p>
+                  <small>{item.nextInternalAction}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First week manual revenue loop">
+              <h4>First Week Revenue Loop</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.status.replace(/_/g, " ")}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.metricFields.length} manual metric fields</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.summary}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.metricFields.map((field) => `${field.label} (${field.cadence.replace(/_/g, " ")})`).join(" / ") || "Manual signal fields pending."}</small>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.signalCaptureChecklist.map((item) => (
+                <article key={`first-week-signal-capture-${item.day}`}>
+                  <span>day {item.day} / {item.status.replace(/_/g, " ")} / {item.recorded ? "receipt recorded" : "receipt needed"}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.requiredEvidence.join(" / ")}</p>
+                  <small>{item.requiredFields.slice(0, 6).join(" / ") || "Manual signal fields pending."} / next {item.nextInternalAction.replace(/_/g, " ")} / rotation {item.rotationRecommendation ?? (item.rotationRecommendationRequired ? "required" : "not required")}</small>
+                </article>
+              ))}
+              <div className="merch-ops-grid compact" aria-label="First-store manual signal fields">
+                <label>
+                  <span>Signal Day</span>
+                  <input type="number" min={0} max={7} step={1} value={firstStoreManualSignalForm.day} onChange={(event) => updateFirstStoreManualSignalForm("day", Number(event.target.value))} />
+                </label>
+                <label>
+                  <span>First Store Visits</span>
+                  <input type="number" min={0} step={1} value={firstStoreManualSignalForm.visits} onChange={(event) => updateFirstStoreManualSignalForm("visits", Number(event.target.value))} />
+                </label>
+                <label>
+                  <span>First Store Units</span>
+                  <input type="number" min={0} step={1} value={firstStoreManualSignalForm.unitsSold} onChange={(event) => updateFirstStoreManualSignalForm("unitsSold", Number(event.target.value))} />
+                </label>
+                <label>
+                  <span>First Store Revenue</span>
+                  <input type="number" min={0} step="0.01" value={firstStoreManualSignalForm.grossRevenue} onChange={(event) => updateFirstStoreManualSignalForm("grossRevenue", Number(event.target.value))} />
+                </label>
+                <label>
+                  <span>First Store Profit</span>
+                  <input type="number" step="0.01" value={firstStoreManualSignalForm.netProfit} onChange={(event) => updateFirstStoreManualSignalForm("netProfit", Number(event.target.value))} />
+                </label>
+                <label>
+                  <span>Content Views</span>
+                  <input type="number" min={0} step={1} value={firstStoreManualSignalForm.manualContentViews} onChange={(event) => updateFirstStoreManualSignalForm("manualContentViews", Number(event.target.value))} />
+                </label>
+                <label>
+                  <span>Saves Or Shares</span>
+                  <input type="number" min={0} step={1} value={firstStoreManualSignalForm.manualSavesOrShares} onChange={(event) => updateFirstStoreManualSignalForm("manualSavesOrShares", Number(event.target.value))} />
+                </label>
+                <label>
+                  <span>Rotation Recommendation</span>
+                  <select value={firstStoreManualSignalForm.rotationRecommendation} onChange={(event) => updateFirstStoreManualSignalForm("rotationRecommendation", event.target.value as RevenueAssetRotationDecision)}>
+                    {revenueAssetControlActions.map((action) => <option key={`first-store-signal-${action}`} value={action}>{action}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Conversion Notes</span>
+                  <input type="text" value={firstStoreManualSignalForm.conversionNotes} onChange={(event) => updateFirstStoreManualSignalForm("conversionNotes", event.target.value)} />
+                </label>
+              </div>
+              <div className="merch-ops-actions split" aria-label="First-store manual signal capture controls">
+                <button type="button" onClick={() => void runFirstStoreManualSignalCapture(true)} disabled={isPreviewingFirstStoreManualSignal || !canRecordFirstStoreManualSignals}>
+                  {isPreviewingFirstStoreManualSignal ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+                  Preview first-store signals
+                </button>
+                <button type="button" onClick={() => void runFirstStoreManualSignalCapture(false)} disabled={isRecordingFirstStoreManualSignal || !canRecordFirstStoreManualSignals}>
+                  {isRecordingFirstStoreManualSignal ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+                  Record first-store signals
+                </button>
+              </div>
+              {revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.checkIns.map((checkIn) => (
+                <article key={`first-week-${checkIn.day}`}>
+                  <span>day {checkIn.day} / {checkIn.status.replace(/_/g, " ")}</span>
+                  <strong>{checkIn.title}</strong>
+                  <p>{checkIn.requiredEvidence.join(" / ")}</p>
+                </article>
+              ))}
+              <article>
+                <span>day {revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.rotationReview.day} review</span>
+                <strong>Scale/Watch/Pause/Kill Input</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.rotationReview.inputs.join(" / ") || "Rotation inputs pending."}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.rotationReview.output.replace(/_/g, " ")} / {revenueDashboard.firstStoreCashLoop.firstWeekRevenueLoop.rotationReview.nextInternalAction.replace(/_/g, " ")}</small>
+              </article>
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First store daily revenue loop">
+              <h4>Daily Revenue Loop</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.signalIngest.status.replace(/_/g, " ")} / {revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.signalIngest.source.replace(/_/g, " ")}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.decision.recommendation} decision loop</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.signalIngest.summary}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.signalIngest.performanceSnapshots} performance snapshots / {revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.signalIngest.manualSnapshots} manual imports / {revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.signalIngest.trackedAssets} tracked assets</small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.status.replace(/_/g, " ")} / {revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.mode.replace(/_/g, " ")}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.adGrowthPercent}/{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.entralOperationsPercent}/{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.ownerIncomePercent} advisory allocation</strong>
+                <p>Ad/Growth {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.adGrowthAmount)} / Entral operations {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.entralOperationsAmount)} / owner income {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.ownerIncomeAmount)}.</p>
+                <small>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.scalingBudgetPackets} budget packets / reserve {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.reserveHeld)} / {revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.advisoryAllocation.guardrail}</small>
+              </article>
+              <article>
+                <span>scale {revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.decision.scalePressure}/100 / kill {revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.decision.killPressure}/100</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.decision.posture.replace(/_/g, " ")} posture</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.decision.reason}</p>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.dailyRevenueLoop.nextActions.map((action) => (
+                <article key={`${action.lane}-${action.nextInternalAction}`}>
+                  <span>{action.lane} / {action.status.replace(/_/g, " ")}</span>
+                  <strong>{action.title}</strong>
+                  <p>{action.detail}</p>
+                  <small>{action.nextInternalAction}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="Proven winner scale ladder">
+              <h4>Proven Winner Scale Ladder</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.winnerScaleLadder.proofGate.status.replace(/_/g, " ")}</span>
+                <strong>Winner Proof Gate</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.winnerScaleLadder.proofGate.evidenceSummary}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.winnerScaleLadder.proofGate.requiredSignals.join(" / ")} / {revenueDashboard.firstStoreCashLoop.winnerScaleLadder.proofGate.nextInternalAction.replace(/_/g, " ")}</small>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.winnerScaleLadder.cloneTemplates.map((template) => (
+                <article key={`winner-template-${template.type}`}>
+                  <span>{template.type} / {template.ready ? "ready" : "waiting"} / {template.source.replace(/_/g, " ")}</span>
+                  <strong>{template.type.replace(/_/g, " ")} template</strong>
+                  <p>{template.detail}</p>
+                </article>
+              ))}
+              {revenueDashboard.firstStoreCashLoop.winnerScaleLadder.stages.map((stage) => (
+                <article key={`winner-scale-${stage.targetStores}`}>
+                  <span>{stage.targetStores} stores / {stage.status.replace(/_/g, " ")} / {stage.readinessPercent}%</span>
+                  <strong>{stage.targetStores} Store Clone Stage</strong>
+                  <p>{stage.proofRequired}</p>
+                  <small>{stage.nextInternalAction} / source {stage.templateSource.replace(/_/g, " ")}</small>
+                </article>
+              ))}
+              {revenueDashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets.map((packet) => (
+                <article key={`winner-clone-packet-${packet.targetStores}`}>
+                  <span>{packet.targetStores} stores / {packet.status.replace(/_/g, " ")} / {packet.draftCloneSlots} draft slots</span>
+                  <strong>{packet.targetStores} Store Internal Clone Packet</strong>
+                  <p>{packet.summary}</p>
+                  <small>
+                    {packet.approvalPhrase} / owner approval {packet.ownerApprovalRequired ? "required" : "waiting"} / external execution {packet.externalExecution ? "enabled" : "locked"} / {packet.tasks.map((task) => `${task.category.replace(/_/g, " ")} ${task.status.replace(/_/g, " ")}`).join(" / ")}
+                  </small>
+                  <small>
+                    {packet.draftSlots.slice(0, 3).map((slot) => `${slot.title}: ${slot.status.replace(/_/g, " ")}`).join(" / ") || "Private clone draft slots are waiting for source proof."}
+                  </small>
+                  <small>
+                    approval readiness {winnerClonePacketPrerequisite(packet)}
+                  </small>
+                  <div className="merch-ops-actions split" aria-label={`${packet.targetStores}-store winner clone packet controls`}>
+                    <button type="button" onClick={() => void runWinnerClonePacketApproval(packet.targetStores, true)} disabled={previewingWinnerCloneTarget === packet.targetStores || !canApproveWinnerClonePacket(packet)}>
+                      {previewingWinnerCloneTarget === packet.targetStores ? "Previewing..." : "Preview clone packet"}
+                    </button>
+                    <button type="button" onClick={() => void runWinnerClonePacketApproval(packet.targetStores, false)} disabled={recordingWinnerCloneTarget === packet.targetStores || !canApproveWinnerClonePacket(packet)}>
+                      {recordingWinnerCloneTarget === packet.targetStores ? "Recording..." : "Record clone approval"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="Revenue milestone path">
+              <h4>Revenue Milestone Path</h4>
+              <article>
+                <span>{formatMerchCurrency(revenueDashboard.firstStoreCashLoop.revenueMilestonePath.currentRunRate.monthlyRevenueRunRate)}/month revenue run-rate</span>
+                <strong>{formatMerchCurrency(revenueDashboard.firstStoreCashLoop.revenueMilestonePath.currentRunRate.monthlyProfitRunRate)}/month profit run-rate</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.revenueMilestonePath.summary}</p>
+                <small>{formatMerchCurrency(revenueDashboard.firstStoreCashLoop.revenueMilestonePath.currentRunRate.dailyRevenueVelocity)}/day revenue / {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.revenueMilestonePath.currentRunRate.dailyProfitVelocity)}/day profit / external execution {revenueDashboard.firstStoreCashLoop.revenueMilestonePath.externalExecution ? "enabled" : "locked"}</small>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.revenueMilestonePath.milestones.map((milestone) => (
+                <article key={`revenue-milestone-${milestone.label}`}>
+                  <span>{milestone.status.replace(/_/g, " ")} / gap {formatMerchCurrency(milestone.gapMonthlyRevenue)}</span>
+                  <strong>{milestone.label}</strong>
+                  <p>{milestone.requiredEvidence.join(" / ")}</p>
+                  <small>{milestone.nextInternalAction.replace(/_/g, " ")} / target {formatMerchCurrency(milestone.targetMonthlyRevenue)} / {milestone.guardrail}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="Cash loop verification audit">
+              <h4>Cash Loop Verification Audit</h4>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.verificationAudit.status.replace(/_/g, " ")}</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.verificationAudit.totals.proven}/{revenueDashboard.firstStoreCashLoop.verificationAudit.totals.requirements} requirements proven</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.verificationAudit.summary}</p>
+                <small>
+                  {revenueDashboard.firstStoreCashLoop.verificationAudit.totals.blocked} blocked / {revenueDashboard.firstStoreCashLoop.verificationAudit.totals.ownerApprovalRequired} owner approval / {revenueDashboard.firstStoreCashLoop.verificationAudit.totals.waitingForLiveEvidence} live evidence / {revenueDashboard.firstStoreCashLoop.verificationAudit.totals.waitingForScaleProof} scale proof / next {revenueDashboard.firstStoreCashLoop.verificationAudit.nextInternalAction.replace(/_/g, " ")} / external execution {revenueDashboard.firstStoreCashLoop.verificationAudit.externalExecution ? "enabled" : "locked"}
+                </small>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.verificationAudit.requirements.map((requirement) => (
+                <article key={`cash-loop-audit-${requirement.id}`}>
+                  <span>{requirement.status.replace(/_/g, " ")} / {requirement.ownerApprovalRequired ? "owner approval" : "internal"}</span>
+                  <strong>{requirement.label}</strong>
+                  <p>{requirement.evidence.join(" / ")}</p>
+                  <small>{requirement.nextInternalAction.replace(/_/g, " ")} / locked: {requirement.externalActionsLocked[0]}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="First store revenue signals and scale path">
+              <h4>Revenue Signals</h4>
+              <article>
+                <span>scale {revenueDashboard.firstStoreCashLoop.revenueSignals.scalePressure}/100 / kill {revenueDashboard.firstStoreCashLoop.revenueSignals.killPressure}/100</span>
+                <strong>{revenueDashboard.firstStoreCashLoop.revenueSignals.recommendation} recommendation</strong>
+                <p>{formatMerchCurrency(revenueDashboard.firstStoreCashLoop.revenueSignals.profitVelocity)}/day profit velocity and {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.revenueSignals.revenueVelocity)}/day revenue velocity.</p>
+                <small>{formatMerchCurrency(revenueDashboard.firstStoreCashLoop.revenueSignals.totalRevenue)} revenue / {formatMerchCurrency(revenueDashboard.firstStoreCashLoop.revenueSignals.estimatedProfit)} estimated profit</small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.scalePath.tenStore.currentStores}/{revenueDashboard.firstStoreCashLoop.scalePath.tenStore.targetStores} stores / {revenueDashboard.firstStoreCashLoop.scalePath.tenStore.readinessPercent}%</span>
+                <strong>10 Store Readiness</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.scalePath.tenStore.nextInternalAction}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.scalePath.tenStore.readyParallelStores} ready parallel / {revenueDashboard.firstStoreCashLoop.scalePath.tenStore.scaleReadyStores} scale ready / gap {revenueDashboard.firstStoreCashLoop.scalePath.tenStore.gap}</small>
+              </article>
+              <article>
+                <span>{revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.currentStores}/{revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.targetStores} stores / {revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.readinessPercent}% / {revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.status.replace(/_/g, " ")}</span>
+                <strong>25 Store Readiness</strong>
+                <p>{revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.nextInternalAction}</p>
+                <small>{revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.applicationTemplatesReady} app templates / {revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.productTemplatesReady} product templates / {revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.contentTemplatesReady} content templates / {revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.launchPacketsReady} launch packets / source {revenueDashboard.firstStoreCashLoop.scalePath.twentyFiveStore.templateSource.replace(/_/g, " ")}</small>
+              </article>
+              {revenueDashboard.firstStoreCashLoop.scalePath.hundredStore ? (
+                <article>
+                  <span>{revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.currentStores}/{revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.targetStores} stores / readiness {revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.readinessScore}/100</span>
+                  <strong>100 Store Readiness</strong>
+                  <p>{revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.nextInternalAction}</p>
+                  <small>{revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.readyParallelStores} ready parallel / {revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.workerAssignmentsReady} worker assignments / gates {revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.gatesPass} pass, {revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.gatesWatch} watch, {revenueDashboard.firstStoreCashLoop.scalePath.hundredStore.gatesBlocked} blocked</small>
+                </article>
+              ) : (
+                <article>
+                  <span>watch</span>
+                  <strong>100 Store Readiness</strong>
+                  <p>100-store readiness is available from the real backend operations plan.</p>
+                </article>
+              )}
+            </section>
 
             <section className="revenue-engine-list" aria-label="Revenue portfolio dashboard next actions">
               <h4>Next Scored Moves</h4>

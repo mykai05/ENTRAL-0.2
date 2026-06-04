@@ -66,7 +66,16 @@ import { buildGrowthApprovalPacket, buildGrowthOrchestrationPreview, buildGrowth
 import { buildLaunchPackage, buildMerchReport, type MerchReportType } from "./services/merchReports.js";
 import { buildProviderHandoffBundle, buildProviderPayloadApprovalPacket, buildProviderPayloadPackage, isProviderPayloadApprovalPacket } from "./services/merchProviderPayloads.js";
 import { calculatePricing, pricingPlatformPresets, type PricingPlatformPreset } from "./services/pricingCalculator.js";
-import { buildRevenueAssetBatchControlPlan, buildRevenueAssetControlPlan, buildRevenueAssetPortfolio, buildRevenueEnginePlan, mergeRevenueAssetPortfolioPerformance, type RevenueEngineThresholds } from "./services/revenueEngine.js";
+import {
+  buildRevenueAssetBatchControlPlan,
+  buildRevenueAssetControlPlan,
+  buildRevenueAssetPortfolio,
+  buildRevenueEnginePlan,
+  mergeRevenueAssetPortfolioPerformance,
+  revenueAssetRotationDecisionValues,
+  type RevenueAssetRotationDecision,
+  type RevenueEngineThresholds
+} from "./services/revenueEngine.js";
 import { buildRevenueBusinessFleetLaunchGapPlan, buildRevenueBusinessFleetSchedulerPlan, selectRevenueBusinessFleetLaunchWave, type RevenueBusinessFleetOptions } from "./services/revenueBusinessFleetScheduler.js";
 import {
   buildRevenueAssetControlLedgerPlan,
@@ -76,7 +85,16 @@ import {
 } from "./services/revenueAssetControlLedger.js";
 import { buildRevenueAssetReviewQueuePlan } from "./services/revenueAssetReviewQueue.js";
 import { buildRevenueAssetControlsFromPortfolioCommands } from "./services/revenuePortfolioCommandAssetControls.js";
-import { buildRevenuePortfolioDashboardPlan } from "./services/revenuePortfolioDashboard.js";
+import {
+  buildRevenuePortfolioDashboardPlan,
+  isRevenuePortfolioDashboardLaunchEvidenceCategory,
+  type RevenuePortfolioDashboardCashLoopEvidenceReceipt
+} from "./services/revenuePortfolioDashboard.js";
+import {
+  buildRevenueFirstStoreManualSignalCaptureGate,
+  buildRevenueWinnerClonePacketApprovalGate,
+  hasRevenueCashLoopEvidenceReceipt
+} from "./services/revenueFirstStoreCashLoopApprovalGates.js";
 import {
   buildRevenueLaunchReadinessPlan,
   type RevenueLaunchReadinessApprovalSnapshot,
@@ -5059,7 +5077,141 @@ function buildMemoryPortfolioCommandCenter(userId: string, options: Partial<Port
   };
 }
 
+const memoryRevenueCashLoopEvidenceTargetTypes = new Set([
+  "revenue_first_store_owner_launch_approval",
+  "revenue_first_store_manual_launch_evidence",
+  "revenue_first_store_manual_signal_snapshot",
+  "revenue_winner_clone_packet_approval"
+]);
+
+function memoryRevenueCashLoopEvidenceType(targetType: string): RevenuePortfolioDashboardCashLoopEvidenceReceipt["evidenceType"] | null {
+  if (targetType === "revenue_first_store_owner_launch_approval") return "owner_launch_approval";
+  if (targetType === "revenue_first_store_manual_launch_evidence") return "manual_launch_evidence";
+  if (targetType === "revenue_first_store_manual_signal_snapshot") return "manual_signal_snapshot";
+  if (targetType === "revenue_winner_clone_packet_approval") return "winner_clone_packet_approval";
+
+  return null;
+}
+
+function memoryStringFromRecord(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function memoryNumberFromRecord(record: Record<string, unknown>, key: string): number | null {
+  const value = record[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function memoryRevenueAssetRotationDecisionFromRecord(record: Record<string, unknown>, key: string): RevenueAssetRotationDecision | null {
+  const value = memoryStringFromRecord(record, key);
+
+  return revenueAssetRotationDecisionValues.includes(value as RevenueAssetRotationDecision)
+    ? value as RevenueAssetRotationDecision
+    : null;
+}
+
+function memoryRevenueCashLoopEvidenceSummary(input: {
+  entry: Record<string, unknown>;
+  evidenceType: RevenuePortfolioDashboardCashLoopEvidenceReceipt["evidenceType"];
+}): string {
+  const summary = memoryStringFromRecord(input.entry, "summary");
+  const storeName = memoryStringFromRecord(input.entry, "storeName") ?? "the first store";
+
+  if (summary) return summary;
+
+  if (input.evidenceType === "manual_launch_evidence") {
+    const category = memoryStringFromRecord(input.entry, "evidenceCategory")?.replace(/_/g, " ") ?? "manual launch";
+    const stepIndex = memoryNumberFromRecord(input.entry, "stepIndex");
+    return `First-store manual launch evidence recorded for ${storeName}: ${category}${stepIndex === null ? "" : ` step ${stepIndex + 1}`}. External execution remains locked.`;
+  }
+
+  if (input.evidenceType === "manual_signal_snapshot") {
+    const unitsSold = memoryNumberFromRecord(input.entry, "unitsSold") ?? 0;
+    const grossRevenue = memoryNumberFromRecord(input.entry, "grossRevenue") ?? 0;
+    const netProfit = memoryNumberFromRecord(input.entry, "netProfit") ?? 0;
+    return `First-store manual signal snapshot recorded for ${storeName}: ${unitsSold} unit${unitsSold === 1 ? "" : "s"}, ${grossRevenue} gross revenue, ${netProfit} net profit. External execution remains locked.`;
+  }
+
+  if (input.evidenceType === "winner_clone_packet_approval") {
+    const targetStores = memoryNumberFromRecord(input.entry, "targetStores");
+    const draftCloneSlots = memoryNumberFromRecord(input.entry, "draftCloneSlots") ?? 0;
+    return `${targetStores ?? "Winner"}-store internal winner clone packet approval recorded for ${storeName} with ${draftCloneSlots} private draft slot${draftCloneSlots === 1 ? "" : "s"}. External execution remains locked.`;
+  }
+
+  return `Owner manual live launch approval receipt recorded for ${storeName}. External execution remains locked.`;
+}
+
+function buildMemoryRevenueCashLoopEvidenceReceipts(): RevenuePortfolioDashboardCashLoopEvidenceReceipt[] {
+  return state.auditLogs
+    .filter((log) => memoryRevenueCashLoopEvidenceTargetTypes.has(log.targetType))
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .map((log): RevenuePortfolioDashboardCashLoopEvidenceReceipt | null => {
+      const evidenceType = memoryRevenueCashLoopEvidenceType(log.targetType);
+      const entryMetadata = log.entry.metadata && typeof log.entry.metadata === "object" && !Array.isArray(log.entry.metadata)
+        ? log.entry.metadata as Record<string, unknown>
+        : null;
+      const entry = entryMetadata ?? log.entry;
+      const evidenceCategory = memoryStringFromRecord(entry, "evidenceCategory");
+      const manualSignalDay = memoryNumberFromRecord(entry, "day");
+      const targetStores = memoryNumberFromRecord(entry, "targetStores");
+
+      return evidenceType
+        ? {
+          action: log.action,
+          auditLogId: log.id,
+          createdAt: log.createdAt,
+          entryHash: log.entryHash,
+          evidenceType,
+          externalExecution: false as const,
+          launchEvidenceCategory: evidenceType === "manual_launch_evidence" && isRevenuePortfolioDashboardLaunchEvidenceCategory(evidenceCategory)
+            ? evidenceCategory
+            : null,
+          manualSignalDay: evidenceType === "manual_signal_snapshot" && manualSignalDay !== null
+            ? Math.max(0, Math.min(7, Math.floor(manualSignalDay)))
+            : null,
+          manualSignalRotationRecommendation: evidenceType === "manual_signal_snapshot"
+            ? memoryRevenueAssetRotationDecisionFromRecord(entry, "rotationRecommendation")
+            : null,
+          providerContacted: false as const,
+          storeId: memoryStringFromRecord(entry, "storeId") ?? log.targetId ?? null,
+          storeName: memoryStringFromRecord(entry, "storeName"),
+          summary: memoryRevenueCashLoopEvidenceSummary({
+            entry,
+            evidenceType
+          }),
+          targetId: log.targetId ?? null,
+          targetStores: evidenceType === "winner_clone_packet_approval" && (targetStores === 10 || targetStores === 25 || targetStores === 100)
+            ? targetStores
+            : null,
+          targetType: log.targetType
+        }
+        : null;
+    })
+    .filter((receipt): receipt is RevenuePortfolioDashboardCashLoopEvidenceReceipt => Boolean(receipt));
+}
+
 function buildMemoryRevenuePortfolioDashboard(userId: string) {
+  const firstCashPlan = buildMemoryRevenueFirstCashReadiness(userId, {
+    includeBlocked: true,
+    maxCandidates: 8,
+    targetDaysToFirstCash: 7
+  });
+  const firstBusinessLaunchContext = buildMemoryRevenueFirstBusinessLaunch(userId, {
+    maxCandidates: 8
+  });
+  const launchReadinessPlan = buildMemoryRevenueLaunchReadiness(userId, {
+    includeApprovalHistory: true,
+    maxStores: 8,
+    minLaunchReadiness: 1,
+    minProviderReadiness: 1
+  });
+  const tenStoreFleetContext = buildMemoryRevenueBusinessFleetScheduler(userId, {
+    launchWaveSize: 10,
+    maxParallelLaunches: 10,
+    maxParallelScaleActions: 25,
+    targetBusinesses: 10
+  });
   const { assetPortfolio, plan: commandPlan } = buildMemoryPortfolioCommandCenter(userId, {
     includeCommandHistory: 50,
     includeContent: true,
@@ -5067,6 +5219,10 @@ function buildMemoryRevenuePortfolioDashboard(userId: string) {
     maxActions: 50,
     windowDays: 30
   });
+  const financialPlan = buildMemoryFinancialOrchestrator(userId, {
+    includePayoutIntents: true,
+    windowDays: 30
+  }).plan;
   const controlLedger = buildRevenueAssetControlLedgerPlan({
     records: state.revenueAssetControlRecords
       .filter((record) => record.userId === userId)
@@ -5084,10 +5240,16 @@ function buildMemoryRevenuePortfolioDashboard(userId: string) {
   });
 
   return buildRevenuePortfolioDashboardPlan({
+    cashLoopEvidenceReceipts: buildMemoryRevenueCashLoopEvidenceReceipts(),
     commandPlan,
     controlLedger,
+    financialPlan,
+    firstBusinessLaunchPlan: firstBusinessLaunchContext.plan,
+    firstCashPlan,
+    launchReadinessPlan,
     portfolio: assetPortfolio,
-    reviewQueue
+    reviewQueue,
+    tenStoreFleetPlan: tenStoreFleetContext.plan
   });
 }
 
@@ -7825,6 +7987,59 @@ function normalizeMemoryPerformanceSnapshot(userId: string, input: RevenuePerfor
   };
 }
 
+function memoryFirstStoreManualSignalSnapshot(input: {
+  adSpend?: number;
+  conversionNotes?: string;
+  day?: number;
+  grossRevenue?: number;
+  manualContentViews?: number;
+  manualSavesOrShares?: number;
+  netProfit?: number;
+  note?: string;
+  periodEnd?: string;
+  periodStart?: string;
+  rotationRecommendation?: string;
+  unitsSold?: number;
+  visits?: number;
+}, storeId: string): RevenuePerformanceSnapshotInput {
+  const day = Math.min(Math.max(Math.floor(Number(input.day ?? 0) || 0), 0), 7);
+  const periodEnd = input.periodEnd ? new Date(input.periodEnd) : new Date();
+  const periodStart = input.periodStart ? new Date(input.periodStart) : new Date(periodEnd.getTime() - 86_400_000);
+  const contentViews = Math.max(0, Math.floor(Number(input.manualContentViews ?? 0) || 0));
+  const savesOrShares = Math.max(0, Math.floor(Number(input.manualSavesOrShares ?? 0) || 0));
+  const rotationRecommendation = ["scale", "watch", "pause", "kill"].includes(String(input.rotationRecommendation))
+    ? String(input.rotationRecommendation)
+    : "watch";
+  const notes = [
+    `First-store manual signal capture day ${day}.`,
+    `Manual content views ${contentViews}; saves/shares ${savesOrShares}; rotation recommendation ${rotationRecommendation}.`,
+    input.conversionNotes ? `Conversion notes: ${input.conversionNotes}` : null,
+    input.note ? `Operator note: ${input.note}` : null,
+    "No external analytics import, provider call, ad spend execution, payout, payment, browser action, upload, marketplace write, or API write executed."
+  ].filter((item): item is string => Boolean(item)).join(" ");
+
+  return {
+    adSpend: Math.max(0, Number(input.adSpend ?? 0) || 0),
+    digitalDeliveryCost: 0,
+    discounts: 0,
+    grossRevenue: Math.max(0, Number(input.grossRevenue ?? 0) || 0),
+    impressions: contentViews,
+    netProfit: input.netProfit === undefined ? undefined : Number(input.netProfit),
+    notes,
+    periodEnd: periodEnd.toISOString(),
+    periodStart: periodStart.toISOString(),
+    platformFees: 0,
+    productId: null,
+    productionCost: 0,
+    refunds: 0,
+    shippingCost: 0,
+    source: "manual",
+    storeId,
+    unitsSold: Math.max(0, Math.floor(Number(input.unitsSold ?? 0) || 0)),
+    visits: Math.max(0, Math.floor(Number(input.visits ?? 0) || 0))
+  };
+}
+
 function validateMemoryPerformanceSnapshots(userId: string, snapshots: RevenuePerformanceSnapshotInput[]) {
   const storeIds = new Set(state.merchStores.filter((store) => store.userId === userId).map((store) => store.id));
   const productsById = new Map(state.podProducts
@@ -8435,6 +8650,542 @@ app.get("/api/v1/merch/revenue-engine/dashboard", { preHandler: requireAuth }, a
   return {
     dashboard: buildMemoryRevenuePortfolioDashboard(user.id)
   };
+});
+
+app.post("/api/v1/merch/revenue-engine/first-store-cash-loop/owner-launch-approval/apply", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const body = (request.body ?? {}) as {
+    approvalPhrase?: string;
+    confirm?: string;
+    dryRun?: boolean;
+    note?: string;
+    storeId?: string;
+  };
+
+  if (body.confirm !== "RECORD OWNER MANUAL LIVE LAUNCH APPROVAL") {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Confirm with RECORD OWNER MANUAL LIVE LAUNCH APPROVAL before recording the owner manual launch approval receipt."
+    });
+  }
+
+  if (body.approvalPhrase !== "APPROVE FIRST STORE MANUAL LIVE LAUNCH") {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Approval phrase must be APPROVE FIRST STORE MANUAL LIVE LAUNCH."
+    });
+  }
+
+  const dashboard = buildMemoryRevenuePortfolioDashboard(user.id);
+  const ownerLaunchApproval = dashboard.firstStoreCashLoop.ownerLaunchApproval;
+  const dashboardStoreId = dashboard.firstStoreCashLoop.firstCashStatus?.storeId
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeId
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeId
+    ?? null;
+  const targetStoreId = body.storeId ?? dashboardStoreId;
+  const storeName = dashboard.firstStoreCashLoop.firstCashStatus?.storeName
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeName
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeName
+    ?? dashboard.firstStoreCashLoop.manualLaunchPacket.store?.name
+    ?? null;
+  const blockers = [
+    targetStoreId ? null : "No first-store target is available on the current cash-loop dashboard.",
+    ownerLaunchApproval.status === "ready_for_owner_review" ? null : `Owner launch approval packet is ${ownerLaunchApproval.status.replace(/_/g, " ")}.`,
+    body.storeId && dashboardStoreId && body.storeId !== dashboardStoreId
+      ? `Requested store ${body.storeId} does not match the current first-store packet ${dashboardStoreId}.`
+      : null
+  ].filter((blocker): blocker is string => Boolean(blocker));
+  const dryRun = body.dryRun !== false;
+  const allowed = blockers.length === 0;
+  const summary = allowed
+    ? dryRun
+      ? `Owner manual live launch approval receipt previewed for ${storeName ?? "the first store"}. External execution remains locked.`
+      : `Owner manual live launch approval receipt recorded for ${storeName ?? "the first store"}. External execution remains locked.`
+    : `Owner manual live launch approval receipt was not recorded: ${blockers.join(" ")}`;
+  const auditLogId = allowed && !dryRun ? id("audit") : null;
+
+  if (auditLogId) {
+    state.auditLogs.unshift({
+      action: "revenue.first_store.owner_manual_launch_approval.recorded",
+      createdAt: now(),
+      entry: {
+        approvalMode: ownerLaunchApproval.approvalMode,
+        approvalPhrase: body.approvalPhrase,
+        approvalStatus: ownerLaunchApproval.status,
+        blockedExternalActions: ownerLaunchApproval.blockedExternalActions,
+        dryRun: false,
+        externalExecution: false,
+        liveApprovalRequired: ownerLaunchApproval.liveApprovalRequired,
+        note: body.note ?? null,
+        providerContacted: false,
+        stillLocked: ownerLaunchApproval.unlockBoundary.stillLocked,
+        storeId: targetStoreId,
+        storeName,
+        summary,
+        unlocks: ownerLaunchApproval.unlockBoundary.unlocks
+      },
+      entryHash: id("hash"),
+      id: auditLogId,
+      outcome: "success",
+      severity: "high",
+      targetId: targetStoreId,
+      targetType: "revenue_first_store_owner_launch_approval"
+    });
+  }
+
+  const response = {
+    applied: {
+      allowed,
+      approvalPhrase: body.approvalPhrase,
+      approvalStatus: ownerLaunchApproval.status,
+      approvalsPreviewed: allowed && dryRun ? 1 : 0,
+      approvalsRecorded: allowed && !dryRun ? 1 : 0,
+      auditLogId,
+      blockedExternalActions: ownerLaunchApproval.blockedExternalActions,
+      blockers,
+      dryRun,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      stillLocked: ownerLaunchApproval.unlockBoundary.stillLocked,
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      unlocks: ownerLaunchApproval.unlockBoundary.unlocks
+    },
+    dashboard: auditLogId ? buildMemoryRevenuePortfolioDashboard(user.id) : dashboard,
+    ownerLaunchApproval
+  };
+
+  if (!allowed) {
+    return reply.code(409).send(response);
+  }
+
+  return response;
+});
+
+app.post("/api/v1/merch/revenue-engine/first-store-cash-loop/manual-launch-evidence/apply", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const body = (request.body ?? {}) as {
+    approvalPhrase?: string;
+    completedAt?: string;
+    confirm?: string;
+    dryRun?: boolean;
+    evidenceCategory?: string;
+    evidenceNote?: string;
+    ownerCompletedManualStep?: boolean;
+    stepIndex?: number;
+    storeId?: string;
+  };
+
+  if (body.confirm !== "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE") {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Confirm with RECORD FIRST STORE MANUAL LAUNCH EVIDENCE before recording first-store manual launch evidence."
+    });
+  }
+
+  if (body.approvalPhrase !== "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP") {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Approval phrase must be CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP."
+    });
+  }
+
+  const dashboard = buildMemoryRevenuePortfolioDashboard(user.id);
+  const manualLaunchPacket = dashboard.firstStoreCashLoop.manualLaunchPacket;
+  const dashboardStoreId = dashboard.firstStoreCashLoop.firstCashStatus?.storeId
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeId
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeId
+    ?? null;
+  const targetStoreId = body.storeId ?? dashboardStoreId;
+  const storeName = dashboard.firstStoreCashLoop.firstCashStatus?.storeName
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeName
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeName
+    ?? manualLaunchPacket.store?.name
+    ?? null;
+  const stepIndex = Math.min(Math.max(Math.floor(Number(body.stepIndex ?? 0) || 0), 0), 25);
+  const stepTitle = manualLaunchPacket.manualSteps[stepIndex] ?? null;
+  const evidenceCategory = ["storefront", "pod_supplier", "payments_payouts", "content_channels", "analytics_manual_import", "ads"].includes(String(body.evidenceCategory))
+    ? String(body.evidenceCategory)
+    : "storefront";
+  const ownerCompletedManualStep = body.ownerCompletedManualStep !== false;
+  const cashLoopReceipts = buildMemoryRevenueCashLoopEvidenceReceipts();
+  const ownerApprovalRecorded = hasRevenueCashLoopEvidenceReceipt(cashLoopReceipts, "owner_launch_approval", targetStoreId);
+  const blockers = [
+    targetStoreId ? null : "No first-store target is available on the current cash-loop dashboard.",
+    manualLaunchPacket.status === "ready_for_operator_review" ? null : `Manual launch packet is ${manualLaunchPacket.status.replace(/_/g, " ")}.`,
+    ownerApprovalRecorded ? null : "Record owner manual live-launch approval receipt before recording first-store manual launch evidence.",
+    stepTitle ? null : `Manual launch step ${stepIndex + 1} is not available in the current first-store packet.`,
+    ownerCompletedManualStep ? null : "Owner/operator completion must be true before recording manual launch evidence.",
+    body.storeId && dashboardStoreId && body.storeId !== dashboardStoreId
+      ? `Requested store ${body.storeId} does not match the current first-store packet ${dashboardStoreId}.`
+      : null
+  ].filter((blocker): blocker is string => Boolean(blocker));
+  const dryRun = body.dryRun !== false;
+  const allowed = blockers.length === 0;
+  const completedAt = body.completedAt ?? now();
+  const summary = allowed
+    ? dryRun
+      ? `First-store manual launch evidence previewed for ${storeName ?? "the first store"}: ${evidenceCategory.replace(/_/g, " ")} step ${stepIndex + 1}. External execution remains locked.`
+      : `First-store manual launch evidence recorded for ${storeName ?? "the first store"}: ${evidenceCategory.replace(/_/g, " ")} step ${stepIndex + 1}. External execution remains locked.`
+    : `First-store manual launch evidence was not recorded: ${blockers.join(" ")}`;
+  const auditLogId = allowed && !dryRun ? id("audit") : null;
+
+  if (auditLogId) {
+    state.auditLogs.unshift({
+      action: "revenue.first_store.manual_launch_evidence.recorded",
+      createdAt: now(),
+      entry: {
+        approvalPhrase: body.approvalPhrase,
+        blockedExternalActions: dashboard.firstStoreCashLoop.ownerLaunchApproval.blockedExternalActions,
+        completedAt,
+        dryRun: false,
+        evidenceCategory,
+        evidenceNote: body.evidenceNote ?? null,
+        externalExecution: false,
+        manualStep: stepTitle,
+        ownerCompletedManualStep,
+        providerContacted: false,
+        requiredConfirmation: "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE",
+        stepIndex,
+        storeId: targetStoreId,
+        storeName,
+        summary
+      },
+      entryHash: id("hash"),
+      id: auditLogId,
+      outcome: "success",
+      severity: "medium",
+      targetId: targetStoreId,
+      targetType: "revenue_first_store_manual_launch_evidence"
+    });
+  }
+
+  const response = {
+    dashboard: auditLogId ? buildMemoryRevenuePortfolioDashboard(user.id) : dashboard,
+    manualLaunchEvidence: {
+      allowed,
+      approvalPhrase: body.approvalPhrase,
+      auditLogId,
+      blockedExternalActions: dashboard.firstStoreCashLoop.ownerLaunchApproval.blockedExternalActions,
+      blockers,
+      completedAt,
+      dryRun,
+      evidenceCategory,
+      evidenceNote: body.evidenceNote ?? null,
+      evidencePreviewed: allowed && dryRun ? 1 : 0,
+      evidenceRecorded: allowed && !dryRun ? 1 : 0,
+      externalExecution: false as const,
+      ownerCompletedManualStep,
+      providerContacted: false as const,
+      stepIndex,
+      stepTitle,
+      storeId: targetStoreId,
+      storeName,
+      summary
+    }
+  };
+
+  if (!allowed) {
+    return reply.code(409).send(response);
+  }
+
+  return response;
+});
+
+app.post("/api/v1/merch/revenue-engine/first-store-cash-loop/manual-signal-snapshot/apply", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const body = (request.body ?? {}) as {
+    adSpend?: number;
+    confirm?: string;
+    conversionNotes?: string;
+    day?: number;
+    dryRun?: boolean;
+    grossRevenue?: number;
+    manualContentViews?: number;
+    manualSavesOrShares?: number;
+    netProfit?: number;
+    note?: string;
+    periodEnd?: string;
+    periodStart?: string;
+    rotationRecommendation?: string;
+    storeId?: string;
+    unitsSold?: number;
+    visits?: number;
+  };
+
+  if (body.confirm !== "RECORD FIRST STORE MANUAL SIGNAL SNAPSHOT") {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Confirm with RECORD FIRST STORE MANUAL SIGNAL SNAPSHOT before recording the first-store manual signal snapshot."
+    });
+  }
+
+  const dashboard = buildMemoryRevenuePortfolioDashboard(user.id);
+  const cashLoopReceipts = buildMemoryRevenueCashLoopEvidenceReceipts();
+  const manualSignalGate = buildRevenueFirstStoreManualSignalCaptureGate({
+    cashLoopEvidenceReceipts: cashLoopReceipts,
+    dashboard,
+    requestedStoreId: typeof body.storeId === "string" && body.storeId.trim() ? body.storeId.trim() : undefined
+  });
+  const {
+    blockers,
+    storeName,
+    targetStoreId
+  } = manualSignalGate;
+
+  if (!targetStoreId) {
+    return reply.code(409).send({
+      capture: {
+        allowed: false,
+        auditLogId: null,
+        blockers,
+        dryRun: body.dryRun !== false,
+        externalExecution: false,
+        providerContacted: false,
+        snapshotId: null,
+        snapshotsPreviewed: 0,
+        snapshotsRecorded: 0,
+        storeId: null,
+        storeName,
+        summary: `First-store manual signal snapshot was not recorded: ${blockers.join(" ")}`
+      },
+      dashboard,
+      digest: null,
+      snapshot: null
+    });
+  }
+
+  const snapshotInput = memoryFirstStoreManualSignalSnapshot(body, targetStoreId);
+  const ownershipError = validateMemoryPerformanceSnapshots(user.id, [snapshotInput]);
+
+  if (ownershipError) {
+    blockers.push(ownershipError);
+  }
+
+  const incomingSnapshot = normalizeMemoryPerformanceSnapshot(user.id, snapshotInput);
+  const existing = buildMemoryRevenuePerformanceDigest(user.id, {
+    storeId: targetStoreId
+  });
+  const previewDigest = buildRevenuePerformanceDigest({
+    options: existing.digest.options,
+    products: existing.products,
+    snapshots: [...existing.digest.snapshots, incomingSnapshot],
+    stores: existing.stores
+  });
+  const allowed = blockers.length === 0;
+  const dryRun = body.dryRun !== false;
+  const summary = allowed
+    ? dryRun
+      ? `First-store manual signal snapshot previewed for ${storeName ?? "the first store"}: ${snapshotInput.unitsSold ?? 0} unit${(snapshotInput.unitsSold ?? 0) === 1 ? "" : "s"}, ${snapshotInput.grossRevenue ?? 0} gross revenue, ${incomingSnapshot.netProfit} net profit.`
+      : `First-store manual signal snapshot recorded for ${storeName ?? "the first store"}: ${snapshotInput.unitsSold ?? 0} unit${(snapshotInput.unitsSold ?? 0) === 1 ? "" : "s"}, ${snapshotInput.grossRevenue ?? 0} gross revenue, ${incomingSnapshot.netProfit} net profit.`
+    : `First-store manual signal snapshot was not recorded: ${blockers.join(" ")}`;
+
+  if (!allowed || dryRun) {
+    const response = {
+      capture: {
+        allowed,
+        auditLogId: null,
+        blockers,
+        day: Math.min(Math.max(Math.floor(Number(body.day ?? 0) || 0), 0), 7),
+        dryRun,
+        externalExecution: false as const,
+        grossRevenue: snapshotInput.grossRevenue ?? 0,
+        netProfit: incomingSnapshot.netProfit,
+        providerContacted: false as const,
+        rotationRecommendation: ["scale", "watch", "pause", "kill"].includes(String(body.rotationRecommendation)) ? body.rotationRecommendation : "watch",
+        snapshotId: null,
+        snapshotsPreviewed: allowed ? 1 : 0,
+        snapshotsRecorded: 0,
+        storeId: targetStoreId,
+        storeName,
+        summary,
+        unitsSold: snapshotInput.unitsSold ?? 0,
+        visits: snapshotInput.visits ?? 0
+      },
+      dashboard,
+      digest: previewDigest,
+      snapshot: incomingSnapshot
+    };
+
+    if (!allowed) {
+      return reply.code(409).send(response);
+    }
+
+    return response;
+  }
+
+  state.revenuePerformanceSnapshots.unshift(incomingSnapshot);
+  rollupMemoryPerformanceStores(user.id, [targetStoreId]);
+  const digest = buildMemoryRevenuePerformanceDigest(user.id, {
+    storeId: targetStoreId
+  }).digest;
+  const auditLogId = id("audit");
+  state.auditLogs.unshift({
+    action: "revenue.first_store.manual_signal_snapshot.recorded",
+    createdAt: now(),
+    entry: {
+      day: Math.min(Math.max(Math.floor(Number(body.day ?? 0) || 0), 0), 7),
+      dryRun: false,
+      externalExecution: false,
+      grossRevenue: snapshotInput.grossRevenue ?? 0,
+      netProfit: incomingSnapshot.netProfit,
+      providerContacted: false,
+      rotationRecommendation: ["scale", "watch", "pause", "kill"].includes(String(body.rotationRecommendation)) ? body.rotationRecommendation : "watch",
+      snapshotId: incomingSnapshot.id,
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      unitsSold: snapshotInput.unitsSold ?? 0,
+      visits: snapshotInput.visits ?? 0
+    },
+    entryHash: id("hash"),
+    id: auditLogId,
+    outcome: "success",
+    severity: (snapshotInput.grossRevenue ?? 0) > 0 || incomingSnapshot.netProfit > 0 ? "medium" : "low",
+    targetId: targetStoreId,
+    targetType: "revenue_first_store_manual_signal_snapshot"
+  });
+
+  return {
+    capture: {
+      allowed: true,
+      auditLogId,
+      blockers: [],
+      day: Math.min(Math.max(Math.floor(Number(body.day ?? 0) || 0), 0), 7),
+      dryRun: false,
+      externalExecution: false as const,
+      grossRevenue: snapshotInput.grossRevenue ?? 0,
+      netProfit: incomingSnapshot.netProfit,
+      providerContacted: false as const,
+      rotationRecommendation: ["scale", "watch", "pause", "kill"].includes(String(body.rotationRecommendation)) ? body.rotationRecommendation : "watch",
+      snapshotId: incomingSnapshot.id,
+      snapshotsPreviewed: 0,
+      snapshotsRecorded: 1,
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      unitsSold: snapshotInput.unitsSold ?? 0,
+      visits: snapshotInput.visits ?? 0
+    },
+    dashboard: buildMemoryRevenuePortfolioDashboard(user.id),
+    digest,
+    snapshot: incomingSnapshot
+  };
+});
+
+app.post("/api/v1/merch/revenue-engine/first-store-cash-loop/winner-clone-packet-approval/apply", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const body = (request.body ?? {}) as {
+    approvalPhrase?: string;
+    confirm?: string;
+    dryRun?: boolean;
+    note?: string;
+    storeId?: string;
+    targetStores?: number;
+  };
+
+  if (body.confirm !== "RECORD INTERNAL WINNER CLONE PACKET APPROVAL") {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Confirm with RECORD INTERNAL WINNER CLONE PACKET APPROVAL before recording the internal winner clone packet approval."
+    });
+  }
+
+  if (body.approvalPhrase !== "APPROVE INTERNAL WINNER CLONE PACKET") {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Approval phrase must be APPROVE INTERNAL WINNER CLONE PACKET."
+    });
+  }
+
+  const targetStores = Number(body.targetStores);
+  const dashboard = buildMemoryRevenuePortfolioDashboard(user.id);
+  const cashLoopReceipts = buildMemoryRevenueCashLoopEvidenceReceipts();
+  const cloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+    cashLoopEvidenceReceipts: cashLoopReceipts,
+    dashboard,
+    requestedStoreId: body.storeId,
+    targetStores
+  });
+  const {
+    allowed,
+    blockers,
+    packet,
+    storeName,
+    targetStoreId
+  } = cloneApprovalGate;
+  const dryRun = body.dryRun !== false;
+  const summary = allowed && packet
+    ? dryRun
+      ? `${targetStores}-store internal winner clone packet previewed for ${storeName ?? "the first store"} with ${packet.draftCloneSlots} private draft slot${packet.draftCloneSlots === 1 ? "" : "s"}. External execution remains locked.`
+      : `${targetStores}-store internal winner clone packet approval recorded for ${storeName ?? "the first store"} with ${packet.draftCloneSlots} private draft slot${packet.draftCloneSlots === 1 ? "" : "s"}. External execution remains locked.`
+    : `${targetStores}-store internal winner clone packet approval was not recorded: ${blockers.join(" ")}`;
+  const auditLogId = allowed && !dryRun ? id("audit") : null;
+
+  if (auditLogId && packet) {
+    state.auditLogs.unshift({
+      action: "revenue.first_store.winner_clone_packet_approval.recorded",
+      createdAt: now(),
+      entry: {
+        approvalPhrase: body.approvalPhrase,
+        blockedExternalActions: packet.blockedExternalActions,
+        draftCloneSlots: packet.draftCloneSlots,
+        dryRun: false,
+        externalExecution: false,
+        note: body.note ?? null,
+        ownerApprovalRequired: packet.ownerApprovalRequired,
+        providerContacted: false,
+        requiredConfirmation: "RECORD INTERNAL WINNER CLONE PACKET APPROVAL",
+        requiredProof: packet.requiredProof,
+        sourceTemplate: packet.sourceTemplate,
+        storeId: targetStoreId,
+        storeName,
+        summary,
+        targetStores: packet.targetStores,
+        tasks: packet.tasks
+      },
+      entryHash: id("hash"),
+      id: auditLogId,
+      outcome: "success",
+      severity: "high",
+      targetId: targetStoreId ?? `winner-clone-${targetStores}`,
+      targetType: "revenue_winner_clone_packet_approval"
+    });
+  }
+
+  const response = {
+    cloneApproval: {
+      allowed,
+      approvalPhrase: body.approvalPhrase,
+      approvalStatus: packet?.status ?? "blocked",
+      approvalsPreviewed: allowed && dryRun ? 1 : 0,
+      approvalsRecorded: allowed && !dryRun ? 1 : 0,
+      auditLogId,
+      blockedExternalActions: packet?.blockedExternalActions ?? [],
+      blockers,
+      draftCloneSlots: packet?.draftCloneSlots ?? 0,
+      dryRun,
+      externalExecution: false as const,
+      ownerApprovalRequired: packet?.ownerApprovalRequired ?? false,
+      providerContacted: false as const,
+      requiredProof: packet?.requiredProof ?? [],
+      sourceTemplate: packet?.sourceTemplate ?? "none",
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      targetStores,
+      taskCount: packet?.tasks.length ?? 0
+    },
+    clonePacket: auditLogId ? buildMemoryRevenuePortfolioDashboard(user.id).firstStoreCashLoop.winnerScaleLadder.clonePackets.find((candidate) => candidate.targetStores === targetStores) ?? packet : packet,
+    dashboard: auditLogId ? buildMemoryRevenuePortfolioDashboard(user.id) : dashboard
+  };
+
+  if (!allowed) {
+    return reply.code(409).send(response);
+  }
+
+  return response;
 });
 
 app.post("/api/v1/merch/revenue-engine/portfolio/action", { preHandler: requireAuth }, async (request, reply) => {

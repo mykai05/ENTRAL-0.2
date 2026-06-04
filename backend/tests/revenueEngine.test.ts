@@ -20,6 +20,12 @@ import { buildFinancialScalingExecutionLedgerPlan, normalizeFinancialScalingExec
 import { buildFinancialPayoutReviewPlan } from "../src/services/financialPayoutReview.js";
 import { buildFinancialReleaseGovernancePlan } from "../src/services/financialReleaseGovernance.js";
 import { buildFacelessContentPipelinePlan } from "../src/services/facelessContentPipeline.js";
+import { buildRevenueMoneyArmyGenerateScoreBatchPlan } from "../src/services/revenueMoneyArmyGenerateScoreBatch.js";
+import {
+  buildRevenueFirstBusinessExecutionPlan,
+  buildRevenueFirstBusinessInternalLaunchPlan,
+  buildRevenueFirstStorePreparationPlan
+} from "../src/services/revenueFirstStorePreparation.js";
 import { buildPortfolioCommandCenterPlan } from "../src/services/portfolioCommandCenter.js";
 import {
   buildRevenueAssetControlRecoveryPlan,
@@ -28,8 +34,31 @@ import {
 } from "../src/services/revenueAssetControlLedger.js";
 import { buildRevenueAssetReviewQueuePlan } from "../src/services/revenueAssetReviewQueue.js";
 import { buildRevenueAssetControlsFromPortfolioCommands } from "../src/services/revenuePortfolioCommandAssetControls.js";
-import { buildRevenuePortfolioDashboardPlan } from "../src/services/revenuePortfolioDashboard.js";
-import { buildRevenueFirstCashReadinessPlan } from "../src/services/revenueFirstCashReadiness.js";
+import {
+  buildRevenuePortfolioDashboardPlan,
+  requiredFirstStoreLaunchEvidenceCategories,
+  type RevenuePortfolioDashboardCashLoopEvidenceReceipt,
+  type RevenuePortfolioDashboardLaunchEvidenceCategory
+} from "../src/services/revenuePortfolioDashboard.js";
+import {
+  buildRevenueFirstStoreManualSignalCaptureGate,
+  buildRevenueWinnerClonePacketApprovalGate,
+  hasRevenueCashLoopEvidenceReceipt
+} from "../src/services/revenueFirstStoreCashLoopApprovalGates.js";
+import { buildRevenueFirstCashReadinessPlan, type RevenueFirstCashReadinessPlan } from "../src/services/revenueFirstCashReadiness.js";
+import {
+  applyRevenueFirstStoreManualSignalCaptureSchema,
+  applyRevenueFirstStoreManualLaunchEvidenceSchema,
+  applyRevenueOwnerManualLaunchApprovalSchema,
+  applyRevenueWinnerClonePacketApprovalSchema,
+  revenueFirstStoreManualLaunchEvidenceConfirmation,
+  revenueFirstStoreManualLaunchEvidencePhrase,
+  revenueFirstStoreManualSignalCaptureConfirmation,
+  revenueOwnerManualLaunchApprovalConfirmation,
+  revenueOwnerManualLaunchApprovalPhrase,
+  revenueWinnerClonePacketApprovalConfirmation,
+  revenueWinnerClonePacketApprovalPhrase
+} from "../src/schemas.js";
 import type { RevenueLaunchReadinessPlan } from "../src/services/revenueLaunchReadiness.js";
 import type { RevenueLiveConnectorReadinessRegistryPlan } from "../src/services/revenueLiveConnectorReadinessRegistry.js";
 
@@ -71,7 +100,275 @@ function product(input: Partial<RevenueEngineProductSnapshot> & { id: string; st
   };
 }
 
+function firstCashPlanForStore(store: RevenueEngineStoreSnapshot): RevenueFirstCashReadinessPlan {
+  return {
+    auditEvents: [],
+    blockedExternalActions: [],
+    candidates: [],
+    externalExecution: false,
+    generatedAt: "2026-06-03T00:00:00.000Z",
+    mode: "Revenue Engine First Cash Readiness",
+    options: {
+      includeBlocked: true,
+      maxCandidates: 8,
+      targetDaysToFirstCash: 7
+    },
+    providerContacted: false,
+    summary: `${store.businessName} is selected for proof gating.`,
+    topCandidate: {
+      automaticCashEtaDays: 3,
+      automaticCashReady: true,
+      automaticCashStatus: "automatic_cash_ready",
+      blockers: [],
+      cashReadinessScore: 90,
+      estimatedFirstSaleDays: 2,
+      evidence: {
+        approvedProducts: 1,
+        launchReadinessScore: 90,
+        liveConnectorReadinessScore: 90,
+        payloadsPrepared: 1,
+        providerApprovalApproved: true,
+        providerApprovalPending: false,
+        revenue: store.revenue
+      },
+      externalExecution: false,
+      launchStage: "handoff_ready",
+      manualLaunchReady: true,
+      nextAction: {
+        action: "queue_launch_approval",
+        reason: `${store.businessName} is ready for owner approval.`,
+        title: "Review first store approval"
+      },
+      paymentReadiness: "live_design_ready",
+      providerContacted: false,
+      status: "ready_for_manual_launch",
+      storeId: store.id,
+      storeName: store.businessName,
+      summary: `${store.businessName} is selected as the first-cash target.`
+    },
+    totals: {
+      automaticCashReady: 1,
+      blocked: 0,
+      candidates: 1,
+      manualLaunchReady: 1,
+      targetReady: 1
+    }
+  };
+}
+
+function cashLoopReceipt(input: {
+  createdAt?: string;
+  evidenceType: RevenuePortfolioDashboardCashLoopEvidenceReceipt["evidenceType"];
+  launchEvidenceCategory?: RevenuePortfolioDashboardLaunchEvidenceCategory;
+  manualSignalDay?: number;
+  manualSignalRotationRecommendation?: RevenuePortfolioDashboardCashLoopEvidenceReceipt["manualSignalRotationRecommendation"];
+  storeId: string;
+  storeName: string;
+  targetStores?: 10 | 25 | 100;
+}): RevenuePortfolioDashboardCashLoopEvidenceReceipt {
+  const targetTypeByEvidence: Record<RevenuePortfolioDashboardCashLoopEvidenceReceipt["evidenceType"], string> = {
+    manual_launch_evidence: "revenue_first_store_manual_launch_evidence",
+    manual_signal_snapshot: "revenue_first_store_manual_signal_snapshot",
+    owner_launch_approval: "revenue_first_store_owner_launch_approval",
+    winner_clone_packet_approval: "revenue_winner_clone_packet_approval"
+  };
+  const actionByEvidence: Record<RevenuePortfolioDashboardCashLoopEvidenceReceipt["evidenceType"], string> = {
+    manual_launch_evidence: "revenue.first_store.manual_launch_evidence.recorded",
+    manual_signal_snapshot: "revenue.first_store.manual_signal_snapshot.recorded",
+    owner_launch_approval: "revenue.first_store.owner_manual_launch_approval.recorded",
+    winner_clone_packet_approval: "revenue.first_store.winner_clone_packet_approval.recorded"
+  };
+
+  return {
+    action: actionByEvidence[input.evidenceType],
+    auditLogId: `audit-${input.evidenceType}-${input.storeId}`,
+    createdAt: input.createdAt ?? "2026-06-03T12:00:00.000Z",
+    entryHash: `hash-${input.evidenceType}-${input.storeId}`,
+    evidenceType: input.evidenceType,
+    externalExecution: false,
+    launchEvidenceCategory: input.evidenceType === "manual_launch_evidence" ? input.launchEvidenceCategory ?? "storefront" : null,
+    manualSignalDay: input.evidenceType === "manual_signal_snapshot" ? input.manualSignalDay ?? 7 : null,
+    manualSignalRotationRecommendation: input.evidenceType === "manual_signal_snapshot" ? input.manualSignalRotationRecommendation ?? "watch" : null,
+    providerContacted: false,
+    storeId: input.storeId,
+    storeName: input.storeName,
+    summary: `${input.evidenceType.replace(/_/g, " ")} receipt recorded for ${input.storeName}. External execution remains locked.`,
+    targetId: input.storeId,
+    targetStores: input.evidenceType === "winner_clone_packet_approval" ? input.targetStores ?? 10 : null,
+    targetType: targetTypeByEvidence[input.evidenceType]
+  };
+}
+
+function requiredLaunchEvidenceReceipts(input: {
+  storeId: string;
+  storeName: string;
+}): RevenuePortfolioDashboardCashLoopEvidenceReceipt[] {
+  return requiredFirstStoreLaunchEvidenceCategories.map((category, index) => cashLoopReceipt({
+    createdAt: `2026-06-03T11:${String(index).padStart(2, "0")}:00.000Z`,
+    evidenceType: "manual_launch_evidence",
+    launchEvidenceCategory: category,
+    storeId: input.storeId,
+    storeName: input.storeName
+  }));
+}
+
+function requiredFirstWeekSignalReceipts(input: {
+  storeId: string;
+  storeName: string;
+}): RevenuePortfolioDashboardCashLoopEvidenceReceipt[] {
+  return [0, 1, 3, 7].map((day, index) => cashLoopReceipt({
+    createdAt: `2026-06-03T12:${String(index).padStart(2, "0")}:00.000Z`,
+    evidenceType: "manual_signal_snapshot",
+    manualSignalDay: day,
+    manualSignalRotationRecommendation: day === 7 ? "scale" : "watch",
+    storeId: input.storeId,
+    storeName: input.storeName
+  }));
+}
+
+function firstBusinessExecutionForStore(store: RevenueEngineStoreSnapshot, products: RevenueEngineProductSnapshot[]) {
+  const currentPortfolio = buildRevenueAssetPortfolio(buildRevenueEnginePlan({
+    generatedAt: "2026-06-02T12:00:00.000Z",
+    products,
+    stores: [store]
+  }));
+  const moneyArmy = buildRevenueMoneyArmyGenerateScoreBatchPlan({
+    currentPortfolio,
+    options: {
+      candidateCount: 12,
+      generatedAt: "2026-06-02T12:30:00.000Z",
+      riskTolerance: "Low"
+    },
+    products,
+    stores: [store]
+  });
+  const preparation = buildRevenueFirstStorePreparationPlan({
+    approvedAt: "2026-06-02T12:45:00.000Z",
+    note: "Approved internally for first-store gate test.",
+    packagePlan: moneyArmy.firstBusinessLaunchPackage!
+  });
+  const launch = buildRevenueFirstBusinessInternalLaunchPlan({
+    launchedAt: "2026-06-02T13:00:00.000Z",
+    note: "Approved internally for first-store gate test.",
+    preparationPlan: preparation
+  });
+
+  return buildRevenueFirstBusinessExecutionPlan({
+    executedAt: "2026-06-02T13:15:00.000Z",
+    launchPlan: launch,
+    note: "Execution packet generated for first-store gate test."
+  });
+}
+
 describe("Revenue Engine", () => {
+  it("requires the exact owner manual launch approval receipt confirmation", () => {
+    const parsed = applyRevenueOwnerManualLaunchApprovalSchema.parse({
+      approvalPhrase: revenueOwnerManualLaunchApprovalPhrase,
+      confirm: revenueOwnerManualLaunchApprovalConfirmation,
+      note: "Owner reviewed the first-store manual launch packet.",
+      storeId: "store_first_cash"
+    });
+
+    expect(parsed).toMatchObject({
+      approvalPhrase: "APPROVE FIRST STORE MANUAL LIVE LAUNCH",
+      confirm: "RECORD OWNER MANUAL LIVE LAUNCH APPROVAL",
+      dryRun: true,
+      storeId: "store_first_cash"
+    });
+    expect(() => applyRevenueOwnerManualLaunchApprovalSchema.parse({
+      approvalPhrase: "APPROVE FIRST STORE MANUAL LIVE LAUNCH",
+      confirm: "launch it"
+    })).toThrow();
+  });
+
+  it("requires the exact first-store manual signal capture confirmation", () => {
+    const parsed = applyRevenueFirstStoreManualSignalCaptureSchema.parse({
+      confirm: revenueFirstStoreManualSignalCaptureConfirmation,
+      conversionNotes: "No sale yet; organic post views captured manually.",
+      day: 1,
+      grossRevenue: 0,
+      manualContentViews: 42,
+      manualSavesOrShares: 3,
+      netProfit: 0,
+      rotationRecommendation: "watch",
+      storeId: "store_first_cash",
+      unitsSold: 0,
+      visits: 18
+    });
+
+    expect(parsed).toMatchObject({
+      confirm: "RECORD FIRST STORE MANUAL SIGNAL SNAPSHOT",
+      day: 1,
+      dryRun: true,
+      grossRevenue: 0,
+      manualContentViews: 42,
+      rotationRecommendation: "watch",
+      storeId: "store_first_cash"
+    });
+    expect(() => applyRevenueFirstStoreManualSignalCaptureSchema.parse({
+      confirm: "record signals",
+      visits: 1
+    })).toThrow();
+  });
+
+  it("requires the exact first-store manual launch evidence confirmation", () => {
+    const parsed = applyRevenueFirstStoreManualLaunchEvidenceSchema.parse({
+      approvalPhrase: revenueFirstStoreManualLaunchEvidencePhrase,
+      confirm: revenueFirstStoreManualLaunchEvidenceConfirmation,
+      evidenceCategory: "storefront",
+      evidenceNote: "Owner completed the first manual storefront setup step.",
+      stepIndex: 0,
+      storeId: "store_first_cash"
+    });
+
+    expect(parsed).toMatchObject({
+      approvalPhrase: "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP",
+      confirm: "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE",
+      dryRun: true,
+      evidenceCategory: "storefront",
+      ownerCompletedManualStep: true,
+      stepIndex: 0,
+      storeId: "store_first_cash"
+    });
+    expect(() => applyRevenueFirstStoreManualLaunchEvidenceSchema.parse({
+      approvalPhrase: revenueFirstStoreManualLaunchEvidencePhrase,
+      confirm: revenueFirstStoreManualLaunchEvidenceConfirmation,
+      evidenceCategory: "ads",
+      stepIndex: 0
+    })).toThrow();
+    expect(() => applyRevenueFirstStoreManualLaunchEvidenceSchema.parse({
+      approvalPhrase: "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP",
+      confirm: "record launch evidence",
+      stepIndex: 0
+    })).toThrow();
+  });
+
+  it("requires the exact internal winner clone packet approval confirmation", () => {
+    const parsed = applyRevenueWinnerClonePacketApprovalSchema.parse({
+      approvalPhrase: revenueWinnerClonePacketApprovalPhrase,
+      confirm: revenueWinnerClonePacketApprovalConfirmation,
+      note: "Owner reviewed the internal 10-store winner clone packet.",
+      targetStores: 10
+    });
+
+    expect(parsed).toMatchObject({
+      approvalPhrase: "APPROVE INTERNAL WINNER CLONE PACKET",
+      confirm: "RECORD INTERNAL WINNER CLONE PACKET APPROVAL",
+      dryRun: true,
+      targetStores: 10
+    });
+    expect(() => applyRevenueWinnerClonePacketApprovalSchema.parse({
+      approvalPhrase: "APPROVE INTERNAL WINNER CLONE PACKET",
+      confirm: "clone it",
+      targetStores: 10
+    })).toThrow();
+    expect(() => applyRevenueWinnerClonePacketApprovalSchema.parse({
+      approvalPhrase: revenueWinnerClonePacketApprovalPhrase,
+      confirm: revenueWinnerClonePacketApprovalConfirmation,
+      targetStores: 11
+    })).toThrow();
+  });
+
   it("identifies products and stores ready to scale without external execution", () => {
     const plan = buildRevenueEnginePlan({
       generatedAt: "2026-06-02T12:00:00.000Z",
@@ -724,6 +1021,20 @@ describe("Revenue Engine", () => {
       }
     });
     const dashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts: [{
+        action: "revenue.first_store.manual_signal_snapshot.recorded",
+        auditLogId: "audit-first-store-signal",
+        createdAt: "2026-06-03T12:00:00.000Z",
+        entryHash: "hash-first-store-signal",
+        evidenceType: "manual_signal_snapshot",
+        externalExecution: false,
+        providerContacted: false,
+        storeId: weakStore.id,
+        storeName: weakStore.businessName,
+        summary: "First-store manual signal snapshot recorded. External execution remains locked.",
+        targetId: weakStore.id,
+        targetType: "revenue_first_store_manual_signal_snapshot"
+      }],
       commandPlan,
       controlLedger,
       portfolio,
@@ -742,9 +1053,1152 @@ describe("Revenue Engine", () => {
       assetId: weakProduct.id,
       recommendation: "kill"
     });
+    expect(dashboard.firstStoreCashLoop.dailyRevenueLoop.nextActions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        lane: "growth",
+        nextInternalAction: "prepare_internal_kill_or_rollback_review",
+        status: "blocked",
+        title: "Freeze growth and prepare kill review"
+      })
+    ]));
+    expect(dashboard.firstStoreCashLoop.dailyRevenueLoop.nextActions.find((action) => action.nextInternalAction === "prepare_internal_kill_or_rollback_review")?.detail)
+      .toContain("25/25/50 allocation is advisory only");
     expect(dashboard.blockedExternalActions).toEqual(expect.arrayContaining([
       expect.stringContaining("external write actions")
     ]));
+    expect(dashboard.firstStoreCashLoop.evidenceLedger.totals).toMatchObject({
+      manualSignals: 1,
+      receipts: 1
+    });
+    expect(dashboard.firstStoreCashLoop.evidenceLedger.selectedStore).toMatchObject({
+      storeId: null,
+      storeName: null,
+      totals: {
+        manualSignals: 0,
+        receipts: 0
+      }
+    });
+    expect(dashboard.firstStoreCashLoop.evidenceLedger.receipts[0]).toMatchObject({
+      auditLogId: "audit-first-store-signal",
+      evidenceType: "manual_signal_snapshot",
+      externalExecution: false,
+      providerContacted: false
+    });
+    expect(dashboard.firstStoreCashLoop.cashLoopStage).toMatchObject({
+      externalExecution: false,
+      providerContacted: false,
+      status: "waiting_for_execution_packet"
+    });
+    expect(dashboard.firstStoreCashLoop.ownerActionQueue).toHaveLength(7);
+    expect(dashboard.firstStoreCashLoop.ownerActionQueue[0]).toMatchObject({
+      actionLabel: "Approve first-store final execution packet",
+      externalExecution: false,
+      providerContacted: false,
+      receiptType: "final_execution_packet",
+      status: "current"
+    });
+    expect(dashboard.firstStoreCashLoop.ownerActionQueue[3]).toMatchObject({
+      actionLabel: "Capture first-store manual revenue signals",
+      receiptType: "manual_signal_snapshot",
+      status: "waiting"
+    });
+    expect(dashboard.firstStoreCashLoop.proofChain).toMatchObject({
+      externalExecution: false,
+      providerContacted: false,
+      status: "needs_internal_packet",
+      totals: {
+        stages: 9
+      }
+    });
+    expect(dashboard.firstStoreCashLoop.proofChain.stages[0]).toMatchObject({
+      label: "Approved first-store execution packet",
+      status: "current"
+    });
+    expect(dashboard.firstStoreCashLoop.proofChain.stages[3]).toMatchObject({
+      label: "Manual first-week signal snapshot",
+      status: "waiting_for_internal_packet"
+    });
+    expect(dashboard.firstStoreCashLoop.nextRevenuePriority).toMatchObject({
+      label: "Approve the first-store final execution packet",
+      source: "cash_loop_stage"
+    });
+
+    const crowdedReceipts: RevenuePortfolioDashboardCashLoopEvidenceReceipt[] = [
+      ...Array.from({ length: 25 }, (_, index): RevenuePortfolioDashboardCashLoopEvidenceReceipt => ({
+        action: "revenue.first_store.manual_signal_snapshot.recorded",
+        auditLogId: `audit-signal-${index}`,
+        createdAt: `2026-06-04T12:${String(index).padStart(2, "0")}:00.000Z`,
+        entryHash: `hash-signal-${index}`,
+        evidenceType: "manual_signal_snapshot",
+        externalExecution: false,
+        providerContacted: false,
+        storeId: weakStore.id,
+        storeName: weakStore.businessName,
+        summary: `First-store manual signal snapshot ${index}. External execution remains locked.`,
+        targetId: weakStore.id,
+        targetType: "revenue_first_store_manual_signal_snapshot"
+      })),
+      {
+        action: "revenue.first_store.owner_manual_launch_approval.recorded",
+        auditLogId: "audit-old-owner-approval",
+        createdAt: "2026-06-01T09:00:00.000Z",
+        entryHash: "hash-old-owner",
+        evidenceType: "owner_launch_approval",
+        externalExecution: false,
+        providerContacted: false,
+        storeId: weakStore.id,
+        storeName: weakStore.businessName,
+        summary: "Owner manual live launch approval receipt recorded. External execution remains locked.",
+        targetId: weakStore.id,
+        targetType: "revenue_first_store_owner_launch_approval"
+      },
+      {
+        action: "revenue.first_store.manual_launch_evidence.recorded",
+        auditLogId: "audit-old-launch-evidence",
+        createdAt: "2026-06-01T10:00:00.000Z",
+        entryHash: "hash-old-launch",
+        evidenceType: "manual_launch_evidence",
+        externalExecution: false,
+        providerContacted: false,
+        storeId: weakStore.id,
+        storeName: weakStore.businessName,
+        summary: "First-store manual launch evidence recorded. External execution remains locked.",
+        targetId: weakStore.id,
+        targetType: "revenue_first_store_manual_launch_evidence"
+      },
+      {
+        action: "revenue.first_store.winner_clone_packet_approval.recorded",
+        auditLogId: "audit-old-clone-approval",
+        createdAt: "2026-06-01T11:00:00.000Z",
+        entryHash: "hash-old-clone",
+        evidenceType: "winner_clone_packet_approval",
+        externalExecution: false,
+        providerContacted: false,
+        storeId: weakStore.id,
+        storeName: weakStore.businessName,
+        summary: "Internal winner clone packet approval recorded. External execution remains locked.",
+        targetId: weakStore.id,
+        targetType: "revenue_winner_clone_packet_approval"
+      }
+    ];
+    const crowdedDashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts: crowdedReceipts,
+      commandPlan,
+      controlLedger,
+      firstCashPlan: firstCashPlanForStore(weakStore),
+      portfolio,
+      reviewQueue
+    });
+
+    expect(crowdedDashboard.firstStoreCashLoop.evidenceLedger.receipts).toHaveLength(20);
+    expect(crowdedDashboard.firstStoreCashLoop.evidenceLedger.totals).toMatchObject({
+      cloneApprovals: 1,
+      launchEvidence: 1,
+      manualSignals: 25,
+      ownerApprovals: 1,
+      receipts: 28
+    });
+    expect(crowdedDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.totals).toMatchObject({
+      cloneApprovals: 1,
+      launchEvidence: 1,
+      manualSignals: 25,
+      ownerApprovals: 1,
+      receipts: 28
+    });
+    expect(crowdedDashboard.firstStoreCashLoop.ownerActionQueue[1]).toMatchObject({
+      actionLabel: "Record owner manual live-launch approval receipt",
+      status: "complete"
+    });
+    expect(crowdedDashboard.firstStoreCashLoop.proofChain.stages[1]).toMatchObject({
+      label: "Owner manual live-launch approval receipt",
+      status: "proven"
+    });
+  });
+
+  it("lets calculated daily revenue pressure override a conflicting stale dashboard action", () => {
+    const weakProduct = product({
+      estimatedProfit: -8,
+      id: "daily_pressure_stale_kill",
+      productName: "Stale Weak Product",
+      profitMargin: -15,
+      status: "Rejected"
+    });
+    const dashboardRevenuePlan = buildRevenueEnginePlan({
+      products: [weakProduct],
+      stores: [scaleStore]
+    });
+    const dashboardPortfolio = buildRevenueAssetPortfolio(dashboardRevenuePlan);
+    const controlLedger = buildRevenueAssetControlLedgerPlan({
+      records: []
+    });
+    const reviewQueue = buildRevenueAssetReviewQueuePlan({
+      controlLedger,
+      portfolio: dashboardPortfolio
+    });
+    const commandPlan = buildPortfolioCommandCenterPlan({
+      assetPortfolio: dashboardPortfolio,
+      performanceDigest: buildRevenuePerformanceDigest({
+        generatedAt: "2026-06-03T00:00:00.000Z",
+        products: [weakProduct],
+        snapshots: [],
+        stores: [scaleStore]
+      }),
+      revenuePlan: dashboardRevenuePlan
+    });
+    const winningProduct = product({
+      estimatedProfit: 48,
+      id: "daily_pressure_real_winner",
+      productName: "Real Winner Tee",
+      profitMargin: 68,
+      status: "Published"
+    });
+    const winningSnapshots = [
+      normalizeRevenuePerformanceSnapshot({
+        grossRevenue: 1400,
+        netProfit: 560,
+        periodEnd: "2026-06-03T00:00:00.000Z",
+        periodStart: "2026-06-02T00:00:00.000Z",
+        productId: winningProduct.id,
+        storeId: scaleStore.id,
+        unitsSold: 24,
+        visits: 520
+      })
+    ];
+    const winningRevenuePlan = buildRevenueEnginePlan({
+      products: [winningProduct],
+      stores: [scaleStore]
+    });
+    const winningPerformanceDigest = buildRevenuePerformanceDigest({
+      generatedAt: "2026-06-03T00:00:00.000Z",
+      products: [winningProduct],
+      snapshots: winningSnapshots,
+      stores: [scaleStore]
+    });
+    const winningPortfolio = mergeRevenueAssetPortfolioPerformance(
+      buildRevenueAssetPortfolio(winningRevenuePlan),
+      winningPerformanceDigest
+    );
+    const financialPlan = buildFinancialOrchestratorPlan({
+      assetPortfolio: winningPortfolio,
+      generatedAt: "2026-06-03T00:00:00.000Z",
+      ownerId: "owner_daily_pressure",
+      products: [winningProduct],
+      snapshots: winningSnapshots,
+      stores: [scaleStore]
+    });
+    const dashboard = buildRevenuePortfolioDashboardPlan({
+      commandPlan,
+      controlLedger,
+      financialPlan,
+      firstCashPlan: firstCashPlanForStore(scaleStore),
+      portfolio: dashboardPortfolio,
+      reviewQueue
+    });
+
+    expect(dashboard.nextActions[0]).toMatchObject({
+      recommendation: "kill"
+    });
+    expect(financialPlan.portfolioSignal.scalePressure.pressureScore).toBeGreaterThanOrEqual(70);
+    expect(dashboard.firstStoreCashLoop.dailyRevenueLoop.decision).toMatchObject({
+      killPressure: 0,
+      recommendation: "scale",
+      scalePressure: financialPlan.portfolioSignal.scalePressure.pressureScore
+    });
+    expect(dashboard.firstStoreCashLoop.dailyRevenueLoop.nextActions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        lane: "growth",
+        nextInternalAction: "review_financial_scaling_budget_packet",
+        status: "approval_required",
+        title: `Review owner-gated scale packet for ${winningProduct.productName}`
+      })
+    ]));
+    expect(dashboard.firstStoreCashLoop.dailyRevenueLoop.nextActions.find((action) => action.nextInternalAction === "review_financial_scaling_budget_packet")?.detail)
+      .toContain("25/25/50 allocation is advisory only");
+    expect(dashboard.firstStoreCashLoop.revenueSignals).toMatchObject({
+      killPressure: 0,
+      recommendation: "scale",
+      scalePressure: financialPlan.portfolioSignal.scalePressure.pressureScore
+    });
+  });
+
+  it("does not treat another store's revenue as first-store revenue proof", () => {
+    const firstStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "First Store Pending",
+      id: "store_first_pending",
+      revenue: 0
+    };
+    const otherStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "Other Store With Revenue",
+      id: "store_other_revenue",
+      revenue: 0
+    };
+    const firstProduct = product({
+      id: "first_store_product",
+      storeId: firstStore.id
+    });
+    const revenuePlan = buildRevenueEnginePlan({
+      products: [firstProduct],
+      stores: [firstStore, otherStore]
+    });
+    const performanceDigest = buildRevenuePerformanceDigest({
+      generatedAt: "2026-06-03T00:00:00.000Z",
+      products: [firstProduct],
+      snapshots: [
+        normalizeRevenuePerformanceSnapshot({
+          grossRevenue: 250,
+          netProfit: 120,
+          periodEnd: "2026-06-03T00:00:00.000Z",
+          periodStart: "2026-06-02T00:00:00.000Z",
+          storeId: otherStore.id,
+          unitsSold: 5,
+          visits: 300
+        })
+      ],
+      stores: [firstStore, otherStore]
+    });
+    const portfolio = mergeRevenueAssetPortfolioPerformance(buildRevenueAssetPortfolio(revenuePlan), performanceDigest);
+    const controlLedger = buildRevenueAssetControlLedgerPlan({
+      records: []
+    });
+    const reviewQueue = buildRevenueAssetReviewQueuePlan({
+      controlLedger,
+      portfolio
+    });
+    const commandPlan = buildPortfolioCommandCenterPlan({
+      assetPortfolio: portfolio,
+      performanceDigest,
+      revenuePlan
+    });
+    const firstCashPlan = firstCashPlanForStore(firstStore);
+    const dashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts: [
+        {
+          action: "revenue.first_store.owner_manual_launch_approval.recorded",
+          auditLogId: "audit-other-store-approval",
+          createdAt: "2026-06-03T11:00:00.000Z",
+          entryHash: "hash-other-store-approval",
+          evidenceType: "owner_launch_approval",
+          externalExecution: false,
+          providerContacted: false,
+          storeId: otherStore.id,
+          storeName: otherStore.businessName,
+          summary: "Other store approval receipt recorded. External execution remains locked.",
+          targetId: otherStore.id,
+          targetType: "revenue_first_store_owner_launch_approval"
+        },
+        {
+          action: "revenue.first_store.manual_signal_snapshot.recorded",
+          auditLogId: "audit-first-store-zero-signal",
+          createdAt: "2026-06-03T12:00:00.000Z",
+          entryHash: "hash-first-store-zero-signal",
+          evidenceType: "manual_signal_snapshot",
+          externalExecution: false,
+          providerContacted: false,
+          storeId: firstStore.id,
+          storeName: firstStore.businessName,
+          summary: "First-store manual signal snapshot recorded with no revenue. External execution remains locked.",
+          targetId: firstStore.id,
+          targetType: "revenue_first_store_manual_signal_snapshot"
+        }
+      ],
+      commandPlan,
+      controlLedger,
+      firstCashPlan,
+      portfolio,
+      reviewQueue
+    });
+
+    expect(dashboard.kpis.totalRevenue).toBe(250);
+    expect(dashboard.firstStoreCashLoop.evidenceLedger.totals).toMatchObject({
+      manualSignals: 1,
+      ownerApprovals: 1,
+      receipts: 2
+    });
+    expect(dashboard.firstStoreCashLoop.evidenceLedger.selectedStore).toMatchObject({
+      storeId: firstStore.id,
+      storeName: firstStore.businessName,
+      totals: {
+        manualSignals: 1,
+        ownerApprovals: 0,
+        receipts: 1
+      }
+    });
+    expect(dashboard.firstStoreCashLoop.firstRevenueProof).toMatchObject({
+      firstRevenueCaptured: false,
+      grossRevenue: 0,
+      manualSignalReceipts: 1,
+      netProfit: 0,
+      status: "waiting_for_revenue",
+      storeId: firstStore.id,
+      storeName: firstStore.businessName
+    });
+    expect(dashboard.firstStoreCashLoop.revenueMilestonePath.milestones[0]).toMatchObject({
+      label: "First Real Revenue",
+      status: "waiting_for_first_sale"
+    });
+    expect(dashboard.firstStoreCashLoop.proofChain.stages[4]).toMatchObject({
+      label: "First real revenue proof",
+      status: "waiting_for_internal_packet"
+    });
+  });
+
+  it("requires selected-store manual signal evidence before first revenue is proven", () => {
+    const firstStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "First Store With Revenue",
+      id: "store_first_revenue",
+      revenue: 0
+    };
+    const otherStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "Other Store With Signals",
+      id: "store_other_signals",
+      revenue: 0
+    };
+    const firstProduct = product({
+      id: "first_store_revenue_product",
+      storeId: firstStore.id
+    });
+    const revenuePlan = buildRevenueEnginePlan({
+      products: [firstProduct],
+      stores: [firstStore, otherStore]
+    });
+    const performanceDigest = buildRevenuePerformanceDigest({
+      generatedAt: "2026-06-03T00:00:00.000Z",
+      products: [firstProduct],
+      snapshots: [
+        normalizeRevenuePerformanceSnapshot({
+          grossRevenue: 250,
+          netProfit: 120,
+          periodEnd: "2026-06-03T00:00:00.000Z",
+          periodStart: "2026-06-02T00:00:00.000Z",
+          storeId: firstStore.id,
+          unitsSold: 5,
+          visits: 300
+        })
+      ],
+      stores: [firstStore, otherStore]
+    });
+    const portfolio = mergeRevenueAssetPortfolioPerformance(buildRevenueAssetPortfolio(revenuePlan), performanceDigest);
+    const controlLedger = buildRevenueAssetControlLedgerPlan({
+      records: []
+    });
+    const reviewQueue = buildRevenueAssetReviewQueuePlan({
+      controlLedger,
+      portfolio
+    });
+    const commandPlan = buildPortfolioCommandCenterPlan({
+      assetPortfolio: portfolio,
+      performanceDigest,
+      revenuePlan
+    });
+    const firstCashPlan = firstCashPlanForStore(firstStore);
+    const dashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts: [
+        {
+          action: "revenue.first_store.manual_signal_snapshot.recorded",
+          auditLogId: "audit-other-store-signal",
+          createdAt: "2026-06-03T12:00:00.000Z",
+          entryHash: "hash-other-store-signal",
+          evidenceType: "manual_signal_snapshot",
+          externalExecution: false,
+          providerContacted: false,
+          storeId: otherStore.id,
+          storeName: otherStore.businessName,
+          summary: "Other store manual signal snapshot recorded. External execution remains locked.",
+          targetId: otherStore.id,
+          targetType: "revenue_first_store_manual_signal_snapshot"
+        }
+      ],
+      commandPlan,
+      controlLedger,
+      firstCashPlan,
+      portfolio,
+      reviewQueue
+    });
+
+    expect(dashboard.kpis.totalRevenue).toBe(250);
+    expect(dashboard.firstStoreCashLoop.evidenceLedger.totals).toMatchObject({
+      manualSignals: 1,
+      receipts: 1
+    });
+    expect(dashboard.firstStoreCashLoop.evidenceLedger.selectedStore).toMatchObject({
+      storeId: firstStore.id,
+      storeName: firstStore.businessName,
+      totals: {
+        manualSignals: 0,
+        receipts: 0
+      }
+    });
+    expect(dashboard.firstStoreCashLoop.firstRevenueProof).toMatchObject({
+      firstRevenueCaptured: false,
+      grossRevenue: 250,
+      manualSignalReceipts: 0,
+      netProfit: 120,
+      status: "waiting_for_signal",
+      storeId: firstStore.id,
+      storeName: firstStore.businessName
+    });
+    const cloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+      cashLoopEvidenceReceipts: [
+        cashLoopReceipt({
+          evidenceType: "owner_launch_approval",
+          storeId: firstStore.id,
+          storeName: firstStore.businessName
+        }),
+        ...requiredLaunchEvidenceReceipts({
+          storeId: firstStore.id,
+          storeName: firstStore.businessName
+        }),
+        cashLoopReceipt({
+          evidenceType: "manual_signal_snapshot",
+          storeId: otherStore.id,
+          storeName: otherStore.businessName
+        })
+      ],
+      dashboard,
+      requestedStoreId: firstStore.id,
+      targetStores: 10
+    });
+
+    expect(cloneApprovalGate).toMatchObject({
+      allowed: false,
+      firstRevenueCaptured: false,
+      manualLaunchEvidenceRecorded: true,
+      manualSignalRecorded: false,
+      ownerApprovalRecorded: true,
+      targetStoreId: firstStore.id
+    });
+    expect(cloneApprovalGate.blockers).toEqual(expect.arrayContaining([
+      "Record first-store manual revenue signal proof before approving an internal winner clone packet.",
+      "First real revenue must be visible before clone packet approval."
+    ]));
+    expect(dashboard.firstStoreCashLoop.proofChain.stages[4]).toMatchObject({
+      label: "First real revenue proof",
+      status: "waiting_for_internal_packet"
+    });
+  });
+
+  it("does not treat unscoped cash-loop receipts as selected first-store proof", () => {
+    const receipt = cashLoopReceipt({
+      evidenceType: "owner_launch_approval",
+      storeId: "store_receipt",
+      storeName: "Receipt Store"
+    });
+
+    expect(hasRevenueCashLoopEvidenceReceipt([receipt], "owner_launch_approval", null)).toBe(false);
+    expect(hasRevenueCashLoopEvidenceReceipt([receipt], "owner_launch_approval", undefined)).toBe(false);
+    expect(hasRevenueCashLoopEvidenceReceipt([receipt], "owner_launch_approval", "store_other")).toBe(false);
+    expect(hasRevenueCashLoopEvidenceReceipt([receipt], "owner_launch_approval", "store_receipt")).toBe(true);
+  });
+
+  it("requires all core launch evidence categories before first-week signal capture unlocks", () => {
+    const firstStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "Launch Coverage Store",
+      id: "store_launch_coverage",
+      revenue: 0
+    };
+    const products = [
+      product({
+        id: "launch_coverage_product",
+        storeId: firstStore.id
+      }),
+      product({
+        id: "launch_coverage_product_2",
+        productName: "Coverage Hoodie",
+        productType: "Hoodie",
+        retailPrice: 58,
+        storeId: firstStore.id
+      })
+    ];
+    const revenuePlan = buildRevenueEnginePlan({
+      products,
+      stores: [firstStore]
+    });
+    const performanceDigest = buildRevenuePerformanceDigest({
+      generatedAt: "2026-06-03T00:00:00.000Z",
+      products,
+      snapshots: [],
+      stores: [firstStore]
+    });
+    const portfolio = mergeRevenueAssetPortfolioPerformance(buildRevenueAssetPortfolio(revenuePlan), performanceDigest);
+    const controlLedger = buildRevenueAssetControlLedgerPlan({
+      records: []
+    });
+    const reviewQueue = buildRevenueAssetReviewQueuePlan({
+      controlLedger,
+      portfolio
+    });
+    const commandPlan = buildPortfolioCommandCenterPlan({
+      assetPortfolio: portfolio,
+      performanceDigest,
+      revenuePlan
+    });
+    const partialFirstWeekEvidenceReceipts = [
+      cashLoopReceipt({
+        evidenceType: "owner_launch_approval",
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      }),
+      ...requiredLaunchEvidenceReceipts({
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      }),
+      cashLoopReceipt({
+        evidenceType: "manual_signal_snapshot",
+        manualSignalDay: 1,
+        manualSignalRotationRecommendation: "watch",
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      })
+    ];
+    const partialDashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts: partialFirstWeekEvidenceReceipts,
+      commandPlan,
+      controlLedger,
+      firstBusinessExecutionPlan: firstBusinessExecutionForStore(firstStore, products),
+      firstCashPlan: firstCashPlanForStore(firstStore),
+      portfolio,
+      reviewQueue
+    });
+    const partialCloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+      cashLoopEvidenceReceipts: partialFirstWeekEvidenceReceipts,
+      dashboard: partialDashboard,
+      requestedStoreId: firstStore.id,
+      targetStores: 10
+    });
+
+    expect(partialDashboard.firstStoreCashLoop.evidenceLedger.selectedStore.firstWeekSignalCoverage).toMatchObject({
+      daySevenRecorded: false,
+      missingDays: [0, 3, 7],
+      ready: false,
+      recordedDays: [1],
+      rotationRecommendationRecorded: false
+    });
+    expect(partialDashboard.firstStoreCashLoop.firstWeekRevenueLoop.signalCaptureChecklist).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        day: 0,
+        nextInternalAction: "record_day_0_manual_signal_snapshot",
+        recorded: false,
+        status: "missing"
+      }),
+      expect.objectContaining({
+        day: 1,
+        nextInternalAction: "maintain_day_1_manual_signal_receipt",
+        recorded: true,
+        status: "recorded"
+      }),
+      expect.objectContaining({
+        day: 7,
+        nextInternalAction: "record_day_7_manual_signal_snapshot",
+        recorded: false,
+        rotationRecommendationRequired: true,
+        status: "missing"
+      })
+    ]));
+    expect(partialDashboard.firstStoreCashLoop.winnerScaleLadder.proofGate).toMatchObject({
+      status: "waiting_for_first_sale"
+    });
+    expect(partialCloneApprovalGate.allowed).toBe(false);
+    expect(partialCloneApprovalGate.blockers).toContain(
+      "Record required first-week signal coverage before approving an internal winner clone packet: 1/4 required first-week signal days recorded; missing day 0, day 3, day 7; day-7 rotation recommendation missing."
+    );
+
+    const cashLoopEvidenceReceipts = [
+      cashLoopReceipt({
+        evidenceType: "owner_launch_approval",
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      }),
+      cashLoopReceipt({
+        evidenceType: "manual_launch_evidence",
+        launchEvidenceCategory: "storefront",
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      })
+    ];
+    const dashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts,
+      commandPlan,
+      controlLedger,
+      firstBusinessExecutionPlan: firstBusinessExecutionForStore(firstStore, products),
+      firstCashPlan: firstCashPlanForStore(firstStore),
+      portfolio,
+      reviewQueue
+    });
+    const manualSignalGate = buildRevenueFirstStoreManualSignalCaptureGate({
+      cashLoopEvidenceReceipts,
+      dashboard,
+      requestedStoreId: firstStore.id
+    });
+
+    expect(dashboard.firstStoreCashLoop.evidenceLedger.selectedStore.launchEvidenceCoverage).toMatchObject({
+      ready: false,
+      recordedCategories: ["storefront"],
+      missingCategories: ["pod_supplier", "payments_payouts", "content_channels", "analytics_manual_import"]
+    });
+    expect(dashboard.firstStoreCashLoop.manualLaunchPacket.launchEvidenceChecklist).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: "storefront",
+        nextInternalAction: "maintain_storefront_launch_evidence_receipt",
+        ownerApprovalRequired: false,
+        requiredForFirstSignal: true,
+        status: "recorded"
+      }),
+      expect.objectContaining({
+        category: "pod_supplier",
+        nextInternalAction: "record_pod_supplier_manual_launch_evidence",
+        ownerApprovalRequired: true,
+        requiredForFirstSignal: true,
+        status: "missing"
+      }),
+      expect.objectContaining({
+        category: "ads",
+        nextInternalAction: "hold_ads_until_owner_ad_spend_approval",
+        ownerApprovalRequired: true,
+        requiredForFirstSignal: false,
+        status: "approval_required"
+      })
+    ]));
+    expect(manualSignalGate).toMatchObject({
+      allowed: false,
+      manualLaunchEvidenceRecorded: false,
+      ownerApprovalRecorded: true,
+      targetStoreId: firstStore.id
+    });
+    expect(manualSignalGate.blockers).toEqual([
+      "Record required first-store manual launch evidence before recording first-week revenue signals: pod supplier, payments payouts, content channels, analytics manual import."
+    ]);
+  });
+
+  it("blocks first-store manual signal capture when the requested store does not match the selected packet", () => {
+    const firstStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "Selected First Store",
+      id: "store_selected_first",
+      revenue: 0
+    };
+    const otherStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "Other Receipt Store",
+      id: "store_other_receipts",
+      revenue: 0
+    };
+    const products = [
+      product({
+        id: "selected_signal_source",
+        storeId: firstStore.id
+      })
+    ];
+    const revenuePlan = buildRevenueEnginePlan({
+      products,
+      stores: [firstStore, otherStore]
+    });
+    const performanceDigest = buildRevenuePerformanceDigest({
+      generatedAt: "2026-06-03T00:00:00.000Z",
+      products,
+      snapshots: [],
+      stores: [firstStore, otherStore]
+    });
+    const portfolio = mergeRevenueAssetPortfolioPerformance(buildRevenueAssetPortfolio(revenuePlan), performanceDigest);
+    const controlLedger = buildRevenueAssetControlLedgerPlan({
+      records: []
+    });
+    const reviewQueue = buildRevenueAssetReviewQueuePlan({
+      controlLedger,
+      portfolio
+    });
+    const commandPlan = buildPortfolioCommandCenterPlan({
+      assetPortfolio: portfolio,
+      performanceDigest,
+      revenuePlan
+    });
+    const cashLoopEvidenceReceipts = [
+      cashLoopReceipt({
+        evidenceType: "owner_launch_approval",
+        storeId: otherStore.id,
+        storeName: otherStore.businessName
+      }),
+      ...requiredLaunchEvidenceReceipts({
+        storeId: otherStore.id,
+        storeName: otherStore.businessName
+      })
+    ];
+    const dashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts,
+      commandPlan,
+      controlLedger,
+      firstBusinessExecutionPlan: firstBusinessExecutionForStore(firstStore, products),
+      firstCashPlan: firstCashPlanForStore(firstStore),
+      portfolio,
+      reviewQueue
+    });
+    const manualSignalGate = buildRevenueFirstStoreManualSignalCaptureGate({
+      cashLoopEvidenceReceipts,
+      dashboard,
+      requestedStoreId: otherStore.id
+    });
+
+    expect(manualSignalGate).toMatchObject({
+      allowed: false,
+      dashboardStoreId: firstStore.id,
+      manualLaunchEvidenceRecorded: true,
+      ownerApprovalRecorded: true,
+      targetStoreId: otherStore.id
+    });
+    expect(manualSignalGate.blockers).toEqual([
+      `Requested store ${otherStore.id} does not match the current first-store packet ${firstStore.id}.`
+    ]);
+  });
+
+  it("opens internal winner clone approval only after selected first-store proof is complete", () => {
+    const firstStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "First Store Proven",
+      id: "store_first_proven",
+      revenue: 0
+    };
+    const products = [
+      product({
+        id: "first_store_clone_source_1",
+        productName: "Core Tee",
+        storeId: firstStore.id
+      }),
+      product({
+        id: "first_store_clone_source_2",
+        productName: "Operator Hoodie",
+        productType: "Hoodie",
+        retailPrice: 58,
+        storeId: firstStore.id
+      })
+    ];
+    const revenuePlan = buildRevenueEnginePlan({
+      products,
+      stores: [firstStore]
+    });
+    const performanceDigest = buildRevenuePerformanceDigest({
+      generatedAt: "2026-06-03T00:00:00.000Z",
+      products,
+      snapshots: [
+        normalizeRevenuePerformanceSnapshot({
+          grossRevenue: 250,
+          netProfit: 120,
+          periodEnd: "2026-06-03T00:00:00.000Z",
+          periodStart: "2026-06-02T00:00:00.000Z",
+          storeId: firstStore.id,
+          unitsSold: 5,
+          visits: 300
+        })
+      ],
+      stores: [firstStore]
+    });
+    const portfolio = mergeRevenueAssetPortfolioPerformance(buildRevenueAssetPortfolio(revenuePlan), performanceDigest);
+    const controlLedger = buildRevenueAssetControlLedgerPlan({
+      records: []
+    });
+    const reviewQueue = buildRevenueAssetReviewQueuePlan({
+      controlLedger,
+      portfolio
+    });
+    const commandPlan = buildPortfolioCommandCenterPlan({
+      assetPortfolio: portfolio,
+      performanceDigest,
+      revenuePlan
+    });
+    const cashLoopEvidenceReceipts = [
+      cashLoopReceipt({
+        evidenceType: "owner_launch_approval",
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      }),
+      ...requiredLaunchEvidenceReceipts({
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      }),
+      ...requiredFirstWeekSignalReceipts({
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      })
+    ];
+    const dashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts,
+      commandPlan,
+      controlLedger,
+      firstBusinessExecutionPlan: firstBusinessExecutionForStore(firstStore, products),
+      firstCashPlan: firstCashPlanForStore(firstStore),
+      portfolio,
+      reviewQueue
+    });
+    const dashboardWithOnlyTwentyFiveCloneApproval = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts: [
+        ...cashLoopEvidenceReceipts,
+        cashLoopReceipt({
+          evidenceType: "winner_clone_packet_approval",
+          storeId: firstStore.id,
+          storeName: firstStore.businessName,
+          targetStores: 25
+        })
+      ],
+      commandPlan,
+      controlLedger,
+      firstBusinessExecutionPlan: firstBusinessExecutionForStore(firstStore, products),
+      firstCashPlan: firstCashPlanForStore(firstStore),
+      portfolio,
+      reviewQueue
+    });
+    const cloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+      cashLoopEvidenceReceipts,
+      dashboard,
+      requestedStoreId: firstStore.id,
+      targetStores: 10
+    });
+    const prematureTwentyFiveCloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+      cashLoopEvidenceReceipts,
+      dashboard,
+      requestedStoreId: firstStore.id,
+      targetStores: 25
+    });
+    const receiptsWithTenCloneApproval = [
+      ...cashLoopEvidenceReceipts,
+      cashLoopReceipt({
+        evidenceType: "winner_clone_packet_approval",
+        storeId: firstStore.id,
+        storeName: firstStore.businessName,
+        targetStores: 10
+      })
+    ];
+    const dashboardWithTenCloneApproval = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts: receiptsWithTenCloneApproval,
+      commandPlan,
+      controlLedger,
+      firstBusinessExecutionPlan: firstBusinessExecutionForStore(firstStore, products),
+      firstCashPlan: firstCashPlanForStore(firstStore),
+      portfolio,
+      reviewQueue
+    });
+    const twentyFiveCloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+      cashLoopEvidenceReceipts: receiptsWithTenCloneApproval,
+      dashboard: dashboardWithTenCloneApproval,
+      requestedStoreId: firstStore.id,
+      targetStores: 25
+    });
+    const receiptsWithTenAndTwentyFiveCloneApproval = [
+      ...receiptsWithTenCloneApproval,
+      cashLoopReceipt({
+        evidenceType: "winner_clone_packet_approval",
+        storeId: firstStore.id,
+        storeName: firstStore.businessName,
+        targetStores: 25
+      })
+    ];
+    const dashboardWithTenAndTwentyFiveCloneApproval = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts: receiptsWithTenAndTwentyFiveCloneApproval,
+      commandPlan,
+      controlLedger,
+      firstBusinessExecutionPlan: firstBusinessExecutionForStore(firstStore, products),
+      firstCashPlan: firstCashPlanForStore(firstStore),
+      portfolio,
+      reviewQueue
+    });
+    const prematureHundredCloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+      cashLoopEvidenceReceipts: receiptsWithTenAndTwentyFiveCloneApproval,
+      dashboard: dashboardWithTenAndTwentyFiveCloneApproval,
+      requestedStoreId: firstStore.id,
+      targetStores: 100
+    });
+
+    expect(dashboard.firstStoreCashLoop.dailyRevenueLoop.signalIngest).toMatchObject({
+      manualSnapshots: 4,
+      status: "ready"
+    });
+    expect(dashboard.firstStoreCashLoop.firstRevenueProof).toMatchObject({
+      firstRevenueCaptured: true,
+      grossRevenue: 250,
+      manualSignalReceipts: 4,
+      netProfit: 120,
+      status: "proven",
+      storeId: firstStore.id
+    });
+    expect(dashboard.firstStoreCashLoop.winnerScaleLadder.proofGate).toMatchObject({
+      status: "ready_for_owner_scale_review"
+    });
+    expect(dashboardWithOnlyTwentyFiveCloneApproval.firstStoreCashLoop.evidenceLedger.selectedStore.totals.cloneApprovalsByTarget).toMatchObject({
+      hundredStore: 0,
+      tenStore: 0,
+      twentyFiveStore: 1,
+      unscoped: 0
+    });
+    expect(dashboardWithOnlyTwentyFiveCloneApproval.firstStoreCashLoop.cashLoopStage.receiptsNeeded).toContain("10-store internal winner clone packet approval receipt");
+    expect(dashboardWithOnlyTwentyFiveCloneApproval.firstStoreCashLoop.proofChain.stages[5]).toMatchObject({
+      label: "Internal winner clone packet approval",
+      status: "owner_approval_required"
+    });
+    expect(dashboardWithOnlyTwentyFiveCloneApproval.firstStoreCashLoop.proofChain.stages[6]).toMatchObject({
+      label: "10-store private clone readiness",
+      status: "waiting_for_scale_proof"
+    });
+    expect(dashboardWithOnlyTwentyFiveCloneApproval.firstStoreCashLoop.verificationAudit.requirements.find((requirement) => requirement.id === "proven_winner_scale_ladder")).toMatchObject({
+      status: "owner_approval_required"
+    });
+    expect(dashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets[0]).toMatchObject({
+      draftCloneSlots: 9,
+      draftSlots: expect.arrayContaining([
+        expect.objectContaining({
+          externalExecution: false,
+          providerContacted: false,
+          slot: 2,
+          status: "approval_required",
+          title: "10-store private clone slot 2"
+        })
+      ]),
+      status: "approval_required",
+      targetStores: 10
+    });
+    expect(dashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets[1]).toMatchObject({
+      status: "waiting_for_proof",
+      targetStores: 25
+    });
+    expect(dashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets[2]).toMatchObject({
+      status: "waiting_for_proof",
+      targetStores: 100
+    });
+    expect(dashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets[0]!.draftSlots).toHaveLength(9);
+    expect(dashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets[1]!.draftSlots).toHaveLength(24);
+    expect(dashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets[2]!.draftSlots).toHaveLength(99);
+    expect(cloneApprovalGate).toMatchObject({
+      allowed: true,
+      firstRevenueCaptured: true,
+      manualLaunchEvidenceRecorded: true,
+      manualSignalRecorded: true,
+      ownerApprovalRecorded: true,
+      targetStoreId: firstStore.id
+    });
+    expect(cloneApprovalGate.blockers).toEqual([]);
+    expect(prematureTwentyFiveCloneApprovalGate).toMatchObject({
+      allowed: false,
+      targetStoreId: firstStore.id
+    });
+    expect(prematureTwentyFiveCloneApprovalGate.blockers).toContain("Record the 10-store internal winner clone packet approval before approving the 25-store bridge.");
+    expect(twentyFiveCloneApprovalGate).toMatchObject({
+      allowed: true,
+      targetStoreId: firstStore.id
+    });
+    expect(twentyFiveCloneApprovalGate.blockers).toEqual([]);
+    expect(dashboardWithTenCloneApproval.firstStoreCashLoop.winnerScaleLadder.clonePackets[1]).toMatchObject({
+      status: "approval_required",
+      targetStores: 25
+    });
+    expect(dashboardWithTenCloneApproval.firstStoreCashLoop.winnerScaleLadder.clonePackets[2]).toMatchObject({
+      status: "waiting_for_proof",
+      targetStores: 100
+    });
+    expect(prematureHundredCloneApprovalGate).toMatchObject({
+      allowed: false,
+      targetStoreId: firstStore.id
+    });
+    expect(prematureHundredCloneApprovalGate.blockers).toContain("$10k/month proof must be achieved before approving the 100-store bridge.");
+  });
+
+  it("uses the final execution packet store as the selected target when readiness rankings are absent", () => {
+    const firstStore: RevenueEngineStoreSnapshot = {
+      ...scaleStore,
+      businessName: "Execution Packet Store",
+      id: "store_execution_packet",
+      revenue: 0
+    };
+    const products = [
+      product({
+        id: "execution_packet_source_1",
+        productName: "Execution Tee",
+        storeId: firstStore.id
+      }),
+      product({
+        id: "execution_packet_source_2",
+        productName: "Execution Hoodie",
+        productType: "Hoodie",
+        retailPrice: 58,
+        storeId: firstStore.id
+      })
+    ];
+    const revenuePlan = buildRevenueEnginePlan({
+      products,
+      stores: [firstStore]
+    });
+    const performanceDigest = buildRevenuePerformanceDigest({
+      generatedAt: "2026-06-03T00:00:00.000Z",
+      products,
+      snapshots: [
+        normalizeRevenuePerformanceSnapshot({
+          grossRevenue: 250,
+          netProfit: 120,
+          periodEnd: "2026-06-03T00:00:00.000Z",
+          periodStart: "2026-06-02T00:00:00.000Z",
+          storeId: firstStore.id,
+          unitsSold: 5,
+          visits: 300
+        })
+      ],
+      stores: [firstStore]
+    });
+    const portfolio = mergeRevenueAssetPortfolioPerformance(buildRevenueAssetPortfolio(revenuePlan), performanceDigest);
+    const controlLedger = buildRevenueAssetControlLedgerPlan({
+      records: []
+    });
+    const reviewQueue = buildRevenueAssetReviewQueuePlan({
+      controlLedger,
+      portfolio
+    });
+    const commandPlan = buildPortfolioCommandCenterPlan({
+      assetPortfolio: portfolio,
+      performanceDigest,
+      revenuePlan
+    });
+    const cashLoopEvidenceReceipts = [
+      cashLoopReceipt({
+        evidenceType: "owner_launch_approval",
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      }),
+      ...requiredLaunchEvidenceReceipts({
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      }),
+      ...requiredFirstWeekSignalReceipts({
+        storeId: firstStore.id,
+        storeName: firstStore.businessName
+      })
+    ];
+    const dashboard = buildRevenuePortfolioDashboardPlan({
+      cashLoopEvidenceReceipts,
+      commandPlan,
+      controlLedger,
+      firstBusinessExecutionPlan: firstBusinessExecutionForStore(firstStore, products),
+      portfolio,
+      reviewQueue
+    });
+    const cloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+      cashLoopEvidenceReceipts,
+      dashboard,
+      targetStores: 10
+    });
+
+    expect(dashboard.firstStoreCashLoop.firstCashStatus).toBeNull();
+    expect(dashboard.firstStoreCashLoop.launchReadiness.storeId).toBeNull();
+    expect(dashboard.firstStoreCashLoop.firstRevenueProof).toMatchObject({
+      firstRevenueCaptured: true,
+      manualSignalReceipts: 4,
+      storeId: firstStore.id,
+      storeName: firstStore.businessName
+    });
+    expect(cloneApprovalGate).toMatchObject({
+      allowed: true,
+      dashboardStoreId: firstStore.id,
+      targetStoreId: firstStore.id
+    });
+    expect(cloneApprovalGate.blockers).toEqual([]);
   });
 
   it("builds selected internal asset batch controls with skipped stale selections", () => {

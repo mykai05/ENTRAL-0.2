@@ -29,6 +29,10 @@ import {
   applyRevenueFirstBusinessExecuteSchema,
   applyRevenueFirstBusinessAutonomousLaunchSchema,
   applyRevenueFirstBusinessLiveExecutorSchema,
+  applyRevenueOwnerManualLaunchApprovalSchema,
+  applyRevenueFirstStoreManualLaunchEvidenceSchema,
+  applyRevenueFirstStoreManualSignalCaptureSchema,
+  applyRevenueWinnerClonePacketApprovalSchema,
   applyRevenueMoneyArmyBatchPipelineSchema,
   applyRevenueDigitalProductSchema,
   applyRevenueListingOptimizationSchema,
@@ -105,8 +109,13 @@ import {
   revenueLaunchChecklistQuerySchema,
   revenueLaunchReadinessQuerySchema,
   revenueLaunchChecklistActionBridgeConfirmation,
+  revenueFirstBusinessExecuteConfirmation,
   revenueFirstBusinessLaunchConfirmation,
   revenueFirstBusinessLiveExecutorUnlockPhrase,
+  revenueOwnerManualLaunchApprovalConfirmation,
+  revenueFirstStoreManualLaunchEvidenceConfirmation,
+  revenueFirstStoreManualSignalCaptureConfirmation,
+  revenueWinnerClonePacketApprovalConfirmation,
   applyRevenueFirstBusinessLaunchSchema,
   applyRevenueFirstCashSprintSchema,
   revenueOpportunityFactoryConfirmation,
@@ -140,6 +149,10 @@ import {
   type ApplyRevenueFirstBusinessExecuteInput,
   type ApplyRevenueFirstBusinessAutonomousLaunchInput,
   type ApplyRevenueFirstBusinessLiveExecutorInput,
+  type ApplyRevenueOwnerManualLaunchApprovalInput,
+  type ApplyRevenueFirstStoreManualLaunchEvidenceInput,
+  type ApplyRevenueFirstStoreManualSignalCaptureInput,
+  type ApplyRevenueWinnerClonePacketApprovalInput,
   type ApplyRevenueMoneyArmyBatchPipelineInput,
   type ApplyFacelessContentPipelineInput,
   type ApplyPortfolioCommandCenterInput,
@@ -218,7 +231,7 @@ import {
   type ReviewFinancialPayoutIntentInput,
   type ReviewFinancialScalingBudgetPacketInput
 } from "../schemas.js";
-import { recordAuditLog } from "../services/audit.js";
+import { publicAuditLog, recordAuditLog } from "../services/audit.js";
 import { formatComplianceNotes } from "../services/complianceGuardrails.js";
 import type { MerchProductSnapshot, MerchStoreSnapshot } from "../services/merchReports.js";
 import {
@@ -278,9 +291,11 @@ import {
   buildRevenueEnginePlan,
   mergeRevenueAssetPortfolioPerformance,
   removeDuplicateRevenueAssetBatchControls,
+  revenueAssetRotationDecisionValues,
   type RevenueAssetControlPlan,
   type RevenueAssetBatchControlPlan,
   type RevenueAssetControlDuplicateSnapshot,
+  type RevenueAssetRotationDecision,
   type RevenueAssetPortfolio,
   type RevenueEnginePlan,
   type RevenueEngineProductSnapshot,
@@ -347,6 +362,8 @@ import {
 import { buildRevenueAssetControlsFromPortfolioCommands } from "../services/revenuePortfolioCommandAssetControls.js";
 import {
   buildRevenuePortfolioDashboardPlan,
+  isRevenuePortfolioDashboardLaunchEvidenceCategory,
+  type RevenuePortfolioDashboardCashLoopEvidenceReceipt,
   type RevenuePortfolioDashboardPlan
 } from "../services/revenuePortfolioDashboard.js";
 import {
@@ -417,6 +434,11 @@ import {
   buildRevenueFirstCashReadinessPlan,
   type RevenueFirstCashReadinessPlan
 } from "../services/revenueFirstCashReadiness.js";
+import {
+  buildRevenueFirstStoreManualSignalCaptureGate,
+  buildRevenueWinnerClonePacketApprovalGate,
+  hasRevenueCashLoopEvidenceReceipt
+} from "../services/revenueFirstStoreCashLoopApprovalGates.js";
 import {
   buildRevenueFirstCashSprintPlan,
   revenueFirstCashSprintConfirmation,
@@ -6213,8 +6235,154 @@ async function buildRevenueAssetControlRecoveryForUser(userId: string, options: 
   });
 }
 
+const revenueCashLoopEvidenceTargetTypes = [
+  "revenue_first_store_owner_launch_approval",
+  "revenue_first_store_manual_launch_evidence",
+  "revenue_first_store_manual_signal_snapshot",
+  "revenue_winner_clone_packet_approval"
+] as const;
+
+type PublicRevenueAuditLog = ReturnType<typeof publicAuditLog>;
+
+function revenueCashLoopEvidenceType(targetType: string): RevenuePortfolioDashboardCashLoopEvidenceReceipt["evidenceType"] | null {
+  if (targetType === "revenue_first_store_owner_launch_approval") return "owner_launch_approval";
+  if (targetType === "revenue_first_store_manual_launch_evidence") return "manual_launch_evidence";
+  if (targetType === "revenue_first_store_manual_signal_snapshot") return "manual_signal_snapshot";
+  if (targetType === "revenue_winner_clone_packet_approval") return "winner_clone_packet_approval";
+
+  return null;
+}
+
+function recordFromUnknown(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function stringFromRecord(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function numberFromRecord(record: Record<string, unknown>, key: string): number | null {
+  const value = record[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function revenueAssetRotationDecisionFromRecord(record: Record<string, unknown>, key: string): RevenueAssetRotationDecision | null {
+  const value = stringFromRecord(record, key);
+
+  return revenueAssetRotationDecisionValues.includes(value as RevenueAssetRotationDecision)
+    ? value as RevenueAssetRotationDecision
+    : null;
+}
+
+function revenueCashLoopEvidenceSummary(input: {
+  evidenceType: RevenuePortfolioDashboardCashLoopEvidenceReceipt["evidenceType"];
+  metadata: Record<string, unknown>;
+}): string {
+  const summary = stringFromRecord(input.metadata, "summary");
+  const storeName = stringFromRecord(input.metadata, "storeName") ?? "the first store";
+
+  if (summary) return summary;
+
+  if (input.evidenceType === "manual_launch_evidence") {
+    const category = stringFromRecord(input.metadata, "evidenceCategory")?.replace(/_/g, " ") ?? "manual launch";
+    const stepIndex = numberFromRecord(input.metadata, "stepIndex");
+    return `First-store manual launch evidence recorded for ${storeName}: ${category}${stepIndex === null ? "" : ` step ${stepIndex + 1}`}. External execution remains locked.`;
+  }
+
+  if (input.evidenceType === "manual_signal_snapshot") {
+    const unitsSold = numberFromRecord(input.metadata, "unitsSold") ?? 0;
+    const grossRevenue = numberFromRecord(input.metadata, "grossRevenue") ?? 0;
+    const netProfit = numberFromRecord(input.metadata, "netProfit") ?? 0;
+    return `First-store manual signal snapshot recorded for ${storeName}: ${unitsSold} unit${unitsSold === 1 ? "" : "s"}, ${grossRevenue} gross revenue, ${netProfit} net profit. External execution remains locked.`;
+  }
+
+  if (input.evidenceType === "winner_clone_packet_approval") {
+    const targetStores = numberFromRecord(input.metadata, "targetStores");
+    const draftCloneSlots = numberFromRecord(input.metadata, "draftCloneSlots") ?? 0;
+    return `${targetStores ?? "Winner"}-store internal winner clone packet approval recorded for ${storeName} with ${draftCloneSlots} private draft slot${draftCloneSlots === 1 ? "" : "s"}. External execution remains locked.`;
+  }
+
+  return `Owner manual live launch approval receipt recorded for ${storeName}. External execution remains locked.`;
+}
+
+function revenueCashLoopEvidenceReceiptFromAuditLog(log: PublicRevenueAuditLog): RevenuePortfolioDashboardCashLoopEvidenceReceipt | null {
+  const evidenceType = revenueCashLoopEvidenceType(log.targetType);
+
+  if (!evidenceType) return null;
+
+  const entry = recordFromUnknown(log.entry);
+  const entryMetadata = recordFromUnknown(entry.metadata);
+  const metadata = Object.keys(entryMetadata).length > 0 ? entryMetadata : entry;
+  const evidenceCategory = stringFromRecord(metadata, "evidenceCategory");
+  const manualSignalDay = numberFromRecord(metadata, "day");
+  const targetStores = numberFromRecord(metadata, "targetStores");
+
+  return {
+    action: log.action,
+    auditLogId: log.id,
+    createdAt: log.createdAt.toISOString(),
+    entryHash: log.entryHash,
+    evidenceType,
+    externalExecution: false,
+    launchEvidenceCategory: evidenceType === "manual_launch_evidence" && isRevenuePortfolioDashboardLaunchEvidenceCategory(evidenceCategory)
+      ? evidenceCategory
+      : null,
+    manualSignalDay: evidenceType === "manual_signal_snapshot" && manualSignalDay !== null
+      ? Math.max(0, Math.min(7, Math.floor(manualSignalDay)))
+      : null,
+    manualSignalRotationRecommendation: evidenceType === "manual_signal_snapshot"
+      ? revenueAssetRotationDecisionFromRecord(metadata, "rotationRecommendation")
+      : null,
+    providerContacted: false,
+    storeId: stringFromRecord(metadata, "storeId") ?? log.targetId,
+    storeName: stringFromRecord(metadata, "storeName"),
+    summary: revenueCashLoopEvidenceSummary({
+      evidenceType,
+      metadata
+    }),
+    targetId: log.targetId,
+    targetStores: evidenceType === "winner_clone_packet_approval" && (targetStores === 10 || targetStores === 25 || targetStores === 100)
+      ? targetStores
+      : null,
+    targetType: log.targetType
+  };
+}
+
+async function listRevenueCashLoopEvidenceReceipts(userId: string): Promise<RevenuePortfolioDashboardCashLoopEvidenceReceipt[]> {
+  const logs = await prisma.auditLog.findMany({
+    orderBy: {
+      createdAt: "desc"
+    },
+    where: {
+      actorUserId: userId,
+      targetType: {
+        in: [...revenueCashLoopEvidenceTargetTypes]
+      }
+    }
+  });
+
+  return logs
+    .map((log) => revenueCashLoopEvidenceReceiptFromAuditLog(publicAuditLog(log)))
+    .filter((receipt): receipt is RevenuePortfolioDashboardCashLoopEvidenceReceipt => Boolean(receipt));
+}
+
 async function buildRevenuePortfolioDashboardForUser(userId: string, thresholds: RevenueEngineQueryInput): Promise<RevenuePortfolioDashboardPlan> {
-  const [portfolio, controlLedger, commandResult] = await Promise.all([
+  const [
+    portfolio,
+    controlLedger,
+    commandResult,
+    firstCashResult,
+    firstBusinessLaunchResult,
+    firstBusinessExecutionPreview,
+    financialResult,
+    launchReadinessResult,
+    tenStoreFleetResult,
+    hundredStoreOperationsResult,
+    cashLoopEvidenceReceipts
+  ] = await Promise.all([
     buildAssetPortfolioForUser(userId, thresholds),
     buildRevenueAssetControlLedgerForUser(userId, revenueAssetControlLedgerQuerySchema.parse({
       limit: 250
@@ -6225,7 +6393,40 @@ async function buildRevenuePortfolioDashboardForUser(userId: string, thresholds:
       includeFinance: true,
       maxActions: 50,
       windowDays: 30
-    }))
+    })),
+    buildFirstCashReadinessForUser(userId, revenueFirstCashReadinessQuerySchema.parse({
+      includeBlocked: true,
+      maxCandidates: 8,
+      targetDaysToFirstCash: 7
+    })),
+    buildFirstBusinessLaunchForUser(userId, revenueFirstBusinessLaunchQuerySchema.parse({
+      maxCandidates: 8
+    })),
+    applyRevenueFirstBusinessExecute(userId, applyRevenueFirstBusinessExecuteSchema.parse({
+      confirm: revenueFirstBusinessExecuteConfirmation,
+      dryRun: true,
+      note: "Dashboard first-store cash-loop final execution readiness preview."
+    })),
+    buildFinancialOrchestratorForUser(userId, financialOrchestratorQuerySchema.parse({
+      includePayoutIntents: true,
+      windowDays: 30
+    })),
+    buildLaunchReadinessForUser(userId, revenueLaunchReadinessQuerySchema.parse({
+      includeApprovalHistory: true,
+      maxStores: 8,
+      minLaunchReadiness: 1,
+      minProviderReadiness: 1
+    })),
+    buildRevenueBusinessFleetSchedulerForUser(userId, revenueBusinessFleetSchedulerQuerySchema.parse({
+      launchWaveSize: 10,
+      maxParallelLaunches: 10,
+      maxParallelScaleActions: 25,
+      targetBusinesses: 10
+    })),
+    buildRevenueHundredStoreOperationsForUser(userId, revenueHundredStoreOperationsQuerySchema.parse({
+      targetStores: 100
+    })),
+    listRevenueCashLoopEvidenceReceipts(userId)
   ]);
   const reviewQueue = buildRevenueAssetReviewQueuePlan({
     controlLedger,
@@ -6238,11 +6439,457 @@ async function buildRevenuePortfolioDashboardForUser(userId: string, thresholds:
   });
 
   return buildRevenuePortfolioDashboardPlan({
+    cashLoopEvidenceReceipts,
     commandPlan: commandResult.plan,
     controlLedger,
+    financialPlan: financialResult.plan,
+    firstBusinessExecutionPlan: firstBusinessExecutionPreview.execution,
+    firstBusinessLaunchPlan: firstBusinessLaunchResult.plan,
+    firstCashPlan: firstCashResult.plan,
+    hundredStoreOperationsPlan: hundredStoreOperationsResult.plan,
+    launchReadinessPlan: launchReadinessResult.plan,
     portfolio,
-    reviewQueue
+    reviewQueue,
+    tenStoreFleetPlan: tenStoreFleetResult.plan
   });
+}
+
+async function applyRevenueOwnerManualLaunchApproval(userId: string, input: ApplyRevenueOwnerManualLaunchApprovalInput) {
+  const dashboard = await buildRevenuePortfolioDashboardForUser(userId, revenueEngineQuerySchema.parse({}));
+  const ownerLaunchApproval = dashboard.firstStoreCashLoop.ownerLaunchApproval;
+  const dashboardStoreId = dashboard.firstStoreCashLoop.firstCashStatus?.storeId
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeId
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeId
+    ?? null;
+  const targetStoreId = input.storeId ?? dashboardStoreId;
+  const storeName = dashboard.firstStoreCashLoop.firstCashStatus?.storeName
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeName
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeName
+    ?? dashboard.firstStoreCashLoop.manualLaunchPacket.store?.name
+    ?? null;
+  const blockers = [
+    targetStoreId ? null : "No first-store target is available on the current cash-loop dashboard.",
+    ownerLaunchApproval.status === "ready_for_owner_review" ? null : `Owner launch approval packet is ${ownerLaunchApproval.status.replace(/_/g, " ")}.`,
+    input.storeId && dashboardStoreId && input.storeId !== dashboardStoreId
+      ? `Requested store ${input.storeId} does not match the current first-store packet ${dashboardStoreId}.`
+      : null
+  ].filter((blocker): blocker is string => Boolean(blocker));
+  const allowed = blockers.length === 0;
+  const summary = allowed
+    ? input.dryRun
+      ? `Owner manual live launch approval receipt previewed for ${storeName ?? "the first store"}. External execution remains locked.`
+      : `Owner manual live launch approval receipt recorded for ${storeName ?? "the first store"}. External execution remains locked.`
+    : `Owner manual live launch approval receipt was not recorded: ${blockers.join(" ")}`;
+  const auditLog = !allowed || input.dryRun ? null : await recordAuditLog({
+    action: "revenue.first_store.owner_manual_launch_approval.recorded",
+    actorUserId: userId,
+    metadata: {
+      approvalMode: ownerLaunchApproval.approvalMode,
+      approvalPhrase: input.approvalPhrase,
+      approvalStatus: ownerLaunchApproval.status,
+      blockedExternalActions: ownerLaunchApproval.blockedExternalActions,
+      dryRun: false,
+      externalExecution: false,
+      liveApprovalRequired: ownerLaunchApproval.liveApprovalRequired,
+      manualOnlyActions: ownerLaunchApproval.manualOnlyActions,
+      note: input.note ?? null,
+      preflightChecks: ownerLaunchApproval.preflightChecks,
+      providerContacted: false,
+      requiredConfirmation: revenueOwnerManualLaunchApprovalConfirmation,
+      rollbackPlan: ownerLaunchApproval.rollbackPlan,
+      stillLocked: ownerLaunchApproval.unlockBoundary.stillLocked,
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      unlocks: ownerLaunchApproval.unlockBoundary.unlocks
+    },
+    outcome: "success",
+    severity: "high",
+    targetId: targetStoreId,
+    targetType: "revenue_first_store_owner_launch_approval"
+  });
+  const refreshedDashboard = auditLog ? await buildRevenuePortfolioDashboardForUser(userId, revenueEngineQuerySchema.parse({})) : dashboard;
+  const refreshedOwnerLaunchApproval = refreshedDashboard.firstStoreCashLoop.ownerLaunchApproval;
+
+  return {
+    applied: {
+      allowed,
+      approvalPhrase: input.approvalPhrase,
+      approvalStatus: ownerLaunchApproval.status,
+      approvalsPreviewed: allowed && input.dryRun ? 1 : 0,
+      approvalsRecorded: allowed && !input.dryRun ? 1 : 0,
+      auditLogId: auditLog?.id ?? null,
+      blockedExternalActions: ownerLaunchApproval.blockedExternalActions,
+      blockers,
+      dryRun: input.dryRun,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      stillLocked: ownerLaunchApproval.unlockBoundary.stillLocked,
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      unlocks: ownerLaunchApproval.unlockBoundary.unlocks
+    },
+    dashboard: refreshedDashboard,
+    ownerLaunchApproval: refreshedOwnerLaunchApproval
+  };
+}
+
+async function applyRevenueFirstStoreManualLaunchEvidence(userId: string, input: ApplyRevenueFirstStoreManualLaunchEvidenceInput) {
+  const dashboard = await buildRevenuePortfolioDashboardForUser(userId, revenueEngineQuerySchema.parse({}));
+  const manualLaunchPacket = dashboard.firstStoreCashLoop.manualLaunchPacket;
+  const dashboardStoreId = dashboard.firstStoreCashLoop.firstCashStatus?.storeId
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeId
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeId
+    ?? null;
+  const targetStoreId = input.storeId ?? dashboardStoreId;
+  const storeName = dashboard.firstStoreCashLoop.firstCashStatus?.storeName
+    ?? dashboard.firstStoreCashLoop.launchReadiness.storeName
+    ?? dashboard.firstStoreCashLoop.firstRevenueProof.storeName
+    ?? manualLaunchPacket.store?.name
+    ?? null;
+  const stepTitle = manualLaunchPacket.manualSteps[input.stepIndex] ?? null;
+  const cashLoopReceipts = await listRevenueCashLoopEvidenceReceipts(userId);
+  const ownerApprovalRecorded = hasRevenueCashLoopEvidenceReceipt(cashLoopReceipts, "owner_launch_approval", targetStoreId);
+  const blockers = [
+    targetStoreId ? null : "No first-store target is available on the current cash-loop dashboard.",
+    manualLaunchPacket.status === "ready_for_operator_review" ? null : `Manual launch packet is ${manualLaunchPacket.status.replace(/_/g, " ")}.`,
+    ownerApprovalRecorded ? null : "Record owner manual live-launch approval receipt before recording first-store manual launch evidence.",
+    stepTitle ? null : `Manual launch step ${input.stepIndex + 1} is not available in the current first-store packet.`,
+    input.ownerCompletedManualStep ? null : "Owner/operator completion must be true before recording manual launch evidence.",
+    input.storeId && dashboardStoreId && input.storeId !== dashboardStoreId
+      ? `Requested store ${input.storeId} does not match the current first-store packet ${dashboardStoreId}.`
+      : null
+  ].filter((blocker): blocker is string => Boolean(blocker));
+  const allowed = blockers.length === 0;
+  const completedAt = input.completedAt ?? new Date().toISOString();
+  const categoryLabel = input.evidenceCategory.replace(/_/g, " ");
+  const summary = allowed
+    ? input.dryRun
+      ? `First-store manual launch evidence previewed for ${storeName ?? "the first store"}: ${categoryLabel} step ${input.stepIndex + 1}. External execution remains locked.`
+      : `First-store manual launch evidence recorded for ${storeName ?? "the first store"}: ${categoryLabel} step ${input.stepIndex + 1}. External execution remains locked.`
+    : `First-store manual launch evidence was not recorded: ${blockers.join(" ")}`;
+  const auditLog = !allowed || input.dryRun ? null : await recordAuditLog({
+    action: "revenue.first_store.manual_launch_evidence.recorded",
+    actorUserId: userId,
+    metadata: {
+      approvalPhrase: input.approvalPhrase,
+      blockedExternalActions: dashboard.firstStoreCashLoop.ownerLaunchApproval.blockedExternalActions,
+      completedAt,
+      dryRun: false,
+      evidenceCategory: input.evidenceCategory,
+      evidenceNote: input.evidenceNote ?? null,
+      externalExecution: false,
+      manualStep: stepTitle,
+      ownerCompletedManualStep: input.ownerCompletedManualStep,
+      providerContacted: false,
+      requiredConfirmation: revenueFirstStoreManualLaunchEvidenceConfirmation,
+      rollbackPlan: manualLaunchPacket.rollbackPlan,
+      stepIndex: input.stepIndex,
+      storeId: targetStoreId,
+      storeName,
+      summary
+    },
+    outcome: "success",
+    severity: "medium",
+    targetId: targetStoreId,
+    targetType: "revenue_first_store_manual_launch_evidence"
+  });
+  const refreshedDashboard = auditLog ? await buildRevenuePortfolioDashboardForUser(userId, revenueEngineQuerySchema.parse({})) : dashboard;
+
+  return {
+    dashboard: refreshedDashboard,
+    manualLaunchEvidence: {
+      allowed,
+      approvalPhrase: input.approvalPhrase,
+      auditLogId: auditLog?.id ?? null,
+      blockedExternalActions: dashboard.firstStoreCashLoop.ownerLaunchApproval.blockedExternalActions,
+      blockers,
+      completedAt,
+      dryRun: input.dryRun,
+      evidenceCategory: input.evidenceCategory,
+      evidenceNote: input.evidenceNote ?? null,
+      evidencePreviewed: allowed && input.dryRun ? 1 : 0,
+      evidenceRecorded: allowed && !input.dryRun ? 1 : 0,
+      externalExecution: false as const,
+      ownerCompletedManualStep: input.ownerCompletedManualStep,
+      providerContacted: false as const,
+      stepIndex: input.stepIndex,
+      stepTitle,
+      storeId: targetStoreId,
+      storeName,
+      summary
+    }
+  };
+}
+
+function buildFirstStoreManualSignalSnapshot(
+  input: ApplyRevenueFirstStoreManualSignalCaptureInput,
+  storeId: string
+): IngestRevenuePerformanceInput["snapshots"][number] {
+  const periodEnd = input.periodEnd ? new Date(input.periodEnd) : new Date();
+  const periodStart = input.periodStart ? new Date(input.periodStart) : new Date(periodEnd.getTime() - 86_400_000);
+  const notes = [
+    `First-store manual signal capture day ${input.day}.`,
+    `Manual content views ${input.manualContentViews}; saves/shares ${input.manualSavesOrShares}; rotation recommendation ${input.rotationRecommendation}.`,
+    input.conversionNotes ? `Conversion notes: ${input.conversionNotes}` : null,
+    input.note ? `Operator note: ${input.note}` : null,
+    "No external analytics import, provider call, ad spend execution, payout, payment, browser action, upload, marketplace write, or API write executed."
+  ].filter((item): item is string => Boolean(item)).join(" ");
+
+  return {
+    adSpend: input.adSpend,
+    digitalDeliveryCost: 0,
+    discounts: 0,
+    grossRevenue: input.grossRevenue,
+    impressions: input.manualContentViews,
+    netProfit: input.netProfit,
+    notes,
+    periodEnd: periodEnd.toISOString(),
+    periodStart: periodStart.toISOString(),
+    platformFees: 0,
+    productId: null,
+    productionCost: 0,
+    refunds: 0,
+    shippingCost: 0,
+    source: "manual",
+    storeId,
+    unitsSold: input.unitsSold,
+    visits: input.visits
+  };
+}
+
+async function applyRevenueFirstStoreManualSignalCapture(userId: string, input: ApplyRevenueFirstStoreManualSignalCaptureInput) {
+  const dashboard = await buildRevenuePortfolioDashboardForUser(userId, revenueEngineQuerySchema.parse({}));
+  const cashLoopReceipts = await listRevenueCashLoopEvidenceReceipts(userId);
+  const manualSignalGate = buildRevenueFirstStoreManualSignalCaptureGate({
+    cashLoopEvidenceReceipts: cashLoopReceipts,
+    dashboard,
+    requestedStoreId: input.storeId
+  });
+  const {
+    blockers,
+    storeName,
+    targetStoreId
+  } = manualSignalGate;
+
+  if (!targetStoreId) {
+    return {
+      capture: {
+        allowed: false,
+        auditLogId: null,
+        blockers,
+        dryRun: input.dryRun,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        snapshotId: null,
+        snapshotsPreviewed: 0,
+        snapshotsRecorded: 0,
+        storeId: null,
+        storeName,
+        summary: `First-store manual signal snapshot was not recorded: ${blockers.join(" ")}`
+      },
+      dashboard,
+      digest: null,
+      snapshot: null
+    };
+  }
+
+  const snapshot = buildFirstStoreManualSignalSnapshot(input, targetStoreId);
+  const ownership = await validatePerformanceSnapshotOwnership(userId, [snapshot]);
+
+  if (ownership.error) {
+    blockers.push(ownership.error);
+  }
+
+  const existing = await buildPerformanceDigestForUser(userId, revenuePerformanceQuerySchema.parse({
+    storeId: targetStoreId
+  }));
+  const incomingSnapshot = normalizeRevenuePerformanceSnapshot({
+    ...snapshot,
+    netProfit: snapshot.netProfit ?? calculateRevenuePerformanceNetProfit(snapshot)
+  });
+  const previewDigest = buildRevenuePerformanceDigest({
+    options: existing.digest.options,
+    products: existing.products,
+    snapshots: [...existing.digest.snapshots, incomingSnapshot],
+    stores: existing.stores.map((store) => storeSnapshot(store))
+  });
+  const allowed = blockers.length === 0;
+  const summary = allowed
+    ? input.dryRun
+      ? `First-store manual signal snapshot previewed for ${storeName ?? "the first store"}: ${input.unitsSold} unit${input.unitsSold === 1 ? "" : "s"}, ${input.grossRevenue} gross revenue, ${input.netProfit ?? calculateRevenuePerformanceNetProfit(snapshot)} net profit.`
+      : `First-store manual signal snapshot recorded for ${storeName ?? "the first store"}: ${input.unitsSold} unit${input.unitsSold === 1 ? "" : "s"}, ${input.grossRevenue} gross revenue, ${input.netProfit ?? calculateRevenuePerformanceNetProfit(snapshot)} net profit.`
+    : `First-store manual signal snapshot was not recorded: ${blockers.join(" ")}`;
+
+  if (!allowed || input.dryRun) {
+    return {
+      capture: {
+        allowed,
+        auditLogId: null,
+        blockers,
+        day: input.day,
+        dryRun: input.dryRun,
+        externalExecution: false as const,
+        grossRevenue: input.grossRevenue,
+        netProfit: input.netProfit ?? calculateRevenuePerformanceNetProfit(snapshot),
+        providerContacted: false as const,
+        rotationRecommendation: input.rotationRecommendation,
+        snapshotId: null,
+        snapshotsPreviewed: allowed ? 1 : 0,
+        snapshotsRecorded: 0,
+        storeId: targetStoreId,
+        storeName,
+        summary,
+        unitsSold: input.unitsSold,
+        visits: input.visits
+      },
+      dashboard,
+      digest: previewDigest,
+      snapshot: incomingSnapshot
+    };
+  }
+
+  const created = await prisma.revenuePerformanceSnapshot.create({
+    data: createPerformanceSnapshotData(userId, snapshot)
+  });
+  await rollupPerformanceStores(userId, [targetStoreId]);
+  const refreshedDigest = await buildPerformanceDigestForUser(userId, revenuePerformanceQuerySchema.parse({
+    storeId: targetStoreId
+  }));
+  const auditLog = await recordAuditLog({
+    action: "revenue.first_store.manual_signal_snapshot.recorded",
+    actorUserId: userId,
+    metadata: {
+      day: input.day,
+      dryRun: false,
+      externalExecution: false,
+      grossRevenue: input.grossRevenue,
+      manualContentViews: input.manualContentViews,
+      manualSavesOrShares: input.manualSavesOrShares,
+      netProfit: input.netProfit ?? calculateRevenuePerformanceNetProfit(snapshot),
+      note: input.note ?? null,
+      providerContacted: false,
+      requiredConfirmation: revenueFirstStoreManualSignalCaptureConfirmation,
+      rotationRecommendation: input.rotationRecommendation,
+      snapshotId: created.id,
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      unitsSold: input.unitsSold,
+      visits: input.visits
+    },
+    outcome: "success",
+    severity: input.grossRevenue > 0 || input.netProfit !== undefined && input.netProfit > 0 ? "medium" : "low",
+    targetId: targetStoreId,
+    targetType: "revenue_first_store_manual_signal_snapshot"
+  });
+  const refreshedDashboard = await buildRevenuePortfolioDashboardForUser(userId, revenueEngineQuerySchema.parse({}));
+
+  return {
+    capture: {
+      allowed: true,
+      auditLogId: auditLog.id,
+      blockers: [],
+      day: input.day,
+      dryRun: false,
+      externalExecution: false as const,
+      grossRevenue: input.grossRevenue,
+      netProfit: input.netProfit ?? calculateRevenuePerformanceNetProfit(snapshot),
+      providerContacted: false as const,
+      rotationRecommendation: input.rotationRecommendation,
+      snapshotId: created.id,
+      snapshotsPreviewed: 0,
+      snapshotsRecorded: 1,
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      unitsSold: input.unitsSold,
+      visits: input.visits
+    },
+    dashboard: refreshedDashboard,
+    digest: refreshedDigest.digest,
+    snapshot: performanceSnapshot(created)
+  };
+}
+
+async function applyRevenueWinnerClonePacketApproval(userId: string, input: ApplyRevenueWinnerClonePacketApprovalInput) {
+  const dashboard = await buildRevenuePortfolioDashboardForUser(userId, revenueEngineQuerySchema.parse({}));
+  const cashLoopReceipts = await listRevenueCashLoopEvidenceReceipts(userId);
+  const cloneApprovalGate = buildRevenueWinnerClonePacketApprovalGate({
+    cashLoopEvidenceReceipts: cashLoopReceipts,
+    dashboard,
+    requestedStoreId: input.storeId,
+    targetStores: input.targetStores
+  });
+  const {
+    allowed,
+    blockers,
+    packet,
+    storeName,
+    targetStoreId
+  } = cloneApprovalGate;
+  const summary = allowed && packet
+    ? input.dryRun
+      ? `${input.targetStores}-store internal winner clone packet previewed for ${storeName ?? "the first store"} with ${packet.draftCloneSlots} private draft slot${packet.draftCloneSlots === 1 ? "" : "s"}. External execution remains locked.`
+      : `${input.targetStores}-store internal winner clone packet approval recorded for ${storeName ?? "the first store"} with ${packet.draftCloneSlots} private draft slot${packet.draftCloneSlots === 1 ? "" : "s"}. External execution remains locked.`
+    : `${input.targetStores}-store internal winner clone packet approval was not recorded: ${blockers.join(" ")}`;
+  const auditLog = !allowed || input.dryRun || !packet ? null : await recordAuditLog({
+    action: "revenue.first_store.winner_clone_packet_approval.recorded",
+    actorUserId: userId,
+    metadata: {
+      approvalPhrase: input.approvalPhrase,
+      blockedExternalActions: packet.blockedExternalActions,
+      draftCloneSlots: packet.draftCloneSlots,
+      dryRun: false,
+      externalExecution: false,
+      note: input.note ?? null,
+      ownerApprovalRequired: packet.ownerApprovalRequired,
+      providerContacted: false,
+      readinessPercent: packet.readinessPercent,
+      requiredConfirmation: revenueWinnerClonePacketApprovalConfirmation,
+      requiredProof: packet.requiredProof,
+      sourceTemplate: packet.sourceTemplate,
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      targetStores: packet.targetStores,
+      tasks: packet.tasks
+    },
+    outcome: "success",
+    severity: "high",
+    targetId: targetStoreId ?? `winner-clone-${input.targetStores}`,
+    targetType: "revenue_winner_clone_packet_approval"
+  });
+  const refreshedDashboard = auditLog ? await buildRevenuePortfolioDashboardForUser(userId, revenueEngineQuerySchema.parse({})) : dashboard;
+  const refreshedPacket = refreshedDashboard.firstStoreCashLoop.winnerScaleLadder.clonePackets.find((candidate) => candidate.targetStores === input.targetStores) ?? packet;
+
+  return {
+    cloneApproval: {
+      allowed,
+      approvalPhrase: input.approvalPhrase,
+      approvalStatus: packet?.status ?? "blocked",
+      approvalsPreviewed: allowed && input.dryRun ? 1 : 0,
+      approvalsRecorded: allowed && !input.dryRun ? 1 : 0,
+      auditLogId: auditLog?.id ?? null,
+      blockedExternalActions: packet?.blockedExternalActions ?? [],
+      blockers,
+      draftCloneSlots: packet?.draftCloneSlots ?? 0,
+      dryRun: input.dryRun,
+      externalExecution: false as const,
+      ownerApprovalRequired: packet?.ownerApprovalRequired ?? false,
+      providerContacted: false as const,
+      requiredProof: packet?.requiredProof ?? [],
+      sourceTemplate: packet?.sourceTemplate ?? "none",
+      storeId: targetStoreId,
+      storeName,
+      summary,
+      targetStores: input.targetStores,
+      taskCount: packet?.tasks.length ?? 0
+    },
+    clonePacket: refreshedPacket,
+    dashboard: refreshedDashboard
+  };
 }
 
 async function buildRevenueOpportunityControlForUser(userId: string, options: RevenueOpportunityControlQueryInput): Promise<{
@@ -11601,6 +12248,74 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
     const dashboard = await buildRevenuePortfolioDashboardForUser(currentUser.sub, query);
 
     return reply.send({ dashboard });
+  });
+
+  app.post("/merch/revenue-engine/first-store-cash-loop/owner-launch-approval/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueOwnerManualLaunchApprovalSchema.parse(request.body);
+    const response = await applyRevenueOwnerManualLaunchApproval(currentUser.sub, input);
+
+    if (!response.applied.allowed) {
+      return reply.code(409).send(response);
+    }
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/first-store-cash-loop/manual-launch-evidence/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueFirstStoreManualLaunchEvidenceSchema.parse(request.body);
+    const response = await applyRevenueFirstStoreManualLaunchEvidence(currentUser.sub, input);
+
+    if (!response.manualLaunchEvidence.allowed) {
+      return reply.code(409).send(response);
+    }
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/first-store-cash-loop/manual-signal-snapshot/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueFirstStoreManualSignalCaptureSchema.parse(request.body);
+    const response = await applyRevenueFirstStoreManualSignalCapture(currentUser.sub, input);
+
+    if (!response.capture.allowed) {
+      return reply.code(409).send(response);
+    }
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/first-store-cash-loop/winner-clone-packet-approval/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueWinnerClonePacketApprovalSchema.parse(request.body);
+    const response = await applyRevenueWinnerClonePacketApproval(currentUser.sub, input);
+
+    if (!response.cloneApproval.allowed) {
+      return reply.code(409).send(response);
+    }
+
+    return reply.send(response);
   });
 
   app.get("/merch/revenue-engine/portfolio", { preHandler: requireAuth }, async (request, reply) => {

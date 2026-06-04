@@ -164,6 +164,13 @@ export const revenueFirstBusinessExecuteConfirmation = "EXECUTE FIRST BUSINESS I
 export const revenueFirstBusinessAutonomousLaunchConfirmation = "RUN AUTONOMOUS FIRST BUSINESS LAUNCH PREP";
 export const revenueFirstBusinessLiveExecutorConfirmation = "PREPARE CONTROLLED LIVE FIRST BUSINESS EXECUTOR";
 export const revenueFirstBusinessLiveExecutorUnlockPhrase = "I APPROVE ENTRAL LIVE LAUNCH EXECUTION";
+export const revenueOwnerManualLaunchApprovalConfirmation = "RECORD OWNER MANUAL LIVE LAUNCH APPROVAL";
+export const revenueOwnerManualLaunchApprovalPhrase = "APPROVE FIRST STORE MANUAL LIVE LAUNCH";
+export const revenueFirstStoreManualLaunchEvidenceConfirmation = "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE";
+export const revenueFirstStoreManualLaunchEvidencePhrase = "CONFIRM OWNER COMPLETED MANUAL FIRST STORE LAUNCH STEP";
+export const revenueFirstStoreManualSignalCaptureConfirmation = "RECORD FIRST STORE MANUAL SIGNAL SNAPSHOT";
+export const revenueWinnerClonePacketApprovalConfirmation = "RECORD INTERNAL WINNER CLONE PACKET APPROVAL";
+export const revenueWinnerClonePacketApprovalPhrase = "APPROVE INTERNAL WINNER CLONE PACKET";
 export const revenueLaunchChecklistActionBridgeConfirmation = "DISPATCH INTERNAL REVENUE LAUNCH CHECKLIST ACTIONS";
 export const revenueLaunchSprintConfirmation = "RUN INTERNAL REVENUE LAUNCH SPRINT";
 export const revenueFirstCashSprintConfirmation = "RUN INTERNAL FIRST CASH SPRINT";
@@ -529,7 +536,7 @@ export const applyRevenueHundredStoreDailySupervisorSchema = z.object({
   ...revenueHundredStoreOperationsFields,
   confirm: z.literal(revenueHundredStoreDailySupervisorConfirmation),
   dryRun: z.boolean().default(true),
-  maxSteps: z.coerce.number().int().min(1).max(12).default(4),
+  maxSteps: z.coerce.number().int().min(1).max(10).default(4),
   mode: revenueHundredStoreDailySupervisorModeSchema.default("safe_internal_only"),
   note: optionalTrimmedString(500),
   podProvider: merchPodProviderSchema.default("Printify")
@@ -697,6 +704,59 @@ export const applyRevenueFirstBusinessLiveExecutorSchema = z.object({
   liveUnlockPhrase: z.string().trim().max(120).optional(),
   note: optionalTrimmedString(500),
   publicLaunchApproval: z.boolean().default(false)
+});
+
+export const applyRevenueOwnerManualLaunchApprovalSchema = z.object({
+  approvalPhrase: z.literal(revenueOwnerManualLaunchApprovalPhrase),
+  confirm: z.literal(revenueOwnerManualLaunchApprovalConfirmation),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500),
+  storeId: z.string().trim().min(1).max(160).optional()
+});
+
+export const applyRevenueFirstStoreManualLaunchEvidenceSchema = z.object({
+  approvalPhrase: z.literal(revenueFirstStoreManualLaunchEvidencePhrase),
+  completedAt: z.string().datetime().optional(),
+  confirm: z.literal(revenueFirstStoreManualLaunchEvidenceConfirmation),
+  dryRun: z.boolean().default(true),
+  evidenceCategory: z.enum(["storefront", "pod_supplier", "payments_payouts", "content_channels", "analytics_manual_import"]).default("storefront"),
+  evidenceNote: optionalTrimmedString(1000),
+  ownerCompletedManualStep: z.boolean().default(true),
+  stepIndex: z.coerce.number().int().min(0).max(25).default(0),
+  storeId: z.string().trim().min(1).max(160).optional()
+});
+
+export const applyRevenueFirstStoreManualSignalCaptureSchema = z.object({
+  adSpend: moneyAmountSchema.default(0),
+  confirm: z.literal(revenueFirstStoreManualSignalCaptureConfirmation),
+  conversionNotes: optionalTrimmedString(1000),
+  day: z.coerce.number().int().min(0).max(7).default(0),
+  dryRun: z.boolean().default(true),
+  grossRevenue: moneyAmountSchema.default(0),
+  manualContentViews: z.coerce.number().int().min(0).max(1_000_000_000).default(0),
+  manualSavesOrShares: z.coerce.number().int().min(0).max(1_000_000_000).default(0),
+  netProfit: z.coerce.number().finite().min(-999_999_999).max(999_999_999).optional(),
+  note: optionalTrimmedString(500),
+  periodEnd: z.string().datetime().optional(),
+  periodStart: z.string().datetime().optional(),
+  rotationRecommendation: revenueAssetRotationDecisionSchema.default("watch"),
+  storeId: z.string().trim().min(1).max(160).optional(),
+  unitsSold: z.coerce.number().int().min(0).max(1_000_000).default(0),
+  visits: z.coerce.number().int().min(0).max(1_000_000_000).default(0)
+}).refine((input) => !input.periodStart || !input.periodEnd || Date.parse(input.periodEnd) >= Date.parse(input.periodStart), {
+  message: "Manual signal period end must be after period start.",
+  path: ["periodEnd"]
+});
+
+export const applyRevenueWinnerClonePacketApprovalSchema = z.object({
+  approvalPhrase: z.literal(revenueWinnerClonePacketApprovalPhrase),
+  confirm: z.literal(revenueWinnerClonePacketApprovalConfirmation),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500),
+  storeId: z.string().trim().min(1).max(160).optional(),
+  targetStores: z.coerce.number().int().refine((value) => value === 10 || value === 25 || value === 100, {
+    message: "Winner clone packet targetStores must be 10, 25, or 100."
+  })
 });
 
 export const revenueAssetControlLedgerQuerySchema = z.object({
@@ -1900,6 +1960,10 @@ export type ApplyRevenueFirstBusinessInternalLaunchInput = z.infer<typeof applyR
 export type ApplyRevenueFirstBusinessExecuteInput = z.infer<typeof applyRevenueFirstBusinessExecuteSchema>;
 export type ApplyRevenueFirstBusinessAutonomousLaunchInput = z.infer<typeof applyRevenueFirstBusinessAutonomousLaunchSchema>;
 export type ApplyRevenueFirstBusinessLiveExecutorInput = z.infer<typeof applyRevenueFirstBusinessLiveExecutorSchema>;
+export type ApplyRevenueOwnerManualLaunchApprovalInput = z.infer<typeof applyRevenueOwnerManualLaunchApprovalSchema>;
+export type ApplyRevenueFirstStoreManualLaunchEvidenceInput = z.infer<typeof applyRevenueFirstStoreManualLaunchEvidenceSchema>;
+export type ApplyRevenueFirstStoreManualSignalCaptureInput = z.infer<typeof applyRevenueFirstStoreManualSignalCaptureSchema>;
+export type ApplyRevenueWinnerClonePacketApprovalInput = z.infer<typeof applyRevenueWinnerClonePacketApprovalSchema>;
 export type RevenueAssetControlLedgerQueryInput = z.infer<typeof revenueAssetControlLedgerQuerySchema>;
 export type RevenueAssetControlRecoveryQueryInput = z.infer<typeof revenueAssetControlRecoveryQuerySchema>;
 export type RevenueAssetReviewQueueQueryInput = z.infer<typeof revenueAssetReviewQueueQuerySchema>;
