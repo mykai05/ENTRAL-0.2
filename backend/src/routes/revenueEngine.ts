@@ -346,6 +346,8 @@ import {
   type RevenueFirstBusinessLiveExecutorPlan,
   type RevenueFirstStorePreparationPlan
 } from "../services/revenueFirstStorePreparation.js";
+import { executeFirstBusinessShopifyAutonomyRun } from "../services/revenueFirstBusinessShopifyBridge.js";
+import { getShopifyConnectionCredentials } from "../services/shopifyConnections.js";
 import {
   buildRevenueAssetControlRecoveryPlan,
   buildRevenueAssetControlLedgerPlan,
@@ -4744,6 +4746,23 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
       publicLaunchApproval: input.publicLaunchApproval
     })
     : null;
+  const shopifyConnectionCredentials = autonomousLaunch
+    ? await getShopifyConnectionCredentials(
+      userId,
+      autonomousLaunch.executionPacket.finalExecutionPacket.store.sourceStoreId
+    )
+    : null;
+  const shopifyAutonomyRun = autonomousLaunch
+    ? await executeFirstBusinessShopifyAutonomyRun({
+      autonomousLaunch,
+      connectorApproval: input.connectorApproval,
+      credentials: shopifyConnectionCredentials ?? undefined,
+      dryRun: input.dryRun,
+      liveExecutor,
+      shopifyDraftUnlockPhrase: input.shopifyDraftUnlockPhrase
+    })
+    : null;
+  const shopifyStorefrontDraft = shopifyAutonomyRun?.storefrontDraft ?? null;
   const sourceKeys = liveExecutor && autonomousLaunch
     ? [autonomousLaunch.executionPacket.finalExecutionPacket.store.sourceStoreId]
     : [];
@@ -4761,20 +4780,26 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
     ? liveExecutor
       ? `Controlled Live First Business Executor preview completed for ${liveExecutor.sourceAutonomousLaunchId}.`
       : "Controlled Live First Business Executor preview found no autonomous launch packet."
+    : shopifyStorefrontDraft?.providerContacted
+      ? `${execution?.finalExecutionPacket.store.businessName ?? "First business"} controlled live executor created Shopify draft storefront resources. Payment actions remain locked.`
+    : shopifyAutonomyRun?.status === "blocked_store_creation_required"
+      ? `${execution?.finalExecutionPacket.store.businessName ?? "First business"} controlled live executor reached Shopify autonomy, but store creation or Admin API connection is still required. Payment actions remain locked.`
     : liveExecutor?.status === "armed_non_payment_live_run"
       ? `${execution?.finalExecutionPacket.store.businessName ?? "First business"} controlled live executor armed for non-payment launch steps. No external action executed; payment actions remain locked.`
       : liveExecutor
         ? `${execution?.finalExecutionPacket.store.businessName ?? "First business"} controlled live executor prepared. Owner unlock, connector approval, public launch approval, or ad draft approval is still incomplete.`
         : "Controlled Live First Business Executor could not prepare a live-run packet.";
+  const actualExternalActionsExecuted = shopifyStorefrontDraft?.actualExternalActionsExecuted ?? false;
+  const providerContacted = shopifyStorefrontDraft?.providerContacted ?? false;
   const liveReceipt = {
-    actualExternalActionsExecuted: false as const,
+    actualExternalActionsExecuted,
     auditLogId: null as string | null,
     batchRunId: null as string | null,
     dryRun: input.dryRun,
-    externalExecution: false as const,
+    externalExecution: actualExternalActionsExecuted,
     liveExecutorId: liveExecutor?.liveExecutorId ?? null,
     paymentExecution: false as const,
-    providerContacted: false as const,
+    providerContacted,
     stage: "controlled_live_executor" as const,
     status: liveExecutor?.status ?? ("blocked" as const),
     summary: appliedSummary,
@@ -4791,24 +4816,30 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
       liveExecutor,
       package: launchPackage,
       preparation,
+      shopifyAutonomyRun,
+      shopifyStorefrontDraft,
       sourceBatch
     };
   }
 
   const auditLog = await recordAuditLog({
-    action: liveExecutor?.status === "armed_non_payment_live_run"
+    action: actualExternalActionsExecuted
+      ? "revenue.first_business.controlled_live_executor_executed_shopify_draft"
+      : shopifyAutonomyRun?.status === "blocked_store_creation_required"
+      ? "revenue.first_business.controlled_live_executor_shopify_autonomy_gate"
+      : liveExecutor?.status === "armed_non_payment_live_run"
       ? "revenue.first_business.controlled_live_executor_armed"
       : liveExecutorPrepared
         ? "revenue.first_business.controlled_live_executor_prepared"
         : "revenue.first_business.controlled_live_executor_blocked",
     actorUserId: userId,
     metadata: {
-      actualExternalActionsExecuted: false,
+      actualExternalActionsExecuted,
       autonomousLaunchId: autonomousLaunch?.autonomousLaunchId ?? null,
       blockedExternalActions: liveExecutor?.blockedExternalActions ?? autonomousLaunch?.blockedExternalActions ?? execution?.blockedExternalActions ?? [],
       credentialReadiness: liveExecutor?.credentialReadiness ?? [],
       dryRun: false,
-      externalExecution: false,
+      externalExecution: actualExternalActionsExecuted,
       guardrails: liveExecutor?.guardrails ?? [],
       liveExecutor,
       liveExecutorId: liveExecutor?.liveExecutorId ?? null,
@@ -4823,8 +4854,24 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
       paymentExecution: false,
       paymentLockedQueue: liveExecutor?.paymentLockedQueue ?? [],
       providerActionManifests: liveExecutor?.providerActionManifests ?? [],
-      providerContacted: false,
+      providerContacted,
+      persistedShopifyConnectionAvailable: Boolean(shopifyConnectionCredentials),
       rollbackPlan: liveExecutor?.rollbackPlan ?? [],
+      shopifyAutonomyRun: shopifyAutonomyRun ? {
+        nextAction: shopifyAutonomyRun.nextAction,
+        providerContacted: shopifyAutonomyRun.providerContacted,
+        provisioningStatus: shopifyAutonomyRun.provisioning.status,
+        status: shopifyAutonomyRun.status,
+        summary: shopifyAutonomyRun.summary,
+        totals: shopifyAutonomyRun.totals
+      } : null,
+      shopifyStorefrontDraft: shopifyStorefrontDraft ? {
+        providerContacted: shopifyStorefrontDraft.providerContacted,
+        providerContactedDomain: shopifyStorefrontDraft.providerContactedDomain,
+        status: shopifyStorefrontDraft.status,
+        summary: shopifyStorefrontDraft.summary,
+        totals: shopifyStorefrontDraft.totals
+      } : null,
       sourceBatchTotals: sourceBatch.totals,
       sourceKeys,
       status: liveExecutor?.status ?? autonomousLaunch?.status ?? execution?.status ?? launch?.status ?? preparation?.status ?? launchPackage?.status ?? "blocked",
@@ -4832,7 +4879,7 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
       totals: liveExecutor?.totals ?? null
     },
     outcome: liveExecutorPrepared ? "success" : "failure",
-    severity: liveExecutor?.status === "armed_non_payment_live_run" ? "high" : liveExecutorPrepared ? "medium" : "high",
+    severity: actualExternalActionsExecuted || liveExecutor?.status === "armed_non_payment_live_run" ? "high" : liveExecutorPrepared ? "medium" : "high",
     targetId: liveExecutor?.liveExecutorId ?? autonomousLaunch?.autonomousLaunchId ?? execution?.executionId ?? launch?.launchId ?? preparation?.preparationId ?? launchPackage?.packageId ?? null,
     targetType: "revenue_controlled_live_first_business_executor"
   });
@@ -4848,8 +4895,8 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
       batchKey,
       beforeTotalsJson: stringifySecureJson(beforeTotals),
       dryRun: false,
-      externalExecution: false,
-      providerContacted: false,
+      externalExecution: actualExternalActionsExecuted,
+      providerContacted,
       resultJson: stringifySecureJson({
         autonomousLaunch,
         execution,
@@ -4861,6 +4908,8 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
         liveExecutor,
         package: launchPackage,
         preparation,
+        shopifyAutonomyRun,
+        shopifyStorefrontDraft,
         sourceBatchTotals: sourceBatch.totals
       }),
       resultSummary: appliedSummary,
@@ -4872,8 +4921,8 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
     update: {
       afterTotalsJson: stringifySecureJson(afterTotals),
       auditLogId: auditLog.id,
-      externalExecution: false,
-      providerContacted: false,
+      externalExecution: actualExternalActionsExecuted,
+      providerContacted,
       resultJson: stringifySecureJson({
         autonomousLaunch,
         execution,
@@ -4885,6 +4934,8 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
         liveExecutor,
         package: launchPackage,
         preparation,
+        shopifyAutonomyRun,
+        shopifyStorefrontDraft,
         sourceBatchTotals: sourceBatch.totals
       }),
       resultSummary: appliedSummary,
@@ -4907,6 +4958,8 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
     liveExecutor,
     package: launchPackage,
     preparation,
+    shopifyAutonomyRun,
+    shopifyStorefrontDraft,
     sourceBatch
   };
 }

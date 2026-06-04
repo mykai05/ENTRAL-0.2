@@ -332,6 +332,439 @@ export type ProviderPayloadPackageResponse = {
   package: ProviderPayloadPackage;
 };
 
+export type ShopifyStorefrontDraftStatus =
+  | "credential_blocked"
+  | "dry_run"
+  | "executed"
+  | "failed"
+  | "not_applicable"
+  | "ready_for_owner_unlock"
+  | "ready_to_execute";
+
+export type ShopifyStorefrontDraftActionKind =
+  | "create_shopify_collection_draft"
+  | "create_shopify_navigation_menu_draft"
+  | "create_shopify_page_draft"
+  | "upsert_shopify_product_draft";
+
+export type ShopifyStorefrontDraftActionStatus =
+  | "blocked"
+  | "executed"
+  | "failed"
+  | "ready"
+  | "skipped";
+
+export type ShopifyStorefrontDraftAction = {
+  body: Record<string, unknown>;
+  externalExecution: boolean;
+  handle: string;
+  id: string;
+  idempotencyKey: string;
+  kind: ShopifyStorefrontDraftActionKind;
+  method: "POST";
+  mutationName: "collectionCreate" | "menuCreate" | "pageCreate" | "productSet";
+  pathTemplate: "/admin/api/{version}/graphql.json";
+  provider: "Shopify";
+  providerContacted: boolean;
+  reason: string;
+  result: {
+    message: string;
+    resourceHandle: string | null;
+    resourceId: string | null;
+    userErrors: string[];
+  } | null;
+  status: ShopifyStorefrontDraftActionStatus;
+  title: string;
+};
+
+export type ShopifyStorefrontLaunchReadiness = {
+  failedResourceCount: number;
+  nextAutonomousStep:
+    | "await_public_launch_approval"
+    | "connect_shopify_admin"
+    | "owner_unlock_required"
+    | "repair_failed_draft_actions"
+    | "review_draft_resources"
+    | "run_shopify_draft_executor"
+    | "skip_non_shopify_store";
+  readyResourceCount: number;
+  remainingApprovals: string[];
+  reviewResources: Array<{
+    adminUrl: string | null;
+    handle: string;
+    kind: ShopifyStorefrontDraftActionKind;
+    resourceId: string;
+    status: "executed" | "skipped";
+    title: string;
+  }>;
+  rollbackChecklist: string[];
+  status:
+    | "blocked_by_failures"
+    | "not_started"
+    | "ready_for_review"
+    | "waiting_connection"
+    | "waiting_owner_unlock";
+  summary: string;
+};
+
+export type ShopifyStorefrontDraftPlan = {
+  actualExternalActionsExecuted: boolean;
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  credentialReadiness: {
+    apiVersion: string;
+    credentialRefs: string[];
+    missingEnvVars: string[];
+    shopDomain: string | null;
+    status: "invalid_domain" | "missing_credentials" | "ready";
+  };
+  externalExecution: boolean;
+  generatedAt: string;
+  guardrails: string[];
+  launchReadiness: ShopifyStorefrontLaunchReadiness;
+  mode: "Controlled Shopify Storefront Draft Executor";
+  ownerUnlock: {
+    connectorApproval: boolean;
+    externalExecution: boolean;
+    phraseAccepted: boolean;
+    providerContacted: boolean;
+    status: "accepted" | "not_requested" | "waiting_owner";
+  };
+  providerContacted: boolean;
+  providerContactedDomain: string | null;
+  shopifyAdminUrl: string | null;
+  sourceStore: {
+    businessName: string;
+    storePlatform: string;
+  };
+  status: ShopifyStorefrontDraftStatus;
+  storefrontActions: ShopifyStorefrontDraftAction[];
+  summary: string;
+  totals: {
+    blockedActions: number;
+    collections: number;
+    executedActions: number;
+    failedActions: number;
+    navigationMenus: number;
+    pages: number;
+    products: number;
+    readyActions: number;
+    skippedActions: number;
+    storeShellActions: number;
+  };
+};
+
+export type ShopifyStorefrontDraftResponse = {
+  auditLogId: string;
+  plan: ShopifyStorefrontDraftPlan;
+};
+
+export type ShopifyConnectionSnapshot = {
+  apiVersion: string;
+  connectedAt: string;
+  id: string;
+  lastUsedAt: string | null;
+  scopes: string[];
+  shopDomain: string;
+  status: string;
+  storeId: string | null;
+  tokenConfigured: boolean;
+  tokenLastFour: string | null;
+  updatedAt: string;
+};
+
+export type ShopifyConnectionResponse = {
+  auditLogId?: string;
+  connection: ShopifyConnectionSnapshot;
+  verification?: ShopifyConnectionVerification;
+};
+
+export type ShopifyConnectionsResponse = {
+  connections: ShopifyConnectionSnapshot[];
+};
+
+export type ShopifyConnectionVerification = {
+  errors: string[];
+  grantedScopes: string[];
+  missingScopes: string[];
+  primaryDomain: string | null;
+  providerContacted: boolean;
+  shopDomain: string | null;
+  shopId: string | null;
+  shopName: string | null;
+  status: "failed" | "verified";
+};
+
+export type ShopifyOAuthStartResponse = {
+  auditLogId: string;
+  authorizeUrl: string;
+  callbackUrl: string;
+  continuation: {
+    expiresAt: string;
+    id: string;
+    status: string;
+  } | null;
+  scopes: string[];
+  shopDomain: string;
+  stateExpiresAt: string;
+};
+
+export type ShopifyStoreProvisioningStatus =
+  | "connected_existing_shop"
+  | "dev_dashboard_creation_required"
+  | "not_applicable";
+
+export type ShopifyDevDashboardBrowserTask = {
+  allowedDomains: string[];
+  allowedSteps: Array<{
+    expectedState: string;
+    id: string;
+    instruction: string;
+    selectorHints: string[];
+  }>;
+  completionEvidence: {
+    captureEndpoint: string;
+    nextAutonomousStep: "submit_shopify_store_creation_capture";
+    requiredFields: string[];
+  };
+  currentExecution: "not_started";
+  hardStops: string[];
+  mode: "Governed Shopify Dev Dashboard Browser Task";
+  targetUrl: string;
+};
+
+export type ShopifyStoreProvisioningPlan = {
+  actualExternalActionsExecuted: false;
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  continuation: {
+    connectEndpoint: string;
+    draftExecutorEndpoint: string;
+    nextAutonomousStep: "connect_existing_shop" | "run_shopify_draft_executor" | "skip_non_shopify_store";
+    readyForDraftExecutor: boolean;
+  };
+  creationCapture: {
+    afterCreationChecklist: string[];
+    autonomyResumeJobEndpoint: string;
+    autonomyResumeJobRequestDefaults: {
+      confirm: "QUEUE SHOPIFY AUTONOMY RESUME JOB";
+      connectionWatchIntervalMinutes: number;
+      countryCode: string;
+      dryRun: false;
+      maxConnectionWatchAttempts: number;
+      requestedShopName: string;
+      storeType: "client_transfer" | "development";
+      watchForConnection: true;
+    };
+    expectedShopDomain: string | null;
+    nextAutonomousStep: "create_store_in_dashboard" | "run_shopify_draft_executor" | "skip_non_shopify_store" | "start_shopify_oauth";
+    oauthStartEndpoint: string;
+    oauthStartRequestDefaults: {
+      confirm: "START SHOPIFY OAUTH";
+      continueAfterApproval: true;
+      countryCode: string;
+      requestedShopName: string;
+      scopes: string[];
+      shopDomain: string | null;
+      storeType: "client_transfer" | "development";
+    };
+    status: "capture_required" | "connected_shop_ready" | "not_applicable";
+    summary: string;
+  };
+  creationHandoff: {
+    automationJobEndpoint: string;
+    automationJobRequestDefaults: {
+      confirm: "QUEUE SHOPIFY STORE CREATION HANDOFF JOB";
+      connectionWatchIntervalMinutes: number;
+      countryCode: string;
+      dryRun: false;
+      maxConnectionWatchAttempts: number;
+      queueBrowserTask: true;
+      queueAutonomyResume: true;
+      requestedShopName: string;
+      storeType: "client_transfer" | "development";
+      watchForConnection: true;
+    };
+    blockedBrowserActions: string[];
+    browserTask: ShopifyDevDashboardBrowserTask;
+    evidenceToCapture: string[];
+    expectedShopDomain: string | null;
+    nextAutonomousStep: "queue_store_creation_handoff_job" | "run_shopify_draft_executor" | "skip_non_shopify_store";
+    status: "ready_to_queue" | "connected_shop_ready" | "not_applicable";
+    summary: string;
+    targetUrl: string;
+  };
+  devDashboardPacket: {
+    countryCode: string;
+    ownerEmail: string | null;
+    partnerDashboardStoresUrl: string;
+    requestedShopName: string;
+    shopDomainSuggestion: string;
+    storeType: "client_transfer" | "development";
+  };
+  externalExecution: false;
+  generatedAt: string;
+  guardrails: string[];
+  mode: "Shopify Store Creation Provisioning Gate";
+  officialApiSurface: {
+    createStoreMutationDocumented: false;
+    docs: Array<{
+      label: string;
+      url: string;
+    }>;
+    summary: string;
+  };
+  providerContacted: false;
+  sourceStore: {
+    businessName: string;
+    storePlatform: string;
+  };
+  status: ShopifyStoreProvisioningStatus;
+  summary: string;
+};
+
+export type ShopifyStoreProvisioningResponse = {
+  auditLogId: string;
+  plan: ShopifyStoreProvisioningPlan;
+};
+
+export type ShopifyStoreCreationHandoffJobResponse = {
+  auditLogId: string;
+  browserTaskJob?: {
+    id: string;
+    scheduledAt: string | null;
+    status: string;
+    type: "shopify_store_creation_browser_task";
+  } | null;
+  handoff: ShopifyStoreProvisioningPlan["creationHandoff"];
+  handoffApprovalPacket?: {
+    id: string;
+    packetId: string | null;
+    status: string;
+  } | null;
+  job: {
+    connectionWatch: {
+      attempt: number;
+      enabled: boolean;
+      intervalMinutes: number;
+      maxAttempts: number;
+    };
+    id: string;
+    scheduledAt: string | null;
+    status: string;
+    type: "shopify_store_creation_handoff";
+  };
+};
+
+export type ShopifyStoreCreationCaptureResponse = {
+  auditLogId: string;
+  capture: {
+    actualExternalActionsExecuted: false;
+    autonomyResumeJob: {
+      connectionWatch: {
+        attempt: number;
+        enabled: boolean;
+        intervalMinutes: number;
+        maxAttempts: number;
+      };
+      id: string;
+      scheduledAt: string | null;
+      status: string;
+      type: "shopify_autonomy_resume";
+    } | null;
+    browserTaskEvidence: {
+      capturedAt: string;
+      capturedFromTargetUrl: string | null;
+      completedStepIds: string[];
+      countryCode: string;
+      finalShopDomain: string;
+      operatorOrSessionContext: string | null;
+      source: "approval_review" | "governed_browser_task" | "manual_capture";
+      storeType: "client_transfer" | "development";
+    };
+    externalExecution: false;
+    mode: "Shopify Store Creation Capture";
+    oauth: {
+      authorizeUrl: string;
+      callbackUrl: string;
+      continuation: {
+        expiresAt: string;
+        id: string;
+        status: string;
+      } | null;
+      scopes: string[];
+      shopDomain: string;
+      stateExpiresAt: string;
+    } | null;
+    providerContacted: false;
+    shopDomain: string;
+    status: "captured" | "oauth_ready" | "watch_queued";
+    summary: string;
+  };
+};
+
+export type ShopifyAutonomyRunStatus =
+  | "blocked_owner_gates"
+  | "blocked_store_creation_required"
+  | "blocked_credentials"
+  | "executed_shopify_draft"
+  | "failed"
+  | "not_applicable"
+  | "preview_ready"
+  | "ready_for_shopify_draft";
+
+export type ShopifyAutonomyRunPlan = {
+  actualExternalActionsExecuted: boolean;
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: boolean;
+  generatedAt: string;
+  guardrails: string[];
+  mode: "Shopify Autonomous Store Run";
+  nextAction: "connect_shopify_admin" | "owner_unlock_required" | "review_failed_actions" | "run_shopify_draft_executor" | "shopify_draft_complete" | "skip_non_shopify_store";
+  ownerUnlock: {
+    connectorApproval: boolean;
+    dryRun: boolean;
+    phraseProvided: boolean;
+  };
+  providerContacted: boolean;
+  provisioning: ShopifyStoreProvisioningPlan;
+  sourceStore: {
+    businessName: string;
+    storePlatform: string;
+  };
+  status: ShopifyAutonomyRunStatus;
+  storefrontDraft: ShopifyStorefrontDraftPlan | null;
+  summary: string;
+  totals: {
+    blockedActions: number;
+    executedActions: number;
+    failedActions: number;
+    plannedDraftActions: number;
+  };
+};
+
+export type ShopifyAutonomyRunResponse = {
+  auditLogId: string;
+  plan: ShopifyAutonomyRunPlan;
+};
+
+export type ShopifyAutonomyResumeJobResponse = {
+  auditLogId: string;
+  job: {
+    connectionWatch: {
+      attempt: number;
+      enabled: boolean;
+      intervalMinutes: number;
+      maxAttempts: number;
+    };
+    id: string;
+    scheduledAt: string | null;
+    status: string;
+    type: "shopify_autonomy_resume";
+  };
+};
+
 export type GrowthDraft = {
   approvalStatus: "Draft - needs approval";
   channel: "Social" | "Shopify" | "Ads" | "Analytics";
@@ -399,6 +832,36 @@ export type GrowthApprovalPacket = {
   };
   rollbackChecklist?: string[];
   scheduledFor: string | null;
+  shopifyAutonomy?: {
+    action:
+      | "connect_shopify_admin"
+      | "repair_failed_draft_actions"
+      | "request_owner_unlock"
+      | "review_draft_resources"
+      | "run_shopify_draft_executor"
+      | "skip_non_shopify_store"
+      | "wait_for_connection";
+    failedActionCount: number;
+    launchReadinessStatus: string | null;
+    nextRunAt: string | null;
+    reviewResourceCount: number;
+    status: "blocked" | "complete" | "queued_follow_up" | "ready_for_next_step" | "requires_repair";
+    storefrontDraftStatus: string | null;
+  };
+  shopifyStoreCreation?: {
+    automationJobId: string;
+    browserTaskJobId: string | null;
+    browserTaskJobStatus: string | null;
+    browserTask: ShopifyDevDashboardBrowserTask;
+    captureEndpoint: string;
+    evidenceToCapture: string[];
+    expectedShopDomain: string | null;
+    nextStep: "capture_shopify_store_creation";
+    resumeJobId: string | null;
+    resumeJobStatus: string | null;
+    status: "waiting_for_dashboard_capture";
+    targetUrl: string;
+  };
   status: "Pending approval";
   storeId: string;
   summary: string;
@@ -420,6 +883,28 @@ export type GrowthApprovalRecord = {
   status: "pending" | "approved" | "rejected";
   statusLabel: "Pending approval" | "Approved - execution still locked" | "Rejected";
   updatedAt: string;
+};
+
+export type ShopifyAutonomyReviewContinuation = {
+  action: NonNullable<GrowthApprovalPacket["shopifyAutonomy"]>["action"];
+  approvalStatus: "approved" | "rejected";
+  canResumeAutonomy: boolean;
+  externalExecution: false;
+  launchReadinessStatus: string | null;
+  message: string;
+  nextStep:
+    | "connect_shopify_admin"
+    | "provide_owner_unlock"
+    | "public_launch_approval_required"
+    | "queue_shopify_autonomy_resume"
+    | "repair_failed_draft_actions"
+    | "wait_for_connection"
+    | "none";
+  providerContacted: false;
+  recommendedEndpoint: string | null;
+  requiredInputs: string[];
+  reviewResourceCount: number;
+  storefrontDraftStatus: string | null;
 };
 
 export type GrowthApprovalResponse = {
@@ -499,6 +984,14 @@ export type GrowthApprovalReviewResponse = {
   approval: GrowthApprovalRecord;
   auditLogId: string;
   message: string;
+  shopifyContinuation?: ShopifyAutonomyReviewContinuation | null;
+  shopifyStoreCreationCapture?: ShopifyStoreCreationCaptureResponse | null;
+  shopifyResumeJob?: {
+    id: string;
+    scheduledAt: string | null;
+    status: string;
+    type: string;
+  } | null;
 };
 
 export type GrowthOrchestrationStep = {
@@ -3426,14 +3919,14 @@ export type RevenueFirstBusinessLiveExecutorApplyResponse = {
   execution: RevenueFirstBusinessExecutionPlan | null;
   launch: RevenueFirstBusinessInternalLaunchPlan | null;
   live: {
-    actualExternalActionsExecuted: false;
+    actualExternalActionsExecuted: boolean;
     auditLogId: string | null;
     batchRunId: string | null;
     dryRun: boolean;
-    externalExecution: false;
+    externalExecution: boolean;
     liveExecutorId: string | null;
     paymentExecution: false;
-    providerContacted: false;
+    providerContacted: boolean;
     stage: "controlled_live_executor";
     status: "ready_for_owner_unlock" | "armed_non_payment_live_run" | "blocked";
     summary: string;
@@ -3442,6 +3935,8 @@ export type RevenueFirstBusinessLiveExecutorApplyResponse = {
   liveExecutor: RevenueFirstBusinessLiveExecutorPlan | null;
   package: RevenueMoneyArmyFirstBusinessLaunchPackage | null;
   preparation: RevenueFirstStorePreparationPlan | null;
+  shopifyAutonomyRun: ShopifyAutonomyRunPlan | null;
+  shopifyStorefrontDraft: ShopifyStorefrontDraftPlan | null;
   sourceBatch: RevenueMoneyArmyGenerateScoreBatchPlan;
 };
 

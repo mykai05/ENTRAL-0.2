@@ -167,7 +167,18 @@ import {
   type RevenuePerformanceSnapshotInput,
   type RevenueStoreSetupApplyResponse,
   type RevenueStoreSetupPlan,
-  type RevenueStoreSetupResponse
+  type RevenueStoreSetupResponse,
+  type ShopifyAutonomyRunResponse,
+  type ShopifyAutonomyResumeJobResponse,
+  type ShopifyConnectionResponse,
+  type ShopifyConnectionSnapshot,
+  type ShopifyConnectionVerification,
+  type ShopifyConnectionsResponse,
+  type ShopifyOAuthStartResponse,
+  type ShopifyStoreCreationCaptureResponse,
+  type ShopifyStoreCreationHandoffJobResponse,
+  type ShopifyStoreProvisioningResponse,
+  type ShopifyStorefrontDraftResponse
 } from "../lib/merch-store";
 
 type MerchOperationsPanelProps = {
@@ -179,6 +190,23 @@ type MerchOperationsPanelProps = {
 
 const automationStorageKey = "entral-merch-automation-level";
 const revenueAssetControlActions: RevenueAssetRotationDecision[] = ["scale", "watch", "pause", "kill"];
+const shopifyAutonomyResumeJobConfirm = "QUEUE SHOPIFY AUTONOMY RESUME JOB";
+const shopifyStoreCreationHandoffJobConfirm = "QUEUE SHOPIFY STORE CREATION HANDOFF JOB";
+const shopifyStoreCreationCaptureConfirm = "CAPTURE SHOPIFY STORE CREATION";
+const shopifyOAuthStartConfirm = "START SHOPIFY OAUTH";
+const shopifyStorefrontDraftConfirm = "EXECUTE CONTROLLED SHOPIFY STOREFRONT DRAFT";
+
+function canQueueShopifyApprovalResume(approval: GrowthApprovalRecord) {
+  const action = approval.packet.shopifyAutonomy?.action;
+
+  return action === "repair_failed_draft_actions"
+    || action === "request_owner_unlock"
+    || action === "run_shopify_draft_executor";
+}
+
+function canCaptureShopifyStoreCreationApproval(approval: GrowthApprovalRecord) {
+  return approval.packet.shopifyStoreCreation?.status === "waiting_for_dashboard_capture";
+}
 
 function readMerchStorage(key: string) {
   try {
@@ -357,6 +385,26 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [providerPayloadPackage, setProviderPayloadPackage] = useState<ProviderPayloadPackage | null>(null);
   const [providerPayloadApprovalResponse, setProviderPayloadApprovalResponse] = useState<ProviderPayloadApprovalResponse | null>(null);
   const [providerHandoffResponse, setProviderHandoffResponse] = useState<ProviderHandoffResponse | null>(null);
+  const [shopifyStorefrontDraft, setShopifyStorefrontDraft] = useState<ShopifyStorefrontDraftResponse | null>(null);
+  const [shopifyConnection, setShopifyConnection] = useState<ShopifyConnectionSnapshot | null>(null);
+  const [shopifyConnectionVerification, setShopifyConnectionVerification] = useState<ShopifyConnectionVerification | null>(null);
+  const [shopifyConnectionShopDomain, setShopifyConnectionShopDomain] = useState("");
+  const [shopifyConnectionAdminToken, setShopifyConnectionAdminToken] = useState("");
+  const [shopifyConnectionMessage, setShopifyConnectionMessage] = useState<string | null>(null);
+  const [shopifyOAuthAuthorizeUrl, setShopifyOAuthAuthorizeUrl] = useState<string | null>(null);
+  const [shopifyOAuthMessage, setShopifyOAuthMessage] = useState<string | null>(null);
+  const [shopifyOAuthContinueAfterApproval, setShopifyOAuthContinueAfterApproval] = useState(true);
+  const [handledShopifyOAuthCallback, setHandledShopifyOAuthCallback] = useState(false);
+  const [shopifyStoreProvisioning, setShopifyStoreProvisioning] = useState<ShopifyStoreProvisioningResponse | null>(null);
+  const [shopifyStoreCreationHandoffJob, setShopifyStoreCreationHandoffJob] = useState<ShopifyStoreCreationHandoffJobResponse | null>(null);
+  const [shopifyStoreCreationCapture, setShopifyStoreCreationCapture] = useState<ShopifyStoreCreationCaptureResponse | null>(null);
+  const [shopifyStoreProvisioningMessage, setShopifyStoreProvisioningMessage] = useState<string | null>(null);
+  const [shopifyAutonomyRun, setShopifyAutonomyRun] = useState<ShopifyAutonomyRunResponse | null>(null);
+  const [shopifyAutonomyRunMessage, setShopifyAutonomyRunMessage] = useState<string | null>(null);
+  const [shopifyAutonomyResumeJob, setShopifyAutonomyResumeJob] = useState<ShopifyAutonomyResumeJobResponse | null>(null);
+  const [shopifyDraftConnectorApproval, setShopifyDraftConnectorApproval] = useState(false);
+  const [shopifyDraftUnlockPhrase, setShopifyDraftUnlockPhrase] = useState("");
+  const [shopifyDraftMessage, setShopifyDraftMessage] = useState<string | null>(null);
   const [growthPlan, setGrowthPlan] = useState<GrowthPlan | null>(null);
   const [growthApprovalResponse, setGrowthApprovalResponse] = useState<GrowthApprovalResponse | null>(null);
   const [growthApprovals, setGrowthApprovals] = useState<GrowthApprovalRecord[]>([]);
@@ -366,6 +414,16 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [isGeneratingLaunchPackage, setIsGeneratingLaunchPackage] = useState(false);
   const [isGeneratingProviderPayloads, setIsGeneratingProviderPayloads] = useState(false);
   const [isRequestingProviderPayloadApproval, setIsRequestingProviderPayloadApproval] = useState(false);
+  const [isPreviewingShopifyDraft, setIsPreviewingShopifyDraft] = useState(false);
+  const [isExecutingShopifyDraft, setIsExecutingShopifyDraft] = useState(false);
+  const [isConnectingShopify, setIsConnectingShopify] = useState(false);
+  const [isLoadingShopifyConnection, setIsLoadingShopifyConnection] = useState(false);
+  const [isStartingShopifyOAuth, setIsStartingShopifyOAuth] = useState(false);
+  const [isPreparingShopifyProvisioning, setIsPreparingShopifyProvisioning] = useState(false);
+  const [isQueueingShopifyStoreCreationHandoff, setIsQueueingShopifyStoreCreationHandoff] = useState(false);
+  const [isCapturingShopifyStoreCreation, setIsCapturingShopifyStoreCreation] = useState(false);
+  const [isRunningShopifyAutonomy, setIsRunningShopifyAutonomy] = useState(false);
+  const [isQueueingShopifyAutonomy, setIsQueueingShopifyAutonomy] = useState(false);
   const [buildingProviderHandoffId, setBuildingProviderHandoffId] = useState<string | null>(null);
   const [isGeneratingGrowthPlan, setIsGeneratingGrowthPlan] = useState(false);
   const [isRequestingGrowthApproval, setIsRequestingGrowthApproval] = useState(false);
@@ -415,6 +473,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [firstBusinessAutonomousLaunchReceipt, setFirstBusinessAutonomousLaunchReceipt] = useState<RevenueFirstBusinessAutonomousLaunchApplyResponse["autonomous"] | null>(null);
   const [firstBusinessLiveExecutor, setFirstBusinessLiveExecutor] = useState<RevenueFirstBusinessLiveExecutorPlan | null>(null);
   const [firstBusinessLiveExecutorReceipt, setFirstBusinessLiveExecutorReceipt] = useState<RevenueFirstBusinessLiveExecutorApplyResponse["live"] | null>(null);
+  const [firstBusinessLiveShopifyAutonomyRun, setFirstBusinessLiveShopifyAutonomyRun] = useState<RevenueFirstBusinessLiveExecutorApplyResponse["shopifyAutonomyRun"]>(null);
+  const [firstBusinessLiveShopifyDraft, setFirstBusinessLiveShopifyDraft] = useState<RevenueFirstBusinessLiveExecutorApplyResponse["shopifyStorefrontDraft"]>(null);
   const [liveExecutorUnlockPhrase, setLiveExecutorUnlockPhrase] = useState("");
   const [liveExecutorConnectorApproval, setLiveExecutorConnectorApproval] = useState(false);
   const [liveExecutorPublicLaunchApproval, setLiveExecutorPublicLaunchApproval] = useState(false);
@@ -653,6 +713,59 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   }, [selectedStoreId, stores]);
 
   useEffect(() => {
+    if (!selectedStore || handledShopifyOAuthCallback || typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+
+    const connectionStatus = url.searchParams.get("shopifyConnection");
+
+    if (connectionStatus !== "success" && connectionStatus !== "error") return;
+
+    const callbackStoreId = url.searchParams.get("storeId");
+
+    if (callbackStoreId && callbackStoreId !== selectedStore.id && stores.some((store) => store.id === callbackStoreId)) {
+      setSelectedStoreId(callbackStoreId);
+      return;
+    }
+
+    setHandledShopifyOAuthCallback(true);
+
+    const shopDomain = url.searchParams.get("shop");
+    const verificationStatus = url.searchParams.get("shopifyVerification");
+    const connectionMessage = url.searchParams.get("shopifyConnectionMessage");
+    const verificationFailureReason = connectionMessage?.replace(/[.\s]+$/, "") || "connection could not be verified";
+    if (shopDomain) {
+      const continuationStatus = url.searchParams.get("shopifyContinuation");
+      const autonomyStatus = url.searchParams.get("shopifyAutonomyStatus");
+      const continuationCopy = continuationStatus && continuationStatus !== "none"
+        ? ` Continuation ${continuationStatus}${autonomyStatus ? ` with autonomy status ${autonomyStatus.replace(/_/g, " ")}` : ""}.`
+        : "";
+      setShopifyConnectionShopDomain(shopDomain);
+      setShopifyOAuthMessage(connectionStatus === "error"
+        ? `Shopify approval returned for ${shopDomain}, but verification failed: ${verificationFailureReason}.${continuationCopy}`
+        : `Shopify approval returned for ${shopDomain}. ${verificationStatus === "verified" ? "Connection verified. " : ""}Refreshing connection status.${continuationCopy}`);
+    } else {
+      setShopifyOAuthMessage(connectionStatus === "error"
+        ? `Shopify approval returned, but verification failed: ${verificationFailureReason}.`
+        : "Shopify approval returned. Refreshing connection status.");
+    }
+
+    url.searchParams.delete("shopifyConnection");
+    url.searchParams.delete("shopifyConnectionMessage");
+    url.searchParams.delete("shop");
+    url.searchParams.delete("storeId");
+    url.searchParams.delete("auditLogId");
+    url.searchParams.delete("shopifyContinuation");
+    url.searchParams.delete("shopifyVerification");
+    url.searchParams.delete("continuationAuditLogId");
+    url.searchParams.delete("shopifyAutonomyStatus");
+    window.history.replaceState(null, "", url.toString());
+    if (connectionStatus === "success") {
+      void refreshShopifyConnection("oauth_callback");
+    }
+  }, [handledShopifyOAuthCallback, selectedStore, stores]);
+
+  useEffect(() => {
     setScalingOutcomeForm((current) => {
       if (current.scalingSpendPacketId && availableScalingOutcomePackets.some((packet) => packet.recordId === current.scalingSpendPacketId)) {
         return current;
@@ -688,6 +801,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   function clearFirstBusinessLiveExecutor() {
     setFirstBusinessLiveExecutor(null);
     setFirstBusinessLiveExecutorReceipt(null);
+    setFirstBusinessLiveShopifyAutonomyRun(null);
+    setFirstBusinessLiveShopifyDraft(null);
   }
 
   function updateAutomationLevel(nextLevel: MerchAutomationLevel) {
@@ -800,6 +915,423 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setError(caught instanceof Error ? caught.message : "Provider payload approval packet could not be queued.");
     } finally {
       setIsRequestingProviderPayloadApproval(false);
+    }
+  }
+
+  async function refreshShopifyConnection(source: "manual" | "oauth_callback" = "manual") {
+    if (!selectedStore) {
+      setError("Select a Shopify Client Merch Store before loading Shopify connection status.");
+      return;
+    }
+
+    setIsLoadingShopifyConnection(true);
+    setError(null);
+
+    try {
+      const response = await apiFetch<ShopifyConnectionsResponse>(`/merch/stores/${selectedStore.id}/shopify-connection`);
+      const connection = response.connections.find((item) => item.storeId === selectedStore.id) ?? response.connections[0] ?? null;
+
+      setShopifyConnection(connection);
+      setShopifyConnectionVerification(null);
+
+      if (connection) {
+        setShopifyConnectionShopDomain(connection.shopDomain);
+        const message = source === "oauth_callback"
+          ? `Shopify approved for ${selectedStore.businessName}: ${connection.shopDomain}. Entral can continue with autonomy.`
+          : `Shopify connection loaded for ${selectedStore.businessName}: ${connection.shopDomain}.`;
+        setShopifyConnectionMessage(message);
+        onEvent?.(message);
+      } else {
+        const message = source === "oauth_callback"
+          ? "Shopify approval returned, but no active Shopify connection was found yet."
+          : `No saved Shopify connection found for ${selectedStore.businessName}.`;
+        setShopifyConnectionMessage(message);
+        onEvent?.(message);
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify connection status could not be loaded.");
+    } finally {
+      setIsLoadingShopifyConnection(false);
+    }
+  }
+
+  async function prepareShopifyStoreProvisioning() {
+    if (!selectedStore) {
+      setError("Select a Client Merch Store before preparing Shopify store creation.");
+      return;
+    }
+
+    setIsPreparingShopifyProvisioning(true);
+    setError(null);
+    setShopifyStoreProvisioningMessage(null);
+
+    try {
+      const response = await apiFetch<ShopifyStoreProvisioningResponse>(`/merch/stores/${selectedStore.id}/shopify-store-provisioning`, {
+        json: {
+          confirm: "PREPARE SHOPIFY STORE CREATION PACKET",
+          countryCode: "US",
+          dryRun: true,
+          note: "Prepared from Merch Operations panel before Shopify connection and draft storefront execution.",
+          ownerEmail: selectedStore.email,
+          requestedShopName: selectedStore.businessName,
+          storeType: "client_transfer"
+        },
+        method: "POST"
+      });
+
+      setShopifyStoreProvisioning(response);
+      if (response.plan.creationCapture.expectedShopDomain) {
+        setShopifyConnectionShopDomain(response.plan.creationCapture.expectedShopDomain);
+      }
+      setShopifyStoreProvisioningMessage(response.plan.summary);
+      onEvent?.(response.plan.summary);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify store creation packet failed.");
+    } finally {
+      setIsPreparingShopifyProvisioning(false);
+    }
+  }
+
+  async function queueShopifyStoreCreationHandoffJob() {
+    if (!selectedStore) {
+      setError("Select a Client Merch Store before queuing Shopify store creation handoff.");
+      return;
+    }
+
+    setIsQueueingShopifyStoreCreationHandoff(true);
+    setError(null);
+    setShopifyStoreProvisioningMessage(null);
+
+    try {
+      const response = await apiFetch<ShopifyStoreCreationHandoffJobResponse>(`/merch/stores/${selectedStore.id}/shopify-store-creation-handoff-job`, {
+        json: {
+          confirm: shopifyStoreCreationHandoffJobConfirm,
+          connectionWatchIntervalMinutes: 15,
+          connectorApproval: shopifyDraftConnectorApproval,
+          countryCode: "US",
+          dryRun: false,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          liveUnlockPhrase: shopifyDraftUnlockPhrase,
+          maxConnectionWatchAttempts: 24,
+          maxProducts: 5,
+          note: "Queued from Merch Operations panel to track Shopify Dev Dashboard store creation handoff.",
+          ownerEmail: selectedStore.email,
+          queueBrowserTask: true,
+          queueAutonomyResume: true,
+          requestedShopName: selectedStore.businessName,
+          storeType: "client_transfer",
+          watchForConnection: true
+        },
+        method: "POST"
+      });
+      const message = `Shopify store creation handoff queued for ${selectedStore.businessName}: ${response.job.status}.`;
+
+      setShopifyStoreCreationHandoffJob(response);
+      setShopifyStoreProvisioningMessage(message);
+      onEvent?.(message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify store creation handoff queue failed.");
+    } finally {
+      setIsQueueingShopifyStoreCreationHandoff(false);
+    }
+  }
+
+  async function captureShopifyStoreCreation() {
+    if (!selectedStore) {
+      setError("Select a Client Merch Store before capturing Shopify store creation.");
+      return;
+    }
+
+    setIsCapturingShopifyStoreCreation(true);
+    setError(null);
+    setShopifyStoreProvisioningMessage(null);
+    setShopifyOAuthAuthorizeUrl(null);
+
+    try {
+      const response = await apiFetch<ShopifyStoreCreationCaptureResponse>(`/merch/stores/${selectedStore.id}/shopify-store-creation-capture`, {
+        json: {
+          browserTaskEvidence: {
+            capturedAt: new Date().toISOString(),
+            capturedFromTargetUrl: shopifyStoreProvisioning?.plan.creationHandoff.browserTask.targetUrl ?? "https://dev.shopify.com/dashboard/stores",
+            completedStepIds: shopifyStoreProvisioning?.plan.creationHandoff.browserTask.allowedSteps.map((step) => step.id) ?? [],
+            finalShopDomain: shopifyConnectionShopDomain,
+            operatorOrSessionContext: "Captured from Merch Operations panel after Shopify dashboard store creation.",
+            source: "manual_capture",
+            storeType: "client_transfer"
+          },
+          confirm: shopifyStoreCreationCaptureConfirm,
+          connectionWatchIntervalMinutes: 15,
+          connectorApproval: shopifyDraftConnectorApproval,
+          continueAfterApproval: shopifyOAuthContinueAfterApproval,
+          countryCode: "US",
+          dryRun: false,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          liveUnlockPhrase: shopifyDraftUnlockPhrase,
+          maxConnectionWatchAttempts: 24,
+          maxProducts: 5,
+          note: "Captured from Merch Operations panel after Shopify dashboard store creation.",
+          ownerEmail: selectedStore.email,
+          queueAutonomyResume: true,
+          requestedShopName: selectedStore.businessName,
+          returnTo: window.location.href,
+          scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+          shopDomain: shopifyConnectionShopDomain,
+          startOAuth: true,
+          storeType: "client_transfer"
+        },
+        method: "POST"
+      });
+
+      setShopifyStoreCreationCapture(response);
+      setShopifyConnectionShopDomain(response.capture.shopDomain);
+      if (response.capture.oauth?.authorizeUrl) {
+        setShopifyOAuthAuthorizeUrl(response.capture.oauth.authorizeUrl);
+      }
+      if (response.capture.autonomyResumeJob) {
+        setShopifyAutonomyResumeJob({
+          auditLogId: response.auditLogId,
+          job: response.capture.autonomyResumeJob
+        });
+      }
+      setShopifyStoreProvisioningMessage(response.capture.summary);
+      onEvent?.(response.capture.summary);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify store creation capture failed.");
+    } finally {
+      setIsCapturingShopifyStoreCreation(false);
+    }
+  }
+
+  async function runShopifyAutonomy() {
+    if (!selectedStore) {
+      setError("Select a Client Merch Store before running Shopify autonomy.");
+      return;
+    }
+
+    setIsRunningShopifyAutonomy(true);
+    setError(null);
+    setShopifyAutonomyRunMessage(null);
+
+    try {
+      const response = await apiFetch<ShopifyAutonomyRunResponse>(`/merch/stores/${selectedStore.id}/shopify-autonomy-run`, {
+        json: {
+          confirm: "RUN SHOPIFY AUTONOMOUS STORE SETUP",
+          connectorApproval: shopifyDraftConnectorApproval,
+          countryCode: "US",
+          dryRun: false,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          liveUnlockPhrase: shopifyDraftUnlockPhrase,
+          maxProducts: 5,
+          note: "Ran from Merch Operations panel as a chained Shopify autonomy step.",
+          ownerEmail: selectedStore.email,
+          requestedShopName: selectedStore.businessName,
+          storeType: "client_transfer"
+        },
+        method: "POST"
+      });
+
+      setShopifyAutonomyRun(response);
+      if (response.plan.storefrontDraft) {
+        setShopifyStorefrontDraft({
+          auditLogId: response.auditLogId,
+          plan: response.plan.storefrontDraft
+        });
+      }
+      setShopifyAutonomyRunMessage(response.plan.summary);
+      onEvent?.(response.plan.summary);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify autonomy run failed.");
+    } finally {
+      setIsRunningShopifyAutonomy(false);
+    }
+  }
+
+  async function queueShopifyAutonomyResumeJob() {
+    if (!selectedStore) {
+      setError("Select a Client Merch Store before queuing Shopify autonomy.");
+      return;
+    }
+
+    setIsQueueingShopifyAutonomy(true);
+    setError(null);
+    setShopifyAutonomyRunMessage(null);
+
+    try {
+      const response = await apiFetch<ShopifyAutonomyResumeJobResponse>(`/merch/stores/${selectedStore.id}/shopify-autonomy-resume-job`, {
+        json: {
+          confirm: "QUEUE SHOPIFY AUTONOMY RESUME JOB",
+          connectionWatchIntervalMinutes: 15,
+          connectorApproval: shopifyDraftConnectorApproval,
+          countryCode: "US",
+          dryRun: false,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          liveUnlockPhrase: shopifyDraftUnlockPhrase,
+          maxConnectionWatchAttempts: 24,
+          maxProducts: 5,
+          note: "Queued from Merch Operations panel for background Shopify autonomy resume.",
+          ownerEmail: selectedStore.email,
+          requestedShopName: selectedStore.businessName,
+          storeType: "client_transfer",
+          watchForConnection: true
+        },
+        method: "POST"
+      });
+      const message = `Shopify autonomy queued for ${selectedStore.businessName}: ${response.job.status}.`;
+
+      setShopifyAutonomyResumeJob(response);
+      setShopifyAutonomyRunMessage(message);
+      onEvent?.(message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify autonomy queue failed.");
+    } finally {
+      setIsQueueingShopifyAutonomy(false);
+    }
+  }
+
+  async function startShopifyOAuth() {
+    if (!selectedStore) {
+      setError("Select a Shopify Client Merch Store before starting Shopify approval.");
+      return;
+    }
+
+    setIsStartingShopifyOAuth(true);
+    setError(null);
+    setShopifyOAuthAuthorizeUrl(null);
+    setShopifyOAuthMessage(null);
+
+    try {
+      const response = await apiFetch<ShopifyOAuthStartResponse>(`/merch/stores/${selectedStore.id}/shopify-oauth/start`, {
+        json: {
+          connectorApproval: shopifyDraftConnectorApproval,
+          confirm: shopifyOAuthStartConfirm,
+          continueAfterApproval: shopifyOAuthContinueAfterApproval,
+          countryCode: "US",
+          dryRun: false,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          liveUnlockPhrase: shopifyDraftUnlockPhrase,
+          maxProducts: 5,
+          note: "Started from Merch Operations panel for approved Shopify Admin API access.",
+          ownerEmail: selectedStore.email,
+          requestedShopName: selectedStore.businessName,
+          returnTo: window.location.href,
+          scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+          shopDomain: shopifyConnectionShopDomain,
+          storeType: "client_transfer"
+        },
+        method: "POST"
+      });
+      const message = response.continuation
+        ? `Shopify approval link ready for ${response.shopDomain}; Entral will continue autonomy after approval.`
+        : `Shopify approval link ready for ${response.shopDomain}.`;
+
+      setShopifyOAuthAuthorizeUrl(response.authorizeUrl);
+      setShopifyOAuthMessage(message);
+      onEvent?.(message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify approval start failed.");
+    } finally {
+      setIsStartingShopifyOAuth(false);
+    }
+  }
+
+  async function connectShopifyStore() {
+    if (!selectedStore) {
+      setError("Select a Shopify Client Merch Store before connecting Shopify.");
+      return;
+    }
+
+    setIsConnectingShopify(true);
+    setError(null);
+    setShopifyConnectionMessage(null);
+
+    try {
+      const response = await apiFetch<ShopifyConnectionResponse>(`/merch/stores/${selectedStore.id}/shopify-connection`, {
+        json: {
+          adminToken: shopifyConnectionAdminToken,
+          apiVersion: "2026-04",
+          confirm: "CONNECT SHOPIFY ADMIN API",
+          note: "Connected from Merch Operations panel for controlled Shopify draft execution.",
+          scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+          shopDomain: shopifyConnectionShopDomain
+        },
+        method: "POST"
+      });
+      setShopifyConnection(response.connection);
+      setShopifyConnectionVerification(response.verification ?? null);
+      setShopifyConnectionAdminToken("");
+
+      const message = response.verification?.status === "verified"
+        ? `Shopify verified and connected for ${selectedStore.businessName}: ${response.connection.shopDomain}.`
+        : `Shopify connected for ${selectedStore.businessName}: ${response.connection.shopDomain}.`;
+      setShopifyConnectionMessage(message);
+      onEvent?.(message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify connection failed.");
+    } finally {
+      setIsConnectingShopify(false);
+    }
+  }
+
+  async function runShopifyStorefrontDraft(dryRun: boolean) {
+    if (!selectedStore) {
+      setError("Select a Client Merch Store before preparing a Shopify draft storefront.");
+      return;
+    }
+
+    if (dryRun) {
+      setIsPreviewingShopifyDraft(true);
+    } else {
+      setIsExecutingShopifyDraft(true);
+    }
+    setError(null);
+    setShopifyDraftMessage(null);
+
+    try {
+      const response = await apiFetch<ShopifyStorefrontDraftResponse>(`/merch/stores/${selectedStore.id}/shopify-storefront-draft`, {
+        json: {
+          confirm: shopifyStorefrontDraftConfirm,
+          dryRun,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          maxProducts: 5,
+          note: dryRun
+            ? "Previewed from Merch Operations panel."
+            : "Requested from Merch Operations panel.",
+          ...(dryRun ? {} : {
+            connectorApproval: shopifyDraftConnectorApproval,
+            liveUnlockPhrase: shopifyDraftUnlockPhrase
+          })
+        },
+        method: "POST"
+      });
+      setShopifyStorefrontDraft(response);
+
+      const message = dryRun
+        ? `Shopify storefront draft previewed for ${selectedStore.businessName}. No Shopify request was sent.`
+        : response.plan.providerContacted
+          ? `Shopify draft executor contacted ${response.plan.providerContactedDomain ?? "the connected shop"} for ${selectedStore.businessName}.`
+          : `Shopify draft execution stayed blocked for ${selectedStore.businessName}: ${response.plan.summary}`;
+      setShopifyDraftMessage(message);
+      onEvent?.(message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Shopify storefront draft request failed.");
+    } finally {
+      if (dryRun) {
+        setIsPreviewingShopifyDraft(false);
+      } else {
+        setIsExecutingShopifyDraft(false);
+      }
     }
   }
 
@@ -2155,6 +2687,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
           note: "Controlled live executor prepared from dashboard controls.",
           publicLaunchApproval: liveExecutorPublicLaunchApproval,
           riskTolerance: "Low",
+          ...(shopifyDraftUnlockPhrase.trim() ? { shopifyDraftUnlockPhrase: shopifyDraftUnlockPhrase.trim() } : {}),
           ...(unlockPhrase ? { liveUnlockPhrase: unlockPhrase } : {})
         },
         method: "POST"
@@ -2167,6 +2700,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setFirstBusinessAutonomousLaunch(response.autonomousLaunch);
       setFirstBusinessLiveExecutor(response.liveExecutor);
       setFirstBusinessLiveExecutorReceipt(response.live);
+      setFirstBusinessLiveShopifyAutonomyRun(response.shopifyAutonomyRun);
+      setFirstBusinessLiveShopifyDraft(response.shopifyStorefrontDraft);
       setMoneyArmyGenerateScoreBatch(response.sourceBatch);
       if (response.batchRun) {
         const batchRun = response.batchRun;
@@ -3636,9 +4171,17 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
     }
   }
 
-  async function reviewGrowthApproval(approval: GrowthApprovalRecord, action: "approve" | "reject") {
+  async function reviewGrowthApproval(approval: GrowthApprovalRecord, action: "approve" | "reject", options: { captureShopifyStoreCreation?: boolean; queueShopifyAutonomyResume?: boolean } = {}) {
     if (!selectedStore) {
       setError("Select a Client Merch Store before reviewing growth approvals.");
+      return;
+    }
+
+    const queueShopifyAutonomyResume = action === "approve" && options.queueShopifyAutonomyResume && canQueueShopifyApprovalResume(approval);
+    const captureShopifyStoreCreationApproval = action === "approve" && options.captureShopifyStoreCreation && canCaptureShopifyStoreCreationApproval(approval);
+
+    if (captureShopifyStoreCreationApproval && !shopifyConnectionShopDomain.trim()) {
+      setError("Enter the Shopify shop domain before approving and capturing store creation.");
       return;
     }
 
@@ -3650,8 +4193,66 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       const response = await apiFetch<GrowthApprovalReviewResponse>(`/merch/stores/${selectedStore.id}/growth-approvals/${approval.id}/${action}`, {
         json: {
           note: action === "approve"
-            ? "Approved for preparation only. External execution remains locked."
-            : "Rejected from the Growth & Scale Plan review queue."
+            ? queueShopifyAutonomyResume
+              ? "Approved Shopify autonomy continuation and queued a resume job. Public launch remains locked."
+              : captureShopifyStoreCreationApproval
+                ? "Approved Shopify store creation and captured the dashboard-created domain. Public launch remains locked."
+                : "Approved for preparation only. External execution remains locked."
+            : "Rejected from the Growth & Scale Plan review queue.",
+          ...(queueShopifyAutonomyResume ? {
+            shopifyAutonomyResumeJob: {
+              confirm: shopifyAutonomyResumeJobConfirm,
+              connectionWatchIntervalMinutes: 15,
+              connectorApproval: shopifyDraftConnectorApproval,
+              countryCode: "US",
+              dryRun: false,
+              includeCollections: true,
+              includeProducts: true,
+              includeStoreShell: true,
+              liveUnlockPhrase: shopifyDraftUnlockPhrase,
+              maxConnectionWatchAttempts: 24,
+              maxProducts: 5,
+              note: "Queued from the Shopify autonomy approval review queue.",
+              ownerEmail: selectedStore.email,
+              requestedShopName: selectedStore.businessName,
+              storeType: "client_transfer",
+              watchForConnection: true
+            }
+          } : {}),
+          ...(captureShopifyStoreCreationApproval ? {
+            shopifyStoreCreationCapture: {
+              browserTaskEvidence: {
+                capturedAt: new Date().toISOString(),
+                capturedFromTargetUrl: approval.packet.shopifyStoreCreation?.browserTask.targetUrl ?? "https://dev.shopify.com/dashboard/stores",
+                completedStepIds: approval.packet.shopifyStoreCreation?.browserTask.allowedSteps.map((step) => step.id) ?? [],
+                finalShopDomain: shopifyConnectionShopDomain,
+                operatorOrSessionContext: "Captured while approving the Shopify store creation review packet.",
+                source: "approval_review",
+                storeType: "client_transfer"
+              },
+              confirm: shopifyStoreCreationCaptureConfirm,
+              connectionWatchIntervalMinutes: 15,
+              connectorApproval: shopifyDraftConnectorApproval,
+              continueAfterApproval: shopifyOAuthContinueAfterApproval,
+              countryCode: "US",
+              dryRun: false,
+              includeCollections: true,
+              includeProducts: true,
+              includeStoreShell: true,
+              liveUnlockPhrase: shopifyDraftUnlockPhrase,
+              maxConnectionWatchAttempts: 24,
+              maxProducts: 5,
+              note: "Captured from the Shopify store creation approval review queue.",
+              ownerEmail: selectedStore.email,
+              queueAutonomyResume: true,
+              requestedShopName: selectedStore.businessName,
+              returnTo: window.location.href,
+              scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+              shopDomain: shopifyConnectionShopDomain,
+              startOAuth: true,
+              storeType: "client_transfer"
+            }
+          } : {})
         },
         method: "POST"
       });
@@ -3659,6 +4260,19 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setGrowthApprovalMessage(response.message);
       setGrowthOrchestrationPreview(null);
       setProviderHandoffResponse(null);
+      if (response.shopifyStoreCreationCapture) {
+        setShopifyStoreCreationCapture(response.shopifyStoreCreationCapture);
+        setShopifyConnectionShopDomain(response.shopifyStoreCreationCapture.capture.shopDomain);
+        if (response.shopifyStoreCreationCapture.capture.oauth?.authorizeUrl) {
+          setShopifyOAuthAuthorizeUrl(response.shopifyStoreCreationCapture.capture.oauth.authorizeUrl);
+        }
+        if (response.shopifyStoreCreationCapture.capture.autonomyResumeJob) {
+          setShopifyAutonomyResumeJob({
+            auditLogId: response.shopifyStoreCreationCapture.auditLogId,
+            job: response.shopifyStoreCreationCapture.capture.autonomyResumeJob
+          });
+        }
+      }
       onEvent?.(response.message);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Growth approval review failed.");
@@ -4080,6 +4694,10 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
           <label>
             <span>Live Unlock Phrase</span>
             <input value={liveExecutorUnlockPhrase} onChange={(event) => setLiveExecutorUnlockPhrase(event.target.value)} placeholder="Owner phrase required to arm" />
+          </label>
+          <label>
+            <span>Shopify Draft Phrase</span>
+            <input value={shopifyDraftUnlockPhrase} onChange={(event) => setShopifyDraftUnlockPhrase(event.target.value)} placeholder="Shopify phrase required to execute" />
           </label>
           <label>
             <span>Connectors Approved</span>
@@ -7085,6 +7703,45 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                   <p>Ad drafts {firstBusinessLiveExecutor.ownerUnlock.adDraftApproval ? "approved" : "waiting"}; payment execution remains locked.</p>
                   <small>external execution {firstBusinessLiveExecutor.ownerUnlock.externalExecution ? "enabled" : "locked"} / payment {firstBusinessLiveExecutor.ownerUnlock.paymentExecution ? "enabled" : "locked"} / provider {firstBusinessLiveExecutor.ownerUnlock.providerContacted ? "contacted" : "locked"}</small>
                 </article>
+                {firstBusinessLiveShopifyAutonomyRun ? (
+                  <section className="revenue-engine-list" aria-label="Live executor Shopify autonomy run">
+                    <h4>Shopify Autonomy Run</h4>
+                    <article>
+                      <span>{firstBusinessLiveShopifyAutonomyRun.status.replace(/_/g, " ")} / provider {firstBusinessLiveShopifyAutonomyRun.providerContacted ? "contacted" : "not contacted"}</span>
+                      <strong>{firstBusinessLiveShopifyAutonomyRun.nextAction.replace(/_/g, " ")}</strong>
+                      <p>{firstBusinessLiveShopifyAutonomyRun.summary}</p>
+                      <small>{firstBusinessLiveShopifyAutonomyRun.totals.plannedDraftActions} draft actions / {firstBusinessLiveShopifyAutonomyRun.totals.executedActions} executed / {firstBusinessLiveShopifyAutonomyRun.totals.blockedActions} blocked</small>
+                    </article>
+                    <article>
+                      <span>{firstBusinessLiveShopifyAutonomyRun.provisioning.status.replace(/_/g, " ")}</span>
+                      <strong>Provisioning</strong>
+                      <p>{firstBusinessLiveShopifyAutonomyRun.provisioning.summary}</p>
+                      <small>{firstBusinessLiveShopifyAutonomyRun.provisioning.devDashboardPacket.shopDomainSuggestion}</small>
+                    </article>
+                  </section>
+                ) : null}
+                {firstBusinessLiveShopifyDraft ? (
+                  <section className="revenue-engine-list" aria-label="Live executor Shopify draft storefront result">
+                    <h4>Shopify Draft Storefront</h4>
+                    <article>
+                      <span>{firstBusinessLiveShopifyDraft.status.replace(/_/g, " ")} / provider {firstBusinessLiveShopifyDraft.providerContacted ? "contacted" : "not contacted"}</span>
+                      <strong>{firstBusinessLiveShopifyDraft.mode}</strong>
+                      <p>{firstBusinessLiveShopifyDraft.summary}</p>
+                      <small>{firstBusinessLiveShopifyDraft.totals.products} products / {firstBusinessLiveShopifyDraft.totals.collections} collections / {firstBusinessLiveShopifyDraft.totals.executedActions} executed / {firstBusinessLiveShopifyDraft.totals.readyActions} ready</small>
+                    </article>
+                    <section className="revenue-engine-list" aria-label="Live executor Shopify draft actions">
+                      <h4>Draft Actions</h4>
+                      {firstBusinessLiveShopifyDraft.storefrontActions.slice(0, 5).map((action) => (
+                        <article key={action.id}>
+                          <span>{action.status} / {action.mutationName}</span>
+                          <strong>{action.title}</strong>
+                          <p>{action.result?.message ?? action.reason}</p>
+                          <small>{action.result?.resourceId ?? action.handle}</small>
+                        </article>
+                      ))}
+                    </section>
+                  </section>
+                ) : null}
                 <section className="revenue-engine-list" aria-label="Live executor credential readiness">
                   <h4>Credential Readiness</h4>
                   {firstBusinessLiveExecutor.credentialReadiness.map((credential) => (
@@ -7474,6 +8131,38 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                   <strong>{lease.storeName}</strong>
                   <p>{lease.summary}</p>
                   <small>{lease.shardId} / dedupe {lease.dedupeKey} / retry {lease.retryPolicy.maxAttempts}x / expires {lease.expiresAt}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store worker assignment plan">
+              <h4>Worker Assignment Plan</h4>
+              <article>
+                <span>{hundredStoreOperations.workerAssignmentPlan.totals.readyToAssign} ready / {hundredStoreOperations.workerAssignmentPlan.totals.approvalHold} approval / {hundredStoreOperations.workerAssignmentPlan.totals.waitingDependency} waiting / {hundredStoreOperations.workerAssignmentPlan.totals.blocked} blocked</span>
+                <strong>{hundredStoreOperations.workerAssignmentPlan.mode}</strong>
+                <p>{hundredStoreOperations.workerAssignmentPlan.summary}</p>
+                <small>{hundredStoreOperations.workerAssignmentPlan.totals.laneCount} lanes / max selectable {hundredStoreOperations.workerAssignmentPlan.totals.maxSelectableAssignments} / duplicate dedupe keys {hundredStoreOperations.workerAssignmentPlan.totals.duplicateDedupeKeys}</small>
+              </article>
+              <article>
+                <span>{hundredStoreOperations.workerAssignmentPlan.totals.scaleCoverageReadyTargets}/3 scale targets ready</span>
+                <strong>10/25/100 worker coverage</strong>
+                <p>{hundredStoreOperations.workerAssignmentPlan.scaleCoverage.map((coverage) => `${coverage.targetStores} stores ${coverage.status} ${coverage.readyAssignments}/${coverage.requiredReadyAssignments} (${coverage.readyCoveragePercent}%)`).join(" / ")}</p>
+                <small>{hundredStoreOperations.workerAssignmentPlan.scaleCoverage.map((coverage) => `${coverage.targetStores} stores: ${coverage.safeCyclesRequired} safe cycle${coverage.safeCyclesRequired === 1 ? "" : "s"}`).join(" / ")}</small>
+              </article>
+              {hundredStoreOperations.workerAssignmentPlan.lanes.slice(0, 7).map((lane) => (
+                <article key={`hundred-store-worker-lane-${lane.lane}`}>
+                  <span>{lane.status.replace(/_/g, " ")} / capacity {lane.laneCapacity} / ready {lane.totals.readyToAssign}</span>
+                  <strong>{lane.workerName}</strong>
+                  <p>{lane.summary}</p>
+                  <small>{lane.nextInternalAction}</small>
+                </article>
+              ))}
+              {hundredStoreOperations.workerAssignmentPlan.assignments.slice(0, 8).map((assignment) => (
+                <article key={assignment.assignmentId}>
+                  <span>{assignment.status.replace(/_/g, " ")} / {assignment.lane.replace(/_/g, " ")} / order {assignment.claimOrder || "hold"}</span>
+                  <strong>{assignment.storeName}</strong>
+                  <p>{assignment.summary}</p>
+                  <small>{assignment.workerName} / {assignment.shardId} / dedupe {assignment.dedupeKey}</small>
                 </article>
               ))}
             </section>
@@ -8682,6 +9371,59 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             </select>
           </label>
         </div>
+        <div className="merch-ops-grid compact" aria-label="Shopify connection">
+          <label>
+            <span>Shop Domain</span>
+            <input value={shopifyConnectionShopDomain} onChange={(event) => setShopifyConnectionShopDomain(event.target.value)} placeholder="example.myshopify.com" />
+          </label>
+          <label>
+            <span>Admin API Token</span>
+            <input type="password" autoComplete="off" value={shopifyConnectionAdminToken} onChange={(event) => setShopifyConnectionAdminToken(event.target.value)} placeholder="shpat_..." />
+          </label>
+        </div>
+        <div className="merch-ops-actions split">
+          <button type="button" onClick={() => void prepareShopifyStoreProvisioning()} disabled={isPreparingShopifyProvisioning || !selectedStore || selectedStore.storePlatform !== "Shopify"}>
+            {isPreparingShopifyProvisioning ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview store creation
+          </button>
+          <button type="button" onClick={() => void queueShopifyStoreCreationHandoffJob()} disabled={isQueueingShopifyStoreCreationHandoff || !selectedStore || selectedStore.storePlatform !== "Shopify"}>
+            {isQueueingShopifyStoreCreationHandoff ? <Loader2 aria-hidden="true" size={15} /> : <RefreshCcw aria-hidden="true" size={15} />}
+            Queue store handoff
+          </button>
+          <button type="button" onClick={() => void captureShopifyStoreCreation()} disabled={isCapturingShopifyStoreCreation || !selectedStore || selectedStore.storePlatform !== "Shopify" || !shopifyConnectionShopDomain.trim()}>
+            {isCapturingShopifyStoreCreation ? <Loader2 aria-hidden="true" size={15} /> : <CheckCircle2 aria-hidden="true" size={15} />}
+            Capture created store
+          </button>
+          <button type="button" onClick={() => void refreshShopifyConnection()} disabled={isLoadingShopifyConnection || !selectedStore || selectedStore.storePlatform !== "Shopify"}>
+            {isLoadingShopifyConnection ? <Loader2 aria-hidden="true" size={15} /> : <RefreshCcw aria-hidden="true" size={15} />}
+            Load Shopify connection
+          </button>
+          <button type="button" onClick={() => void startShopifyOAuth()} disabled={isStartingShopifyOAuth || !selectedStore || selectedStore.storePlatform !== "Shopify" || !shopifyConnectionShopDomain.trim()}>
+            {isStartingShopifyOAuth ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Start Shopify approval
+          </button>
+          <button type="button" onClick={() => void connectShopifyStore()} disabled={isConnectingShopify || !selectedStore || selectedStore.storePlatform !== "Shopify" || !shopifyConnectionShopDomain.trim() || !shopifyConnectionAdminToken.trim()}>
+            {isConnectingShopify ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Connect Shopify
+          </button>
+          <button type="button" className="primary" onClick={() => void runShopifyAutonomy()} disabled={isRunningShopifyAutonomy || !selectedStore || selectedStore.storePlatform !== "Shopify"}>
+            {isRunningShopifyAutonomy ? <Loader2 aria-hidden="true" size={15} /> : <Rocket aria-hidden="true" size={15} />}
+            Run Shopify autonomy
+          </button>
+          <button type="button" onClick={() => void queueShopifyAutonomyResumeJob()} disabled={isQueueingShopifyAutonomy || !selectedStore || selectedStore.storePlatform !== "Shopify"}>
+            {isQueueingShopifyAutonomy ? <Loader2 aria-hidden="true" size={15} /> : <RefreshCcw aria-hidden="true" size={15} />}
+            Queue Shopify autonomy
+          </button>
+          {shopifyConnection ? (
+            <small>{shopifyConnection.shopDomain} / {shopifyConnection.apiVersion} / token {shopifyConnection.tokenLastFour ? `...${shopifyConnection.tokenLastFour}` : "configured"}</small>
+          ) : null}
+          {shopifyConnectionVerification ? (
+            <small>Verified shop: {shopifyConnectionVerification.shopName ?? shopifyConnectionVerification.shopDomain ?? "Shopify"} / {shopifyConnectionVerification.grantedScopes.length} scopes</small>
+          ) : null}
+          {shopifyOAuthAuthorizeUrl ? (
+            <a href={shopifyOAuthAuthorizeUrl}>Open Shopify approval</a>
+          ) : null}
+        </div>
         <div className="merch-ops-actions split">
           <button type="button" onClick={generateLaunchPackage} disabled={isGeneratingLaunchPackage || !selectedStore}>
             {isGeneratingLaunchPackage ? <Loader2 aria-hidden="true" size={15} /> : <PackageCheck aria-hidden="true" size={15} />}
@@ -8691,11 +9433,211 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             {isGeneratingProviderPayloads ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
             Provider payloads
           </button>
+          <button type="button" onClick={() => void runShopifyStorefrontDraft(true)} disabled={isPreviewingShopifyDraft || !selectedStore}>
+            {isPreviewingShopifyDraft ? <Loader2 aria-hidden="true" size={15} /> : <PackageCheck aria-hidden="true" size={15} />}
+            Preview Shopify draft
+          </button>
+          <button type="button" onClick={() => void runShopifyStorefrontDraft(false)} disabled={isExecutingShopifyDraft || !selectedStore}>
+            {isExecutingShopifyDraft ? <Loader2 aria-hidden="true" size={15} /> : <Rocket aria-hidden="true" size={15} />}
+            Run Shopify draft
+          </button>
           <button type="button" className="primary" onClick={generateReport} disabled={isGeneratingReport || !selectedStore}>
             {isGeneratingReport ? <Loader2 aria-hidden="true" size={15} /> : <FileText aria-hidden="true" size={15} />}
             Generate report
           </button>
         </div>
+        <div className="merch-ops-grid compact" aria-label="Controlled Shopify storefront draft owner gates">
+          <label>
+            <span>Continue After Approval</span>
+            <input type="checkbox" checked={shopifyOAuthContinueAfterApproval} onChange={(event) => setShopifyOAuthContinueAfterApproval(event.target.checked)} />
+          </label>
+          <label>
+            <span>Connector Approval</span>
+            <input type="checkbox" checked={shopifyDraftConnectorApproval} onChange={(event) => setShopifyDraftConnectorApproval(event.target.checked)} />
+          </label>
+          <label>
+            <span>Owner Unlock Phrase</span>
+            <input value={shopifyDraftUnlockPhrase} onChange={(event) => setShopifyDraftUnlockPhrase(event.target.value)} placeholder="Owner phrase required to arm" />
+          </label>
+        </div>
+        {shopifyStoreProvisioningMessage ? <p className="growth-approval-message" role="status">{shopifyStoreProvisioningMessage}</p> : null}
+        {shopifyAutonomyRunMessage ? <p className="growth-approval-message" role="status">{shopifyAutonomyRunMessage}</p> : null}
+        {shopifyOAuthMessage ? <p className="growth-approval-message" role="status">{shopifyOAuthMessage}</p> : null}
+        {shopifyConnectionMessage ? <p className="growth-approval-message" role="status">{shopifyConnectionMessage}</p> : null}
+        {shopifyDraftMessage ? <p className="growth-approval-message" role="status">{shopifyDraftMessage}</p> : null}
+        {shopifyStoreCreationHandoffJob ? (
+          <section className="provider-payload-result" aria-label="Shopify store creation handoff job">
+            <header>
+              <span>{shopifyStoreCreationHandoffJob.job.type.replace(/_/g, " ")} / {shopifyStoreCreationHandoffJob.job.status}</span>
+              <strong>{shopifyStoreCreationHandoffJob.handoff.status.replace(/_/g, " ")}</strong>
+              <p>{shopifyStoreCreationHandoffJob.handoff.summary}</p>
+              <small>Audit log: {shopifyStoreCreationHandoffJob.auditLogId}</small>
+              {shopifyStoreCreationHandoffJob.handoffApprovalPacket ? <small>Review packet: {shopifyStoreCreationHandoffJob.handoffApprovalPacket.id}</small> : null}
+              {shopifyStoreCreationHandoffJob.browserTaskJob ? <small>Browser task: {shopifyStoreCreationHandoffJob.browserTaskJob.id}</small> : null}
+            </header>
+            <div className="provider-payload-grid">
+              <article>
+                <span>Dashboard</span>
+                <strong>{shopifyStoreCreationHandoffJob.handoff.expectedShopDomain ?? "domain capture pending"}</strong>
+                <p>{shopifyStoreCreationHandoffJob.handoff.targetUrl}</p>
+              </article>
+              <article>
+                <span>Watcher</span>
+                <strong>{shopifyStoreCreationHandoffJob.job.connectionWatch.enabled ? "Queued" : "Off"}</strong>
+                <p>{shopifyStoreCreationHandoffJob.job.connectionWatch.attempt}/{shopifyStoreCreationHandoffJob.job.connectionWatch.maxAttempts} attempts, every {shopifyStoreCreationHandoffJob.job.connectionWatch.intervalMinutes} min</p>
+              </article>
+            </div>
+          </section>
+        ) : null}
+        {shopifyStoreCreationCapture ? (
+          <section className="provider-payload-result" aria-label="Shopify store creation capture">
+            <header>
+              <span>{shopifyStoreCreationCapture.capture.mode} / {shopifyStoreCreationCapture.capture.status.replace(/_/g, " ")}</span>
+              <strong>{shopifyStoreCreationCapture.capture.shopDomain}</strong>
+              <p>{shopifyStoreCreationCapture.capture.summary}</p>
+              <small>Audit log: {shopifyStoreCreationCapture.auditLogId}</small>
+            </header>
+            <div className="provider-payload-grid">
+              <article>
+                <span>OAuth</span>
+                <strong>{shopifyStoreCreationCapture.capture.oauth ? "Ready" : "Not started"}</strong>
+                <p>{shopifyStoreCreationCapture.capture.oauth?.continuation ? "Continuation armed" : "No continuation"}</p>
+              </article>
+              <article>
+                <span>Watcher</span>
+                <strong>{shopifyStoreCreationCapture.capture.autonomyResumeJob?.status ?? "Not queued"}</strong>
+                <p>{shopifyStoreCreationCapture.capture.autonomyResumeJob ? `${shopifyStoreCreationCapture.capture.autonomyResumeJob.connectionWatch.attempt}/${shopifyStoreCreationCapture.capture.autonomyResumeJob.connectionWatch.maxAttempts} attempts` : "Connection watch off"}</p>
+              </article>
+              <article>
+                <span>Evidence</span>
+                <strong>{shopifyStoreCreationCapture.capture.browserTaskEvidence.source.replace(/_/g, " ")}</strong>
+                <p>{shopifyStoreCreationCapture.capture.browserTaskEvidence.finalShopDomain} / {shopifyStoreCreationCapture.capture.browserTaskEvidence.completedStepIds.length} steps</p>
+              </article>
+            </div>
+          </section>
+        ) : null}
+        {shopifyAutonomyResumeJob ? (
+          <section className="provider-payload-result" aria-label="Shopify autonomy resume job">
+            <header>
+              <span>{shopifyAutonomyResumeJob.job.type.replace(/_/g, " ")} / {shopifyAutonomyResumeJob.job.status}</span>
+              <strong>Background Shopify Autonomy</strong>
+              <p>Job {shopifyAutonomyResumeJob.job.id} is queued for the automation worker.</p>
+              <p>Connection watch: {shopifyAutonomyResumeJob.job.connectionWatch.enabled ? `${shopifyAutonomyResumeJob.job.connectionWatch.attempt}/${shopifyAutonomyResumeJob.job.connectionWatch.maxAttempts} attempts, every ${shopifyAutonomyResumeJob.job.connectionWatch.intervalMinutes} min` : "off"}</p>
+              <small>Audit log: {shopifyAutonomyResumeJob.auditLogId}</small>
+            </header>
+          </section>
+        ) : null}
+        {shopifyAutonomyRun ? (
+          <section className="provider-payload-result" aria-label="Shopify autonomous store run">
+            <header>
+              <span>{shopifyAutonomyRun.plan.mode} / {shopifyAutonomyRun.plan.status.replace(/_/g, " ")}</span>
+              <strong>{shopifyAutonomyRun.plan.nextAction.replace(/_/g, " ")}</strong>
+              <p>{shopifyAutonomyRun.plan.summary}</p>
+              <small>Audit log: {shopifyAutonomyRun.auditLogId}</small>
+            </header>
+            <div className="provider-payload-grid">
+              <article>
+                <span>Provisioning</span>
+                <strong>{shopifyAutonomyRun.plan.provisioning.status.replace(/_/g, " ")}</strong>
+                <p>{shopifyAutonomyRun.plan.provisioning.devDashboardPacket.shopDomainSuggestion}</p>
+              </article>
+              <article>
+                <span>Draft Storefront</span>
+                <strong>{shopifyAutonomyRun.plan.storefrontDraft?.status.replace(/_/g, " ") ?? "not started"}</strong>
+                <p>{shopifyAutonomyRun.plan.totals.plannedDraftActions} planned / {shopifyAutonomyRun.plan.totals.executedActions} executed</p>
+              </article>
+              <article>
+                <span>Launch Readiness</span>
+                <strong>{shopifyAutonomyRun.plan.storefrontDraft?.launchReadiness.status.replace(/_/g, " ") ?? "waiting for draft"}</strong>
+                <p>{shopifyAutonomyRun.plan.storefrontDraft?.launchReadiness.summary ?? "Waiting for Shopify draft resources."}</p>
+              </article>
+              <article>
+                <span>Provider</span>
+                <strong>{shopifyAutonomyRun.plan.providerContacted ? "Contacted" : "Not contacted"}</strong>
+                <p>External execution: {String(shopifyAutonomyRun.plan.externalExecution)}</p>
+              </article>
+              <article>
+                <span>Owner Gates</span>
+                <strong>{shopifyAutonomyRun.plan.ownerUnlock.connectorApproval ? "Approved" : "Waiting"}</strong>
+                <p>Phrase provided: {String(shopifyAutonomyRun.plan.ownerUnlock.phraseProvided)}</p>
+              </article>
+            </div>
+            <div className="growth-blocked-actions">
+              <strong>Blocked external actions</strong>
+              {shopifyAutonomyRun.plan.blockedExternalActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
+            </div>
+          </section>
+        ) : null}
+        {shopifyStoreProvisioning ? (
+          <section className="provider-payload-result" aria-label="Shopify store creation packet">
+            <header>
+              <span>{shopifyStoreProvisioning.plan.mode} / {shopifyStoreProvisioning.plan.status.replace(/_/g, " ")}</span>
+              <strong>{shopifyStoreProvisioning.plan.devDashboardPacket.requestedShopName}</strong>
+              <p>{shopifyStoreProvisioning.plan.summary}</p>
+              <small>Audit log: {shopifyStoreProvisioning.auditLogId}</small>
+            </header>
+            <div className="provider-payload-grid">
+              <article>
+                <span>Store Packet</span>
+                <strong>{shopifyStoreProvisioning.plan.devDashboardPacket.storeType.replace(/_/g, " ")}</strong>
+                <p>{shopifyStoreProvisioning.plan.devDashboardPacket.shopDomainSuggestion} / {shopifyStoreProvisioning.plan.devDashboardPacket.countryCode}</p>
+              </article>
+              <article>
+                <span>API Surface</span>
+                <strong>Dev Dashboard required</strong>
+                <p>{shopifyStoreProvisioning.plan.officialApiSurface.summary}</p>
+              </article>
+              <article>
+                <span>Continuation</span>
+                <strong>{shopifyStoreProvisioning.plan.continuation.nextAutonomousStep.replace(/_/g, " ")}</strong>
+                <p>Draft executor ready: {String(shopifyStoreProvisioning.plan.continuation.readyForDraftExecutor)}</p>
+              </article>
+              <article>
+                <span>Creation Capture</span>
+                <strong>{shopifyStoreProvisioning.plan.creationCapture.status.replace(/_/g, " ")}</strong>
+                <p>{shopifyStoreProvisioning.plan.creationCapture.expectedShopDomain ?? "No Shopify domain needed"}</p>
+              </article>
+              <article>
+                <span>Handoff Job</span>
+                <strong>{shopifyStoreProvisioning.plan.creationHandoff.status.replace(/_/g, " ")}</strong>
+                <p>{shopifyStoreProvisioning.plan.creationHandoff.nextAutonomousStep.replace(/_/g, " ")}</p>
+              </article>
+              <article>
+                <span>Browser Task</span>
+                <strong>{shopifyStoreProvisioning.plan.creationHandoff.browserTask.currentExecution.replace(/_/g, " ")}</strong>
+                <p>{shopifyStoreProvisioning.plan.creationHandoff.browserTask.allowedSteps.length} governed steps</p>
+              </article>
+            </div>
+            <div className="growth-blocked-actions">
+              <strong>OAuth continuation path</strong>
+              <span>{shopifyStoreProvisioning.plan.creationCapture.oauthStartEndpoint}</span>
+              <span>{shopifyStoreProvisioning.plan.creationCapture.autonomyResumeJobEndpoint}</span>
+              <span>{shopifyStoreProvisioning.plan.creationCapture.summary}</span>
+            </div>
+            <div className="growth-blocked-actions">
+              <strong>Store creation handoff</strong>
+              <span>{shopifyStoreProvisioning.plan.creationHandoff.automationJobEndpoint}</span>
+              <span>{shopifyStoreProvisioning.plan.creationHandoff.summary}</span>
+              {shopifyStoreProvisioning.plan.creationHandoff.evidenceToCapture.slice(0, 2).map((item) => <span key={item}>{item}</span>)}
+            </div>
+            <div className="growth-blocked-actions">
+              <strong>Governed dashboard browser task</strong>
+              <span>{shopifyStoreProvisioning.plan.creationHandoff.browserTask.targetUrl}</span>
+              {shopifyStoreProvisioning.plan.creationHandoff.browserTask.allowedSteps.slice(0, 3).map((step) => <span key={step.id}>{step.instruction}</span>)}
+              {shopifyStoreProvisioning.plan.creationHandoff.browserTask.hardStops.slice(0, 2).map((stop) => <span key={stop}>{stop}</span>)}
+            </div>
+            {shopifyStoreProvisioning.plan.creationCapture.afterCreationChecklist.length > 0 ? (
+              <div className="growth-blocked-actions">
+                <strong>After Shopify creates the store</strong>
+                {shopifyStoreProvisioning.plan.creationCapture.afterCreationChecklist.slice(0, 4).map((item) => <span key={item}>{item}</span>)}
+              </div>
+            ) : null}
+            <div className="growth-blocked-actions">
+              <strong>Blocked external actions</strong>
+              {shopifyStoreProvisioning.plan.blockedExternalActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
+            </div>
+          </section>
+        ) : null}
         {launchPackage ? (
           <div className="merch-launch-package-result">
             <strong>Launch Package</strong>
@@ -8761,6 +9703,73 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                 ) : null}
               </section>
             ) : null}
+          </section>
+        ) : null}
+        {shopifyStorefrontDraft ? (
+          <section className="provider-payload-result" aria-label="Controlled Shopify storefront draft">
+            <header>
+              <span>{shopifyStorefrontDraft.plan.mode} / {shopifyStorefrontDraft.plan.status.replace(/_/g, " ")}</span>
+              <strong>{shopifyStorefrontDraft.plan.totals.products} products / {shopifyStorefrontDraft.plan.totals.collections} collections / {shopifyStorefrontDraft.plan.totals.pages} pages / {shopifyStorefrontDraft.plan.totals.navigationMenus} menus</strong>
+              <p>{shopifyStorefrontDraft.plan.summary}</p>
+              <small>Audit log: {shopifyStorefrontDraft.auditLogId}</small>
+            </header>
+            <div className="provider-payload-grid">
+              <article>
+                <span>Provider</span>
+                <strong>{shopifyStorefrontDraft.plan.providerContacted ? "Contacted" : "Not contacted"}</strong>
+                <p>{shopifyStorefrontDraft.plan.providerContactedDomain ?? shopifyStorefrontDraft.plan.credentialReadiness.shopDomain ?? "No Shopify domain selected"}</p>
+              </article>
+              <article>
+                <span>Credentials</span>
+                <strong>{shopifyStorefrontDraft.plan.credentialReadiness.status.replace(/_/g, " ")}</strong>
+                <p>{shopifyStorefrontDraft.plan.credentialReadiness.missingEnvVars.join(", ") || "Backend connector credentials ready"}</p>
+              </article>
+              <article>
+                <span>Owner Unlock</span>
+                <strong>{shopifyStorefrontDraft.plan.ownerUnlock.status.replace(/_/g, " ")}</strong>
+                <p>Connector approved: {String(shopifyStorefrontDraft.plan.ownerUnlock.connectorApproval)} / phrase accepted: {String(shopifyStorefrontDraft.plan.ownerUnlock.phraseAccepted)}</p>
+              </article>
+              <article>
+                <span>Action Totals</span>
+                <strong>{shopifyStorefrontDraft.plan.totals.readyActions} ready / {shopifyStorefrontDraft.plan.totals.executedActions} executed</strong>
+                <p>{shopifyStorefrontDraft.plan.totals.failedActions} failed / {shopifyStorefrontDraft.plan.totals.blockedActions} blocked / {shopifyStorefrontDraft.plan.totals.skippedActions} skipped</p>
+              </article>
+              <article>
+                <span>Launch Readiness</span>
+                <strong>{shopifyStorefrontDraft.plan.launchReadiness.status.replace(/_/g, " ")}</strong>
+                <p>{shopifyStorefrontDraft.plan.launchReadiness.readyResourceCount} ready resources / {shopifyStorefrontDraft.plan.launchReadiness.failedResourceCount} failed / next {shopifyStorefrontDraft.plan.launchReadiness.nextAutonomousStep.replace(/_/g, " ")}</p>
+              </article>
+            </div>
+            <div className="growth-approval-actions">
+              {shopifyStorefrontDraft.plan.storefrontActions.slice(0, 6).map((action) => (
+                <article key={action.id}>
+                  <span>{action.status} / {action.kind.replace(/_/g, " ")}</span>
+                  <strong>{action.title}</strong>
+                  <p>{action.result?.message ?? action.reason}</p>
+                  <small>{action.result?.resourceId ?? action.handle}</small>
+                </article>
+              ))}
+            </div>
+            {shopifyStorefrontDraft.plan.launchReadiness.reviewResources.length > 0 ? (
+              <div className="growth-approval-actions" aria-label="Shopify launch readiness review resources">
+                {shopifyStorefrontDraft.plan.launchReadiness.reviewResources.slice(0, 6).map((resource) => (
+                  <article key={`${resource.kind}-${resource.resourceId}`}>
+                    <span>{resource.status} / {resource.kind.replace(/_/g, " ")}</span>
+                    <strong>{resource.title}</strong>
+                    <p>{resource.handle}</p>
+                    <small>{resource.adminUrl ?? resource.resourceId}</small>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+            <div className="growth-blocked-actions">
+              <strong>Launch readiness receipt</strong>
+              {shopifyStorefrontDraft.plan.launchReadiness.remainingApprovals.slice(0, 3).map((approval) => <span key={approval}>{approval}</span>)}
+            </div>
+            <div className="growth-blocked-actions">
+              <strong>Blocked external actions</strong>
+              {shopifyStorefrontDraft.plan.blockedExternalActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
+            </div>
           </section>
         ) : null}
         {report ? (
@@ -8908,6 +9917,25 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                   <span>{approval.mode} / {approval.statusLabel}</span>
                   <strong>{approval.packet.businessName}</strong>
                   <p>{approval.packet.summary}</p>
+                  {(approval.packet.shopifyAutonomy || approval.packet.shopifyStoreCreation) && approval.packet.actions.length > 0 ? (
+                    <small>{approval.packet.actions.map((action) => action.title).join(" / ")}</small>
+                  ) : null}
+                  {approval.packet.shopifyAutonomy ? (
+                    <small>
+                      Shopify autonomy {approval.packet.shopifyAutonomy.action.replace(/_/g, " ")}
+                      {" / "}{approval.packet.shopifyAutonomy.status.replace(/_/g, " ")}
+                      {" / draft "}{approval.packet.shopifyAutonomy.storefrontDraftStatus?.replace(/_/g, " ") ?? "not started"}
+                      {" / review resources "}{approval.packet.shopifyAutonomy.reviewResourceCount}
+                      {" / failed "}{approval.packet.shopifyAutonomy.failedActionCount}
+                    </small>
+                  ) : null}
+                  {approval.packet.shopifyStoreCreation ? (
+                    <small>
+                      Shopify store creation {approval.packet.shopifyStoreCreation.status.replace(/_/g, " ")}
+                      {" / "}{approval.packet.shopifyStoreCreation.expectedShopDomain ?? "domain capture pending"}
+                      {" / "}{approval.packet.shopifyStoreCreation.captureEndpoint}
+                    </small>
+                  ) : null}
                   <small>{approval.executionState} / Audit: {approval.reviewAuditLogId ?? approval.auditLogId ?? "pending"}</small>
                 </div>
                 {approval.status === "pending" ? (
@@ -8916,6 +9944,18 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
                       {reviewingGrowthApprovalId === approval.id ? <Loader2 aria-hidden="true" size={14} /> : <CheckCircle2 aria-hidden="true" size={14} />}
                       Approve preparation
                     </button>
+                    {canQueueShopifyApprovalResume(approval) ? (
+                      <button type="button" onClick={() => reviewGrowthApproval(approval, "approve", { queueShopifyAutonomyResume: true })} disabled={reviewingGrowthApprovalId === approval.id}>
+                        {reviewingGrowthApprovalId === approval.id ? <Loader2 aria-hidden="true" size={14} /> : <Rocket aria-hidden="true" size={14} />}
+                        Approve and queue Shopify resume
+                      </button>
+                    ) : null}
+                    {canCaptureShopifyStoreCreationApproval(approval) ? (
+                      <button type="button" onClick={() => reviewGrowthApproval(approval, "approve", { captureShopifyStoreCreation: true })} disabled={reviewingGrowthApprovalId === approval.id || !shopifyConnectionShopDomain.trim()}>
+                        {reviewingGrowthApprovalId === approval.id ? <Loader2 aria-hidden="true" size={14} /> : <Rocket aria-hidden="true" size={14} />}
+                        Approve and capture store
+                      </button>
+                    ) : null}
                     <button type="button" onClick={() => reviewGrowthApproval(approval, "reject")} disabled={reviewingGrowthApprovalId === approval.id}>
                       <XCircle aria-hidden="true" size={14} />
                       Reject packet

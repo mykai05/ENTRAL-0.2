@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueHundredStoreAppConnectionPacketsApplyResponse, RevenueHundredStoreAutonomyRunApplyResponse, RevenueHundredStoreConnectorActivationApplyResponse, RevenueHundredStoreDailySupervisorApplyResponse, RevenueHundredStoreDailySupervisorPlan, RevenueHundredStoreLaunchPacketsApplyResponse, RevenueHundredStoreMonitoringCycleApplyResponse, RevenueHundredStoreOperationsApplyResponse, RevenueHundredStoreOperationsPlan, RevenueHundredStoreOperationsResponse, RevenueHundredStoreProductDepthApplyResponse, RevenueHundredStoreWorkLeasesApplyResponse, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse, RevenuePortfolioDashboardManualSignalCaptureApplyResponse, RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse, RevenuePortfolioDashboardPlan, RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueHundredStoreAppConnectionPacketsApplyResponse, RevenueHundredStoreAutonomyRunApplyResponse, RevenueHundredStoreConnectorActivationApplyResponse, RevenueHundredStoreDailySupervisorApplyResponse, RevenueHundredStoreDailySupervisorPlan, RevenueHundredStoreLaunchPacketsApplyResponse, RevenueHundredStoreMonitoringCycleApplyResponse, RevenueHundredStoreOperationsApplyResponse, RevenueHundredStoreOperationsPlan, RevenueHundredStoreOperationsResponse, RevenueHundredStoreProductDepthApplyResponse, RevenueHundredStoreWorkLeasesApplyResponse, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse, RevenuePortfolioDashboardManualSignalCaptureApplyResponse, RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse, RevenuePortfolioDashboardPlan, RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan, ShopifyAutonomyResumeJobResponse, ShopifyAutonomyRunResponse, ShopifyConnectionResponse, ShopifyDevDashboardBrowserTask, ShopifyOAuthStartResponse, ShopifyStoreCreationCaptureResponse, ShopifyStoreProvisioningResponse, ShopifyStorefrontDraftResponse } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -41,6 +41,59 @@ const store: ClientMerchStore = {
   storePlatform: "Shopify",
   updatedAt: "2026-06-01T00:00:00.000Z",
   userId: "user-1"
+};
+
+const shopifyDevDashboardBrowserTask: ShopifyDevDashboardBrowserTask = {
+  allowedDomains: ["dev.shopify.com", "accounts.shopify.com", "myshopify.com"],
+  allowedSteps: [{
+    expectedState: "Dev Dashboard Stores page is open, or a normal Shopify login/organization gate is visible.",
+    id: "open_dev_dashboard_stores",
+    instruction: "Open Shopify Dev Dashboard Stores.",
+    selectorHints: ["a[href*='/dashboard/stores']", "text=/Stores/i"]
+  }, {
+    expectedState: "Create-store form is visible without asking for billing, payouts, payments, domains, app charges, or public publishing.",
+    id: "open_create_store_form",
+    instruction: "Select Create store.",
+    selectorHints: ["button:has-text('Create store')", "a:has-text('Create store')"]
+  }, {
+    expectedState: "Client transfer store is selected and the form still shows only store setup fields.",
+    id: "select_store_type",
+    instruction: "Select Client transfer store.",
+    selectorHints: ["text=/Client transfer store/i", "input[type='radio']"]
+  }, {
+    expectedState: "Store name is filled as Iron House Gym.",
+    id: "fill_store_name",
+    instruction: "Enter store name: Iron House Gym.",
+    selectorHints: ["input[name='name']", "input[aria-label*='store name' i]", "input[placeholder*='store name' i]"]
+  }, {
+    expectedState: "Country or region is set to US.",
+    id: "select_country",
+    instruction: "Select country or region: US.",
+    selectorHints: ["select[name='country']", "button[aria-label*='country' i]", "input[aria-label*='country' i]"]
+  }, {
+    expectedState: "Shopify reports a created store and exposes the final myshopify.com domain, expected near iron-house-gym.myshopify.com.",
+    id: "create_store_and_capture_domain",
+    instruction: "Select Create store only if no hard stop is present, then capture the final myshopify.com domain.",
+    selectorHints: ["button:has-text('Create store')", "text=/myshopify\\.com/i"]
+  }],
+  completionEvidence: {
+    captureEndpoint: "/api/v1/merch/stores/store-1/shopify-store-creation-capture",
+    nextAutonomousStep: "submit_shopify_store_creation_capture",
+    requiredFields: ["finalShopDomain", "storeType", "countryCode", "operatorOrSessionContext", "createdAt"]
+  },
+  currentExecution: "not_started",
+  hardStops: [
+    "Login, MFA, CAPTCHA, bot challenge, account recovery, or organization-permission challenge requires the owner/operator.",
+    "Billing, paid plan selection, payouts, payments, domains, app charges, Shopify Plus enablement, or public publishing must stop for separate owner approval.",
+    "Any browser request for stealth, proxy rotation, fingerprint spoofing, CAPTCHA bypass, account warmup, or traffic disguise must stop."
+  ],
+  mode: "Governed Shopify Dev Dashboard Browser Task",
+  targetUrl: "https://dev.shopify.com/dashboard/stores"
+};
+
+const connectedShopifyDevDashboardBrowserTask: ShopifyDevDashboardBrowserTask = {
+  ...shopifyDevDashboardBrowserTask,
+  allowedSteps: []
 };
 
 const plan: GrowthPlan = {
@@ -140,6 +193,150 @@ const approvedRecord: GrowthApprovalRecord = {
   status: "approved",
   statusLabel: "Approved - execution still locked",
   updatedAt: "2026-06-01T01:00:00.000Z"
+};
+
+const shopifyAutonomyApprovalRecord: GrowthApprovalRecord = {
+  ...approvalRecord,
+  auditLogId: "audit-shopify-autonomy-review-1",
+  id: "packet-shopify-autonomy-1",
+  packet: {
+    actions: [{
+      approvalStatus: "Pending human approval",
+      channel: "Shopify",
+      executionState: "Locked - no external action",
+      id: "shopify-autonomy-action-1",
+      requiredControls: [
+        "Review every Shopify draft resource ID and Admin link captured by ENTRAL.",
+        "Do not publish the storefront until the separate public launch approval exists."
+      ],
+      scheduledFor: null,
+      summary: "Six Shopify draft resources are ready for owner review.",
+      title: "Review Shopify draft resources"
+    }],
+    auditEvents: [
+      "Shopify autonomy supervisor packet queued from a background resume job.",
+      "No additional Shopify request, publish action, payment setup, billing, payout, domain, supplier charge, or ad spend action was executed by this packet."
+    ],
+    blockedActions: ["Publishing products, collections, pages, policies, or theme navigation to public sales channels without separate public launch approval"],
+    businessName: "Iron House Gym",
+    costGuardrail: "External spend remains $0; Shopify public launch, payments, billing, domains, supplier charges, and ad spend stay locked.",
+    createdAt: "2026-06-01T00:10:00.000Z",
+    humanApprovalRequired: true,
+    id: "shopify_autonomy_store-1_20260601001000",
+    logging: "Stores the Shopify autonomy supervisor decision, launch-readiness state, and next safe review action.",
+    mode: "Mock Mode",
+    note: "Queued from test.",
+    scheduledFor: null,
+    shopifyAutonomy: {
+      action: "review_draft_resources",
+      failedActionCount: 0,
+      launchReadinessStatus: "ready_for_review",
+      nextRunAt: null,
+      reviewResourceCount: 6,
+      status: "ready_for_next_step",
+      storefrontDraftStatus: "executed"
+    },
+    status: "Pending approval",
+    storeId: "store-1",
+    summary: "Shopify draft resources are ready for review and later public-launch gating."
+  },
+  requestAuditLogId: "audit-shopify-autonomy-review-1",
+  status: "pending",
+  statusLabel: "Pending approval",
+  updatedAt: "2026-06-01T00:10:00.000Z"
+};
+
+const shopifyAutonomyResumeApprovalRecord: GrowthApprovalRecord = {
+  ...shopifyAutonomyApprovalRecord,
+  auditLogId: "audit-shopify-autonomy-resume-1",
+  id: "packet-shopify-autonomy-resume-1",
+  packet: {
+    ...shopifyAutonomyApprovalRecord.packet,
+    actions: [{
+      ...shopifyAutonomyApprovalRecord.packet.actions[0]!,
+      id: "shopify-autonomy-resume-action-1",
+      requiredControls: [
+        "Confirm connector approval is intentional.",
+        "Record the exact Shopify draft owner unlock phrase.",
+        "Keep billing, payouts, domains, payments, supplier charges, and public publishing locked."
+      ],
+      scheduledFor: null,
+      summary: "Connector approval or the exact Shopify draft owner phrase is missing.",
+      title: "Approve Shopify draft owner gates"
+    }],
+    id: "shopify_autonomy_store-1_20260601002000",
+    shopifyAutonomy: {
+      ...shopifyAutonomyApprovalRecord.packet.shopifyAutonomy!,
+      action: "request_owner_unlock",
+      failedActionCount: 0,
+      launchReadinessStatus: "owner_unlock_required",
+      reviewResourceCount: 0,
+      status: "blocked",
+      storefrontDraftStatus: "blocked_owner_gates"
+    },
+    summary: "Shopify draft execution is waiting for owner unlock gates."
+  },
+  requestAuditLogId: "audit-shopify-autonomy-resume-1",
+  updatedAt: "2026-06-01T00:20:00.000Z"
+};
+
+const shopifyStoreCreationApprovalRecord: GrowthApprovalRecord = {
+  ...approvalRecord,
+  auditLogId: "audit-shopify-store-creation-1",
+  id: "packet-shopify-store-creation-1",
+  packet: {
+    actions: [{
+      approvalStatus: "Pending human approval",
+      channel: "Shopify",
+      executionState: "Locked - no external action",
+      id: "shopify-store-creation-action-1",
+      requiredControls: [
+        "Capture the final myshopify.com domain exactly as Shopify displays it.",
+        "Start Shopify OAuth from Entral with continuation enabled after the domain is known."
+      ],
+      scheduledFor: null,
+      summary: "Iron House Gym needs the Shopify dashboard-created store domain captured before OAuth and draft storefront autonomy can continue.",
+      title: "Capture Shopify store domain"
+    }],
+    auditEvents: [
+      "Shopify store creation handoff packet queued from a background handoff job.",
+      "No Shopify account, store, billing, payout, domain, browser login, payment setup, or public publishing action was executed by this packet."
+    ],
+    blockedActions: ["Creating a brand-new Shopify account or store through undocumented Partner API behavior"],
+    businessName: "Iron House Gym",
+    costGuardrail: "External spend remains $0; Shopify paid plans, billing, domains, payouts, payments, supplier charges, and ad spend stay locked.",
+    createdAt: "2026-06-01T00:30:00.000Z",
+    humanApprovalRequired: true,
+    id: "shopify_store_creation_store-1_20260601003000",
+    logging: "Stores the Shopify dashboard handoff state, required capture evidence, and next safe continuation endpoint.",
+    mode: "Mock Mode",
+    note: "Queued from test.",
+    scheduledFor: null,
+    shopifyStoreCreation: {
+      automationJobId: "automation-job-shopify-handoff-1",
+      browserTaskJobId: "automation-job-shopify-browser-task-1",
+      browserTaskJobStatus: "pending",
+      browserTask: shopifyDevDashboardBrowserTask,
+      captureEndpoint: "/api/v1/merch/stores/store-1/shopify-store-creation-capture",
+      evidenceToCapture: [
+        "Final myshopify.com domain after Shopify creates the store",
+        "Store type selected in the Shopify dashboard"
+      ],
+      expectedShopDomain: "iron-house-gym.myshopify.com",
+      nextStep: "capture_shopify_store_creation",
+      resumeJobId: "automation-job-shopify-resume-1",
+      resumeJobStatus: "scheduled",
+      status: "waiting_for_dashboard_capture",
+      targetUrl: "https://dev.shopify.com/dashboard/stores"
+    },
+    status: "Pending approval",
+    storeId: "store-1",
+    summary: "Iron House Gym is waiting for Shopify dashboard store-domain capture before OAuth and draft storefront autonomy can continue."
+  },
+  requestAuditLogId: "audit-shopify-store-creation-1",
+  status: "pending",
+  statusLabel: "Pending approval",
+  updatedAt: "2026-06-01T00:30:00.000Z"
 };
 
 const orchestrationPreview: GrowthOrchestrationPreviewResponse = {
@@ -1837,13 +2034,28 @@ const hundredStoreOperationsPlan: RevenueHundredStoreOperationsPlan = {
     }, {
       approvalRequired: true,
       blockers: [],
+      confirmation: "RECORD INTERNAL 100 STORE WORKER ASSIGNMENTS",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-worker-assignments/apply",
+      expectedInternalEffect: "Record up to 25 internal worker assignments across capped chain-of-command lanes.",
+      externalExecution: false,
+      maxItems: 25,
+      phase: "worker_assignment_claims",
+      priority: 10,
+      providerContacted: false,
+      reason: "25 assignments are ready across 7 command lanes.",
+      status: "ready",
+      stepId: "daily_worker_assignment_claims",
+      title: "Record worker assignments"
+    }, {
+      approvalRequired: true,
+      blockers: [],
       confirmation: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
       endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
       expectedInternalEffect: "Create the next 25 private store shells with internal product drafts.",
       externalExecution: false,
       maxItems: 25,
       phase: "store_batch_creation",
-      priority: 10,
+      priority: 11,
       providerContacted: false,
       reason: "99 stores remain before the 100-store operating floor; safe batch size is 25.",
       status: "ready",
@@ -1858,19 +2070,19 @@ const hundredStoreOperationsPlan: RevenueHundredStoreOperationsPlan = {
       externalExecution: false,
       maxItems: 0,
       phase: "weak_lane_rotation",
-      priority: 11,
+      priority: 12,
       providerContacted: false,
       reason: "0 immediate rotation reviews are visible in monitoring.",
       status: "waiting",
       stepId: "daily_weak_lane_rotation",
       title: "Clear weak lanes"
     }],
-    summary: "11 daily operating steps sequenced for 100-store private operations: 9 ready, 1 approval-required, 1 waiting, and 0 blocked. External execution remains locked.",
+    summary: "12 daily operating steps sequenced for 100-store private operations: 10 ready, 1 approval-required, 1 waiting, and 0 blocked. External execution remains locked.",
     totals: {
       approvalRequired: 1,
       blocked: 0,
-      executableInternalSteps: 9,
-      ready: 9,
+      executableInternalSteps: 10,
+      ready: 10,
       safeBatchSize: 25,
       storeGap: 99,
       storesCovered: 1,
@@ -2380,6 +2592,187 @@ const hundredStoreOperationsPlan: RevenueHundredStoreOperationsPlan = {
       waitingDependency: 99
     }
   },
+  workerAssignmentPlan: {
+    assignments: [{
+      approvalGate: "Internal store shell creation only; separate provider and public launch approval required.",
+      assignmentId: "assignment:store-shell-builder",
+      blockedExternalActions: ["Treating a worker assignment as permission to create provider accounts, upload products, publish listings, post content, run ads, move money, move payouts, use browsers, or call external APIs"],
+      claimOrder: 1,
+      dedupeKey: "Iron House Gym:prepare_store_shell:entral-private-revenue-lane-1",
+      dependencyRefs: ["source_opportunity_seed", "store_shell_template"],
+      expectedInternalEffect: "Prepare a private store shell record for Iron House Gym with 5 planned product concepts.",
+      externalExecution: false,
+      idempotencyKey: "assignment-idempotency-store-shell",
+      jobType: "prepare_store_shell",
+      lane: "store_builder",
+      leaseExpiresAt: "2026-06-02T13:05:00.000Z",
+      leaseId: "lease:lease-ready-store-shell",
+      priority: 95,
+      providerContacted: false,
+      shardId: "future_shard_001",
+      status: "ready_to_assign",
+      storeId: null,
+      storeName: "Iron House Gym",
+      summary: "Store Builder Command can claim Iron House Gym prepare store shell at order 1.",
+      workerId: "chain-store-builder",
+      workerName: "Store Builder Command"
+    }, {
+      approvalGate: "Internal product concept only; separate design, supplier, pricing, mockup, listing, and provider approval required.",
+      assignmentId: "assignment:product-builder",
+      blockedExternalActions: ["Treating a worker assignment as permission to create provider accounts, upload products, publish listings, post content, run ads, move money, move payouts, use browsers, or call external APIs"],
+      claimOrder: 2,
+      dedupeKey: "Iron House Gym:record_product_depth_draft:product-depth:future-slot-1:1",
+      dependencyRefs: ["future_store_shell", "product_depth_target"],
+      expectedInternalEffect: "Record product-depth draft Iron House Gym daily discipline performance tee for Iron House Gym.",
+      externalExecution: false,
+      idempotencyKey: "assignment-idempotency-product",
+      jobType: "record_product_depth_draft",
+      lane: "product_builder",
+      leaseExpiresAt: "2026-06-02T13:05:00.000Z",
+      leaseId: "lease:lease-ready-product",
+      priority: 88,
+      providerContacted: false,
+      shardId: "future_shard_002",
+      status: "ready_to_assign",
+      storeId: null,
+      storeName: "Iron House Gym",
+      summary: "Product Builder Command can claim Iron House Gym record product depth draft at order 2.",
+      workerId: "chain-product-builder",
+      workerName: "Product Builder Command"
+    }, {
+      approvalGate: "Owner must approve the launch packet before manual or semi-automated external execution can be prepared.",
+      assignmentId: "assignment:launch-reviewer",
+      blockedExternalActions: ["Treating a worker assignment as permission to create provider accounts, upload products, publish listings, post content, run ads, move money, move payouts, use browsers, or call external APIs"],
+      claimOrder: 0,
+      dedupeKey: "store-1:record_launch_packet:launch-packet:store-1",
+      dependencyRefs: ["store_shell", "connector_activation_matrix", "product_depth_queue", "owner_launch_review"],
+      expectedInternalEffect: "Record launch packet review bundle for Iron House Gym.",
+      externalExecution: false,
+      idempotencyKey: "assignment-idempotency-launch",
+      jobType: "record_launch_packet",
+      lane: "launch_reviewer",
+      leaseExpiresAt: "2026-06-02T13:05:00.000Z",
+      leaseId: "lease:lease-approval-launch",
+      priority: 92,
+      providerContacted: false,
+      shardId: "shard_001",
+      status: "approval_hold",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: "Launch Reviewer Command keeps Iron House Gym record launch packet in approval hold state.",
+      workerId: "chain-launch-reviewer",
+      workerName: "Launch Reviewer Command"
+    }],
+    auditEvents: [
+      "100 Store Chain Of Command Assignment Plan routed clean work leases into capped internal worker lanes."
+    ],
+    blockedExternalActions: [
+      "Treating a worker assignment as permission to create provider accounts, upload products, publish listings, post content, run ads, move money, move payouts, use browsers, or call external APIs"
+    ],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    lanes: [{
+      assignments: [],
+      blockedExternalActions: ["Treating a worker assignment as permission to create provider accounts, upload products, publish listings, post content, run ads, move money, move payouts, use browsers, or call external APIs"],
+      externalExecution: false,
+      lane: "store_builder",
+      laneCapacity: 5,
+      nextInternalAction: "Claim up to 5 store builder assignments internally.",
+      providerContacted: false,
+      status: "ready",
+      summary: "Store Builder Command has 5 ready assignments, 0 approval-held, 0 waiting, and 0 blocked.",
+      totals: {
+        approvalHold: 0,
+        assigned: 5,
+        blocked: 0,
+        readyToAssign: 5,
+        waitingDependency: 0
+      },
+      workerId: "chain-store-builder",
+      workerName: "Store Builder Command"
+    }, {
+      assignments: [],
+      blockedExternalActions: ["Treating a worker assignment as permission to create provider accounts, upload products, publish listings, post content, run ads, move money, move payouts, use browsers, or call external APIs"],
+      externalExecution: false,
+      lane: "product_builder",
+      laneCapacity: 7,
+      nextInternalAction: "Claim up to 7 product builder assignments internally.",
+      providerContacted: false,
+      status: "ready",
+      summary: "Product Builder Command has 7 ready assignments, 0 approval-held, 0 waiting, and 0 blocked.",
+      totals: {
+        approvalHold: 0,
+        assigned: 7,
+        blocked: 0,
+        readyToAssign: 7,
+        waitingDependency: 0
+      },
+      workerId: "chain-product-builder",
+      workerName: "Product Builder Command"
+    }, {
+      assignments: [],
+      blockedExternalActions: ["Treating a worker assignment as permission to create provider accounts, upload products, publish listings, post content, run ads, move money, move payouts, use browsers, or call external APIs"],
+      externalExecution: false,
+      lane: "launch_reviewer",
+      laneCapacity: 4,
+      nextInternalAction: "Resolve approval-held assignments before this lane can claim more work.",
+      providerContacted: false,
+      status: "approval_hold",
+      summary: "Launch Reviewer Command has 0 ready assignments, 2 approval-held, 0 waiting, and 0 blocked.",
+      totals: {
+        approvalHold: 2,
+        assigned: 0,
+        blocked: 0,
+        readyToAssign: 0,
+        waitingDependency: 0
+      },
+      workerId: "chain-launch-reviewer",
+      workerName: "Launch Reviewer Command"
+    }],
+    mode: "100 Store Chain Of Command Assignment Plan",
+    providerContacted: false,
+    scaleCoverage: [{
+      approvalHoldAssignments: 2,
+      readyAssignments: 10,
+      readyCoveragePercent: 100,
+      requiredReadyAssignments: 10,
+      safeCyclesRequired: 1,
+      status: "ready",
+      summary: "10-store worker coverage is ready for the next safe internal claim cycle with 10/10 required assignments.",
+      targetStores: 10
+    }, {
+      approvalHoldAssignments: 2,
+      readyAssignments: 25,
+      readyCoveragePercent: 100,
+      requiredReadyAssignments: 25,
+      safeCyclesRequired: 1,
+      status: "ready",
+      summary: "25-store worker coverage is ready for the next safe internal claim cycle with 25/25 required assignments.",
+      targetStores: 25
+    }, {
+      approvalHoldAssignments: 2,
+      readyAssignments: 25,
+      readyCoveragePercent: 100,
+      requiredReadyAssignments: 25,
+      safeCyclesRequired: 4,
+      status: "ready",
+      summary: "100-store worker coverage is ready for the next safe internal claim cycle with 25/25 required assignments.",
+      targetStores: 100
+    }],
+    summary: "25 worker assignments ready across 7 internal command lanes for the 100-store floor; 10-store ready 10/10, 25-store ready 25/25, 100-store ready 25/25. 2 approval-held, 99 waiting, and 0 blocked. External execution remains locked.",
+    totals: {
+      approvalHold: 2,
+      assigned: 25,
+      blocked: 0,
+      duplicateDedupeKeys: 0,
+      laneCount: 7,
+      maxSelectableAssignments: 25,
+      readyToAssign: 25,
+      scaleCoverageReadyTargets: 3,
+      targetStores: 100,
+      waitingDependency: 99
+    }
+  },
   externalExecution: false,
   gates: [{
     actionEndpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
@@ -2574,6 +2967,8 @@ const hundredStoreDailySupervisorPlan: RevenueHundredStoreDailySupervisorPlan = 
                     ? "record_autonomy_run_queue"
                     : step.phase === "work_lease_claims"
                       ? "record_work_leases"
+                      : step.phase === "worker_assignment_claims"
+                        ? "record_worker_assignments"
                       : step.phase === "weak_lane_rotation"
                         ? "manual_review"
                         : "run_money_army_step",
@@ -2591,7 +2986,7 @@ const hundredStoreDailySupervisorPlan: RevenueHundredStoreDailySupervisorPlan = 
     reason: step.reason,
     requiresOwnerApproval: step.approvalRequired,
     sourceStatus: step.status,
-    status: step.phase === "safety_gate_snapshot" || step.phase === "application_connection_packets" || step.phase === "connector_activation_matrix" || step.phase === "monitoring_cycle" || step.phase === "product_depth_repair" || step.phase === "launch_packet_review" || step.phase === "autonomy_run_queue" || step.phase === "work_lease_claims"
+    status: step.phase === "safety_gate_snapshot" || step.phase === "application_connection_packets" || step.phase === "connector_activation_matrix" || step.phase === "monitoring_cycle" || step.phase === "product_depth_repair" || step.phase === "launch_packet_review" || step.phase === "autonomy_run_queue" || step.phase === "work_lease_claims" || step.phase === "worker_assignment_claims"
       ? "selected"
       : step.phase === "weak_lane_rotation"
         ? "manual_only"
@@ -4552,6 +4947,229 @@ const firstBusinessLiveExecutorRun: RevenueMoneyArmyBatchRun = {
   status: "ready_for_owner_unlock"
 };
 
+const firstBusinessLiveShopifyDraft: ShopifyStorefrontDraftResponse["plan"] = {
+  actualExternalActionsExecuted: false,
+  auditEvents: [
+    "Controlled Shopify storefront draft executor prepared a provider-specific draft plan.",
+    "Dry-run and blocked plans do not contact Shopify."
+  ],
+  blockedExternalActions: [
+    "Sending any Shopify request when dryRun=true, credentials are missing, the connector approval is false, or the exact owner unlock phrase is absent",
+    "Publishing products, collections, pages, policies, or theme navigation to public sales channels without separate public launch approval"
+  ],
+  credentialReadiness: {
+    apiVersion: "2026-04",
+    credentialRefs: ["SHOPIFY_STORE_DOMAIN", "SHOPIFY_CONNECTOR_ADMIN_TOKEN", "SHOPIFY_API_VERSION"],
+    missingEnvVars: [],
+    shopDomain: "iron-house.myshopify.com",
+    status: "ready"
+  },
+  externalExecution: false,
+  generatedAt: "2026-06-02T13:45:00.000Z",
+  guardrails: [
+    "Use Shopify GraphQL Admin API productSet by handle for draft product idempotency.",
+    "Keep products in draft status and collections unpublished."
+  ],
+  launchReadiness: {
+    failedResourceCount: 0,
+    nextAutonomousStep: "owner_unlock_required",
+    readyResourceCount: 0,
+    remainingApprovals: [
+      "Connector approval and the exact Shopify draft owner phrase are required before draft resources can be created.",
+      "Owner review of every created or skipped Shopify draft resource",
+      "Separate public launch approval before publishing products, collections, pages, or navigation"
+    ],
+    reviewResources: [],
+    rollbackChecklist: [
+      "Keep all generated Shopify products in draft status until public launch approval is recorded."
+    ],
+    status: "waiting_owner_unlock",
+    summary: "Iron House Gym Shopify launch readiness is waiting for owner unlock before draft resources can be created."
+  },
+  mode: "Controlled Shopify Storefront Draft Executor",
+  ownerUnlock: {
+    connectorApproval: false,
+    externalExecution: false,
+    phraseAccepted: false,
+    providerContacted: false,
+    status: "waiting_owner"
+  },
+  providerContacted: false,
+  providerContactedDomain: null,
+  shopifyAdminUrl: "https://iron-house.myshopify.com/admin",
+  sourceStore: {
+    businessName: "Iron House Gym",
+    storePlatform: "Shopify"
+  },
+  status: "ready_for_owner_unlock",
+  storefrontActions: [{
+    body: { input: { handle: "entral-store-1-iron-house-operator-tee-1" } },
+    externalExecution: false,
+    handle: "entral-store-1-iron-house-operator-tee-1",
+    id: "shopify_product_entral-store-1-iron-house-operator-tee-1",
+    idempotencyKey: "entral:store-1:entral-store-1-iron-house-operator-tee-1:shopify-product-set",
+    kind: "upsert_shopify_product_draft",
+    method: "POST",
+    mutationName: "productSet",
+    pathTemplate: "/admin/api/{version}/graphql.json",
+    provider: "Shopify",
+    providerContacted: false,
+    reason: "Draft product can be upserted by handle after owner unlock.",
+    result: null,
+    status: "ready",
+    title: "Upsert Shopify draft product: Iron House Operator Tee 1"
+  }],
+  summary: "Iron House Gym is ready for controlled Shopify draft execution, but owner unlock gates are incomplete.",
+  totals: {
+    blockedActions: 0,
+    collections: 0,
+    executedActions: 0,
+    failedActions: 0,
+    navigationMenus: 0,
+    pages: 0,
+    products: 1,
+    readyActions: 1,
+    skippedActions: 0,
+    storeShellActions: 0
+  }
+};
+
+const firstBusinessLiveShopifyAutonomyRun: RevenueFirstBusinessLiveExecutorApplyResponse["shopifyAutonomyRun"] = {
+  actualExternalActionsExecuted: false,
+  auditEvents: [
+    "Shopify autonomous store run composed provisioning, connection readiness, and draft storefront execution."
+  ],
+  blockedExternalActions: firstBusinessLiveShopifyDraft.blockedExternalActions,
+  externalExecution: false,
+  generatedAt: "2026-06-02T13:45:00.000Z",
+  guardrails: firstBusinessLiveShopifyDraft.guardrails,
+  mode: "Shopify Autonomous Store Run",
+  nextAction: "owner_unlock_required",
+  ownerUnlock: {
+    connectorApproval: false,
+    dryRun: false,
+    phraseProvided: true
+  },
+  providerContacted: false,
+  provisioning: {
+    actualExternalActionsExecuted: false,
+    auditEvents: [
+      "Shopify store provisioning gate prepared.",
+      "Entral can continue automatically after a Shopify shop domain and Admin API token are connected."
+    ],
+    blockedExternalActions: [
+      "Creating a brand-new Shopify account or store through undocumented Partner API behavior"
+    ],
+    continuation: {
+      connectEndpoint: "/api/v1/merch/stores/store-1/shopify-connection",
+      draftExecutorEndpoint: "/api/v1/merch/stores/store-1/shopify-storefront-draft",
+      nextAutonomousStep: "run_shopify_draft_executor",
+      readyForDraftExecutor: true
+    },
+    creationCapture: {
+      afterCreationChecklist: [
+        "Verified Shopify Admin API connection is already available.",
+        "Run the controlled Shopify draft storefront executor when owner gates are accepted."
+      ],
+      autonomyResumeJobEndpoint: "/api/v1/merch/stores/store-1/shopify-autonomy-resume-job",
+      autonomyResumeJobRequestDefaults: {
+        confirm: "QUEUE SHOPIFY AUTONOMY RESUME JOB",
+        connectionWatchIntervalMinutes: 15,
+        countryCode: "US",
+        dryRun: false,
+        maxConnectionWatchAttempts: 24,
+        requestedShopName: "Iron House Gym",
+        storeType: "client_transfer",
+        watchForConnection: true
+      },
+      expectedShopDomain: "iron-house.myshopify.com",
+      nextAutonomousStep: "run_shopify_draft_executor",
+      oauthStartEndpoint: "/api/v1/merch/stores/store-1/shopify-oauth/start",
+      oauthStartRequestDefaults: {
+        confirm: "START SHOPIFY OAUTH",
+        continueAfterApproval: true,
+        countryCode: "US",
+        requestedShopName: "Iron House Gym",
+        scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+        shopDomain: "iron-house.myshopify.com",
+        storeType: "client_transfer"
+      },
+      status: "connected_shop_ready",
+      summary: "Iron House Gym already has iron-house.myshopify.com captured and verified for Shopify OAuth continuation."
+    },
+    creationHandoff: {
+      automationJobEndpoint: "/api/v1/merch/stores/store-1/shopify-store-creation-handoff-job",
+      automationJobRequestDefaults: {
+        confirm: "QUEUE SHOPIFY STORE CREATION HANDOFF JOB",
+        connectionWatchIntervalMinutes: 15,
+        countryCode: "US",
+        dryRun: false,
+        maxConnectionWatchAttempts: 24,
+        queueBrowserTask: true,
+        queueAutonomyResume: true,
+        requestedShopName: "Iron House Gym",
+        storeType: "client_transfer",
+        watchForConnection: true
+      },
+      blockedBrowserActions: [
+        "Entering credentials, solving MFA/CAPTCHA, bypassing account protections, or clicking through protected Shopify login flows"
+      ],
+      browserTask: connectedShopifyDevDashboardBrowserTask,
+      evidenceToCapture: [
+        "Existing verified Shopify connection",
+        "Draft executor readiness receipt"
+      ],
+      expectedShopDomain: "iron-house.myshopify.com",
+      nextAutonomousStep: "run_shopify_draft_executor",
+      status: "connected_shop_ready",
+      summary: "Iron House Gym already has a connected Shopify shop, so no store creation handoff job is needed.",
+      targetUrl: "https://dev.shopify.com/dashboard/stores"
+    },
+    devDashboardPacket: {
+      countryCode: "US",
+      ownerEmail: null,
+      partnerDashboardStoresUrl: "https://dev.shopify.com/dashboard/stores",
+      requestedShopName: "Iron House Gym",
+      shopDomainSuggestion: "iron-house-gym.myshopify.com",
+      storeType: "client_transfer"
+    },
+    externalExecution: false,
+    generatedAt: "2026-06-02T13:45:00.000Z",
+    guardrails: [
+      "After the shop exists, connect its Admin API token in Entral and resume the controlled draft storefront executor."
+    ],
+    mode: "Shopify Store Creation Provisioning Gate",
+    officialApiSurface: {
+      createStoreMutationDocumented: false,
+      docs: [{
+        label: "Shopify Partner API reference",
+        url: "https://shopify.dev/docs/api/partner/latest"
+      }],
+      summary: "Shopify documents the Partner API for Partner Dashboard data and documents store creation from the Dev Dashboard Stores tab, not a public create-store Partner API mutation."
+    },
+    providerContacted: false,
+    sourceStore: {
+      businessName: "Iron House Gym",
+      storePlatform: "Shopify"
+    },
+    status: "connected_existing_shop",
+    summary: "Iron House Gym already has a connected Shopify shop (iron-house.myshopify.com); Entral can continue with draft storefront automation."
+  },
+  sourceStore: {
+    businessName: "Iron House Gym",
+    storePlatform: "Shopify"
+  },
+  status: "blocked_owner_gates",
+  storefrontDraft: firstBusinessLiveShopifyDraft,
+  summary: "Iron House Gym Shopify autonomy reached storefront draft step: Iron House Gym is ready for controlled Shopify draft execution, but owner unlock gates are incomplete.",
+  totals: {
+    blockedActions: 0,
+    executedActions: 0,
+    failedActions: 0,
+    plannedDraftActions: 1
+  }
+};
+
 const firstBusinessLiveExecutorApplyResponse: RevenueFirstBusinessLiveExecutorApplyResponse = {
   autonomousLaunch: firstBusinessAutonomousLaunchPlan,
   batchRun: firstBusinessLiveExecutorRun,
@@ -4574,6 +5192,8 @@ const firstBusinessLiveExecutorApplyResponse: RevenueFirstBusinessLiveExecutorAp
   liveExecutor: firstBusinessLiveExecutorPlan,
   package: firstBusinessPackagePlan,
   preparation: firstStorePreparationPlan,
+  shopifyAutonomyRun: firstBusinessLiveShopifyAutonomyRun,
+  shopifyStorefrontDraft: firstBusinessLiveShopifyDraft,
   sourceBatch: moneyArmyGenerateScoreBatchPlan
 };
 
@@ -9528,6 +10148,430 @@ const providerPayloadPackage: ProviderPayloadPackage = {
   warnings: ["Provider payloads are request drafts only."]
 };
 
+const shopifyConnectionResponse: ShopifyConnectionResponse = {
+  auditLogId: "audit-shopify-connection-1",
+  connection: {
+    apiVersion: "2026-04",
+    connectedAt: "2026-06-04T09:00:00.000Z",
+    id: "shopify-connection-1",
+    lastUsedAt: null,
+    scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+    shopDomain: "iron-house.myshopify.com",
+    status: "active",
+    storeId: "store-1",
+    tokenConfigured: true,
+    tokenLastFour: "1234",
+    updatedAt: "2026-06-04T09:00:00.000Z"
+  },
+  verification: {
+    errors: [],
+    grantedScopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+    missingScopes: [],
+    primaryDomain: "iron-house.myshopify.com",
+    providerContacted: true,
+    shopDomain: "iron-house.myshopify.com",
+    shopId: "gid://shopify/Shop/1",
+    shopName: "Iron House Gym",
+    status: "verified"
+  }
+};
+
+const shopifyOAuthStartResponse: ShopifyOAuthStartResponse = {
+  auditLogId: "audit-shopify-oauth-start-1",
+  authorizeUrl: "https://iron-house.myshopify.com/admin/oauth/authorize?client_id=shopify-client-id&scope=read_products%2Cwrite_products%2Cread_online_store_pages%2Cwrite_online_store_pages%2Cread_online_store_navigation%2Cwrite_online_store_navigation&state=signed-state",
+  callbackUrl: "https://api.entral.test/api/v1/merch/shopify/oauth/callback",
+  continuation: {
+    expiresAt: "2026-06-04T09:10:00.000Z",
+    id: "shopify-oauth-continuation-1",
+    status: "pending"
+  },
+  scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+  shopDomain: "iron-house.myshopify.com",
+  stateExpiresAt: "2026-06-04T09:10:00.000Z"
+};
+
+const shopifyStoreProvisioningResponse: ShopifyStoreProvisioningResponse = {
+  auditLogId: "audit-shopify-provisioning-1",
+  plan: {
+    actualExternalActionsExecuted: false,
+    auditEvents: [
+      "Shopify store provisioning gate prepared.",
+      "No Shopify account, store, billing, payout, domain, browser, or payment action was executed.",
+      "Entral can continue automatically after a Shopify shop domain and Admin API token are connected."
+    ],
+    blockedExternalActions: [
+      "Creating a brand-new Shopify account or store through undocumented Partner API behavior",
+      "Using browser automation to bypass Shopify login, MFA, bot checks, account protections, plan selection, billing, payouts, or payment setup",
+      "Purchasing domains, selecting paid plans, adding bank accounts, enabling payment processors, or publishing a public storefront"
+    ],
+    continuation: {
+      connectEndpoint: "/api/v1/merch/stores/store-1/shopify-connection",
+      draftExecutorEndpoint: "/api/v1/merch/stores/store-1/shopify-storefront-draft",
+      nextAutonomousStep: "connect_existing_shop",
+      readyForDraftExecutor: false
+    },
+    creationCapture: {
+      afterCreationChecklist: [
+        "Create the Shopify store from the documented Dev Dashboard or Partner Dashboard flow.",
+        "Copy the final myshopify.com domain into Entral exactly as Shopify shows it.",
+        "Start Shopify OAuth approval from Entral with Continue After Approval enabled.",
+        "Keep the queued Shopify autonomy resume job watching for the verified connection."
+      ],
+      autonomyResumeJobEndpoint: "/api/v1/merch/stores/store-1/shopify-autonomy-resume-job",
+      autonomyResumeJobRequestDefaults: {
+        confirm: "QUEUE SHOPIFY AUTONOMY RESUME JOB",
+        connectionWatchIntervalMinutes: 15,
+        countryCode: "US",
+        dryRun: false,
+        maxConnectionWatchAttempts: 24,
+        requestedShopName: "Iron House Gym",
+        storeType: "client_transfer",
+        watchForConnection: true
+      },
+      expectedShopDomain: "iron-house-gym.myshopify.com",
+      nextAutonomousStep: "create_store_in_dashboard",
+      oauthStartEndpoint: "/api/v1/merch/stores/store-1/shopify-oauth/start",
+      oauthStartRequestDefaults: {
+        confirm: "START SHOPIFY OAUTH",
+        continueAfterApproval: true,
+        countryCode: "US",
+        requestedShopName: "Iron House Gym",
+        scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+        shopDomain: "iron-house-gym.myshopify.com",
+        storeType: "client_transfer"
+      },
+      status: "capture_required",
+      summary: "Iron House Gym is waiting for the Shopify dashboard-created shop domain; Entral can start OAuth and resume autonomy as soon as that domain is captured."
+    },
+    creationHandoff: {
+      automationJobEndpoint: "/api/v1/merch/stores/store-1/shopify-store-creation-handoff-job",
+      automationJobRequestDefaults: {
+        confirm: "QUEUE SHOPIFY STORE CREATION HANDOFF JOB",
+        connectionWatchIntervalMinutes: 15,
+        countryCode: "US",
+        dryRun: false,
+        maxConnectionWatchAttempts: 24,
+        queueBrowserTask: true,
+        queueAutonomyResume: true,
+        requestedShopName: "Iron House Gym",
+        storeType: "client_transfer",
+        watchForConnection: true
+      },
+      blockedBrowserActions: [
+        "Entering credentials, solving MFA/CAPTCHA, bypassing account protections, or clicking through protected Shopify login flows",
+        "Selecting paid plans, adding billing, enabling payouts/payments, buying domains, publishing storefront changes, or accepting app charges",
+        "Using stealth, proxy, fingerprint, anti-detection, or traffic-disguise browser automation"
+      ],
+      browserTask: shopifyDevDashboardBrowserTask,
+      evidenceToCapture: [
+        "Final myshopify.com domain after Shopify creates the store",
+        "Store type selected in the Shopify dashboard",
+        "Timestamp and operator/account context for the dashboard-created store"
+      ],
+      expectedShopDomain: "iron-house-gym.myshopify.com",
+      nextAutonomousStep: "queue_store_creation_handoff_job",
+      status: "ready_to_queue",
+      summary: "Iron House Gym can queue a Shopify store creation handoff job that tracks the Dev Dashboard step, records required evidence, and starts the bounded connection watcher.",
+      targetUrl: "https://dev.shopify.com/dashboard/stores"
+    },
+    devDashboardPacket: {
+      countryCode: "US",
+      ownerEmail: "mara@example.com",
+      partnerDashboardStoresUrl: "https://dev.shopify.com/dashboard/stores",
+      requestedShopName: "Iron House Gym",
+      shopDomainSuggestion: "iron-house-gym.myshopify.com",
+      storeType: "client_transfer"
+    },
+    externalExecution: false,
+    generatedAt: "2026-06-04T09:00:00.000Z",
+    guardrails: [
+      "Use the Shopify Dev Dashboard Stores tab for store creation while Shopify lacks a documented public create-store mutation.",
+      "After the shop exists, connect its Admin API token in Entral and resume the controlled draft storefront executor."
+    ],
+    mode: "Shopify Store Creation Provisioning Gate",
+    officialApiSurface: {
+      createStoreMutationDocumented: false,
+      docs: [{
+        label: "Shopify Partner API reference",
+        url: "https://shopify.dev/docs/api/partner/latest"
+      }, {
+        label: "Shopify Dev Dashboard stores",
+        url: "https://shopify.dev/docs/apps/build/dev-dashboard/stores/index"
+      }],
+      summary: "Shopify documents the Partner API for Partner Dashboard data and documents store creation from the Dev Dashboard Stores tab, not a public create-store Partner API mutation."
+    },
+    providerContacted: false,
+    sourceStore: {
+      businessName: "Iron House Gym",
+      storePlatform: "Shopify"
+    },
+    status: "dev_dashboard_creation_required",
+    summary: "Iron House Gym needs a Shopify Dev Dashboard store creation step before Entral can connect Admin API credentials and continue autonomous draft setup."
+  }
+};
+
+const shopifyStoreCreationHandoffJobResponse = {
+  auditLogId: "audit-shopify-handoff-1",
+  browserTaskJob: {
+    id: "automation-job-shopify-browser-task-1",
+    scheduledAt: null,
+    status: "pending",
+    type: "shopify_store_creation_browser_task" as const
+  },
+  handoff: shopifyStoreProvisioningResponse.plan.creationHandoff,
+  handoffApprovalPacket: {
+    id: "packet-shopify-store-creation-1",
+    packetId: "shopify_store_creation_store-1_20260601003000",
+    status: "pending"
+  },
+  job: {
+    connectionWatch: {
+      attempt: 0,
+      enabled: true,
+      intervalMinutes: 15,
+      maxAttempts: 24
+    },
+    id: "automation-job-shopify-handoff-1",
+    scheduledAt: null,
+    status: "pending",
+    type: "shopify_store_creation_handoff" as const
+  }
+};
+
+const shopifyStoreCreationCaptureResponse: ShopifyStoreCreationCaptureResponse = {
+  auditLogId: "audit-shopify-capture-1",
+  capture: {
+    actualExternalActionsExecuted: false,
+    autonomyResumeJob: {
+      connectionWatch: {
+        attempt: 0,
+        enabled: true,
+        intervalMinutes: 15,
+        maxAttempts: 24
+      },
+      id: "automation-job-shopify-capture-1",
+      scheduledAt: null,
+      status: "pending",
+      type: "shopify_autonomy_resume"
+    },
+    browserTaskEvidence: {
+      capturedAt: "2026-06-04T09:05:00.000Z",
+      capturedFromTargetUrl: "https://dev.shopify.com/dashboard/stores",
+      completedStepIds: [],
+      countryCode: "US",
+      finalShopDomain: "iron-house.myshopify.com",
+      operatorOrSessionContext: "Captured from Merch Operations panel after Shopify dashboard store creation.",
+      source: "manual_capture",
+      storeType: "client_transfer"
+    },
+    externalExecution: false,
+    mode: "Shopify Store Creation Capture",
+    oauth: {
+      authorizeUrl: shopifyOAuthStartResponse.authorizeUrl,
+      callbackUrl: shopifyOAuthStartResponse.callbackUrl,
+      continuation: shopifyOAuthStartResponse.continuation,
+      scopes: shopifyOAuthStartResponse.scopes,
+      shopDomain: "iron-house.myshopify.com",
+      stateExpiresAt: shopifyOAuthStartResponse.stateExpiresAt
+    },
+    providerContacted: false,
+    shopDomain: "iron-house.myshopify.com",
+    status: "oauth_ready",
+    summary: "Iron House Gym Shopify store domain iron-house.myshopify.com captured. OAuth approval link is ready and autonomy continuation is armed."
+  }
+};
+
+const approvedShopifyStoreCreationApprovalRecord: GrowthApprovalRecord = {
+  ...shopifyStoreCreationApprovalRecord,
+  reviewAuditLogId: "audit-shopify-store-creation-review-1",
+  reviewedAt: "2026-06-01T00:35:00.000Z",
+  status: "approved",
+  statusLabel: "Approved - execution still locked",
+  updatedAt: "2026-06-01T00:35:00.000Z"
+};
+
+const shopifyStoreCreationApprovalCaptureReviewResponse = {
+  approval: approvedShopifyStoreCreationApprovalRecord,
+  auditLogId: "audit-shopify-store-creation-review-1",
+  message: "Iron House Gym Shopify store domain iron-house.myshopify.com captured. OAuth approval link is ready and autonomy continuation is armed. Review packet approved and linked to capture audit audit-shopify-capture-1.",
+  shopifyStoreCreationCapture: {
+    ...shopifyStoreCreationCaptureResponse,
+    capture: {
+      ...shopifyStoreCreationCaptureResponse.capture,
+      browserTaskEvidence: {
+        ...shopifyStoreCreationCaptureResponse.capture.browserTaskEvidence,
+        completedStepIds: shopifyDevDashboardBrowserTask.allowedSteps.map((step) => step.id),
+        operatorOrSessionContext: "Captured while approving the Shopify store creation review packet.",
+        source: "approval_review" as const
+      }
+    }
+  }
+};
+
+const shopifyAutonomyRunResponse: ShopifyAutonomyRunResponse = {
+  auditLogId: "audit-shopify-autonomy-1",
+  plan: {
+    actualExternalActionsExecuted: false,
+    auditEvents: [
+      "Shopify autonomous store run composed provisioning, connection readiness, and draft storefront execution."
+    ],
+    blockedExternalActions: shopifyStoreProvisioningResponse.plan.blockedExternalActions,
+    externalExecution: false,
+    generatedAt: "2026-06-04T09:00:00.000Z",
+    guardrails: shopifyStoreProvisioningResponse.plan.guardrails,
+    mode: "Shopify Autonomous Store Run",
+    nextAction: "connect_shopify_admin",
+    ownerUnlock: {
+      connectorApproval: false,
+      dryRun: false,
+      phraseProvided: false
+    },
+    providerContacted: false,
+    provisioning: shopifyStoreProvisioningResponse.plan,
+    sourceStore: {
+      businessName: "Iron House Gym",
+      storePlatform: "Shopify"
+    },
+    status: "blocked_store_creation_required",
+    storefrontDraft: null,
+    summary: "Iron House Gym Shopify autonomy is waiting on the store creation/connection gate before draft storefront work can run.",
+    totals: {
+      blockedActions: 1,
+      executedActions: 0,
+      failedActions: 0,
+      plannedDraftActions: 0
+    }
+  }
+};
+
+const shopifyAutonomyResumeJobResponse: ShopifyAutonomyResumeJobResponse = {
+  auditLogId: "audit-shopify-autonomy-job-1",
+  job: {
+    connectionWatch: {
+      attempt: 0,
+      enabled: true,
+      intervalMinutes: 15,
+      maxAttempts: 24
+    },
+    id: "automation-job-shopify-1",
+    scheduledAt: null,
+    status: "pending",
+    type: "shopify_autonomy_resume"
+  }
+};
+
+const shopifyStorefrontDraftResponse: ShopifyStorefrontDraftResponse = {
+  auditLogId: "audit-shopify-preview-1",
+  plan: {
+    actualExternalActionsExecuted: false,
+    auditEvents: [
+      "Controlled Shopify storefront draft executor prepared a provider-specific draft plan.",
+      "Dry-run and blocked plans do not contact Shopify."
+    ],
+    blockedExternalActions: [
+      "Provisioning a brand-new Shopify account, organization store, paid plan, billing record, payment processor, tax profile, bank account, payout setting, domain purchase, app charge, or ad spend action",
+      "Publishing products, collections, pages, policies, or theme navigation to public sales channels without separate public launch approval",
+      "Sending any Shopify request when dryRun=true, credentials are missing, the connector approval is false, or the exact owner unlock phrase is absent"
+    ],
+    credentialReadiness: {
+      apiVersion: "2026-04",
+      credentialRefs: ["SHOPIFY_STORE_DOMAIN", "SHOPIFY_CONNECTOR_ADMIN_TOKEN", "SHOPIFY_API_VERSION"],
+      missingEnvVars: [],
+      shopDomain: "iron-house.myshopify.com",
+      status: "ready"
+    },
+    externalExecution: false,
+    generatedAt: "2026-06-02T00:00:00.000Z",
+    guardrails: [
+      "Use Shopify GraphQL Admin API productSet by handle for draft product idempotency.",
+      "Keep products in draft status and collections unpublished.",
+      "Create store pages as unpublished drafts and leave generated navigation unattached to the theme until launch approval."
+    ],
+    launchReadiness: {
+      failedResourceCount: 0,
+      nextAutonomousStep: "run_shopify_draft_executor",
+      readyResourceCount: 0,
+      remainingApprovals: [
+        "Run the controlled Shopify draft executor before launch review can begin.",
+        "Owner review of every created or skipped Shopify draft resource",
+        "Separate public launch approval before publishing products, collections, pages, or navigation"
+      ],
+      reviewResources: [],
+      rollbackChecklist: [
+        "Keep all generated Shopify products in draft status until public launch approval is recorded.",
+        "Keep generated collections unpublished and remove them from sales channels if a retry or rollback is needed."
+      ],
+      status: "not_started",
+      summary: "Iron House Gym Shopify launch readiness has not started; 2 draft actions are planned."
+    },
+    mode: "Controlled Shopify Storefront Draft Executor",
+    ownerUnlock: {
+      connectorApproval: false,
+      externalExecution: false,
+      phraseAccepted: false,
+      providerContacted: false,
+      status: "not_requested"
+    },
+    providerContacted: false,
+    providerContactedDomain: null,
+    shopifyAdminUrl: "https://iron-house.myshopify.com/admin",
+    sourceStore: {
+      businessName: "Iron House Gym",
+      storePlatform: "Shopify"
+    },
+    status: "dry_run",
+    storefrontActions: [
+      {
+        body: { input: { handle: "entral-store-1-iron-house-core-tee" } },
+        externalExecution: false,
+        handle: "entral-store-1-iron-house-core-tee",
+        id: "shopify_product_entral-store-1-iron-house-core-tee",
+        idempotencyKey: "entral:store-1:entral-store-1-iron-house-core-tee:shopify-product-set",
+        kind: "upsert_shopify_product_draft",
+        method: "POST",
+        mutationName: "productSet",
+        pathTemplate: "/admin/api/{version}/graphql.json",
+        provider: "Shopify",
+        providerContacted: false,
+        reason: "Draft product can be upserted by handle after owner unlock.",
+        result: null,
+        status: "ready",
+        title: "Upsert Shopify draft product: Iron House Core Tee"
+      },
+      {
+        body: { input: { handle: "entral-store-1-launch" } },
+        externalExecution: false,
+        handle: "entral-store-1-launch",
+        id: "shopify_collection_entral-store-1-launch",
+        idempotencyKey: "entral:store-1:entral-store-1-launch:shopify-collection-create",
+        kind: "create_shopify_collection_draft",
+        method: "POST",
+        mutationName: "collectionCreate",
+        pathTemplate: "/admin/api/{version}/graphql.json",
+        provider: "Shopify",
+        providerContacted: false,
+        reason: "Unpublished launch collection can be created after owner unlock.",
+        result: null,
+        status: "ready",
+        title: "Create Shopify draft collection: Iron House Gym Launch Collection"
+      }
+    ],
+    summary: "2 Shopify draft actions planned for Iron House Gym: 1 approved product and 0 store-shell actions. No Shopify request was sent.",
+    totals: {
+      blockedActions: 0,
+      collections: 1,
+      executedActions: 0,
+      failedActions: 0,
+      navigationMenus: 0,
+      pages: 0,
+      products: 1,
+      readyActions: 2,
+      skippedActions: 0,
+      storeShellActions: 0
+    }
+  }
+};
+
 const providerApprovalRecord: GrowthApprovalRecord = {
   ...approvalRecord,
   auditLogId: "audit-provider-1",
@@ -9666,6 +10710,7 @@ const providerHandoffResponse: ProviderHandoffResponse = {
 describe("MerchOperationsPanel", () => {
   beforeEach(() => {
     vi.mocked(apiFetch).mockReset();
+    window.history.replaceState(null, "", "/");
   });
 
   it("loads first-cash readiness for the fastest income path", async () => {
@@ -9873,6 +10918,11 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("100 Store Internal Work Lease Plan")).toBeInTheDocument();
     expect(within(region).getByText("Lease safety posture")).toBeInTheDocument();
     expect(within(region).getByText("128 internal work leases prepared for 100-store operations: 25 ready to claim, 2 approval-hold, 99 waiting on dependencies, 0 blocked, and 25 can run cleanly within shard caps. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getByText("Worker Assignment Plan")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Chain Of Command Assignment Plan")).toBeInTheDocument();
+    expect(within(region).getByText("10/25/100 worker coverage")).toBeInTheDocument();
+    expect(within(region).getByText(/10 stores ready 10\/10 \(100%\) \/ 25 stores ready 25\/25 \(100%\) \/ 100 stores ready 25\/25 \(100%\)/)).toBeInTheDocument();
+    expect(within(region).getByText(/3\/3 scale targets ready/)).toBeInTheDocument();
     expect(within(region).getByText("Capacity Proof")).toBeInTheDocument();
     expect(within(region).getByText("100 Store Capacity Proof")).toBeInTheDocument();
     expect(within(region).getByText("BLOCK capacity proof: private controls can currently model 8/100 clean simultaneous store slots with 5 pass, 2 watch, and 1 block checks. External execution remains locked.")).toBeInTheDocument();
@@ -10449,6 +11499,14 @@ describe("MerchOperationsPanel", () => {
     expect(await screen.findAllByText("Iron House Gym controlled live executor prepared. Owner unlock, connector approval, public launch approval, or ad draft approval is still incomplete.")).toHaveLength(2);
     expect(within(region).getAllByText("Controlled Live First Business Executor").length).toBeGreaterThan(0);
     expect(within(region).getAllByText(/ready for owner unlock/i).length).toBeGreaterThan(0);
+    expect(within(region).getByText("Shopify Autonomy Run")).toBeInTheDocument();
+    expect(within(region).getByText("owner unlock required")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym Shopify autonomy reached storefront draft step: Iron House Gym is ready for controlled Shopify draft execution, but owner unlock gates are incomplete.")).toBeInTheDocument();
+    expect(within(region).getByText("connected existing shop")).toBeInTheDocument();
+    expect(within(region).getByText("Shopify Draft Storefront")).toBeInTheDocument();
+    expect(within(region).getByText("Controlled Shopify Storefront Draft Executor")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym is ready for controlled Shopify draft execution, but owner unlock gates are incomplete.")).toBeInTheDocument();
+    expect(within(region).getByText("Upsert Shopify draft product: Iron House Operator Tee 1")).toBeInTheDocument();
     expect(within(region).getByText("Credential Readiness")).toBeInTheDocument();
     expect(within(region).getByText("Provider Action Manifests")).toBeInTheDocument();
     expect(within(region).getByText("Live Runbook")).toBeInTheDocument();
@@ -11732,7 +12790,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("Provider / Pending human approval")).toBeInTheDocument();
     expect(screen.getByText("Provider payload approval packet queued. Provider execution remains locked.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /approve preparation/i }));
+    await userEvent.click(screen.getAllByRole("button", { name: /approve preparation/i })[0]!);
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/stores/store-1/growth-approvals/packet-provider-1/approve", {
       json: {
@@ -11751,9 +12809,502 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText(/Provider contacted: false/i)).toBeInTheDocument();
   });
 
+  it("previews a controlled Shopify storefront draft without contacting Shopify", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyStorefrontDraftResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /preview shopify draft/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-storefront-draft", {
+      json: {
+        confirm: "EXECUTE CONTROLLED SHOPIFY STOREFRONT DRAFT",
+        dryRun: true,
+        includeCollections: true,
+        includeProducts: true,
+        includeStoreShell: true,
+        maxProducts: 5,
+        note: "Previewed from Merch Operations panel."
+      },
+      method: "POST"
+    });
+
+    const region = await screen.findByRole("region", { name: /controlled shopify storefront draft/i });
+    expect(within(region).getByText(/Controlled Shopify Storefront Draft Executor \/ dry run/i)).toBeInTheDocument();
+    expect(within(region).getByText("1 products / 1 collections / 0 pages / 0 menus")).toBeInTheDocument();
+    expect(within(region).getByText("2 Shopify draft actions planned for Iron House Gym: 1 approved product and 0 store-shell actions. No Shopify request was sent.")).toBeInTheDocument();
+    expect(within(region).getByText("Not contacted")).toBeInTheDocument();
+    expect(within(region).getByText("Backend connector credentials ready")).toBeInTheDocument();
+    expect(within(region).getByText("0 ready resources / 0 failed / next run shopify draft executor")).toBeInTheDocument();
+    expect(within(region).getByText("Upsert Shopify draft product: Iron House Core Tee")).toBeInTheDocument();
+    expect(within(region).getByText("Launch readiness receipt")).toBeInTheDocument();
+    expect(within(region).getByText("Publishing products, collections, pages, policies, or theme navigation to public sales channels without separate public launch approval")).toBeInTheDocument();
+    expect(screen.getByText("Shopify storefront draft previewed for Iron House Gym. No Shopify request was sent.")).toBeInTheDocument();
+  });
+
+  it("previews a Shopify store creation provisioning packet before connection", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyStoreProvisioningResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /preview store creation/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-store-provisioning", {
+      json: {
+        confirm: "PREPARE SHOPIFY STORE CREATION PACKET",
+        countryCode: "US",
+        dryRun: true,
+        note: "Prepared from Merch Operations panel before Shopify connection and draft storefront execution.",
+        ownerEmail: "mara@example.com",
+        requestedShopName: "Iron House Gym",
+        storeType: "client_transfer"
+      },
+      method: "POST"
+    });
+
+    const region = await screen.findByRole("region", { name: /shopify store creation packet/i });
+    expect(within(region).getByText(/Shopify Store Creation Provisioning Gate \/ dev dashboard creation required/i)).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym")).toBeInTheDocument();
+    expect(within(region).getByText("client transfer")).toBeInTheDocument();
+    expect(within(region).getByText("iron-house-gym.myshopify.com / US")).toBeInTheDocument();
+    expect(within(region).getByText("Dev Dashboard required")).toBeInTheDocument();
+    expect(within(region).getByText("connect existing shop")).toBeInTheDocument();
+    expect(within(region).getByText("capture required")).toBeInTheDocument();
+    expect(within(region).getByText("ready to queue")).toBeInTheDocument();
+    expect(within(region).getByText("queue store creation handoff job")).toBeInTheDocument();
+    expect(within(region).getByText("not started")).toBeInTheDocument();
+    expect(within(region).getByText("6 governed steps")).toBeInTheDocument();
+    expect(within(region).getByText("/api/v1/merch/stores/store-1/shopify-oauth/start")).toBeInTheDocument();
+    expect(within(region).getByText("/api/v1/merch/stores/store-1/shopify-store-creation-handoff-job")).toBeInTheDocument();
+    expect(within(region).getByText("Final myshopify.com domain after Shopify creates the store")).toBeInTheDocument();
+    expect(within(region).getByText("Open Shopify Dev Dashboard Stores.")).toBeInTheDocument();
+    expect(within(region).getByText("Select Create store.")).toBeInTheDocument();
+    expect(within(region).getByText("Select Client transfer store.")).toBeInTheDocument();
+    expect(within(region).getByText("Login, MFA, CAPTCHA, bot challenge, account recovery, or organization-permission challenge requires the owner/operator.")).toBeInTheDocument();
+    expect(within(region).getByText("Start Shopify OAuth approval from Entral with Continue After Approval enabled.")).toBeInTheDocument();
+    expect(within(region).getByText("Creating a brand-new Shopify account or store through undocumented Partner API behavior")).toBeInTheDocument();
+    expect(screen.getByLabelText(/shop domain/i)).toHaveValue("iron-house-gym.myshopify.com");
+    expect(screen.getAllByText("Iron House Gym needs a Shopify Dev Dashboard store creation step before Entral can connect Admin API credentials and continue autonomous draft setup.").length).toBeGreaterThan(0);
+  });
+
+  it("queues a Shopify store creation handoff job", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyStoreCreationHandoffJobResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /queue store handoff/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-store-creation-handoff-job", {
+      json: {
+        confirm: "QUEUE SHOPIFY STORE CREATION HANDOFF JOB",
+        connectionWatchIntervalMinutes: 15,
+        connectorApproval: false,
+        countryCode: "US",
+        dryRun: false,
+        includeCollections: true,
+        includeProducts: true,
+        includeStoreShell: true,
+        liveUnlockPhrase: "",
+        maxConnectionWatchAttempts: 24,
+        maxProducts: 5,
+        note: "Queued from Merch Operations panel to track Shopify Dev Dashboard store creation handoff.",
+        ownerEmail: "mara@example.com",
+        queueBrowserTask: true,
+        queueAutonomyResume: true,
+        requestedShopName: "Iron House Gym",
+        storeType: "client_transfer",
+        watchForConnection: true
+      },
+      method: "POST"
+    });
+
+    const region = await screen.findByRole("region", { name: /shopify store creation handoff job/i });
+    expect(within(region).getByText("shopify store creation handoff / pending")).toBeInTheDocument();
+    expect(within(region).getByText("ready to queue")).toBeInTheDocument();
+    expect(within(region).getByText("iron-house-gym.myshopify.com")).toBeInTheDocument();
+    expect(within(region).getByText("0/24 attempts, every 15 min")).toBeInTheDocument();
+    expect(within(region).getByText("Review packet: packet-shopify-store-creation-1")).toBeInTheDocument();
+    expect(within(region).getByText("Browser task: automation-job-shopify-browser-task-1")).toBeInTheDocument();
+    expect(screen.getByText("Shopify store creation handoff queued for Iron House Gym: pending.")).toBeInTheDocument();
+  });
+
+  it("captures a dashboard-created Shopify store and prepares OAuth continuation plus watcher", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyStoreCreationCaptureResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.type(screen.getByLabelText(/shop domain/i), "iron-house.myshopify.com");
+    await userEvent.click(screen.getByRole("button", { name: /capture created store/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-store-creation-capture", {
+      json: {
+        browserTaskEvidence: {
+          capturedAt: expect.any(String),
+          capturedFromTargetUrl: "https://dev.shopify.com/dashboard/stores",
+          completedStepIds: [],
+          finalShopDomain: "iron-house.myshopify.com",
+          operatorOrSessionContext: "Captured from Merch Operations panel after Shopify dashboard store creation.",
+          source: "manual_capture",
+          storeType: "client_transfer"
+        },
+        confirm: "CAPTURE SHOPIFY STORE CREATION",
+        connectionWatchIntervalMinutes: 15,
+        connectorApproval: false,
+        continueAfterApproval: true,
+        countryCode: "US",
+        dryRun: false,
+        includeCollections: true,
+        includeProducts: true,
+        includeStoreShell: true,
+        liveUnlockPhrase: "",
+        maxConnectionWatchAttempts: 24,
+        maxProducts: 5,
+        note: "Captured from Merch Operations panel after Shopify dashboard store creation.",
+        ownerEmail: "mara@example.com",
+        queueAutonomyResume: true,
+        requestedShopName: "Iron House Gym",
+        returnTo: window.location.href,
+        scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+        shopDomain: "iron-house.myshopify.com",
+        startOAuth: true,
+        storeType: "client_transfer"
+      },
+      method: "POST"
+    });
+
+    const region = await screen.findByRole("region", { name: /shopify store creation capture/i });
+    expect(screen.getAllByText("Iron House Gym Shopify store domain iron-house.myshopify.com captured. OAuth approval link is ready and autonomy continuation is armed.")).toHaveLength(2);
+    expect(within(region).getByText("Shopify Store Creation Capture / oauth ready")).toBeInTheDocument();
+    expect(within(region).getByText("iron-house.myshopify.com")).toBeInTheDocument();
+    expect(within(region).getByText("Continuation armed")).toBeInTheDocument();
+    expect(within(region).getByText("0/24 attempts")).toBeInTheDocument();
+    expect(within(region).getByText("manual capture")).toBeInTheDocument();
+    expect(within(region).getByText("iron-house.myshopify.com / 0 steps")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open shopify approval/i })).toHaveAttribute("href", shopifyOAuthStartResponse.authorizeUrl);
+    expect(screen.getByText("Job automation-job-shopify-capture-1 is queued for the automation worker.")).toBeInTheDocument();
+  });
+
+  it("approves a Shopify store creation packet and captures the shop domain from the review queue", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce({ items: [shopifyStoreCreationApprovalRecord] })
+      .mockResolvedValueOnce(shopifyStoreCreationApprovalCaptureReviewResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.type(screen.getByLabelText(/shop domain/i), "iron-house.myshopify.com");
+    await userEvent.click(screen.getByRole("button", { name: /load review queue/i }));
+
+    expect(await screen.findByText("Capture Shopify store domain")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /approve and capture store/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/stores/store-1/growth-approvals/packet-shopify-store-creation-1/approve", {
+      json: {
+        note: "Approved Shopify store creation and captured the dashboard-created domain. Public launch remains locked.",
+        shopifyStoreCreationCapture: {
+          browserTaskEvidence: {
+            capturedAt: expect.any(String),
+            capturedFromTargetUrl: "https://dev.shopify.com/dashboard/stores",
+            completedStepIds: shopifyDevDashboardBrowserTask.allowedSteps.map((step) => step.id),
+            finalShopDomain: "iron-house.myshopify.com",
+            operatorOrSessionContext: "Captured while approving the Shopify store creation review packet.",
+            source: "approval_review",
+            storeType: "client_transfer"
+          },
+          confirm: "CAPTURE SHOPIFY STORE CREATION",
+          connectionWatchIntervalMinutes: 15,
+          connectorApproval: false,
+          continueAfterApproval: true,
+          countryCode: "US",
+          dryRun: false,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          liveUnlockPhrase: "",
+          maxConnectionWatchAttempts: 24,
+          maxProducts: 5,
+          note: "Captured from the Shopify store creation approval review queue.",
+          ownerEmail: "mara@example.com",
+          queueAutonomyResume: true,
+          requestedShopName: "Iron House Gym",
+          returnTo: window.location.href,
+          scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+          shopDomain: "iron-house.myshopify.com",
+          startOAuth: true,
+          storeType: "client_transfer"
+        }
+      },
+      method: "POST"
+    });
+
+    expect(await screen.findByText(shopifyStoreCreationApprovalCaptureReviewResponse.message)).toBeInTheDocument();
+    const region = await screen.findByRole("region", { name: /shopify store creation capture/i });
+    expect(within(region).getByText("Shopify Store Creation Capture / oauth ready")).toBeInTheDocument();
+    expect(within(region).getByText("iron-house.myshopify.com")).toBeInTheDocument();
+    expect(within(region).getByText("Continuation armed")).toBeInTheDocument();
+    expect(within(region).getByText("approval review")).toBeInTheDocument();
+    expect(within(region).getByText("iron-house.myshopify.com / 6 steps")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open shopify approval/i })).toHaveAttribute("href", shopifyOAuthStartResponse.authorizeUrl);
+    expect(screen.getByText("Job automation-job-shopify-capture-1 is queued for the automation worker.")).toBeInTheDocument();
+  });
+
+  it("runs the chained Shopify autonomy step until the shop connection gate", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyAutonomyRunResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /run shopify autonomy/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-autonomy-run", {
+      json: {
+        confirm: "RUN SHOPIFY AUTONOMOUS STORE SETUP",
+        connectorApproval: false,
+        countryCode: "US",
+        dryRun: false,
+        includeCollections: true,
+        includeProducts: true,
+        includeStoreShell: true,
+        liveUnlockPhrase: "",
+        maxProducts: 5,
+        note: "Ran from Merch Operations panel as a chained Shopify autonomy step.",
+        ownerEmail: "mara@example.com",
+        requestedShopName: "Iron House Gym",
+        storeType: "client_transfer"
+      },
+      method: "POST"
+    });
+
+    const region = await screen.findByRole("region", { name: /shopify autonomous store run/i });
+    expect(within(region).getByText(/Shopify Autonomous Store Run \/ blocked store creation required/i)).toBeInTheDocument();
+    expect(within(region).getByText("connect shopify admin")).toBeInTheDocument();
+    expect(within(region).getByText("dev dashboard creation required")).toBeInTheDocument();
+    expect(within(region).getByText("not started")).toBeInTheDocument();
+    expect(within(region).getByText("0 planned / 0 executed")).toBeInTheDocument();
+    expect(within(region).getByText("Not contacted")).toBeInTheDocument();
+    expect(screen.getAllByText("Iron House Gym Shopify autonomy is waiting on the store creation/connection gate before draft storefront work can run.").length).toBeGreaterThan(0);
+  });
+
+  it("queues Shopify autonomy as a background automation job", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyAutonomyResumeJobResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /queue shopify autonomy/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-autonomy-resume-job", {
+      json: {
+        confirm: "QUEUE SHOPIFY AUTONOMY RESUME JOB",
+        connectionWatchIntervalMinutes: 15,
+        connectorApproval: false,
+        countryCode: "US",
+        dryRun: false,
+        includeCollections: true,
+        includeProducts: true,
+        includeStoreShell: true,
+        liveUnlockPhrase: "",
+        maxConnectionWatchAttempts: 24,
+        maxProducts: 5,
+        note: "Queued from Merch Operations panel for background Shopify autonomy resume.",
+        ownerEmail: "mara@example.com",
+        requestedShopName: "Iron House Gym",
+        storeType: "client_transfer",
+        watchForConnection: true
+      },
+      method: "POST"
+    });
+
+    const region = await screen.findByRole("region", { name: /shopify autonomy resume job/i });
+    expect(screen.getByText("Shopify autonomy queued for Iron House Gym: pending.")).toBeInTheDocument();
+    expect(within(region).getByText("shopify autonomy resume / pending")).toBeInTheDocument();
+    expect(within(region).getByText("Background Shopify Autonomy")).toBeInTheDocument();
+    expect(within(region).getByText("Job automation-job-shopify-1 is queued for the automation worker.")).toBeInTheDocument();
+    expect(within(region).getByText("Connection watch: 0/24 attempts, every 15 min")).toBeInTheDocument();
+  });
+
+  it("approves a Shopify autonomy packet and queues the resume job from the review queue", async () => {
+    const approvedShopifyAutonomyResumeRecord: GrowthApprovalRecord = {
+      ...shopifyAutonomyResumeApprovalRecord,
+      reviewAuditLogId: "audit-shopify-continuation-1",
+      reviewedAt: "2026-06-01T00:30:00.000Z",
+      status: "approved",
+      statusLabel: "Approved - execution still locked",
+      updatedAt: "2026-06-01T00:30:00.000Z"
+    };
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce({ items: [shopifyAutonomyResumeApprovalRecord] })
+      .mockResolvedValueOnce({
+        approval: approvedShopifyAutonomyResumeRecord,
+        auditLogId: "audit-shopify-continuation-1",
+        message: "Shopify owner-gate approval recorded. Queue Shopify autonomy with connector approval and the owner unlock phrase to continue draft execution. Resume job automation-job-shopify-resume-2 queued.",
+        shopifyContinuation: {
+          action: "request_owner_unlock",
+          approvalStatus: "approved",
+          canResumeAutonomy: true,
+          externalExecution: false,
+          launchReadinessStatus: "owner_unlock_required",
+          message: "Shopify owner-gate approval recorded. Queue Shopify autonomy with connector approval and the owner unlock phrase to continue draft execution.",
+          nextStep: "provide_owner_unlock",
+          providerContacted: false,
+          recommendedEndpoint: "/api/v1/merch/stores/store-1/shopify-autonomy-resume-job",
+          requiredInputs: [
+            "connectorApproval=true",
+            "liveUnlockPhrase=\"I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION\""
+          ],
+          reviewResourceCount: 0,
+          storefrontDraftStatus: "blocked_owner_gates"
+        },
+        shopifyResumeJob: {
+          id: "automation-job-shopify-resume-2",
+          scheduledAt: null,
+          status: "pending",
+          type: "shopify_autonomy_resume"
+        }
+      });
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByLabelText("Connector Approval"));
+    await userEvent.type(screen.getByLabelText("Owner Unlock Phrase"), "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION");
+    await userEvent.click(screen.getByRole("button", { name: /load review queue/i }));
+
+    expect(await screen.findByText("Approve Shopify draft owner gates")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /approve and queue shopify resume/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/stores/store-1/growth-approvals/packet-shopify-autonomy-resume-1/approve", {
+      json: {
+        note: "Approved Shopify autonomy continuation and queued a resume job. Public launch remains locked.",
+        shopifyAutonomyResumeJob: {
+          confirm: "QUEUE SHOPIFY AUTONOMY RESUME JOB",
+          connectionWatchIntervalMinutes: 15,
+          connectorApproval: true,
+          countryCode: "US",
+          dryRun: false,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          liveUnlockPhrase: "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION",
+          maxConnectionWatchAttempts: 24,
+          maxProducts: 5,
+          note: "Queued from the Shopify autonomy approval review queue.",
+          ownerEmail: "mara@example.com",
+          requestedShopName: "Iron House Gym",
+          storeType: "client_transfer",
+          watchForConnection: true
+        }
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Shopify owner-gate approval recorded. Queue Shopify autonomy with connector approval and the owner unlock phrase to continue draft execution. Resume job automation-job-shopify-resume-2 queued.")).toBeInTheDocument();
+  });
+
+  it("starts Shopify app approval and shows the generated approval link", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyOAuthStartResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.type(screen.getByLabelText(/shop domain/i), "iron-house.myshopify.com");
+    await userEvent.click(screen.getByRole("button", { name: /start shopify approval/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-oauth/start", {
+      json: {
+        connectorApproval: false,
+        confirm: "START SHOPIFY OAUTH",
+        continueAfterApproval: true,
+        countryCode: "US",
+        dryRun: false,
+        includeCollections: true,
+        includeProducts: true,
+        includeStoreShell: true,
+        liveUnlockPhrase: "",
+        maxProducts: 5,
+        note: "Started from Merch Operations panel for approved Shopify Admin API access.",
+        ownerEmail: "mara@example.com",
+        requestedShopName: "Iron House Gym",
+        returnTo: window.location.href,
+        scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+        shopDomain: "iron-house.myshopify.com",
+        storeType: "client_transfer"
+      },
+      method: "POST"
+    });
+
+    expect(await screen.findByText("Shopify approval link ready for iron-house.myshopify.com; Entral will continue autonomy after approval.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open shopify approval/i })).toHaveAttribute("href", shopifyOAuthStartResponse.authorizeUrl);
+    expect(screen.getByLabelText(/admin api token/i)).toHaveValue("");
+  });
+
+  it("loads a saved Shopify connection for the selected store", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      connections: [shopifyConnectionResponse.connection]
+    });
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /load shopify connection/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-connection");
+    expect(await screen.findByText("Shopify connection loaded for Iron House Gym: iron-house.myshopify.com.")).toBeInTheDocument();
+    expect(screen.getByText("iron-house.myshopify.com / 2026-04 / token ...1234")).toBeInTheDocument();
+    expect(screen.getByLabelText(/shop domain/i)).toHaveValue("iron-house.myshopify.com");
+  });
+
+  it("refreshes the saved Shopify connection after an OAuth callback redirect", async () => {
+    window.history.replaceState(null, "", "/merch?shopifyConnection=success&shop=iron-house.myshopify.com&storeId=store-1&auditLogId=audit-shopify-oauth-1&shopifyVerification=verified&shopifyContinuation=consumed&continuationAuditLogId=audit-continuation-1&shopifyAutonomyStatus=blocked_owner_gates");
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      connections: [shopifyConnectionResponse.connection]
+    });
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-connection"));
+    expect(screen.getByText("Shopify approval returned for iron-house.myshopify.com. Connection verified. Refreshing connection status. Continuation consumed with autonomy status blocked owner gates.")).toBeInTheDocument();
+    expect(await screen.findByText("Shopify approved for Iron House Gym: iron-house.myshopify.com. Entral can continue with autonomy.")).toBeInTheDocument();
+    expect(screen.getByText("iron-house.myshopify.com / 2026-04 / token ...1234")).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
+  it("surfaces a Shopify OAuth verification failure without loading a saved connection", async () => {
+    window.history.replaceState(null, "", "/merch?shopifyConnection=error&shop=iron-house.myshopify.com&storeId=store-1&auditLogId=audit-shopify-oauth-error-1&shopifyVerification=failed&shopifyConnectionMessage=Shopify+token+is+missing+required+scopes%3A+write_products.&shopifyContinuation=failed");
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    expect(await screen.findByText("Shopify approval returned for iron-house.myshopify.com, but verification failed: Shopify token is missing required scopes: write_products. Continuation failed.")).toBeInTheDocument();
+    expect(apiFetch).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("");
+  });
+
+  it("connects Shopify Admin API credentials without rendering the token after save", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyConnectionResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.type(screen.getByLabelText(/shop domain/i), "iron-house.myshopify.com");
+    await userEvent.type(screen.getByLabelText(/admin api token/i), "shpat_test_secret_token_1234");
+    await userEvent.click(screen.getByRole("button", { name: /connect shopify/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/shopify-connection", {
+      json: {
+        adminToken: "shpat_test_secret_token_1234",
+        apiVersion: "2026-04",
+        confirm: "CONNECT SHOPIFY ADMIN API",
+        note: "Connected from Merch Operations panel for controlled Shopify draft execution.",
+        scopes: ["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"],
+        shopDomain: "iron-house.myshopify.com"
+      },
+      method: "POST"
+    });
+
+    expect(await screen.findByText("Shopify verified and connected for Iron House Gym: iron-house.myshopify.com.")).toBeInTheDocument();
+    expect(screen.getByText("iron-house.myshopify.com / 2026-04 / token ...1234")).toBeInTheDocument();
+    expect(screen.getByText("Verified shop: Iron House Gym / 6 scopes")).toBeInTheDocument();
+    expect(screen.getByLabelText(/admin api token/i)).toHaveValue("");
+    expect(screen.queryByDisplayValue("shpat_test_secret_token_1234")).not.toBeInTheDocument();
+    expect(screen.queryByText("shpat_test_secret_token_1234")).not.toBeInTheDocument();
+  });
+
   it("builds a guarded mock growth plan without external execution", async () => {
     vi.mocked(apiFetch)
       .mockResolvedValueOnce({ plan })
+      .mockResolvedValueOnce({ items: [approvalRecord, shopifyAutonomyApprovalRecord, shopifyStoreCreationApprovalRecord] })
       .mockResolvedValueOnce(approvalResponse)
       .mockResolvedValueOnce({
         approval: approvedRecord,
@@ -11774,6 +13325,14 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("Publishing social posts")).toBeInTheDocument();
     expect(screen.getByText(/Daily spend stays locked until approval/i)).toBeInTheDocument();
 
+    await userEvent.click(screen.getByRole("button", { name: /load review queue/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/stores/store-1/growth-approvals");
+    expect(await screen.findByText("Shopify autonomy review draft resources / ready for next step / draft executed / review resources 6 / failed 0")).toBeInTheDocument();
+    expect(screen.getByText("Shopify store creation waiting for dashboard capture / iron-house-gym.myshopify.com / /api/v1/merch/stores/store-1/shopify-store-creation-capture")).toBeInTheDocument();
+    expect(screen.getByText("Capture Shopify store domain")).toBeInTheDocument();
+    expect(screen.getByText("Review Shopify draft resources")).toBeInTheDocument();
+
     await userEvent.click(screen.getByRole("button", { name: /queue approval packet/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/stores/store-1/growth-plan/approval-request", {
@@ -11789,7 +13348,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("Growth approval queue")).toBeInTheDocument();
     expect(screen.getByText("Real review records / external execution locked")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /approve preparation/i }));
+    await userEvent.click(screen.getAllByRole("button", { name: /approve preparation/i })[0]!);
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/stores/store-1/growth-approvals/packet-1/approve", {
       json: {

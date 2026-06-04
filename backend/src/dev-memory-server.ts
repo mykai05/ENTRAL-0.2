@@ -66,6 +66,13 @@ import { buildGrowthApprovalPacket, buildGrowthOrchestrationPreview, buildGrowth
 import { buildLaunchPackage, buildMerchReport, type MerchReportType } from "./services/merchReports.js";
 import { buildProviderHandoffBundle, buildProviderPayloadApprovalPacket, buildProviderPayloadPackage, isProviderPayloadApprovalPacket } from "./services/merchProviderPayloads.js";
 import { calculatePricing, pricingPlatformPresets, type PricingPlatformPreset } from "./services/pricingCalculator.js";
+import { normalizeShopifyOAuthScopes, normalizeShopifyOAuthShopDomain } from "./services/shopifyOAuth.js";
+import { buildShopifyStoreProvisioningPlan } from "./services/shopifyStoreProvisioning.js";
+import { buildShopifyStoreCreationHandoffApprovalPacket } from "./services/shopifyStoreCreationHandoffJobs.js";
+import type {
+  ShopifyStoreCreationBrowserTaskPayload,
+  ShopifyStoreCreationBrowserTaskReceipt
+} from "./services/shopifyStoreCreationBrowserTask.js";
 import {
   buildRevenueAssetBatchControlPlan,
   buildRevenueAssetControlPlan,
@@ -322,16 +329,16 @@ type AutomationJob = {
   error?: string | null;
   id: string;
   logs: Array<{ createdAt: string; id: string; level: string; message: string }>;
-  payload: {
+  payload: Record<string, unknown> & {
     selector?: string;
     url?: string;
   };
-  result?: {
+  result?: ({
     content?: string;
     engine?: string;
     statusCode?: number;
     title?: string;
-  } | null;
+  } & Record<string, unknown>) | null;
   scheduledAt?: string | null;
   status: string;
   type: string;
@@ -7825,6 +7832,7 @@ function memoryBrowserJobSnapshot(job: AutomationJob): BrowserOperationJobSnapsh
     id: job.id,
     logCount: job.logs.length,
     payload: job.payload,
+    result: job.result ?? null,
     resultEngine: job.result?.engine ?? null,
     scheduledAt: job.scheduledAt ?? null,
     startedAt: job.status === "running" ? job.logs[0]?.createdAt ?? job.createdAt : null,
@@ -7853,6 +7861,72 @@ function buildMemoryBrowserOperations(userId: string, options: Partial<BrowserOp
   });
 }
 
+const memoryShopifyStoreCreationBrowserTaskJobType = "shopify_store_creation_browser_task" as const;
+
+function normalizeMemoryShopifyDomain(value: unknown) {
+  const normalized = typeof value === "string"
+    ? value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "")
+    : "";
+
+  return /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(normalized) ? normalized : null;
+}
+
+function memoryShopifyStoreSlug(value: unknown) {
+  const slug = typeof value === "string"
+    ? value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48)
+    : "";
+
+  return slug || "entral-store";
+}
+
+function buildMemoryShopifyStoreCreationBrowserTaskResult(payload: Record<string, unknown>) {
+  const browserTask = payload.browserTask as ShopifyStoreCreationBrowserTaskPayload["browserTask"] | undefined;
+  const countryCode = typeof payload.countryCode === "string" ? payload.countryCode.toUpperCase().slice(0, 2) : "US";
+  const detectedDomain = normalizeMemoryShopifyDomain(payload.expectedShopDomain)
+    ?? `${memoryShopifyStoreSlug(payload.requestedShopName)}.myshopify.com`;
+  const attemptedStepIds = Array.isArray(browserTask?.allowedSteps)
+    ? browserTask.allowedSteps.map((step) => step.id)
+    : [];
+  const targetUrl = typeof browserTask?.targetUrl === "string"
+    ? browserTask.targetUrl
+    : "https://dev.shopify.com/dashboard/stores";
+  const storeType = payload.storeType === "development" ? "development" : "client_transfer";
+  const receipt: ShopifyStoreCreationBrowserTaskReceipt = {
+    actualExternalActionsExecuted: false,
+    attemptedStepIds,
+    autoCapture: null,
+    autoCaptureError: "Memory mode simulated the browser evidence only; use the real backend to contact Shopify and start OAuth automatically.",
+    browserTaskEvidence: {
+      capturedAt: now(),
+      capturedFromTargetUrl: targetUrl,
+      completedStepIds: attemptedStepIds,
+      countryCode,
+      finalShopDomain: detectedDomain,
+      operatorOrSessionContext: "Dev memory backend simulated a governed Shopify Dev Dashboard browser task without contacting Shopify.",
+      source: "governed_browser_task",
+      storeType
+    },
+    detectedDomain,
+    externalExecution: false,
+    hardStop: null,
+    mode: "Governed Shopify Dev Dashboard Browser Task Receipt",
+    providerContacted: false,
+    status: "capture_ready",
+    summary: `Memory Shopify Dev Dashboard browser task prepared capture-ready evidence for ${detectedDomain} without contacting Shopify.`,
+    targetUrl
+  };
+
+  return {
+    auditLogId: null,
+    content: receipt.summary,
+    engine: "memory-shopify-browser-task",
+    providerContacted: false,
+    receipt,
+    statusCode: 200,
+    title: "Memory Shopify browser task receipt"
+  };
+}
+
 function applyMemoryBrowserRecovery(userId: string, plan: BrowserOperationsPlan, options: Partial<BrowserOperationOptions>) {
   const maxRecoveryJobs = options.maxRecoveryJobs ?? 10;
   const recoveryRunbooks = plan.runbooks.filter((runbook) => (
@@ -7879,15 +7953,17 @@ function applyMemoryBrowserRecovery(userId: string, plan: BrowserOperationsPlan,
       staleRecoveredJobIds.push(job.id);
     }
 
-    if (runbook.action === "retry_failed_job" && (job.status === "failed" || job.status === "canceled")) {
+    if (runbook.action === "retry_failed_job" && (job.status === "failed" || job.status === "canceled" || job.status === "completed")) {
       job.status = "completed";
       job.error = null;
-      job.result = {
-        content: `Recovered ${job.payload.selector ?? "page"} from ${job.payload.url ?? "target"} in memory mode.`,
-        engine: "memory-recovery",
-        statusCode: 200,
-        title: "Recovered dev scrape result"
-      };
+      job.result = job.type === memoryShopifyStoreCreationBrowserTaskJobType
+        ? buildMemoryShopifyStoreCreationBrowserTaskResult(job.payload)
+        : {
+          content: `Recovered ${job.payload.selector ?? "page"} from ${job.payload.url ?? "target"} in memory mode.`,
+          engine: "memory-recovery",
+          statusCode: 200,
+          title: "Recovered dev scrape result"
+        };
       job.logs.unshift({
         createdAt: now(),
         id: id("log"),
@@ -11905,6 +11981,675 @@ app.post("/api/v1/merch/stores/:storeId/provider-payloads/approval-request", { p
   });
 });
 
+app.get("/api/v1/merch/stores/:storeId/shopify-connection", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  return { connections: [] };
+});
+
+app.post("/api/v1/merch/stores/:storeId/shopify-oauth/start", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const body = (request.body ?? {}) as {
+    continueAfterApproval?: boolean;
+    scopes?: string[];
+    shopDomain?: string;
+  };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  if (store.storePlatform !== "Shopify") {
+    return reply.code(400).send({ error: "Bad Request", message: "Shopify OAuth can only be started for Shopify merch stores." });
+  }
+
+  const shopDomain = normalizeShopifyOAuthShopDomain(body.shopDomain);
+
+  if (!shopDomain) {
+    return reply.code(400).send({ error: "Bad Request", message: "Shopify OAuth requires a valid *.myshopify.com shop domain." });
+  }
+
+  const scopes = normalizeShopifyOAuthScopes(body.scopes);
+  const stateExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const continuation = body.continueAfterApproval === false
+    ? null
+    : {
+      expiresAt: stateExpiresAt,
+      id: id("shopify_oauth_continuation"),
+      status: "pending"
+    };
+  const auditLog = {
+    action: "shopify.oauth.started",
+    createdAt: now(),
+    entry: {
+      continuation,
+      mockMode: true,
+      scopes,
+      shopDomain,
+      storeId: store.id
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: "medium",
+    targetId: store.id,
+    targetType: "shopify_oauth"
+  };
+
+  state.auditLogs.unshift(auditLog);
+
+  return {
+    auditLogId: auditLog.id,
+    authorizeUrl: `https://${shopDomain}/admin/oauth/authorize?${new URLSearchParams({
+      client_id: "memory-shopify-client",
+      scope: scopes.join(","),
+      state: id("memory_shopify_state")
+    }).toString()}`,
+    callbackUrl: "http://127.0.0.1:4000/api/v1/merch/shopify/oauth/callback",
+    continuation,
+    scopes,
+    shopDomain,
+    stateExpiresAt
+  };
+});
+
+app.post("/api/v1/merch/stores/:storeId/shopify-store-provisioning", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const body = (request.body ?? {}) as {
+    countryCode?: string;
+    dryRun?: boolean;
+    note?: string;
+    ownerEmail?: string;
+    requestedShopName?: string;
+    storeType?: "client_transfer" | "development";
+  };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  const plan = buildShopifyStoreProvisioningPlan({
+    countryCode: body.countryCode,
+    ownerEmail: body.ownerEmail ?? store.email,
+    requestedShopName: body.requestedShopName ?? store.businessName,
+    store,
+    storeId: store.id,
+    storeType: body.storeType
+  });
+  const auditLog = {
+    action: plan.status === "connected_existing_shop"
+      ? "shopify.store_provisioning.connected_existing_shop"
+      : "shopify.store_provisioning.packet_prepared",
+    createdAt: now(),
+    entry: {
+      creationCapture: plan.creationCapture,
+      creationHandoff: plan.creationHandoff,
+      devDashboardPacket: plan.devDashboardPacket,
+      dryRun: body.dryRun ?? true,
+      externalExecution: false,
+      note: body.note ?? null,
+      providerContacted: false,
+      status: plan.status,
+      summary: plan.summary
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: plan.status === "not_applicable" ? "failure" : "success",
+    severity: plan.status === "connected_existing_shop" ? "low" : "medium",
+    targetId: store.id,
+    targetType: "shopify_store_provisioning"
+  };
+
+  state.auditLogs.unshift(auditLog);
+
+  return {
+    auditLogId: auditLog.id,
+    plan
+  };
+});
+
+app.post("/api/v1/merch/stores/:storeId/shopify-store-creation-handoff-job", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const body = (request.body ?? {}) as {
+    browserTaskEvidence?: {
+      capturedAt?: string;
+      capturedFromTargetUrl?: string;
+      completedStepIds?: string[];
+      finalShopDomain?: string;
+      operatorOrSessionContext?: string;
+      source?: "approval_review" | "governed_browser_task" | "manual_capture";
+      storeType?: "client_transfer" | "development";
+    };
+    connectionWatchIntervalMinutes?: number;
+    connectorApproval?: boolean;
+    countryCode?: string;
+    dryRun?: boolean;
+    includeCollections?: boolean;
+    includeProducts?: boolean;
+    includeStoreShell?: boolean;
+    liveUnlockPhrase?: string;
+    maxConnectionWatchAttempts?: number;
+    maxProducts?: number;
+    note?: string;
+    ownerEmail?: string;
+    queueBrowserTask?: boolean;
+    queueAutonomyResume?: boolean;
+    requestedShopName?: string;
+    storeType?: "client_transfer" | "development";
+    watchForConnection?: boolean;
+  };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  if (store.storePlatform !== "Shopify") {
+    return reply.code(400).send({ error: "Bad Request", message: "Shopify store creation handoff jobs can only be queued for Shopify merch stores." });
+  }
+
+  const plan = buildShopifyStoreProvisioningPlan({
+    countryCode: body.countryCode,
+    ownerEmail: body.ownerEmail ?? store.email,
+    requestedShopName: body.requestedShopName ?? store.businessName,
+    store,
+    storeId: store.id,
+    storeType: body.storeType
+  });
+  const createdAt = now();
+  const connectionWatchIntervalMinutes = Math.max(1, Math.min(Number(body.connectionWatchIntervalMinutes ?? 15), 1440));
+  const maxConnectionWatchAttempts = Math.max(0, Math.min(Number(body.maxConnectionWatchAttempts ?? 24), 96));
+  const watchForConnection = body.watchForConnection !== false;
+  const shouldQueueBrowserTask = body.queueBrowserTask !== false && plan.status === "dev_dashboard_creation_required";
+  const job = {
+    connectionWatch: {
+      attempt: 0,
+      enabled: watchForConnection,
+      intervalMinutes: connectionWatchIntervalMinutes,
+      maxAttempts: maxConnectionWatchAttempts
+    },
+    id: id("automation_job_shopify_handoff"),
+    scheduledAt: null,
+    status: "pending",
+    type: "shopify_store_creation_handoff" as const
+  };
+
+  state.automationJobs.unshift({
+    createdAt,
+    id: job.id,
+    logs: [{
+      createdAt,
+      id: id("automation_log"),
+      level: "info",
+      message: "Shopify store creation handoff job queued from memory server."
+    }],
+    payload: {
+      connectionWatchIntervalMinutes,
+      connectorApproval: Boolean(body.connectorApproval),
+      countryCode: (body.countryCode ?? "US").slice(0, 2).toUpperCase(),
+      dryRun: body.dryRun ?? false,
+      includeCollections: body.includeCollections ?? true,
+      includeProducts: body.includeProducts ?? true,
+      includeStoreShell: body.includeStoreShell ?? true,
+      liveUnlockPhrase: body.liveUnlockPhrase ?? "",
+      maxConnectionWatchAttempts,
+      maxProducts: Number(body.maxProducts ?? 5),
+      note: body.note ?? null,
+      ownerEmail: body.ownerEmail ?? store.email,
+      queueBrowserTask: body.queueBrowserTask !== false,
+      queueAutonomyResume: body.queueAutonomyResume !== false,
+      requestedShopName: body.requestedShopName ?? store.businessName,
+      storeId: store.id,
+      storeType: body.storeType ?? "client_transfer",
+      watchForConnection
+    },
+    result: null,
+    scheduledAt: null,
+    status: job.status,
+    type: job.type,
+    userId: user.id
+  });
+
+  const browserTaskJob = shouldQueueBrowserTask
+    ? {
+      id: id("automation_job_shopify_browser_task"),
+      scheduledAt: null,
+      status: "completed",
+      type: memoryShopifyStoreCreationBrowserTaskJobType
+    }
+    : null;
+  const browserTaskPayload = browserTaskJob
+    ? {
+      browserTask: plan.creationHandoff.browserTask,
+      countryCode: (body.countryCode ?? "US").slice(0, 2).toUpperCase(),
+      expectedShopDomain: plan.creationHandoff.expectedShopDomain,
+      requestedShopName: body.requestedShopName ?? store.businessName,
+      storeId: store.id,
+      storeType: body.storeType ?? "client_transfer"
+    }
+    : null;
+
+  if (browserTaskJob && browserTaskPayload) {
+    state.automationJobs.unshift({
+      createdAt,
+      id: browserTaskJob.id,
+      logs: [{
+        createdAt,
+        id: id("automation_log"),
+        level: "info",
+        message: "Governed Shopify Dev Dashboard browser task simulated by memory server."
+      }],
+      payload: browserTaskPayload,
+      result: buildMemoryShopifyStoreCreationBrowserTaskResult(browserTaskPayload),
+      scheduledAt: null,
+      status: browserTaskJob.status,
+      type: browserTaskJob.type,
+      userId: user.id
+    });
+  }
+
+  const handoffReceipt = {
+    actualExternalActionsExecuted: false as const,
+    automationJobId: job.id,
+    browserTaskJob,
+    browserTask: plan.creationHandoff.browserTask,
+    captureEndpoint: `/api/v1/merch/stores/${store.id}/shopify-store-creation-capture`,
+    evidenceToCapture: plan.creationHandoff.evidenceToCapture,
+    externalExecution: false as const,
+    mode: "Shopify Store Creation Handoff Job" as const,
+    nextAutonomousStep: plan.status === "dev_dashboard_creation_required"
+      ? "capture_shopify_store_creation" as const
+      : plan.creationHandoff.nextAutonomousStep,
+    providerContacted: false as const,
+    resumeJob: null,
+    status: plan.status === "connected_existing_shop"
+      ? "connection_ready" as const
+      : plan.status === "not_applicable" ? "not_applicable" as const : "waiting_for_dashboard_capture" as const,
+    summary: plan.creationHandoff.summary,
+    targetUrl: plan.creationHandoff.targetUrl
+  };
+  const handoffPacket = buildShopifyStoreCreationHandoffApprovalPacket({
+    note: body.note ?? null,
+    plan,
+    receipt: handoffReceipt,
+    storeId: store.id
+  });
+  const handoffApprovalRecord: GrowthApprovalPacketRecord | null = handoffPacket
+    ? {
+      createdAt,
+      id: id("growth_approval_shopify_creation"),
+      mode: handoffPacket.mode,
+      packet: handoffPacket,
+      requestAuditLogId: null,
+      reviewAuditLogId: null,
+      reviewedAt: null,
+      reviewedById: null,
+      reviewNote: null,
+      scheduledFor: null,
+      status: "pending",
+      storeId: store.id,
+      updatedAt: createdAt,
+      userId: user.id
+    }
+    : null;
+
+  const auditLog = {
+    action: "shopify.store_creation_handoff_job.queued",
+    createdAt,
+    entry: {
+      automationJobId: job.id,
+      creationHandoff: plan.creationHandoff,
+      dryRun: body.dryRun ?? false,
+      externalExecution: false,
+      browserTaskJob,
+      handoffApprovalPacket: handoffApprovalRecord ? {
+        id: handoffApprovalRecord.id,
+        packetId: handoffPacket?.id ?? null,
+        status: handoffApprovalRecord.status
+      } : null,
+      note: body.note ?? null,
+      providerContacted: false,
+      queueBrowserTask: body.queueBrowserTask !== false,
+      queueAutonomyResume: body.queueAutonomyResume !== false,
+      status: plan.creationHandoff.status,
+      storeId: store.id
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: plan.status === "connected_existing_shop" ? "low" : "medium",
+    targetId: job.id,
+    targetType: "automation_job"
+  };
+
+  if (handoffApprovalRecord) {
+    handoffApprovalRecord.requestAuditLogId = auditLog.id;
+    state.growthApprovalPackets.unshift(handoffApprovalRecord);
+  }
+  state.auditLogs.unshift(auditLog);
+
+  return reply.code(202).send({
+    auditLogId: auditLog.id,
+    handoffApprovalPacket: handoffApprovalRecord ? {
+      id: handoffApprovalRecord.id,
+      packetId: handoffPacket?.id ?? null,
+      status: handoffApprovalRecord.status
+    } : null,
+    browserTaskJob,
+    handoff: plan.creationHandoff,
+    job
+  });
+});
+
+app.post("/api/v1/merch/stores/:storeId/shopify-store-creation-capture", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const body = (request.body ?? {}) as {
+    browserTaskEvidence?: {
+      capturedAt?: string;
+      capturedFromTargetUrl?: string;
+      completedStepIds?: string[];
+      finalShopDomain?: string;
+      operatorOrSessionContext?: string;
+      source?: "approval_review" | "governed_browser_task" | "manual_capture";
+      storeType?: "client_transfer" | "development";
+    };
+    connectionWatchIntervalMinutes?: number;
+    connectorApproval?: boolean;
+    continueAfterApproval?: boolean;
+    countryCode?: string;
+    dryRun?: boolean;
+    includeCollections?: boolean;
+    includeProducts?: boolean;
+    includeStoreShell?: boolean;
+    liveUnlockPhrase?: string;
+    maxConnectionWatchAttempts?: number;
+    maxProducts?: number;
+    note?: string;
+    ownerEmail?: string;
+    queueAutonomyResume?: boolean;
+    requestedShopName?: string;
+    scopes?: string[];
+    shopDomain?: string;
+    startOAuth?: boolean;
+    storeType?: "client_transfer" | "development";
+  };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  if (store.storePlatform !== "Shopify") {
+    return reply.code(400).send({ error: "Bad Request", message: "Shopify store creation capture can only be recorded for Shopify merch stores." });
+  }
+
+  const shopDomain = normalizeShopifyOAuthShopDomain(body.shopDomain);
+
+  if (!shopDomain) {
+    return reply.code(400).send({ error: "Bad Request", message: "Shopify store creation capture requires a valid *.myshopify.com shop domain." });
+  }
+
+  const evidenceShopDomain = normalizeShopifyOAuthShopDomain(body.browserTaskEvidence?.finalShopDomain);
+
+  if (evidenceShopDomain && evidenceShopDomain !== shopDomain) {
+    return reply.code(400).send({ error: "Bad Request", message: "Shopify store creation evidence domain must match the captured shop domain." });
+  }
+
+  const scopes = normalizeShopifyOAuthScopes(body.scopes);
+  const nowIso = now();
+  const stateExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const shouldStartOAuth = body.startOAuth !== false;
+  const continuation = shouldStartOAuth && body.continueAfterApproval !== false
+    ? {
+      expiresAt: stateExpiresAt,
+      id: id("shopify_oauth_continuation"),
+      status: "pending"
+    }
+    : null;
+  const oauth = shouldStartOAuth
+    ? {
+      authorizeUrl: `https://${shopDomain}/admin/oauth/authorize?${new URLSearchParams({
+        client_id: "memory-shopify-client",
+        scope: scopes.join(","),
+        state: id("memory_shopify_state")
+      }).toString()}`,
+      callbackUrl: "http://127.0.0.1:4000/api/v1/merch/shopify/oauth/callback",
+      continuation,
+      scopes,
+      shopDomain,
+      stateExpiresAt
+    }
+    : null;
+  const connectionWatchIntervalMinutes = Math.max(1, Math.min(Number(body.connectionWatchIntervalMinutes ?? 15), 1440));
+  const maxConnectionWatchAttempts = Math.max(0, Math.min(Number(body.maxConnectionWatchAttempts ?? 24), 96));
+  const shouldQueueResume = body.queueAutonomyResume !== false;
+  const resumeJob = shouldQueueResume
+    ? {
+      connectionWatch: {
+        attempt: 0,
+        enabled: true,
+        intervalMinutes: connectionWatchIntervalMinutes,
+        maxAttempts: maxConnectionWatchAttempts
+      },
+      id: id("automation_job_shopify"),
+      scheduledAt: null,
+      status: "pending",
+      type: "shopify_autonomy_resume" as const
+    }
+    : null;
+
+  if (resumeJob) {
+    state.automationJobs.unshift({
+      createdAt: nowIso,
+      id: resumeJob.id,
+      logs: [{
+        createdAt: nowIso,
+        id: id("automation_log"),
+        level: "info",
+        message: "Shopify autonomy resume job queued from memory store creation capture."
+      }],
+      payload: {
+        connectionWatchAttempt: 0,
+        connectionWatchIntervalMinutes,
+        connectorApproval: Boolean(body.connectorApproval),
+        countryCode: (body.countryCode ?? "US").slice(0, 2).toUpperCase(),
+        dryRun: body.dryRun ?? false,
+        includeCollections: body.includeCollections ?? true,
+        includeProducts: body.includeProducts ?? true,
+        includeStoreShell: body.includeStoreShell ?? true,
+        liveUnlockPhrase: body.liveUnlockPhrase ?? "",
+        maxConnectionWatchAttempts,
+        maxProducts: Number(body.maxProducts ?? 5),
+        note: body.note ?? null,
+        ownerEmail: body.ownerEmail ?? store.email,
+        requestedShopName: body.requestedShopName ?? store.businessName,
+        shopDomain,
+        storeId: store.id,
+        storeType: body.storeType ?? "client_transfer",
+        watchForConnection: true
+      },
+      result: null,
+      scheduledAt: null,
+      status: resumeJob.status,
+      type: resumeJob.type,
+      userId: user.id
+    });
+  }
+
+  const capture = {
+    actualExternalActionsExecuted: false,
+    autonomyResumeJob: resumeJob,
+    browserTaskEvidence: {
+      capturedAt: body.browserTaskEvidence?.capturedAt ?? nowIso,
+      capturedFromTargetUrl: body.browserTaskEvidence?.capturedFromTargetUrl ?? "https://dev.shopify.com/dashboard/stores",
+      completedStepIds: body.browserTaskEvidence?.completedStepIds ?? [],
+      countryCode: (body.countryCode ?? "US").slice(0, 2).toUpperCase(),
+      finalShopDomain: shopDomain,
+      operatorOrSessionContext: body.browserTaskEvidence?.operatorOrSessionContext ?? null,
+      source: body.browserTaskEvidence?.source ?? "manual_capture",
+      storeType: body.browserTaskEvidence?.storeType ?? body.storeType ?? "client_transfer"
+    },
+    externalExecution: false,
+    mode: "Shopify Store Creation Capture",
+    oauth,
+    providerContacted: false,
+    shopDomain,
+    status: oauth ? "oauth_ready" : resumeJob ? "watch_queued" : "captured",
+    summary: oauth
+      ? `${store.businessName} Shopify store domain ${shopDomain} captured. OAuth approval link is ready and autonomy continuation is ${continuation ? "armed" : "not armed"}.`
+      : resumeJob
+        ? `${store.businessName} Shopify store domain ${shopDomain} captured. Autonomy watcher ${resumeJob.id} is queued while connection approval is completed.`
+        : `${store.businessName} Shopify store domain ${shopDomain} captured for the next Shopify autonomy step.`
+  };
+  const auditLog = {
+    action: "shopify.store_creation.captured",
+    createdAt: nowIso,
+    entry: {
+      browserTaskEvidence: capture.browserTaskEvidence,
+      capture,
+      connectionWatchQueued: Boolean(resumeJob),
+      continuation,
+      note: body.note ?? null,
+      oauthStarted: Boolean(oauth),
+      shopDomain
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: oauth || resumeJob ? "medium" : "low",
+    targetId: store.id,
+    targetType: "shopify_store_creation_capture"
+  };
+
+  state.auditLogs.unshift(auditLog);
+
+  return reply.code(201).send({
+    auditLogId: auditLog.id,
+    capture
+  });
+});
+
+app.post("/api/v1/merch/stores/:storeId/shopify-autonomy-resume-job", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { storeId } = request.params as { storeId: string };
+  const body = (request.body ?? {}) as {
+    connectionWatchAttempt?: number;
+    connectionWatchIntervalMinutes?: number;
+    connectorApproval?: boolean;
+    countryCode?: string;
+    dryRun?: boolean;
+    includeCollections?: boolean;
+    includeProducts?: boolean;
+    includeStoreShell?: boolean;
+    liveUnlockPhrase?: string;
+    maxConnectionWatchAttempts?: number;
+    maxProducts?: number;
+    note?: string;
+    ownerEmail?: string;
+    requestedShopName?: string;
+    storeType?: "client_transfer" | "development";
+    watchForConnection?: boolean;
+  };
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+
+  if (!store) {
+    return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+  }
+
+  if (store.storePlatform !== "Shopify") {
+    return reply.code(400).send({ error: "Bad Request", message: "Shopify autonomy resume jobs can only be queued for Shopify merch stores." });
+  }
+
+  const connectionWatchAttempt = Math.max(0, Math.min(Number(body.connectionWatchAttempt ?? 0), 96));
+  const connectionWatchIntervalMinutes = Math.max(1, Math.min(Number(body.connectionWatchIntervalMinutes ?? 15), 1440));
+  const maxConnectionWatchAttempts = Math.max(0, Math.min(Number(body.maxConnectionWatchAttempts ?? 24), 96));
+  const watchForConnection = body.watchForConnection !== false;
+  const createdAt = now();
+  const job = {
+    connectionWatch: {
+      attempt: connectionWatchAttempt,
+      enabled: watchForConnection,
+      intervalMinutes: connectionWatchIntervalMinutes,
+      maxAttempts: maxConnectionWatchAttempts
+    },
+    id: id("automation_job_shopify"),
+    scheduledAt: null,
+    status: "pending",
+    type: "shopify_autonomy_resume" as const
+  };
+
+  state.automationJobs.unshift({
+    createdAt,
+    id: job.id,
+    logs: [{
+      createdAt,
+      id: id("automation_log"),
+      level: "info",
+      message: "Shopify autonomy resume job queued in memory mode."
+    }],
+    payload: {
+      connectionWatchAttempt,
+      connectionWatchIntervalMinutes,
+      connectorApproval: Boolean(body.connectorApproval),
+      countryCode: (body.countryCode ?? "US").slice(0, 2).toUpperCase(),
+      dryRun: body.dryRun ?? false,
+      includeCollections: body.includeCollections ?? true,
+      includeProducts: body.includeProducts ?? true,
+      includeStoreShell: body.includeStoreShell ?? true,
+      liveUnlockPhrase: body.liveUnlockPhrase ?? "",
+      maxConnectionWatchAttempts,
+      maxProducts: Number(body.maxProducts ?? 5),
+      note: body.note ?? null,
+      ownerEmail: body.ownerEmail ?? store.email,
+      requestedShopName: body.requestedShopName ?? store.businessName,
+      storeId: store.id,
+      storeType: body.storeType ?? "client_transfer",
+      watchForConnection
+    },
+    result: null,
+    scheduledAt: null,
+    status: job.status,
+    type: job.type,
+    userId: user.id
+  });
+
+  const auditLog = {
+    action: "shopify.autonomy_resume_job.queued",
+    createdAt,
+    entry: {
+      job,
+      mockMode: true,
+      note: body.note ?? null,
+      storeId: store.id
+    },
+    entryHash: id("hash"),
+    id: id("audit"),
+    outcome: "success",
+    severity: "medium",
+    targetId: job.id,
+    targetType: "automation_job"
+  };
+
+  state.auditLogs.unshift(auditLog);
+
+  return reply.code(201).send({
+    auditLogId: auditLog.id,
+    job
+  });
+});
+
 app.get("/api/v1/merch/stores/:storeId/growth-plan", { preHandler: requireAuth }, async (request, reply) => {
   const user = currentUserOrThrow(request);
   const { storeId } = request.params as { storeId: string };
@@ -12003,7 +12748,40 @@ app.post("/api/v1/merch/stores/:storeId/growth-plan/approval-request", { preHand
 function reviewMemoryGrowthApproval(request: FastifyRequest, reply: FastifyReply, status: GrowthApprovalPacketRecord["status"]) {
   const user = currentUserOrThrow(request);
   const { packetId, storeId } = request.params as { packetId: string; storeId: string };
-  const body = request.body as { note?: string };
+  const body = (request.body ?? {}) as {
+    note?: string;
+    shopifyAutonomyResumeJob?: unknown;
+    shopifyStoreCreationCapture?: {
+      browserTaskEvidence?: {
+        capturedAt?: string;
+        capturedFromTargetUrl?: string;
+        completedStepIds?: string[];
+        finalShopDomain?: string;
+        operatorOrSessionContext?: string;
+        source?: "approval_review" | "governed_browser_task" | "manual_capture";
+        storeType?: "client_transfer" | "development";
+      };
+      connectionWatchIntervalMinutes?: number;
+      connectorApproval?: boolean;
+      continueAfterApproval?: boolean;
+      countryCode?: string;
+      dryRun?: boolean;
+      includeCollections?: boolean;
+      includeProducts?: boolean;
+      includeStoreShell?: boolean;
+      liveUnlockPhrase?: string;
+      maxConnectionWatchAttempts?: number;
+      maxProducts?: number;
+      note?: string;
+      ownerEmail?: string;
+      queueAutonomyResume?: boolean;
+      requestedShopName?: string;
+      scopes?: string[];
+      shopDomain?: string;
+      startOAuth?: boolean;
+      storeType?: "client_transfer" | "development";
+    };
+  };
   const record = state.growthApprovalPackets.find((item) => (
     item.id === packetId && item.storeId === storeId && item.userId === user.id
   ));
@@ -12017,6 +12795,234 @@ function reviewMemoryGrowthApproval(request: FastifyRequest, reply: FastifyReply
       error: "Conflict",
       message: `This growth approval packet is already ${growthApprovalStatusLabel(record.status).toLowerCase()}.`
     });
+  }
+
+  const shopifyStoreCreation = (record.packet as {
+    shopifyStoreCreation?: {
+      captureEndpoint?: string;
+      expectedShopDomain?: string | null;
+      nextStep?: string;
+      status?: string;
+    };
+  }).shopifyStoreCreation ?? null;
+
+  if (body.shopifyAutonomyResumeJob && body.shopifyStoreCreationCapture) {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Only one Shopify continuation can be run from a growth approval review."
+    });
+  }
+
+  if (body.shopifyStoreCreationCapture && (status !== "approved" || shopifyStoreCreation?.status !== "waiting_for_dashboard_capture")) {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "Shopify store creation capture can only be submitted while approving a waiting Shopify store-creation packet."
+    });
+  }
+
+  const store = state.merchStores.find((item) => item.id === storeId && item.userId === user.id);
+  let shopifyStoreCreationCapture: {
+    auditLogId: string;
+    capture: {
+      actualExternalActionsExecuted: false;
+      autonomyResumeJob: {
+        connectionWatch: {
+          attempt: number;
+          enabled: boolean;
+          intervalMinutes: number;
+          maxAttempts: number;
+        };
+        id: string;
+        scheduledAt: string | null;
+        status: string;
+        type: "shopify_autonomy_resume";
+      } | null;
+      externalExecution: false;
+      browserTaskEvidence: {
+        capturedAt: string;
+        capturedFromTargetUrl: string | null;
+        completedStepIds: string[];
+        countryCode: string;
+        finalShopDomain: string;
+        operatorOrSessionContext: string | null;
+        source: "approval_review" | "governed_browser_task" | "manual_capture";
+        storeType: "client_transfer" | "development";
+      };
+      mode: "Shopify Store Creation Capture";
+      oauth: {
+        authorizeUrl: string;
+        callbackUrl: string;
+        continuation: {
+          expiresAt: string;
+          id: string;
+          status: string;
+        } | null;
+        scopes: string[];
+        shopDomain: string;
+        stateExpiresAt: string;
+      } | null;
+      providerContacted: false;
+      shopDomain: string;
+      status: string;
+      summary: string;
+    };
+  } | null = null;
+
+  if (body.shopifyStoreCreationCapture) {
+    if (!store) {
+      return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+    }
+
+    if (store.storePlatform !== "Shopify") {
+      return reply.code(400).send({ error: "Bad Request", message: "Shopify store creation capture can only be recorded for Shopify merch stores." });
+    }
+
+    const captureInput = body.shopifyStoreCreationCapture;
+    const shopDomain = normalizeShopifyOAuthShopDomain(captureInput.shopDomain);
+
+    if (!shopDomain) {
+      return reply.code(400).send({ error: "Bad Request", message: "Shopify store creation capture requires a valid *.myshopify.com shop domain." });
+    }
+
+    const evidenceShopDomain = normalizeShopifyOAuthShopDomain(captureInput.browserTaskEvidence?.finalShopDomain);
+
+    if (evidenceShopDomain && evidenceShopDomain !== shopDomain) {
+      return reply.code(400).send({ error: "Bad Request", message: "Shopify store creation evidence domain must match the captured shop domain." });
+    }
+
+    const scopes = normalizeShopifyOAuthScopes(captureInput.scopes);
+    const nowIso = now();
+    const stateExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const shouldStartOAuth = captureInput.startOAuth !== false;
+    const continuation = shouldStartOAuth && captureInput.continueAfterApproval !== false
+      ? {
+        expiresAt: stateExpiresAt,
+        id: id("shopify_oauth_continuation"),
+        status: "pending"
+      }
+      : null;
+    const oauth = shouldStartOAuth
+      ? {
+        authorizeUrl: `https://${shopDomain}/admin/oauth/authorize?${new URLSearchParams({
+          client_id: "memory-shopify-client",
+          scope: scopes.join(","),
+          state: id("memory_shopify_state")
+        }).toString()}`,
+        callbackUrl: "http://127.0.0.1:4000/api/v1/merch/shopify/oauth/callback",
+        continuation,
+        scopes,
+        shopDomain,
+        stateExpiresAt
+      }
+      : null;
+    const connectionWatchIntervalMinutes = Math.max(1, Math.min(Number(captureInput.connectionWatchIntervalMinutes ?? 15), 1440));
+    const maxConnectionWatchAttempts = Math.max(0, Math.min(Number(captureInput.maxConnectionWatchAttempts ?? 24), 96));
+    const shouldQueueResume = captureInput.queueAutonomyResume !== false;
+    const resumeJob = shouldQueueResume
+      ? {
+        connectionWatch: {
+          attempt: 0,
+          enabled: true,
+          intervalMinutes: connectionWatchIntervalMinutes,
+          maxAttempts: maxConnectionWatchAttempts
+        },
+        id: id("automation_job_shopify"),
+        scheduledAt: null,
+        status: "pending",
+        type: "shopify_autonomy_resume" as const
+      }
+      : null;
+
+    if (resumeJob) {
+      state.automationJobs.unshift({
+        createdAt: nowIso,
+        id: resumeJob.id,
+        logs: [{
+          createdAt: nowIso,
+          id: id("automation_log"),
+          level: "info",
+          message: "Shopify autonomy resume job queued from memory approval capture."
+        }],
+        payload: {
+          connectionWatchAttempt: 0,
+          connectionWatchIntervalMinutes,
+          connectorApproval: Boolean(captureInput.connectorApproval),
+          countryCode: (captureInput.countryCode ?? "US").slice(0, 2).toUpperCase(),
+          dryRun: captureInput.dryRun ?? false,
+          includeCollections: captureInput.includeCollections ?? true,
+          includeProducts: captureInput.includeProducts ?? true,
+          includeStoreShell: captureInput.includeStoreShell ?? true,
+          liveUnlockPhrase: captureInput.liveUnlockPhrase ?? "",
+          maxConnectionWatchAttempts,
+          maxProducts: Number(captureInput.maxProducts ?? 5),
+          note: captureInput.note ?? null,
+          ownerEmail: captureInput.ownerEmail ?? store.email,
+          requestedShopName: captureInput.requestedShopName ?? store.businessName,
+          shopDomain,
+          storeId: store.id,
+          storeType: captureInput.storeType ?? "client_transfer",
+          watchForConnection: true
+        },
+        result: null,
+        scheduledAt: null,
+        status: resumeJob.status,
+        type: resumeJob.type,
+        userId: user.id
+      });
+    }
+
+    const capture = {
+      actualExternalActionsExecuted: false as const,
+      autonomyResumeJob: resumeJob,
+      browserTaskEvidence: {
+        capturedAt: captureInput.browserTaskEvidence?.capturedAt ?? nowIso,
+        capturedFromTargetUrl: captureInput.browserTaskEvidence?.capturedFromTargetUrl ?? "https://dev.shopify.com/dashboard/stores",
+        completedStepIds: captureInput.browserTaskEvidence?.completedStepIds ?? [],
+        countryCode: (captureInput.countryCode ?? "US").slice(0, 2).toUpperCase(),
+        finalShopDomain: shopDomain,
+        operatorOrSessionContext: captureInput.browserTaskEvidence?.operatorOrSessionContext ?? null,
+        source: captureInput.browserTaskEvidence?.source ?? "manual_capture",
+        storeType: captureInput.browserTaskEvidence?.storeType ?? captureInput.storeType ?? "client_transfer"
+      },
+      externalExecution: false as const,
+      mode: "Shopify Store Creation Capture" as const,
+      oauth,
+      providerContacted: false as const,
+      shopDomain,
+      status: oauth ? "oauth_ready" : resumeJob ? "watch_queued" : "captured",
+      summary: oauth
+        ? `${store.businessName} Shopify store domain ${shopDomain} captured. OAuth approval link is ready and autonomy continuation is ${continuation ? "armed" : "not armed"}.`
+        : resumeJob
+          ? `${store.businessName} Shopify store domain ${shopDomain} captured. Autonomy watcher ${resumeJob.id} is queued while connection approval is completed.`
+          : `${store.businessName} Shopify store domain ${shopDomain} captured for the next Shopify autonomy step.`
+    };
+    const captureAuditLog = {
+      action: "shopify.store_creation.captured_from_approval",
+      createdAt: nowIso,
+      entry: {
+        approvalPacketId: record.id,
+        browserTaskEvidence: capture.browserTaskEvidence,
+        capture,
+        connectionWatchQueued: Boolean(resumeJob),
+        continuation,
+        note: captureInput.note ?? null,
+        oauthStarted: Boolean(oauth),
+        reviewStatus: status,
+        shopDomain
+      },
+      entryHash: id("hash"),
+      id: id("audit"),
+      outcome: "success",
+      severity: oauth || resumeJob ? "medium" : "low",
+      targetId: store.id,
+      targetType: "shopify_store_creation_capture"
+    };
+
+    state.auditLogs.unshift(captureAuditLog);
+    shopifyStoreCreationCapture = {
+      auditLogId: captureAuditLog.id,
+      capture
+    };
   }
 
   record.status = status;
@@ -12033,7 +13039,9 @@ function reviewMemoryGrowthApproval(request: FastifyRequest, reply: FastifyReply
       note: record.reviewNote,
       packet: record.packet,
       packetId: record.id,
-      reviewStatus: status
+      reviewStatus: status,
+      shopifyStoreCreation,
+      shopifyStoreCreationCapture
     },
     entryHash: id("hash"),
     id: id("audit"),
@@ -12049,9 +13057,12 @@ function reviewMemoryGrowthApproval(request: FastifyRequest, reply: FastifyReply
   return reply.send({
     approval: publicGrowthApprovalPacket(record),
     auditLogId: auditLog.id,
-    message: status === "approved"
-      ? "Growth packet approved for preparation only. No external action executed."
-      : "Growth packet rejected. No external action executed."
+    message: shopifyStoreCreationCapture
+      ? `${shopifyStoreCreationCapture.capture.summary} Review packet approved and linked to capture audit ${shopifyStoreCreationCapture.auditLogId}.`
+      : status === "approved"
+        ? "Growth packet approved for preparation only. No external action executed."
+        : "Growth packet rejected. No external action executed.",
+    shopifyStoreCreationCapture
   });
 }
 

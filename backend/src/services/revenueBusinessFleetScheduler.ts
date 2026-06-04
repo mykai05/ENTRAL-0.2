@@ -1315,6 +1315,12 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function percent(numerator: number, denominator: number) {
+  if (denominator <= 0) return 0;
+
+  return clamp(Math.round((numerator / denominator) * 100), 0, 100);
+}
+
 function money(value: number) {
   return Math.round(value * 100) / 100;
 }

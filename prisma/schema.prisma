@@ -43,6 +43,8 @@ model User {
   facelessContentPerformanceSnapshots FacelessContentPerformanceSnapshot[]
   portfolioCommandActions PortfolioCommandAction[]
   revenueLaunchHandoffPackets RevenueLaunchHandoffPacket[]
+  shopifyConnections ShopifyConnection[]
+  shopifyOAuthContinuations ShopifyOAuthContinuation[]
   revenueSignalConnectorApprovals RevenueSignalConnectorApproval[]
   revenueSignalImportJobs RevenueSignalImportJob[]
   commandSnapshot CommandOSSnapshot?
@@ -152,6 +154,8 @@ model ClientMerchStore {
   revenueOpportunities RevenueOpportunity[]
   growthApprovalPackets GrowthApprovalPacket[]
   revenueLaunchHandoffPackets RevenueLaunchHandoffPacket[]
+  shopifyConnections ShopifyConnection[]
+  shopifyOAuthContinuations ShopifyOAuthContinuation[]
   revenueAssetControlRecords RevenueAssetControlRecord[]
   performanceSnapshots RevenuePerformanceSnapshot[]
   financialScalingExecutionEntries FinancialScalingExecutionEntry[]
@@ -165,6 +169,53 @@ model ClientMerchStore {
   @@index([userId, commandMarshalId])
   @@index([userId, commandGeneralId])
   @@index([email])
+}
+
+model ShopifyConnection {
+  id             String           @id @default(cuid())
+  userId         String
+  storeId        String?
+  shopDomain     String
+  apiVersion     String           @default("2026-04")
+  status         String           @default("active")
+  scopes         String[]         @default([])
+  credentialJson String
+  tokenLastFour  String?
+  connectedAt    DateTime         @default(now())
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store          ClientMerchStore? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, shopDomain])
+  @@index([userId, status])
+  @@index([storeId, status])
+  @@index([shopDomain])
+}
+
+model ShopifyOAuthContinuation {
+  id               String           @id @default(cuid())
+  userId           String
+  storeId          String
+  shopDomain       String
+  stateNonce       String           @unique
+  status           String           @default("pending")
+  payloadJson      String
+  auditLogId       String?
+  resultAuditLogId String?
+  resultSummary    String?
+  expiresAt        DateTime
+  consumedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store            ClientMerchStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([storeId, status])
+  @@index([expiresAt])
 }
 
 model RevenueOpportunity {

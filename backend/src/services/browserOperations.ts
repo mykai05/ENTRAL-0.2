@@ -22,10 +22,11 @@ export type BrowserOperationJobSnapshot = {
   error: string | null;
   id: string;
   logCount: number;
-  payload: {
+  payload: Record<string, unknown> & {
     selector?: string;
     url?: string;
   };
+  result: Record<string, unknown> | null;
   resultEngine: string | null;
   scheduledAt: string | null;
   startedAt: string | null;
@@ -146,6 +147,36 @@ function dateMs(value: string | null) {
 
 function active(status: string) {
   return status === "pending" || status === "scheduled" || status === "running";
+}
+
+function shopifyBrowserReceiptStatus(job: BrowserOperationJobSnapshot) {
+  if (job.type !== "shopify_store_creation_browser_task") return null;
+
+  const receipt = job.result?.receipt;
+
+  if (!receipt || typeof receipt !== "object") return null;
+
+  const status = (receipt as { status?: unknown }).status;
+
+  return typeof status === "string" ? status : null;
+}
+
+function recoverableCompletedJob(job: BrowserOperationJobSnapshot) {
+  if (job.status !== "completed") return false;
+
+  const status = shopifyBrowserReceiptStatus(job);
+
+  return status === "browser_unavailable" || status === "blocked_operator_gate" || status === "no_domain_detected";
+}
+
+function recoveryReason(job: BrowserOperationJobSnapshot) {
+  const shopifyReceiptStatus = shopifyBrowserReceiptStatus(job);
+
+  if (shopifyReceiptStatus) {
+    return `Shopify store-creation browser task completed with recoverable receipt status ${shopifyReceiptStatus}.`;
+  }
+
+  return job.error ? `Job finished as ${job.status}: ${job.error}` : `Job finished as ${job.status} and is eligible for a controlled retry.`;
 }
 
 function staleRunning(job: BrowserOperationJobSnapshot, staleRunningMinutes: number, nowMs: number) {
@@ -270,7 +301,7 @@ export function buildBrowserOperationsPlan(input: {
   const windowStartMs = nowMs - options.windowHours * 60 * 60_000;
   const recentJobs = input.jobs
     .filter((job) => dateMs(job.createdAt) >= windowStartMs || active(job.status))
-    .filter((job) => options.includeCompleted || job.status !== "completed")
+    .filter((job) => options.includeCompleted || job.status !== "completed" || recoverableCompletedJob(job))
     .sort((left, right) => dateMs(right.createdAt) - dateMs(left.createdAt));
   const pendingJobs = recentJobs.filter((job) => job.status === "pending").length;
   const scheduledJobs = recentJobs.filter((job) => job.status === "scheduled").length;
@@ -281,7 +312,7 @@ export function buildBrowserOperationsPlan(input: {
   const activeJobs = pendingJobs + scheduledJobs + runningJobs;
   const staleJobs = recentJobs.filter((job) => staleRunning(job, options.staleRunningMinutes, nowMs));
   const recoveryJobCandidates = recentJobs
-    .filter((job) => job.status === "failed" || job.status === "canceled")
+    .filter((job) => job.status === "failed" || job.status === "canceled" || recoverableCompletedJob(job))
     .slice(0, options.maxRecoveryJobs);
   const runbooks: BrowserOperationRunbook[] = [];
 
@@ -306,7 +337,7 @@ export function buildBrowserOperationsPlan(input: {
       expectedInternalEffect: "Reset the finished job to pending, clear stale result/error fields, and add a recovery log entry.",
       id: `browser_retry_${job.id}`,
       priority: 20,
-      reason: job.error ? `Job finished as ${job.status}: ${job.error}` : `Job finished as ${job.status} and is eligible for a controlled retry.`,
+      reason: recoveryReason(job),
       riskLevel: "low",
       status: "ready",
       targetId: job.id,

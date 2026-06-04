@@ -7119,7 +7119,8 @@ body:has(.command-center-page) .palette-trigger {
   grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
 }
 
-.merch-ops-actions button {
+.merch-ops-actions button,
+.merch-ops-actions a {
   align-items: center;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 240, 0.1);
@@ -7133,6 +7134,7 @@ body:has(.command-center-page) .palette-trigger {
   justify-content: center;
   min-height: 2.1rem;
   padding: 0.42rem 0.64rem;
+  text-decoration: none;
 }
 
 .merch-ops-actions button.primary {
@@ -7141,7 +7143,8 @@ body:has(.command-center-page) .palette-trigger {
   color: var(--ink);
 }
 
-.merch-ops-actions button:hover {
+.merch-ops-actions button:hover,
+.merch-ops-actions a:hover {
   border-color: rgba(var(--neon-accent-rgb), 0.36);
   box-shadow: 0 0 18px rgba(var(--neon-accent-rgb), 0.08);
   color: var(--ink);

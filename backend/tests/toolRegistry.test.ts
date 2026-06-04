@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 beforeEach(() => {
@@ -13,6 +16,10 @@ beforeEach(() => {
   delete process.env.VERCEL_TOKEN;
   delete process.env.VERCEL_ORG_ID;
   delete process.env.VERCEL_PROJECT_ID;
+  delete process.env.SHOPIFY_STORE_DOMAIN;
+  delete process.env.SHOPIFY_CONNECTOR_ADMIN_TOKEN;
+  delete process.env.SHOPIFY_API_VERSION;
+  delete process.env.SHOPIFY_DEV_DASHBOARD_STORAGE_STATE_PATH;
 });
 
 describe("backend Tool Registry", () => {
@@ -63,6 +70,39 @@ describe("backend Tool Registry", () => {
 
     expect(result.message).toContain("No external system was contacted");
     expect(result.simulatedResult).toContain("Prepare Shopify launch");
+  });
+
+  it("advertises governed Shopify store-creation browser autonomy", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "entral-shopify-registry-"));
+    const storageStatePath = join(tempDir, "shopify-dev-dashboard-storage.json");
+
+    try {
+      writeFileSync(storageStatePath, JSON.stringify({ cookies: [], origins: [] }));
+      process.env.SHOPIFY_DEV_DASHBOARD_STORAGE_STATE_PATH = storageStatePath;
+      const { getToolById } = await import("../src/services/toolRegistry.js");
+      const shopify = getToolById("shopify");
+
+      expect(shopify?.availableActions).toEqual(expect.arrayContaining([
+        "store.creation.browser_task",
+        "store.creation.browser_task.authenticated_session",
+        "store.creation.capture"
+      ]));
+      expect(shopify?.metadata?.devDashboardStorageStateConfigured).toBe(true);
+      expect(shopify?.metadata?.devDashboardStorageStateStatus).toBe("ready");
+      expect(shopify?.requiresAuthorization).toBe(true);
+      expect(shopify?.riskLevel).toBe("High");
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
+  it("reports missing Shopify Dev Dashboard storage state in registry metadata", async () => {
+    process.env.SHOPIFY_DEV_DASHBOARD_STORAGE_STATE_PATH = "C:/secure/missing-shopify-dev-dashboard-storage.json";
+    const { getToolById } = await import("../src/services/toolRegistry.js");
+    const shopify = getToolById("shopify");
+
+    expect(shopify?.metadata?.devDashboardStorageStateConfigured).toBe(true);
+    expect(shopify?.metadata?.devDashboardStorageStateStatus).toBe("missing");
   });
 
   it("keeps external-tool copy behind approval language", async () => {

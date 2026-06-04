@@ -1,14 +1,18 @@
 import { env } from "../env.js";
 import { scrapePayloadSchema, type ScrapePayload } from "../schemas.js";
+import { runShopifyAutonomyResumeJob, shopifyAutonomyResumeJobType } from "./shopifyAutonomyJobs.js";
+import { runShopifyStoreCreationBrowserTaskJob, shopifyStoreCreationBrowserTaskJobType } from "./shopifyStoreCreationBrowserTask.js";
+import { runShopifyStoreCreationHandoffJob, shopifyStoreCreationHandoffJobType } from "./shopifyStoreCreationHandoffJobs.js";
 import { assertSafePublicHttpUrl } from "./urlSafety.js";
 
 export type AutomationJobRecord = {
   id: string;
   type: string;
   payloadJson: string;
+  userId: string;
 };
 
-export type AutomationResult = Record<string, string | number | null>;
+export type AutomationResult = Record<string, unknown>;
 
 type LogStep = (message: string, level?: "info" | "warn" | "error") => Promise<void>;
 
@@ -159,6 +163,18 @@ async function runScrapeTask(payload: ScrapePayload, logStep: LogStep): Promise<
 export async function executeAutomationJob(job: AutomationJobRecord, logStep: LogStep): Promise<AutomationResult> {
   if (!env.AUTOMATION_FEATURE_ENABLED) {
     throw new Error("Automation processing is disabled.");
+  }
+
+  if (job.type === shopifyAutonomyResumeJobType) {
+    return runShopifyAutonomyResumeJob(job, logStep);
+  }
+
+  if (job.type === shopifyStoreCreationHandoffJobType) {
+    return runShopifyStoreCreationHandoffJob(job, logStep);
+  }
+
+  if (job.type === shopifyStoreCreationBrowserTaskJobType) {
+    return runShopifyStoreCreationBrowserTaskJob(job, logStep);
   }
 
   if (job.type !== "scrape") {

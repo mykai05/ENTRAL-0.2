@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { getPrimaryAiProviderState, testPrimaryAiProvider, type AiProviderTestResult } from "./aiProvider.js";
 import {
   getGitHubConnectionState,
@@ -7,6 +8,8 @@ import {
   type GitHubReadOnlyStatus,
   type VercelReadOnlyStatus
 } from "./developmentConnections.js";
+import { env } from "../env.js";
+import { getShopifyConnectorState } from "./shopifyStorefrontExecutor.js";
 
 export type ToolCategory =
   | "AI"
@@ -87,6 +90,14 @@ function entry(input: ToolBlueprint): ToolRegistryEntry {
     connectionStatus: status,
     status
   };
+}
+
+function shopifyDevDashboardStorageStateStatus() {
+  const storageStatePath = env.SHOPIFY_DEV_DASHBOARD_STORAGE_STATE_PATH?.trim();
+
+  if (!storageStatePath) return "not_configured";
+
+  return existsSync(storageStatePath) ? "ready" : "missing";
 }
 
 const toolBlueprints: ToolBlueprint[] = [
@@ -221,15 +232,14 @@ const toolBlueprints: ToolBlueprint[] = [
     status: "Mock Mode"
   },
   {
-    availableActions: ["store.setup.mock", "product.publish.future"],
+    availableActions: ["store.creation.packet", "store.creation.browser_task", "store.creation.browser_task.authenticated_session", "store.creation.capture", "shopify.oauth.start", "shopify.oauth.continue", "shopify.autonomy.run", "shopify.autonomy.queue", "storefront.draft.plan", "product.draft.upsert", "collection.draft.create", "page.draft.create", "navigation.draft.create"],
     category: "E-commerce",
-    description: "Shopify store connection for future storefront preparation after approval.",
+    description: "Shopify connector for OAuth app approval, chained autonomy runs, governed store-creation browser tasks with optional operator-provided Dev Dashboard session state, and controlled draft storefront creation inside an existing connected shop after approval.",
     id: "shopify",
     name: "Shopify",
-    requiredCredentials: ["SHOPIFY_ADMIN_TOKEN", "SHOPIFY_SHOP_DOMAIN"],
+    requiredCredentials: ["SHOPIFY_APP_API_KEY", "SHOPIFY_APP_API_SECRET", "SHOPIFY_STORE_DOMAIN", "SHOPIFY_CONNECTOR_ADMIN_TOKEN"],
     requiresAuthorization: true,
-    riskLevel: "High",
-    status: "Mock Mode"
+    riskLevel: "High"
   },
   {
     availableActions: ["design.brief.mock"],
@@ -388,6 +398,10 @@ function statusForTool(tool: ToolBlueprint): ToolConnectionStatus {
     return getVercelConnectionState().status;
   }
 
+  if (tool.id === "shopify") {
+    return getShopifyConnectorState().status;
+  }
+
   return tool.status ?? "Not Connected";
 }
 
@@ -426,6 +440,26 @@ export function getToolRegistry() {
         ...tool,
         metadata: {
           mode: state.missingEnvVars.length ? "Mock Mode" : "Read-only pending test",
+          readOnly: state.readOnly,
+          writeActionsEnabled: state.writeActionsEnabled
+        },
+        missingEnvVars: state.missingEnvVars,
+        readOnly: state.readOnly,
+        status: state.status,
+        writeActionsEnabled: state.writeActionsEnabled
+      });
+    }
+
+    if (tool.id === "shopify") {
+      const state = getShopifyConnectorState();
+      const devDashboardStorageStateStatus = shopifyDevDashboardStorageStateStatus();
+      return entry({
+        ...tool,
+        metadata: {
+          apiVersion: state.apiVersion,
+          devDashboardStorageStateConfigured: devDashboardStorageStateStatus !== "not_configured",
+          devDashboardStorageStateStatus,
+          mode: state.missingEnvVars.length ? "Credentials required" : "Controlled draft writes available",
           readOnly: state.readOnly,
           writeActionsEnabled: state.writeActionsEnabled
         },

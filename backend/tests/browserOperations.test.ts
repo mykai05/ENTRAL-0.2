@@ -17,6 +17,7 @@ function job(input: Partial<BrowserOperationJobSnapshot> & { id: string; status:
       selector: "h1",
       url: "https://example.com"
     },
+    result: null,
     resultEngine: null,
     scheduledAt: null,
     startedAt: null,
@@ -97,5 +98,78 @@ describe("Browser Operations Layer", () => {
       targetType: "policy"
     });
     expect(plan.safetyLanes[0].riskLevel).toBe("high");
+  });
+
+  it("treats completed recoverable Shopify browser receipts as retry candidates", () => {
+    const plan = buildBrowserOperationsPlan({
+      config: {
+        allowedDomains: ["dev.shopify.com"],
+        featureEnabled: true,
+        localFallbackEnabled: true,
+        maxConcurrency: 2,
+        playwrightConfigured: true,
+        workerEnabled: true
+      },
+      jobs: [
+        job({
+          id: "shopify_browser_login_gate",
+          payload: {
+            url: "https://dev.shopify.com/dashboard/stores"
+          },
+          result: {
+            receipt: {
+              status: "blocked_operator_gate",
+              summary: "Shopify Dev Dashboard browser task stopped at a login, verification, or permission gate."
+            }
+          },
+          status: "completed",
+          type: "shopify_store_creation_browser_task"
+        })
+      ],
+      now
+    });
+
+    expect(plan.totals.recoveryActions).toBe(1);
+    expect(plan.runbooks[0]).toMatchObject({
+      action: "retry_failed_job",
+      reason: "Shopify store-creation browser task completed with recoverable receipt status blocked_operator_gate.",
+      status: "ready",
+      targetId: "shopify_browser_login_gate"
+    });
+  });
+
+  it("does not retry completed Shopify browser hard-stop receipts", () => {
+    const plan = buildBrowserOperationsPlan({
+      config: {
+        allowedDomains: ["dev.shopify.com"],
+        featureEnabled: true,
+        localFallbackEnabled: true,
+        maxConcurrency: 2,
+        playwrightConfigured: true,
+        workerEnabled: true
+      },
+      jobs: [
+        job({
+          id: "shopify_browser_billing_gate",
+          payload: {
+            url: "https://dev.shopify.com/dashboard/stores"
+          },
+          result: {
+            receipt: {
+              status: "blocked_hard_stop",
+              summary: "Shopify Dev Dashboard browser task stopped at a billing gate."
+            }
+          },
+          status: "completed",
+          type: "shopify_store_creation_browser_task"
+        })
+      ],
+      now
+    });
+
+    expect(plan.totals.recoveryActions).toBe(0);
+    expect(plan.runbooks[0]).toMatchObject({
+      action: "watch"
+    });
   });
 });

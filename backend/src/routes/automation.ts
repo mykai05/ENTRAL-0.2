@@ -33,7 +33,14 @@ function publicAutomationJob(job: {
   updatedAt: Date;
   logs?: Array<{ id: string; level: string; message: string; createdAt: Date }>;
 }) {
-  const payload = JSON.parse(job.payloadJson) as unknown;
+  let payload: unknown = { redacted: true };
+
+  try {
+    payload = JSON.parse(job.payloadJson) as unknown;
+  } catch {
+    payload = { redacted: true, type: job.type };
+  }
+
   const result = job.resultJson ? JSON.parse(job.resultJson) as unknown : null;
 
   return {
@@ -81,6 +88,19 @@ function parseResultEngine(resultJson: string | null) {
   }
 }
 
+function parseResultObject(resultJson: string | null): Record<string, unknown> | null {
+  if (!resultJson) return null;
+
+  try {
+    const parsed = JSON.parse(resultJson) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function automationJobSnapshot(job: {
   completedAt: Date | null;
   createdAt: Date;
@@ -102,6 +122,7 @@ function automationJobSnapshot(job: {
     id: job.id,
     logCount: job.logs?.length ?? 0,
     payload: parsePayload(job.payloadJson),
+    result: parseResultObject(job.resultJson),
     resultEngine: parseResultEngine(job.resultJson),
     scheduledAt: job.scheduledAt?.toISOString() ?? null,
     startedAt: job.startedAt?.toISOString() ?? null,
@@ -196,7 +217,7 @@ async function applyBrowserOperationsRecovery(userId: string, plan: BrowserOpera
       const updated = await prisma.automationJob.updateMany({
         where: {
           id: runbook.targetId,
-          status: { in: ["failed", "canceled"] },
+          status: { in: ["failed", "canceled", "completed"] },
           userId
         },
         data: {

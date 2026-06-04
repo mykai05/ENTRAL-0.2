@@ -164,6 +164,15 @@ export const revenueFirstBusinessExecuteConfirmation = "EXECUTE FIRST BUSINESS I
 export const revenueFirstBusinessAutonomousLaunchConfirmation = "RUN AUTONOMOUS FIRST BUSINESS LAUNCH PREP";
 export const revenueFirstBusinessLiveExecutorConfirmation = "PREPARE CONTROLLED LIVE FIRST BUSINESS EXECUTOR";
 export const revenueFirstBusinessLiveExecutorUnlockPhrase = "I APPROVE ENTRAL LIVE LAUNCH EXECUTION";
+export const shopifyConnectionConfirmation = "CONNECT SHOPIFY ADMIN API";
+export const shopifyOAuthStartConfirmation = "START SHOPIFY OAUTH";
+export const shopifyAutonomyRunConfirmation = "RUN SHOPIFY AUTONOMOUS STORE SETUP";
+export const shopifyAutonomyResumeJobConfirmation = "QUEUE SHOPIFY AUTONOMY RESUME JOB";
+export const shopifyStoreProvisioningConfirmation = "PREPARE SHOPIFY STORE CREATION PACKET";
+export const shopifyStoreCreationHandoffJobConfirmation = "QUEUE SHOPIFY STORE CREATION HANDOFF JOB";
+export const shopifyStoreCreationCaptureConfirmation = "CAPTURE SHOPIFY STORE CREATION";
+export const shopifyStorefrontDraftConfirmation = "EXECUTE CONTROLLED SHOPIFY STOREFRONT DRAFT";
+export const shopifyStorefrontDraftUnlockPhrase = "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION";
 export const revenueOwnerManualLaunchApprovalConfirmation = "RECORD OWNER MANUAL LIVE LAUNCH APPROVAL";
 export const revenueOwnerManualLaunchApprovalPhrase = "APPROVE FIRST STORE MANUAL LIVE LAUNCH";
 export const revenueFirstStoreManualLaunchEvidenceConfirmation = "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE";
@@ -369,6 +378,149 @@ export const providerPayloadQuerySchema = z.object({
 export const requestProviderPayloadApprovalSchema = providerPayloadQuerySchema.extend({
   note: optionalTrimmedString(500),
   scheduledFor: z.string().datetime().optional()
+});
+
+export const shopifyStorefrontDraftSchema = z.object({
+  confirm: z.literal(shopifyStorefrontDraftConfirmation),
+  connectorApproval: z.boolean().default(false),
+  dryRun: z.boolean().default(true),
+  includeCollections: z.boolean().default(true),
+  includeProducts: z.boolean().default(true),
+  includeStoreShell: z.boolean().default(true),
+  liveUnlockPhrase: z.string().trim().max(120).optional(),
+  maxProducts: z.coerce.number().int().min(1).max(25).default(5),
+  note: optionalTrimmedString(500)
+});
+
+export const shopifyConnectionSchema = z.object({
+  adminToken: z.string().trim().min(8).max(1000),
+  apiVersion: z.string().trim().regex(/^\d{4}-\d{2}$/).default("2026-04"),
+  confirm: z.literal(shopifyConnectionConfirmation),
+  note: optionalTrimmedString(500),
+  scopes: z.array(z.string().trim().min(1).max(80)).max(25).default(["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"]),
+  shopDomain: z.string().trim().min(4).max(255)
+});
+
+export const shopifyOAuthStartSchema = z.object({
+  connectorApproval: z.boolean().default(false),
+  confirm: z.literal(shopifyOAuthStartConfirmation),
+  continueAfterApproval: z.boolean().default(false),
+  countryCode: z.string().trim().regex(/^[A-Za-z]{2}$/).transform((value) => value.toUpperCase()).default("US"),
+  dryRun: z.boolean().default(true),
+  includeCollections: z.boolean().default(true),
+  includeProducts: z.boolean().default(true),
+  includeStoreShell: z.boolean().default(true),
+  liveUnlockPhrase: z.string().trim().max(120).optional(),
+  maxProducts: z.coerce.number().int().min(1).max(25).default(5),
+  note: optionalTrimmedString(500),
+  ownerEmail: emailSchema.optional(),
+  requestedShopName: optionalTrimmedString(120),
+  returnTo: optionalTrimmedString(500),
+  scopes: z.array(z.string().trim().min(1).max(80)).max(25).default(["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"]),
+  shopDomain: z.string().trim().min(4).max(255),
+  storeType: z.enum(["client_transfer", "development"]).default("client_transfer")
+});
+
+export const shopifyStoreProvisioningSchema = z.object({
+  confirm: z.literal(shopifyStoreProvisioningConfirmation),
+  countryCode: z.string().trim().regex(/^[A-Za-z]{2}$/).transform((value) => value.toUpperCase()).default("US"),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500),
+  ownerEmail: emailSchema.optional(),
+  requestedShopName: optionalTrimmedString(120),
+  storeType: z.enum(["client_transfer", "development"]).default("client_transfer")
+});
+
+export const shopifyStoreCreationHandoffJobSchema = z.object({
+  confirm: z.literal(shopifyStoreCreationHandoffJobConfirmation),
+  connectionWatchIntervalMinutes: z.coerce.number().int().min(1).max(1440).default(15),
+  connectorApproval: z.boolean().default(false),
+  countryCode: z.string().trim().regex(/^[A-Za-z]{2}$/).transform((value) => value.toUpperCase()).default("US"),
+  dryRun: z.boolean().default(false),
+  includeCollections: z.boolean().default(true),
+  includeProducts: z.boolean().default(true),
+  includeStoreShell: z.boolean().default(true),
+  liveUnlockPhrase: z.string().trim().max(120).optional(),
+  maxConnectionWatchAttempts: z.coerce.number().int().min(0).max(96).default(24),
+  maxProducts: z.coerce.number().int().min(1).max(25).default(5),
+  note: optionalTrimmedString(500),
+  ownerEmail: emailSchema.optional(),
+  queueBrowserTask: z.boolean().default(true),
+  queueAutonomyResume: z.boolean().default(true),
+  requestedShopName: optionalTrimmedString(120),
+  scheduledAt: z.string().datetime().optional(),
+  storeType: z.enum(["client_transfer", "development"]).default("client_transfer"),
+  watchForConnection: z.boolean().default(true)
+});
+
+export const shopifyStoreCreationCaptureSchema = z.object({
+  browserTaskEvidence: z.object({
+    capturedAt: z.string().datetime().optional(),
+    capturedFromTargetUrl: optionalTrimmedString(500),
+    completedStepIds: z.array(z.string().trim().min(1).max(120)).max(20).default([]),
+    finalShopDomain: z.string().trim().min(4).max(255).optional(),
+    operatorOrSessionContext: optionalTrimmedString(240),
+    source: z.enum(["approval_review", "governed_browser_task", "manual_capture"]).default("manual_capture"),
+    storeType: z.enum(["client_transfer", "development"]).optional()
+  }).default({}),
+  confirm: z.literal(shopifyStoreCreationCaptureConfirmation),
+  connectionWatchIntervalMinutes: z.coerce.number().int().min(1).max(1440).default(15),
+  connectorApproval: z.boolean().default(false),
+  continueAfterApproval: z.boolean().default(true),
+  countryCode: z.string().trim().regex(/^[A-Za-z]{2}$/).transform((value) => value.toUpperCase()).default("US"),
+  dryRun: z.boolean().default(false),
+  includeCollections: z.boolean().default(true),
+  includeProducts: z.boolean().default(true),
+  includeStoreShell: z.boolean().default(true),
+  liveUnlockPhrase: z.string().trim().max(120).optional(),
+  maxConnectionWatchAttempts: z.coerce.number().int().min(0).max(96).default(24),
+  maxProducts: z.coerce.number().int().min(1).max(25).default(5),
+  note: optionalTrimmedString(500),
+  ownerEmail: emailSchema.optional(),
+  queueAutonomyResume: z.boolean().default(true),
+  requestedShopName: optionalTrimmedString(120),
+  returnTo: optionalTrimmedString(500),
+  scopes: z.array(z.string().trim().min(1).max(80)).max(25).default(["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"]),
+  shopDomain: z.string().trim().min(4).max(255),
+  startOAuth: z.boolean().default(true),
+  storeType: z.enum(["client_transfer", "development"]).default("client_transfer")
+});
+
+export const shopifyAutonomyRunSchema = z.object({
+  confirm: z.literal(shopifyAutonomyRunConfirmation),
+  connectorApproval: z.boolean().default(false),
+  countryCode: z.string().trim().regex(/^[A-Za-z]{2}$/).transform((value) => value.toUpperCase()).default("US"),
+  dryRun: z.boolean().default(true),
+  includeCollections: z.boolean().default(true),
+  includeProducts: z.boolean().default(true),
+  includeStoreShell: z.boolean().default(true),
+  liveUnlockPhrase: z.string().trim().max(120).optional(),
+  maxProducts: z.coerce.number().int().min(1).max(25).default(5),
+  note: optionalTrimmedString(500),
+  ownerEmail: emailSchema.optional(),
+  requestedShopName: optionalTrimmedString(120),
+  storeType: z.enum(["client_transfer", "development"]).default("client_transfer")
+});
+
+export const shopifyAutonomyResumeJobSchema = z.object({
+  confirm: z.literal(shopifyAutonomyResumeJobConfirmation),
+  connectionWatchAttempt: z.coerce.number().int().min(0).max(96).default(0),
+  connectionWatchIntervalMinutes: z.coerce.number().int().min(1).max(1440).default(15),
+  connectorApproval: z.boolean().default(false),
+  countryCode: z.string().trim().regex(/^[A-Za-z]{2}$/).transform((value) => value.toUpperCase()).default("US"),
+  dryRun: z.boolean().default(false),
+  includeCollections: z.boolean().default(true),
+  includeProducts: z.boolean().default(true),
+  includeStoreShell: z.boolean().default(true),
+  liveUnlockPhrase: z.string().trim().max(120).optional(),
+  maxConnectionWatchAttempts: z.coerce.number().int().min(0).max(96).default(24),
+  maxProducts: z.coerce.number().int().min(1).max(25).default(5),
+  note: optionalTrimmedString(500),
+  ownerEmail: emailSchema.optional(),
+  requestedShopName: optionalTrimmedString(120),
+  scheduledAt: z.string().datetime().optional(),
+  storeType: z.enum(["client_transfer", "development"]).default("client_transfer"),
+  watchForConnection: z.boolean().default(true)
 });
 
 const revenueEngineThresholdFields = {
@@ -703,7 +855,8 @@ export const applyRevenueFirstBusinessLiveExecutorSchema = z.object({
   dryRun: z.boolean().default(false),
   liveUnlockPhrase: z.string().trim().max(120).optional(),
   note: optionalTrimmedString(500),
-  publicLaunchApproval: z.boolean().default(false)
+  publicLaunchApproval: z.boolean().default(false),
+  shopifyDraftUnlockPhrase: z.string().trim().max(160).optional()
 });
 
 export const applyRevenueOwnerManualLaunchApprovalSchema = z.object({
@@ -1604,7 +1757,9 @@ export const growthApprovalPacketParamsSchema = z.object({
 });
 
 export const reviewGrowthApprovalSchema = z.object({
-  note: optionalTrimmedString(500)
+  note: optionalTrimmedString(500),
+  shopifyAutonomyResumeJob: shopifyAutonomyResumeJobSchema.optional(),
+  shopifyStoreCreationCapture: shopifyStoreCreationCaptureSchema.optional()
 });
 
 export const conversationIdParamsSchema = z.object({
@@ -1927,6 +2082,14 @@ export type ComplianceCheckInput = z.infer<typeof complianceCheckSchema>;
 export type PricingCalculatorInput = z.infer<typeof pricingCalculatorSchema>;
 export type ProviderPayloadQueryInput = z.infer<typeof providerPayloadQuerySchema>;
 export type RequestProviderPayloadApprovalInput = z.infer<typeof requestProviderPayloadApprovalSchema>;
+export type ShopifyStorefrontDraftInput = z.infer<typeof shopifyStorefrontDraftSchema>;
+export type ShopifyConnectionInput = z.infer<typeof shopifyConnectionSchema>;
+export type ShopifyOAuthStartInput = z.infer<typeof shopifyOAuthStartSchema>;
+export type ShopifyStoreProvisioningInput = z.infer<typeof shopifyStoreProvisioningSchema>;
+export type ShopifyStoreCreationHandoffJobInput = z.infer<typeof shopifyStoreCreationHandoffJobSchema>;
+export type ShopifyStoreCreationCaptureInput = z.infer<typeof shopifyStoreCreationCaptureSchema>;
+export type ShopifyAutonomyRunInput = z.infer<typeof shopifyAutonomyRunSchema>;
+export type ShopifyAutonomyResumeJobInput = z.infer<typeof shopifyAutonomyResumeJobSchema>;
 export type RequestGrowthApprovalInput = z.infer<typeof requestGrowthApprovalSchema>;
 export type ReviewGrowthApprovalInput = z.infer<typeof reviewGrowthApprovalSchema>;
 export type RevenueEngineQueryInput = z.infer<typeof revenueEngineQuerySchema>;

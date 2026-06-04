@@ -117,6 +117,20 @@ import {
   revenueOpportunityControlParamsSchema,
   revenueOpportunityControlQuerySchema,
   screenInsightSchema,
+  shopifyAutonomyRunConfirmation,
+  shopifyAutonomyResumeJobConfirmation,
+  shopifyAutonomyResumeJobSchema,
+  shopifyAutonomyRunSchema,
+  shopifyConnectionConfirmation,
+  shopifyConnectionSchema,
+  shopifyOAuthStartConfirmation,
+  shopifyOAuthStartSchema,
+  shopifyStoreCreationCaptureConfirmation,
+  shopifyStoreCreationCaptureSchema,
+  shopifyStoreCreationHandoffJobConfirmation,
+  shopifyStoreCreationHandoffJobSchema,
+  shopifyStoreProvisioningConfirmation,
+  shopifyStoreProvisioningSchema,
   signupSchema,
   taskListQuerySchema
 } from "../src/schemas.js";
@@ -147,6 +161,175 @@ describe("validation schemas", () => {
     });
 
     expect(result.email).toBe("ada@example.com");
+  });
+
+  it("validates Shopify Admin API connection payloads without exposing token material", () => {
+    const result = shopifyConnectionSchema.parse({
+      adminToken: "shpat_test_admin_token_1234",
+      confirm: shopifyConnectionConfirmation,
+      shopDomain: " iron-house.myshopify.com "
+    });
+
+    expect(result.shopDomain).toBe("iron-house.myshopify.com");
+    expect(result.apiVersion).toBe("2026-04");
+    expect(result.scopes).toEqual(["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"]);
+    expect(() => shopifyConnectionSchema.parse({
+      adminToken: "shpat_test_admin_token_1234",
+      confirm: "CONNECT",
+      shopDomain: "iron-house.myshopify.com"
+    })).toThrow();
+  });
+
+  it("validates Shopify OAuth start payloads", () => {
+    const result = shopifyOAuthStartSchema.parse({
+      confirm: shopifyOAuthStartConfirmation,
+      returnTo: "https://app.example.com/merch",
+      shopDomain: " iron-house.myshopify.com "
+    });
+
+    expect(result.shopDomain).toBe("iron-house.myshopify.com");
+    expect(result.scopes).toEqual(["read_products", "write_products", "read_online_store_pages", "write_online_store_pages", "read_online_store_navigation", "write_online_store_navigation"]);
+    expect(() => shopifyOAuthStartSchema.parse({
+      confirm: "START",
+      shopDomain: "iron-house.myshopify.com"
+    })).toThrow();
+  });
+
+  it("validates Shopify store provisioning packets for the Dev Dashboard gate", () => {
+    const result = shopifyStoreProvisioningSchema.parse({
+      confirm: shopifyStoreProvisioningConfirmation,
+      countryCode: "ca",
+      ownerEmail: "owner@example.com",
+      requestedShopName: "Iron House Gym"
+    });
+
+    expect(result.countryCode).toBe("CA");
+    expect(result.dryRun).toBe(true);
+    expect(result.storeType).toBe("client_transfer");
+    expect(() => shopifyStoreProvisioningSchema.parse({
+      confirm: shopifyStoreProvisioningConfirmation,
+      countryCode: "USA"
+    })).toThrow();
+  });
+
+  it("validates Shopify store creation capture payloads", () => {
+    const result = shopifyStoreCreationCaptureSchema.parse({
+      confirm: shopifyStoreCreationCaptureConfirmation,
+      countryCode: "us",
+      liveUnlockPhrase: "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION",
+      requestedShopName: "Iron House Gym",
+      shopDomain: "iron-house.myshopify.com"
+    });
+
+    expect(result.countryCode).toBe("US");
+    expect(result.continueAfterApproval).toBe(true);
+    expect(result.dryRun).toBe(false);
+    expect(result.queueAutonomyResume).toBe(true);
+    expect(result.startOAuth).toBe(true);
+    expect(result.connectionWatchIntervalMinutes).toBe(15);
+    expect(result.maxConnectionWatchAttempts).toBe(24);
+    expect(result.browserTaskEvidence.source).toBe("manual_capture");
+    expect(result.browserTaskEvidence.completedStepIds).toEqual([]);
+    const governedEvidence = shopifyStoreCreationCaptureSchema.parse({
+      browserTaskEvidence: {
+        capturedAt: "2026-06-04T09:05:00.000Z",
+        capturedFromTargetUrl: "https://dev.shopify.com/dashboard/stores",
+        completedStepIds: ["open_dev_dashboard_stores", "create_store_and_capture_domain"],
+        finalShopDomain: "iron-house.myshopify.com",
+        operatorOrSessionContext: "Playwright browser task",
+        source: "governed_browser_task",
+        storeType: "client_transfer"
+      },
+      confirm: shopifyStoreCreationCaptureConfirmation,
+      shopDomain: "iron-house.myshopify.com"
+    });
+
+    expect(governedEvidence.browserTaskEvidence.source).toBe("governed_browser_task");
+    expect(governedEvidence.browserTaskEvidence.completedStepIds).toContain("create_store_and_capture_domain");
+    expect(() => shopifyStoreCreationCaptureSchema.parse({
+      confirm: "CAPTURE",
+      shopDomain: "iron-house.myshopify.com"
+    })).toThrow();
+  });
+
+  it("validates queued Shopify store creation handoff job payloads", () => {
+    const result = shopifyStoreCreationHandoffJobSchema.parse({
+      confirm: shopifyStoreCreationHandoffJobConfirmation,
+      countryCode: "ca",
+      ownerEmail: "owner@example.com",
+      requestedShopName: "Iron House Gym",
+      scheduledAt: "2026-06-04T10:00:00.000Z"
+    });
+
+    expect(result.countryCode).toBe("CA");
+    expect(result.dryRun).toBe(false);
+    expect(result.queueBrowserTask).toBe(true);
+    expect(result.queueAutonomyResume).toBe(true);
+    expect(result.watchForConnection).toBe(true);
+    expect(result.connectionWatchIntervalMinutes).toBe(15);
+    expect(result.maxConnectionWatchAttempts).toBe(24);
+    expect(result.storeType).toBe("client_transfer");
+    expect(() => shopifyStoreCreationHandoffJobSchema.parse({
+      confirm: "QUEUE",
+      countryCode: "US"
+    })).toThrow();
+    expect(() => shopifyStoreCreationHandoffJobSchema.parse({
+      confirm: shopifyStoreCreationHandoffJobConfirmation,
+      countryCode: "USA"
+    })).toThrow();
+  });
+
+  it("validates chained Shopify autonomy run payloads", () => {
+    const result = shopifyAutonomyRunSchema.parse({
+      confirm: shopifyAutonomyRunConfirmation,
+      connectorApproval: true,
+      countryCode: "us",
+      dryRun: false,
+      liveUnlockPhrase: "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION",
+      maxProducts: 5
+    });
+
+    expect(result.countryCode).toBe("US");
+    expect(result.connectorApproval).toBe(true);
+    expect(result.includeCollections).toBe(true);
+    expect(result.includeProducts).toBe(true);
+    expect(result.includeStoreShell).toBe(true);
+    expect(result.storeType).toBe("client_transfer");
+    expect(() => shopifyAutonomyRunSchema.parse({
+      confirm: "RUN",
+      countryCode: "US"
+    })).toThrow();
+  });
+
+  it("validates queued Shopify autonomy resume job payloads", () => {
+    const result = shopifyAutonomyResumeJobSchema.parse({
+      confirm: shopifyAutonomyResumeJobConfirmation,
+      connectorApproval: true,
+      countryCode: "ca",
+      dryRun: false,
+      maxProducts: 5,
+      scheduledAt: "2026-06-04T10:00:00.000Z"
+    });
+
+    expect(result.countryCode).toBe("CA");
+    expect(result.connectorApproval).toBe(true);
+    expect(result.includeCollections).toBe(true);
+    expect(result.includeProducts).toBe(true);
+    expect(result.includeStoreShell).toBe(true);
+    expect(result.watchForConnection).toBe(true);
+    expect(result.connectionWatchAttempt).toBe(0);
+    expect(result.connectionWatchIntervalMinutes).toBe(15);
+    expect(result.maxConnectionWatchAttempts).toBe(24);
+    expect(result.storeType).toBe("client_transfer");
+    expect(() => shopifyAutonomyResumeJobSchema.parse({
+      confirm: "QUEUE",
+      countryCode: "US"
+    })).toThrow();
+    expect(() => shopifyAutonomyResumeJobSchema.parse({
+      confirm: shopifyAutonomyResumeJobConfirmation,
+      connectionWatchIntervalMinutes: 0,
+      countryCode: "US"
+    })).toThrow();
   });
 
   it("caps task pagination at 50 rows", () => {
@@ -773,7 +956,8 @@ describe("validation schemas", () => {
       dryRun: false,
       liveUnlockPhrase: "I APPROVE ENTRAL LIVE LAUNCH EXECUTION",
       maxProducts: 5,
-      publicLaunchApproval: true
+      publicLaunchApproval: true,
+      shopifyDraftUnlockPhrase: "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION"
     });
 
     expect(query).toMatchObject({
@@ -894,6 +1078,7 @@ describe("validation schemas", () => {
     expect(firstBusinessAutonomousLaunchApply.dryRun).toBe(false);
     expect(firstBusinessLiveExecutorApply.connectorApproval).toBe(true);
     expect(firstBusinessLiveExecutorApply.liveUnlockPhrase).toBe("I APPROVE ENTRAL LIVE LAUNCH EXECUTION");
+    expect(firstBusinessLiveExecutorApply.shopifyDraftUnlockPhrase).toBe("I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION");
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ shardCount: "300" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
@@ -1904,12 +2089,31 @@ describe("validation schemas", () => {
       storeId: "clx0b5v8g000008l58v3n0wz0"
     });
     const review = reviewGrowthApprovalSchema.parse({
-      note: "Approved for preparation only; external execution remains locked."
+      note: "Approved for preparation only; external execution remains locked.",
+      shopifyAutonomyResumeJob: {
+        confirm: shopifyAutonomyResumeJobConfirmation,
+        connectorApproval: true,
+        liveUnlockPhrase: "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION"
+      }
+    });
+    const storeCreationReview = reviewGrowthApprovalSchema.parse({
+      note: "Approve and capture the dashboard-created Shopify store.",
+      shopifyStoreCreationCapture: {
+        confirm: shopifyStoreCreationCaptureConfirmation,
+        shopDomain: "iron-house.myshopify.com"
+      }
     });
 
     expect(approvalRequest.scheduledFor).toBe("2026-06-03T16:00:00.000Z");
     expect(params.packetId).toBe("clx0b5v8g000008l58v3n0wz1");
     expect(review.note).toContain("external execution remains locked");
+    expect(review.shopifyAutonomyResumeJob?.confirm).toBe(shopifyAutonomyResumeJobConfirmation);
+    expect(review.shopifyAutonomyResumeJob?.connectionWatchAttempt).toBe(0);
+    expect(review.shopifyAutonomyResumeJob?.watchForConnection).toBe(true);
+    expect(storeCreationReview.shopifyStoreCreationCapture?.confirm).toBe(shopifyStoreCreationCaptureConfirmation);
+    expect(storeCreationReview.shopifyStoreCreationCapture?.shopDomain).toBe("iron-house.myshopify.com");
+    expect(storeCreationReview.shopifyStoreCreationCapture?.startOAuth).toBe(true);
+    expect(storeCreationReview.shopifyStoreCreationCapture?.queueAutonomyResume).toBe(true);
   });
 
   it("validates agent profiles and task assignments", () => {
