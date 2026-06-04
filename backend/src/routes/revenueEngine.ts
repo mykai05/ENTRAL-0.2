@@ -12,6 +12,16 @@ import {
   applyRevenueBusinessFleetProviderApprovalReviewSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
+  applyRevenueHundredStoreDailySupervisorSchema,
+  applyRevenueHundredStoreAppConnectionPacketsSchema,
+  applyRevenueHundredStoreConnectorActivationSchema,
+  applyRevenueHundredStoreMonitoringCycleSchema,
+  applyRevenueHundredStoreProductDepthSchema,
+  applyRevenueHundredStoreLaunchPacketsSchema,
+  applyRevenueHundredStoreAutonomyRunSchema,
+  applyRevenueHundredStoreWorkLeasesSchema,
+  applyRevenueHundredStoreWorkerAssignmentsSchema,
+  applyRevenueHundredStoreOperationsSchema,
   applyRevenueMoneyArmyGenerateScoreBatchSchema,
   applyRevenueFirstBusinessLaunchPackageSchema,
   applyRevenueFirstStorePrepareSchema,
@@ -64,6 +74,7 @@ import {
   revenueAssetControlLedgerQuerySchema,
   revenueAssetReviewQueueQuerySchema,
   revenueBusinessFleetSchedulerQuerySchema,
+  revenueHundredStoreOperationsQuerySchema,
   revenueBusinessFleetLaunchGateQuerySchema,
   revenueBusinessFleetProviderApprovalReviewQuerySchema,
   revenueMoneyArmyGenerateScoreBatchQuerySchema,
@@ -112,6 +123,16 @@ import {
   type ApplyRevenueBusinessFleetProviderApprovalReviewInput,
   type ApplyRevenueBusinessFleetSeedGapInput,
   type ApplyRevenueBusinessFleetLaunchWaveInput,
+  type ApplyRevenueHundredStoreDailySupervisorInput,
+  type ApplyRevenueHundredStoreAppConnectionPacketsInput,
+  type ApplyRevenueHundredStoreConnectorActivationInput,
+  type ApplyRevenueHundredStoreMonitoringCycleInput,
+  type ApplyRevenueHundredStoreProductDepthInput,
+  type ApplyRevenueHundredStoreLaunchPacketsInput,
+  type ApplyRevenueHundredStoreAutonomyRunInput,
+  type ApplyRevenueHundredStoreWorkLeasesInput,
+  type ApplyRevenueHundredStoreWorkerAssignmentsInput,
+  type ApplyRevenueHundredStoreOperationsInput,
   type ApplyRevenueMoneyArmyGenerateScoreBatchInput,
   type ApplyRevenueFirstBusinessLaunchPackageInput,
   type ApplyRevenueFirstStorePrepareInput,
@@ -162,6 +183,7 @@ import {
   type RevenueAssetControlLedgerQueryInput,
   type RevenueAssetReviewQueueQueryInput,
   type RevenueBusinessFleetSchedulerQueryInput,
+  type RevenueHundredStoreOperationsQueryInput,
   type RevenueBusinessFleetLaunchGateQueryInput,
   type RevenueBusinessFleetProviderApprovalReviewQueryInput,
   type RevenueMoneyArmyGenerateScoreBatchQueryInput,
@@ -268,12 +290,27 @@ import {
 } from "../services/revenueEngine.js";
 import {
   buildRevenueMoneyArmyBatchPipelinePlan,
+  buildRevenueHundredStoreDailySupervisorPlan,
+  buildRevenueHundredStoreOperationsCommandPlan,
+  buildRevenueHundredStoreOperationsPlan,
   buildRevenueBusinessFleetLaunchGapPlan,
   buildRevenueBusinessFleetSchedulerPlan,
   selectRevenueBusinessFleetLaunchWave,
   type RevenueBusinessFleetLaunchGapPlan,
   type RevenueBusinessFleetOpportunitySeed,
   type RevenueBusinessFleetPlan,
+  type RevenueHundredStoreOperationsPlan,
+  type RevenueHundredStoreConnectorActivationRow,
+  type RevenueHundredStoreMonitoringItem,
+  type RevenueHundredStoreProductDepthDraft,
+  type RevenueHundredStoreLaunchPacket,
+  type RevenueHundredStoreAutonomyJob,
+  type RevenueHundredStoreWorkLease,
+  type RevenueHundredStoreWorkerAssignment,
+  type RevenueHundredStoreDailySupervisorPlan,
+  type RevenueHundredStoreDailySupervisorStep,
+  type RevenueHundredStoreOperationsCommand,
+  type RevenueHundredStoreOperationsCommandPlan,
   type RevenueMoneyArmyBatchPipelinePlan,
   type RevenueMoneyArmyBatchPipelineStageName
 } from "../services/revenueBusinessFleetScheduler.js";
@@ -1843,6 +1880,1531 @@ async function buildRevenueMoneyArmyBatchPipelineForUser(
       plan: context.plan,
       selectedSourceKeys: sourceKeys
     })
+  };
+}
+
+function hundredStoreSchedulerOptions(input: RevenueHundredStoreOperationsQueryInput): RevenueBusinessFleetSchedulerQueryInput {
+  return revenueBusinessFleetSchedulerQuerySchema.parse({
+    killPressureThreshold: input.killPressureThreshold,
+    launchWaveSize: input.launchWaveSize,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    targetBusinesses: input.targetStores
+  });
+}
+
+async function buildRevenueHundredStoreOperationsForUser(
+  userId: string,
+  input: RevenueHundredStoreOperationsQueryInput
+): Promise<{
+  dailySupervisor: RevenueHundredStoreDailySupervisorPlan;
+  fleet: RevenueBusinessFleetPlan;
+  gapPlan: RevenueBusinessFleetLaunchGapPlan;
+  pipeline: RevenueMoneyArmyBatchPipelinePlan;
+  plan: RevenueHundredStoreOperationsPlan;
+}> {
+  const [context, liveConnectorReadiness] = await Promise.all([
+    buildRevenueBusinessFleetSchedulerForUser(userId, hundredStoreSchedulerOptions(input)),
+    buildLiveConnectorReadinessRegistryForUser(userId, revenueLiveConnectorReadinessQuerySchema.parse({
+      includeBlocked: true,
+      maxEntries: Math.min(input.targetStores, 100),
+      minClosureScore: 1,
+      minReadOnlyConnectors: 0,
+      requireOperationsPackAudit: false,
+      requirePerformanceEvidence: false
+    }))
+  ]);
+  const gapPlan = buildRevenueBusinessFleetLaunchGapPlan({
+    plan: context.plan
+  });
+  const pipeline = buildRevenueMoneyArmyBatchPipelinePlan({
+    gapPlan,
+    plan: context.plan
+  });
+  const plan = buildRevenueHundredStoreOperationsPlan({
+    gapPlan,
+    liveConnectorReadiness: liveConnectorReadiness.plan,
+    options: {
+      maxStoresPerShard: input.maxStoresPerShard,
+      minProductsPerStore: input.minProductsPerStore,
+      safeBatchSize: input.safeBatchSize,
+      targetStores: input.targetStores
+    },
+    pipeline,
+    plan: context.plan
+  });
+
+  return {
+    dailySupervisor: buildRevenueHundredStoreDailySupervisorPlan({
+      operations: plan
+    }),
+    fleet: context.plan,
+    gapPlan,
+    pipeline,
+    plan
+  };
+}
+
+type RevenueHundredStoreOperationsApplyCycle = {
+  afterReadinessScore: number;
+  afterStoreGap: number;
+  batchRunId: string | null;
+  beforeReadinessScore: number;
+  beforeStoreGap: number;
+  command: RevenueHundredStoreOperationsCommand;
+  cycle: number;
+  resultSummary: string;
+  stage: RevenueMoneyArmyBatchPipelineStageName;
+};
+
+function selectHundredStoreApplicationConnectionPackets(
+  plan: RevenueHundredStoreOperationsPlan,
+  input: ApplyRevenueHundredStoreAppConnectionPacketsInput
+) {
+  const storeIds = new Set(input.storeIds.filter(Boolean));
+  const roles = new Set(input.roles);
+  const statuses = new Set(input.setupStatuses);
+
+  return plan.applicationConnectionWorkbench.packets
+    .filter((packet) => storeIds.size === 0 || (packet.storeId && storeIds.has(packet.storeId)))
+    .filter((packet) => roles.size === 0 || roles.has(packet.role))
+    .filter((packet) => statuses.has(packet.setupStatus))
+    .slice(0, input.maxPackets);
+}
+
+async function applyRevenueHundredStoreAppConnectionPackets(userId: string, input: ApplyRevenueHundredStoreAppConnectionPacketsInput) {
+  const context = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const packets = selectHundredStoreApplicationConnectionPackets(context.plan, input);
+  const roleCounts = packets.reduce<Record<string, number>>((counts, packet) => {
+    counts[packet.role] = (counts[packet.role] ?? 0) + 1;
+    return counts;
+  }, {});
+  const storeIds = [...new Set(packets.map((packet) => packet.storeId).filter((storeId): storeId is string => Boolean(storeId)))];
+  const readyPackets = packets.filter((packet) => packet.setupStatus === "ready_for_internal_packet").length;
+  const alreadyMappedPackets = packets.filter((packet) => packet.setupStatus === "already_mapped").length;
+  const blockedPackets = packets.filter((packet) => packet.setupStatus === "blocked_by_store_quality").length;
+  const summary = input.dryRun
+    ? `${packets.length} application connection packet${packets.length === 1 ? "" : "s"} would be recorded as internal 100-store app readiness artifacts.`
+    : `${packets.length} application connection packet${packets.length === 1 ? "" : "s"} recorded as internal 100-store app readiness artifacts.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        dryRun: true,
+        externalExecution: false as const,
+        packetsRecorded: 0,
+        packetsSelected: packets.length,
+        providerContacted: false as const,
+        roleCounts,
+        storesCovered: storeIds.length,
+        summary
+      },
+      packets,
+      plan: context.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.hundred_store_app_connection_packets.recorded",
+    actorUserId: userId,
+    metadata: {
+      blockedPackets,
+      externalExecution: false,
+      note: input.note ?? null,
+      packets: packets.map((packet) => ({
+        connectionMode: packet.connectionMode,
+        credentialEnvVars: packet.credentialEnvVars,
+        providerOptions: packet.providerOptions,
+        readOnlyScopes: packet.readOnlyScopes,
+        requiredArtifacts: packet.requiredArtifacts,
+        role: packet.role,
+        setupStatus: packet.setupStatus,
+        shardId: packet.shardId,
+        storeId: packet.storeId,
+        storeName: packet.storeName,
+        title: packet.title
+      })),
+      providerContacted: false,
+      readyPackets,
+      roleCounts,
+      summary,
+      workbenchTotals: context.plan.applicationConnectionWorkbench.totals
+    },
+    outcome: packets.length > 0 ? "success" : "failure",
+    severity: blockedPackets > 0 ? "medium" : packets.length > 0 ? "low" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_app_connection_packets"
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      dryRun: false,
+      externalExecution: false as const,
+      packetsRecorded: packets.length,
+      packetsSelected: packets.length,
+      providerContacted: false as const,
+      roleCounts,
+      storesCovered: storeIds.length,
+      summary
+    },
+    packets,
+    plan: context.plan
+  };
+}
+
+function selectHundredStoreConnectorActivationRows(
+  plan: RevenueHundredStoreOperationsPlan,
+  input: ApplyRevenueHundredStoreConnectorActivationInput
+) {
+  const storeIds = new Set(input.storeIds.filter(Boolean));
+  const roles = new Set(input.roles);
+  const statuses = new Set(input.rowStatuses);
+
+  return plan.connectorActivationMatrix.rows
+    .filter((row) => storeIds.size === 0 || (row.storeId && storeIds.has(row.storeId)))
+    .filter((row) => roles.size === 0 || roles.has(row.role))
+    .filter((row) => statuses.size === 0 || statuses.has(row.status))
+    .sort((left, right) => (
+      right.readinessScore - left.readinessScore
+      || left.storeName.localeCompare(right.storeName)
+      || left.role.localeCompare(right.role)
+    ))
+    .slice(0, input.maxRows);
+}
+
+function connectorActivationStatusCounts(rows: RevenueHundredStoreConnectorActivationRow[]) {
+  return rows.reduce<Record<string, number>>((counts, row) => {
+    counts[row.status] = (counts[row.status] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function connectorActivationRoleCounts(rows: RevenueHundredStoreConnectorActivationRow[]) {
+  return rows.reduce<Record<string, number>>((counts, row) => {
+    counts[row.role] = (counts[row.role] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+async function applyRevenueHundredStoreConnectorActivation(userId: string, input: ApplyRevenueHundredStoreConnectorActivationInput) {
+  const context = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const rows = selectHundredStoreConnectorActivationRows(context.plan, input);
+  const statusCounts = connectorActivationStatusCounts(rows);
+  const roleCounts = connectorActivationRoleCounts(rows);
+  const storeIds = [...new Set(rows.map((row) => row.storeId).filter((storeId): storeId is string => Boolean(storeId)))];
+  const credentialEnvVarRefs = rows.reduce((sum, row) => sum + row.credentialEnvVars.length, 0);
+  const dryRunRequestMaps = rows.reduce((sum, row) => sum + row.dryRunRequestMap.length, 0);
+  const writeScopesBlocked = rows.reduce((sum, row) => sum + row.writeScopesBlocked.length, 0);
+  const summary = input.dryRun
+    ? `${rows.length} connector activation row${rows.length === 1 ? "" : "s"} would be recorded with credential custody and external writes locked.`
+    : `${rows.length} connector activation row${rows.length === 1 ? "" : "s"} recorded with credential custody and external writes locked.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        credentialEnvVarRefs,
+        dryRun: true,
+        dryRunRequestMaps,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        roleCounts,
+        rowsRecorded: 0,
+        rowsSelected: rows.length,
+        statusCounts,
+        storesCovered: storeIds.length,
+        summary,
+        writeScopesBlocked
+      },
+      plan: context.plan,
+      rows
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.hundred_store_connector_activation.recorded",
+    actorUserId: userId,
+    metadata: {
+      credentialEnvVarRefs,
+      dryRunRequestMaps,
+      externalExecution: false,
+      matrixTotals: context.plan.connectorActivationMatrix.totals,
+      note: input.note ?? null,
+      providerContacted: false,
+      roleCounts,
+      rows: rows.map((row) => ({
+        approvalChecklist: row.approvalChecklist,
+        credentialCustodyChecklist: row.credentialCustodyChecklist,
+        credentialEnvVars: row.credentialEnvVars,
+        dryRunRequestMap: row.dryRunRequestMap,
+        providerOptions: row.providerOptions,
+        readinessScore: row.readinessScore,
+        readOnlyScopes: row.readOnlyScopes,
+        requiredArtifacts: row.requiredArtifacts,
+        role: row.role,
+        rowId: row.rowId,
+        rollbackPlan: row.rollbackPlan,
+        shardId: row.shardId,
+        status: row.status,
+        storeId: row.storeId,
+        storeName: row.storeName,
+        title: row.title,
+        writeScopesBlocked: row.writeScopesBlocked
+      })),
+      statusCounts,
+      summary,
+      writeScopesBlocked
+    },
+    outcome: rows.length > 0 ? "success" : "failure",
+    severity: statusCounts.blocked_by_store_quality ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_connector_activation"
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      credentialEnvVarRefs,
+      dryRun: false,
+      dryRunRequestMaps,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      roleCounts,
+      rowsRecorded: rows.length,
+      rowsSelected: rows.length,
+      statusCounts,
+      storesCovered: storeIds.length,
+      summary,
+      writeScopesBlocked
+    },
+    plan: context.plan,
+    rows
+  };
+}
+
+function selectHundredStoreMonitoringItems(
+  plan: RevenueHundredStoreOperationsPlan,
+  input: ApplyRevenueHundredStoreMonitoringCycleInput
+) {
+  const storeIds = new Set(input.storeIds.filter(Boolean));
+  const signalStatuses = new Set(input.signalStatuses);
+  const queues = new Set(input.queues);
+  const queueItems: RevenueHundredStoreMonitoringItem[] = queues.size === 0 || queues.has("all")
+    ? plan.monitoringMatrix.items
+    : [
+      ...(queues.has("manualSnapshots") ? plan.monitoringMatrix.queues.manualSnapshots : []),
+      ...(queues.has("readOnlyImports") ? plan.monitoringMatrix.queues.readOnlyImports : []),
+      ...(queues.has("rotationReviews") ? plan.monitoringMatrix.queues.rotationReviews : []),
+      ...(queues.has("scaleReviews") ? plan.monitoringMatrix.queues.scaleReviews : [])
+    ];
+  const deduped = Array.from(new Map(queueItems.map((item) => [`${item.businessId}:${item.signalStatus}`, item])).values());
+
+  return deduped
+    .filter((item) => storeIds.size === 0 || storeIds.has(item.businessId))
+    .filter((item) => signalStatuses.size === 0 || signalStatuses.has(item.signalStatus))
+    .sort((left, right) => (
+      right.priority - left.priority
+      || right.profitVelocity - left.profitVelocity
+      || left.businessName.localeCompare(right.businessName)
+    ))
+    .slice(0, input.maxItems);
+}
+
+function monitoringQueueCounts(items: RevenueHundredStoreMonitoringItem[]) {
+  return items.reduce<Record<string, number>>((counts, item) => {
+    const queue = item.signalStatus === "needs_manual_snapshot"
+      ? "manualSnapshots"
+      : item.signalStatus === "needs_readonly_import"
+        ? "readOnlyImports"
+        : item.signalStatus === "rotation_review_required"
+          ? "rotationReviews"
+          : item.signalStatus === "scale_review_required"
+            ? "scaleReviews"
+            : "signalReady";
+
+    counts[queue] = (counts[queue] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function monitoringSignalStatusCounts(items: RevenueHundredStoreMonitoringItem[]) {
+  return items.reduce<Record<string, number>>((counts, item) => {
+    counts[item.signalStatus] = (counts[item.signalStatus] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+async function applyRevenueHundredStoreMonitoringCycle(userId: string, input: ApplyRevenueHundredStoreMonitoringCycleInput) {
+  const context = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const items = selectHundredStoreMonitoringItems(context.plan, input);
+  const queueCounts = monitoringQueueCounts(items);
+  const signalStatusCounts = monitoringSignalStatusCounts(items);
+  const storeIds = [...new Set(items.map((item) => item.businessId))];
+  const requiredSignals = [...new Set(items.flatMap((item) => item.requiredSignals))];
+  const summary = input.dryRun
+    ? `${items.length} monitoring item${items.length === 1 ? "" : "s"} would be recorded for the 100-store monitoring cycle.`
+    : `${items.length} monitoring item${items.length === 1 ? "" : "s"} recorded for the 100-store monitoring cycle.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        dryRun: true,
+        externalExecution: false as const,
+        itemsRecorded: 0,
+        itemsSelected: items.length,
+        providerContacted: false as const,
+        queueCounts,
+        requiredSignals: requiredSignals.length,
+        signalStatusCounts,
+        storesCovered: storeIds.length,
+        summary
+      },
+      items,
+      plan: context.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.hundred_store_monitoring_cycle.recorded",
+    actorUserId: userId,
+    metadata: {
+      externalExecution: false,
+      items: items.map((item) => ({
+        businessId: item.businessId,
+        businessName: item.businessName,
+        cadence: item.cadence,
+        lane: item.lane,
+        nextInternalAction: item.nextInternalAction,
+        priority: item.priority,
+        profitVelocity: item.profitVelocity,
+        requiredSignals: item.requiredSignals,
+        scheduleState: item.scheduleState,
+        shardId: item.shardId,
+        signalStatus: item.signalStatus,
+        trackedAssets: item.trackedAssets,
+        triggerReason: item.triggerReason
+      })),
+      matrixTotals: context.plan.monitoringMatrix.totals,
+      note: input.note ?? null,
+      providerContacted: false,
+      queueCounts,
+      requiredSignals,
+      signalStatusCounts,
+      summary
+    },
+    outcome: items.length > 0 ? "success" : "failure",
+    severity: queueCounts.rotationReviews ? "medium" : items.length > 0 ? "low" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_monitoring_cycle"
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      dryRun: false,
+      externalExecution: false as const,
+      itemsRecorded: items.length,
+      itemsSelected: items.length,
+      providerContacted: false as const,
+      queueCounts,
+      requiredSignals: requiredSignals.length,
+      signalStatusCounts,
+      storesCovered: storeIds.length,
+      summary
+    },
+    items,
+    plan: context.plan
+  };
+}
+
+function selectHundredStoreProductDepthDrafts(
+  plan: RevenueHundredStoreOperationsPlan,
+  input: ApplyRevenueHundredStoreProductDepthInput
+) {
+  const storeIds = new Set(input.storeIds.filter(Boolean));
+  const statuses = new Set(input.draftStatuses);
+
+  return plan.productDepthQueue.drafts
+    .filter((draft) => storeIds.size === 0 || (draft.storeId && storeIds.has(draft.storeId)))
+    .filter((draft) => statuses.size === 0 || statuses.has(draft.status))
+    .sort((left, right) => (
+      right.priority - left.priority
+      || left.storeName.localeCompare(right.storeName)
+      || left.title.localeCompare(right.title)
+    ))
+    .slice(0, input.maxDrafts);
+}
+
+function productDepthStatusCounts(drafts: RevenueHundredStoreProductDepthDraft[]) {
+  return drafts.reduce<Record<string, number>>((counts, draft) => {
+    counts[draft.status] = (counts[draft.status] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+async function applyRevenueHundredStoreProductDepth(userId: string, input: ApplyRevenueHundredStoreProductDepthInput) {
+  const context = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const drafts = selectHundredStoreProductDepthDrafts(context.plan, input);
+  const statusCounts = productDepthStatusCounts(drafts);
+  const currentStoreDrafts = drafts.filter((draft) => draft.storeId).length;
+  const futureStoreDrafts = drafts.length - currentStoreDrafts;
+  const storeIds = [...new Set(drafts.map((draft) => draft.storeId).filter((storeId): storeId is string => Boolean(storeId)))];
+  const summary = input.dryRun
+    ? `${drafts.length} product-depth draft packet${drafts.length === 1 ? "" : "s"} would be recorded for the 100-store queue.`
+    : `${drafts.length} product-depth draft packet${drafts.length === 1 ? "" : "s"} recorded for the 100-store queue.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        currentStoreDrafts,
+        draftsRecorded: 0,
+        draftsSelected: drafts.length,
+        dryRun: true,
+        externalExecution: false as const,
+        futureStoreDrafts,
+        providerContacted: false as const,
+        statusCounts,
+        storesCovered: storeIds.length,
+        summary
+      },
+      drafts,
+      plan: context.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.hundred_store_product_depth.recorded",
+    actorUserId: userId,
+    metadata: {
+      drafts: drafts.map((draft) => ({
+        approvalChecklist: draft.approvalChecklist,
+        contentTieIn: draft.contentTieIn,
+        currentProducts: draft.currentProducts,
+        designPrompt: draft.designPrompt,
+        draftId: draft.draftId,
+        facelessHook: draft.facelessHook,
+        lane: draft.lane,
+        listingAngle: draft.listingAngle,
+        missingProducts: draft.missingProducts,
+        organicMove: draft.organicMove,
+        priority: draft.priority,
+        productType: draft.productType,
+        requiredProducts: draft.requiredProducts,
+        shardId: draft.shardId,
+        status: draft.status,
+        storeId: draft.storeId,
+        storeName: draft.storeName,
+        title: draft.title
+      })),
+      externalExecution: false,
+      note: input.note ?? null,
+      productDepthTotals: context.plan.productDepthQueue.totals,
+      providerContacted: false,
+      statusCounts,
+      summary
+    },
+    outcome: drafts.length > 0 ? "success" : "failure",
+    severity: statusCounts.blocked_by_quality ? "medium" : drafts.length > 0 ? "low" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_product_depth"
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      currentStoreDrafts,
+      draftsRecorded: drafts.length,
+      draftsSelected: drafts.length,
+      dryRun: false,
+      externalExecution: false as const,
+      futureStoreDrafts,
+      providerContacted: false as const,
+      statusCounts,
+      storesCovered: storeIds.length,
+      summary
+    },
+    drafts,
+    plan: context.plan
+  };
+}
+
+function selectHundredStoreLaunchPackets(
+  plan: RevenueHundredStoreOperationsPlan,
+  input: ApplyRevenueHundredStoreLaunchPacketsInput
+) {
+  const storeIds = new Set(input.storeIds.filter(Boolean));
+  const statuses = new Set(input.packetStatuses);
+
+  return plan.launchPacketQueue.packets
+    .filter((packet) => storeIds.size === 0 || (packet.storeId && storeIds.has(packet.storeId)))
+    .filter((packet) => statuses.size === 0 || statuses.has(packet.status))
+    .sort((left, right) => (
+      right.readinessScore - left.readinessScore
+      || right.priority - left.priority
+      || left.storeName.localeCompare(right.storeName)
+    ))
+    .slice(0, input.maxPackets);
+}
+
+function launchPacketStatusCounts(packets: RevenueHundredStoreLaunchPacket[]) {
+  return packets.reduce<Record<string, number>>((counts, packet) => {
+    counts[packet.status] = (counts[packet.status] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+async function applyRevenueHundredStoreLaunchPackets(userId: string, input: ApplyRevenueHundredStoreLaunchPacketsInput) {
+  const context = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const packets = selectHundredStoreLaunchPackets(context.plan, input);
+  const statusCounts = launchPacketStatusCounts(packets);
+  const currentStorePackets = packets.filter((packet) => packet.storeId).length;
+  const futureStorePackets = packets.length - currentStorePackets;
+  const storeIds = [...new Set(packets.map((packet) => packet.storeId).filter((storeId): storeId is string => Boolean(storeId)))];
+  const summary = input.dryRun
+    ? `${packets.length} launch packet${packets.length === 1 ? "" : "s"} would be recorded for 100-store internal launch review.`
+    : `${packets.length} launch packet${packets.length === 1 ? "" : "s"} recorded for 100-store internal launch review.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        currentStorePackets,
+        dryRun: true,
+        externalExecution: false as const,
+        futureStorePackets,
+        packetsRecorded: 0,
+        packetsSelected: packets.length,
+        providerContacted: false as const,
+        statusCounts,
+        storesCovered: storeIds.length,
+        summary
+      },
+      packets,
+      plan: context.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.hundred_store_launch_packets.recorded",
+    actorUserId: userId,
+    metadata: {
+      externalExecution: false,
+      launchPacketTotals: context.plan.launchPacketQueue.totals,
+      note: input.note ?? null,
+      packets: packets.map((packet) => ({
+        applicationPacketCount: packet.applicationPacketCount,
+        approvalChecklist: packet.approvalChecklist,
+        contentIdeas: packet.contentIdeas,
+        currentProducts: packet.currentProducts,
+        growthLane: packet.growthLane,
+        launchPacketId: packet.launchPacketId,
+        missingApplicationRoles: packet.missingApplicationRoles,
+        organicMoves: packet.organicMoves,
+        productDraftCount: packet.productDraftCount,
+        readinessScore: packet.readinessScore,
+        requiredApplicationRoles: packet.requiredApplicationRoles,
+        requiredProducts: packet.requiredProducts,
+        shardId: packet.shardId,
+        status: packet.status,
+        storeId: packet.storeId,
+        storeName: packet.storeName,
+        summary: packet.summary
+      })),
+      providerContacted: false,
+      statusCounts,
+      summary
+    },
+    outcome: packets.length > 0 ? "success" : "failure",
+    severity: statusCounts.blocked_by_quality ? "medium" : packets.length > 0 ? "low" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_launch_packets"
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      currentStorePackets,
+      dryRun: false,
+      externalExecution: false as const,
+      futureStorePackets,
+      packetsRecorded: packets.length,
+      packetsSelected: packets.length,
+      providerContacted: false as const,
+      statusCounts,
+      storesCovered: storeIds.length,
+      summary
+    },
+    packets,
+    plan: context.plan
+  };
+}
+
+function selectHundredStoreAutonomyJobs(
+  plan: RevenueHundredStoreOperationsPlan,
+  input: ApplyRevenueHundredStoreAutonomyRunInput
+) {
+  const storeIds = new Set(input.storeIds.filter(Boolean));
+  const statuses = new Set(input.jobStatuses);
+  const jobTypes = new Set(input.jobTypes);
+
+  return plan.autonomyRunQueue.jobs
+    .filter((job) => storeIds.size === 0 || (job.storeId && storeIds.has(job.storeId)))
+    .filter((job) => statuses.size === 0 || statuses.has(job.status))
+    .filter((job) => jobTypes.size === 0 || jobTypes.has(job.jobType))
+    .sort((left, right) => (
+      right.priority - left.priority
+      || left.status.localeCompare(right.status)
+      || left.storeName.localeCompare(right.storeName)
+      || left.jobType.localeCompare(right.jobType)
+    ))
+    .slice(0, input.maxJobs);
+}
+
+function autonomyJobStatusCounts(jobs: RevenueHundredStoreAutonomyJob[]) {
+  return jobs.reduce<Record<string, number>>((counts, job) => {
+    counts[job.status] = (counts[job.status] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function autonomyJobTypeCounts(jobs: RevenueHundredStoreAutonomyJob[]) {
+  return jobs.reduce<Record<string, number>>((counts, job) => {
+    counts[job.jobType] = (counts[job.jobType] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+async function applyRevenueHundredStoreAutonomyRun(userId: string, input: ApplyRevenueHundredStoreAutonomyRunInput) {
+  const context = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const jobs = selectHundredStoreAutonomyJobs(context.plan, input);
+  const statusCounts = autonomyJobStatusCounts(jobs);
+  const typeCounts = autonomyJobTypeCounts(jobs);
+  const storeIds = [...new Set(jobs.map((job) => job.storeId).filter((storeId): storeId is string => Boolean(storeId)))];
+  const approvalRequired = jobs.filter((job) => job.requiresOwnerApproval).length;
+  const readyInternal = jobs.filter((job) => job.status === "ready_internal").length;
+  const summary = input.dryRun
+    ? `${jobs.length} autonomy job${jobs.length === 1 ? "" : "s"} would be recorded for the 100-store chain of command.`
+    : `${jobs.length} autonomy job${jobs.length === 1 ? "" : "s"} recorded for the 100-store chain of command.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        approvalRequired,
+        auditLogId: null,
+        dryRun: true,
+        externalExecution: false as const,
+        jobsRecorded: 0,
+        jobsSelected: jobs.length,
+        providerContacted: false as const,
+        readyInternal,
+        statusCounts,
+        storesCovered: storeIds.length,
+        summary,
+        typeCounts
+      },
+      jobs,
+      plan: context.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.hundred_store_autonomy_run.recorded",
+    actorUserId: userId,
+    metadata: {
+      autonomyTotals: context.plan.autonomyRunQueue.totals,
+      externalExecution: false,
+      jobs: jobs.map((job) => ({
+        approvalGate: job.approvalGate,
+        blockedExternalActions: job.blockedExternalActions,
+        expectedInternalEffect: job.expectedInternalEffect,
+        jobId: job.jobId,
+        jobType: job.jobType,
+        priority: job.priority,
+        requiresOwnerApproval: job.requiresOwnerApproval,
+        shardId: job.shardId,
+        sourceId: job.sourceId,
+        sourceModule: job.sourceModule,
+        status: job.status,
+        storeId: job.storeId,
+        storeName: job.storeName,
+        summary: job.summary
+      })),
+      note: input.note ?? null,
+      providerContacted: false,
+      statusCounts,
+      summary,
+      typeCounts
+    },
+    outcome: jobs.length > 0 ? "success" : "failure",
+    severity: statusCounts.blocked ? "medium" : approvalRequired > 0 ? "low" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_autonomy_run"
+  });
+
+  return {
+    applied: {
+      approvalRequired,
+      auditLogId: auditLog.id,
+      dryRun: false,
+      externalExecution: false as const,
+      jobsRecorded: jobs.length,
+      jobsSelected: jobs.length,
+      providerContacted: false as const,
+      readyInternal,
+      statusCounts,
+      storesCovered: storeIds.length,
+      summary,
+      typeCounts
+    },
+    jobs,
+    plan: context.plan
+  };
+}
+
+function selectHundredStoreWorkLeases(
+  plan: RevenueHundredStoreOperationsPlan,
+  input: ApplyRevenueHundredStoreWorkLeasesInput
+) {
+  const storeIds = new Set(input.storeIds.filter(Boolean));
+  const statuses = new Set(input.leaseStatuses);
+  const jobTypes = new Set(input.jobTypes);
+
+  return plan.workLeasePlan.leases
+    .filter((lease) => storeIds.size === 0 || (lease.storeId && storeIds.has(lease.storeId)))
+    .filter((lease) => statuses.size === 0 || statuses.has(lease.status))
+    .filter((lease) => jobTypes.size === 0 || jobTypes.has(lease.jobType))
+    .sort((left, right) => (
+      right.priority - left.priority
+      || left.status.localeCompare(right.status)
+      || left.storeName.localeCompare(right.storeName)
+      || left.jobType.localeCompare(right.jobType)
+    ))
+    .slice(0, input.maxLeases);
+}
+
+function workLeaseStatusCounts(leases: RevenueHundredStoreWorkLease[]) {
+  return leases.reduce<Record<string, number>>((counts, lease) => {
+    counts[lease.status] = (counts[lease.status] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function workLeaseJobTypeCounts(leases: RevenueHundredStoreWorkLease[]) {
+  return leases.reduce<Record<string, number>>((counts, lease) => {
+    counts[lease.jobType] = (counts[lease.jobType] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+async function applyRevenueHundredStoreWorkLeases(userId: string, input: ApplyRevenueHundredStoreWorkLeasesInput) {
+  const context = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const leases = selectHundredStoreWorkLeases(context.plan, input);
+  const statusCounts = workLeaseStatusCounts(leases);
+  const typeCounts = workLeaseJobTypeCounts(leases);
+  const storeIds = [...new Set(leases.map((lease) => lease.storeId).filter((storeId): storeId is string => Boolean(storeId)))];
+  const dedupeKeys = new Set(leases.map((lease) => lease.dedupeKey));
+  const readyToClaim = leases.filter((lease) => lease.status === "ready_to_claim").length;
+  const approvalHold = leases.filter((lease) => lease.status === "approval_hold").length;
+  const summary = input.dryRun
+    ? `${leases.length} internal work lease${leases.length === 1 ? "" : "s"} would be recorded for clean 100-store work claiming.`
+    : `${leases.length} internal work lease${leases.length === 1 ? "" : "s"} recorded for clean 100-store work claiming.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        approvalHold,
+        auditLogId: null,
+        dedupeKeys: dedupeKeys.size,
+        dryRun: true,
+        externalExecution: false as const,
+        leasesRecorded: 0,
+        leasesSelected: leases.length,
+        providerContacted: false as const,
+        readyToClaim,
+        statusCounts,
+        storesCovered: storeIds.length,
+        summary,
+        typeCounts
+      },
+      leases,
+      plan: context.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.hundred_store_work_leases.recorded",
+    actorUserId: userId,
+    metadata: {
+      dedupeKeys: [...dedupeKeys],
+      externalExecution: false,
+      leases: leases.map((lease) => ({
+        approvalGate: lease.approvalGate,
+        claimWindowMinutes: lease.claimWindowMinutes,
+        dedupeKey: lease.dedupeKey,
+        dependencyRefs: lease.dependencyRefs,
+        expectedInternalEffect: lease.expectedInternalEffect,
+        expiresAt: lease.expiresAt,
+        idempotencyKey: lease.idempotencyKey,
+        jobId: lease.jobId,
+        jobType: lease.jobType,
+        leaseId: lease.leaseId,
+        priority: lease.priority,
+        retryPolicy: lease.retryPolicy,
+        shardId: lease.shardId,
+        sourceModule: lease.sourceModule,
+        status: lease.status,
+        storeId: lease.storeId,
+        storeName: lease.storeName,
+        summary: lease.summary
+      })),
+      leaseTotals: context.plan.workLeasePlan.totals,
+      note: input.note ?? null,
+      providerContacted: false,
+      statusCounts,
+      summary,
+      typeCounts
+    },
+    outcome: leases.length > 0 ? "success" : "failure",
+    severity: statusCounts.blocked ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_work_leases"
+  });
+
+  return {
+    applied: {
+      approvalHold,
+      auditLogId: auditLog.id,
+      dedupeKeys: dedupeKeys.size,
+      dryRun: false,
+      externalExecution: false as const,
+      leasesRecorded: leases.length,
+      leasesSelected: leases.length,
+      providerContacted: false as const,
+      readyToClaim,
+      statusCounts,
+      storesCovered: storeIds.length,
+      summary,
+      typeCounts
+    },
+    leases,
+    plan: context.plan
+  };
+}
+
+function selectHundredStoreWorkerAssignments(
+  plan: RevenueHundredStoreOperationsPlan,
+  input: ApplyRevenueHundredStoreWorkerAssignmentsInput
+) {
+  const storeIds = new Set(input.storeIds.filter(Boolean));
+  const statuses = new Set(input.assignmentStatuses);
+  const jobTypes = new Set(input.jobTypes);
+  const workerLanes = new Set(input.workerLanes);
+
+  return plan.workerAssignmentPlan.assignments
+    .filter((assignment) => storeIds.size === 0 || (assignment.storeId && storeIds.has(assignment.storeId)))
+    .filter((assignment) => statuses.size === 0 || statuses.has(assignment.status))
+    .filter((assignment) => jobTypes.size === 0 || jobTypes.has(assignment.jobType))
+    .filter((assignment) => workerLanes.size === 0 || workerLanes.has(assignment.lane))
+    .sort((left, right) => (
+      (left.claimOrder || Number.MAX_SAFE_INTEGER) - (right.claimOrder || Number.MAX_SAFE_INTEGER)
+      || right.priority - left.priority
+      || left.status.localeCompare(right.status)
+      || left.workerName.localeCompare(right.workerName)
+      || left.storeName.localeCompare(right.storeName)
+    ))
+    .slice(0, input.maxAssignments);
+}
+
+function workerAssignmentStatusCounts(assignments: RevenueHundredStoreWorkerAssignment[]) {
+  return assignments.reduce<Record<string, number>>((counts, assignment) => {
+    counts[assignment.status] = (counts[assignment.status] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function workerAssignmentLaneCounts(assignments: RevenueHundredStoreWorkerAssignment[]) {
+  return assignments.reduce<Record<string, number>>((counts, assignment) => {
+    counts[assignment.lane] = (counts[assignment.lane] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function workerAssignmentJobTypeCounts(assignments: RevenueHundredStoreWorkerAssignment[]) {
+  return assignments.reduce<Record<string, number>>((counts, assignment) => {
+    counts[assignment.jobType] = (counts[assignment.jobType] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+async function applyRevenueHundredStoreWorkerAssignments(userId: string, input: ApplyRevenueHundredStoreWorkerAssignmentsInput) {
+  const context = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const assignments = selectHundredStoreWorkerAssignments(context.plan, input);
+  const statusCounts = workerAssignmentStatusCounts(assignments);
+  const laneCounts = workerAssignmentLaneCounts(assignments);
+  const typeCounts = workerAssignmentJobTypeCounts(assignments);
+  const storeIds = [...new Set(assignments.map((assignment) => assignment.storeId).filter((storeId): storeId is string => Boolean(storeId)))];
+  const workerIds = new Set(assignments.map((assignment) => assignment.workerId));
+  const readyToAssign = assignments.filter((assignment) => assignment.status === "ready_to_assign").length;
+  const approvalHold = assignments.filter((assignment) => assignment.status === "approval_hold").length;
+  const summary = input.dryRun
+    ? `${assignments.length} internal worker assignment${assignments.length === 1 ? "" : "s"} would be recorded for capped chain-of-command claiming.`
+    : `${assignments.length} internal worker assignment${assignments.length === 1 ? "" : "s"} recorded for capped chain-of-command claiming.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        approvalHold,
+        assignmentsRecorded: 0,
+        assignmentsSelected: assignments.length,
+        auditLogId: null,
+        dryRun: true,
+        externalExecution: false as const,
+        laneCounts,
+        providerContacted: false as const,
+        readyToAssign,
+        statusCounts,
+        storesCovered: storeIds.length,
+        summary,
+        typeCounts,
+        workersCovered: workerIds.size
+      },
+      assignments,
+      plan: context.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.hundred_store_worker_assignments.recorded",
+    actorUserId: userId,
+    metadata: {
+      assignmentTotals: context.plan.workerAssignmentPlan.totals,
+      assignments: assignments.map((assignment) => ({
+        approvalGate: assignment.approvalGate,
+        assignmentId: assignment.assignmentId,
+        claimOrder: assignment.claimOrder,
+        dedupeKey: assignment.dedupeKey,
+        dependencyRefs: assignment.dependencyRefs,
+        expectedInternalEffect: assignment.expectedInternalEffect,
+        idempotencyKey: assignment.idempotencyKey,
+        jobType: assignment.jobType,
+        lane: assignment.lane,
+        leaseExpiresAt: assignment.leaseExpiresAt,
+        leaseId: assignment.leaseId,
+        priority: assignment.priority,
+        shardId: assignment.shardId,
+        status: assignment.status,
+        storeId: assignment.storeId,
+        storeName: assignment.storeName,
+        summary: assignment.summary,
+        workerId: assignment.workerId,
+        workerName: assignment.workerName
+      })),
+      externalExecution: false,
+      laneCounts,
+      note: input.note ?? null,
+      providerContacted: false,
+      statusCounts,
+      summary,
+      typeCounts,
+      workerIds: [...workerIds]
+    },
+    outcome: assignments.length > 0 ? "success" : "failure",
+    severity: statusCounts.blocked ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_worker_assignments"
+  });
+
+  return {
+    applied: {
+      approvalHold,
+      assignmentsRecorded: assignments.length,
+      assignmentsSelected: assignments.length,
+      auditLogId: auditLog.id,
+      dryRun: false,
+      externalExecution: false as const,
+      laneCounts,
+      providerContacted: false as const,
+      readyToAssign,
+      statusCounts,
+      storesCovered: storeIds.length,
+      summary,
+      typeCounts,
+      workersCovered: workerIds.size
+    },
+    assignments,
+    plan: context.plan
+  };
+}
+
+type RevenueHundredStoreDailySupervisorResult = {
+  action: RevenueHundredStoreDailySupervisorStep["action"];
+  auditLogId: string | null;
+  dryRun: boolean;
+  externalExecution: false;
+  connectorRowsRecorded?: number;
+  connectorRowsSelected?: number;
+  itemsRecorded?: number;
+  itemsSelected?: number;
+  operationCyclesRun?: number;
+  packetsRecorded?: number;
+  packetsSelected?: number;
+  productDraftsRecorded?: number;
+  productDraftsSelected?: number;
+  launchPacketsRecorded?: number;
+  launchPacketsSelected?: number;
+  autonomyJobsRecorded?: number;
+  autonomyJobsSelected?: number;
+  workLeasesRecorded?: number;
+  workLeasesSelected?: number;
+  workerAssignmentsRecorded?: number;
+  workerAssignmentsSelected?: number;
+  providerContacted: false;
+  stepId: string;
+  summary: string;
+  title: string;
+};
+
+async function applyRevenueHundredStoreDailySupervisor(userId: string, input: ApplyRevenueHundredStoreDailySupervisorInput) {
+  const before = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const beforeSupervisor = buildRevenueHundredStoreDailySupervisorPlan({
+    maxSteps: input.maxSteps,
+    mode: input.mode,
+    operations: before.plan
+  });
+  const results: RevenueHundredStoreDailySupervisorResult[] = [];
+
+  for (const step of beforeSupervisor.selectedSteps) {
+    if (step.action === "confirm_safety") {
+      results.push({
+        action: step.action,
+        auditLogId: null,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: input.dryRun
+          ? "Supervisor would confirm the 100-store safety envelope before internal work."
+          : "Supervisor confirmed the 100-store safety envelope inside the audit cycle.",
+        title: step.title
+      });
+      continue;
+    }
+
+    if (step.action === "review_growth_allocation") {
+      results.push({
+        action: step.action,
+        auditLogId: null,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: input.dryRun
+          ? "Supervisor would include advisory Ad/Growth routing in the cycle summary without authorizing spend."
+          : "Supervisor included advisory Ad/Growth routing in the cycle summary without authorizing spend.",
+        title: step.title
+      });
+      continue;
+    }
+
+    if (step.action === "record_app_connection_packets") {
+      const packetResult = await applyRevenueHundredStoreAppConnectionPackets(userId, applyRevenueHundredStoreAppConnectionPacketsSchema.parse({
+        ...input,
+        confirm: "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS",
+        maxPackets: step.maxItems,
+        note: input.note ?? "100 Store Daily Supervisor selected app connection packet recording.",
+        setupStatuses: ["ready_for_internal_packet"]
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: packetResult.applied.auditLogId,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        packetsRecorded: packetResult.applied.packetsRecorded,
+        packetsSelected: packetResult.applied.packetsSelected,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: packetResult.applied.summary,
+        title: step.title
+      });
+      continue;
+    }
+
+    if (step.action === "record_connector_activation_matrix") {
+      const connectorActivationResult = await applyRevenueHundredStoreConnectorActivation(userId, applyRevenueHundredStoreConnectorActivationSchema.parse({
+        ...input,
+        confirm: "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX",
+        maxRows: step.maxItems,
+        note: input.note ?? "100 Store Daily Supervisor selected connector activation matrix recording.",
+        rowStatuses: ["ready_for_connection_design", "credential_custody_required"]
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: connectorActivationResult.applied.auditLogId,
+        connectorRowsRecorded: connectorActivationResult.applied.rowsRecorded,
+        connectorRowsSelected: connectorActivationResult.applied.rowsSelected,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: connectorActivationResult.applied.summary,
+        title: step.title
+      });
+      continue;
+    }
+
+    if (step.action === "record_monitoring_cycle") {
+      const monitoringResult = await applyRevenueHundredStoreMonitoringCycle(userId, applyRevenueHundredStoreMonitoringCycleSchema.parse({
+        ...input,
+        confirm: "RECORD INTERNAL 100 STORE MONITORING CYCLE",
+        maxItems: step.maxItems,
+        note: input.note ?? "100 Store Daily Supervisor selected monitoring cycle recording.",
+        queues: ["all"]
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: monitoringResult.applied.auditLogId,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        itemsRecorded: monitoringResult.applied.itemsRecorded,
+        itemsSelected: monitoringResult.applied.itemsSelected,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: monitoringResult.applied.summary,
+        title: step.title
+      });
+      continue;
+    }
+
+    if (step.action === "record_product_depth_drafts") {
+      const productDepthResult = await applyRevenueHundredStoreProductDepth(userId, applyRevenueHundredStoreProductDepthSchema.parse({
+        ...input,
+        confirm: "RECORD INTERNAL 100 STORE PRODUCT DEPTH DRAFTS",
+        draftStatuses: ["ready_for_internal_draft", "waiting_for_store_shell"],
+        maxDrafts: step.maxItems,
+        note: input.note ?? "100 Store Daily Supervisor selected product-depth draft recording."
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: productDepthResult.applied.auditLogId,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        productDraftsRecorded: productDepthResult.applied.draftsRecorded,
+        productDraftsSelected: productDepthResult.applied.draftsSelected,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: productDepthResult.applied.summary,
+        title: step.title
+      });
+      continue;
+    }
+
+    if (step.action === "record_launch_packets") {
+      const launchPacketResult = await applyRevenueHundredStoreLaunchPackets(userId, applyRevenueHundredStoreLaunchPacketsSchema.parse({
+        ...input,
+        confirm: "RECORD INTERNAL 100 STORE LAUNCH PACKETS",
+        maxPackets: step.maxItems,
+        note: input.note ?? "100 Store Daily Supervisor selected launch packet recording.",
+        packetStatuses: ["ready_for_internal_launch_review", "waiting_for_store_shell"]
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: launchPacketResult.applied.auditLogId,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        launchPacketsRecorded: launchPacketResult.applied.packetsRecorded,
+        launchPacketsSelected: launchPacketResult.applied.packetsSelected,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: launchPacketResult.applied.summary,
+        title: step.title
+      });
+      continue;
+    }
+
+    if (step.action === "record_autonomy_run_queue") {
+      const autonomyRunResult = await applyRevenueHundredStoreAutonomyRun(userId, applyRevenueHundredStoreAutonomyRunSchema.parse({
+        ...input,
+        confirm: "RECORD INTERNAL 100 STORE AUTONOMY RUN",
+        jobStatuses: ["ready_internal", "approval_required"],
+        maxJobs: step.maxItems,
+        note: input.note ?? "100 Store Daily Supervisor selected autonomy run queue recording."
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: autonomyRunResult.applied.auditLogId,
+        autonomyJobsRecorded: autonomyRunResult.applied.jobsRecorded,
+        autonomyJobsSelected: autonomyRunResult.applied.jobsSelected,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: autonomyRunResult.applied.summary,
+        title: step.title
+      });
+      continue;
+    }
+
+    if (step.action === "record_work_leases") {
+      const workLeaseResult = await applyRevenueHundredStoreWorkLeases(userId, applyRevenueHundredStoreWorkLeasesSchema.parse({
+        ...input,
+        confirm: "RECORD INTERNAL 100 STORE WORK LEASES",
+        leaseStatuses: ["ready_to_claim", "approval_hold"],
+        maxLeases: step.maxItems,
+        note: input.note ?? "100 Store Daily Supervisor selected internal work lease recording."
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: workLeaseResult.applied.auditLogId,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: workLeaseResult.applied.summary,
+        title: step.title,
+        workLeasesRecorded: workLeaseResult.applied.leasesRecorded,
+        workLeasesSelected: workLeaseResult.applied.leasesSelected
+      });
+      continue;
+    }
+
+    if (step.action === "record_worker_assignments") {
+      const assignmentResult = await applyRevenueHundredStoreWorkerAssignments(userId, applyRevenueHundredStoreWorkerAssignmentsSchema.parse({
+        ...input,
+        assignmentStatuses: ["ready_to_assign", "approval_hold"],
+        confirm: "RECORD INTERNAL 100 STORE WORKER ASSIGNMENTS",
+        maxAssignments: step.maxItems,
+        note: input.note ?? "100 Store Daily Supervisor selected chain-of-command worker assignment recording."
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: assignmentResult.applied.auditLogId,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: assignmentResult.applied.summary,
+        title: step.title,
+        workerAssignmentsRecorded: assignmentResult.applied.assignmentsRecorded,
+        workerAssignmentsSelected: assignmentResult.applied.assignmentsSelected
+      });
+      continue;
+    }
+
+    if (step.action === "run_money_army_step") {
+      const operationsResult = await applyRevenueHundredStoreOperations(userId, applyRevenueHundredStoreOperationsSchema.parse({
+        ...input,
+        confirm: "RUN INTERNAL 100 STORE OPERATIONS STEP",
+        maxCycles: 1,
+        note: input.note ?? `100 Store Daily Supervisor selected ${step.title}.`,
+        podProvider: input.podProvider
+      }));
+
+      results.push({
+        action: step.action,
+        auditLogId: operationsResult.applied.auditLogId,
+        dryRun: input.dryRun,
+        externalExecution: false,
+        operationCyclesRun: operationsResult.applied.cyclesRun,
+        providerContacted: false,
+        stepId: step.stepId,
+        summary: operationsResult.applied.summary,
+        title: step.title
+      });
+    }
+  }
+
+  const after = input.dryRun ? before : await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const afterSupervisor = buildRevenueHundredStoreDailySupervisorPlan({
+    maxSteps: input.maxSteps,
+    mode: input.mode,
+    operations: after.plan
+  });
+  const summary = results.length === 0
+    ? "100-store daily supervisor found no selected private internal steps; review waiting, manual-only, or blocked steps."
+    : input.dryRun
+      ? `100-store daily supervisor preview selected ${results.length} private internal step${results.length === 1 ? "" : "s"}.`
+      : `100-store daily supervisor recorded ${results.length} private internal step${results.length === 1 ? "" : "s"} under one audit cycle.`;
+  const auditLog = input.dryRun ? null : await recordAuditLog({
+    action: "revenue.hundred_store_daily_supervisor.recorded",
+    actorUserId: userId,
+    metadata: {
+      afterSupervisor,
+      beforeSupervisor,
+      dryRun: false,
+      externalExecution: false,
+      mode: input.mode,
+      note: input.note ?? null,
+      providerContacted: false,
+      results,
+      summary
+    },
+    outcome: results.length > 0 ? "success" : "failure",
+    severity: beforeSupervisor.totals.blocked > 0 ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_daily_supervisor"
+  });
+
+  return {
+    after,
+    afterSupervisor,
+    applied: {
+      appPacketsRecorded: results.reduce((sum, result) => sum + (result.packetsRecorded ?? 0), 0),
+      auditLogId: auditLog?.id ?? null,
+      autonomyJobsRecorded: results.reduce((sum, result) => sum + (result.autonomyJobsRecorded ?? 0), 0),
+      connectorRowsRecorded: results.reduce((sum, result) => sum + (result.connectorRowsRecorded ?? 0), 0),
+      dryRun: input.dryRun,
+      externalExecution: false as const,
+      monitoringItemsRecorded: results.reduce((sum, result) => sum + (result.itemsRecorded ?? 0), 0),
+      operationCyclesRun: results.reduce((sum, result) => sum + (result.operationCyclesRun ?? 0), 0),
+      productDraftsRecorded: results.reduce((sum, result) => sum + (result.productDraftsRecorded ?? 0), 0),
+      launchPacketsRecorded: results.reduce((sum, result) => sum + (result.launchPacketsRecorded ?? 0), 0),
+      providerContacted: false as const,
+      stepsRecorded: input.dryRun ? 0 : results.length,
+      stepsSelected: results.length,
+      summary,
+      workLeasesRecorded: results.reduce((sum, result) => sum + (result.workLeasesRecorded ?? 0), 0),
+      workerAssignmentsRecorded: results.reduce((sum, result) => sum + (result.workerAssignmentsRecorded ?? 0), 0)
+    },
+    before,
+    beforeSupervisor,
+    results
+  };
+}
+
+function moneyArmyInputForHundredStoreCommand(
+  input: ApplyRevenueHundredStoreOperationsInput,
+  command: RevenueHundredStoreOperationsCommand
+): ApplyRevenueMoneyArmyBatchPipelineInput {
+  const maxItems = Math.max(command.maxItems, 1);
+
+  return applyRevenueMoneyArmyBatchPipelineSchema.parse({
+    action: "approve",
+    confirm: "RUN INTERNAL MONEY ARMY BATCH PIPELINE",
+    dryRun: input.dryRun,
+    killPressureThreshold: input.killPressureThreshold,
+    launchWaveSize: input.launchWaveSize,
+    maxPackets: Math.min(50, maxItems),
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    maxSeeds: Math.min(25, maxItems),
+    maxStores: Math.min(25, maxItems),
+    note: input.note ?? `100 Store Operations selected ${command.sourceActionTitle}.`,
+    podProvider: input.podProvider,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: [],
+    stage: command.stage ?? undefined,
+    targetBusinesses: input.targetStores
+  });
+}
+
+async function applyRevenueHundredStoreOperations(userId: string, input: ApplyRevenueHundredStoreOperationsInput) {
+  const before = await buildRevenueHundredStoreOperationsForUser(userId, input);
+  const beforeCommandPlan = buildRevenueHundredStoreOperationsCommandPlan({
+    operations: before.plan
+  });
+  let current = before;
+  const cycles: RevenueHundredStoreOperationsApplyCycle[] = [];
+
+  for (let cycleIndex = 0; cycleIndex < input.maxCycles; cycleIndex += 1) {
+    const commandPlan = buildRevenueHundredStoreOperationsCommandPlan({
+      operations: current.plan
+    });
+    const command = commandPlan.selectedCommand;
+
+    if (!command?.stage) break;
+
+    const result = await applyRevenueMoneyArmyBatchPipeline(
+      userId,
+      moneyArmyInputForHundredStoreCommand(input, command)
+    );
+    const afterCycle = input.dryRun
+      ? current
+      : await buildRevenueHundredStoreOperationsForUser(userId, input);
+
+    cycles.push({
+      afterReadinessScore: afterCycle.plan.readinessScore,
+      afterStoreGap: afterCycle.plan.batchPlan.storeGap,
+      batchRunId: result.applied.batchRunId,
+      beforeReadinessScore: current.plan.readinessScore,
+      beforeStoreGap: current.plan.batchPlan.storeGap,
+      command,
+      cycle: cycleIndex + 1,
+      resultSummary: result.applied.summary,
+      stage: command.stage
+    });
+
+    current = afterCycle;
+
+    if (input.dryRun || command.stage !== "batch_creation" || current.plan.batchPlan.storeGap <= 0) {
+      break;
+    }
+  }
+
+  const afterCommandPlan = buildRevenueHundredStoreOperationsCommandPlan({
+    operations: current.plan
+  });
+  const appliedSummary = cycles.length === 0
+    ? "100-store operations found no executable internal command; review the command queue for waiting or manual-review steps."
+    : input.dryRun
+      ? `100-store operations preview selected ${cycles[0]?.command.sourceActionTitle ?? "the next command"} for up to ${cycles[0]?.command.maxItems ?? 0} internal item${(cycles[0]?.command.maxItems ?? 0) === 1 ? "" : "s"}.`
+      : `100-store operations recorded ${cycles.length} internal cycle${cycles.length === 1 ? "" : "s"}; store gap moved from ${before.plan.batchPlan.storeGap} to ${current.plan.batchPlan.storeGap}.`;
+  const auditLog = input.dryRun ? null : await recordAuditLog({
+    action: "revenue.hundred_store_operations.step_applied",
+    actorUserId: userId,
+    metadata: {
+      afterCommandPlan,
+      afterPlan: current.plan,
+      beforeCommandPlan,
+      beforePlan: before.plan,
+      cycles,
+      dryRun: false,
+      externalExecution: false,
+      maxCycles: input.maxCycles,
+      note: input.note ?? null,
+      providerContacted: false,
+      summary: appliedSummary
+    },
+    outcome: cycles.length > 0 ? "success" : "failure",
+    severity: cycles.length > 0 ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_hundred_store_operations"
+  });
+  const recentRuns = await listRevenueMoneyArmyBatchRuns(userId);
+
+  return {
+    after: current,
+    afterCommandPlan,
+    applied: {
+      auditLogId: auditLog?.id ?? null,
+      batchRunIds: cycles.map((cycle) => cycle.batchRunId).filter((id): id is string => Boolean(id)),
+      cyclesRequested: input.maxCycles,
+      cyclesRun: cycles.length,
+      dryRun: input.dryRun,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      selectedCommandId: cycles[0]?.command.commandId ?? beforeCommandPlan.selectedCommand?.commandId ?? null,
+      selectedStage: cycles[0]?.stage ?? beforeCommandPlan.selectedCommand?.stage ?? null,
+      summary: appliedSummary
+    },
+    before,
+    beforeCommandPlan,
+    cycles,
+    recentRuns
   };
 }
 
@@ -10065,6 +11627,149 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
     const { plan } = await buildRevenueBusinessFleetSchedulerForUser(currentUser.sub, query);
 
     return reply.send({ plan });
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/100-store-operations", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueHundredStoreOperationsQuerySchema.parse(request.query);
+    const response = await buildRevenueHundredStoreOperationsForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-operations/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreOperationsSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreOperations(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-application-connections/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreAppConnectionPacketsSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreAppConnectionPackets(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-connector-activation/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreConnectorActivationSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreConnectorActivation(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-monitoring-cycle/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreMonitoringCycleSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreMonitoringCycle(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-product-depth/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreProductDepthSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreProductDepth(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-launch-packets/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreLaunchPacketsSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreLaunchPackets(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-autonomy-run/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreAutonomyRunSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreAutonomyRun(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-work-leases/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreWorkLeasesSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreWorkLeases(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-worker-assignments/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreWorkerAssignmentsSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreWorkerAssignments(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/100-store-daily-supervisor/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueHundredStoreDailySupervisorSchema.parse(request.body);
+    const response = await applyRevenueHundredStoreDailySupervisor(currentUser.sub, input);
+
+    return reply.send(response);
   });
 
   app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap", { preHandler: requireAuth }, async (request, reply) => {

@@ -243,7 +243,7 @@ function clamp(value: number, min: number, max: number) {
 function optionsWithDefaults(input: Partial<RevenueLiveConnectorReadinessOptions> = {}): RevenueLiveConnectorReadinessOptions {
   return {
     includeBlocked: input.includeBlocked ?? defaultOptions.includeBlocked,
-    maxEntries: clamp(Math.round(input.maxEntries ?? defaultOptions.maxEntries), 1, 50),
+    maxEntries: clamp(Math.round(input.maxEntries ?? defaultOptions.maxEntries), 1, 100),
     minClosureScore: clamp(Math.round(input.minClosureScore ?? defaultOptions.minClosureScore), 1, 100),
     minReadOnlyConnectors: clamp(Math.round(input.minReadOnlyConnectors ?? defaultOptions.minReadOnlyConnectors), 0, 10),
     requireOperationsPackAudit: input.requireOperationsPackAudit ?? defaultOptions.requireOperationsPackAudit,

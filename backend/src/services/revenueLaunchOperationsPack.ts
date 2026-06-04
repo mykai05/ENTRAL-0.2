@@ -142,7 +142,7 @@ function optionsWithDefaults(input: Partial<RevenueLaunchOperationsPackOptions> 
 
   return {
     includeBlocked: provided.includeBlocked ?? defaultOptions.includeBlocked,
-    maxPacks: clamp(Math.round(provided.maxPacks ?? defaultOptions.maxPacks), 1, 50),
+    maxPacks: clamp(Math.round(provided.maxPacks ?? defaultOptions.maxPacks), 1, 100),
     minConnectorReadiness: clamp(Math.round(provided.minConnectorReadiness ?? defaultOptions.minConnectorReadiness), 1, 100),
     minLaunchReadiness: clamp(Math.round(provided.minLaunchReadiness ?? defaultOptions.minLaunchReadiness), 1, 100),
     minProviderReadiness: clamp(Math.round(provided.minProviderReadiness ?? defaultOptions.minProviderReadiness), 1, 100)

@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueHundredStoreAppConnectionPacketsApplyResponse, RevenueHundredStoreAutonomyRunApplyResponse, RevenueHundredStoreConnectorActivationApplyResponse, RevenueHundredStoreDailySupervisorApplyResponse, RevenueHundredStoreDailySupervisorPlan, RevenueHundredStoreLaunchPacketsApplyResponse, RevenueHundredStoreMonitoringCycleApplyResponse, RevenueHundredStoreOperationsApplyResponse, RevenueHundredStoreOperationsPlan, RevenueHundredStoreOperationsResponse, RevenueHundredStoreProductDepthApplyResponse, RevenueHundredStoreWorkLeasesApplyResponse, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardPlan, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -1130,6 +1130,1824 @@ const moneyArmyPipelinePlan: RevenueMoneyArmyBatchPipelinePlan = {
   }
 };
 moneyArmyPipelinePlan.nextStage = moneyArmyPipelinePlan.stages[0]!;
+
+const hundredStoreOperationsPlan: RevenueHundredStoreOperationsPlan = {
+  applicationReadiness: {
+    applications: [{
+      approvedReadOnlyConnectors: 1,
+      blockedStores: 0,
+      externalExecution: false,
+      missingStores: 99,
+      nextInternalAction: "Record missing read-only connector manifests, approvals, rollback plans, and operations-pack evidence.",
+      pendingStores: 0,
+      providerContacted: false,
+      providerNames: ["Etsy"],
+      readyStores: 1,
+      readinessStatus: "partial",
+      requiredStores: 100,
+      role: "storefront",
+      title: "Storefront Marketplace"
+    }, {
+      approvedReadOnlyConnectors: 1,
+      blockedStores: 0,
+      externalExecution: false,
+      missingStores: 99,
+      nextInternalAction: "Record missing read-only connector manifests, approvals, rollback plans, and operations-pack evidence.",
+      pendingStores: 0,
+      providerContacted: false,
+      providerNames: ["Printify"],
+      readyStores: 1,
+      readinessStatus: "partial",
+      requiredStores: 100,
+      role: "pod_provider",
+      title: "POD Supplier"
+    }, {
+      approvedReadOnlyConnectors: 1,
+      blockedStores: 0,
+      externalExecution: false,
+      missingStores: 99,
+      nextInternalAction: "Record missing read-only connector manifests, approvals, rollback plans, and operations-pack evidence.",
+      pendingStores: 0,
+      providerContacted: false,
+      providerNames: ["Stripe"],
+      readyStores: 1,
+      readinessStatus: "partial",
+      requiredStores: 100,
+      role: "payments",
+      title: "Payments And Payout Signals"
+    }, {
+      approvedReadOnlyConnectors: 0,
+      blockedStores: 0,
+      externalExecution: false,
+      missingStores: 100,
+      nextInternalAction: "Create connector readiness entries from launch closure, operations pack, provider manifest, payment, and content-channel evidence.",
+      pendingStores: 0,
+      providerContacted: false,
+      providerNames: [],
+      readyStores: 0,
+      readinessStatus: "missing",
+      requiredStores: 100,
+      role: "content",
+      title: "Faceless Content Channels"
+    }, {
+      approvedReadOnlyConnectors: 0,
+      blockedStores: 0,
+      externalExecution: false,
+      missingStores: 100,
+      nextInternalAction: "Create connector readiness entries from launch closure, operations pack, provider manifest, payment, and content-channel evidence.",
+      pendingStores: 0,
+      providerContacted: false,
+      providerNames: [],
+      readyStores: 0,
+      readinessStatus: "missing",
+      requiredStores: 100,
+      role: "manual_import",
+      title: "Manual Signal Import"
+    }],
+    summary: "1% application readiness coverage: 1/100 stores mapped, 1 ready for connector design, 0 need read-only approval, 0 need operator review, and 0 blocked. External execution remains locked.",
+    totals: {
+      approvedReadOnlyConnectors: 3,
+      blockedEntries: 0,
+      mappedStores: 1,
+      missingStores: 99,
+      needsOperatorReview: 0,
+      needsReadOnlyApproval: 0,
+      readinessCoveragePercent: 1,
+      readyForDesign: 1,
+      requiredBoundaries: 3,
+      targetStores: 100
+    }
+  },
+  auditEvents: [
+    "100 Store Operations Readiness assembled Business Fleet scheduling, launch gap planning, Money Army batch stages, and provider packet readiness.",
+    "The plan is internal and advisory; no provider, marketplace, browser, upload, publishing, ad spend, payment, bank, payout, or external write action was executed."
+  ],
+  applicationConnectionWorkbench: {
+    auditEvents: [
+      "100 Store Application Connection Workbench converted missing application roles into internal connection-prep packets and reusable future-store templates."
+    ],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    mode: "100 Store Application Connection Workbench",
+    packets: [{
+      approvalChecklist: ["Confirm storefront owner and store URL/marketplace id."],
+      connectionMode: "internal_preparation_only",
+      credentialEnvVars: ["ETSY_CONNECTOR_CLIENT_ID", "SHOPIFY_CONNECTOR_ADMIN_TOKEN"],
+      externalExecution: false,
+      lane: "launch_now",
+      providerContacted: false,
+      providerOptions: ["Etsy", "Shopify"],
+      readOnlyScopes: ["listings:read", "orders:read"],
+      requiredArtifacts: ["Storefront connector manifest", "Draft listing field map"],
+      role: "storefront",
+      rollbackPlan: ["Keep listing writes disabled until a separate launch approval packet exists."],
+      setupStatus: "already_mapped",
+      shardId: "shard_001",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      title: "Storefront Marketplace"
+    }, {
+      approvalChecklist: ["Confirm POD provider account owner and shop id."],
+      connectionMode: "internal_preparation_only",
+      credentialEnvVars: ["PRINTIFY_CONNECTOR_TOKEN", "PRINTIFY_SHOP_ID"],
+      externalExecution: false,
+      lane: "launch_now",
+      providerContacted: false,
+      providerOptions: ["Printify", "Printful"],
+      readOnlyScopes: ["shops:read", "catalog:read"],
+      requiredArtifacts: ["POD provider manifest", "Product request manifest"],
+      role: "pod_provider",
+      rollbackPlan: ["Disable provider write queue for the affected store."],
+      setupStatus: "already_mapped",
+      shardId: "shard_001",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      title: "POD Supplier"
+    }, {
+      approvalChecklist: ["Confirm payment account owner and payout destination owner."],
+      connectionMode: "internal_preparation_only",
+      credentialEnvVars: ["STRIPE_CONNECTOR_SECRET_KEY"],
+      externalExecution: false,
+      lane: "launch_now",
+      providerContacted: false,
+      providerOptions: ["Stripe"],
+      readOnlyScopes: ["balance:read", "orders:read"],
+      requiredArtifacts: ["Payment read-only manifest", "Payout freeze control"],
+      role: "payments",
+      rollbackPlan: ["Keep payout and transfer writes disabled until separate financial approval exists."],
+      setupStatus: "already_mapped",
+      shardId: "shard_001",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      title: "Payments And Payout Signals"
+    }, {
+      approvalChecklist: ["Confirm channel owner and brand-safe publishing boundaries."],
+      connectionMode: "internal_preparation_only",
+      credentialEnvVars: ["YOUTUBE_CONNECTOR_CLIENT_ID", "TIKTOK_CONNECTOR_CLIENT_KEY"],
+      externalExecution: false,
+      lane: "launch_now",
+      providerContacted: false,
+      providerOptions: ["YouTube Shorts", "TikTok", "Instagram Reels"],
+      readOnlyScopes: ["channel:read", "analytics:read"],
+      requiredArtifacts: ["Faceless content channel manifest", "Content brief approval"],
+      role: "content",
+      rollbackPlan: ["Freeze upload queue before any future live content attempt."],
+      setupStatus: "ready_for_internal_packet",
+      shardId: "shard_001",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      title: "Faceless Content Channels"
+    }, {
+      approvalChecklist: ["Confirm operator-owned source file or manual signal source."],
+      connectionMode: "internal_preparation_only",
+      credentialEnvVars: [],
+      externalExecution: false,
+      lane: "launch_now",
+      providerContacted: false,
+      providerOptions: ["Manual Import"],
+      readOnlyScopes: ["manual:reviewed_import"],
+      requiredArtifacts: ["Manual import schema", "Sample signal file"],
+      role: "manual_import",
+      rollbackPlan: ["Archive bad manual import batch and keep original evidence."],
+      setupStatus: "ready_for_internal_packet",
+      shardId: "shard_001",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      title: "Manual Signal Import"
+    }],
+    providerContacted: false,
+    summary: "2 application connection packets ready for internal prep across 1 visible store; 3 already mapped, 0 blocked by store quality, and 99 future store slots have reusable app templates. External execution remains locked.",
+    templates: [{
+      connectionMode: "internal_preparation_only",
+      externalExecution: false,
+      providerContacted: false,
+      role: "storefront",
+      slotCount: 99,
+      title: "Storefront Marketplace"
+    }, {
+      connectionMode: "internal_preparation_only",
+      externalExecution: false,
+      providerContacted: false,
+      role: "pod_provider",
+      slotCount: 99,
+      title: "POD Supplier"
+    }, {
+      connectionMode: "internal_preparation_only",
+      externalExecution: false,
+      providerContacted: false,
+      role: "payments",
+      slotCount: 99,
+      title: "Payments And Payout Signals"
+    }, {
+      connectionMode: "internal_preparation_only",
+      externalExecution: false,
+      providerContacted: false,
+      role: "content",
+      slotCount: 99,
+      title: "Faceless Content Channels"
+    }, {
+      connectionMode: "internal_preparation_only",
+      externalExecution: false,
+      providerContacted: false,
+      role: "manual_import",
+      slotCount: 99,
+      title: "Manual Signal Import"
+    }],
+    totals: {
+      alreadyMappedPackets: 3,
+      blockedPackets: 0,
+      credentialEnvVars: 7,
+      futureStoreTemplates: 495,
+      packets: 5,
+      readyPackets: 2,
+      requiredArtifacts: 10,
+      rollbackPlans: 5,
+      storesCovered: 1
+    }
+  },
+  batchPlan: {
+    batchRunsRequired: 4,
+    currentStores: 1,
+    productDraftDeficit: 487,
+    recommendedBatchSize: 25,
+    storeGap: 99,
+    targetStores: 100
+  },
+  blockedExternalActions: moneyArmyPipelinePlan.blockedExternalActions,
+  concurrency: {
+    configuredParallelSlots: 75,
+    currentShards: 1,
+    maxStoresPerShard: 8,
+    minimumRecommendedShards: 13,
+    overloadedShardIds: [],
+    safeInternalJobSlots: 3,
+    shardCount: 32
+  },
+  connectorActivationMatrix: {
+    auditEvents: [
+      "100 Store Connector Activation Matrix converted application packets and future templates into per-store connector readiness rows."
+    ],
+    blockedExternalActions: [
+      "Using connector activation rows as authorization to contact providers, exchange credentials, create OAuth grants, execute write scopes, upload content, publish listings, run ads, open browsers, move money, or call external APIs",
+      "Storing credential values inside ENTRAL instead of env-var references and owner-controlled credential custody"
+    ],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    mode: "100 Store Connector Activation Matrix",
+    providerContacted: false,
+    rows: [{
+      approvalChecklist: ["Owner confirms storefront connector design before any OAuth or provider action."],
+      credentialCustodyChecklist: ["Credential value remains outside ENTRAL until explicit owner approval."],
+      credentialEnvVars: ["ETSY_CONNECTOR_CLIENT_ID", "SHOPIFY_CONNECTOR_ADMIN_TOKEN"],
+      dryRunRequestMap: [{
+        approvalRequired: true,
+        endpointTemplate: "/internal/dry-run/storefront/connectors/{storeId}",
+        idempotencyKey: "connector-store-1-storefront",
+        method: "POST",
+        payloadFields: ["storeId", "provider", "readOnlyScopes", "approvalId"],
+        stepId: "connector-store-1-storefront-dry-run",
+        title: "Storefront Marketplace dry-run request map"
+      }],
+      externalExecution: false,
+      providerContacted: false,
+      providerOptions: ["Etsy", "Shopify"],
+      readinessScore: 86,
+      readOnlyScopes: ["listings:read", "orders:read"],
+      requiredArtifacts: ["Storefront connector manifest", "Draft listing field map"],
+      role: "storefront",
+      rollbackPlan: ["Disable storefront connector row and keep listing writes blocked."],
+      shardId: "shard_001",
+      status: "credential_custody_required",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      title: "Storefront Marketplace",
+      writeScopesBlocked: ["listings:write", "shops:write"]
+    }, {
+      approvalChecklist: ["Owner confirms manual import schema before any signal is trusted."],
+      credentialCustodyChecklist: ["No credential custody required for manual import."],
+      credentialEnvVars: [],
+      dryRunRequestMap: [{
+        approvalRequired: true,
+        endpointTemplate: "/internal/dry-run/manual-import/{storeId}",
+        idempotencyKey: "connector-store-1-manual-import",
+        method: "POST",
+        payloadFields: ["storeId", "sourceName", "schemaVersion", "sampleRows"],
+        stepId: "connector-store-1-manual-import-dry-run",
+        title: "Manual Signal Import dry-run request map"
+      }],
+      externalExecution: false,
+      providerContacted: false,
+      providerOptions: ["Manual Import"],
+      readinessScore: 76,
+      readOnlyScopes: ["manual:reviewed_import"],
+      requiredArtifacts: ["Manual import schema", "Sample signal file"],
+      role: "manual_import",
+      rollbackPlan: ["Archive bad manual import batch and keep original evidence."],
+      shardId: "shard_001",
+      status: "ready_for_connection_design",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      title: "Manual Signal Import",
+      writeScopesBlocked: ["manual:auto_apply"]
+    }, {
+      approvalChecklist: ["Create the store shell before credential or provider readiness can be reviewed."],
+      credentialCustodyChecklist: ["Hold credential custody until the future store exists."],
+      credentialEnvVars: ["PRINTIFY_CONNECTOR_TOKEN", "PRINTIFY_SHOP_ID"],
+      dryRunRequestMap: [{
+        approvalRequired: true,
+        endpointTemplate: "/internal/dry-run/pod-provider/connectors/{storeId}",
+        idempotencyKey: "connector-future-001-pod-provider",
+        method: "POST",
+        payloadFields: ["storeName", "provider", "readOnlyScopes", "approvalId"],
+        stepId: "connector-future-001-pod-provider-dry-run",
+        title: "POD Supplier dry-run request map"
+      }],
+      externalExecution: false,
+      providerContacted: false,
+      providerOptions: ["Printify", "Printful"],
+      readinessScore: 42,
+      readOnlyScopes: ["shops:read", "catalog:read"],
+      requiredArtifacts: ["POD provider manifest", "Product request manifest"],
+      role: "pod_provider",
+      rollbackPlan: ["Keep provider write queue disabled for this future store slot."],
+      shardId: "shard_future",
+      status: "waiting_for_store_shell",
+      storeId: null,
+      storeName: "Future Store Slot 001",
+      title: "POD Supplier",
+      writeScopesBlocked: ["products:write", "orders:write"]
+    }],
+    summary: "500/500 connector activation rows prepared for 100 stores across 5 required application roles: 1 ready for connection design, 3 require credential custody, 496 waiting for store shells, and 0 blocked by quality. External execution remains locked.",
+    totals: {
+      blockedByQuality: 0,
+      credentialCustodyRequired: 3,
+      credentialEnvVarRefs: 7,
+      currentStoreRows: 5,
+      dryRunRequestMaps: 500,
+      futureStoreRows: 495,
+      maxSelectableRows: 25,
+      readyForConnectionDesign: 1,
+      requiredRoles: 5,
+      rows: 500,
+      storesCovered: 1,
+      targetStores: 100,
+      waitingForStoreShell: 496,
+      writeScopesBlocked: 500
+    }
+  },
+  controlGrid: {
+    auditEvents: [
+      "100 Store Operating Control Grid assigned each visible store to a shard, lane, allowed internal job set, and application-readiness state."
+    ],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    mode: "100 Store Operating Control Grid",
+    providerContacted: false,
+    safeToRunParallelInternalJobs: true,
+    shards: [{
+      availableStoreSlots: 7,
+      capacityUtilizationPercent: 13,
+      externalExecution: false,
+      id: "shard_001",
+      laneCounts: {
+        kill: 0,
+        launch_now: 1,
+        quality_repair: 0,
+        scale: 0,
+        throttle: 0,
+        watch: 0
+      },
+      maxStores: 8,
+      nextInternalFocus: "Prepare launch packages and connector packets for ready stores.",
+      overloaded: false,
+      providerContacted: false,
+      readyInternalJobs: 4,
+      stores: 1,
+      throttledOrBlockedStores: 0
+    }],
+    stores: [{
+      allowedInternalJobs: ["prepare_connector_packet", "generate_products", "prepare_launch_package", "queue_organic_content", "monitor_performance"],
+      applicationReadiness: {
+        approvedReadOnlyConnectors: 3,
+        missingRoles: ["Faceless Content Channels", "Manual Signal Import"],
+        readinessStatus: "partial",
+        requiredRoles: 5
+      },
+      businessId: "store-1",
+      businessName: "Iron House Gym",
+      externalExecution: false,
+      lane: "launch_now",
+      nextInternalAction: "dispatch_first_cash_bridge_action",
+      productAssets: 2,
+      profitVelocity: 58,
+      providerContacted: false,
+      qualityStatus: "pass",
+      queuePosition: 1,
+      scheduleState: "ready_parallel",
+      score: {
+        finalRank: 92,
+        killPressure: 0,
+        scalePressure: 76
+      },
+      shardId: "shard_001"
+    }],
+    summary: "1/100 stores mapped into the 100-store control grid across 1 shard; 1 ready-parallel stores, 4 allowed ready internal jobs, 0 overloaded shards, and 99 empty store slots remain. External execution is locked.",
+    totals: {
+      applicationBlocked: 0,
+      applicationMissing: 0,
+      applicationPartial: 1,
+      applicationReady: 0,
+      configuredShards: 1,
+      currentStores: 1,
+      killLaneStores: 0,
+      launchLaneStores: 1,
+      missingStoreSlots: 99,
+      overloadedShards: 0,
+      readyInternalJobs: 4,
+      readyParallelStores: 1,
+      repairLaneStores: 0,
+      scaleLaneStores: 0,
+      targetStores: 100,
+      visibleStores: 1,
+      watchLaneStores: 0
+    }
+  },
+  monitoringMatrix: {
+    auditEvents: [
+      "100 Store Monitoring Matrix assigned every visible store to an internal signal cadence, evidence queue, and rotation/scale review path."
+    ],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    items: [{
+      businessId: "store-1",
+      businessName: "Iron House Gym",
+      cadence: "twice_daily_until_first_signal",
+      externalExecution: false,
+      lane: "launch_now",
+      nextInternalAction: "queue_readonly_performance_import",
+      priority: 90,
+      profitVelocity: 58,
+      providerContacted: false,
+      requiredSignals: ["gross revenue", "net profit", "units sold", "store visits", "conversion rate", "refunds", "ad spend", "organic content views", "read-only connector import timestamp", "source system record id"],
+      rotationDecision: "launch_now",
+      scheduleState: "ready_parallel",
+      shardId: "shard_001",
+      signalStatus: "needs_readonly_import",
+      trackedAssets: 0,
+      triggerReason: "Iron House Gym has approved read-only connector evidence but no tracked performance assets yet."
+    }],
+    mode: "100 Store Monitoring Matrix",
+    providerContacted: false,
+    queues: {
+      manualSnapshots: [],
+      readOnlyImports: [{
+        businessId: "store-1",
+        businessName: "Iron House Gym",
+        cadence: "twice_daily_until_first_signal",
+        externalExecution: false,
+        lane: "launch_now",
+        nextInternalAction: "queue_readonly_performance_import",
+        priority: 90,
+        profitVelocity: 58,
+        providerContacted: false,
+        requiredSignals: ["gross revenue", "net profit", "units sold", "store visits", "conversion rate", "refunds", "ad spend", "organic content views", "read-only connector import timestamp", "source system record id"],
+        rotationDecision: "launch_now",
+        scheduleState: "ready_parallel",
+        shardId: "shard_001",
+        signalStatus: "needs_readonly_import",
+        trackedAssets: 0,
+        triggerReason: "Iron House Gym has approved read-only connector evidence but no tracked performance assets yet."
+      }],
+      rotationReviews: [],
+      scaleReviews: []
+    },
+    summary: "1/100 stores are on a monitoring cadence: 0 manual snapshot queues, 1 read-only import queue, 0 rotation reviews, 0 scale reviews, and 99 future slots still need store creation. External execution is locked.",
+    totals: {
+      dailyProfitVelocity: 58,
+      every3Days: 0,
+      immediateRotationReviews: 0,
+      manualSnapshots: 0,
+      missingStoreSlots: 99,
+      readOnlyImports: 1,
+      scaleReviews: 0,
+      signalReady: 0,
+      storesCovered: 1,
+      twiceDaily: 1,
+      weeklyWatch: 0
+    }
+  },
+  growthAllocationRouter: {
+    auditEvents: [
+      "100 Store Growth Allocation Router converted scale pressure, kill pressure, monitoring status, and tracked signal depth into advisory Ad/Growth bucket priorities."
+    ],
+    blockedExternalActions: [
+      "Spending from the 25% Ad/Growth bucket without explicit owner approval",
+      "Starting paid ads, provider writes, marketplace uploads, content posting, browser automation, payouts, bank movement, or payment actions"
+    ],
+    candidates: [{
+      adGrowthBucketSharePercent: 100,
+      allocationLane: "organic_first",
+      allocationWeight: 89,
+      businessId: "store-1",
+      businessName: "Iron House Gym",
+      eligibleForPaidScaleReview: false,
+      externalExecution: false,
+      guardrails: ["Ad/Growth allocation is advisory only and cannot spend money without Financial Orchestrator approval."],
+      killPressure: 0,
+      lane: "launch_now",
+      nextInternalAction: "queue_organic_content_and_signal_capture",
+      priority: 90,
+      profitVelocity: 58,
+      providerContacted: false,
+      reason: "Iron House Gym should use organic-first growth and signal capture before paid spend because status is needs readonly import.",
+      recommendedSpendPriority: "none",
+      requiredApproval: "No paid spend approval is available from this lane.",
+      scalePressure: 76,
+      shardId: "shard_001",
+      signalStatus: "needs_readonly_import",
+      trackedAssets: 0
+    }],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    mode: "100 Store Growth Allocation Router",
+    providerContacted: false,
+    summary: "1/100 stores evaluated for advisory Ad/Growth routing: 0 paid-scale review, 1 organic-first, 0 defensive hold, and 0 watch. 0% of the 25% Ad/Growth bucket remains unrouted or defensive. External execution is locked.",
+    totals: {
+      advisoryOnly: true,
+      averageKillPressure: 0,
+      averageScalePressure: 76,
+      candidates: 1,
+      defensiveHold: 0,
+      organicFirst: 1,
+      paidScaleReview: 0,
+      retainedForDefensePercent: 0,
+      routedAdGrowthPercent: 100,
+      storesCovered: 1,
+      totalAllocationWeight: 89,
+      watch: 0
+    }
+  },
+  dailyOperatingLoop: {
+    auditEvents: [
+      "100 Store Daily Operating Loop sequenced safety, application packet prep, monitoring, growth allocation review, product depth repair, autonomy work leasing, store batch creation, and weak-lane cleanup."
+    ],
+    blockedExternalActions: [
+      "Running daily loop steps against external providers, marketplaces, ad accounts, banks, payment systems, browsers, uploads, or publishing systems"
+    ],
+    cadence: "daily_private_internal_ops",
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    mode: "100 Store Daily Operating Loop",
+    providerContacted: false,
+    steps: [{
+      approvalRequired: false,
+      blockers: [],
+      confirmation: "REVIEW INTERNAL SAFETY ENVELOPE",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-operations",
+      expectedInternalEffect: "Confirm all 100-store operating layers remain private, internal, and external-execution locked.",
+      externalExecution: false,
+      maxItems: 1,
+      phase: "safety_gate_snapshot",
+      priority: 1,
+      providerContacted: false,
+      reason: "Safety envelope is clear enough to continue internal daily sequencing.",
+      status: "ready",
+      stepId: "daily_safety_gate_snapshot",
+      title: "Confirm private safety envelope"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-application-connections/apply",
+      expectedInternalEffect: "Record up to 2 internal app readiness packets for required store applications.",
+      externalExecution: false,
+      maxItems: 2,
+      phase: "application_connection_packets",
+      priority: 2,
+      providerContacted: false,
+      reason: "2 application connection packets can be recorded before launch capacity expands.",
+      status: "ready",
+      stepId: "daily_application_connection_packets",
+      title: "Record app connection packets"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-connector-activation/apply",
+      expectedInternalEffect: "Record up to 25 connector activation readiness rows with dry-run maps and credential custody gates.",
+      externalExecution: false,
+      maxItems: 25,
+      phase: "connector_activation_matrix",
+      priority: 3,
+      providerContacted: false,
+      reason: "1 rows are ready for connection design and 3 require credential custody approval.",
+      status: "ready",
+      stepId: "daily_connector_activation_matrix",
+      title: "Record connector activation matrix"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "RECORD INTERNAL 100 STORE MONITORING CYCLE",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-monitoring-cycle/apply",
+      expectedInternalEffect: "Record up to 1 monitoring item from the 100-store signal queues.",
+      externalExecution: false,
+      maxItems: 1,
+      phase: "monitoring_cycle",
+      priority: 4,
+      providerContacted: false,
+      reason: "0 manual, 1 read-only, 0 scale, and 0 rotation monitoring queues are visible.",
+      status: "ready",
+      stepId: "daily_monitoring_cycle",
+      title: "Run monitoring cycle"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "REVIEW ADVISORY 100 STORE GROWTH ALLOCATION",
+      endpoint: "/merch/financial-orchestrator/plan",
+      expectedInternalEffect: "Review advisory routing for the Financial Orchestrator 25% Ad/Growth bucket without authorizing spend.",
+      externalExecution: false,
+      maxItems: 1,
+      phase: "growth_allocation_review",
+      priority: 5,
+      providerContacted: false,
+      reason: "1 growth route can inform organic work or paid-scale budget review; all spend remains approval-gated.",
+      status: "approval_required",
+      stepId: "daily_growth_allocation_review",
+      title: "Review Ad/Growth allocation router"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "RECORD INTERNAL 100 STORE PRODUCT DEPTH DRAFTS",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-product-depth/apply",
+      expectedInternalEffect: "Record up to 25 internal product-depth draft packets across current stores and future store slots.",
+      externalExecution: false,
+      maxItems: 25,
+      phase: "product_depth_repair",
+      priority: 6,
+      providerContacted: false,
+      reason: "100-store operations require at least 5 products per store; 487 internal draft packets are queued.",
+      status: "ready",
+      stepId: "daily_product_depth_repair",
+      title: "Fill product depth"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "RECORD INTERNAL 100 STORE LAUNCH PACKETS",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-launch-packets/apply",
+      expectedInternalEffect: "Record up to 25 internal launch packets for ready and planned store lanes.",
+      externalExecution: false,
+      maxItems: 25,
+      phase: "launch_packet_review",
+      priority: 7,
+      providerContacted: false,
+      reason: "1 packets are ready for internal launch review and 99 future packets are waiting for store shells.",
+      status: "ready",
+      stepId: "daily_launch_packet_review",
+      title: "Review launch packets"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "RECORD INTERNAL 100 STORE AUTONOMY RUN",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-autonomy-run/apply",
+      expectedInternalEffect: "Record up to 25 bounded internal autonomy jobs across 100-store control lanes.",
+      externalExecution: false,
+      maxItems: 25,
+      phase: "autonomy_run_queue",
+      priority: 8,
+      providerContacted: false,
+      reason: "25 ready internal jobs and 2 approval-routed jobs are queued for the chain of command.",
+      status: "ready",
+      stepId: "daily_autonomy_run_queue",
+      title: "Record autonomy run queue"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "RECORD INTERNAL 100 STORE WORK LEASES",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-work-leases/apply",
+      expectedInternalEffect: "Record up to 25 deterministic internal work leases with dedupe and shard caps.",
+      externalExecution: false,
+      maxItems: 25,
+      phase: "work_lease_claims",
+      priority: 9,
+      providerContacted: false,
+      reason: "25 leases are ready to claim and 2 leases remain approval-held.",
+      status: "ready",
+      stepId: "daily_work_lease_claims",
+      title: "Record work leases"
+    }, {
+      approvalRequired: true,
+      blockers: [],
+      confirmation: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+      expectedInternalEffect: "Create the next 25 private store shells with internal product drafts.",
+      externalExecution: false,
+      maxItems: 25,
+      phase: "store_batch_creation",
+      priority: 10,
+      providerContacted: false,
+      reason: "99 stores remain before the 100-store operating floor; safe batch size is 25.",
+      status: "ready",
+      stepId: "daily_store_batch_creation",
+      title: "Create next store batch"
+    }, {
+      approvalRequired: true,
+      blockers: ["No weak-lane review action is currently queued."],
+      confirmation: "APPLY INTERNAL ASSET ACTION",
+      endpoint: "/merch/revenue-engine/review-queue",
+      expectedInternalEffect: "Review weak lanes before they consume launch or growth capacity.",
+      externalExecution: false,
+      maxItems: 0,
+      phase: "weak_lane_rotation",
+      priority: 11,
+      providerContacted: false,
+      reason: "0 immediate rotation reviews are visible in monitoring.",
+      status: "waiting",
+      stepId: "daily_weak_lane_rotation",
+      title: "Clear weak lanes"
+    }],
+    summary: "11 daily operating steps sequenced for 100-store private operations: 9 ready, 1 approval-required, 1 waiting, and 0 blocked. External execution remains locked.",
+    totals: {
+      approvalRequired: 1,
+      blocked: 0,
+      executableInternalSteps: 9,
+      ready: 9,
+      safeBatchSize: 25,
+      storeGap: 99,
+      storesCovered: 1,
+      waiting: 1
+    }
+  },
+  capacityProof: {
+    auditEvents: [
+      "100 Store Capacity Proof stress-tested shard capacity, application boundary preparation, monitoring throughput, daily supervisor control, work lease claiming, batch/product depth, and growth-routing guardrails."
+    ],
+    blockedExternalActions: [
+      "Using capacity proof as authorization for provider, marketplace, ad, upload, browser, payment, payout, bank, social, or external write execution"
+    ],
+    checks: [{
+      capacity: 8,
+      checkId: "shard_capacity",
+      evidence: [
+        "1 configured shard at 8 stores per shard.",
+        "0 overloaded shards detected.",
+        "8/100 projected stores fit inside the current shard ceiling."
+      ],
+      externalExecution: false,
+      gap: 92,
+      nextInternalAction: "Increase shard count or reduce stores per overloaded shard before expanding parallel work.",
+      projectedLoad: 100,
+      providerContacted: false,
+      status: "block",
+      title: "Shard Capacity"
+    }, {
+      capacity: 500,
+      checkId: "application_boundary_preparation",
+      evidence: [
+        "500/500 current packets plus future templates cover required application boundaries.",
+        "2 ready packets, 3 already mapped, and 0 blocked by store quality.",
+        "99/99 future store slots have reusable application templates."
+      ],
+      externalExecution: false,
+      gap: 0,
+      nextInternalAction: "Record ready app packets and keep reusable templates attached to every new store shell.",
+      projectedLoad: 500,
+      providerContacted: false,
+      status: "pass",
+      title: "Application Boundary Preparation"
+    }, {
+      capacity: 500,
+      checkId: "connector_activation_readiness",
+      evidence: [
+        "500/500 connector activation rows prepared across current and future stores.",
+        "1 ready for connection design and 3 waiting on credential custody review.",
+        "500 dry-run request maps prepared while 500 write scope references remain blocked."
+      ],
+      externalExecution: false,
+      gap: 0,
+      nextInternalAction: "Record connector activation rows and keep credential custody/read-only scopes separated from external execution.",
+      projectedLoad: 500,
+      providerContacted: false,
+      status: "watch",
+      title: "Connector Activation Readiness"
+    }, {
+      capacity: 100,
+      checkId: "monitoring_throughput",
+      evidence: [
+        "4 internal monitoring cycles needed to sweep 100 stores at safe batch size 25.",
+        "0 immediate rotation reviews and 0 scale reviews are currently queued.",
+        "1/100 current stores are visible in the monitoring matrix."
+      ],
+      externalExecution: false,
+      gap: 0,
+      nextInternalAction: "Run supervisor monitoring cycles until every active store has current signal evidence.",
+      projectedLoad: 100,
+      providerContacted: false,
+      status: "pass",
+      title: "Monitoring Throughput"
+    }, {
+      capacity: 11,
+      checkId: "daily_supervisor_control",
+      evidence: [
+        "9 ready steps, 1 approval-required, 1 waiting, and 0 blocked.",
+        "Daily supervisor can select from 11 ordered internal steps.",
+        "Safety envelope reports external execution locked."
+      ],
+      externalExecution: false,
+      gap: 0,
+      nextInternalAction: "Use the daily supervisor as the single private control cycle for 100-store operations.",
+      projectedLoad: 11,
+      providerContacted: false,
+      status: "pass",
+      title: "Daily Supervisor Control"
+    }, {
+      capacity: 25,
+      checkId: "work_lease_clean_claiming",
+      evidence: [
+        "25 ready-to-claim leases and 2 approval-held leases.",
+        "25 clean parallel leases fit shard caps at 1 per shard.",
+        "0 duplicate dedupe keys detected across 128 leases."
+      ],
+      externalExecution: false,
+      gap: 0,
+      nextInternalAction: "Record deduped work leases before workers claim store, product, launch, connector, or monitoring tasks.",
+      projectedLoad: 25,
+      providerContacted: false,
+      status: "pass",
+      title: "Work Lease Clean Claiming"
+    }, {
+      capacity: 100,
+      checkId: "batch_and_product_depth",
+      evidence: [
+        "99 store slots remain before the 100-store floor.",
+        "487 product drafts remain before configured product depth is satisfied.",
+        "Safe batch size 25 creates up to 100 stores across four internal batch cycles."
+      ],
+      externalExecution: false,
+      gap: 586,
+      nextInternalAction: "Run internal batch creation and product-depth repair until all 100 stores have minimum product depth.",
+      projectedLoad: 100,
+      providerContacted: false,
+      status: "watch",
+      title: "Batch And Product Depth"
+    }, {
+      capacity: 1,
+      checkId: "profit_routing_guardrails",
+      evidence: [
+        "1 current store evaluated for advisory growth routing.",
+        "0 paid-scale review routes and 1 organic-first route.",
+        "100% of advisory Ad/Growth priority is currently routed with spend locked."
+      ],
+      externalExecution: false,
+      gap: 99,
+      nextInternalAction: "Use pressure-routed growth priorities for organic work and separate Financial Orchestrator budget review.",
+      projectedLoad: 100,
+      providerContacted: false,
+      status: "pass",
+      title: "Profit Routing Guardrails"
+    }],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    mode: "100 Store Capacity Proof",
+    providerContacted: false,
+    status: "block",
+    stressProfile: {
+      applicationBoundaryCoveragePercent: 100,
+      cleanSimultaneousStoreCapacity: 8,
+      futureStoreSlotsCovered: 99,
+      maximumCleanStoresAtShardLimit: 8,
+      monitoringSweepCycles: 4,
+      preparedApplicationBoundaries: 500,
+      productDraftDeficit: 487,
+      projectedDailySupervisorSteps: 11,
+      requiredApplicationBoundaries: 500,
+      safeBatchSize: 25,
+      shardCapacity: 8,
+      storeGap: 99,
+      targetStores: 100
+    },
+    summary: "BLOCK capacity proof: private controls can currently model 8/100 clean simultaneous store slots with 5 pass, 2 watch, and 1 block checks. External execution remains locked.",
+    totals: {
+      block: 1,
+      cleanSimultaneousStoreCapacity: 8,
+      pass: 5,
+      targetStores: 100,
+      watch: 2
+    }
+  },
+  productDepthQueue: {
+    auditEvents: [
+      "100 Store Product Depth Queue prepared deterministic internal product draft packets for current under-depth stores and future store slots."
+    ],
+    blockedExternalActions: [
+      "Generating images, uploading products, choosing suppliers, publishing listings, posting content, running ads, opening browsers, charging cards, moving payouts, or contacting providers from product-depth queue records"
+    ],
+    drafts: [{
+      approvalChecklist: [
+        "Confirm product concept fits store audience and brand voice.",
+        "Approve design prompt before generating or uploading any asset."
+      ],
+      contentTieIn: "Faceless launch teaser for Iron House Gym built around the performance tee first-drop angle.",
+      currentProducts: 0,
+      designPrompt: "Create a reusable POD-ready performance tee concept for Iron House Gym; original text or abstract motif only, no protected brands, no provider upload.",
+      draftId: "product-depth:future-slot-1:1",
+      externalExecution: false,
+      facelessHook: "The first Iron House Gym drop starts with a performance tee people can understand in three seconds.",
+      lane: "future_store_slot",
+      listingAngle: "Future Iron House Gym launch concept prepared for organic-first validation.",
+      missingProducts: 5,
+      organicMove: "Prepare launch caption, three organic hooks, and a manual signal row before provider work.",
+      priority: 50,
+      productType: "performance tee",
+      providerContacted: false,
+      requiredProducts: 5,
+      shardId: "future_shard_001",
+      status: "waiting_for_store_shell",
+      storeId: null,
+      storeName: "Iron House Gym",
+      title: "Iron House Gym founder edition performance tee"
+    }, {
+      approvalChecklist: [
+        "Confirm product concept fits store audience and brand voice.",
+        "Approve design prompt before generating or uploading any asset."
+      ],
+      contentTieIn: "Faceless launch teaser for Iron House Gym built around the training hoodie first-drop angle.",
+      currentProducts: 0,
+      designPrompt: "Create a reusable POD-ready training hoodie concept for Iron House Gym; original text or abstract motif only, no protected brands, no provider upload.",
+      draftId: "product-depth:future-slot-1:2",
+      externalExecution: false,
+      facelessHook: "The first Iron House Gym drop starts with a training hoodie people can understand in three seconds.",
+      lane: "future_store_slot",
+      listingAngle: "Future Iron House Gym launch concept prepared for organic-first validation.",
+      missingProducts: 5,
+      organicMove: "Prepare launch caption, three organic hooks, and a manual signal row before provider work.",
+      priority: 49,
+      productType: "training hoodie",
+      providerContacted: false,
+      requiredProducts: 5,
+      shardId: "future_shard_001",
+      status: "waiting_for_store_shell",
+      storeId: null,
+      storeName: "Iron House Gym",
+      title: "Iron House Gym daily discipline training hoodie"
+    }],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    mode: "100 Store Product Depth Queue",
+    providerContacted: false,
+    summary: "487 internal product-depth draft packets prepared for the 100-store floor: 0 ready for current stores, 487 waiting for future store shells, and 0 blocked by quality. External execution remains locked.",
+    totals: {
+      blockedDrafts: 0,
+      currentStoreDrafts: 0,
+      drafts: 487,
+      futureStoreDrafts: 487,
+      maxSelectableDrafts: 25,
+      productDraftDeficit: 487,
+      readyDrafts: 0,
+      storesCovered: 99,
+      targetStores: 100,
+      waitingDrafts: 487
+    }
+  },
+  launchPacketQueue: {
+    auditEvents: [
+      "100 Store Launch Packet Queue assembled store readiness, application packets/templates, product-depth drafts, faceless hooks, organic moves, and growth lanes into per-store internal review packets."
+    ],
+    blockedExternalActions: [
+      "Treating launch packets as live marketplace listings, provider uploads, browser automation, ad launches, social posts, payment actions, payouts, bank movement, or external write execution"
+    ],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    mode: "100 Store Launch Packet Queue",
+    packets: [{
+      applicationPacketCount: 5,
+      approvalChecklist: [
+        "Review store shell, product depth, application packets, faceless hooks, and organic moves.",
+        "Approve supplier, pricing, mockup, listing copy, connector setup, and launch timing before external execution can exist."
+      ],
+      contentIdeas: ["The first Iron House Gym drop starts with a performance tee people can understand in three seconds."],
+      currentProducts: 5,
+      externalExecution: false,
+      growthLane: "organic_first",
+      launchPacketId: "launch-packet:store-1",
+      missingApplicationRoles: [],
+      organicMoves: ["Queue organic content and signal capture before paid spend."],
+      priority: 99,
+      productDraftCount: 0,
+      providerContacted: false,
+      readinessScore: 100,
+      requiredApplicationRoles: 5,
+      requiredProducts: 5,
+      shardId: "shard_001",
+      status: "ready_for_internal_launch_review",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym launch packet is ready for internal launch review with 5/5 app packets and 5/5 product depth."
+    }, {
+      applicationPacketCount: 5,
+      approvalChecklist: [
+        "Review store shell, product depth, application packets, faceless hooks, and organic moves.",
+        "Create or approve the store shell before this future-slot packet can become a live launch candidate."
+      ],
+      contentIdeas: ["The first Iron House Gym drop starts with a performance tee people can understand in three seconds."],
+      currentProducts: 0,
+      externalExecution: false,
+      growthLane: "unrouted",
+      launchPacketId: "launch-packet:future-slot-1",
+      missingApplicationRoles: [],
+      organicMoves: ["Prepare launch caption, three organic hooks, and a manual signal row before provider work."],
+      priority: 90,
+      productDraftCount: 5,
+      providerContacted: false,
+      readinessScore: 90,
+      requiredApplicationRoles: 5,
+      requiredProducts: 5,
+      shardId: "future_shard_001",
+      status: "waiting_for_store_shell",
+      storeId: null,
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym future launch packet is waiting for store shell with 5/5 app templates and 5/5 planned product drafts."
+    }],
+    providerContacted: false,
+    summary: "100/100 launch packets assembled: 1 ready for internal launch review, 99 waiting for store shells, 0 need application packets, 0 need product depth, and 0 blocked by quality. External execution remains locked.",
+    totals: {
+      blockedByQuality: 0,
+      currentStorePackets: 1,
+      futureStorePackets: 99,
+      maxSelectablePackets: 25,
+      needsApplicationPackets: 0,
+      needsProductDepth: 0,
+      packets: 100,
+      readyForReview: 1,
+      targetStores: 100,
+      waitingForStoreShell: 99
+    }
+  },
+  autonomyRunQueue: {
+    auditEvents: [
+      "100 Store Autonomy Run Queue converted store shells, monitoring evidence, growth routing, product-depth drafts, launch packets, connector packets, and rotation reviews into bounded internal jobs."
+    ],
+    blockedExternalActions: [
+      "Provider account creation, OAuth authorization, credential exchange, API writes, uploads, marketplace publishing, browser automation, social posting, ad spend, payment actions, payout actions, bank movement, or supplier contact"
+    ],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    jobs: [{
+      approvalGate: "Internal store shell creation only; separate provider and public launch approval required.",
+      blockedExternalActions: [
+        "Provider account creation, OAuth authorization, credential exchange, API writes, uploads, marketplace publishing, browser automation, social posting, ad spend, payment actions, payout actions, bank movement, or supplier contact"
+      ],
+      expectedInternalEffect: "Prepare a private store shell record for Iron House Gym with 5 planned product concepts.",
+      externalExecution: false,
+      jobId: "autonomy:store-shell:entral-private-revenue-lane-1",
+      jobType: "prepare_store_shell",
+      priority: 95,
+      providerContacted: false,
+      requiresOwnerApproval: false,
+      shardId: "future_shard_001",
+      sourceId: "entral-private-revenue-lane-1",
+      sourceModule: "Revenue Business Fleet Launch Gap Planner",
+      status: "ready_internal",
+      storeId: null,
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym can be prepared as an internal store shell with no provider, marketplace, browser, ad, or payment action."
+    }, {
+      approvalGate: "Owner must approve the launch packet before manual or semi-automated external execution can be prepared.",
+      blockedExternalActions: [
+        "Provider account creation, OAuth authorization, credential exchange, API writes, uploads, marketplace publishing, browser automation, social posting, ad spend, payment actions, payout actions, bank movement, or supplier contact"
+      ],
+      expectedInternalEffect: "Record launch packet review bundle for Iron House Gym.",
+      externalExecution: false,
+      jobId: "autonomy:launch-packet:launch-packet:store-1",
+      jobType: "record_launch_packet",
+      priority: 92,
+      providerContacted: false,
+      requiresOwnerApproval: true,
+      shardId: "shard_001",
+      sourceId: "launch-packet:store-1",
+      sourceModule: "100 Store Launch Packet Queue",
+      status: "approval_required",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym launch packet is ready for internal launch review with 5/5 app packets and 5/5 product depth."
+    }, {
+      approvalGate: "Internal product concept only; separate design, supplier, pricing, mockup, listing, and provider approval required.",
+      blockedExternalActions: [
+        "Provider account creation, OAuth authorization, credential exchange, API writes, uploads, marketplace publishing, browser automation, social posting, ad spend, payment actions, payout actions, bank movement, or supplier contact"
+      ],
+      expectedInternalEffect: "Record product-depth draft Iron House Gym daily discipline performance tee for Iron House Gym.",
+      externalExecution: false,
+      jobId: "autonomy:product-depth:product-depth:future-slot-1:1",
+      jobType: "record_product_depth_draft",
+      priority: 70,
+      providerContacted: false,
+      requiresOwnerApproval: false,
+      shardId: "future_shard_001",
+      sourceId: "product-depth:future-slot-1:1",
+      sourceModule: "100 Store Product Depth Queue",
+      status: "waiting",
+      storeId: null,
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym product-depth draft Iron House Gym daily discipline performance tee is waiting for store shell."
+    }],
+    mode: "100 Store Autonomy Run Queue",
+    providerContacted: false,
+    summary: "128 internal autonomy jobs queued for the 100-store floor: 25 ready internal, 2 approval-required, 99 waiting, 0 blocked, and 25 clean parallel jobs can run within shard caps. External execution remains locked.",
+    totals: {
+      approvalRequired: 2,
+      blocked: 0,
+      cleanParallelJobs: 25,
+      jobs: 128,
+      maxJobsPerShard: 1,
+      maxSelectableJobs: 25,
+      readyInternal: 25,
+      shardCount: 32,
+      storesCovered: 100,
+      targetStores: 100,
+      waiting: 99
+    }
+  },
+  workLeasePlan: {
+    auditEvents: [
+      "100 Store Internal Work Lease Plan converted autonomy jobs into deterministic, deduped, shard-capped claim records."
+    ],
+    blockedExternalActions: [
+      "Claiming the same dedupe key more than once in a single internal work cycle",
+      "Using a work lease as proof of credential custody, supplier selection, payment authorization, or public launch approval"
+    ],
+    externalExecution: false,
+    generatedAt: "2026-06-02T12:20:00.000Z",
+    leases: [{
+      approvalGate: "Internal store shell creation only; separate provider and public launch approval required.",
+      blockedExternalActions: ["Provider account creation remains blocked."],
+      claimWindowMinutes: 45,
+      dedupeKey: "Iron House Gym:prepare_store_shell:entral-private-revenue-lane-1",
+      dependencyRefs: ["source_opportunity_seed", "store_shell_template"],
+      expectedInternalEffect: "Prepare a private store shell record for Iron House Gym with 5 planned product concepts.",
+      expiresAt: "2026-06-02T13:05:00.000Z",
+      externalExecution: false,
+      idempotencyKey: "lease-ready-store-shell",
+      jobId: "autonomy:store-shell:entral-private-revenue-lane-1",
+      jobType: "prepare_store_shell",
+      leaseId: "lease:lease-ready-store-shell",
+      priority: 95,
+      providerContacted: false,
+      retryPolicy: {
+        backoffMinutes: 15,
+        maxAttempts: 3,
+        requiresFreshPlanAfterFailure: false
+      },
+      shardId: "future_shard_001",
+      sourceModule: "Revenue Business Fleet Launch Gap Planner",
+      status: "ready_to_claim",
+      storeId: null,
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym prepare store shell lease is ready to claim with idempotency key lease-ready-store-shell."
+    }, {
+      approvalGate: "Owner must approve the launch packet before manual or semi-automated external execution can be prepared.",
+      blockedExternalActions: ["Marketplace publishing remains blocked."],
+      claimWindowMinutes: 45,
+      dedupeKey: "store-1:record_launch_packet:launch-packet:store-1",
+      dependencyRefs: ["store_shell", "connector_activation_matrix", "product_depth_queue", "owner_launch_review"],
+      expectedInternalEffect: "Record launch packet review bundle for Iron House Gym.",
+      expiresAt: "2026-06-02T13:05:00.000Z",
+      externalExecution: false,
+      idempotencyKey: "lease-approval-launch",
+      jobId: "autonomy:launch-packet:launch-packet:store-1",
+      jobType: "record_launch_packet",
+      leaseId: "lease:lease-approval-launch",
+      priority: 92,
+      providerContacted: false,
+      retryPolicy: {
+        backoffMinutes: 60,
+        maxAttempts: 3,
+        requiresFreshPlanAfterFailure: true
+      },
+      shardId: "shard_001",
+      sourceModule: "100 Store Launch Packet Queue",
+      status: "approval_hold",
+      storeId: "store-1",
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym record launch packet lease is approval hold with idempotency key lease-approval-launch."
+    }, {
+      approvalGate: "Create or approve the store shell before this lease can be claimed.",
+      blockedExternalActions: ["Provider upload remains blocked."],
+      claimWindowMinutes: 45,
+      dedupeKey: "Iron House Gym:record_product_depth_draft:product-depth:future-slot-1:1",
+      dependencyRefs: ["future_store_shell", "product_depth_target"],
+      expectedInternalEffect: "Record product-depth draft Iron House Gym daily discipline performance tee for Iron House Gym.",
+      expiresAt: "2026-06-02T13:05:00.000Z",
+      externalExecution: false,
+      idempotencyKey: "lease-waiting-product",
+      jobId: "autonomy:product-depth:product-depth:future-slot-1:1",
+      jobType: "record_product_depth_draft",
+      leaseId: "lease:lease-waiting-product",
+      priority: 70,
+      providerContacted: false,
+      retryPolicy: {
+        backoffMinutes: 60,
+        maxAttempts: 3,
+        requiresFreshPlanAfterFailure: true
+      },
+      shardId: "future_shard_001",
+      sourceModule: "100 Store Product Depth Queue",
+      status: "waiting_dependency",
+      storeId: null,
+      storeName: "Iron House Gym",
+      summary: "Iron House Gym record product depth draft lease is waiting dependency with idempotency key lease-waiting-product."
+    }],
+    mode: "100 Store Internal Work Lease Plan",
+    providerContacted: false,
+    queues: {
+      approvalHold: [],
+      blocked: [],
+      readyToClaim: [],
+      waitingDependency: []
+    },
+    summary: "128 internal work leases prepared for 100-store operations: 25 ready to claim, 2 approval-hold, 99 waiting on dependencies, 0 blocked, and 25 can run cleanly within shard caps. External execution remains locked.",
+    totals: {
+      approvalHold: 2,
+      blocked: 0,
+      claimWindowMinutes: 45,
+      cleanParallelLeases: 25,
+      duplicateDedupeKeys: 0,
+      leases: 128,
+      maxLeasesPerShard: 1,
+      maxSelectableLeases: 25,
+      readyToClaim: 25,
+      shardCount: 32,
+      storesCovered: 100,
+      targetStores: 100,
+      waitingDependency: 99
+    }
+  },
+  externalExecution: false,
+  gates: [{
+    actionEndpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+    evidence: [
+      "1/100 stores currently tracked.",
+      "99 additional store shells needed for the 100-store operating floor.",
+      "4 safe batch runs at up to 25 stores each."
+    ],
+    externalExecution: false,
+    providerContacted: false,
+    status: "watch",
+    title: "Store Inventory"
+  }, {
+    actionEndpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply",
+    evidence: [
+      "1 stores are ready for parallel internal work.",
+      "1/25 launch-wave slots pass quality gates.",
+      "75 configured parallel launch/scale slots."
+    ],
+    externalExecution: false,
+    providerContacted: false,
+    status: "watch",
+    title: "Parallel Launch Capacity"
+  }, {
+    actionEndpoint: "/merch/revenue-engine/review-queue",
+    evidence: [
+      "1 pass, 0 watch, 0 blocked quality gates.",
+      "0 repair lanes and 0 kill lanes.",
+      "Quality floor is 72/100."
+    ],
+    externalExecution: false,
+    providerContacted: false,
+    status: "pass",
+    title: "Quality And Rotation Health"
+  }, {
+    actionEndpoint: "/merch/revenue-engine/business-fleet-scheduler",
+    evidence: [
+      "32 configured shards; 13 recommended minimum for 100 stores at 8 stores/shard.",
+      "0 shards exceed the safe store density.",
+      "3 current internal job slots across active shards."
+    ],
+    externalExecution: false,
+    providerContacted: false,
+    status: "pass",
+    title: "Shard Distribution"
+  }, {
+    actionEndpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/provider-approval-review",
+    evidence: [
+      "0 provider approval packets ready or approved.",
+      "0 provider approval packets waiting.",
+      "0 deployment lanes currently ready."
+    ],
+    externalExecution: false,
+    providerContacted: false,
+    status: "pass",
+    title: "Connector And Provider Packets"
+  }, {
+    actionEndpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+    evidence: [
+      "3 Money Army stages ready.",
+      "Next stage: Create internal batch.",
+      "9 seed candidates currently available."
+    ],
+    externalExecution: false,
+    providerContacted: false,
+    status: "pass",
+    title: "Money Army Batch Pipeline"
+  }, {
+    actionEndpoint: "/merch/financial-orchestrator/plan",
+    evidence: [
+      "0 scale lanes and 1 launch-now lane.",
+      "$10.86/day current profit velocity.",
+      "Financial Orchestrator remains advisory until owner spend approval."
+    ],
+    externalExecution: false,
+    providerContacted: false,
+    status: "pass",
+    title: "Profit Acceleration"
+  }, {
+    actionEndpoint: "/merch/revenue-engine/business-fleet-scheduler/100-store-operations",
+    evidence: [
+      "All inspected fleet, gap, and pipeline plans report external execution locked.",
+      "Provider writes, browser automation, uploads, publishing, ad spend, card charges, payouts, and bank movement stay blocked.",
+      "Every next action routes through an internal endpoint with confirmation text."
+    ],
+    externalExecution: false,
+    providerContacted: false,
+    status: "pass",
+    title: "Safety Envelope"
+  }],
+  generatedAt: "2026-06-02T12:20:00.000Z",
+  mode: "100 Store Operations Readiness",
+  nextActions: [{
+    confirmation: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
+    endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+    expectedInternalEffect: "Create private store shells and product drafts from approved internal opportunity seeds.",
+    externalExecution: false,
+    priority: 1,
+    providerContacted: false,
+    reason: "9 launch-wave gap seeds are ready for internal batch creation.",
+    status: "ready",
+    title: "Create internal batch"
+  }, {
+    confirmation: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
+    endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+    expectedInternalEffect: "Create the next 25 private store shells with internal product drafts.",
+    externalExecution: false,
+    priority: 2,
+    providerContacted: false,
+    reason: "99 stores remain before the 100-store operating floor; safe batch size is 25.",
+    status: "ready",
+    title: "Create the next 100-store batch"
+  }, {
+    confirmation: "RUN INTERNAL BUSINESS FLEET GAP ACCELERATION",
+    endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/acceleration/apply",
+    expectedInternalEffect: "Prepare 487 internal product drafts or setup repairs across the fleet.",
+    externalExecution: false,
+    priority: 3,
+    providerContacted: false,
+    reason: "100-store operations require at least 5 products per store before live packaging.",
+    status: "ready",
+    title: "Fill product depth for 100 stores"
+  }],
+  operatingStatus: "ready_to_build_to_100",
+  pipeline: {
+    blockedStages: 0,
+    nextStage: "batch_creation",
+    readyStages: 3,
+    seedCandidates: 9,
+    stages: 5
+  },
+  profitAcceleration: {
+    dailyProfitVelocity: 10.86,
+    dailyRevenueVelocity: 20,
+    killLaneStores: 0,
+    launchNowStores: 1,
+    repairLaneStores: 0,
+    scaleLaneStores: 0,
+    topScaleCandidates: [{
+      businessId: "store-1",
+      businessName: "Iron House Gym",
+      profitVelocity: 10.86,
+      scalePressure: 82,
+      shardId: "shard_001"
+    }]
+  },
+  providerContacted: false,
+  readinessScore: 82,
+  summary: "82/100 readiness for 100-store internal operations. 1/100 stores tracked, 99 store gap, 1 ready-parallel lane, 0 scale lanes, 0 repair lanes, and 3 Money Army stages ready. External execution remains locked.",
+  totals: {
+    approvalPacketsReady: 0,
+    approvalPacketsWaiting: 0,
+    currentStores: 1,
+    gatesBlocked: 0,
+    gatesPass: 6,
+    gatesWatch: 2,
+    readyParallelStores: 1,
+    storeGap: 99,
+    targetStores: 100
+  }
+};
+
+const hundredStoreDailySupervisorPlan: RevenueHundredStoreDailySupervisorPlan = {
+  auditEvents: [
+    "100 Store Daily Supervisor selected bounded internal loop steps from the daily operating loop."
+  ],
+  blockedExternalActions: [
+    "Turning a supervisor cycle into provider, marketplace, ad, payment, payout, upload, browser, social, bank, or external write execution"
+  ],
+  externalExecution: false,
+  generatedAt: "2026-06-02T12:30:00.000Z",
+  mode: "100 Store Daily Supervisor",
+  operatingMode: "safe_internal_only",
+  providerContacted: false,
+  selectedSteps: [],
+  steps: hundredStoreOperationsPlan.dailyOperatingLoop.steps.map((step) => ({
+    action: step.phase === "safety_gate_snapshot"
+      ? "confirm_safety"
+      : step.phase === "application_connection_packets"
+        ? "record_app_connection_packets"
+        : step.phase === "connector_activation_matrix"
+          ? "record_connector_activation_matrix"
+          : step.phase === "monitoring_cycle"
+            ? "record_monitoring_cycle"
+            : step.phase === "growth_allocation_review"
+              ? "review_growth_allocation"
+              : step.phase === "product_depth_repair"
+                ? "record_product_depth_drafts"
+                : step.phase === "launch_packet_review"
+                  ? "record_launch_packets"
+                  : step.phase === "autonomy_run_queue"
+                    ? "record_autonomy_run_queue"
+                    : step.phase === "work_lease_claims"
+                      ? "record_work_leases"
+                      : step.phase === "weak_lane_rotation"
+                        ? "manual_review"
+                        : "run_money_army_step",
+    blockers: step.phase === "store_batch_creation"
+      ? ["Batch creation is held until the supervisor is run in include-batch-creation mode."]
+      : step.blockers,
+    confirmation: step.confirmation,
+    endpoint: step.endpoint,
+    expectedInternalEffect: step.expectedInternalEffect,
+    externalExecution: false,
+    maxItems: step.maxItems,
+    phase: step.phase,
+    priority: step.priority,
+    providerContacted: false,
+    reason: step.reason,
+    requiresOwnerApproval: step.approvalRequired,
+    sourceStatus: step.status,
+    status: step.phase === "safety_gate_snapshot" || step.phase === "application_connection_packets" || step.phase === "connector_activation_matrix" || step.phase === "monitoring_cycle" || step.phase === "product_depth_repair" || step.phase === "launch_packet_review" || step.phase === "autonomy_run_queue" || step.phase === "work_lease_claims"
+      ? "selected"
+      : step.phase === "weak_lane_rotation"
+        ? "manual_only"
+        : step.status === "blocked"
+          ? "blocked"
+          : step.status === "waiting"
+            ? "waiting"
+            : "approval_required",
+    stepId: step.stepId,
+    title: step.title
+  })),
+  summary: "4/11 daily supervisor steps selected in safe internal only mode for up to 4 private internal actions. External execution remains locked.",
+  totals: {
+    approvalRequired: 2,
+    blocked: 0,
+    manualOnly: 1,
+    maxSteps: 4,
+    selected: 4,
+    storesCovered: 1,
+    waiting: 0
+  }
+};
+hundredStoreDailySupervisorPlan.selectedSteps = hundredStoreDailySupervisorPlan.steps.filter((step) => step.status === "selected").slice(0, 4);
+
+const hundredStoreOperationsResponse: RevenueHundredStoreOperationsResponse = {
+  dailySupervisor: hundredStoreDailySupervisorPlan,
+  fleet: businessFleetPlan,
+  gapPlan: businessFleetGapPlan,
+  pipeline: moneyArmyPipelinePlan,
+  plan: hundredStoreOperationsPlan
+};
+
+const hundredStoreOperationsCommandPlan: RevenueHundredStoreOperationsApplyResponse["beforeCommandPlan"] = {
+  auditEvents: [
+    "100 Store Operations Command Queue converted readiness next-actions into bounded internal commands."
+  ],
+  blockedExternalActions: hundredStoreOperationsPlan.blockedExternalActions,
+  commands: [{
+    action: "run_money_army_batch_creation",
+    commandId: "batch_creation",
+    confirmation: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
+    endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+    expectedInternalEffect: "Create the next 25 private store shells with internal product drafts.",
+    externalExecution: false,
+    maxItems: 25,
+    priority: 1,
+    providerContacted: false,
+    reason: "99 stores remain before the 100-store operating floor; safe batch size is 25.",
+    requiresManualSelection: false,
+    sourceActionTitle: "Create the next 100-store batch",
+    stage: "batch_creation",
+    status: "ready"
+  }],
+  externalExecution: false,
+  generatedAt: "2026-06-02T12:25:00.000Z",
+  mode: "100 Store Operations Command Queue",
+  providerContacted: false,
+  selectedCommand: null,
+  summary: "Create the next 100-store batch is selected as the next bounded 100-store command for up to 25 items. External execution remains locked.",
+  totals: {
+    blocked: 0,
+    commands: 1,
+    executable: 1,
+    manualReview: 0,
+    ready: 1,
+    waiting: 0
+  }
+};
+hundredStoreOperationsCommandPlan.selectedCommand = hundredStoreOperationsCommandPlan.commands[0]!;
+
+const hundredStoreOperationsAfterPlan: RevenueHundredStoreOperationsPlan = {
+  ...hundredStoreOperationsPlan,
+  batchPlan: {
+    ...hundredStoreOperationsPlan.batchPlan,
+    batchRunsRequired: 3,
+    currentStores: 26,
+    storeGap: 74
+  },
+  summary: "84/100 readiness for 100-store internal operations. 26/100 stores tracked, 74 store gap, 1 ready-parallel lane, 0 scale lanes, 0 repair lanes, and 3 Money Army stages ready. External execution remains locked.",
+  totals: {
+    ...hundredStoreOperationsPlan.totals,
+    currentStores: 26,
+    storeGap: 74
+  }
+};
+
+const hundredStoreOperationsApplyResponse: RevenueHundredStoreOperationsApplyResponse = {
+  after: {
+    ...hundredStoreOperationsResponse,
+    plan: hundredStoreOperationsAfterPlan
+  },
+  afterCommandPlan: hundredStoreOperationsCommandPlan,
+  applied: {
+    auditLogId: null,
+    batchRunIds: [],
+    cyclesRequested: 1,
+    cyclesRun: 1,
+    dryRun: true,
+    externalExecution: false,
+    providerContacted: false,
+    selectedCommandId: "batch_creation",
+    selectedStage: "batch_creation",
+    summary: "100-store operations preview selected Create the next 100-store batch for up to 25 internal items."
+  },
+  before: hundredStoreOperationsResponse,
+  beforeCommandPlan: hundredStoreOperationsCommandPlan,
+  cycles: [{
+    afterReadinessScore: 84,
+    afterStoreGap: 74,
+    batchRunId: null,
+    beforeReadinessScore: 82,
+    beforeStoreGap: 99,
+    command: hundredStoreOperationsCommandPlan.commands[0]!,
+    cycle: 1,
+    resultSummary: "Money Army batch creation preview completed.",
+    stage: "batch_creation"
+  }],
+  recentRuns: []
+};
+
+const hundredStoreAppConnectionPacketsResponse: RevenueHundredStoreAppConnectionPacketsApplyResponse = {
+  applied: {
+    auditLogId: null,
+    dryRun: true,
+    externalExecution: false,
+    packetsRecorded: 0,
+    packetsSelected: 2,
+    providerContacted: false,
+    roleCounts: {
+      content: 1,
+      manual_import: 1
+    },
+    storesCovered: 1,
+    summary: "2 application connection packets would be recorded as internal 100-store app readiness artifacts."
+  },
+  packets: hundredStoreOperationsPlan.applicationConnectionWorkbench.packets.filter((packet) => packet.setupStatus === "ready_for_internal_packet"),
+  plan: hundredStoreOperationsPlan
+};
+
+const hundredStoreConnectorActivationResponse: RevenueHundredStoreConnectorActivationApplyResponse = {
+  applied: {
+    auditLogId: null,
+    credentialEnvVarRefs: 7,
+    dryRun: true,
+    dryRunRequestMaps: 25,
+    externalExecution: false,
+    providerContacted: false,
+    roleCounts: {
+      manual_import: 1,
+      storefront: 1
+    },
+    rowsRecorded: 0,
+    rowsSelected: 25,
+    statusCounts: {
+      credential_custody_required: 3,
+      ready_for_connection_design: 1
+    },
+    storesCovered: 1,
+    summary: "25 connector activation rows would be recorded with credential custody and external writes locked.",
+    writeScopesBlocked: 25
+  },
+  plan: hundredStoreOperationsPlan,
+  rows: hundredStoreOperationsPlan.connectorActivationMatrix.rows
+};
+
+const hundredStoreMonitoringCycleResponse: RevenueHundredStoreMonitoringCycleApplyResponse = {
+  applied: {
+    auditLogId: null,
+    dryRun: true,
+    externalExecution: false,
+    itemsRecorded: 0,
+    itemsSelected: 1,
+    providerContacted: false,
+    queueCounts: {
+      readOnlyImports: 1
+    },
+    requiredSignals: 10,
+    signalStatusCounts: {
+      needs_readonly_import: 1
+    },
+    storesCovered: 1,
+    summary: "1 monitoring item would be recorded for the 100-store monitoring cycle."
+  },
+  items: hundredStoreOperationsPlan.monitoringMatrix.items,
+  plan: hundredStoreOperationsPlan
+};
+
+const hundredStoreProductDepthResponse: RevenueHundredStoreProductDepthApplyResponse = {
+  applied: {
+    auditLogId: null,
+    currentStoreDrafts: 0,
+    draftsRecorded: 0,
+    draftsSelected: 25,
+    dryRun: true,
+    externalExecution: false,
+    futureStoreDrafts: 25,
+    providerContacted: false,
+    statusCounts: {
+      waiting_for_store_shell: 25
+    },
+    storesCovered: 0,
+    summary: "25 product-depth draft packets would be recorded for the 100-store queue."
+  },
+  drafts: hundredStoreOperationsPlan.productDepthQueue.drafts,
+  plan: hundredStoreOperationsPlan
+};
+
+const hundredStoreLaunchPacketsResponse: RevenueHundredStoreLaunchPacketsApplyResponse = {
+  applied: {
+    auditLogId: null,
+    currentStorePackets: 1,
+    dryRun: true,
+    externalExecution: false,
+    futureStorePackets: 24,
+    packetsRecorded: 0,
+    packetsSelected: 25,
+    providerContacted: false,
+    statusCounts: {
+      ready_for_internal_launch_review: 1,
+      waiting_for_store_shell: 24
+    },
+    storesCovered: 1,
+    summary: "25 launch packets would be recorded for 100-store internal launch review."
+  },
+  packets: hundredStoreOperationsPlan.launchPacketQueue.packets,
+  plan: hundredStoreOperationsPlan
+};
+
+const hundredStoreAutonomyRunResponse: RevenueHundredStoreAutonomyRunApplyResponse = {
+  applied: {
+    approvalRequired: 2,
+    auditLogId: null,
+    dryRun: true,
+    externalExecution: false,
+    jobsRecorded: 0,
+    jobsSelected: 25,
+    providerContacted: false,
+    readyInternal: 23,
+    statusCounts: {
+      approval_required: 2,
+      ready_internal: 23
+    },
+    storesCovered: 24,
+    summary: "25 autonomy jobs would be recorded for the 100-store chain of command.",
+    typeCounts: {
+      prepare_store_shell: 23,
+      record_launch_packet: 2
+    }
+  },
+  jobs: hundredStoreOperationsPlan.autonomyRunQueue.jobs,
+  plan: hundredStoreOperationsPlan
+};
+
+const hundredStoreWorkLeasesResponse: RevenueHundredStoreWorkLeasesApplyResponse = {
+  applied: {
+    approvalHold: 2,
+    auditLogId: null,
+    dedupeKeys: 25,
+    dryRun: true,
+    externalExecution: false,
+    leasesRecorded: 0,
+    leasesSelected: 25,
+    providerContacted: false,
+    readyToClaim: 23,
+    statusCounts: {
+      approval_hold: 2,
+      ready_to_claim: 23
+    },
+    storesCovered: 24,
+    summary: "25 internal work leases would be recorded for clean 100-store work claiming.",
+    typeCounts: {
+      prepare_store_shell: 23,
+      record_launch_packet: 2
+    }
+  },
+  leases: hundredStoreOperationsPlan.workLeasePlan.leases,
+  plan: hundredStoreOperationsPlan
+};
+
+const hundredStoreDailySupervisorPreviewResponse: RevenueHundredStoreDailySupervisorApplyResponse = {
+  after: hundredStoreOperationsResponse,
+  afterSupervisor: hundredStoreDailySupervisorPlan,
+  applied: {
+    appPacketsRecorded: 0,
+    auditLogId: null,
+    autonomyJobsRecorded: 0,
+    connectorRowsRecorded: 0,
+    dryRun: true,
+    externalExecution: false,
+    launchPacketsRecorded: 0,
+    monitoringItemsRecorded: 0,
+    operationCyclesRun: 0,
+    productDraftsRecorded: 0,
+    providerContacted: false,
+    stepsRecorded: 0,
+    stepsSelected: 4,
+    summary: "100-store daily supervisor preview selected 4 private internal steps.",
+    workLeasesRecorded: 0
+  },
+  before: hundredStoreOperationsResponse,
+  beforeSupervisor: hundredStoreDailySupervisorPlan,
+  results: [{
+    action: "confirm_safety",
+    auditLogId: null,
+    dryRun: true,
+    externalExecution: false,
+    providerContacted: false,
+    stepId: "daily_safety_gate_snapshot",
+    summary: "Supervisor would confirm the 100-store safety envelope before internal work.",
+    title: "Confirm private safety envelope"
+  }, {
+    action: "record_app_connection_packets",
+    auditLogId: null,
+    dryRun: true,
+    externalExecution: false,
+    packetsRecorded: 0,
+    packetsSelected: 2,
+    providerContacted: false,
+    stepId: "daily_application_connection_packets",
+    summary: "2 application connection packets would be recorded as internal 100-store app readiness artifacts.",
+    title: "Record app connection packets"
+  }, {
+    action: "record_connector_activation_matrix",
+    auditLogId: null,
+    connectorRowsRecorded: 0,
+    connectorRowsSelected: 25,
+    dryRun: true,
+    externalExecution: false,
+    providerContacted: false,
+    stepId: "daily_connector_activation_matrix",
+    summary: "25 connector activation rows would be recorded with credential custody and external writes locked.",
+    title: "Record connector activation matrix"
+  }, {
+    action: "record_monitoring_cycle",
+    auditLogId: null,
+    dryRun: true,
+    externalExecution: false,
+    itemsRecorded: 0,
+    itemsSelected: 1,
+    providerContacted: false,
+    stepId: "daily_monitoring_cycle",
+    summary: "1 monitoring item would be recorded for the 100-store monitoring cycle.",
+    title: "Run monitoring cycle"
+  }, {
+    action: "record_product_depth_drafts",
+    auditLogId: null,
+    dryRun: true,
+    externalExecution: false,
+    productDraftsRecorded: 0,
+    productDraftsSelected: 25,
+    providerContacted: false,
+    stepId: "daily_product_depth_repair",
+    summary: "25 product-depth draft packets would be recorded for the 100-store queue.",
+    title: "Fill product depth"
+  }]
+};
 
 const moneyArmyBatchRun: RevenueMoneyArmyBatchRun = {
   afterTotals: {
@@ -6443,6 +8261,233 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("1 checklist bridge action previewed.")).toBeInTheDocument();
   });
 
+  it("loads the 100-store operations readiness layer", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(hundredStoreOperationsResponse)
+      .mockResolvedValueOnce(hundredStoreDailySupervisorPreviewResponse)
+      .mockResolvedValueOnce(hundredStoreAppConnectionPacketsResponse)
+      .mockResolvedValueOnce(hundredStoreConnectorActivationResponse)
+      .mockResolvedValueOnce(hundredStoreMonitoringCycleResponse)
+      .mockResolvedValueOnce(hundredStoreProductDepthResponse)
+      .mockResolvedValueOnce(hundredStoreLaunchPacketsResponse)
+      .mockResolvedValueOnce(hundredStoreAutonomyRunResponse)
+      .mockResolvedValueOnce(hundredStoreWorkLeasesResponse)
+      .mockResolvedValueOnce(hundredStoreOperationsApplyResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /load 100-store ops/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-operations");
+    const region = await screen.findByRole("region", { name: /100 store operations readiness/i });
+
+    expect(within(region).getByText("100 Store Operations Readiness")).toBeInTheDocument();
+    expect(within(region).getByText("82/100 readiness for 100-store internal operations. 1/100 stores tracked, 99 store gap, 1 ready-parallel lane, 0 scale lanes, 0 repair lanes, and 3 Money Army stages ready. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getByText("100-Store Gates")).toBeInTheDocument();
+    expect(within(region).getByText("Store Inventory")).toBeInTheDocument();
+    expect(within(region).getByText("Safety Envelope")).toBeInTheDocument();
+    expect(within(region).getByText("Next Internal Actions")).toBeInTheDocument();
+    expect(within(region).getByText("Create the next 100-store batch")).toBeInTheDocument();
+    expect(within(region).getByText("Fill product depth for 100 stores")).toBeInTheDocument();
+    expect(within(region).getByText("Application Readiness")).toBeInTheDocument();
+    expect(within(region).getByText("Required apps and connector boundaries")).toBeInTheDocument();
+    expect(within(region).getByText("Storefront Marketplace")).toBeInTheDocument();
+    expect(within(region).getByText("Faceless Content Channels")).toBeInTheDocument();
+    expect(within(region).getByText("Application Connection Workbench")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Application Connection Workbench")).toBeInTheDocument();
+    expect(within(region).getByText("Connection prep evidence")).toBeInTheDocument();
+    expect(within(region).getByText("Manual Signal Import template")).toBeInTheDocument();
+    expect(within(region).getByText("Connector Activation Matrix")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Connector Activation Matrix")).toBeInTheDocument();
+    expect(within(region).getByText("Connector safety posture")).toBeInTheDocument();
+    expect(within(region).getByText("500/500 connector activation rows prepared for 100 stores across 5 required application roles: 1 ready for connection design, 3 require credential custody, 496 waiting for store shells, and 0 blocked by quality. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getByText("Monitoring Matrix")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Monitoring Matrix")).toBeInTheDocument();
+    expect(within(region).getByText("Signal queues")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym has approved read-only connector evidence but no tracked performance assets yet.")).toBeInTheDocument();
+    expect(within(region).getByText("Growth Allocation Router")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Growth Allocation Router")).toBeInTheDocument();
+    expect(within(region).getByText("25% Ad/Growth advisory routing")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym should use organic-first growth and signal capture before paid spend because status is needs readonly import.")).toBeInTheDocument();
+    expect(within(region).getByText("Daily Operating Loop")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Daily Operating Loop")).toBeInTheDocument();
+    expect(within(region).getAllByText("Confirm private safety envelope").length).toBeGreaterThan(0);
+    expect(within(region).getAllByText("Run monitoring cycle").length).toBeGreaterThan(0);
+    expect(within(region).getAllByText("Review Ad/Growth allocation router").length).toBeGreaterThan(0);
+    expect(within(region).getByText("Daily Supervisor")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Daily Supervisor")).toBeInTheDocument();
+    expect(within(region).getByText("4/11 daily supervisor steps selected in safe internal only mode for up to 4 private internal actions. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getByText("Product Depth Queue")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Product Depth Queue")).toBeInTheDocument();
+    expect(within(region).getByText("487 internal product-depth draft packets prepared for the 100-store floor: 0 ready for current stores, 487 waiting for future store shells, and 0 blocked by quality. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym founder edition performance tee")).toBeInTheDocument();
+    expect(within(region).getByText("Launch Packet Queue")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Launch Packet Queue")).toBeInTheDocument();
+    expect(within(region).getByText("100/100 launch packets assembled: 1 ready for internal launch review, 99 waiting for store shells, 0 need application packets, 0 need product depth, and 0 blocked by quality. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getAllByText("Iron House Gym")[0]).toBeInTheDocument();
+    expect(within(region).getByText("Autonomy Run Queue")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Autonomy Run Queue")).toBeInTheDocument();
+    expect(within(region).getByText("128 internal autonomy jobs queued for the 100-store floor: 25 ready internal, 2 approval-required, 99 waiting, 0 blocked, and 25 clean parallel jobs can run within shard caps. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym can be prepared as an internal store shell with no provider, marketplace, browser, ad, or payment action.")).toBeInTheDocument();
+    expect(within(region).getByText("Internal Work Lease Plan")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Internal Work Lease Plan")).toBeInTheDocument();
+    expect(within(region).getByText("Lease safety posture")).toBeInTheDocument();
+    expect(within(region).getByText("128 internal work leases prepared for 100-store operations: 25 ready to claim, 2 approval-hold, 99 waiting on dependencies, 0 blocked, and 25 can run cleanly within shard caps. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getByText("Capacity Proof")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Capacity Proof")).toBeInTheDocument();
+    expect(within(region).getByText("BLOCK capacity proof: private controls can currently model 8/100 clean simultaneous store slots with 5 pass, 2 watch, and 1 block checks. External execution remains locked.")).toBeInTheDocument();
+    expect(within(region).getByText("100-store stress profile")).toBeInTheDocument();
+    expect(within(region).getByText("Shard Capacity")).toBeInTheDocument();
+    expect(within(region).getByText("Application Boundary Preparation")).toBeInTheDocument();
+    expect(within(region).getByText("Connector Activation Readiness")).toBeInTheDocument();
+    expect(within(region).getByText("Operating Control Grid")).toBeInTheDocument();
+    expect(within(region).getByText("100 Store Operating Control Grid")).toBeInTheDocument();
+    expect(within(region).getByText("Lane load")).toBeInTheDocument();
+    expect(within(region).getAllByText("shard_001").length).toBeGreaterThan(0);
+    expect(within(region).getByText("Concurrency And Shards")).toBeInTheDocument();
+    expect(within(region).getByText("Batch buildout plan")).toBeInTheDocument();
+    expect(within(region).getAllByText("Profit Acceleration").length).toBeGreaterThan(0);
+    expect(within(region).getByText("100-store operations stay private")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview supervisor/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-daily-supervisor/apply", {
+      json: {
+        confirm: "RUN INTERNAL 100 STORE DAILY SUPERVISOR",
+        dryRun: true,
+        maxSteps: 4,
+        mode: "safe_internal_only",
+        note: "Previewed from the 100-store daily supervisor dashboard control.",
+        podProvider: "Printify"
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("Supervisor cycle receipt")).toBeInTheDocument();
+    expect(within(region).getByText("100-store daily supervisor preview selected 4 private internal steps.")).toBeInTheDocument();
+    expect(within(region).getByText("Supervisor would confirm the 100-store safety envelope before internal work.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview app packets/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-application-connections/apply", {
+      json: {
+        confirm: "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS",
+        dryRun: true,
+        maxPackets: 100,
+        note: "Previewed from the 100-store application connection workbench.",
+        setupStatuses: ["ready_for_internal_packet"]
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("Application packet receipt")).toBeInTheDocument();
+    expect(within(region).getByText("2 application connection packets would be recorded as internal 100-store app readiness artifacts.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview connector matrix/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-connector-activation/apply", {
+      json: {
+        confirm: "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX",
+        dryRun: true,
+        maxRows: 25,
+        note: "Previewed from the 100-store connector activation matrix.",
+        rowStatuses: ["ready_for_connection_design", "credential_custody_required"]
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("Connector activation receipt")).toBeInTheDocument();
+    expect(within(region).getByText("25 connector activation rows would be recorded with credential custody and external writes locked.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview monitor cycle/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-monitoring-cycle/apply", {
+      json: {
+        confirm: "RECORD INTERNAL 100 STORE MONITORING CYCLE",
+        dryRun: true,
+        maxItems: 25,
+        note: "Previewed from the 100-store monitoring matrix.",
+        queues: ["all"]
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("Monitoring cycle receipt")).toBeInTheDocument();
+    expect(within(region).getByText("1 monitoring item would be recorded for the 100-store monitoring cycle.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview product depth/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-product-depth/apply", {
+      json: {
+        confirm: "RECORD INTERNAL 100 STORE PRODUCT DEPTH DRAFTS",
+        draftStatuses: ["ready_for_internal_draft", "waiting_for_store_shell"],
+        dryRun: true,
+        maxDrafts: 25,
+        note: "Previewed from the 100-store product depth queue."
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("Product depth receipt")).toBeInTheDocument();
+    expect(within(region).getByText("25 product-depth draft packets would be recorded for the 100-store queue.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview launch packets/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-launch-packets/apply", {
+      json: {
+        confirm: "RECORD INTERNAL 100 STORE LAUNCH PACKETS",
+        dryRun: true,
+        maxPackets: 25,
+        note: "Previewed from the 100-store launch packet queue.",
+        packetStatuses: ["ready_for_internal_launch_review", "waiting_for_store_shell"]
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("Launch packet receipt")).toBeInTheDocument();
+    expect(within(region).getByText("25 launch packets would be recorded for 100-store internal launch review.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview autonomy run/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-autonomy-run/apply", {
+      json: {
+        confirm: "RECORD INTERNAL 100 STORE AUTONOMY RUN",
+        dryRun: true,
+        jobStatuses: ["ready_internal", "approval_required"],
+        maxJobs: 25,
+        note: "Previewed from the 100-store autonomy run queue."
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("Autonomy run receipt")).toBeInTheDocument();
+    expect(within(region).getByText("25 autonomy jobs would be recorded for the 100-store chain of command.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview work leases/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-work-leases/apply", {
+      json: {
+        confirm: "RECORD INTERNAL 100 STORE WORK LEASES",
+        dryRun: true,
+        leaseStatuses: ["ready_to_claim", "approval_hold"],
+        maxLeases: 25,
+        note: "Previewed from the 100-store internal work lease plan."
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("Work lease receipt")).toBeInTheDocument();
+    expect(within(region).getByText("25 internal work leases would be recorded for clean 100-store work claiming.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /preview 100-store step/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/100-store-operations/apply", {
+      json: {
+        confirm: "RUN INTERNAL 100 STORE OPERATIONS STEP",
+        dryRun: true,
+        maxCycles: 1,
+        note: "Previewed from the 100-store dashboard control.",
+        podProvider: "Printify"
+      },
+      method: "POST"
+    });
+    expect(await within(region).findByText("100-Store Command Queue")).toBeInTheDocument();
+    expect(within(region).getByText("100-store operations preview selected Create the next 100-store batch for up to 25 internal items.")).toBeInTheDocument();
+    expect(within(region).getByText("Store gap 99 to 74; readiness 82/100 to 84/100.")).toBeInTheDocument();
+  }, 10000);
+
   it("loads the business fleet scheduler for a 10-lane launch wave", async () => {
     vi.mocked(apiFetch)
       .mockResolvedValueOnce({ plan: businessFleetPlan })
@@ -6593,7 +8638,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("1 business selected for the internal launch wave from 1 eligible ready-parallel lane.")).toBeInTheDocument();
     expect(within(region).getByText("Launch Wave Receipt")).toBeInTheDocument();
     expect(within(region).getByText("1 first-business launch action previewed from the fleet wave.")).toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("loads and applies the private Money Army batch pipeline through the dashboard", async () => {
     const onRefreshStores = vi.fn();

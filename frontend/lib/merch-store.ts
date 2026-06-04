@@ -840,6 +840,1106 @@ export type RevenueBusinessFleetSchedulerResponse = {
   plan: RevenueBusinessFleetPlan;
 };
 
+export type RevenueHundredStoreOperationsStatus =
+  | "ready_for_100_store_internal_operations"
+  | "ready_to_build_to_100"
+  | "needs_store_generation"
+  | "needs_quality_repair"
+  | "blocked";
+
+export type RevenueHundredStoreOperationsGateStatus = "pass" | "watch" | "block";
+export type RevenueHundredStoreApplicationStatus = "ready" | "partial" | "missing" | "blocked";
+export type RevenueHundredStoreApplicationRole = RevenueLiveConnectorBoundaryRole;
+export type RevenueHundredStoreInternalJobType =
+  | "advisory_growth_allocation"
+  | "generate_products"
+  | "monitor_performance"
+  | "pause_or_kill_review"
+  | "prepare_connector_packet"
+  | "prepare_launch_package"
+  | "queue_organic_content"
+  | "repair_quality";
+export type RevenueHundredStoreMonitoringCadence =
+  | "immediate_rotation_review"
+  | "twice_daily_until_first_signal"
+  | "daily"
+  | "every_3_days"
+  | "weekly_watch";
+export type RevenueHundredStoreMonitoringSignalStatus =
+  | "signal_ready"
+  | "needs_manual_snapshot"
+  | "needs_readonly_import"
+  | "rotation_review_required"
+  | "scale_review_required";
+
+export type RevenueHundredStoreControlGrid = {
+  auditEvents: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Operating Control Grid";
+  providerContacted: false;
+  safeToRunParallelInternalJobs: boolean;
+  shards: Array<{
+    availableStoreSlots: number;
+    capacityUtilizationPercent: number;
+    externalExecution: false;
+    id: string;
+    laneCounts: Record<RevenueBusinessFleetLane, number>;
+    maxStores: number;
+    nextInternalFocus: string;
+    overloaded: boolean;
+    providerContacted: false;
+    readyInternalJobs: number;
+    stores: number;
+    throttledOrBlockedStores: number;
+  }>;
+  stores: Array<{
+    allowedInternalJobs: RevenueHundredStoreInternalJobType[];
+    applicationReadiness: {
+      approvedReadOnlyConnectors: number;
+      missingRoles: string[];
+      readinessStatus: RevenueHundredStoreApplicationStatus;
+      requiredRoles: number;
+    };
+    businessId: string;
+    businessName: string;
+    externalExecution: false;
+    lane: RevenueBusinessFleetLane;
+    nextInternalAction: string;
+    productAssets: number;
+    profitVelocity: number;
+    providerContacted: false;
+    qualityStatus: RevenueBusinessFleetQualityStatus;
+    queuePosition: number;
+    scheduleState: RevenueBusinessFleetScheduleState;
+    score: {
+      finalRank: number;
+      killPressure: number;
+      scalePressure: number;
+    };
+    shardId: string;
+  }>;
+  summary: string;
+  totals: {
+    applicationBlocked: number;
+    applicationMissing: number;
+    applicationPartial: number;
+    applicationReady: number;
+    configuredShards: number;
+    currentStores: number;
+    killLaneStores: number;
+    launchLaneStores: number;
+    missingStoreSlots: number;
+    overloadedShards: number;
+    readyInternalJobs: number;
+    readyParallelStores: number;
+    repairLaneStores: number;
+    scaleLaneStores: number;
+    targetStores: number;
+    visibleStores: number;
+    watchLaneStores: number;
+  };
+};
+
+export type RevenueHundredStoreApplicationConnectionWorkbench = {
+  auditEvents: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Application Connection Workbench";
+  packets: Array<{
+    approvalChecklist: string[];
+    connectionMode: "internal_preparation_only";
+    credentialEnvVars: string[];
+    externalExecution: false;
+    lane: RevenueBusinessFleetLane | "future_store_slot";
+    providerContacted: false;
+    providerOptions: string[];
+    readOnlyScopes: string[];
+    requiredArtifacts: string[];
+    role: RevenueHundredStoreApplicationRole;
+    rollbackPlan: string[];
+    setupStatus: "ready_for_internal_packet" | "already_mapped" | "blocked_by_store_quality";
+    shardId: string;
+    storeId: string | null;
+    storeName: string;
+    title: string;
+  }>;
+  providerContacted: false;
+  summary: string;
+  templates: Array<{
+    connectionMode: "internal_preparation_only";
+    externalExecution: false;
+    providerContacted: false;
+    role: RevenueHundredStoreApplicationRole;
+    slotCount: number;
+    title: string;
+  }>;
+  totals: {
+    alreadyMappedPackets: number;
+    blockedPackets: number;
+    credentialEnvVars: number;
+    futureStoreTemplates: number;
+    packets: number;
+    readyPackets: number;
+    requiredArtifacts: number;
+    rollbackPlans: number;
+    storesCovered: number;
+  };
+};
+
+export type RevenueHundredStoreConnectorActivationStatus =
+  | "ready_for_connection_design"
+  | "credential_custody_required"
+  | "waiting_for_store_shell"
+  | "blocked_by_store_quality";
+
+export type RevenueHundredStoreConnectorActivationDryRunRequest = {
+  approvalRequired: true;
+  endpointTemplate: string;
+  idempotencyKey: string;
+  method: "GET" | "POST";
+  payloadFields: string[];
+  stepId: string;
+  title: string;
+};
+
+export type RevenueHundredStoreConnectorActivationRow = {
+  approvalChecklist: string[];
+  credentialCustodyChecklist: string[];
+  credentialEnvVars: string[];
+  dryRunRequestMap: RevenueHundredStoreConnectorActivationDryRunRequest[];
+  externalExecution: false;
+  providerContacted: false;
+  providerOptions: string[];
+  readinessScore: number;
+  readOnlyScopes: string[];
+  requiredArtifacts: string[];
+  role: RevenueHundredStoreApplicationRole;
+  rowId?: string;
+  rollbackPlan: string[];
+  shardId: string;
+  status: RevenueHundredStoreConnectorActivationStatus;
+  storeId: string | null;
+  storeName: string;
+  title: string;
+  writeScopesBlocked: string[];
+};
+
+export type RevenueHundredStoreConnectorActivationMatrix = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Connector Activation Matrix";
+  providerContacted: false;
+  rows: RevenueHundredStoreConnectorActivationRow[];
+  summary: string;
+  totals: {
+    blockedByQuality: number;
+    credentialCustodyRequired: number;
+    credentialEnvVarRefs: number;
+    currentStoreRows: number;
+    dryRunRequestMaps: number;
+    futureStoreRows: number;
+    maxSelectableRows: number;
+    readyForConnectionDesign: number;
+    requiredRoles: number;
+    rows: number;
+    storesCovered: number;
+    targetStores: number;
+    waitingForStoreShell: number;
+    writeScopesBlocked: number;
+  };
+};
+
+export type RevenueHundredStoreMonitoringItem = {
+  businessId: string;
+  businessName: string;
+  cadence: RevenueHundredStoreMonitoringCadence;
+  externalExecution: false;
+  lane: RevenueBusinessFleetLane;
+  nextInternalAction: string;
+  priority: number;
+  profitVelocity: number;
+  providerContacted: false;
+  requiredSignals: string[];
+  rotationDecision: RevenueBusinessFleetLane;
+  scheduleState: RevenueBusinessFleetScheduleState;
+  shardId: string;
+  signalStatus: RevenueHundredStoreMonitoringSignalStatus;
+  trackedAssets: number;
+  triggerReason: string;
+};
+
+export type RevenueHundredStoreMonitoringMatrix = {
+  auditEvents: string[];
+  externalExecution: false;
+  generatedAt: string;
+  items: RevenueHundredStoreMonitoringItem[];
+  mode: "100 Store Monitoring Matrix";
+  providerContacted: false;
+  queues: {
+    manualSnapshots: RevenueHundredStoreMonitoringItem[];
+    readOnlyImports: RevenueHundredStoreMonitoringItem[];
+    rotationReviews: RevenueHundredStoreMonitoringItem[];
+    scaleReviews: RevenueHundredStoreMonitoringItem[];
+  };
+  summary: string;
+  totals: {
+    dailyProfitVelocity: number;
+    every3Days: number;
+    immediateRotationReviews: number;
+    manualSnapshots: number;
+    missingStoreSlots: number;
+    readOnlyImports: number;
+    scaleReviews: number;
+    signalReady: number;
+    storesCovered: number;
+    twiceDaily: number;
+    weeklyWatch: number;
+  };
+};
+
+export type RevenueHundredStoreGrowthAllocationLane =
+  | "organic_first"
+  | "paid_scale_review"
+  | "defensive_hold"
+  | "watch";
+
+export type RevenueHundredStoreGrowthAllocationCandidate = {
+  adGrowthBucketSharePercent: number;
+  allocationLane: RevenueHundredStoreGrowthAllocationLane;
+  allocationWeight: number;
+  businessId: string;
+  businessName: string;
+  eligibleForPaidScaleReview: boolean;
+  externalExecution: false;
+  guardrails: string[];
+  killPressure: number;
+  lane: RevenueBusinessFleetLane;
+  nextInternalAction: string;
+  priority: number;
+  profitVelocity: number;
+  providerContacted: false;
+  reason: string;
+  recommendedSpendPriority: "none" | "low_test" | "scale_test";
+  requiredApproval: string;
+  scalePressure: number;
+  shardId: string;
+  signalStatus: RevenueHundredStoreMonitoringSignalStatus;
+  trackedAssets: number;
+};
+
+export type RevenueHundredStoreGrowthAllocationRouter = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  candidates: RevenueHundredStoreGrowthAllocationCandidate[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Growth Allocation Router";
+  providerContacted: false;
+  summary: string;
+  totals: {
+    advisoryOnly: true;
+    averageKillPressure: number;
+    averageScalePressure: number;
+    candidates: number;
+    defensiveHold: number;
+    organicFirst: number;
+    paidScaleReview: number;
+    retainedForDefensePercent: number;
+    routedAdGrowthPercent: number;
+    storesCovered: number;
+    totalAllocationWeight: number;
+    watch: number;
+  };
+};
+
+export type RevenueHundredStoreProductDepthDraftStatus =
+  | "ready_for_internal_draft"
+  | "waiting_for_store_shell"
+  | "blocked_by_quality";
+
+export type RevenueHundredStoreProductDepthDraft = {
+  approvalChecklist: string[];
+  contentTieIn: string;
+  currentProducts: number;
+  designPrompt: string;
+  draftId: string;
+  externalExecution: false;
+  facelessHook: string;
+  lane: RevenueBusinessFleetLane | "future_store_slot";
+  listingAngle: string;
+  missingProducts: number;
+  organicMove: string;
+  priority: number;
+  productType: string;
+  providerContacted: false;
+  requiredProducts: number;
+  shardId: string;
+  status: RevenueHundredStoreProductDepthDraftStatus;
+  storeId: string | null;
+  storeName: string;
+  title: string;
+};
+
+export type RevenueHundredStoreProductDepthQueue = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  drafts: RevenueHundredStoreProductDepthDraft[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Product Depth Queue";
+  providerContacted: false;
+  summary: string;
+  totals: {
+    blockedDrafts: number;
+    currentStoreDrafts: number;
+    drafts: number;
+    futureStoreDrafts: number;
+    maxSelectableDrafts: number;
+    productDraftDeficit: number;
+    readyDrafts: number;
+    storesCovered: number;
+    targetStores: number;
+    waitingDrafts: number;
+  };
+};
+
+export type RevenueHundredStoreLaunchPacketStatus =
+  | "ready_for_internal_launch_review"
+  | "waiting_for_store_shell"
+  | "needs_application_packets"
+  | "needs_product_depth"
+  | "blocked_by_quality";
+
+export type RevenueHundredStoreLaunchPacket = {
+  applicationPacketCount: number;
+  approvalChecklist: string[];
+  contentIdeas: string[];
+  currentProducts: number;
+  externalExecution: false;
+  growthLane: RevenueHundredStoreGrowthAllocationLane | "unrouted";
+  launchPacketId: string;
+  missingApplicationRoles: string[];
+  organicMoves: string[];
+  priority: number;
+  productDraftCount: number;
+  providerContacted: false;
+  readinessScore: number;
+  requiredApplicationRoles: number;
+  requiredProducts: number;
+  shardId: string;
+  status: RevenueHundredStoreLaunchPacketStatus;
+  storeId: string | null;
+  storeName: string;
+  summary: string;
+};
+
+export type RevenueHundredStoreLaunchPacketQueue = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Launch Packet Queue";
+  packets: RevenueHundredStoreLaunchPacket[];
+  providerContacted: false;
+  summary: string;
+  totals: {
+    blockedByQuality: number;
+    currentStorePackets: number;
+    futureStorePackets: number;
+    maxSelectablePackets: number;
+    needsApplicationPackets: number;
+    needsProductDepth: number;
+    packets: number;
+    readyForReview: number;
+    targetStores: number;
+    waitingForStoreShell: number;
+  };
+};
+
+export type RevenueHundredStoreAutonomyJobType =
+  | "prepare_store_shell"
+  | "record_app_connection_packet"
+  | "record_connector_activation_row"
+  | "record_product_depth_draft"
+  | "record_launch_packet"
+  | "record_monitoring_evidence"
+  | "review_growth_allocation"
+  | "review_rotation";
+
+export type RevenueHundredStoreAutonomyJobStatus =
+  | "ready_internal"
+  | "approval_required"
+  | "waiting"
+  | "blocked";
+
+export type RevenueHundredStoreAutonomyJob = {
+  approvalGate: string;
+  blockedExternalActions: string[];
+  expectedInternalEffect: string;
+  externalExecution: false;
+  jobId: string;
+  jobType: RevenueHundredStoreAutonomyJobType;
+  priority: number;
+  providerContacted: false;
+  requiresOwnerApproval: boolean;
+  shardId: string;
+  sourceId: string;
+  sourceModule: string;
+  status: RevenueHundredStoreAutonomyJobStatus;
+  storeId: string | null;
+  storeName: string;
+  summary: string;
+};
+
+export type RevenueHundredStoreAutonomyRunQueue = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  jobs: RevenueHundredStoreAutonomyJob[];
+  mode: "100 Store Autonomy Run Queue";
+  providerContacted: false;
+  summary: string;
+  totals: {
+    approvalRequired: number;
+    blocked: number;
+    cleanParallelJobs: number;
+    jobs: number;
+    maxJobsPerShard: number;
+    maxSelectableJobs: number;
+    readyInternal: number;
+    shardCount: number;
+    storesCovered: number;
+    targetStores: number;
+    waiting: number;
+  };
+};
+
+export type RevenueHundredStoreWorkLeaseStatus =
+  | "ready_to_claim"
+  | "approval_hold"
+  | "waiting_dependency"
+  | "blocked";
+
+export type RevenueHundredStoreWorkLease = {
+  approvalGate: string;
+  blockedExternalActions: string[];
+  claimWindowMinutes: number;
+  dedupeKey: string;
+  dependencyRefs: string[];
+  expectedInternalEffect: string;
+  expiresAt: string;
+  externalExecution: false;
+  idempotencyKey: string;
+  jobId: string;
+  jobType: RevenueHundredStoreAutonomyJobType;
+  leaseId: string;
+  priority: number;
+  providerContacted: false;
+  retryPolicy: {
+    backoffMinutes: number;
+    maxAttempts: number;
+    requiresFreshPlanAfterFailure: boolean;
+  };
+  shardId: string;
+  sourceModule: string;
+  status: RevenueHundredStoreWorkLeaseStatus;
+  storeId: string | null;
+  storeName: string;
+  summary: string;
+};
+
+export type RevenueHundredStoreWorkLeasePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  leases: RevenueHundredStoreWorkLease[];
+  mode: "100 Store Internal Work Lease Plan";
+  providerContacted: false;
+  queues: {
+    approvalHold: RevenueHundredStoreWorkLease[];
+    blocked: RevenueHundredStoreWorkLease[];
+    readyToClaim: RevenueHundredStoreWorkLease[];
+    waitingDependency: RevenueHundredStoreWorkLease[];
+  };
+  summary: string;
+  totals: {
+    approvalHold: number;
+    blocked: number;
+    claimWindowMinutes: number;
+    cleanParallelLeases: number;
+    duplicateDedupeKeys: number;
+    leases: number;
+    maxLeasesPerShard: number;
+    maxSelectableLeases: number;
+    readyToClaim: number;
+    shardCount: number;
+    storesCovered: number;
+    targetStores: number;
+    waitingDependency: number;
+  };
+};
+
+export type RevenueHundredStoreDailyOperatingLoopPhase =
+  | "safety_gate_snapshot"
+  | "application_connection_packets"
+  | "connector_activation_matrix"
+  | "monitoring_cycle"
+  | "growth_allocation_review"
+  | "product_depth_repair"
+  | "launch_packet_review"
+  | "autonomy_run_queue"
+  | "work_lease_claims"
+  | "store_batch_creation"
+  | "weak_lane_rotation";
+
+export type RevenueHundredStoreDailyOperatingLoopStatus = "ready" | "waiting" | "blocked" | "approval_required";
+
+export type RevenueHundredStoreDailyOperatingLoopStep = {
+  approvalRequired: boolean;
+  blockers: string[];
+  confirmation: string;
+  endpoint: string;
+  expectedInternalEffect: string;
+  externalExecution: false;
+  maxItems: number;
+  phase: RevenueHundredStoreDailyOperatingLoopPhase;
+  priority: number;
+  providerContacted: false;
+  reason: string;
+  status: RevenueHundredStoreDailyOperatingLoopStatus;
+  stepId: string;
+  title: string;
+};
+
+export type RevenueHundredStoreDailyOperatingLoop = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  cadence: "daily_private_internal_ops";
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Daily Operating Loop";
+  providerContacted: false;
+  steps: RevenueHundredStoreDailyOperatingLoopStep[];
+  summary: string;
+  totals: {
+    approvalRequired: number;
+    blocked: number;
+    executableInternalSteps: number;
+    ready: number;
+    safeBatchSize: number;
+    storeGap: number;
+    storesCovered: number;
+    waiting: number;
+  };
+};
+
+export type RevenueHundredStoreDailySupervisorMode = "safe_internal_only" | "include_batch_creation";
+
+export type RevenueHundredStoreDailySupervisorAction =
+  | "confirm_safety"
+  | "record_app_connection_packets"
+  | "record_connector_activation_matrix"
+  | "record_monitoring_cycle"
+  | "record_product_depth_drafts"
+  | "record_launch_packets"
+  | "record_autonomy_run_queue"
+  | "record_work_leases"
+  | "review_growth_allocation"
+  | "run_money_army_step"
+  | "manual_review"
+  | "wait";
+
+export type RevenueHundredStoreDailySupervisorStatus =
+  | "selected"
+  | "approval_required"
+  | "blocked"
+  | "waiting"
+  | "manual_only";
+
+export type RevenueHundredStoreDailySupervisorStep = {
+  action: RevenueHundredStoreDailySupervisorAction;
+  blockers: string[];
+  confirmation: string;
+  endpoint: string;
+  expectedInternalEffect: string;
+  externalExecution: false;
+  maxItems: number;
+  phase: RevenueHundredStoreDailyOperatingLoopPhase;
+  priority: number;
+  providerContacted: false;
+  reason: string;
+  requiresOwnerApproval: boolean;
+  sourceStatus: RevenueHundredStoreDailyOperatingLoopStatus;
+  status: RevenueHundredStoreDailySupervisorStatus;
+  stepId: string;
+  title: string;
+};
+
+export type RevenueHundredStoreDailySupervisorPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Daily Supervisor";
+  operatingMode: RevenueHundredStoreDailySupervisorMode;
+  providerContacted: false;
+  selectedSteps: RevenueHundredStoreDailySupervisorStep[];
+  steps: RevenueHundredStoreDailySupervisorStep[];
+  summary: string;
+  totals: {
+    approvalRequired: number;
+    blocked: number;
+    manualOnly: number;
+    maxSteps: number;
+    selected: number;
+    storesCovered: number;
+    waiting: number;
+  };
+};
+
+export type RevenueHundredStoreCapacityProofStatus = "pass" | "watch" | "block";
+
+export type RevenueHundredStoreCapacityProofCheck = {
+  capacity: number;
+  checkId: string;
+  evidence: string[];
+  externalExecution: false;
+  gap: number;
+  nextInternalAction: string;
+  projectedLoad: number;
+  providerContacted: false;
+  status: RevenueHundredStoreCapacityProofStatus;
+  title: string;
+};
+
+export type RevenueHundredStoreCapacityProof = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  checks: RevenueHundredStoreCapacityProofCheck[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Capacity Proof";
+  providerContacted: false;
+  status: RevenueHundredStoreCapacityProofStatus;
+  stressProfile: {
+    applicationBoundaryCoveragePercent: number;
+    cleanSimultaneousStoreCapacity: number;
+    futureStoreSlotsCovered: number;
+    maximumCleanStoresAtShardLimit: number;
+    monitoringSweepCycles: number;
+    preparedApplicationBoundaries: number;
+    productDraftDeficit: number;
+    projectedDailySupervisorSteps: number;
+    requiredApplicationBoundaries: number;
+    safeBatchSize: number;
+    shardCapacity: number;
+    storeGap: number;
+    targetStores: number;
+  };
+  summary: string;
+  totals: {
+    block: number;
+    cleanSimultaneousStoreCapacity: number;
+    pass: number;
+    targetStores: number;
+    watch: number;
+  };
+};
+
+export type RevenueHundredStoreOperationsPlan = {
+  applicationReadiness: {
+    applications: Array<{
+      approvedReadOnlyConnectors: number;
+      blockedStores: number;
+      externalExecution: false;
+      missingStores: number;
+      nextInternalAction: string;
+      pendingStores: number;
+      providerContacted: false;
+      providerNames: string[];
+      readyStores: number;
+      readinessStatus: "ready" | "partial" | "missing" | "blocked";
+      requiredStores: number;
+      role: RevenueLiveConnectorBoundaryRole | "analytics";
+      title: string;
+    }>;
+    summary: string;
+    totals: {
+      approvedReadOnlyConnectors: number;
+      blockedEntries: number;
+      mappedStores: number;
+      missingStores: number;
+      needsOperatorReview: number;
+      needsReadOnlyApproval: number;
+      readinessCoveragePercent: number;
+      readyForDesign: number;
+      requiredBoundaries: number;
+      targetStores: number;
+    };
+  };
+  auditEvents: string[];
+  applicationConnectionWorkbench: RevenueHundredStoreApplicationConnectionWorkbench;
+  autonomyRunQueue: RevenueHundredStoreAutonomyRunQueue;
+  batchPlan: {
+    batchRunsRequired: number;
+    currentStores: number;
+    productDraftDeficit: number;
+    recommendedBatchSize: number;
+    storeGap: number;
+    targetStores: number;
+  };
+  blockedExternalActions: string[];
+  concurrency: {
+    configuredParallelSlots: number;
+    currentShards: number;
+    maxStoresPerShard: number;
+    minimumRecommendedShards: number;
+    overloadedShardIds: string[];
+    safeInternalJobSlots: number;
+    shardCount: number;
+  };
+  connectorActivationMatrix: RevenueHundredStoreConnectorActivationMatrix;
+  controlGrid: RevenueHundredStoreControlGrid;
+  externalExecution: false;
+  gates: Array<{
+    actionEndpoint: string;
+    evidence: string[];
+    externalExecution: false;
+    providerContacted: false;
+    status: RevenueHundredStoreOperationsGateStatus;
+    title: string;
+  }>;
+  generatedAt: string;
+  growthAllocationRouter: RevenueHundredStoreGrowthAllocationRouter;
+  dailyOperatingLoop: RevenueHundredStoreDailyOperatingLoop;
+  capacityProof: RevenueHundredStoreCapacityProof;
+  launchPacketQueue: RevenueHundredStoreLaunchPacketQueue;
+  mode: "100 Store Operations Readiness";
+  monitoringMatrix: RevenueHundredStoreMonitoringMatrix;
+  nextActions: Array<{
+    confirmation: string;
+    endpoint: string;
+    expectedInternalEffect: string;
+    externalExecution: false;
+    priority: number;
+    providerContacted: false;
+    reason: string;
+    status: RevenueMoneyArmyBatchPipelineStageStatus;
+    title: string;
+  }>;
+  operatingStatus: RevenueHundredStoreOperationsStatus;
+  pipeline: {
+    blockedStages: number;
+    nextStage: RevenueMoneyArmyBatchPipelineStageName | null;
+    readyStages: number;
+    seedCandidates: number;
+    stages: number;
+  };
+  profitAcceleration: {
+    dailyProfitVelocity: number;
+    dailyRevenueVelocity: number;
+    killLaneStores: number;
+    launchNowStores: number;
+    repairLaneStores: number;
+    scaleLaneStores: number;
+    topScaleCandidates: Array<{
+      businessId: string;
+      businessName: string;
+      profitVelocity: number;
+      scalePressure: number;
+      shardId: string;
+    }>;
+  };
+  productDepthQueue: RevenueHundredStoreProductDepthQueue;
+  providerContacted: false;
+  readinessScore: number;
+  summary: string;
+  totals: {
+    approvalPacketsReady: number;
+    approvalPacketsWaiting: number;
+    currentStores: number;
+    gatesBlocked: number;
+    gatesPass: number;
+    gatesWatch: number;
+    readyParallelStores: number;
+    storeGap: number;
+    targetStores: number;
+  };
+  workLeasePlan: RevenueHundredStoreWorkLeasePlan;
+};
+
+export type RevenueHundredStoreOperationsResponse = {
+  dailySupervisor: RevenueHundredStoreDailySupervisorPlan;
+  fleet: RevenueBusinessFleetPlan;
+  gapPlan: RevenueBusinessFleetLaunchGapPlan;
+  pipeline: RevenueMoneyArmyBatchPipelinePlan;
+  plan: RevenueHundredStoreOperationsPlan;
+};
+
+export type RevenueHundredStoreOperationsCommandAction =
+  | "run_money_army_batch_creation"
+  | "run_money_army_batch_acceleration"
+  | "run_money_army_launch_package"
+  | "run_money_army_approval"
+  | "run_money_army_deployment"
+  | "record_connector_activation_matrix"
+  | "record_product_depth_drafts"
+  | "record_launch_packets"
+  | "record_autonomy_run_queue"
+  | "record_work_leases"
+  | "manual_quality_review";
+
+export type RevenueHundredStoreOperationsCommand = {
+  action: RevenueHundredStoreOperationsCommandAction;
+  commandId: string;
+  confirmation: string;
+  endpoint: string;
+  expectedInternalEffect: string;
+  externalExecution: false;
+  maxItems: number;
+  priority: number;
+  providerContacted: false;
+  reason: string;
+  requiresManualSelection: boolean;
+  sourceActionTitle: string;
+  stage: RevenueMoneyArmyBatchPipelineStageName | null;
+  status: RevenueMoneyArmyBatchPipelineStageStatus;
+};
+
+export type RevenueHundredStoreOperationsCommandPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  commands: RevenueHundredStoreOperationsCommand[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "100 Store Operations Command Queue";
+  providerContacted: false;
+  selectedCommand: RevenueHundredStoreOperationsCommand | null;
+  summary: string;
+  totals: {
+    blocked: number;
+    commands: number;
+    executable: number;
+    manualReview: number;
+    ready: number;
+    waiting: number;
+  };
+};
+
+export type RevenueHundredStoreOperationsApplyResponse = {
+  after: RevenueHundredStoreOperationsResponse;
+  afterCommandPlan: RevenueHundredStoreOperationsCommandPlan;
+  applied: {
+    auditLogId: string | null;
+    batchRunIds: string[];
+    cyclesRequested: number;
+    cyclesRun: number;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    selectedCommandId: string | null;
+    selectedStage: RevenueMoneyArmyBatchPipelineStageName | null;
+    summary: string;
+  };
+  before: RevenueHundredStoreOperationsResponse;
+  beforeCommandPlan: RevenueHundredStoreOperationsCommandPlan;
+  cycles: Array<{
+    afterReadinessScore: number;
+    afterStoreGap: number;
+    batchRunId: string | null;
+    beforeReadinessScore: number;
+    beforeStoreGap: number;
+    command: RevenueHundredStoreOperationsCommand;
+    cycle: number;
+    resultSummary: string;
+    stage: RevenueMoneyArmyBatchPipelineStageName;
+  }>;
+  recentRuns: RevenueMoneyArmyBatchRun[];
+};
+
+export type RevenueHundredStoreAppConnectionPacketsApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    packetsRecorded: number;
+    packetsSelected: number;
+    providerContacted: false;
+    roleCounts: Record<string, number>;
+    storesCovered: number;
+    summary: string;
+  };
+  packets: RevenueHundredStoreApplicationConnectionWorkbench["packets"];
+  plan: RevenueHundredStoreOperationsPlan;
+};
+
+export type RevenueHundredStoreConnectorActivationApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    credentialEnvVarRefs: number;
+    dryRun: boolean;
+    dryRunRequestMaps: number;
+    externalExecution: false;
+    providerContacted: false;
+    roleCounts: Record<string, number>;
+    rowsRecorded: number;
+    rowsSelected: number;
+    statusCounts: Record<string, number>;
+    storesCovered: number;
+    summary: string;
+    writeScopesBlocked: number;
+  };
+  plan: RevenueHundredStoreOperationsPlan;
+  rows: RevenueHundredStoreConnectorActivationRow[];
+};
+
+export type RevenueHundredStoreMonitoringCycleApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    itemsRecorded: number;
+    itemsSelected: number;
+    providerContacted: false;
+    queueCounts: Record<string, number>;
+    requiredSignals: number;
+    signalStatusCounts: Record<string, number>;
+    storesCovered: number;
+    summary: string;
+  };
+  items: RevenueHundredStoreMonitoringItem[];
+  plan: RevenueHundredStoreOperationsPlan;
+};
+
+export type RevenueHundredStoreProductDepthApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    currentStoreDrafts: number;
+    draftsRecorded: number;
+    draftsSelected: number;
+    dryRun: boolean;
+    externalExecution: false;
+    futureStoreDrafts: number;
+    providerContacted: false;
+    statusCounts: Record<string, number>;
+    storesCovered: number;
+    summary: string;
+  };
+  drafts: RevenueHundredStoreProductDepthDraft[];
+  plan: RevenueHundredStoreOperationsPlan;
+};
+
+export type RevenueHundredStoreLaunchPacketsApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    currentStorePackets: number;
+    dryRun: boolean;
+    externalExecution: false;
+    futureStorePackets: number;
+    packetsRecorded: number;
+    packetsSelected: number;
+    providerContacted: false;
+    statusCounts: Record<string, number>;
+    storesCovered: number;
+    summary: string;
+  };
+  packets: RevenueHundredStoreLaunchPacket[];
+  plan: RevenueHundredStoreOperationsPlan;
+};
+
+export type RevenueHundredStoreAutonomyRunApplyResponse = {
+  applied: {
+    approvalRequired: number;
+    auditLogId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    jobsRecorded: number;
+    jobsSelected: number;
+    providerContacted: false;
+    readyInternal: number;
+    statusCounts: Record<string, number>;
+    storesCovered: number;
+    summary: string;
+    typeCounts: Record<string, number>;
+  };
+  jobs: RevenueHundredStoreAutonomyJob[];
+  plan: RevenueHundredStoreOperationsPlan;
+};
+
+export type RevenueHundredStoreWorkLeasesApplyResponse = {
+  applied: {
+    approvalHold: number;
+    auditLogId: string | null;
+    dedupeKeys: number;
+    dryRun: boolean;
+    externalExecution: false;
+    leasesRecorded: number;
+    leasesSelected: number;
+    providerContacted: false;
+    readyToClaim: number;
+    statusCounts: Record<string, number>;
+    storesCovered: number;
+    summary: string;
+    typeCounts: Record<string, number>;
+  };
+  leases: RevenueHundredStoreWorkLease[];
+  plan: RevenueHundredStoreOperationsPlan;
+};
+
+export type RevenueHundredStoreDailySupervisorApplyResponse = {
+  after: RevenueHundredStoreOperationsResponse;
+  afterSupervisor: RevenueHundredStoreDailySupervisorPlan;
+  applied: {
+    appPacketsRecorded: number;
+    auditLogId: string | null;
+    autonomyJobsRecorded: number;
+    connectorRowsRecorded: number;
+    dryRun: boolean;
+    externalExecution: false;
+    monitoringItemsRecorded: number;
+    operationCyclesRun: number;
+    productDraftsRecorded: number;
+    launchPacketsRecorded: number;
+    providerContacted: false;
+    stepsRecorded: number;
+    stepsSelected: number;
+    summary: string;
+    workLeasesRecorded: number;
+  };
+  before: RevenueHundredStoreOperationsResponse;
+  beforeSupervisor: RevenueHundredStoreDailySupervisorPlan;
+  results: Array<{
+    action: RevenueHundredStoreDailySupervisorAction;
+    auditLogId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    connectorRowsRecorded?: number;
+    connectorRowsSelected?: number;
+    itemsRecorded?: number;
+    itemsSelected?: number;
+    operationCyclesRun?: number;
+    packetsRecorded?: number;
+    packetsSelected?: number;
+    productDraftsRecorded?: number;
+    productDraftsSelected?: number;
+    launchPacketsRecorded?: number;
+    launchPacketsSelected?: number;
+    autonomyJobsRecorded?: number;
+    autonomyJobsSelected?: number;
+    workLeasesRecorded?: number;
+    workLeasesSelected?: number;
+    providerContacted: false;
+    stepId: string;
+    summary: string;
+    title: string;
+  }>;
+};
+
 export type RevenueBusinessFleetLaunchGapAction = {
   action:
     | "run_launch_wave"

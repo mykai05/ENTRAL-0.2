@@ -146,6 +146,16 @@ export const revenueBusinessFleetGapAccelerationConfirmation = "RUN INTERNAL BUS
 export const revenueBusinessFleetLiveLaunchPackageConfirmation = "RECORD INTERNAL BUSINESS FLEET LIVE LAUNCH PACKAGE";
 export const revenueBusinessFleetProviderApprovalReviewConfirmation = "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS";
 export const revenueMoneyArmyBatchPipelineConfirmation = "RUN INTERNAL MONEY ARMY BATCH PIPELINE";
+export const revenueHundredStoreOperationsApplyConfirmation = "RUN INTERNAL 100 STORE OPERATIONS STEP";
+export const revenueHundredStoreAppConnectionPacketsConfirmation = "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS";
+export const revenueHundredStoreConnectorActivationConfirmation = "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX";
+export const revenueHundredStoreMonitoringCycleConfirmation = "RECORD INTERNAL 100 STORE MONITORING CYCLE";
+export const revenueHundredStoreDailySupervisorConfirmation = "RUN INTERNAL 100 STORE DAILY SUPERVISOR";
+export const revenueHundredStoreProductDepthConfirmation = "RECORD INTERNAL 100 STORE PRODUCT DEPTH DRAFTS";
+export const revenueHundredStoreLaunchPacketsConfirmation = "RECORD INTERNAL 100 STORE LAUNCH PACKETS";
+export const revenueHundredStoreAutonomyRunConfirmation = "RECORD INTERNAL 100 STORE AUTONOMY RUN";
+export const revenueHundredStoreWorkLeasesConfirmation = "RECORD INTERNAL 100 STORE WORK LEASES";
+export const revenueHundredStoreWorkerAssignmentsConfirmation = "RECORD INTERNAL 100 STORE WORKER ASSIGNMENTS";
 export const revenueMoneyArmyGenerateScoreBatchConfirmation = "RECORD INTERNAL MONEY ARMY GENERATE SCORE BATCH";
 export const revenueFirstBusinessLaunchPackageConfirmation = "RECORD INTERNAL FIRST BUSINESS LAUNCH PACKAGE";
 export const revenueFirstStorePrepareConfirmation = "APPROVE AND PREPARE FIRST STORE";
@@ -379,6 +389,151 @@ const revenueBusinessFleetSchedulerFields = {
 };
 
 export const revenueBusinessFleetSchedulerQuerySchema = z.object(revenueBusinessFleetSchedulerFields);
+
+const revenueHundredStoreOperationsFields = {
+  killPressureThreshold: z.coerce.number().int().min(0).max(100).default(70),
+  launchWaveSize: z.coerce.number().int().min(1).max(100).default(25),
+  maxParallelLaunches: z.coerce.number().int().min(1).max(1_000).default(25),
+  maxParallelScaleActions: z.coerce.number().int().min(1).max(2_000).default(50),
+  maxStoresPerShard: z.coerce.number().int().min(1).max(100).default(8),
+  minProductsPerStore: z.coerce.number().int().min(1).max(25).default(5),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(72),
+  safeBatchSize: z.coerce.number().int().min(1).max(50).default(25),
+  shardCount: z.coerce.number().int().min(1).max(256).default(32),
+  targetStores: z.coerce.number().int().min(100).max(100_000).default(100)
+};
+
+export const revenueHundredStoreOperationsQuerySchema = z.object(revenueHundredStoreOperationsFields);
+
+export const applyRevenueHundredStoreOperationsSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreOperationsApplyConfirmation),
+  dryRun: z.boolean().default(true),
+  maxCycles: z.coerce.number().int().min(1).max(4).default(1),
+  note: optionalTrimmedString(500),
+  podProvider: merchPodProviderSchema.default("Printify")
+});
+
+export const revenueHundredStoreApplicationRoleSchema = z.enum(["storefront", "pod_provider", "payments", "content", "manual_import"]);
+export const revenueHundredStoreApplicationSetupStatusSchema = z.enum(["ready_for_internal_packet", "already_mapped", "blocked_by_store_quality"]);
+export const revenueHundredStoreConnectorActivationStatusSchema = z.enum(["ready_for_connection_design", "credential_custody_required", "waiting_for_store_shell", "blocked_by_store_quality"]);
+export const revenueHundredStoreMonitoringQueueSchema = z.enum(["manualSnapshots", "readOnlyImports", "rotationReviews", "scaleReviews", "all"]);
+export const revenueHundredStoreMonitoringSignalStatusSchema = z.enum(["signal_ready", "needs_manual_snapshot", "needs_readonly_import", "rotation_review_required", "scale_review_required"]);
+export const revenueHundredStoreProductDepthDraftStatusSchema = z.enum(["ready_for_internal_draft", "waiting_for_store_shell", "blocked_by_quality"]);
+export const revenueHundredStoreLaunchPacketStatusSchema = z.enum(["ready_for_internal_launch_review", "waiting_for_store_shell", "needs_application_packets", "needs_product_depth", "blocked_by_quality"]);
+export const revenueHundredStoreAutonomyJobStatusSchema = z.enum(["ready_internal", "approval_required", "waiting", "blocked"]);
+export const revenueHundredStoreWorkLeaseStatusSchema = z.enum(["ready_to_claim", "approval_hold", "waiting_dependency", "blocked"]);
+export const revenueHundredStoreWorkerAssignmentStatusSchema = z.enum(["ready_to_assign", "approval_hold", "waiting_dependency", "blocked"]);
+export const revenueHundredStoreWorkerLaneSchema = z.enum(["store_builder", "product_builder", "connector_planner", "launch_reviewer", "monitoring_analyst", "growth_allocator", "rotation_reviewer"]);
+export const revenueHundredStoreAutonomyJobTypeSchema = z.enum([
+  "prepare_store_shell",
+  "record_app_connection_packet",
+  "record_connector_activation_row",
+  "record_product_depth_draft",
+  "record_launch_packet",
+  "record_monitoring_evidence",
+  "review_growth_allocation",
+  "review_rotation"
+]);
+
+export const applyRevenueHundredStoreAppConnectionPacketsSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreAppConnectionPacketsConfirmation),
+  dryRun: z.boolean().default(true),
+  maxPackets: z.coerce.number().int().min(1).max(500).default(100),
+  note: optionalTrimmedString(500),
+  roles: z.array(revenueHundredStoreApplicationRoleSchema).max(5).default([]),
+  setupStatuses: z.array(revenueHundredStoreApplicationSetupStatusSchema).max(3).default(["ready_for_internal_packet"]),
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([])
+});
+
+export const applyRevenueHundredStoreConnectorActivationSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreConnectorActivationConfirmation),
+  dryRun: z.boolean().default(true),
+  maxRows: z.coerce.number().int().min(1).max(500).default(25),
+  note: optionalTrimmedString(500),
+  roles: z.array(revenueHundredStoreApplicationRoleSchema).max(5).default([]),
+  rowStatuses: z.array(revenueHundredStoreConnectorActivationStatusSchema).max(4).default(["ready_for_connection_design", "credential_custody_required"]),
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([])
+});
+
+export const applyRevenueHundredStoreMonitoringCycleSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreMonitoringCycleConfirmation),
+  dryRun: z.boolean().default(true),
+  maxItems: z.coerce.number().int().min(1).max(100).default(25),
+  note: optionalTrimmedString(500),
+  queues: z.array(revenueHundredStoreMonitoringQueueSchema).max(5).default(["all"]),
+  signalStatuses: z.array(revenueHundredStoreMonitoringSignalStatusSchema).max(5).default([]),
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([])
+});
+
+export const applyRevenueHundredStoreProductDepthSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreProductDepthConfirmation),
+  draftStatuses: z.array(revenueHundredStoreProductDepthDraftStatusSchema).max(3).default(["ready_for_internal_draft", "waiting_for_store_shell"]),
+  dryRun: z.boolean().default(true),
+  maxDrafts: z.coerce.number().int().min(1).max(250).default(25),
+  note: optionalTrimmedString(500),
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([])
+});
+
+export const applyRevenueHundredStoreLaunchPacketsSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreLaunchPacketsConfirmation),
+  dryRun: z.boolean().default(true),
+  maxPackets: z.coerce.number().int().min(1).max(250).default(25),
+  note: optionalTrimmedString(500),
+  packetStatuses: z.array(revenueHundredStoreLaunchPacketStatusSchema).max(5).default(["ready_for_internal_launch_review", "waiting_for_store_shell"]),
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([])
+});
+
+export const applyRevenueHundredStoreAutonomyRunSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreAutonomyRunConfirmation),
+  dryRun: z.boolean().default(true),
+  jobStatuses: z.array(revenueHundredStoreAutonomyJobStatusSchema).max(4).default(["ready_internal", "approval_required"]),
+  jobTypes: z.array(revenueHundredStoreAutonomyJobTypeSchema).max(8).default([]),
+  maxJobs: z.coerce.number().int().min(1).max(250).default(25),
+  note: optionalTrimmedString(500),
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([])
+});
+
+export const applyRevenueHundredStoreWorkLeasesSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreWorkLeasesConfirmation),
+  dryRun: z.boolean().default(true),
+  jobTypes: z.array(revenueHundredStoreAutonomyJobTypeSchema).max(8).default([]),
+  leaseStatuses: z.array(revenueHundredStoreWorkLeaseStatusSchema).max(4).default(["ready_to_claim", "approval_hold"]),
+  maxLeases: z.coerce.number().int().min(1).max(500).default(25),
+  note: optionalTrimmedString(500),
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([])
+});
+
+export const applyRevenueHundredStoreWorkerAssignmentsSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  assignmentStatuses: z.array(revenueHundredStoreWorkerAssignmentStatusSchema).max(4).default(["ready_to_assign", "approval_hold"]),
+  confirm: z.literal(revenueHundredStoreWorkerAssignmentsConfirmation),
+  dryRun: z.boolean().default(true),
+  jobTypes: z.array(revenueHundredStoreAutonomyJobTypeSchema).max(8).default([]),
+  maxAssignments: z.coerce.number().int().min(1).max(500).default(25),
+  note: optionalTrimmedString(500),
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([]),
+  workerLanes: z.array(revenueHundredStoreWorkerLaneSchema).max(7).default([])
+});
+
+export const revenueHundredStoreDailySupervisorModeSchema = z.enum(["safe_internal_only", "include_batch_creation"]);
+
+export const applyRevenueHundredStoreDailySupervisorSchema = z.object({
+  ...revenueHundredStoreOperationsFields,
+  confirm: z.literal(revenueHundredStoreDailySupervisorConfirmation),
+  dryRun: z.boolean().default(true),
+  maxSteps: z.coerce.number().int().min(1).max(12).default(4),
+  mode: revenueHundredStoreDailySupervisorModeSchema.default("safe_internal_only"),
+  note: optionalTrimmedString(500),
+  podProvider: merchPodProviderSchema.default("Printify")
+});
 
 export const applyRevenueBusinessFleetLaunchWaveSchema = z.object({
   ...revenueBusinessFleetSchedulerFields,
@@ -1271,7 +1426,7 @@ export const applyRevenueLaunchHandoffSchema = z.object({
 
 const revenueLaunchOperationsPackFields = {
   includeBlocked: queryBooleanSchema(true),
-  maxPacks: z.coerce.number().int().min(1).max(50).default(10),
+  maxPacks: z.coerce.number().int().min(1).max(100).default(10),
   minConnectorReadiness: z.coerce.number().int().min(1).max(100).default(70),
   minLaunchReadiness: z.coerce.number().int().min(1).max(100).default(70),
   minProviderReadiness: z.coerce.number().int().min(1).max(100).default(70)
@@ -1290,7 +1445,7 @@ export const applyRevenueLaunchOperationsPackSchema = z.object({
 const revenueLaunchClosureLedgerFields = {
   expectedOrderValue: moneyAmountSchema.default(32),
   includeBlocked: queryBooleanSchema(true),
-  maxEntries: z.coerce.number().int().min(1).max(50).default(10),
+  maxEntries: z.coerce.number().int().min(1).max(100).default(10),
   minClosureScore: z.coerce.number().int().min(1).max(100).default(72),
   monitoringWindowDays: z.coerce.number().int().min(1).max(30).default(7),
   targetFirstWeekRevenue: moneyAmountSchema.default(250)
@@ -1308,7 +1463,7 @@ export const applyRevenueLaunchClosureLedgerSchema = z.object({
 
 const revenueLiveConnectorReadinessFields = {
   includeBlocked: queryBooleanSchema(true),
-  maxEntries: z.coerce.number().int().min(1).max(50).default(10),
+  maxEntries: z.coerce.number().int().min(1).max(100).default(10),
   minClosureScore: z.coerce.number().int().min(1).max(100).default(76),
   minReadOnlyConnectors: z.coerce.number().int().min(0).max(10).default(1),
   requireOperationsPackAudit: queryBooleanSchema(true),
@@ -1322,7 +1477,7 @@ export const applyRevenueLiveConnectorReadinessSchema = z.object({
   confirm: z.literal(revenueLiveConnectorReadinessRegistryConfirmation),
   dryRun: z.boolean().default(true),
   note: optionalTrimmedString(500),
-  storeIds: z.array(z.string().trim().min(1).max(160)).max(50).default([])
+  storeIds: z.array(z.string().trim().min(1).max(160)).max(100).default([])
 });
 
 const revenueLiveConnectorDesignDossierFields = {
@@ -1716,6 +1871,17 @@ export type RequestGrowthApprovalInput = z.infer<typeof requestGrowthApprovalSch
 export type ReviewGrowthApprovalInput = z.infer<typeof reviewGrowthApprovalSchema>;
 export type RevenueEngineQueryInput = z.infer<typeof revenueEngineQuerySchema>;
 export type RevenueBusinessFleetSchedulerQueryInput = z.infer<typeof revenueBusinessFleetSchedulerQuerySchema>;
+export type RevenueHundredStoreOperationsQueryInput = z.infer<typeof revenueHundredStoreOperationsQuerySchema>;
+export type ApplyRevenueHundredStoreOperationsInput = z.infer<typeof applyRevenueHundredStoreOperationsSchema>;
+export type ApplyRevenueHundredStoreAppConnectionPacketsInput = z.infer<typeof applyRevenueHundredStoreAppConnectionPacketsSchema>;
+export type ApplyRevenueHundredStoreConnectorActivationInput = z.infer<typeof applyRevenueHundredStoreConnectorActivationSchema>;
+export type ApplyRevenueHundredStoreMonitoringCycleInput = z.infer<typeof applyRevenueHundredStoreMonitoringCycleSchema>;
+export type ApplyRevenueHundredStoreDailySupervisorInput = z.infer<typeof applyRevenueHundredStoreDailySupervisorSchema>;
+export type ApplyRevenueHundredStoreProductDepthInput = z.infer<typeof applyRevenueHundredStoreProductDepthSchema>;
+export type ApplyRevenueHundredStoreLaunchPacketsInput = z.infer<typeof applyRevenueHundredStoreLaunchPacketsSchema>;
+export type ApplyRevenueHundredStoreAutonomyRunInput = z.infer<typeof applyRevenueHundredStoreAutonomyRunSchema>;
+export type ApplyRevenueHundredStoreWorkLeasesInput = z.infer<typeof applyRevenueHundredStoreWorkLeasesSchema>;
+export type ApplyRevenueHundredStoreWorkerAssignmentsInput = z.infer<typeof applyRevenueHundredStoreWorkerAssignmentsSchema>;
 export type ApplyRevenueBusinessFleetLaunchWaveInput = z.infer<typeof applyRevenueBusinessFleetLaunchWaveSchema>;
 export type ApplyRevenueBusinessFleetSeedGapInput = z.infer<typeof applyRevenueBusinessFleetSeedGapSchema>;
 export type ApplyRevenueBusinessFleetGapAccelerationInput = z.infer<typeof applyRevenueBusinessFleetGapAccelerationSchema>;

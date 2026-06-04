@@ -89,6 +89,18 @@ import {
   type RevenueBusinessFleetLaunchWavePlan,
   type RevenueBusinessFleetPlan,
   type RevenueBusinessFleetSchedulerResponse,
+  type RevenueHundredStoreAppConnectionPacketsApplyResponse,
+  type RevenueHundredStoreConnectorActivationApplyResponse,
+  type RevenueHundredStoreDailySupervisorApplyResponse,
+  type RevenueHundredStoreDailySupervisorPlan,
+  type RevenueHundredStoreMonitoringCycleApplyResponse,
+  type RevenueHundredStoreOperationsApplyResponse,
+  type RevenueHundredStoreOperationsPlan,
+  type RevenueHundredStoreOperationsResponse,
+  type RevenueHundredStoreLaunchPacketsApplyResponse,
+  type RevenueHundredStoreAutonomyRunApplyResponse,
+  type RevenueHundredStoreWorkLeasesApplyResponse,
+  type RevenueHundredStoreProductDepthApplyResponse,
   type RevenueMoneyArmyBatchPipelineApplyResponse,
   type RevenueMoneyArmyFirstBusinessLaunchPackage,
   type RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse,
@@ -312,6 +324,18 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [businessFleetProviderApprovalReceipt, setBusinessFleetProviderApprovalReceipt] = useState<RevenueBusinessFleetProviderApprovalReviewApplyResponse["applied"] | null>(null);
   const [businessFleetWaveSelection, setBusinessFleetWaveSelection] = useState<RevenueBusinessFleetLaunchWavePlan | null>(null);
   const [businessFleetWaveReceipt, setBusinessFleetWaveReceipt] = useState<RevenueBusinessFleetLaunchWaveApplyResponse["dispatched"] | null>(null);
+  const [hundredStoreOperations, setHundredStoreOperations] = useState<RevenueHundredStoreOperationsPlan | null>(null);
+  const [hundredStoreDailySupervisor, setHundredStoreDailySupervisor] = useState<RevenueHundredStoreDailySupervisorPlan | null>(null);
+  const [hundredStoreDailySupervisorReceipt, setHundredStoreDailySupervisorReceipt] = useState<RevenueHundredStoreDailySupervisorApplyResponse["applied"] | null>(null);
+  const [hundredStoreDailySupervisorResults, setHundredStoreDailySupervisorResults] = useState<RevenueHundredStoreDailySupervisorApplyResponse["results"]>([]);
+  const [hundredStoreOperationsCommand, setHundredStoreOperationsCommand] = useState<RevenueHundredStoreOperationsApplyResponse | null>(null);
+  const [hundredStoreAppConnectionReceipt, setHundredStoreAppConnectionReceipt] = useState<RevenueHundredStoreAppConnectionPacketsApplyResponse["applied"] | null>(null);
+  const [hundredStoreConnectorActivationReceipt, setHundredStoreConnectorActivationReceipt] = useState<RevenueHundredStoreConnectorActivationApplyResponse["applied"] | null>(null);
+  const [hundredStoreMonitoringCycleReceipt, setHundredStoreMonitoringCycleReceipt] = useState<RevenueHundredStoreMonitoringCycleApplyResponse["applied"] | null>(null);
+  const [hundredStoreProductDepthReceipt, setHundredStoreProductDepthReceipt] = useState<RevenueHundredStoreProductDepthApplyResponse["applied"] | null>(null);
+  const [hundredStoreLaunchPacketReceipt, setHundredStoreLaunchPacketReceipt] = useState<RevenueHundredStoreLaunchPacketsApplyResponse["applied"] | null>(null);
+  const [hundredStoreAutonomyRunReceipt, setHundredStoreAutonomyRunReceipt] = useState<RevenueHundredStoreAutonomyRunApplyResponse["applied"] | null>(null);
+  const [hundredStoreWorkLeaseReceipt, setHundredStoreWorkLeaseReceipt] = useState<RevenueHundredStoreWorkLeasesApplyResponse["applied"] | null>(null);
   const [moneyArmyPipeline, setMoneyArmyPipeline] = useState<RevenueMoneyArmyBatchPipelinePlan | null>(null);
   const [moneyArmyPipelineReceipt, setMoneyArmyPipelineReceipt] = useState<RevenueMoneyArmyBatchPipelineApplyResponse["applied"] | null>(null);
   const [moneyArmyGenerateScoreBatch, setMoneyArmyGenerateScoreBatch] = useState<RevenueMoneyArmyGenerateScoreBatchPlan | null>(null);
@@ -359,6 +383,25 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [isApplyingBusinessFleetProviderApprovalReview, setIsApplyingBusinessFleetProviderApprovalReview] = useState(false);
   const [isPreviewingBusinessFleetWave, setIsPreviewingBusinessFleetWave] = useState(false);
   const [isRunningBusinessFleetWave, setIsRunningBusinessFleetWave] = useState(false);
+  const [isLoadingHundredStoreOperations, setIsLoadingHundredStoreOperations] = useState(false);
+  const [isPreviewingHundredStoreOperations, setIsPreviewingHundredStoreOperations] = useState(false);
+  const [isRunningHundredStoreOperations, setIsRunningHundredStoreOperations] = useState(false);
+  const [isPreviewingHundredStoreDailySupervisor, setIsPreviewingHundredStoreDailySupervisor] = useState(false);
+  const [isRunningHundredStoreDailySupervisor, setIsRunningHundredStoreDailySupervisor] = useState(false);
+  const [isPreviewingHundredStoreAppConnections, setIsPreviewingHundredStoreAppConnections] = useState(false);
+  const [isRecordingHundredStoreAppConnections, setIsRecordingHundredStoreAppConnections] = useState(false);
+  const [isPreviewingHundredStoreConnectorActivation, setIsPreviewingHundredStoreConnectorActivation] = useState(false);
+  const [isRecordingHundredStoreConnectorActivation, setIsRecordingHundredStoreConnectorActivation] = useState(false);
+  const [isPreviewingHundredStoreMonitoringCycle, setIsPreviewingHundredStoreMonitoringCycle] = useState(false);
+  const [isRecordingHundredStoreMonitoringCycle, setIsRecordingHundredStoreMonitoringCycle] = useState(false);
+  const [isPreviewingHundredStoreProductDepth, setIsPreviewingHundredStoreProductDepth] = useState(false);
+  const [isRecordingHundredStoreProductDepth, setIsRecordingHundredStoreProductDepth] = useState(false);
+  const [isPreviewingHundredStoreLaunchPackets, setIsPreviewingHundredStoreLaunchPackets] = useState(false);
+  const [isRecordingHundredStoreLaunchPackets, setIsRecordingHundredStoreLaunchPackets] = useState(false);
+  const [isPreviewingHundredStoreAutonomyRun, setIsPreviewingHundredStoreAutonomyRun] = useState(false);
+  const [isRecordingHundredStoreAutonomyRun, setIsRecordingHundredStoreAutonomyRun] = useState(false);
+  const [isPreviewingHundredStoreWorkLeases, setIsPreviewingHundredStoreWorkLeases] = useState(false);
+  const [isRecordingHundredStoreWorkLeases, setIsRecordingHundredStoreWorkLeases] = useState(false);
   const [businessFleetMessage, setBusinessFleetMessage] = useState<string | null>(null);
   const [revenuePlan, setRevenuePlan] = useState<RevenueAssetPortfolio | null>(null);
   const [revenueDashboard, setRevenueDashboard] = useState<RevenuePortfolioDashboardPlan | null>(null);
@@ -912,6 +955,18 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setBusinessFleetProviderApprovalReceipt(null);
       setBusinessFleetWaveSelection(null);
       setBusinessFleetWaveReceipt(null);
+      setHundredStoreOperations(null);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreOperationsCommand(null);
+      setHundredStoreAppConnectionReceipt(null);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreMonitoringCycleReceipt(null);
+      setHundredStoreProductDepthReceipt(null);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
       setMoneyArmyPipeline(null);
       setMoneyArmyPipelineReceipt(null);
       setMoneyArmyGenerateScoreBatch(null);
@@ -936,6 +991,425 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
     }
   }
 
+  async function loadHundredStoreOperations() {
+    setIsLoadingHundredStoreOperations(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreOperationsResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-operations");
+
+      setBusinessFleetPlan(response.fleet);
+      setBusinessFleetGapPlan(response.gapPlan);
+      setMoneyArmyPipeline(response.pipeline);
+      setHundredStoreOperations(response.plan);
+      setHundredStoreDailySupervisor(response.dailySupervisor);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreOperationsCommand(null);
+      setHundredStoreAppConnectionReceipt(null);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreMonitoringCycleReceipt(null);
+      setHundredStoreProductDepthReceipt(null);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
+      setBusinessFleetMessage(response.plan.summary);
+      onEvent?.(`100-store operations readiness loaded at ${response.plan.readinessScore}/100 with ${response.plan.totals.storeGap} stores remaining.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store operations readiness failed.");
+    } finally {
+      setIsLoadingHundredStoreOperations(false);
+    }
+  }
+
+  async function runHundredStoreOperations(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreOperations : setIsRunningHundredStoreOperations;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreOperationsApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-operations/apply", {
+        json: {
+          confirm: "RUN INTERNAL 100 STORE OPERATIONS STEP",
+          dryRun,
+          maxCycles: dryRun ? 1 : 4,
+          note: dryRun
+            ? "Previewed from the 100-store dashboard control."
+            : "Recorded from the 100-store dashboard control.",
+          podProvider: "Printify"
+        },
+        method: "POST"
+      });
+
+      setBusinessFleetPlan(response.after.fleet);
+      setBusinessFleetGapPlan(response.after.gapPlan);
+      setMoneyArmyPipeline(response.after.pipeline);
+      setHundredStoreOperations(response.after.plan);
+      setHundredStoreDailySupervisor(response.after.dailySupervisor);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreOperationsCommand(response);
+      setHundredStoreAppConnectionReceipt(null);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreMonitoringCycleReceipt(null);
+      setHundredStoreProductDepthReceipt(null);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
+      setMoneyArmyBatchRuns(response.recentRuns);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store operations previewed ${response.applied.selectedStage?.replace(/_/g, " ") ?? "watch"} with external execution locked.`
+        : `100-store operations recorded ${response.applied.cyclesRun} internal cycle${response.applied.cyclesRun === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store operations command failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runHundredStoreAppConnectionPackets(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreAppConnections : setIsRecordingHundredStoreAppConnections;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreAppConnectionPacketsApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-application-connections/apply", {
+        json: {
+          confirm: "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS",
+          dryRun,
+          maxPackets: 100,
+          note: dryRun
+            ? "Previewed from the 100-store application connection workbench."
+            : "Recorded from the 100-store application connection workbench.",
+          setupStatuses: ["ready_for_internal_packet"]
+        },
+        method: "POST"
+      });
+
+      setHundredStoreOperations(response.plan);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreAppConnectionReceipt(response.applied);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreMonitoringCycleReceipt(null);
+      setHundredStoreProductDepthReceipt(null);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store app connection packets previewed: ${response.applied.packetsSelected} internal packet${response.applied.packetsSelected === 1 ? "" : "s"}.`
+        : `100-store app connection packets recorded: ${response.applied.packetsRecorded} internal packet${response.applied.packetsRecorded === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store app connection packet recording failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runHundredStoreConnectorActivation(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreConnectorActivation : setIsRecordingHundredStoreConnectorActivation;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreConnectorActivationApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-connector-activation/apply", {
+        json: {
+          confirm: "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX",
+          dryRun,
+          maxRows: 25,
+          note: dryRun
+            ? "Previewed from the 100-store connector activation matrix."
+            : "Recorded from the 100-store connector activation matrix.",
+          rowStatuses: ["ready_for_connection_design", "credential_custody_required"]
+        },
+        method: "POST"
+      });
+
+      setHundredStoreOperations(response.plan);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreAppConnectionReceipt(null);
+      setHundredStoreConnectorActivationReceipt(response.applied);
+      setHundredStoreMonitoringCycleReceipt(null);
+      setHundredStoreProductDepthReceipt(null);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store connector matrix previewed: ${response.applied.rowsSelected} activation row${response.applied.rowsSelected === 1 ? "" : "s"}.`
+        : `100-store connector matrix recorded: ${response.applied.rowsRecorded} activation row${response.applied.rowsRecorded === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store connector activation matrix failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runHundredStoreMonitoringCycle(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreMonitoringCycle : setIsRecordingHundredStoreMonitoringCycle;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreMonitoringCycleApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-monitoring-cycle/apply", {
+        json: {
+          confirm: "RECORD INTERNAL 100 STORE MONITORING CYCLE",
+          dryRun,
+          maxItems: 25,
+          note: dryRun
+            ? "Previewed from the 100-store monitoring matrix."
+            : "Recorded from the 100-store monitoring matrix.",
+          queues: ["all"]
+        },
+        method: "POST"
+      });
+
+      setHundredStoreOperations(response.plan);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreMonitoringCycleReceipt(response.applied);
+      setHundredStoreProductDepthReceipt(null);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store monitoring cycle previewed: ${response.applied.itemsSelected} internal item${response.applied.itemsSelected === 1 ? "" : "s"}.`
+        : `100-store monitoring cycle recorded: ${response.applied.itemsRecorded} internal item${response.applied.itemsRecorded === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store monitoring cycle failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runHundredStoreProductDepth(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreProductDepth : setIsRecordingHundredStoreProductDepth;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreProductDepthApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-product-depth/apply", {
+        json: {
+          confirm: "RECORD INTERNAL 100 STORE PRODUCT DEPTH DRAFTS",
+          draftStatuses: ["ready_for_internal_draft", "waiting_for_store_shell"],
+          dryRun,
+          maxDrafts: 25,
+          note: dryRun
+            ? "Previewed from the 100-store product depth queue."
+            : "Recorded from the 100-store product depth queue."
+        },
+        method: "POST"
+      });
+
+      setHundredStoreOperations(response.plan);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreProductDepthReceipt(response.applied);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store product depth previewed: ${response.applied.draftsSelected} internal draft packet${response.applied.draftsSelected === 1 ? "" : "s"}.`
+        : `100-store product depth recorded: ${response.applied.draftsRecorded} internal draft packet${response.applied.draftsRecorded === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store product depth queue failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runHundredStoreLaunchPackets(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreLaunchPackets : setIsRecordingHundredStoreLaunchPackets;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreLaunchPacketsApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-launch-packets/apply", {
+        json: {
+          confirm: "RECORD INTERNAL 100 STORE LAUNCH PACKETS",
+          dryRun,
+          maxPackets: 25,
+          note: dryRun
+            ? "Previewed from the 100-store launch packet queue."
+            : "Recorded from the 100-store launch packet queue.",
+          packetStatuses: ["ready_for_internal_launch_review", "waiting_for_store_shell"]
+        },
+        method: "POST"
+      });
+
+      setHundredStoreOperations(response.plan);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreLaunchPacketReceipt(response.applied);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store launch packets previewed: ${response.applied.packetsSelected} internal packet${response.applied.packetsSelected === 1 ? "" : "s"}.`
+        : `100-store launch packets recorded: ${response.applied.packetsRecorded} internal packet${response.applied.packetsRecorded === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store launch packet queue failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runHundredStoreAutonomyRun(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreAutonomyRun : setIsRecordingHundredStoreAutonomyRun;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreAutonomyRunApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-autonomy-run/apply", {
+        json: {
+          confirm: "RECORD INTERNAL 100 STORE AUTONOMY RUN",
+          dryRun,
+          jobStatuses: ["ready_internal", "approval_required"],
+          maxJobs: 25,
+          note: dryRun
+            ? "Previewed from the 100-store autonomy run queue."
+            : "Recorded from the 100-store autonomy run queue."
+        },
+        method: "POST"
+      });
+
+      setHundredStoreOperations(response.plan);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreAutonomyRunReceipt(response.applied);
+      setHundredStoreWorkLeaseReceipt(null);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store autonomy run previewed: ${response.applied.jobsSelected} internal job${response.applied.jobsSelected === 1 ? "" : "s"}.`
+        : `100-store autonomy run recorded: ${response.applied.jobsRecorded} internal job${response.applied.jobsRecorded === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store autonomy run queue failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runHundredStoreWorkLeases(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreWorkLeases : setIsRecordingHundredStoreWorkLeases;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreWorkLeasesApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-work-leases/apply", {
+        json: {
+          confirm: "RECORD INTERNAL 100 STORE WORK LEASES",
+          dryRun,
+          leaseStatuses: ["ready_to_claim", "approval_hold"],
+          maxLeases: 25,
+          note: dryRun
+            ? "Previewed from the 100-store internal work lease plan."
+            : "Recorded from the 100-store internal work lease plan."
+        },
+        method: "POST"
+      });
+
+      setHundredStoreOperations(response.plan);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreAppConnectionReceipt(null);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreMonitoringCycleReceipt(null);
+      setHundredStoreProductDepthReceipt(null);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(response.applied);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store work leases previewed: ${response.applied.leasesSelected} internal lease${response.applied.leasesSelected === 1 ? "" : "s"}.`
+        : `100-store work leases recorded: ${response.applied.leasesRecorded} internal lease${response.applied.leasesRecorded === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store internal work lease plan failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runHundredStoreDailySupervisor(dryRun: boolean) {
+    const setBusy = dryRun ? setIsPreviewingHundredStoreDailySupervisor : setIsRunningHundredStoreDailySupervisor;
+
+    setBusy(true);
+    setError(null);
+    setBusinessFleetMessage(null);
+
+    try {
+      const response = await apiFetch<RevenueHundredStoreDailySupervisorApplyResponse>("/merch/revenue-engine/business-fleet-scheduler/100-store-daily-supervisor/apply", {
+        json: {
+          confirm: "RUN INTERNAL 100 STORE DAILY SUPERVISOR",
+          dryRun,
+          maxSteps: dryRun ? 4 : 5,
+          mode: dryRun ? "safe_internal_only" : "include_batch_creation",
+          note: dryRun
+            ? "Previewed from the 100-store daily supervisor dashboard control."
+            : "Recorded from the 100-store daily supervisor dashboard control.",
+          podProvider: "Printify"
+        },
+        method: "POST"
+      });
+
+      setBusinessFleetPlan(response.after.fleet);
+      setBusinessFleetGapPlan(response.after.gapPlan);
+      setMoneyArmyPipeline(response.after.pipeline);
+      setHundredStoreOperations(response.after.plan);
+      setHundredStoreDailySupervisor(response.afterSupervisor);
+      setHundredStoreDailySupervisorReceipt(response.applied);
+      setHundredStoreDailySupervisorResults(response.results);
+      setHundredStoreOperationsCommand(null);
+      setHundredStoreAppConnectionReceipt(null);
+      setHundredStoreConnectorActivationReceipt(null);
+      setHundredStoreMonitoringCycleReceipt(null);
+      setHundredStoreProductDepthReceipt(null);
+      setHundredStoreLaunchPacketReceipt(null);
+      setHundredStoreAutonomyRunReceipt(null);
+      setHundredStoreWorkLeaseReceipt(null);
+      setBusinessFleetMessage(response.applied.summary);
+      onEvent?.(dryRun
+        ? `100-store supervisor preview selected ${response.applied.stepsSelected} private internal step${response.applied.stepsSelected === 1 ? "" : "s"}.`
+        : `100-store supervisor recorded ${response.applied.stepsRecorded} private internal step${response.applied.stepsRecorded === 1 ? "" : "s"}. No external systems were contacted.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "100-store daily supervisor failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function loadBusinessFleetLaunchGap() {
     setIsLoadingBusinessFleetGap(true);
     setError(null);
@@ -951,6 +1425,12 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
       setBusinessFleetLaunchGate(null);
       setBusinessFleetProviderApprovalReview(null);
       setBusinessFleetProviderApprovalReceipt(null);
+      setHundredStoreOperations(null);
+      setHundredStoreDailySupervisor(null);
+      setHundredStoreDailySupervisorReceipt(null);
+      setHundredStoreDailySupervisorResults([]);
+      setHundredStoreOperationsCommand(null);
+      setHundredStoreConnectorActivationReceipt(null);
       setMoneyArmyPipeline(null);
       setMoneyArmyPipelineReceipt(null);
       setMoneyArmyGenerateScoreBatch(null);
@@ -3092,6 +3572,82 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
           <button type="button" className="primary" onClick={loadBusinessFleetScheduler} disabled={isLoadingBusinessFleet}>
             {isLoadingBusinessFleet ? <Loader2 aria-hidden="true" size={15} /> : <LineChart aria-hidden="true" size={15} />}
             Load fleet scheduler
+          </button>
+          <button type="button" className="primary" onClick={() => void loadHundredStoreOperations()} disabled={isLoadingHundredStoreOperations}>
+            {isLoadingHundredStoreOperations ? <Loader2 aria-hidden="true" size={15} /> : <Gauge aria-hidden="true" size={15} />}
+            Load 100-store ops
+          </button>
+          <button type="button" onClick={() => void runHundredStoreOperations(true)} disabled={isPreviewingHundredStoreOperations || !hundredStoreOperations || hundredStoreOperations.nextActions.length === 0}>
+            {isPreviewingHundredStoreOperations ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview 100-store step
+          </button>
+          <button type="button" onClick={() => void runHundredStoreOperations(false)} disabled={isRunningHundredStoreOperations || !hundredStoreOperations || hundredStoreOperations.nextActions.length === 0}>
+            {isRunningHundredStoreOperations ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Run 100-store step
+          </button>
+          <button type="button" onClick={() => void runHundredStoreDailySupervisor(true)} disabled={isPreviewingHundredStoreDailySupervisor || !hundredStoreDailySupervisor || hundredStoreDailySupervisor.selectedSteps.length === 0}>
+            {isPreviewingHundredStoreDailySupervisor ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview supervisor
+          </button>
+          <button type="button" className="primary" onClick={() => void runHundredStoreDailySupervisor(false)} disabled={isRunningHundredStoreDailySupervisor || !hundredStoreDailySupervisor || hundredStoreDailySupervisor.selectedSteps.length === 0}>
+            {isRunningHundredStoreDailySupervisor ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Run supervisor
+          </button>
+          <button type="button" onClick={() => void runHundredStoreAppConnectionPackets(true)} disabled={isPreviewingHundredStoreAppConnections || !hundredStoreOperations || hundredStoreOperations.applicationConnectionWorkbench.totals.readyPackets === 0}>
+            {isPreviewingHundredStoreAppConnections ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview app packets
+          </button>
+          <button type="button" onClick={() => void runHundredStoreAppConnectionPackets(false)} disabled={isRecordingHundredStoreAppConnections || !hundredStoreOperations || hundredStoreOperations.applicationConnectionWorkbench.totals.readyPackets === 0}>
+            {isRecordingHundredStoreAppConnections ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record app packets
+          </button>
+          <button type="button" onClick={() => void runHundredStoreConnectorActivation(true)} disabled={isPreviewingHundredStoreConnectorActivation || !hundredStoreOperations || hundredStoreOperations.connectorActivationMatrix.totals.rows === 0}>
+            {isPreviewingHundredStoreConnectorActivation ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview connector matrix
+          </button>
+          <button type="button" onClick={() => void runHundredStoreConnectorActivation(false)} disabled={isRecordingHundredStoreConnectorActivation || !hundredStoreOperations || hundredStoreOperations.connectorActivationMatrix.totals.rows === 0}>
+            {isRecordingHundredStoreConnectorActivation ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record connector matrix
+          </button>
+          <button type="button" onClick={() => void runHundredStoreMonitoringCycle(true)} disabled={isPreviewingHundredStoreMonitoringCycle || !hundredStoreOperations || hundredStoreOperations.monitoringMatrix.items.length === 0}>
+            {isPreviewingHundredStoreMonitoringCycle ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview monitor cycle
+          </button>
+          <button type="button" onClick={() => void runHundredStoreMonitoringCycle(false)} disabled={isRecordingHundredStoreMonitoringCycle || !hundredStoreOperations || hundredStoreOperations.monitoringMatrix.items.length === 0}>
+            {isRecordingHundredStoreMonitoringCycle ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record monitor cycle
+          </button>
+          <button type="button" onClick={() => void runHundredStoreProductDepth(true)} disabled={isPreviewingHundredStoreProductDepth || !hundredStoreOperations || hundredStoreOperations.productDepthQueue.totals.drafts === 0}>
+            {isPreviewingHundredStoreProductDepth ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview product depth
+          </button>
+          <button type="button" onClick={() => void runHundredStoreProductDepth(false)} disabled={isRecordingHundredStoreProductDepth || !hundredStoreOperations || hundredStoreOperations.productDepthQueue.totals.drafts === 0}>
+            {isRecordingHundredStoreProductDepth ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record product depth
+          </button>
+          <button type="button" onClick={() => void runHundredStoreLaunchPackets(true)} disabled={isPreviewingHundredStoreLaunchPackets || !hundredStoreOperations || hundredStoreOperations.launchPacketQueue.totals.packets === 0}>
+            {isPreviewingHundredStoreLaunchPackets ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview launch packets
+          </button>
+          <button type="button" onClick={() => void runHundredStoreLaunchPackets(false)} disabled={isRecordingHundredStoreLaunchPackets || !hundredStoreOperations || hundredStoreOperations.launchPacketQueue.totals.packets === 0}>
+            {isRecordingHundredStoreLaunchPackets ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record launch packets
+          </button>
+          <button type="button" onClick={() => void runHundredStoreAutonomyRun(true)} disabled={isPreviewingHundredStoreAutonomyRun || !hundredStoreOperations || hundredStoreOperations.autonomyRunQueue.totals.jobs === 0}>
+            {isPreviewingHundredStoreAutonomyRun ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview autonomy run
+          </button>
+          <button type="button" onClick={() => void runHundredStoreAutonomyRun(false)} disabled={isRecordingHundredStoreAutonomyRun || !hundredStoreOperations || hundredStoreOperations.autonomyRunQueue.totals.jobs === 0}>
+            {isRecordingHundredStoreAutonomyRun ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record autonomy run
+          </button>
+          <button type="button" onClick={() => void runHundredStoreWorkLeases(true)} disabled={isPreviewingHundredStoreWorkLeases || !hundredStoreOperations || hundredStoreOperations.workLeasePlan.totals.leases === 0}>
+            {isPreviewingHundredStoreWorkLeases ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
+            Preview work leases
+          </button>
+          <button type="button" onClick={() => void runHundredStoreWorkLeases(false)} disabled={isRecordingHundredStoreWorkLeases || !hundredStoreOperations || hundredStoreOperations.workLeasePlan.totals.leases === 0}>
+            {isRecordingHundredStoreWorkLeases ? <Loader2 aria-hidden="true" size={15} /> : <LockKeyhole aria-hidden="true" size={15} />}
+            Record work leases
           </button>
           <button type="button" onClick={() => void loadBusinessFleetLaunchGap()} disabled={isLoadingBusinessFleetGap}>
             {isLoadingBusinessFleetGap ? <Loader2 aria-hidden="true" size={15} /> : <ClipboardCheck aria-hidden="true" size={15} />}
@@ -5928,6 +6484,524 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             <div className="growth-blocked-actions">
               <strong>Money Army stays private</strong>
               {moneyArmyPipeline.blockedExternalActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
+            </div>
+          </section>
+        ) : null}
+
+        {hundredStoreOperations ? (
+          <section className="revenue-engine-result" aria-label="100 Store Operations Readiness">
+            <div className="revenue-engine-summary">
+              <strong>{hundredStoreOperations.mode}</strong>
+              <p>{hundredStoreOperations.summary}</p>
+            </div>
+
+            <dl className="revenue-engine-metrics">
+              <div>
+                <dt>Readiness</dt>
+                <dd>{hundredStoreOperations.readinessScore}/100</dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>{hundredStoreOperations.operatingStatus.replace(/_/g, " ")}</dd>
+              </div>
+              <div>
+                <dt>Stores</dt>
+                <dd>{hundredStoreOperations.totals.currentStores}/{hundredStoreOperations.totals.targetStores}</dd>
+              </div>
+              <div>
+                <dt>Store Gap</dt>
+                <dd>{hundredStoreOperations.totals.storeGap}</dd>
+              </div>
+              <div>
+                <dt>Ready Parallel</dt>
+                <dd>{hundredStoreOperations.totals.readyParallelStores}</dd>
+              </div>
+              <div>
+                <dt>Batch Runs</dt>
+                <dd>{hundredStoreOperations.batchPlan.batchRunsRequired}</dd>
+              </div>
+              <div>
+                <dt>Product Gap</dt>
+                <dd>{hundredStoreOperations.batchPlan.productDraftDeficit}</dd>
+              </div>
+              <div>
+                <dt>Next Stage</dt>
+                <dd>{hundredStoreOperations.pipeline.nextStage?.replace(/_/g, " ") ?? "watch"}</dd>
+              </div>
+            </dl>
+
+            <div className="revenue-decision-counts" aria-label="100-store gate counts">
+              <span>pass: {hundredStoreOperations.totals.gatesPass}</span>
+              <span>watch: {hundredStoreOperations.totals.gatesWatch}</span>
+              <span>block: {hundredStoreOperations.totals.gatesBlocked}</span>
+              <span>approval ready: {hundredStoreOperations.totals.approvalPacketsReady}</span>
+              <span>approval waiting: {hundredStoreOperations.totals.approvalPacketsWaiting}</span>
+            </div>
+
+            <section className="revenue-engine-list" aria-label="100-store capacity proof">
+              <h4>Capacity Proof</h4>
+              <article>
+                <span>{hundredStoreOperations.capacityProof.status} / {hundredStoreOperations.capacityProof.totals.cleanSimultaneousStoreCapacity}/{hundredStoreOperations.capacityProof.totals.targetStores} clean slots</span>
+                <strong>{hundredStoreOperations.capacityProof.mode}</strong>
+                <p>{hundredStoreOperations.capacityProof.summary}</p>
+                <small>pass {hundredStoreOperations.capacityProof.totals.pass} / watch {hundredStoreOperations.capacityProof.totals.watch} / block {hundredStoreOperations.capacityProof.totals.block}</small>
+              </article>
+              <article>
+                <span>{hundredStoreOperations.capacityProof.stressProfile.shardCapacity} shard capacity / {hundredStoreOperations.capacityProof.stressProfile.monitoringSweepCycles} monitoring cycles</span>
+                <strong>100-store stress profile</strong>
+                <p>{hundredStoreOperations.capacityProof.stressProfile.preparedApplicationBoundaries}/{hundredStoreOperations.capacityProof.stressProfile.requiredApplicationBoundaries} application boundaries prepared with {hundredStoreOperations.capacityProof.stressProfile.applicationBoundaryCoveragePercent}% coverage.</p>
+                <small>future slots {hundredStoreOperations.capacityProof.stressProfile.futureStoreSlotsCovered} / product gap {hundredStoreOperations.capacityProof.stressProfile.productDraftDeficit} / supervisor steps {hundredStoreOperations.capacityProof.stressProfile.projectedDailySupervisorSteps}</small>
+              </article>
+              {hundredStoreOperations.capacityProof.checks.map((check) => (
+                <article key={`hundred-store-capacity-proof-${check.checkId}`}>
+                  <span>{check.status} / load {check.projectedLoad} / capacity {check.capacity} / gap {check.gap}</span>
+                  <strong>{check.title}</strong>
+                  <p>{check.nextInternalAction}</p>
+                  <small>{check.evidence.join(" ")}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store product depth queue">
+              <h4>Product Depth Queue</h4>
+              <article>
+                <span>{hundredStoreOperations.productDepthQueue.totals.readyDrafts} ready / {hundredStoreOperations.productDepthQueue.totals.waitingDrafts} waiting / {hundredStoreOperations.productDepthQueue.totals.blockedDrafts} blocked</span>
+                <strong>{hundredStoreOperations.productDepthQueue.mode}</strong>
+                <p>{hundredStoreOperations.productDepthQueue.summary}</p>
+                <small>{hundredStoreOperations.productDepthQueue.totals.currentStoreDrafts} current-store drafts / {hundredStoreOperations.productDepthQueue.totals.futureStoreDrafts} future-slot drafts / max selectable {hundredStoreOperations.productDepthQueue.totals.maxSelectableDrafts}</small>
+              </article>
+              {hundredStoreProductDepthReceipt ? (
+                <article>
+                  <span>{hundredStoreProductDepthReceipt.dryRun ? "preview" : "recorded"} / {hundredStoreProductDepthReceipt.draftsSelected} selected / {hundredStoreProductDepthReceipt.draftsRecorded} recorded</span>
+                  <strong>Product depth receipt</strong>
+                  <p>{hundredStoreProductDepthReceipt.summary}</p>
+                  <small>current {hundredStoreProductDepthReceipt.currentStoreDrafts} / future {hundredStoreProductDepthReceipt.futureStoreDrafts} / stores {hundredStoreProductDepthReceipt.storesCovered} / audit {hundredStoreProductDepthReceipt.auditLogId ?? "preview only"}</small>
+                </article>
+              ) : null}
+              {hundredStoreOperations.productDepthQueue.drafts.slice(0, 8).map((draft) => (
+                <article key={draft.draftId}>
+                  <span>{draft.status.replace(/_/g, " ")} / {draft.productType} / priority {draft.priority}</span>
+                  <strong>{draft.title}</strong>
+                  <p>{draft.listingAngle}</p>
+                  <small>{draft.storeName} / {draft.shardId} / {draft.facelessHook} / {draft.organicMove}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store launch packet queue">
+              <h4>Launch Packet Queue</h4>
+              <article>
+                <span>{hundredStoreOperations.launchPacketQueue.totals.readyForReview} ready / {hundredStoreOperations.launchPacketQueue.totals.waitingForStoreShell} waiting / {hundredStoreOperations.launchPacketQueue.totals.blockedByQuality} blocked</span>
+                <strong>{hundredStoreOperations.launchPacketQueue.mode}</strong>
+                <p>{hundredStoreOperations.launchPacketQueue.summary}</p>
+                <small>{hundredStoreOperations.launchPacketQueue.totals.currentStorePackets} current-store packets / {hundredStoreOperations.launchPacketQueue.totals.futureStorePackets} future-slot packets / max selectable {hundredStoreOperations.launchPacketQueue.totals.maxSelectablePackets}</small>
+              </article>
+              {hundredStoreLaunchPacketReceipt ? (
+                <article>
+                  <span>{hundredStoreLaunchPacketReceipt.dryRun ? "preview" : "recorded"} / {hundredStoreLaunchPacketReceipt.packetsSelected} selected / {hundredStoreLaunchPacketReceipt.packetsRecorded} recorded</span>
+                  <strong>Launch packet receipt</strong>
+                  <p>{hundredStoreLaunchPacketReceipt.summary}</p>
+                  <small>current {hundredStoreLaunchPacketReceipt.currentStorePackets} / future {hundredStoreLaunchPacketReceipt.futureStorePackets} / stores {hundredStoreLaunchPacketReceipt.storesCovered} / audit {hundredStoreLaunchPacketReceipt.auditLogId ?? "preview only"}</small>
+                </article>
+              ) : null}
+              {hundredStoreOperations.launchPacketQueue.packets.slice(0, 8).map((packet) => (
+                <article key={packet.launchPacketId}>
+                  <span>{packet.status.replace(/_/g, " ")} / score {packet.readinessScore} / {packet.growthLane.replace(/_/g, " ")}</span>
+                  <strong>{packet.storeName}</strong>
+                  <p>{packet.summary}</p>
+                  <small>{packet.shardId} / apps {packet.applicationPacketCount}/{packet.requiredApplicationRoles} / products {packet.currentProducts + packet.productDraftCount}/{packet.requiredProducts} / {packet.organicMoves.slice(0, 2).join(" / ") || "organic move pending"}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store autonomy run queue">
+              <h4>Autonomy Run Queue</h4>
+              <article>
+                <span>{hundredStoreOperations.autonomyRunQueue.totals.readyInternal} ready / {hundredStoreOperations.autonomyRunQueue.totals.approvalRequired} approval / {hundredStoreOperations.autonomyRunQueue.totals.waiting} waiting / {hundredStoreOperations.autonomyRunQueue.totals.blocked} blocked</span>
+                <strong>{hundredStoreOperations.autonomyRunQueue.mode}</strong>
+                <p>{hundredStoreOperations.autonomyRunQueue.summary}</p>
+                <small>{hundredStoreOperations.autonomyRunQueue.totals.cleanParallelJobs} clean parallel jobs / max selectable {hundredStoreOperations.autonomyRunQueue.totals.maxSelectableJobs} / shard cap {hundredStoreOperations.autonomyRunQueue.totals.maxJobsPerShard}</small>
+              </article>
+              {hundredStoreAutonomyRunReceipt ? (
+                <article>
+                  <span>{hundredStoreAutonomyRunReceipt.dryRun ? "preview" : "recorded"} / {hundredStoreAutonomyRunReceipt.jobsSelected} selected / {hundredStoreAutonomyRunReceipt.jobsRecorded} recorded</span>
+                  <strong>Autonomy run receipt</strong>
+                  <p>{hundredStoreAutonomyRunReceipt.summary}</p>
+                  <small>ready {hundredStoreAutonomyRunReceipt.readyInternal} / approval {hundredStoreAutonomyRunReceipt.approvalRequired} / stores {hundredStoreAutonomyRunReceipt.storesCovered} / audit {hundredStoreAutonomyRunReceipt.auditLogId ?? "preview only"}</small>
+                </article>
+              ) : null}
+              {hundredStoreOperations.autonomyRunQueue.jobs.slice(0, 10).map((job) => (
+                <article key={job.jobId}>
+                  <span>{job.status.replace(/_/g, " ")} / {job.jobType.replace(/_/g, " ")} / priority {job.priority}</span>
+                  <strong>{job.storeName}</strong>
+                  <p>{job.summary}</p>
+                  <small>{job.shardId} / {job.sourceModule} / {job.approvalGate}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store internal work lease plan">
+              <h4>Internal Work Lease Plan</h4>
+              <article>
+                <span>{hundredStoreOperations.workLeasePlan.totals.readyToClaim} ready / {hundredStoreOperations.workLeasePlan.totals.approvalHold} approval / {hundredStoreOperations.workLeasePlan.totals.waitingDependency} waiting / {hundredStoreOperations.workLeasePlan.totals.blocked} blocked</span>
+                <strong>{hundredStoreOperations.workLeasePlan.mode}</strong>
+                <p>{hundredStoreOperations.workLeasePlan.summary}</p>
+                <small>{hundredStoreOperations.workLeasePlan.totals.cleanParallelLeases} clean parallel leases / max selectable {hundredStoreOperations.workLeasePlan.totals.maxSelectableLeases} / max per shard {hundredStoreOperations.workLeasePlan.totals.maxLeasesPerShard}</small>
+              </article>
+              <article>
+                <span>{hundredStoreOperations.workLeasePlan.totals.duplicateDedupeKeys} duplicate dedupe keys / {hundredStoreOperations.workLeasePlan.totals.claimWindowMinutes} min claim window</span>
+                <strong>Lease safety posture</strong>
+                <p>Each lease carries a deterministic idempotency key, dependency list, retry policy, approval gate, and blocked external action list before any chain-of-command work can be claimed.</p>
+                <small>{hundredStoreOperations.workLeasePlan.totals.leases} leases / {hundredStoreOperations.workLeasePlan.totals.storesCovered} stores covered / {hundredStoreOperations.workLeasePlan.totals.shardCount} shards</small>
+              </article>
+              {hundredStoreWorkLeaseReceipt ? (
+                <article>
+                  <span>{hundredStoreWorkLeaseReceipt.dryRun ? "preview" : "recorded"} / {hundredStoreWorkLeaseReceipt.leasesSelected} selected / {hundredStoreWorkLeaseReceipt.leasesRecorded} recorded</span>
+                  <strong>Work lease receipt</strong>
+                  <p>{hundredStoreWorkLeaseReceipt.summary}</p>
+                  <small>ready {hundredStoreWorkLeaseReceipt.readyToClaim} / approval {hundredStoreWorkLeaseReceipt.approvalHold} / dedupe keys {hundredStoreWorkLeaseReceipt.dedupeKeys} / stores {hundredStoreWorkLeaseReceipt.storesCovered} / audit {hundredStoreWorkLeaseReceipt.auditLogId ?? "preview only"}</small>
+                </article>
+              ) : null}
+              {hundredStoreOperations.workLeasePlan.leases.slice(0, 10).map((lease) => (
+                <article key={lease.leaseId}>
+                  <span>{lease.status.replace(/_/g, " ")} / {lease.jobType.replace(/_/g, " ")} / priority {lease.priority}</span>
+                  <strong>{lease.storeName}</strong>
+                  <p>{lease.summary}</p>
+                  <small>{lease.shardId} / dedupe {lease.dedupeKey} / retry {lease.retryPolicy.maxAttempts}x / expires {lease.expiresAt}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store application readiness">
+              <h4>Application Readiness</h4>
+              <article>
+                <span>{hundredStoreOperations.applicationReadiness.totals.readinessCoveragePercent}% coverage / {hundredStoreOperations.applicationReadiness.totals.mappedStores}/{hundredStoreOperations.applicationReadiness.totals.targetStores} stores mapped</span>
+                <strong>Required apps and connector boundaries</strong>
+                <p>{hundredStoreOperations.applicationReadiness.summary}</p>
+                <small>{hundredStoreOperations.applicationReadiness.totals.approvedReadOnlyConnectors} approved read-only connector{hundredStoreOperations.applicationReadiness.totals.approvedReadOnlyConnectors === 1 ? "" : "s"} / {hundredStoreOperations.applicationReadiness.totals.requiredBoundaries} boundary record{hundredStoreOperations.applicationReadiness.totals.requiredBoundaries === 1 ? "" : "s"}</small>
+              </article>
+              {hundredStoreOperations.applicationReadiness.applications.map((application) => (
+                <article key={`hundred-store-app-${application.role}`}>
+                  <span>{application.readinessStatus} / {application.readyStores} ready / {application.pendingStores} pending / {application.blockedStores} blocked</span>
+                  <strong>{application.title}</strong>
+                  <p>{application.nextInternalAction}</p>
+                  <small>{application.providerNames.length > 0 ? application.providerNames.join(", ") : "provider not mapped"} / missing {application.missingStores}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store application connection workbench">
+              <h4>Application Connection Workbench</h4>
+              <article>
+                <span>{hundredStoreOperations.applicationConnectionWorkbench.totals.readyPackets} ready packets / {hundredStoreOperations.applicationConnectionWorkbench.totals.packets} total</span>
+                <strong>{hundredStoreOperations.applicationConnectionWorkbench.mode}</strong>
+                <p>{hundredStoreOperations.applicationConnectionWorkbench.summary}</p>
+                <small>{hundredStoreOperations.applicationConnectionWorkbench.totals.alreadyMappedPackets} mapped / {hundredStoreOperations.applicationConnectionWorkbench.totals.blockedPackets} blocked / {hundredStoreOperations.applicationConnectionWorkbench.totals.futureStoreTemplates} future template slots</small>
+              </article>
+              <article>
+                <span>{hundredStoreOperations.applicationConnectionWorkbench.totals.credentialEnvVars} credential env refs / {hundredStoreOperations.applicationConnectionWorkbench.totals.requiredArtifacts} artifacts</span>
+                <strong>Connection prep evidence</strong>
+                <p>Packets keep credential values out of ENTRAL and prepare only provider options, read-only scopes, approval checklists, and rollback plans.</p>
+                <small>{hundredStoreOperations.applicationConnectionWorkbench.totals.rollbackPlans} rollback steps / {hundredStoreOperations.applicationConnectionWorkbench.totals.storesCovered} stores covered</small>
+              </article>
+              {hundredStoreAppConnectionReceipt ? (
+                <article>
+                  <span>{hundredStoreAppConnectionReceipt.dryRun ? "preview" : "recorded"} / {hundredStoreAppConnectionReceipt.packetsSelected} selected / {hundredStoreAppConnectionReceipt.packetsRecorded} recorded</span>
+                  <strong>Application packet receipt</strong>
+                  <p>{hundredStoreAppConnectionReceipt.summary}</p>
+                  <small>stores {hundredStoreAppConnectionReceipt.storesCovered} / audit {hundredStoreAppConnectionReceipt.auditLogId ?? "none"} / roles {Object.entries(hundredStoreAppConnectionReceipt.roleCounts).map(([role, count]) => `${role.replace(/_/g, " ")} ${count}`).join(", ") || "none"}</small>
+                </article>
+              ) : null}
+              {hundredStoreOperations.applicationConnectionWorkbench.packets
+                .filter((packet) => packet.setupStatus !== "already_mapped")
+                .slice(0, 8)
+                .map((packet) => (
+                  <article key={`hundred-store-app-packet-${packet.storeId ?? "slot"}-${packet.role}`}>
+                    <span>{packet.setupStatus.replace(/_/g, " ")} / {packet.role.replace(/_/g, " ")}</span>
+                    <strong>{packet.storeName} / {packet.title}</strong>
+                    <p>{packet.providerOptions.join(", ")}. Read-only: {packet.readOnlyScopes.slice(0, 3).join(", ") || "manual review"}.</p>
+                    <small>{packet.shardId} / env refs {packet.credentialEnvVars.length} / artifacts {packet.requiredArtifacts.length} / rollback {packet.rollbackPlan.length}</small>
+                  </article>
+                ))}
+              {hundredStoreOperations.applicationConnectionWorkbench.templates.slice(0, 5).map((template) => (
+                <article key={`hundred-store-app-template-${template.role}`}>
+                  <span>{template.slotCount} future slots / {template.connectionMode.replace(/_/g, " ")}</span>
+                  <strong>{template.title} template</strong>
+                  <p>Reusable internal packet template for stores created later in the 100-store buildout.</p>
+                  <small>external execution {template.externalExecution ? "enabled" : "locked"} / provider {template.providerContacted ? "contacted" : "locked"}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store connector activation matrix">
+              <h4>Connector Activation Matrix</h4>
+              <article>
+                <span>{hundredStoreOperations.connectorActivationMatrix.totals.rows} rows / {hundredStoreOperations.connectorActivationMatrix.totals.targetStores} target stores</span>
+                <strong>{hundredStoreOperations.connectorActivationMatrix.mode}</strong>
+                <p>{hundredStoreOperations.connectorActivationMatrix.summary}</p>
+                <small>{hundredStoreOperations.connectorActivationMatrix.totals.currentStoreRows} current rows / {hundredStoreOperations.connectorActivationMatrix.totals.futureStoreRows} future rows / max selectable {hundredStoreOperations.connectorActivationMatrix.totals.maxSelectableRows}</small>
+              </article>
+              <article>
+                <span>{hundredStoreOperations.connectorActivationMatrix.totals.readyForConnectionDesign} design-ready / {hundredStoreOperations.connectorActivationMatrix.totals.credentialCustodyRequired} credential custody / {hundredStoreOperations.connectorActivationMatrix.totals.waitingForStoreShell} waiting</span>
+                <strong>Connector safety posture</strong>
+                <p>Activation rows prepare read-only scopes, dry-run request maps, approval checklists, and rollback plans while credential values and write scopes stay blocked.</p>
+                <small>{hundredStoreOperations.connectorActivationMatrix.totals.dryRunRequestMaps} dry-run maps / {hundredStoreOperations.connectorActivationMatrix.totals.credentialEnvVarRefs} env refs / {hundredStoreOperations.connectorActivationMatrix.totals.writeScopesBlocked} write scopes blocked</small>
+              </article>
+              {hundredStoreConnectorActivationReceipt ? (
+                <article>
+                  <span>{hundredStoreConnectorActivationReceipt.dryRun ? "preview" : "recorded"} / {hundredStoreConnectorActivationReceipt.rowsSelected} selected / {hundredStoreConnectorActivationReceipt.rowsRecorded} recorded</span>
+                  <strong>Connector activation receipt</strong>
+                  <p>{hundredStoreConnectorActivationReceipt.summary}</p>
+                  <small>stores {hundredStoreConnectorActivationReceipt.storesCovered} / env refs {hundredStoreConnectorActivationReceipt.credentialEnvVarRefs} / dry-run maps {hundredStoreConnectorActivationReceipt.dryRunRequestMaps} / write scopes blocked {hundredStoreConnectorActivationReceipt.writeScopesBlocked} / audit {hundredStoreConnectorActivationReceipt.auditLogId ?? "preview only"}</small>
+                </article>
+              ) : null}
+              {hundredStoreOperations.connectorActivationMatrix.rows.slice(0, 8).map((row) => (
+                <article key={`hundred-store-connector-activation-${row.rowId ?? row.storeId ?? row.storeName}-${row.role}`}>
+                  <span>{row.status.replace(/_/g, " ")} / {row.role.replace(/_/g, " ")} / readiness {row.readinessScore}</span>
+                  <strong>{row.storeName} / {row.title}</strong>
+                  <p>{row.providerOptions.join(", ")}. Read-only: {row.readOnlyScopes.slice(0, 3).join(", ") || "manual review"}.</p>
+                  <small>{row.shardId} / env refs {row.credentialEnvVars.length} / dry-run maps {row.dryRunRequestMap.length} / write scopes blocked {row.writeScopesBlocked.length} / approval {row.approvalChecklist.length}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store monitoring matrix">
+              <h4>Monitoring Matrix</h4>
+              <article>
+                <span>{hundredStoreOperations.monitoringMatrix.totals.storesCovered}/{hundredStoreOperations.totals.targetStores} stores covered / {hundredStoreOperations.monitoringMatrix.totals.twiceDaily} twice-daily</span>
+                <strong>{hundredStoreOperations.monitoringMatrix.mode}</strong>
+                <p>{hundredStoreOperations.monitoringMatrix.summary}</p>
+                <small>{formatMerchCurrency(hundredStoreOperations.monitoringMatrix.totals.dailyProfitVelocity)}/day tracked profit velocity / {hundredStoreOperations.monitoringMatrix.totals.missingStoreSlots} future slots</small>
+              </article>
+              <article>
+                <span>manual {hundredStoreOperations.monitoringMatrix.totals.manualSnapshots} / read-only {hundredStoreOperations.monitoringMatrix.totals.readOnlyImports} / scale {hundredStoreOperations.monitoringMatrix.totals.scaleReviews} / rotation {hundredStoreOperations.monitoringMatrix.totals.immediateRotationReviews}</span>
+                <strong>Signal queues</strong>
+                <p>Manual snapshots, read-only imports, scale reviews, and rotation reviews are separated before any store can consume launch or growth capacity.</p>
+                <small>daily {hundredStoreOperations.monitoringMatrix.totals.signalReady} ready / every 3 days {hundredStoreOperations.monitoringMatrix.totals.every3Days} / weekly {hundredStoreOperations.monitoringMatrix.totals.weeklyWatch}</small>
+              </article>
+              {hundredStoreMonitoringCycleReceipt ? (
+                <article>
+                  <span>{hundredStoreMonitoringCycleReceipt.dryRun ? "preview" : "recorded"} / {hundredStoreMonitoringCycleReceipt.itemsSelected} selected / {hundredStoreMonitoringCycleReceipt.itemsRecorded} recorded</span>
+                  <strong>Monitoring cycle receipt</strong>
+                  <p>{hundredStoreMonitoringCycleReceipt.summary}</p>
+                  <small>stores {hundredStoreMonitoringCycleReceipt.storesCovered} / required signals {hundredStoreMonitoringCycleReceipt.requiredSignals} / audit {hundredStoreMonitoringCycleReceipt.auditLogId ?? "preview only"} / queues {Object.entries(hundredStoreMonitoringCycleReceipt.queueCounts).map(([queue, count]) => `${queue.replace(/([A-Z])/g, " $1").toLowerCase()} ${count}`).join(", ") || "none"}</small>
+                </article>
+              ) : null}
+              {hundredStoreOperations.monitoringMatrix.items.slice(0, 8).map((item) => (
+                <article key={`hundred-store-monitoring-${item.businessId}`}>
+                  <span>{item.signalStatus.replace(/_/g, " ")} / {item.cadence.replace(/_/g, " ")} / priority {item.priority}</span>
+                  <strong>{item.businessName}</strong>
+                  <p>{item.triggerReason}</p>
+                  <small>{item.shardId} / lane {item.lane.replace(/_/g, " ")} / tracked assets {item.trackedAssets} / signals {item.requiredSignals.slice(0, 4).join(", ")}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store growth allocation router">
+              <h4>Growth Allocation Router</h4>
+              <article>
+                <span>{hundredStoreOperations.growthAllocationRouter.totals.routedAdGrowthPercent}% routed / {hundredStoreOperations.growthAllocationRouter.totals.retainedForDefensePercent}% retained</span>
+                <strong>{hundredStoreOperations.growthAllocationRouter.mode}</strong>
+                <p>{hundredStoreOperations.growthAllocationRouter.summary}</p>
+                <small>paid-scale {hundredStoreOperations.growthAllocationRouter.totals.paidScaleReview} / organic-first {hundredStoreOperations.growthAllocationRouter.totals.organicFirst} / defensive {hundredStoreOperations.growthAllocationRouter.totals.defensiveHold} / watch {hundredStoreOperations.growthAllocationRouter.totals.watch}</small>
+              </article>
+              <article>
+                <span>scale avg {hundredStoreOperations.growthAllocationRouter.totals.averageScalePressure}/100 / kill avg {hundredStoreOperations.growthAllocationRouter.totals.averageKillPressure}/100</span>
+                <strong>25% Ad/Growth advisory routing</strong>
+                <p>Shares describe how the Financial Orchestrator Ad/Growth bucket should be prioritized after separate owner approval; no spend is authorized here.</p>
+                <small>{hundredStoreOperations.growthAllocationRouter.totals.totalAllocationWeight} allocation weight / {hundredStoreOperations.growthAllocationRouter.totals.storesCovered} stores covered</small>
+              </article>
+              {hundredStoreOperations.growthAllocationRouter.candidates.slice(0, 8).map((candidate) => (
+                <article key={`hundred-store-growth-allocation-${candidate.businessId}`}>
+                  <span>{candidate.allocationLane.replace(/_/g, " ")} / {candidate.adGrowthBucketSharePercent}% of Ad/Growth bucket / {candidate.recommendedSpendPriority.replace(/_/g, " ")}</span>
+                  <strong>{candidate.businessName}</strong>
+                  <p>{candidate.reason}</p>
+                  <small>{candidate.shardId} / scale {candidate.scalePressure}/100 / kill {candidate.killPressure}/100 / {candidate.requiredApproval}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store daily operating loop">
+              <h4>Daily Operating Loop</h4>
+              <article>
+                <span>{hundredStoreOperations.dailyOperatingLoop.totals.ready} ready / {hundredStoreOperations.dailyOperatingLoop.totals.approvalRequired} approval-required / {hundredStoreOperations.dailyOperatingLoop.totals.waiting} waiting</span>
+                <strong>{hundredStoreOperations.dailyOperatingLoop.mode}</strong>
+                <p>{hundredStoreOperations.dailyOperatingLoop.summary}</p>
+                <small>{hundredStoreOperations.dailyOperatingLoop.cadence.replace(/_/g, " ")} / stores {hundredStoreOperations.dailyOperatingLoop.totals.storesCovered} / safe batch {hundredStoreOperations.dailyOperatingLoop.totals.safeBatchSize}</small>
+              </article>
+              {hundredStoreOperations.dailyOperatingLoop.steps.map((step) => (
+                <article key={step.stepId}>
+                  <span>#{step.priority} / {step.status.replace(/_/g, " ")} / {step.phase.replace(/_/g, " ")} / max {step.maxItems}</span>
+                  <strong>{step.title}</strong>
+                  <p>{step.reason}</p>
+                  <small>{step.confirmation} / {step.endpoint} / {step.expectedInternalEffect}</small>
+                </article>
+              ))}
+            </section>
+
+            {hundredStoreDailySupervisor ? (
+              <section className="revenue-engine-list" aria-label="100-store daily supervisor">
+                <h4>Daily Supervisor</h4>
+                <article>
+                  <span>{hundredStoreDailySupervisor.totals.selected} selected / {hundredStoreDailySupervisor.totals.approvalRequired} approval-required / {hundredStoreDailySupervisor.totals.manualOnly} manual-only</span>
+                  <strong>{hundredStoreDailySupervisor.mode}</strong>
+                  <p>{hundredStoreDailySupervisor.summary}</p>
+                  <small>{hundredStoreDailySupervisor.operatingMode.replace(/_/g, " ")} / stores {hundredStoreDailySupervisor.totals.storesCovered} / max steps {hundredStoreDailySupervisor.totals.maxSteps}</small>
+                </article>
+                {hundredStoreDailySupervisorReceipt ? (
+                  <article>
+                    <span>{hundredStoreDailySupervisorReceipt.dryRun ? "preview" : "recorded"} / {hundredStoreDailySupervisorReceipt.stepsSelected} selected / {hundredStoreDailySupervisorReceipt.stepsRecorded} recorded</span>
+                    <strong>Supervisor cycle receipt</strong>
+                    <p>{hundredStoreDailySupervisorReceipt.summary}</p>
+                    <small>app packets {hundredStoreDailySupervisorReceipt.appPacketsRecorded} / connector rows {hundredStoreDailySupervisorReceipt.connectorRowsRecorded} / monitoring {hundredStoreDailySupervisorReceipt.monitoringItemsRecorded} / product drafts {hundredStoreDailySupervisorReceipt.productDraftsRecorded} / launch packets {hundredStoreDailySupervisorReceipt.launchPacketsRecorded} / autonomy jobs {hundredStoreDailySupervisorReceipt.autonomyJobsRecorded} / work leases {hundredStoreDailySupervisorReceipt.workLeasesRecorded} / operations {hundredStoreDailySupervisorReceipt.operationCyclesRun} / audit {hundredStoreDailySupervisorReceipt.auditLogId ?? "preview only"}</small>
+                  </article>
+                ) : null}
+                {hundredStoreDailySupervisorResults.map((result) => (
+                  <article key={`hundred-store-supervisor-result-${result.stepId}`}>
+                    <span>{result.dryRun ? "preview" : "recorded"} / {result.action.replace(/_/g, " ")}</span>
+                    <strong>{result.title}</strong>
+                    <p>{result.summary}</p>
+                    <small>audit {result.auditLogId ?? "cycle summary"} / packets {result.packetsRecorded ?? result.packetsSelected ?? 0} / connector rows {result.connectorRowsRecorded ?? result.connectorRowsSelected ?? 0} / work leases {result.workLeasesRecorded ?? result.workLeasesSelected ?? 0} / monitoring {result.itemsRecorded ?? result.itemsSelected ?? 0} / operations {result.operationCyclesRun ?? 0}</small>
+                  </article>
+                ))}
+                {hundredStoreDailySupervisor.steps.map((step) => (
+                  <article key={`hundred-store-supervisor-step-${step.stepId}`}>
+                    <span>#{step.priority} / {step.status.replace(/_/g, " ")} / {step.action.replace(/_/g, " ")} / max {step.maxItems}</span>
+                    <strong>{step.title}</strong>
+                    <p>{step.reason}</p>
+                    <small>{step.requiresOwnerApproval ? "approval gate" : "internal review"} / {step.confirmation} / {step.endpoint}</small>
+                  </article>
+                ))}
+              </section>
+            ) : null}
+
+            <section className="revenue-engine-list" aria-label="100-store operating control grid">
+              <h4>Operating Control Grid</h4>
+              <article>
+                <span>{hundredStoreOperations.controlGrid.safeToRunParallelInternalJobs ? "parallel safe" : "needs review"} / {hundredStoreOperations.controlGrid.totals.readyInternalJobs} ready jobs</span>
+                <strong>{hundredStoreOperations.controlGrid.mode}</strong>
+                <p>{hundredStoreOperations.controlGrid.summary}</p>
+                <small>{hundredStoreOperations.controlGrid.totals.visibleStores}/{hundredStoreOperations.controlGrid.totals.targetStores} visible stores / {hundredStoreOperations.controlGrid.totals.overloadedShards} overloaded shard{hundredStoreOperations.controlGrid.totals.overloadedShards === 1 ? "" : "s"} / {hundredStoreOperations.controlGrid.totals.missingStoreSlots} empty slot{hundredStoreOperations.controlGrid.totals.missingStoreSlots === 1 ? "" : "s"}</small>
+              </article>
+              <article>
+                <span>launch {hundredStoreOperations.controlGrid.totals.launchLaneStores} / scale {hundredStoreOperations.controlGrid.totals.scaleLaneStores} / repair {hundredStoreOperations.controlGrid.totals.repairLaneStores}</span>
+                <strong>Lane load</strong>
+                <p>Watch {hundredStoreOperations.controlGrid.totals.watchLaneStores}, kill {hundredStoreOperations.controlGrid.totals.killLaneStores}, and ready-parallel {hundredStoreOperations.controlGrid.totals.readyParallelStores} stores are separated before any internal command can run.</p>
+                <small>apps ready {hundredStoreOperations.controlGrid.totals.applicationReady} / partial {hundredStoreOperations.controlGrid.totals.applicationPartial} / missing {hundredStoreOperations.controlGrid.totals.applicationMissing} / blocked {hundredStoreOperations.controlGrid.totals.applicationBlocked}</small>
+              </article>
+              {hundredStoreOperations.controlGrid.shards
+                .filter((shard) => shard.stores > 0 || shard.overloaded)
+                .slice(0, 8)
+                .map((shard) => (
+                  <article key={`hundred-store-grid-shard-${shard.id}`}>
+                    <span>{shard.stores}/{shard.maxStores} stores / {shard.capacityUtilizationPercent}% used</span>
+                    <strong>{shard.id}{shard.overloaded ? " overloaded" : ""}</strong>
+                    <p>{shard.nextInternalFocus}</p>
+                    <small>{shard.readyInternalJobs} ready job{shard.readyInternalJobs === 1 ? "" : "s"} / launch {shard.laneCounts.launch_now} / scale {shard.laneCounts.scale} / repair {shard.laneCounts.quality_repair + shard.laneCounts.throttle} / kill {shard.laneCounts.kill}</small>
+                  </article>
+                ))}
+              {hundredStoreOperations.controlGrid.stores.slice(0, 8).map((store) => (
+                <article key={`hundred-store-grid-store-${store.businessId}`}>
+                  <span>#{store.queuePosition} / {store.lane.replace(/_/g, " ")} / {store.scheduleState.replace(/_/g, " ")}</span>
+                  <strong>{store.businessName}</strong>
+                  <p>{store.nextInternalAction.replace(/_/g, " ")}. Jobs: {store.allowedInternalJobs.map((job) => job.replace(/_/g, " ")).join(", ")}.</p>
+                  <small>{store.shardId} / score {store.score.finalRank}/100 / apps {store.applicationReadiness.readinessStatus} / missing {store.applicationReadiness.missingRoles.length}</small>
+                </article>
+              ))}
+            </section>
+
+            {hundredStoreOperationsCommand ? (
+              <section className="revenue-engine-list" aria-label="100-store command queue">
+                <h4>100-Store Command Queue</h4>
+                <article>
+                  <span>{hundredStoreOperationsCommand.applied.dryRun ? "preview" : "recorded"} / {hundredStoreOperationsCommand.applied.cyclesRun}/{hundredStoreOperationsCommand.applied.cyclesRequested} cycles</span>
+                  <strong>{hundredStoreOperationsCommand.afterCommandPlan.selectedCommand?.sourceActionTitle ?? "No executable command selected"}</strong>
+                  <p>{hundredStoreOperationsCommand.applied.summary}</p>
+                  <small>audit {hundredStoreOperationsCommand.applied.auditLogId ?? "none"} / stage {hundredStoreOperationsCommand.applied.selectedStage?.replace(/_/g, " ") ?? "watch"} / external execution locked</small>
+                </article>
+                {hundredStoreOperationsCommand.cycles.map((cycle) => (
+                  <article key={`hundred-store-cycle-${cycle.cycle}`}>
+                    <span>cycle {cycle.cycle} / {cycle.stage.replace(/_/g, " ")}</span>
+                    <strong>{cycle.command.sourceActionTitle}</strong>
+                    <p>Store gap {cycle.beforeStoreGap} to {cycle.afterStoreGap}; readiness {cycle.beforeReadinessScore}/100 to {cycle.afterReadinessScore}/100.</p>
+                    <small>batch run {cycle.batchRunId ?? "preview"} / {cycle.resultSummary}</small>
+                  </article>
+                ))}
+                <article>
+                  <span>{hundredStoreOperationsCommand.afterCommandPlan.totals.executable} executable / {hundredStoreOperationsCommand.afterCommandPlan.totals.manualReview} manual-review</span>
+                  <strong>{hundredStoreOperationsCommand.afterCommandPlan.mode}</strong>
+                  <p>{hundredStoreOperationsCommand.afterCommandPlan.summary}</p>
+                  <small>ready {hundredStoreOperationsCommand.afterCommandPlan.totals.ready} / waiting {hundredStoreOperationsCommand.afterCommandPlan.totals.waiting} / blocked {hundredStoreOperationsCommand.afterCommandPlan.totals.blocked}</small>
+                </article>
+              </section>
+            ) : null}
+
+            <section className="revenue-engine-list" aria-label="100-store readiness gates">
+              <h4>100-Store Gates</h4>
+              {hundredStoreOperations.gates.map((gate) => (
+                <article key={gate.title}>
+                  <span>{gate.status} / {gate.actionEndpoint}</span>
+                  <strong>{gate.title}</strong>
+                  <p>{gate.evidence.join(" ")}</p>
+                  <small>external execution {gate.externalExecution ? "enabled" : "locked"} / provider {gate.providerContacted ? "contacted" : "locked"}</small>
+                </article>
+              ))}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store next internal actions">
+              <h4>Next Internal Actions</h4>
+              {hundredStoreOperations.nextActions.length > 0 ? hundredStoreOperations.nextActions.map((action) => (
+                <article key={`${action.priority}-${action.title}`}>
+                  <span>{action.status} / priority {action.priority}</span>
+                  <strong>{action.title}</strong>
+                  <p>{action.reason}</p>
+                  <small>{action.confirmation} / {action.endpoint} / {action.expectedInternalEffect}</small>
+                </article>
+              )) : (
+                <article>
+                  <span>watch</span>
+                  <strong>No immediate internal action</strong>
+                  <p>100-store operations are in watch mode until new score, launch, or connector evidence arrives.</p>
+                </article>
+              )}
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store concurrency plan">
+              <h4>Concurrency And Shards</h4>
+              <article>
+                <span>{hundredStoreOperations.concurrency.configuredParallelSlots} configured slots / {hundredStoreOperations.concurrency.safeInternalJobSlots} active job slots</span>
+                <strong>{hundredStoreOperations.concurrency.shardCount} configured shards</strong>
+                <p>{hundredStoreOperations.concurrency.minimumRecommendedShards} shards recommended minimum at {hundredStoreOperations.concurrency.maxStoresPerShard} stores per shard.</p>
+                <small>{hundredStoreOperations.concurrency.overloadedShardIds.length > 0 ? `overloaded: ${hundredStoreOperations.concurrency.overloadedShardIds.join(", ")}` : "no overloaded shards detected"}</small>
+              </article>
+              <article>
+                <span>{hundredStoreOperations.batchPlan.recommendedBatchSize} store next batch / {hundredStoreOperations.batchPlan.batchRunsRequired} batch runs</span>
+                <strong>Batch buildout plan</strong>
+                <p>{hundredStoreOperations.batchPlan.storeGap} store shell{hundredStoreOperations.batchPlan.storeGap === 1 ? "" : "s"} and {hundredStoreOperations.batchPlan.productDraftDeficit} product draft{hundredStoreOperations.batchPlan.productDraftDeficit === 1 ? "" : "s"} needed for the 100-store floor.</p>
+                <small>target {hundredStoreOperations.batchPlan.targetStores} / current {hundredStoreOperations.batchPlan.currentStores}</small>
+              </article>
+            </section>
+
+            <section className="revenue-engine-list" aria-label="100-store profit acceleration">
+              <h4>Profit Acceleration</h4>
+              <article>
+                <span>{formatMerchCurrency(hundredStoreOperations.profitAcceleration.dailyProfitVelocity)}/day profit / {formatMerchCurrency(hundredStoreOperations.profitAcceleration.dailyRevenueVelocity)}/day revenue</span>
+                <strong>{hundredStoreOperations.profitAcceleration.launchNowStores} launch / {hundredStoreOperations.profitAcceleration.scaleLaneStores} scale / {hundredStoreOperations.profitAcceleration.repairLaneStores} repair / {hundredStoreOperations.profitAcceleration.killLaneStores} kill</strong>
+                <p>Scale pressure is advisory and routes through Financial Orchestrator; ad spend and payment actions remain locked.</p>
+              </article>
+              {hundredStoreOperations.profitAcceleration.topScaleCandidates.slice(0, 5).map((candidate) => (
+                <article key={`hundred-store-scale-${candidate.businessId}`}>
+                  <span>scale pressure {candidate.scalePressure}/100 / {formatMerchCurrency(candidate.profitVelocity)}/day</span>
+                  <strong>{candidate.businessName}</strong>
+                  <p>{candidate.shardId}</p>
+                  <small>candidate {candidate.businessId}</small>
+                </article>
+              ))}
+            </section>
+
+            <div className="growth-blocked-actions">
+              <strong>100-store operations stay private</strong>
+              {hundredStoreOperations.blockedExternalActions.slice(0, 5).map((action) => <span key={action}>{action}</span>)}
             </div>
           </section>
         ) : null}

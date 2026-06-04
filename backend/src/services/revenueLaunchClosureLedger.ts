@@ -153,7 +153,7 @@ function optionsWithDefaults(input: Partial<RevenueLaunchClosureLedgerOptions> =
   return {
     expectedOrderValue: money(clamp(Number(provided.expectedOrderValue ?? defaultOptions.expectedOrderValue), 1, 10_000)),
     includeBlocked: provided.includeBlocked ?? defaultOptions.includeBlocked,
-    maxEntries: clamp(Math.round(provided.maxEntries ?? defaultOptions.maxEntries), 1, 50),
+    maxEntries: clamp(Math.round(provided.maxEntries ?? defaultOptions.maxEntries), 1, 100),
     minClosureScore: clamp(Math.round(provided.minClosureScore ?? defaultOptions.minClosureScore), 1, 100),
     monitoringWindowDays: clamp(Math.round(provided.monitoringWindowDays ?? defaultOptions.monitoringWindowDays), 1, 30),
     targetFirstWeekRevenue: money(clamp(Number(provided.targetFirstWeekRevenue ?? defaultOptions.targetFirstWeekRevenue), 0, 1_000_000))

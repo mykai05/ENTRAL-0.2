@@ -7,6 +7,15 @@ import {
   applyRevenueBusinessFleetLiveLaunchPackageSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
+  applyRevenueHundredStoreAppConnectionPacketsSchema,
+  applyRevenueHundredStoreAutonomyRunSchema,
+  applyRevenueHundredStoreConnectorActivationSchema,
+  applyRevenueHundredStoreDailySupervisorSchema,
+  applyRevenueHundredStoreLaunchPacketsSchema,
+  applyRevenueHundredStoreMonitoringCycleSchema,
+  applyRevenueHundredStoreOperationsSchema,
+  applyRevenueHundredStoreProductDepthSchema,
+  applyRevenueHundredStoreWorkLeasesSchema,
   applyRevenueFirstBusinessAutonomousLaunchSchema,
   applyRevenueFirstBusinessExecuteSchema,
   applyRevenueFirstBusinessInternalLaunchSchema,
@@ -80,6 +89,7 @@ import {
   revenueMoneyArmyGenerateScoreBatchQuerySchema,
   revenueMoneyArmyBatchPipelineQuerySchema,
   revenueBusinessFleetSchedulerQuerySchema,
+  revenueHundredStoreOperationsQuerySchema,
   revenueEngineQuerySchema,
   revenuePerformanceQuerySchema,
   revenueStoreSetupQuerySchema,
@@ -581,6 +591,93 @@ describe("validation schemas", () => {
       shardCount: "64",
       targetBusinesses: "2500"
     });
+    const hundredStoreOps = revenueHundredStoreOperationsQuerySchema.parse({
+      launchWaveSize: "25",
+      maxParallelLaunches: "25",
+      maxParallelScaleActions: "50",
+      maxStoresPerShard: "8",
+      minProductsPerStore: "5",
+      safeBatchSize: "25",
+      shardCount: "32",
+      targetStores: "100"
+    });
+    const hundredStoreOpsApply = applyRevenueHundredStoreOperationsSchema.parse({
+      confirm: "RUN INTERNAL 100 STORE OPERATIONS STEP",
+      dryRun: false,
+      maxCycles: "4",
+      podProvider: "Printify",
+      safeBatchSize: "25",
+      targetStores: "100"
+    });
+    const hundredStoreAppConnectionPackets = applyRevenueHundredStoreAppConnectionPacketsSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS",
+      dryRun: true,
+      maxPackets: "100",
+      roles: ["content", "manual_import"],
+      setupStatuses: ["ready_for_internal_packet"],
+      storeIds: ["store-1"],
+      targetStores: "100"
+    });
+    const hundredStoreConnectorActivation = applyRevenueHundredStoreConnectorActivationSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX",
+      dryRun: true,
+      maxRows: "25",
+      roles: ["storefront", "manual_import"],
+      rowStatuses: ["ready_for_connection_design", "credential_custody_required"],
+      storeIds: ["store-1"],
+      targetStores: "100"
+    });
+    const hundredStoreMonitoringCycle = applyRevenueHundredStoreMonitoringCycleSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE MONITORING CYCLE",
+      dryRun: true,
+      maxItems: "25",
+      queues: ["readOnlyImports", "scaleReviews"],
+      signalStatuses: ["needs_readonly_import", "scale_review_required"],
+      storeIds: ["store-1"],
+      targetStores: "100"
+    });
+    const hundredStoreProductDepth = applyRevenueHundredStoreProductDepthSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE PRODUCT DEPTH DRAFTS",
+      draftStatuses: ["ready_for_internal_draft", "waiting_for_store_shell"],
+      dryRun: true,
+      maxDrafts: "25",
+      storeIds: ["store-1"],
+      targetStores: "100"
+    });
+    const hundredStoreLaunchPackets = applyRevenueHundredStoreLaunchPacketsSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE LAUNCH PACKETS",
+      dryRun: true,
+      maxPackets: "25",
+      packetStatuses: ["ready_for_internal_launch_review", "waiting_for_store_shell"],
+      storeIds: ["store-1"],
+      targetStores: "100"
+    });
+    const hundredStoreAutonomyRun = applyRevenueHundredStoreAutonomyRunSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE AUTONOMY RUN",
+      dryRun: true,
+      jobStatuses: ["ready_internal", "approval_required"],
+      jobTypes: ["prepare_store_shell", "record_launch_packet"],
+      maxJobs: "25",
+      storeIds: ["store-1"],
+      targetStores: "100"
+    });
+    const hundredStoreWorkLeases = applyRevenueHundredStoreWorkLeasesSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE WORK LEASES",
+      dryRun: true,
+      jobTypes: ["prepare_store_shell", "record_launch_packet"],
+      leaseStatuses: ["ready_to_claim", "approval_hold"],
+      maxLeases: "25",
+      storeIds: ["store-1"],
+      targetStores: "100"
+    });
+    const hundredStoreDailySupervisor = applyRevenueHundredStoreDailySupervisorSchema.parse({
+      confirm: "RUN INTERNAL 100 STORE DAILY SUPERVISOR",
+      dryRun: false,
+      maxSteps: "8",
+      mode: "include_batch_creation",
+      podProvider: "Printify",
+      targetStores: "100"
+    });
     const apply = applyRevenueBusinessFleetLaunchWaveSchema.parse({
       businessIds: ["store-1"],
       confirm: "RUN INTERNAL BUSINESS FLEET LAUNCH WAVE",
@@ -687,6 +784,82 @@ describe("validation schemas", () => {
       targetBusinesses: 2500
     });
     expect(query.maxParallelScaleActions).toBe(25);
+    expect(hundredStoreOps).toMatchObject({
+      launchWaveSize: 25,
+      maxParallelLaunches: 25,
+      maxParallelScaleActions: 50,
+      maxStoresPerShard: 8,
+      minProductsPerStore: 5,
+      safeBatchSize: 25,
+      shardCount: 32,
+      targetStores: 100
+    });
+    expect(hundredStoreOpsApply).toMatchObject({
+      dryRun: false,
+      maxCycles: 4,
+      podProvider: "Printify",
+      safeBatchSize: 25,
+      targetStores: 100
+    });
+    expect(hundredStoreAppConnectionPackets).toMatchObject({
+      dryRun: true,
+      maxPackets: 100,
+      roles: ["content", "manual_import"],
+      setupStatuses: ["ready_for_internal_packet"],
+      storeIds: ["store-1"]
+    });
+    expect(hundredStoreConnectorActivation).toMatchObject({
+      dryRun: true,
+      maxRows: 25,
+      roles: ["storefront", "manual_import"],
+      rowStatuses: ["ready_for_connection_design", "credential_custody_required"],
+      storeIds: ["store-1"],
+      targetStores: 100
+    });
+    expect(hundredStoreMonitoringCycle).toMatchObject({
+      dryRun: true,
+      maxItems: 25,
+      queues: ["readOnlyImports", "scaleReviews"],
+      signalStatuses: ["needs_readonly_import", "scale_review_required"],
+      storeIds: ["store-1"]
+    });
+    expect(hundredStoreProductDepth).toMatchObject({
+      draftStatuses: ["ready_for_internal_draft", "waiting_for_store_shell"],
+      dryRun: true,
+      maxDrafts: 25,
+      storeIds: ["store-1"],
+      targetStores: 100
+    });
+    expect(hundredStoreLaunchPackets).toMatchObject({
+      dryRun: true,
+      maxPackets: 25,
+      packetStatuses: ["ready_for_internal_launch_review", "waiting_for_store_shell"],
+      storeIds: ["store-1"],
+      targetStores: 100
+    });
+    expect(hundredStoreAutonomyRun).toMatchObject({
+      dryRun: true,
+      jobStatuses: ["ready_internal", "approval_required"],
+      jobTypes: ["prepare_store_shell", "record_launch_packet"],
+      maxJobs: 25,
+      storeIds: ["store-1"],
+      targetStores: 100
+    });
+    expect(hundredStoreWorkLeases).toMatchObject({
+      dryRun: true,
+      jobTypes: ["prepare_store_shell", "record_launch_packet"],
+      leaseStatuses: ["ready_to_claim", "approval_hold"],
+      maxLeases: 25,
+      storeIds: ["store-1"],
+      targetStores: 100
+    });
+    expect(hundredStoreDailySupervisor).toMatchObject({
+      dryRun: false,
+      maxSteps: 8,
+      mode: "include_batch_creation",
+      podProvider: "Printify",
+      targetStores: 100
+    });
     expect(apply.businessIds).toEqual(["store-1"]);
     expect(apply.dryRun).toBe(true);
     expect(seedGap.dryRun).toBe(true);
@@ -724,6 +897,97 @@ describe("validation schemas", () => {
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ shardCount: "300" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
+    expect(() => revenueHundredStoreOperationsQuerySchema.parse({ targetStores: "99" })).toThrow();
+    expect(() => revenueHundredStoreOperationsQuerySchema.parse({ safeBatchSize: "51" })).toThrow();
+    expect(() => applyRevenueHundredStoreOperationsSchema.parse({ confirm: "RUN" })).toThrow();
+    expect(() => applyRevenueHundredStoreOperationsSchema.parse({
+      confirm: "RUN INTERNAL 100 STORE OPERATIONS STEP",
+      maxCycles: 5
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreAppConnectionPacketsSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueHundredStoreAppConnectionPacketsSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS",
+      maxPackets: 501
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreAppConnectionPacketsSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS",
+      roles: ["analytics"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreConnectorActivationSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueHundredStoreConnectorActivationSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX",
+      maxRows: 501
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreConnectorActivationSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX",
+      rowStatuses: ["provider_live_write"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreConnectorActivationSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE CONNECTOR ACTIVATION MATRIX",
+      roles: ["ad_account"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreMonitoringCycleSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueHundredStoreMonitoringCycleSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE MONITORING CYCLE",
+      maxItems: 101
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreMonitoringCycleSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE MONITORING CYCLE",
+      queues: ["externalAds"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreProductDepthSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueHundredStoreProductDepthSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE PRODUCT DEPTH DRAFTS",
+      maxDrafts: 251
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreProductDepthSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE PRODUCT DEPTH DRAFTS",
+      draftStatuses: ["external_upload_ready"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreLaunchPacketsSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueHundredStoreLaunchPacketsSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE LAUNCH PACKETS",
+      maxPackets: 251
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreLaunchPacketsSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE LAUNCH PACKETS",
+      packetStatuses: ["external_launch_ready"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreAutonomyRunSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueHundredStoreAutonomyRunSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE AUTONOMY RUN",
+      maxJobs: 251
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreAutonomyRunSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE AUTONOMY RUN",
+      jobStatuses: ["external_execution"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreAutonomyRunSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE AUTONOMY RUN",
+      jobTypes: ["provider_write"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreWorkLeasesSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueHundredStoreWorkLeasesSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE WORK LEASES",
+      maxLeases: 501
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreWorkLeasesSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE WORK LEASES",
+      leaseStatuses: ["external_claimed"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreWorkLeasesSchema.parse({
+      confirm: "RECORD INTERNAL 100 STORE WORK LEASES",
+      jobTypes: ["provider_write"]
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreDailySupervisorSchema.parse({ confirm: "RUN" })).toThrow();
+    expect(() => applyRevenueHundredStoreDailySupervisorSchema.parse({
+      confirm: "RUN INTERNAL 100 STORE DAILY SUPERVISOR",
+      maxSteps: 12
+    })).toThrow();
+    expect(() => applyRevenueHundredStoreDailySupervisorSchema.parse({
+      confirm: "RUN INTERNAL 100 STORE DAILY SUPERVISOR",
+      mode: "external_execution"
+    })).toThrow();
     expect(() => applyRevenueBusinessFleetLaunchWaveSchema.parse({ confirm: "RUN" })).toThrow();
     expect(() => applyRevenueBusinessFleetSeedGapSchema.parse({ confirm: "CREATE" })).toThrow();
     expect(() => applyRevenueBusinessFleetSeedGapSchema.parse({
@@ -1158,7 +1422,7 @@ describe("validation schemas", () => {
   it("validates revenue launch operations pack query and audit gate", () => {
     const query = revenueLaunchOperationsPackQuerySchema.parse({
       includeBlocked: "false",
-      maxPacks: "6",
+      maxPacks: "100",
       minConnectorReadiness: "82",
       minLaunchReadiness: "76",
       minProviderReadiness: "79"
@@ -1171,7 +1435,7 @@ describe("validation schemas", () => {
     });
 
     expect(query.includeBlocked).toBe(false);
-    expect(query.maxPacks).toBe(6);
+    expect(query.maxPacks).toBe(100);
     expect(query.minConnectorReadiness).toBe(82);
     expect(query.minLaunchReadiness).toBe(76);
     expect(query.minProviderReadiness).toBe(79);
@@ -1179,6 +1443,9 @@ describe("validation schemas", () => {
     expect(apply.storeIds).toEqual(["store_1"]);
     expect(() => revenueLaunchOperationsPackQuerySchema.parse({
       maxPacks: 0
+    })).toThrow();
+    expect(() => revenueLaunchOperationsPackQuerySchema.parse({
+      maxPacks: 101
     })).toThrow();
     expect(() => applyRevenueLaunchOperationsPackSchema.parse({
       confirm: "RECORD"
@@ -1189,7 +1456,7 @@ describe("validation schemas", () => {
     const query = revenueLaunchClosureLedgerQuerySchema.parse({
       expectedOrderValue: "39",
       includeBlocked: "false",
-      maxEntries: "6",
+      maxEntries: "100",
       minClosureScore: "78",
       monitoringWindowDays: "10",
       targetFirstWeekRevenue: "500"
@@ -1203,7 +1470,7 @@ describe("validation schemas", () => {
 
     expect(query.expectedOrderValue).toBe(39);
     expect(query.includeBlocked).toBe(false);
-    expect(query.maxEntries).toBe(6);
+    expect(query.maxEntries).toBe(100);
     expect(query.minClosureScore).toBe(78);
     expect(query.monitoringWindowDays).toBe(10);
     expect(query.targetFirstWeekRevenue).toBe(500);
@@ -1211,6 +1478,9 @@ describe("validation schemas", () => {
     expect(apply.storeIds).toEqual(["store_1"]);
     expect(() => revenueLaunchClosureLedgerQuerySchema.parse({
       maxEntries: 0
+    })).toThrow();
+    expect(() => revenueLaunchClosureLedgerQuerySchema.parse({
+      maxEntries: 101
     })).toThrow();
     expect(() => applyRevenueLaunchClosureLedgerSchema.parse({
       confirm: "RECORD"
@@ -1220,7 +1490,7 @@ describe("validation schemas", () => {
   it("validates revenue live connector readiness query and audit gate", () => {
     const query = revenueLiveConnectorReadinessQuerySchema.parse({
       includeBlocked: "false",
-      maxEntries: "7",
+      maxEntries: "100",
       minClosureScore: "82",
       minReadOnlyConnectors: "2",
       requireOperationsPackAudit: "false",
@@ -1234,7 +1504,7 @@ describe("validation schemas", () => {
     });
 
     expect(query.includeBlocked).toBe(false);
-    expect(query.maxEntries).toBe(7);
+    expect(query.maxEntries).toBe(100);
     expect(query.minClosureScore).toBe(82);
     expect(query.minReadOnlyConnectors).toBe(2);
     expect(query.requireOperationsPackAudit).toBe(false);
@@ -1243,6 +1513,9 @@ describe("validation schemas", () => {
     expect(apply.storeIds).toEqual(["store_1"]);
     expect(() => revenueLiveConnectorReadinessQuerySchema.parse({
       maxEntries: 0
+    })).toThrow();
+    expect(() => revenueLiveConnectorReadinessQuerySchema.parse({
+      maxEntries: 101
     })).toThrow();
     expect(() => applyRevenueLiveConnectorReadinessSchema.parse({
       confirm: "RECORD"
