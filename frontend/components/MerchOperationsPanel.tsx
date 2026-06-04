@@ -174,6 +174,7 @@ import {
   type ShopifyConnectionSnapshot,
   type ShopifyConnectionVerification,
   type ShopifyConnectionsResponse,
+  type ShopifyFirstLiveRevenueLoopResponse,
   type ShopifyOAuthStartResponse,
   type ShopifyStoreCreationCaptureResponse,
   type ShopifyStoreCreationHandoffJobResponse,
@@ -195,6 +196,7 @@ const shopifyStoreCreationHandoffJobConfirm = "QUEUE SHOPIFY STORE CREATION HAND
 const shopifyStoreCreationCaptureConfirm = "CAPTURE SHOPIFY STORE CREATION";
 const shopifyOAuthStartConfirm = "START SHOPIFY OAUTH";
 const shopifyStorefrontDraftConfirm = "EXECUTE CONTROLLED SHOPIFY STOREFRONT DRAFT";
+const shopifyFirstLiveRevenueLoopConfirm = "RUN FIRST LIVE REVENUE LOOP";
 
 function canQueueShopifyApprovalResume(approval: GrowthApprovalRecord) {
   const action = approval.packet.shopifyAutonomy?.action;
@@ -386,6 +388,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [providerPayloadApprovalResponse, setProviderPayloadApprovalResponse] = useState<ProviderPayloadApprovalResponse | null>(null);
   const [providerHandoffResponse, setProviderHandoffResponse] = useState<ProviderHandoffResponse | null>(null);
   const [shopifyStorefrontDraft, setShopifyStorefrontDraft] = useState<ShopifyStorefrontDraftResponse | null>(null);
+  const [shopifyFirstLiveLoop, setShopifyFirstLiveLoop] = useState<ShopifyFirstLiveRevenueLoopResponse | null>(null);
   const [shopifyConnection, setShopifyConnection] = useState<ShopifyConnectionSnapshot | null>(null);
   const [shopifyConnectionVerification, setShopifyConnectionVerification] = useState<ShopifyConnectionVerification | null>(null);
   const [shopifyConnectionShopDomain, setShopifyConnectionShopDomain] = useState("");
@@ -405,6 +408,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [shopifyDraftConnectorApproval, setShopifyDraftConnectorApproval] = useState(false);
   const [shopifyDraftUnlockPhrase, setShopifyDraftUnlockPhrase] = useState("");
   const [shopifyDraftMessage, setShopifyDraftMessage] = useState<string | null>(null);
+  const [shopifyFirstLiveLoopMessage, setShopifyFirstLiveLoopMessage] = useState<string | null>(null);
   const [growthPlan, setGrowthPlan] = useState<GrowthPlan | null>(null);
   const [growthApprovalResponse, setGrowthApprovalResponse] = useState<GrowthApprovalResponse | null>(null);
   const [growthApprovals, setGrowthApprovals] = useState<GrowthApprovalRecord[]>([]);
@@ -416,6 +420,8 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
   const [isRequestingProviderPayloadApproval, setIsRequestingProviderPayloadApproval] = useState(false);
   const [isPreviewingShopifyDraft, setIsPreviewingShopifyDraft] = useState(false);
   const [isExecutingShopifyDraft, setIsExecutingShopifyDraft] = useState(false);
+  const [isPreviewingShopifyFirstLiveLoop, setIsPreviewingShopifyFirstLiveLoop] = useState(false);
+  const [isRunningShopifyFirstLiveLoop, setIsRunningShopifyFirstLiveLoop] = useState(false);
   const [isConnectingShopify, setIsConnectingShopify] = useState(false);
   const [isLoadingShopifyConnection, setIsLoadingShopifyConnection] = useState(false);
   const [isStartingShopifyOAuth, setIsStartingShopifyOAuth] = useState(false);
@@ -1331,6 +1337,75 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
         setIsPreviewingShopifyDraft(false);
       } else {
         setIsExecutingShopifyDraft(false);
+      }
+    }
+  }
+
+  async function runShopifyFirstLiveRevenueLoop(dryRun: boolean) {
+    if (!selectedStore || selectedStore.storePlatform !== "Shopify") {
+      setError("Select a Shopify Client Merch Store before running the first live revenue loop.");
+      return;
+    }
+
+    if (dryRun) {
+      setIsPreviewingShopifyFirstLiveLoop(true);
+    } else {
+      setIsRunningShopifyFirstLiveLoop(true);
+    }
+    setError(null);
+    setShopifyFirstLiveLoopMessage(null);
+
+    try {
+      const response = await apiFetch<ShopifyFirstLiveRevenueLoopResponse>(`/merch/stores/${selectedStore.id}/first-live-revenue-loop`, {
+        json: {
+          autoApproveInternalProducts: true,
+          confirm: shopifyFirstLiveRevenueLoopConfirm,
+          createProductBatch: true,
+          dryRun,
+          includeCollections: true,
+          includeProducts: true,
+          includeStoreShell: true,
+          maxProducts: 5,
+          minimumProducts: 3,
+          note: dryRun
+            ? "Previewed from Merch Operations panel first live revenue loop controls."
+            : "Ran from Merch Operations panel first live revenue loop controls.",
+          productCount: 5,
+          ...(dryRun ? {} : {
+            connectorApproval: shopifyDraftConnectorApproval,
+            liveUnlockPhrase: shopifyDraftUnlockPhrase
+          })
+        },
+        method: "POST"
+      });
+
+      setShopifyFirstLiveLoop(response);
+      setProviderPayloadPackage(response.plan.providerPackage);
+      setPerformanceDigest(response.plan.performanceDigest);
+      setShopifyStorefrontDraft({
+        auditLogId: response.auditLogId,
+        plan: response.plan.shopifyDraft
+      });
+
+      const productSummary = response.createdProducts.length > 0
+        ? ` ${response.createdProducts.length} internal product${response.createdProducts.length === 1 ? "" : "s"} created.`
+        : "";
+      const message = dryRun
+        ? `First live revenue loop previewed for ${selectedStore.businessName}: ${response.plan.summary}`
+        : `First live revenue loop ran for ${selectedStore.businessName}: ${response.plan.summary}${productSummary}`;
+      setShopifyFirstLiveLoopMessage(message);
+      onEvent?.(message);
+
+      if (!dryRun && response.createdProducts.length > 0) {
+        onRefreshStores();
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "First live revenue loop failed.");
+    } finally {
+      if (dryRun) {
+        setIsPreviewingShopifyFirstLiveLoop(false);
+      } else {
+        setIsRunningShopifyFirstLiveLoop(false);
       }
     }
   }
@@ -9441,6 +9516,14 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             {isExecutingShopifyDraft ? <Loader2 aria-hidden="true" size={15} /> : <Rocket aria-hidden="true" size={15} />}
             Run Shopify draft
           </button>
+          <button type="button" onClick={() => void runShopifyFirstLiveRevenueLoop(true)} disabled={isPreviewingShopifyFirstLiveLoop || !selectedStore || selectedStore.storePlatform !== "Shopify"}>
+            {isPreviewingShopifyFirstLiveLoop ? <Loader2 aria-hidden="true" size={15} /> : <Gauge aria-hidden="true" size={15} />}
+            Preview first live loop
+          </button>
+          <button type="button" className="primary" onClick={() => void runShopifyFirstLiveRevenueLoop(false)} disabled={isRunningShopifyFirstLiveLoop || !selectedStore || selectedStore.storePlatform !== "Shopify"}>
+            {isRunningShopifyFirstLiveLoop ? <Loader2 aria-hidden="true" size={15} /> : <Rocket aria-hidden="true" size={15} />}
+            Run first live loop
+          </button>
           <button type="button" className="primary" onClick={generateReport} disabled={isGeneratingReport || !selectedStore}>
             {isGeneratingReport ? <Loader2 aria-hidden="true" size={15} /> : <FileText aria-hidden="true" size={15} />}
             Generate report
@@ -9465,6 +9548,7 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
         {shopifyOAuthMessage ? <p className="growth-approval-message" role="status">{shopifyOAuthMessage}</p> : null}
         {shopifyConnectionMessage ? <p className="growth-approval-message" role="status">{shopifyConnectionMessage}</p> : null}
         {shopifyDraftMessage ? <p className="growth-approval-message" role="status">{shopifyDraftMessage}</p> : null}
+        {shopifyFirstLiveLoopMessage ? <p className="growth-approval-message" role="status">{shopifyFirstLiveLoopMessage}</p> : null}
         {shopifyStoreCreationHandoffJob ? (
           <section className="provider-payload-result" aria-label="Shopify store creation handoff job">
             <header>
@@ -9565,6 +9649,68 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
             <div className="growth-blocked-actions">
               <strong>Blocked external actions</strong>
               {shopifyAutonomyRun.plan.blockedExternalActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
+            </div>
+          </section>
+        ) : null}
+        {shopifyFirstLiveLoop ? (
+          <section className="provider-payload-result" aria-label="First live Shopify revenue loop">
+            <header>
+              <span>{shopifyFirstLiveLoop.plan.mode} / {shopifyFirstLiveLoop.plan.status.replace(/_/g, " ")}</span>
+              <strong>{shopifyFirstLiveLoop.plan.nextAutonomousStep.replace(/_/g, " ")}</strong>
+              <p>{shopifyFirstLiveLoop.plan.summary}</p>
+              <small>Audit log: {shopifyFirstLiveLoop.auditLogId}</small>
+            </header>
+            <div className="provider-payload-grid">
+              <article>
+                <span>Products</span>
+                <strong>{shopifyFirstLiveLoop.plan.productReadiness.readyForDraftProducts}/{shopifyFirstLiveLoop.plan.productReadiness.productTarget} draft ready</strong>
+                <p>{shopifyFirstLiveLoop.plan.productReadiness.createdInternalProducts} created / {shopifyFirstLiveLoop.plan.productReadiness.approvedProducts} approved / minimum {shopifyFirstLiveLoop.plan.productReadiness.minimumProducts}</p>
+              </article>
+              <article>
+                <span>Shopify Draft</span>
+                <strong>{shopifyFirstLiveLoop.plan.shopifyDraft.status.replace(/_/g, " ")}</strong>
+                <p>{shopifyFirstLiveLoop.plan.totals.shopifyDraftActions} planned / {shopifyFirstLiveLoop.plan.totals.shopifyExecutedActions} executed</p>
+              </article>
+              <article>
+                <span>Performance</span>
+                <strong>{shopifyFirstLiveLoop.plan.totals.performanceSnapshots} snapshots</strong>
+                <p>{shopifyFirstLiveLoop.plan.totals.scaleSignals} scale signals / {shopifyFirstLiveLoop.plan.totals.rotationChanges} rotations</p>
+              </article>
+              <article>
+                <span>Today</span>
+                <strong>{shopifyFirstLiveLoop.plan.todayLaunchWindow.canMoveToday ? "Can move" : "Blocked"}</strong>
+                <p>{shopifyFirstLiveLoop.plan.dryRun ? "Preview only" : shopifyFirstLiveLoop.plan.actualExternalActionsExecuted ? "Draft execution recorded" : "No external action executed"}</p>
+              </article>
+              <article>
+                <span>Provider Payloads</span>
+                <strong>{shopifyFirstLiveLoop.plan.totals.providerPayloads} drafts</strong>
+                <p>{shopifyFirstLiveLoop.plan.providerContacted ? "Shopify contacted" : "Provider execution locked"}</p>
+              </article>
+            </div>
+            {shopifyFirstLiveLoop.createdProducts.length > 0 ? (
+              <div className="growth-approval-actions" aria-label="First live loop created products">
+                {shopifyFirstLiveLoop.createdProducts.slice(0, 5).map((product) => (
+                  <article key={product.id}>
+                    <span>{product.status}</span>
+                    <strong>{product.productName}</strong>
+                    <p>{product.id}</p>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+            <div className="growth-blocked-actions">
+              <strong>Current blockers</strong>
+              {shopifyFirstLiveLoop.plan.todayLaunchWindow.blockers.length > 0
+                ? shopifyFirstLiveLoop.plan.todayLaunchWindow.blockers.slice(0, 5).map((blocker) => <span key={blocker}>{blocker}</span>)
+                : <span>No loop blocker detected</span>}
+            </div>
+            <div className="growth-blocked-actions">
+              <strong>Required owner actions</strong>
+              {shopifyFirstLiveLoop.plan.todayLaunchWindow.requiredHumanActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
+            </div>
+            <div className="growth-blocked-actions">
+              <strong>Blocked external actions</strong>
+              {shopifyFirstLiveLoop.plan.blockedExternalActions.slice(0, 4).map((action) => <span key={action}>{action}</span>)}
             </div>
           </section>
         ) : null}

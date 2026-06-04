@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
-import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueHundredStoreAppConnectionPacketsApplyResponse, RevenueHundredStoreAutonomyRunApplyResponse, RevenueHundredStoreConnectorActivationApplyResponse, RevenueHundredStoreDailySupervisorApplyResponse, RevenueHundredStoreDailySupervisorPlan, RevenueHundredStoreLaunchPacketsApplyResponse, RevenueHundredStoreMonitoringCycleApplyResponse, RevenueHundredStoreOperationsApplyResponse, RevenueHundredStoreOperationsPlan, RevenueHundredStoreOperationsResponse, RevenueHundredStoreProductDepthApplyResponse, RevenueHundredStoreWorkLeasesApplyResponse, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse, RevenuePortfolioDashboardManualSignalCaptureApplyResponse, RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse, RevenuePortfolioDashboardPlan, RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan, ShopifyAutonomyResumeJobResponse, ShopifyAutonomyRunResponse, ShopifyConnectionResponse, ShopifyDevDashboardBrowserTask, ShopifyOAuthStartResponse, ShopifyStoreCreationCaptureResponse, ShopifyStoreProvisioningResponse, ShopifyStorefrontDraftResponse } from "../lib/merch-store";
+import type { ClientMerchStore, DigitalProductApplyResponse, DigitalProductPortfolioPlan, FacelessContentPipelineApplyResponse, FacelessContentPipelinePlan, FacelessContentPerformanceDigest, FinancialOrchestratorApplyResponse, FinancialOrchestratorPlan, FinancialPayoutReviewApplyResponse, FinancialPayoutReviewPlan, FinancialReleaseGovernanceApplyResponse, FinancialReleaseGovernancePlan, FinancialScalingBudgetReviewApplyResponse, FinancialScalingBudgetReviewPlan, FinancialScalingExecutionLedgerApplyResponse, FinancialScalingExecutionLedgerPlan, FinancialScalingSpendControlApplyResponse, FinancialScalingSpendControlPlan, GrowthApprovalRecord, GrowthApprovalResponse, GrowthOrchestrationPreviewResponse, GrowthPlan, PortfolioCommandCenterApplyResponse, PortfolioCommandCenterPlan, ProviderHandoffResponse, ProviderPayloadApprovalResponse, ProviderPayloadPackage, RevenueAssetActionApplyResponse, RevenueAssetBatchActionApplyResponse, RevenueAssetControlLedgerPlan, RevenueAssetControlRecoveryPlan, RevenueAssetPortfolio, RevenueAssetReviewQueuePlan, RevenueAssetRotationDecision, RevenueBusinessFleetLaunchGapAccelerationResponse, RevenueBusinessFleetLaunchGateResponse, RevenueBusinessFleetLiveLaunchPackageResponse, RevenueBusinessFleetLaunchGapPlan, RevenueBusinessFleetLaunchGapSeedApplyResponse, RevenueBusinessFleetPlan, RevenueEnginePlan, RevenueFirstBusinessAutonomousLaunchApplyResponse, RevenueFirstBusinessAutonomousLaunchPlan, RevenueFirstBusinessExecuteApplyResponse, RevenueFirstBusinessExecutionPlan, RevenueFirstBusinessInternalLaunchApplyResponse, RevenueFirstBusinessInternalLaunchPlan, RevenueFirstBusinessLaunchPlan, RevenueFirstBusinessLiveExecutorApplyResponse, RevenueFirstBusinessLiveExecutorPlan, RevenueFirstCashReadinessPlan, RevenueFirstCashSprintPlan, RevenueFirstStorePrepareApplyResponse, RevenueFirstStorePreparationPlan, RevenueHundredStoreAppConnectionPacketsApplyResponse, RevenueHundredStoreAutonomyRunApplyResponse, RevenueHundredStoreConnectorActivationApplyResponse, RevenueHundredStoreDailySupervisorApplyResponse, RevenueHundredStoreDailySupervisorPlan, RevenueHundredStoreLaunchPacketsApplyResponse, RevenueHundredStoreMonitoringCycleApplyResponse, RevenueHundredStoreOperationsApplyResponse, RevenueHundredStoreOperationsPlan, RevenueHundredStoreOperationsResponse, RevenueHundredStoreProductDepthApplyResponse, RevenueHundredStoreWorkLeasesApplyResponse, RevenueLaunchPipelineApplyResponse, RevenueLaunchPipelinePlan, RevenueListingOptimizationApplyResponse, RevenueListingOptimizationPlan, RevenueMoneyArmyBatchPipelineApplyResponse, RevenueMoneyArmyBatchPipelinePlan, RevenueMoneyArmyBatchRun, RevenueMoneyArmyFirstBusinessLaunchPackageApplyResponse, RevenueMoneyArmyFirstBusinessLaunchPackageResponse, RevenueMoneyArmyGenerateScoreBatchApplyResponse, RevenueMoneyArmyGenerateScoreBatchPlan, RevenuePerformanceDigest, RevenuePerformanceIngestResponse, RevenuePerformanceRotationApplyResponse, RevenuePortfolioDashboardManualLaunchEvidenceApplyResponse, RevenuePortfolioDashboardManualSignalCaptureApplyResponse, RevenuePortfolioDashboardOwnerLaunchApprovalApplyResponse, RevenuePortfolioDashboardPlan, RevenuePortfolioDashboardWinnerClonePacketApprovalApplyResponse, RevenueRotationApplyResponse, RevenueStoreSetupApplyResponse, RevenueStoreSetupPlan, ShopifyAutonomyResumeJobResponse, ShopifyAutonomyRunResponse, ShopifyConnectionResponse, ShopifyDevDashboardBrowserTask, ShopifyFirstLiveRevenueLoopResponse, ShopifyOAuthStartResponse, ShopifyStoreCreationCaptureResponse, ShopifyStoreProvisioningResponse, ShopifyStorefrontDraftResponse } from "../lib/merch-store";
 
 vi.mock("../lib/api", () => ({
   apiFetch: vi.fn()
@@ -10572,6 +10572,69 @@ const shopifyStorefrontDraftResponse: ShopifyStorefrontDraftResponse = {
   }
 };
 
+const shopifyFirstLiveRevenueLoopResponse: ShopifyFirstLiveRevenueLoopResponse = {
+  auditLogId: "audit-first-live-loop-1",
+  createdProducts: [{
+    id: "pod-created-1",
+    productName: "Iron House Training Tee",
+    status: "Approved"
+  }],
+  plan: {
+    actualExternalActionsExecuted: false,
+    blockedExternalActions: [
+      "Public publishing remains separate from the draft executor.",
+      "Payment, payout, billing, supplier charges, tax, legal policy, domain, ad spend, and customer messaging actions remain separately gated."
+    ],
+    createdInternalProducts: 1,
+    dryRun: true,
+    externalExecution: false,
+    generatedAt: "2026-06-02T00:00:00.000Z",
+    guardrails: [
+      "Create internal product records before provider or storefront execution.",
+      "Use Shopify draft resources only until owner review and public launch approval are complete."
+    ],
+    mode: "First Live Shopify Revenue Loop",
+    nextAutonomousStep: "run_controlled_shopify_draft",
+    performanceDigest,
+    productReadiness: {
+      approvedProducts: 3,
+      createdInternalProducts: 1,
+      minimumProducts: 3,
+      productTarget: 5,
+      readyForDraftProducts: 3,
+      status: "ready"
+    },
+    providerContacted: false,
+    providerPackage: providerPayloadPackage,
+    shopifyDraft: shopifyStorefrontDraftResponse.plan,
+    status: "ready_for_draft_execution",
+    store: {
+      businessName: "Iron House Gym",
+      id: "store-1",
+      launchStatus: "Awaiting Approval",
+      platform: "Shopify"
+    },
+    summary: "Iron House Gym has 2 Shopify draft actions ready for the controlled draft executor.",
+    todayLaunchWindow: {
+      blockers: [],
+      canMoveToday: true,
+      requiredHumanActions: [
+        "Run the controlled Shopify draft executor before launch review can begin.",
+        "Drive real traffic through approved channels after draft resources are reviewed."
+      ]
+    },
+    totals: {
+      blockedExternalActions: 2,
+      performanceSnapshots: performanceDigest.totals.snapshots,
+      providerPayloads: providerPayloadPackage.payloadCount,
+      rotationChanges: performanceDigest.totals.rotationChanges,
+      scaleSignals: performanceDigest.totals.scaleRecommendations,
+      shopifyDraftActions: shopifyStorefrontDraftResponse.plan.storefrontActions.length,
+      shopifyExecutedActions: shopifyStorefrontDraftResponse.plan.totals.executedActions
+    }
+  }
+};
+
 const providerApprovalRecord: GrowthApprovalRecord = {
   ...approvalRecord,
   auditLogId: "audit-provider-1",
@@ -12840,6 +12903,44 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("Launch readiness receipt")).toBeInTheDocument();
     expect(within(region).getByText("Publishing products, collections, pages, policies, or theme navigation to public sales channels without separate public launch approval")).toBeInTheDocument();
     expect(screen.getByText("Shopify storefront draft previewed for Iron House Gym. No Shopify request was sent.")).toBeInTheDocument();
+  });
+
+  it("previews the first live Shopify revenue loop from the merch panel", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(shopifyFirstLiveRevenueLoopResponse);
+
+    render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /preview first live loop/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/stores/store-1/first-live-revenue-loop", {
+      json: {
+        autoApproveInternalProducts: true,
+        confirm: "RUN FIRST LIVE REVENUE LOOP",
+        createProductBatch: true,
+        dryRun: true,
+        includeCollections: true,
+        includeProducts: true,
+        includeStoreShell: true,
+        maxProducts: 5,
+        minimumProducts: 3,
+        note: "Previewed from Merch Operations panel first live revenue loop controls.",
+        productCount: 5
+      },
+      method: "POST"
+    });
+
+    const region = await screen.findByRole("region", { name: /first live shopify revenue loop/i });
+    expect(within(region).getByText(/First Live Shopify Revenue Loop \/ ready for draft execution/i)).toBeInTheDocument();
+    expect(within(region).getByText("run controlled shopify draft")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Gym has 2 Shopify draft actions ready for the controlled draft executor.")).toBeInTheDocument();
+    expect(within(region).getByText("3/5 draft ready")).toBeInTheDocument();
+    expect(within(region).getByText("1 created / 3 approved / minimum 3")).toBeInTheDocument();
+    expect(within(region).getByText("Preview only")).toBeInTheDocument();
+    expect(within(region).getByText("Iron House Training Tee")).toBeInTheDocument();
+    expect(within(region).getByText("No loop blocker detected")).toBeInTheDocument();
+    expect(within(region).getByText("Payment, payout, billing, supplier charges, tax, legal policy, domain, ad spend, and customer messaging actions remain separately gated.")).toBeInTheDocument();
+    expect(screen.getByText("First live revenue loop previewed for Iron House Gym: Iron House Gym has 2 Shopify draft actions ready for the controlled draft executor.")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /controlled shopify storefront draft/i })).toBeInTheDocument();
   });
 
   it("previews a Shopify store creation provisioning packet before connection", async () => {

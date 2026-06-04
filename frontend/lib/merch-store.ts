@@ -459,6 +459,85 @@ export type ShopifyStorefrontDraftResponse = {
   plan: ShopifyStorefrontDraftPlan;
 };
 
+export type ShopifyFirstLiveRevenueLoopStatus =
+  | "drafts_created"
+  | "failed"
+  | "needs_owner_unlock"
+  | "needs_performance_signal"
+  | "needs_products"
+  | "needs_shopify_connection"
+  | "not_applicable"
+  | "ready_for_draft_execution"
+  | "ready_for_launch_review"
+  | "rotation_review"
+  | "watching";
+
+export type ShopifyFirstLiveRevenueLoopNextStep =
+  | "apply_performance_rotation"
+  | "connect_or_create_shopify_store"
+  | "create_internal_product_batch"
+  | "ingest_performance_snapshot"
+  | "review_draft_resources"
+  | "run_controlled_shopify_draft"
+  | "skip_non_shopify_store"
+  | "watch_first_sales";
+
+export type ShopifyFirstLiveRevenueLoopPlan = {
+  actualExternalActionsExecuted: boolean;
+  blockedExternalActions: string[];
+  createdInternalProducts: number;
+  dryRun: boolean;
+  externalExecution: boolean;
+  generatedAt: string;
+  guardrails: string[];
+  mode: "First Live Shopify Revenue Loop";
+  nextAutonomousStep: ShopifyFirstLiveRevenueLoopNextStep;
+  performanceDigest: RevenuePerformanceDigest;
+  productReadiness: {
+    approvedProducts: number;
+    createdInternalProducts: number;
+    minimumProducts: number;
+    productTarget: number;
+    readyForDraftProducts: number;
+    status: "ready" | "needs_products";
+  };
+  providerContacted: boolean;
+  providerPackage: ProviderPayloadPackage;
+  shopifyDraft: ShopifyStorefrontDraftPlan;
+  status: ShopifyFirstLiveRevenueLoopStatus;
+  store: {
+    businessName: string;
+    id: string;
+    launchStatus: string;
+    platform: string;
+  };
+  summary: string;
+  todayLaunchWindow: {
+    blockers: string[];
+    canMoveToday: boolean;
+    requiredHumanActions: string[];
+  };
+  totals: {
+    blockedExternalActions: number;
+    providerPayloads: number;
+    shopifyDraftActions: number;
+    shopifyExecutedActions: number;
+    performanceSnapshots: number;
+    rotationChanges: number;
+    scaleSignals: number;
+  };
+};
+
+export type ShopifyFirstLiveRevenueLoopResponse = {
+  auditLogId: string;
+  createdProducts: Array<{
+    id: string;
+    productName: string;
+    status: PodProductStatus;
+  }>;
+  plan: ShopifyFirstLiveRevenueLoopPlan;
+};
+
 export type ShopifyConnectionSnapshot = {
   apiVersion: string;
   connectedAt: string;

@@ -18,9 +18,11 @@ import {
   shopifyOAuthStartSchema,
   shopifyStoreCreationHandoffJobSchema,
   shopifyStoreCreationCaptureSchema,
+  shopifyFirstLiveRevenueLoopSchema,
   shopifyStoreProvisioningSchema,
   shopifyStorefrontDraftSchema,
   updateClientMerchStoreSchema,
+  type CreatePodProductInput,
   type CreateClientMerchStoreInput,
   type ShopifyAutonomyRunInput,
   type ShopifyAutonomyResumeJobInput,
@@ -28,6 +30,7 @@ import {
   type ShopifyOAuthStartInput,
   type ShopifyStoreCreationHandoffJobInput,
   type ShopifyStoreCreationCaptureInput,
+  type ShopifyFirstLiveRevenueLoopInput,
   type ShopifyStoreProvisioningInput,
   type ShopifyStorefrontDraftInput,
   type UpdateClientMerchStoreInput
@@ -36,6 +39,8 @@ import { buildGrowthApprovalPacket, buildGrowthOrchestrationPreview, buildGrowth
 import { recordAuditLog } from "../services/audit.js";
 import { buildLaunchPackage, buildMerchReport, type MerchProductSnapshot } from "../services/merchReports.js";
 import { buildProviderHandoffBundle, buildProviderPayloadApprovalPacket, buildProviderPayloadPackage, isProviderPayloadApprovalPacket } from "../services/merchProviderPayloads.js";
+import { formatComplianceNotes } from "../services/complianceGuardrails.js";
+import { generateProductBatch } from "../services/productBatchGenerator.js";
 import { parseSecureJson, stringifySecureJson } from "../services/secureJson.js";
 import { credentialsFromShopifyConnection, getShopifyConnectionCredentials, listShopifyConnections, publicShopifyConnection, upsertShopifyConnection, verifyShopifyConnection } from "../services/shopifyConnections.js";
 import { executeShopifyAutonomyRun } from "../services/shopifyAutonomyRun.js";
@@ -47,6 +52,8 @@ import { appendShopifyOAuthResultToReturnUrl, buildShopifyOAuthStart, exchangeSh
 import { attachShopifyOAuthContinuationAudit, createShopifyOAuthContinuation, getPendingShopifyOAuthContinuation, markShopifyOAuthContinuationConsumed, markShopifyOAuthContinuationFailed } from "../services/shopifyOAuthContinuations.js";
 import { buildShopifyStoreProvisioningPlan } from "../services/shopifyStoreProvisioning.js";
 import { executeShopifyStorefrontDraft } from "../services/shopifyStorefrontExecutor.js";
+import { executeShopifyFirstLiveRevenueLoop, type ShopifyFirstLiveRevenueLoopProduct } from "../services/shopifyFirstLiveRevenueLoop.js";
+import { normalizeRevenuePerformanceSnapshot } from "../services/revenuePerformance.js";
 
 const storePlatformToDb = {
   Etsy: "ETSY",
@@ -131,6 +138,21 @@ const productStatusFromDb = {
   ARCHIVED: "Archived"
 } as const;
 
+const productStatusToDb = {
+  Idea: "IDEA",
+  "Prompt Ready": "PROMPT_READY",
+  Designed: "DESIGNED",
+  "Mockup Created": "MOCKUP_CREATED",
+  "Listing Drafted": "LISTING_DRAFTED",
+  "Compliance Review": "COMPLIANCE_REVIEW",
+  "Awaiting Approval": "AWAITING_APPROVAL",
+  Approved: "APPROVED",
+  Published: "PUBLISHED",
+  "Needs Revision": "NEEDS_REVISION",
+  Rejected: "REJECTED",
+  Archived: "ARCHIVED"
+} as const;
+
 type ClientMerchStoreRecord = {
   id: string;
   userId: string;
@@ -167,15 +189,42 @@ type PodProductSnapshotRecord = {
   complianceNotes: string | null;
   designConcept: string;
   designPrompt: string;
+  designTheme: string;
   estimatedProfit: { toString(): string };
+  id: string;
   listingDescription: string | null;
   listingTitle: string | null;
   productName: string;
   productType: string;
   productionPartnerDisclosureNeeded: boolean;
+  profitMargin: { toString(): string };
   retailPrice: { toString(): string };
   status: keyof typeof productStatusFromDb;
+  storeId: string;
   tags: string[];
+};
+
+type RevenuePerformanceSnapshotRecord = {
+  adSpend: { toString(): string };
+  createdAt: Date;
+  digitalDeliveryCost: { toString(): string };
+  discounts: { toString(): string };
+  grossRevenue: { toString(): string };
+  id: string;
+  impressions: number;
+  netProfit: { toString(): string };
+  notes: string | null;
+  periodEnd: Date;
+  periodStart: Date;
+  platformFees: { toString(): string };
+  productId: string | null;
+  productionCost: { toString(): string };
+  refunds: { toString(): string };
+  shippingCost: { toString(): string };
+  source: string;
+  storeId: string;
+  unitsSold: number;
+  visits: number;
 };
 
 function decimalToNumber(value: { toString(): string }) {
@@ -251,6 +300,76 @@ function merchProductSnapshot(product: PodProductSnapshotRecord): MerchProductSn
     retailPrice: decimalToNumber(product.retailPrice),
     status: productStatusFromDb[product.status],
     tags: product.tags
+  };
+}
+
+function firstLiveRevenueLoopProductSnapshot(product: PodProductSnapshotRecord): ShopifyFirstLiveRevenueLoopProduct {
+  return {
+    ...merchProductSnapshot(product),
+    designTheme: product.designTheme,
+    id: product.id,
+    profitMargin: decimalToNumber(product.profitMargin),
+    status: productStatusFromDb[product.status] as ShopifyFirstLiveRevenueLoopProduct["status"],
+    storeId: product.storeId
+  };
+}
+
+function revenuePerformanceSnapshot(record: RevenuePerformanceSnapshotRecord) {
+  return normalizeRevenuePerformanceSnapshot({
+    adSpend: decimalToNumber(record.adSpend),
+    createdAt: record.createdAt.toISOString(),
+    digitalDeliveryCost: decimalToNumber(record.digitalDeliveryCost),
+    discounts: decimalToNumber(record.discounts),
+    grossRevenue: decimalToNumber(record.grossRevenue),
+    id: record.id,
+    impressions: record.impressions,
+    netProfit: decimalToNumber(record.netProfit),
+    notes: record.notes,
+    periodEnd: record.periodEnd.toISOString(),
+    periodStart: record.periodStart.toISOString(),
+    platformFees: decimalToNumber(record.platformFees),
+    productId: record.productId,
+    productionCost: decimalToNumber(record.productionCost),
+    refunds: decimalToNumber(record.refunds),
+    shippingCost: decimalToNumber(record.shippingCost),
+    source: record.source as ReturnType<typeof normalizeRevenuePerformanceSnapshot>["source"],
+    storeId: record.storeId,
+    unitsSold: record.unitsSold,
+    visits: record.visits
+  });
+}
+
+function createLoopPodProductData(input: CreatePodProductInput) {
+  const complianceNotes = formatComplianceNotes(input);
+
+  return {
+    aiDisclosureNeeded: input.aiDisclosureNeeded,
+    colorDirection: input.colorDirection,
+    commandGeneralId: input.commandGeneralId,
+    commandGeneralName: input.commandGeneralName,
+    commandMarshalId: input.commandMarshalId,
+    commandMarshalName: input.commandMarshalName,
+    complianceNotes: input.complianceNotes ? `${input.complianceNotes} ${complianceNotes}` : complianceNotes,
+    designConcept: input.designConcept,
+    designPrompt: input.designPrompt,
+    designTheme: input.designTheme,
+    estimatedPlatformFees: input.estimatedPlatformFees,
+    estimatedProfit: input.estimatedProfit,
+    listingDescription: input.listingDescription,
+    listingTitle: input.listingTitle,
+    mockupNotes: input.mockupNotes,
+    productName: input.productName,
+    productType: input.productType,
+    productionPartnerDisclosureNeeded: input.productionPartnerDisclosureNeeded,
+    profitMargin: input.profitMargin,
+    retailPrice: input.retailPrice,
+    shippingCost: input.shippingCost,
+    status: productStatusToDb[input.status],
+    storeId: input.storeId,
+    supplierCost: input.supplierCost,
+    tags: input.tags,
+    targetAudience: input.targetAudience,
+    typographyDirection: input.typographyDirection
   };
 }
 
@@ -1362,6 +1481,122 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     return reply.send({
       auditLogId: auditLog.id,
+      plan
+    });
+  });
+
+  app.post("/merch/stores/:storeId/first-live-revenue-loop", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const params = clientMerchStoreIdParamsSchema.parse(request.params);
+    const input: ShopifyFirstLiveRevenueLoopInput = shopifyFirstLiveRevenueLoopSchema.parse(request.body ?? {});
+    const store = await prisma.clientMerchStore.findFirst({
+      where: {
+        id: params.storeId,
+        userId: currentUser.sub
+      },
+      include: {
+        performanceSnapshots: {
+          orderBy: { periodEnd: "desc" },
+          take: 250
+        },
+        products: {
+          orderBy: { updatedAt: "desc" }
+        }
+      }
+    });
+
+    if (!store) {
+      return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
+    }
+
+    if (store.storePlatform !== "SHOPIFY") {
+      return reply.code(400).send({ error: "Bad Request", message: "First live revenue loop currently runs only for Shopify merch stores." });
+    }
+
+    const existingApprovedProducts = store.products.filter((product) => product.status === "APPROVED" || product.status === "PUBLISHED").length;
+    const missingProducts = Math.max(0, input.maxProducts - existingApprovedProducts);
+    const productsToCreate = input.createProductBatch && !input.dryRun && missingProducts > 0
+      ? generateProductBatch(store, {
+        audience: store.audience,
+        priceRange: input.priceRange,
+        productCount: input.productCount,
+        productTypes: store.productTypes.length > 0 ? store.productTypes : ["T-shirt"],
+        riskTolerance: input.riskTolerance,
+        storeId: store.id,
+        styleDirection: store.brandStyle
+      }).slice(0, missingProducts).map((product) => ({
+        ...product,
+        status: input.autoApproveInternalProducts ? "Approved" as const : "Awaiting Approval" as const
+      }))
+      : [];
+    const createdProducts = productsToCreate.length > 0
+      ? await prisma.$transaction(productsToCreate.map((product) => prisma.podProduct.create({
+        data: createLoopPodProductData(product)
+      })))
+      : [];
+    const products = [
+      ...createdProducts,
+      ...store.products
+    ].map((product) => firstLiveRevenueLoopProductSnapshot(product));
+    const credentials = await getShopifyConnectionCredentials(currentUser.sub, store.id);
+    const plan = await executeShopifyFirstLiveRevenueLoop({
+      connectorApproval: input.connectorApproval,
+      createdInternalProducts: createdProducts.length,
+      credentials: credentials ?? undefined,
+      dryRun: input.dryRun,
+      liveUnlockPhrase: input.liveUnlockPhrase,
+      options: {
+        includeCollections: input.includeCollections,
+        includeProducts: input.includeProducts,
+        includeStoreShell: input.includeStoreShell,
+        maxProducts: input.maxProducts,
+        minimumProducts: input.minimumProducts
+      },
+      performanceSnapshots: store.performanceSnapshots.map((snapshot) => revenuePerformanceSnapshot(snapshot)),
+      products,
+      store: {
+        ...merchStoreSnapshot(store),
+        id: store.id
+      }
+    });
+    const auditLog = await recordAuditLog({
+      action: plan.providerContacted
+        ? "shopify.first_live_revenue_loop.executed_draft"
+        : input.dryRun ? "shopify.first_live_revenue_loop.previewed" : "shopify.first_live_revenue_loop.applied_internal",
+      actorUserId: currentUser.sub,
+      metadata: {
+        createdInternalProducts: createdProducts.length,
+        dryRun: input.dryRun,
+        externalExecution: plan.externalExecution,
+        nextAutonomousStep: plan.nextAutonomousStep,
+        note: input.note ?? null,
+        ownerUnlock: plan.shopifyDraft.ownerUnlock,
+        productReadiness: plan.productReadiness,
+        providerContacted: plan.providerContacted,
+        shopifyDraftStatus: plan.shopifyDraft.status,
+        status: plan.status,
+        summary: plan.summary,
+        todayLaunchWindow: plan.todayLaunchWindow,
+        totals: plan.totals
+      },
+      outcome: plan.status === "failed" || plan.status === "not_applicable" ? "failure" : plan.todayLaunchWindow.blockers.length > 0 ? "blocked" : "success",
+      severity: plan.externalExecution ? "high" : plan.todayLaunchWindow.blockers.length > 0 ? "medium" : "low",
+      targetId: store.id,
+      targetType: "shopify_first_live_revenue_loop"
+    });
+
+    return reply.send({
+      auditLogId: auditLog.id,
+      createdProducts: createdProducts.map((product) => ({
+        id: product.id,
+        productName: product.productName,
+        status: productStatusFromDb[product.status]
+      })),
       plan
     });
   });

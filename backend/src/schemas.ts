@@ -173,6 +173,7 @@ export const shopifyStoreCreationHandoffJobConfirmation = "QUEUE SHOPIFY STORE C
 export const shopifyStoreCreationCaptureConfirmation = "CAPTURE SHOPIFY STORE CREATION";
 export const shopifyStorefrontDraftConfirmation = "EXECUTE CONTROLLED SHOPIFY STOREFRONT DRAFT";
 export const shopifyStorefrontDraftUnlockPhrase = "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION";
+export const shopifyFirstLiveRevenueLoopConfirmation = "RUN FIRST LIVE REVENUE LOOP";
 export const revenueOwnerManualLaunchApprovalConfirmation = "RECORD OWNER MANUAL LIVE LAUNCH APPROVAL";
 export const revenueOwnerManualLaunchApprovalPhrase = "APPROVE FIRST STORE MANUAL LIVE LAUNCH";
 export const revenueFirstStoreManualLaunchEvidenceConfirmation = "RECORD FIRST STORE MANUAL LAUNCH EVIDENCE";
@@ -500,6 +501,33 @@ export const shopifyAutonomyRunSchema = z.object({
   ownerEmail: emailSchema.optional(),
   requestedShopName: optionalTrimmedString(120),
   storeType: z.enum(["client_transfer", "development"]).default("client_transfer")
+});
+
+export const shopifyFirstLiveRevenueLoopSchema = z.object({
+  autoApproveInternalProducts: z.boolean().default(true),
+  confirm: z.literal(shopifyFirstLiveRevenueLoopConfirmation),
+  connectorApproval: z.boolean().default(false),
+  createProductBatch: z.boolean().default(true),
+  dryRun: z.boolean().default(true),
+  includeCollections: z.boolean().default(true),
+  includeProducts: z.boolean().default(true),
+  includeStoreShell: z.boolean().default(true),
+  liveUnlockPhrase: z.string().trim().max(120).optional(),
+  maxProducts: z.coerce.number().int().min(1).max(25).default(5),
+  minimumProducts: z.coerce.number().int().min(1).max(25).default(3),
+  note: optionalTrimmedString(500),
+  priceRange: z.object({
+    max: moneyAmountSchema,
+    min: moneyAmountSchema
+  }).default({
+    max: 44,
+    min: 24
+  }).refine((range) => range.max >= range.min, "Maximum price must be greater than or equal to minimum price."),
+  productCount: z.coerce.number().pipe(productBatchSizeSchema).default(5),
+  riskTolerance: productBatchRiskToleranceSchema.default("Low")
+}).refine((input) => input.minimumProducts <= input.maxProducts, {
+  message: "minimumProducts must be less than or equal to maxProducts.",
+  path: ["minimumProducts"]
 });
 
 export const shopifyAutonomyResumeJobSchema = z.object({
@@ -2089,6 +2117,7 @@ export type ShopifyStoreProvisioningInput = z.infer<typeof shopifyStoreProvision
 export type ShopifyStoreCreationHandoffJobInput = z.infer<typeof shopifyStoreCreationHandoffJobSchema>;
 export type ShopifyStoreCreationCaptureInput = z.infer<typeof shopifyStoreCreationCaptureSchema>;
 export type ShopifyAutonomyRunInput = z.infer<typeof shopifyAutonomyRunSchema>;
+export type ShopifyFirstLiveRevenueLoopInput = z.infer<typeof shopifyFirstLiveRevenueLoopSchema>;
 export type ShopifyAutonomyResumeJobInput = z.infer<typeof shopifyAutonomyResumeJobSchema>;
 export type RequestGrowthApprovalInput = z.infer<typeof requestGrowthApprovalSchema>;
 export type ReviewGrowthApprovalInput = z.infer<typeof reviewGrowthApprovalSchema>;
