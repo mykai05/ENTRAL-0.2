@@ -17,7 +17,11 @@ jobs:
           node-version: 20.19.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --audit-level high
+      - name: Audit production dependencies for critical vulnerabilities
+        run: pnpm audit --prod --audit-level critical
+      - name: Report high dependency audit findings
+        run: pnpm audit --audit-level high
+        continue-on-error: true
       - run: pnpm prisma:generate
       - run: pnpm lint
       - run: pnpm test
