@@ -27,6 +27,7 @@ import { memberSignInPath, sovereignProtocolUrl } from "../lib/member";
 import { BrandMark } from "./BrandMark";
 import { Button } from "./Button";
 import { MemberNeuronGraph } from "./MemberNeuronGraph";
+import { MemberNeuronsCommandCenter } from "./MemberNeuronsCommandCenter";
 
 const statusLabels: Record<string, string> = {
   ARCHIVED: "Archived",
@@ -234,7 +235,7 @@ export function MemberDashboardClient({
           </section>
 
           {view === "graph" ? (
-            <MemberNeuronGraph overview={overview} variant="full" />
+            <MemberNeuronsCommandCenter overview={overview} />
           ) : (
             <>
               <MemberNeuronGraph overview={overview} />
