@@ -25,8 +25,8 @@ export const metadata: Metadata = {
     type: "website"
   },
   robots: {
-    follow: true,
-    index: true
+    follow: false,
+    index: false
   },
   twitter: {
     card: "summary",

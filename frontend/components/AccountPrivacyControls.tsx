@@ -72,7 +72,7 @@ export function AccountPrivacyControls({ onDeleted }: AccountPrivacyControlsProp
       if (onDeleted) {
         onDeleted();
       } else {
-        window.location.assign("/onboarding?deleted=1");
+        window.location.assign("/dashboard");
       }
     } catch (deleteError) {
       if (deleteError instanceof ApiError && deleteError.status === 401) {

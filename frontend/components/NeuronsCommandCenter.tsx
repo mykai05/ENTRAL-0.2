@@ -1733,7 +1733,7 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
   return Math.hypot(first.x - second.x, first.y - second.y);
 }
 
-export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void; user?: DashboardUser | null }) {
+export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void; user?: DashboardUser | null }) {
   const { settings, updateSettings } = useTheme();
   const { isSpeaking, settings: voiceSettings, speak, stopSpeaking } = useVoice();
   const [graph, dispatchGraph] = useReducer(commandOSReducer<GraphNode3D>, undefined as unknown as GraphState3D, readStoredCommandState);
@@ -6485,9 +6485,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         <button className="command-icon-button" data-academy="settings" type="button" onClick={() => openSettings()} aria-label="Open command center settings">
           <Settings aria-hidden="true" size={18} />
         </button>
-        <button className="command-icon-button" type="button" onClick={onLogout} aria-label="Sign out">
-          <LogOut aria-hidden="true" size={18} />
-        </button>
+        {user && onLogout ? (
+          <button className="command-icon-button" type="button" onClick={onLogout} aria-label="Sign out">
+            <LogOut aria-hidden="true" size={18} />
+          </button>
+        ) : null}
       </div>
 
       <details className="command-mobile-nav" data-academy="command-nav">

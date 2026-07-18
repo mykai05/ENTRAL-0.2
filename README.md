@@ -2,7 +2,7 @@
 
 This workspace contains the working foundation for Entral:
 
-- `frontend`: Next.js App Router UI for landing, sign-up, verification, and dashboard.
+- `frontend`: Next.js App Router UI that opens directly into the ENTRAL command center.
 - `backend`: Fastify REST API with JWT auth, HttpOnly cookies, validation, rate limiting, task endpoints, AI chat endpoints, automation endpoints, and agent orchestration endpoints.
 - `prisma`: Prisma schema for users, teams, memberships, tasks, conversations, messages, automation jobs, automation logs, agents, agent tasks, agent logs, and agent messages.
 
@@ -20,7 +20,7 @@ npm.cmd run dev
 
 Keep that terminal open while using the app. Closing it stops both local servers.
 
-The fast start uses an in-memory backend so signup, verification, dashboard, tasks, chat, automations, agents, and admin screens are usable without PostgreSQL. Data resets when the server stops.
+The fast start uses an in-memory backend so the dashboard, tasks, chat, automations, agents, and admin screens are usable without PostgreSQL. The web UI opens directly into the command center; backend authentication APIs remain available for the future owner/member gateway. Data resets when the server stops.
 
 ### E2E Smoke Tests
 
@@ -40,7 +40,7 @@ Run the launch safety gate before treating a build as public-release-ready:
 npm.cmd run release:check
 ```
 
-The check fails when local source is missing the approved positioning, real/mock/read-only labels, human approval gates, cost guardrails, or locked growth orchestration behavior. It also scans public source and docs for forbidden launch claims such as unsupported full-operation or external-execution promises.
+The check fails when local source is missing direct command-center entry, real/mock/read-only labels, human approval gates, cost guardrails, or locked growth orchestration behavior. It also scans public source and docs for forbidden launch claims such as unsupported full-operation or external-execution promises.
 
 The command checks `https://entral-0-2-frontend.vercel.app` by default and warns when the live deployment is behind local source. Set `ENTRAL_LIVE_URL` to check another public URL. Set `RELEASE_CHECK_STRICT_LIVE=1` for a final release pass where live deployment drift should fail the command.
 

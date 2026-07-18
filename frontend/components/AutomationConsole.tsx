@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ApiError, apiFetch } from "../lib/api";
 import { AutomationForm } from "./AutomationForm";
 import { AutomationList, type AutomationJob } from "./AutomationList";
@@ -22,7 +21,6 @@ function hasActiveJobs(jobs: AutomationJob[]) {
 }
 
 export function AutomationConsole() {
-  const router = useRouter();
   const { notify } = useToast();
   const [jobs, setJobs] = useState<AutomationJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,12 +28,12 @@ export function AutomationConsole() {
 
   const handleUnauthorized = useCallback((errorValue: unknown) => {
     if (errorValue instanceof ApiError && errorValue.status === 401) {
-      router.push("/onboarding?next=/automations");
+      setError("Owner authentication is required for saved automation operations. The local command center remains available.");
       return true;
     }
 
     return false;
-  }, [router]);
+  }, []);
 
   const loadJobs = useCallback(async () => {
     try {

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "../components/AppProviders";
 
 const navigationMocks = vi.hoisted(() => ({
-  pathname: "/onboarding"
+  pathname: "/dashboard"
 }));
 
 vi.mock("next/navigation", () => ({
@@ -13,13 +13,17 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() })
 }));
 
+vi.mock("../components/SystemStatusBanner", () => ({
+  SystemStatusBanner: () => null
+}));
+
 describe("AppProviders storage resilience", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("renders public entry pages even when browser storage is blocked", () => {
-    navigationMocks.pathname = "/onboarding";
+  it("renders the command-center shell even when browser storage is blocked", () => {
+    navigationMocks.pathname = "/dashboard";
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("storage unavailable");
     });
@@ -30,12 +34,11 @@ describe("AppProviders storage resilience", () => {
     render(
       <AppProviders>
         <main>
-          <h1>Entral beta brief</h1>
+          <h1>Entral command center</h1>
         </main>
       </AppProviders>
     );
 
-    expect(screen.getByRole("heading", { name: "Entral beta brief" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /settings/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Entral command center" })).toBeInTheDocument();
   });
 });

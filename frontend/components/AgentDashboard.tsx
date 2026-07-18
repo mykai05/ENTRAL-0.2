@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
 import { AgentCreateForm, AgentScheduleForm, AgentTaskForm, type Agent, type AgentFormDefaults } from "./AgentForms";
@@ -24,7 +23,6 @@ type AgentDetailResponse = {
 };
 
 export function AgentDashboard() {
-  const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
@@ -40,12 +38,12 @@ export function AgentDashboard() {
 
   const handleUnauthorized = useCallback((errorValue: unknown) => {
     if (errorValue instanceof ApiError && errorValue.status === 401) {
-      router.push("/onboarding?next=/agents");
+      setError("Owner authentication is required for saved agent operations. The local command center remains available.");
       return true;
     }
 
     return false;
-  }, [router]);
+  }, []);
 
   const loadAgents = useCallback(async () => {
     const response = await apiFetch<AgentListResponse>("/agents");

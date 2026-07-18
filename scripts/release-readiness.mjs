@@ -6,29 +6,26 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const liveUrl = process.env.ENTRAL_LIVE_URL ?? "https://entral-0-2-frontend.vercel.app";
 const strictLive = process.env.RELEASE_CHECK_STRICT_LIVE === "1";
 
-const approvedPositioning =
-  "An AI command center for organizing, planning, monitoring, and safely preparing business operations";
-
 const requiredChecks = [
   {
     file: "frontend/app/page.tsx",
-    label: "Public landing uses approved positioning",
-    text: approvedPositioning
+    label: "Root URL enters the command center",
+    text: "redirect(\"/dashboard\")"
   },
   {
-    file: "frontend/app/page.tsx",
-    label: "Public landing shows real/mock/read-only promise",
-    text: "Real / Mock / Read-only labels"
+    file: "frontend/middleware.ts",
+    label: "Retired account routes return to the command center",
+    text: "retiredEntryPaths"
   },
   {
-    file: "frontend/components/PublicBetaBrief.tsx",
-    label: "Public beta brief explains external approval gate",
-    text: "External posting, commerce updates, outreach, and ad work require human approval."
+    file: "frontend/components/DashboardClient.tsx",
+    label: "Unauthenticated visitors receive local command-center access",
+    text: "setUser(null)"
   },
   {
-    file: "frontend/components/PublicBetaBrief.tsx",
-    label: "Public beta brief explains permission, logging, and cost guardrails",
-    text: "Sensitive actions are permission-checked, logged, and designed for cost limits."
+    file: "frontend/components/NeuronsCommandCenter.tsx",
+    label: "Command center keeps visible operating-mode status",
+    text: "Command center mode status"
   },
   {
     file: "frontend/components/MerchOperationsPanel.tsx",
@@ -67,8 +64,8 @@ const requiredChecks = [
   },
   {
     file: "e2e/entral.e2e.mjs",
-    label: "E2E verifies approved positioning",
-    text: approvedPositioning
+    label: "E2E verifies direct command-center entry",
+    text: "root URL opens the command center without an account screen"
   },
   {
     file: "package.json",
@@ -229,16 +226,12 @@ async function checkLiveDeployment() {
     const text = stripHtml(html);
     const checks = [
       {
-        label: "approved positioning",
-        passed: text.includes(approvedPositioning)
+        label: "direct command-center shell",
+        passed: text.includes("Booting ENTRAL command center")
       },
       {
-        label: "external approval gate",
-        passed: text.includes("External posting, commerce updates, outreach, and ad work require human approval.")
-      },
-      {
-        label: "mode labels",
-        passed: text.includes("Mock") && text.includes("Read-only")
+        label: "no account-creation prompt",
+        passed: !/create verified account|private beta brief/i.test(text)
       }
     ];
 
