@@ -22,13 +22,15 @@ jobs:
       - name: Report high dependency audit findings
         run: pnpm audit --audit-level high
         continue-on-error: true
+      - run: pnpm test:release-positioning
       - run: pnpm prisma:generate
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm release:check
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.VERCEL_ACTIONS_DEPLOY_ENABLED == 'true'
     needs: verify
     runs-on: ubuntu-latest
     env:
