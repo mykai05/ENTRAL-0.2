@@ -8,7 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "../components/AppProviders";
 import { MemberDashboardClient } from "../components/MemberDashboardClient";
 import { buildMemberNeurons, MemberNeuronGraph } from "../components/MemberNeuronGraph";
+import { MemberNeuronsCommandCenter } from "../components/MemberNeuronsCommandCenter";
 import { buildMemberGraphModel } from "../components/member-graph-model";
+import { buildMemberNeuronScene3D } from "../components/member-neurons-3d";
 import { MemberRecoveryClient } from "../components/MemberRecoveryClient";
 import { MemberSignInClient } from "../components/MemberSignInClient";
 import { safeMemberReturnPath } from "../lib/member";
@@ -102,6 +104,7 @@ const overview: MemberOverviewResponse = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   window.sessionStorage.clear();
   navigation.pathname = "/member/sign-in";
 });
@@ -377,6 +380,18 @@ describe("member workspace presentation", () => {
       expect(node.y).toBeGreaterThanOrEqual(3);
       expect(node.y).toBeLessThanOrEqual(97);
     }
+
+    const scene = buildMemberNeuronScene3D(maxOverview);
+    expect(scene.nodes).toHaveLength(91);
+    expect(scene.edges).toEqual(model.edges);
+    expect(buildMemberNeuronScene3D(maxOverview)).toEqual(scene);
+    expect(scene.nodes.find((node) => node.id === "core")).toMatchObject({ x3: 0, y3: 0, z3: 0 });
+    for (const node of scene.nodes) {
+      expect(Number.isFinite(node.x3)).toBe(true);
+      expect(Number.isFinite(node.y3)).toBe(true);
+      expect(Number.isFinite(node.z3)).toBe(true);
+      expect(Math.hypot(node.x3, node.y3, node.z3)).toBeLessThan(700);
+    }
   });
 
   it("renders the full graph with every approved record and no internal command controls", () => {
@@ -390,12 +405,37 @@ describe("member workspace presentation", () => {
     expect(screen.queryByText("Agent controls")).not.toBeInTheDocument();
   });
 
+  it("provides the full tenant-safe 3D command field and local visual controls", async () => {
+    const user = userEvent.setup();
+    render(<MemberNeuronsCommandCenter overview={overview} />);
+
+    expect(screen.getByRole("heading", { name: "Neurons command field" })).toBeInTheDocument();
+    expect(screen.getByLabelText("3D field view controls")).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: "Neuron orbit speed" })).toHaveValue("0.72");
+    expect(screen.getByRole("slider", { name: "Neuron field gravity" })).toHaveValue("1");
+    expect(screen.getByRole("slider", { name: "Neuron camera sensitivity" })).toHaveValue("1");
+    expect(screen.getByRole("slider", { name: "Neuron field brightness" })).toHaveValue("1");
+    expect(screen.getByLabelText("Entral core color")).toHaveValue("#00f0ff");
+    expect(screen.getByRole("button", { name: "Pause" })).toHaveAttribute("aria-pressed", "false");
+    await user.click(screen.getByRole("button", { name: "Pause" }));
+    expect(screen.getByRole("button", { name: "Resume" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("3D rendering is unavailable");
+    expect(screen.getByText("Map the operating workflow")).toBeInTheDocument();
+    expect(screen.getByText("Bound to Analytical Works")).toBeInTheDocument();
+    expect(screen.getByText(/Visual controls change the local view/)).toBeInTheDocument();
+    expect(screen.queryByText("Raw prompts")).not.toBeInTheDocument();
+    expect(screen.queryByText("Agent controls")).not.toBeInTheDocument();
+  });
+
   it("keeps the member graph source independent from internal command and connector modules", () => {
     const source = readFileSync(resolve(process.cwd(), "components", "MemberNeuronGraph.tsx"), "utf8");
     const modelSource = readFileSync(resolve(process.cwd(), "components", "member-graph-model.ts"), "utf8");
+    const commandFieldSource = readFileSync(resolve(process.cwd(), "components", "MemberNeuronsCommandCenter.tsx"), "utf8");
+    const sceneSource = readFileSync(resolve(process.cwd(), "components", "member-neurons-3d.ts"), "utf8");
 
-    for (const memberGraphSource of [source, modelSource]) {
-      expect(memberGraphSource).not.toContain("NeuronsCommandCenter");
+    for (const memberGraphSource of [source, modelSource, commandFieldSource, sceneSource]) {
+      expect(memberGraphSource).not.toContain('from "./NeuronsCommandCenter"');
+      expect(memberGraphSource).not.toContain('from "../components/NeuronsCommandCenter"');
       expect(memberGraphSource).not.toContain("../lib/api");
       expect(memberGraphSource).not.toContain("../lib/command");
       expect(memberGraphSource).not.toContain("ConnectionCenter");
@@ -435,7 +475,10 @@ describe("member workspace presentation", () => {
 
     expect(await screen.findByRole("heading", { name: "Full organization graph" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Full graph" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("button", { name: "Map the operating workflow: in progress. Status: active" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Neurons command field" })).toBeInTheDocument();
+    expect(screen.getByText("Map the operating workflow")).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: "Neuron orbit speed" })).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("3D rendering is unavailable");
     expect(screen.queryByRole("heading", { name: "Work overview" })).not.toBeInTheDocument();
   });
 
