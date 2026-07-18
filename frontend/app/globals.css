@@ -10134,7 +10134,7 @@ textarea {
   font-weight: 800;
   gap: 0.42rem;
   justify-content: center;
-  min-height: 2.3rem;
+  min-height: 2.75rem;
   padding: 0.5rem 0.72rem;
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
 }
@@ -10228,7 +10228,7 @@ textarea {
   display: flex;
   gap: 0.45rem;
   margin: 1rem 0 0.75rem;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: 0 0.65rem;
 }
 
@@ -10272,7 +10272,7 @@ textarea {
   gap: 0.55rem;
   grid-template-columns: auto minmax(0, 1fr);
   list-style: none;
-  min-height: 2.7rem;
+  min-height: 2.75rem;
   padding: 0.42rem 0.38rem;
 }
 
@@ -10324,6 +10324,7 @@ textarea {
   cursor: pointer;
   font: inherit;
   gap: 0.08rem;
+  min-height: 2.75rem;
   padding: 0.42rem 0.5rem;
   text-align: left;
 }
@@ -10597,7 +10598,7 @@ textarea {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: auto minmax(4rem, 1fr) auto;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: 0.5rem 0.65rem;
 }
 
@@ -10669,6 +10670,7 @@ textarea {
   display: flex;
   gap: 0.48rem;
   justify-content: space-between;
+  min-height: 2.75rem;
   min-width: 0;
   padding: 0.46rem 0.55rem;
 }
