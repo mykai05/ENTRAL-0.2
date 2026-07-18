@@ -2,7 +2,7 @@
 
 This workspace contains the working foundation for Entral:
 
-- `frontend`: Next.js App Router UI for landing, sign-in, sign-up, and dashboard.
+- `frontend`: Next.js App Router UI for landing, sign-up, verification, and dashboard.
 - `backend`: Fastify REST API with JWT auth, HttpOnly cookies, validation, rate limiting, task endpoints, AI chat endpoints, automation endpoints, and agent orchestration endpoints.
 - `prisma`: Prisma schema for users, teams, memberships, tasks, conversations, messages, automation jobs, automation logs, agents, agent tasks, agent logs, and agent messages.
 
@@ -20,7 +20,7 @@ npm.cmd run dev
 
 Keep that terminal open while using the app. Closing it stops both local servers.
 
-The fast start uses an in-memory backend so signup, login, dashboard, tasks, chat, automations, agents, and admin screens are usable without PostgreSQL. Data resets when the server stops.
+The fast start uses an in-memory backend so signup, verification, dashboard, tasks, chat, automations, agents, and admin screens are usable without PostgreSQL. Data resets when the server stops.
 
 ### E2E Smoke Tests
 

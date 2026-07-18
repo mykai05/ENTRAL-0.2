@@ -39,11 +39,6 @@ function publicUrlSchema(label: string) {
   }, `${label} URL must use a public HTTP(S) host.`);
 }
 
-export const loginFormSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(1, "Password is required.")
-});
-
 export const signupFormSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters."),
   email: z.string().trim().email("Enter a valid email address."),
@@ -192,7 +187,6 @@ export const policyFormSchema = z.object({
   severity: z.enum(["low", "medium", "high", "critical"]).default("medium")
 });
 
-export type LoginFormInput = z.infer<typeof loginFormSchema>;
 export type SignupFormInput = z.infer<typeof signupFormSchema>;
 export type EmailOnlyFormInput = z.infer<typeof emailOnlyFormSchema>;
 export type ResetPasswordFormInput = z.infer<typeof resetPasswordFormSchema>;

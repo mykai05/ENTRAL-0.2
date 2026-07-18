@@ -489,7 +489,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   function requireSignedInForAcademy() {
     if (signedInUserKey) return true;
-    router.push("/login?next=/dashboard");
+    router.push("/onboarding?next=/dashboard");
     return false;
   }
 

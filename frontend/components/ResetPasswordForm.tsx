@@ -96,7 +96,7 @@ export function ResetPasswordForm() {
       {errors.token ? <p className="form-error" role="alert">{errors.token}</p> : null}
       {notice ? (
         <p className="form-notice" role="status">
-          {notice} <Link href="/login">Sign in</Link>.
+          {notice} <Link href="/onboarding">Review Entral</Link>.
         </p>
       ) : null}
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}

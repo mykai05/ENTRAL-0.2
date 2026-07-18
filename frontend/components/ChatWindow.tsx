@@ -96,7 +96,7 @@ export function ChatWindow() {
 
   const handleUnauthorized = useCallback((errorValue: unknown) => {
     if (errorValue instanceof ApiError && errorValue.status === 401) {
-      router.push("/login?next=/chat");
+      router.push("/onboarding?next=/chat");
       return true;
     }
 

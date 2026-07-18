@@ -7,9 +7,9 @@ export default function ForgotPasswordPage() {
     <AuthCard
       title="Reset password"
       subtitle="Request a single-use reset link for your ENTRAL account."
-      footerText="Remember your password?"
-      footerLabel="Sign in"
-      footerHref="/login"
+      footerText="Need the beta brief?"
+      footerLabel="Review Entral"
+      footerHref="/onboarding"
     >
       <ForgotPasswordForm />
     </AuthCard>

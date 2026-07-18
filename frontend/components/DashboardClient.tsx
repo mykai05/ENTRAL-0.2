@@ -63,7 +63,7 @@ export function DashboardClient() {
       window.dispatchEvent(new CustomEvent("entral:user-authenticated", { detail: authDetail }));
     } catch (loadError) {
       if (loadError instanceof ApiError && loadError.status === 401) {
-        router.push("/login?next=/dashboard");
+        router.push("/onboarding?next=/dashboard");
         return;
       }
 
@@ -81,7 +81,7 @@ export function DashboardClient() {
     await apiFetch("/logout", { method: "POST" }).catch(() => null);
     removeSessionValue(authenticatedUserSessionKey);
     window.dispatchEvent(new Event("entral:user-signed-out"));
-    router.push("/login");
+    router.push("/onboarding");
     router.refresh();
   }
 

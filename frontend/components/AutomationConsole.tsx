@@ -30,7 +30,7 @@ export function AutomationConsole() {
 
   const handleUnauthorized = useCallback((errorValue: unknown) => {
     if (errorValue instanceof ApiError && errorValue.status === 401) {
-      router.push("/login?next=/automations");
+      router.push("/onboarding?next=/automations");
       return true;
     }
 

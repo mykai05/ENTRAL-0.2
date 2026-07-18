@@ -9,7 +9,7 @@ $Artifacts = Join-Path $Root "artifacts"
 $BackendDir = Join-Path $Root "backend"
 $FrontendDir = Join-Path $Root "frontend"
 $FrontendUrl = "http://localhost:3000"
-$FrontendReadyUrl = "$FrontendUrl/login"
+$FrontendReadyUrl = "$FrontendUrl/"
 $BackendHealthUrl = "http://localhost:4000/health"
 
 New-Item -ItemType Directory -Force -Path $Artifacts | Out-Null

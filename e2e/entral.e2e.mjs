@@ -170,12 +170,15 @@ async function newPage(options = {}) {
   return { context, page };
 }
 
-async function login(page, email = uniqueEmail("operator")) {
-  await page.goto(`${frontendUrl}/login`);
+async function enterWorkspace(page, email = uniqueEmail("operator")) {
+  await page.goto(`${frontendUrl}/signup`);
+  await page.getByLabel("Name").fill("E2E Operator");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill("password123");
-  await page.getByRole("button", { name: /sign in/i }).click();
-  await expectUrl(page, /\/dashboard$/, "Dashboard after sign-in");
+  await page.getByRole("button", { name: /create account/i }).click();
+  await expectUrl(page, /\/verify-email\?email=/, "Email verification handoff");
+  await page.goto(`${frontendUrl}/dashboard`);
+  await expectUrl(page, /\/dashboard$/, "Dashboard after account creation");
   await expectVisible(page.getByLabel("ENTRAL Command Center"), "Command Center");
   return email;
 }
@@ -222,11 +225,11 @@ const tests = [
     }
   },
   {
-    name: "auth login opens dashboard with visible mode labels",
+    name: "account creation opens dashboard with visible mode labels",
     run: async () => {
       const { context, page } = await newPage();
       try {
-        await login(page, uniqueEmail("dashboard"));
+        await enterWorkspace(page, uniqueEmail("dashboard"));
         await expectVisible(page.getByLabel("Command center mode status"), "Command center mode status");
         await expectVisible(page.getByText("Real workspace"), "Real workspace label");
         await expectVisible(page.getByText("Mock tools labeled"), "Mock tools label");
@@ -242,7 +245,7 @@ const tests = [
     run: async () => {
       const { context, page } = await newPage();
       try {
-        await login(page, uniqueEmail("chat"));
+        await enterWorkspace(page, uniqueEmail("chat"));
         await page.goto(`${frontendUrl}/chat`);
         await expectVisible(page.getByRole("heading", { name: /entral communications/i }), "Communications heading");
         await expectVisible(page.getByText("AI cost guardrails"), "AI usage guardrail");
@@ -266,7 +269,7 @@ const tests = [
         deviceScaleFactor: 2
       });
       try {
-        await login(page, uniqueEmail("mobile"));
+        await enterWorkspace(page, uniqueEmail("mobile"));
         await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Mobile command console");
         await expectVisible(page.getByLabel("Mobile command tabs"), "Mobile command tabs");
         await page.getByRole("button", { name: "Close command console and view graph" }).click();
