@@ -8,7 +8,6 @@ import { chatFormSchema } from "../lib/validation";
 import { AiUsageGuardrail } from "./AiUsageGuardrail";
 import { Button } from "./Button";
 import { ChatInput } from "./ChatInput";
-import { CurlSnippet } from "./CurlSnippet";
 import { DataPortability } from "./DataPortability";
 import { MessageBubble, type ChatRole } from "./MessageBubble";
 import { ModeBadge } from "./ModeStatus";
@@ -16,6 +15,7 @@ import { ScreenShareControls, type ScreenShareControlsHandle } from "./ScreenSha
 import { SkeletonList } from "./Skeleton";
 import { useToast } from "./ToastProvider";
 import { useVoice } from "./VoiceProvider";
+import { clearAuthenticatedUserSession } from "../lib/auth-session";
 
 type ConversationSummary = {
   id: string;
@@ -89,12 +89,15 @@ export function ChatWindow() {
   const [draftPrompt, setDraftPrompt] = useState("");
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] = useState(true);
   const [usageRefreshIndex, setUsageRefreshIndex] = useState(0);
+  const [accessState, setAccessState] = useState<"checking" | "authorized" | "denied" | "unavailable">("checking");
   const logRef = useRef<HTMLDivElement>(null);
   const screenShareRef = useRef<ScreenShareControlsHandle>(null);
 
   const handleUnauthorized = useCallback((errorValue: unknown) => {
     if (errorValue instanceof ApiError && errorValue.status === 401) {
       setError("Owner authentication is required for saved communications. The local command center remains available.");
+      setAccessState("denied");
+      clearAuthenticatedUserSession();
       return true;
     }
 
@@ -122,9 +125,11 @@ export function ChatWindow() {
         if (items[0]) {
           await loadConversation(items[0].id);
         }
+        setAccessState("authorized");
       } catch (loadError) {
         if (!handleUnauthorized(loadError)) {
           setError(loadError instanceof Error ? loadError.message : "Unable to load chat.");
+          setAccessState("unavailable");
         }
       } finally {
         setIsLoading(false);
@@ -277,11 +282,14 @@ export function ChatWindow() {
     }
   }
 
-  async function handleClearConversation() {
+  async function handleDeleteConversation() {
     if (!activeConversationId) {
+      if (messages.length > 0 && !window.confirm("Discard this unsaved thread?")) return;
       setMessages([]);
       return;
     }
+
+    if (!window.confirm("Delete this command thread and its saved messages? This cannot be undone.")) return;
 
     try {
       await apiFetch(`/ai/conversations/${activeConversationId}`, { method: "DELETE" });
@@ -309,6 +317,15 @@ export function ChatWindow() {
       json: normalized
     });
     await loadConversations();
+  }
+
+  if (accessState !== "authorized") {
+    return (
+      <section className="permission-state" role={accessState === "unavailable" ? "alert" : "status"}>
+        <h2>{accessState === "checking" ? "Loading communications" : accessState === "denied" ? "Owner session required" : "Communications unavailable"}</h2>
+        <p>{accessState === "checking" ? "Checking saved communications access." : error}</p>
+      </section>
+    );
   }
 
   return (
@@ -364,7 +381,7 @@ export function ChatWindow() {
       <div className="chat-panel">
         <header className="chat-panel-header">
           <div>
-            <h1>ENTRAL Communications</h1>
+            <h2>ENTRAL Communications</h2>
             <p>Use this focused channel for saved conversations, screen-aware assistance, and report drafting.</p>
           </div>
           <div className="row-actions">
@@ -372,10 +389,12 @@ export function ChatWindow() {
               {isConversationSidebarOpen ? <PanelLeftClose aria-hidden="true" size={20} /> : <PanelLeftOpen aria-hidden="true" size={20} />}
               {isConversationSidebarOpen ? "Hide history" : "Show history"}
             </Button>
-            <Button type="button" variant="secondary" onClick={handleClearConversation}>
-              <Trash2 aria-hidden="true" size={20} />
-              Clear
-            </Button>
+            {activeConversationId || messages.length > 0 ? (
+              <Button type="button" variant="danger" onClick={() => void handleDeleteConversation()}>
+                <Trash2 aria-hidden="true" size={20} />
+                {activeConversationId ? "Delete thread" : "Discard draft"}
+              </Button>
+            ) : null}
           </div>
         </header>
         <p className="surface-mode-note chat-mode-note" role="note">
@@ -439,17 +458,6 @@ export function ChatWindow() {
 
         <ChatInput disabled={isSending || isLoading} error={inputError} initialText={draftPrompt} onSend={handleSendMessage} />
 
-        <div id="export" className="api-snippet-strip">
-          <CurlSnippet
-            body={{
-              conversationId: activeConversationId ?? "conversation_id",
-              message: "Prepare a command report for the next workflow."
-            }}
-            method="POST"
-            path="/ai/chat"
-            title="Send command directive"
-          />
-        </div>
       </div>
     </section>
   );

@@ -70,6 +70,7 @@ import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../l
 import { creationBlockedTransmission, hierarchyNameFromCommandText, nextCommandPlaceholderName } from "../lib/command-creation";
 import { createAiActionPlan, createAiAuditEntry, formatActionPlanSummary, type AiActionPlan, type AiAuditEntry } from "../lib/ai-brain";
 import { buildMockToolExecution, defaultToolRegistry, toolById, type MockToolExecutionResult, type ToolRegistryEntry } from "../lib/tool-registry";
+import { useDialogFocus } from "../lib/dialog-focus";
 
 type GraphStatus = CommandStatus;
 
@@ -6274,7 +6275,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
     marshals: selectedScopeNodes.filter((node) => node.commandType === "marshal").length,
     soldiers: selectedScopeNodes.filter((node) => node.commandType === "soldier").length
   } : null;
-  const selectedSuggestedActions = getInspectorSuggestedActions(selectedNode);
+  const selectedSuggestedActions = getInspectorSuggestedActions(selectedNode)
+    .filter((action) => !(selectedChildren.length === 0 && selectedNode?.commandType === "emperor" && action.label === "Create Marshal"));
   const visibleTasks = graph.tasks.slice(0, 8);
   const userBusinessGenerals = generalNodes.filter((node) => node.id !== "entral-general");
   const selectedTemplate = businessTemplates.find((template) => template.id === businessWizard.templateId) ?? businessTemplates[0];
@@ -6287,6 +6289,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
     selectedNode
   });
   const pendingRemovalNode = pendingRemovalId ? nodeMap.get(pendingRemovalId) ?? null : null;
+  const removalDialogRef = useDialogFocus<HTMLElement>(Boolean(pendingRemovalNode), () => setPendingRemovalId(null));
   const pendingRemovalChildren = pendingRemovalNode ? descendantIdsFor(pendingRemovalNode.id, graph.nodes) : [];
   const pendingRemovalParent = pendingRemovalNode?.parentId ? nodeMap.get(pendingRemovalNode.parentId) : null;
   const pendingRemovalScopeIds = new Set(pendingRemovalNode ? [pendingRemovalNode.id, ...pendingRemovalChildren] : []);
@@ -6691,13 +6694,8 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
         </details>
         <details open>
           <summary>Command</summary>
-          <button type="button" onClick={() => {
-            const entral = graphRef.current.nodes.find((node) => node.id === "entral");
-            if (entral) focusCommandNode(entral);
-          }}>ENTRAL Overview</button>
           <button type="button" onClick={() => setStatusHighlight(["working", "thinking"], "Highlighted active working and thinking hierarchy nodes.")}>Active Nodes</button>
           <button type="button" onClick={() => setStatusHighlight(["error", "waiting", "offline"], "Highlighted error, waiting, and offline nodes.")}>Alerts</button>
-          <button type="button" onClick={() => respond("Latest activity is visible in the Activity Feed. Local execution logs are preserved per node.")}>Logs</button>
         </details>
         <details open>
           <summary>Tasks</summary>
@@ -6766,29 +6764,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
           <button type="button" onClick={() => requestNodeAuthorization("general")}>Add General</button>
           <button type="button" onClick={() => requestNodeAuthorization("commander")}>Add Commander</button>
           <button type="button" onClick={() => requestNodeAuthorization("soldier")}>Add Soldier</button>
-        </details>
-        <details>
-          <summary>Infrastructure</summary>
-          {["Memory", "Permissions", "Event Bus", "Tools", "Integrations"].map((label) => (
-            <button key={label} type="button" onClick={() => respond(`${label} is represented in local Command OS mode. External execution remains policy-gated until explicitly connected.`)}>{label}</button>
-          ))}
-        </details>
-        <details>
-          <summary>Analytics</summary>
-          {["System Metrics", "Agent Performance", "Resource Usage", "Execution Stats"].map((label) => (
-            <button key={label} type="button" onClick={() => respond(`${label} summary: ${marshalNodes.length} Marshals, ${generalNodes.length} business Generals, ${commanderNodes.length} Commanders, ${soldierNodes.length} Soldiers, ${graph.nodes.length} total command nodes.`)}>{label}</button>
-          ))}
-        </details>
-        <details>
-          <summary>Settings</summary>
-          <button type="button" onClick={() => openSettings("appearance")}>Appearance</button>
-          <button type="button" onClick={() => openSettings("account")}>Account</button>
-          <button type="button" onClick={() => openSettings("assistant")}>Command AI</button>
-          <button type="button" onClick={() => openSettings("voice")}>Voice</button>
-          <button type="button" onClick={() => openSettings("academy")}>Academy</button>
-          <button type="button" onClick={openGraphControls}>Graph Settings</button>
-          <button type="button" onClick={() => respond("Agent permissions are shown in the selected node inspector. Real permission enforcement remains policy-gated.")}>Agent Permissions</button>
-          <button type="button" onClick={() => respond("Notifications are local in this Command OS layer until real delivery channels are connected.")}>Notifications</button>
         </details>
       </nav>
 
@@ -6873,36 +6848,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
             <h3>{commandConsoleSectionCopy[commandConsoleSection].title}</h3>
             <p>{commandConsoleSectionCopy[commandConsoleSection].body}</p>
           </section>
-          <div className="command-section-quick-actions" aria-label="Quick command console actions">
-            {commandConsoleSection !== "command" ? (
-              <button type="button" onClick={() => showCommandConsole("command")}>
-                Command stream
-              </button>
-            ) : null}
-            {commandConsoleSection !== "controls" ? (
-              <button type="button" onClick={openGraphControls}>
-                Graph controls
-              </button>
-            ) : null}
-            {commandConsoleSection !== "setup" ? (
-              <button type="button" onClick={() => openBusinessWizard()}>
-                Guided setup
-              </button>
-            ) : null}
-            {commandConsoleSection !== "tools" ? (
-              <button type="button" onClick={() => {
-                setCommandConsoleSection("tools");
-                setIsControlsOpen(true);
-                void loadApprovalQueue();
-              }}>
-                Tool bay
-              </button>
-            ) : null}
-            <button type="button" onClick={closeCommandConsoleForGraph}>
-              View graph
-            </button>
-          </div>
-
           {latestAiPlan ? (
             <section className="ai-brain-summary" aria-label="AI Brain interpretation">
               <div>
@@ -6939,7 +6884,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
           <div className={["voice-command-status", isListening ? "listening" : "", isSpeaking ? "speaking" : ""].filter(Boolean).join(" ")} data-academy="voice-controls" role="status" aria-live="polite">
             {isListening ? <Mic aria-hidden="true" size={15} /> : isSpeaking ? <Volume2 aria-hidden="true" size={15} /> : <MicOff aria-hidden="true" size={15} />}
             <span>{isListening ? "Microphone active. Speak directive." : isSpeaking ? "ENTRAL speaking." : voiceStatus}</span>
-            <button type="button" onClick={stopSpeaking} disabled={!isSpeaking}>Stop speech</button>
+            {isSpeaking ? <button type="button" onClick={stopSpeaking}>Stop speech</button> : null}
           </div>
 
           {recoverySummary.hasRecoveryMarshal ? (
@@ -6981,9 +6926,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
                 <Sparkles aria-hidden="true" size={16} />
                 Start guided setup
               </Button>
-              <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
-                View templates
-              </Button>
               <Button type="button" variant="secondary" onClick={() => executeCommand("Start voice guide")}>
                 Voice introduction
               </Button>
@@ -7007,14 +6949,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
               </button>
             </header>
 
-            <div className="business-template-grid" role="list" aria-label="Business templates">
+            <div className="business-template-grid" aria-label="Business templates">
               {businessTemplates.map((template) => (
                 <button
                   className={template.id === businessWizard.templateId ? "active" : ""}
                   key={template.id}
                   type="button"
                   onClick={() => updateBusinessWizard({ templateId: template.id })}
-                  role="listitem"
                 >
                   <span style={{ "--template-color": template.color } as React.CSSProperties} />
                   <strong>{template.label}</strong>
@@ -7754,6 +7695,18 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
             onPointerUp={voiceSettings.pushToTalk ? stopVoiceRecognition : undefined}
             onPointerCancel={voiceSettings.pushToTalk ? stopVoiceRecognition : undefined}
             onPointerLeave={voiceSettings.pushToTalk && isListening ? stopVoiceRecognition : undefined}
+            onKeyDown={voiceSettings.pushToTalk ? (event) => {
+              if ((event.key === " " || event.key === "Enter") && !event.repeat) {
+                event.preventDefault();
+                startVoiceRecognition();
+              }
+            } : undefined}
+            onKeyUp={voiceSettings.pushToTalk ? (event) => {
+              if (event.key === " " || event.key === "Enter") {
+                event.preventDefault();
+                stopVoiceRecognition();
+              }
+            } : undefined}
           >
             {isListening ? <Mic aria-hidden="true" size={18} /> : <MicOff aria-hidden="true" size={18} />}
           </button>
@@ -7780,7 +7733,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
 
       {pendingRemovalNode ? (
         <div className="command-confirm-backdrop" role="presentation">
-          <section className="command-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="command-remove-title">
+          <section className="command-confirm-dialog" ref={removalDialogRef} role="dialog" aria-modal="true" aria-labelledby="command-remove-title" tabIndex={-1}>
             <div className="command-confirm-icon">
               <AlertTriangle aria-hidden="true" size={22} />
             </div>
@@ -7808,7 +7761,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
               <Button type="button" variant="secondary" onClick={() => setPendingRemovalId(null)}>
                 Cancel
               </Button>
-              <Button type="button" onClick={confirmRemoveNode}>
+              <Button type="button" variant="danger" onClick={confirmRemoveNode}>
                 <Trash2 aria-hidden="true" size={17} />
                 Confirm Remove
               </Button>
@@ -7817,7 +7770,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
         </div>
       ) : null}
 
-      <aside className={isPanelOpen ? "command-side-panel open" : "command-side-panel"} data-academy="command-inspector" aria-label="Neuron side information panel" aria-hidden={!isPanelOpen}>
+      <aside className={isPanelOpen ? "command-side-panel open" : "command-side-panel"} data-academy="command-inspector" aria-label="Neuron side information panel" aria-hidden={!isPanelOpen} inert={isPanelOpen ? undefined : true}>
         {selectedNode ? (
           <>
             <header>
@@ -8089,10 +8042,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
               <h3>Reasoning</h3>
               <p>{selectedNode.reasoning}</p>
             </section>
-            <section>
-              <h3>Screen sharing preview</h3>
-              <div className="screen-preview-placeholder">No active screen stream. Start sharing from the command interface when needed.</div>
-            </section>
             <div className="command-metrics">
               <span><strong>{selectedNode.metrics.successRate}%</strong> success</span>
               <span><strong>{selectedNode.metrics.roi}</strong> ROI</span>
@@ -8115,14 +8064,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
                 {selectedNode.status === "offline" ? <Play aria-hidden="true" size={17} /> : <Pause aria-hidden="true" size={17} />}
                 {selectedNode.status === "offline" ? "Resume" : "Offline"}
               </Button>
-              <Button type="button" variant="secondary" onClick={() => mutateNode(selectedNode.id, { logs: ["Reasoning trace refreshed.", ...selectedNode.logs] })}>
-                <RotateCcw aria-hidden="true" size={17} />
-                Refresh
-              </Button>
-              <Button type="button" variant="secondary" disabled={selectedNode.type === "core"} onClick={deleteSelectedNode}>
+              {selectedNode.type !== "core" ? <Button type="button" variant="danger" onClick={deleteSelectedNode}>
                 <Trash2 aria-hidden="true" size={17} />
                 Delete
-              </Button>
+              </Button> : null}
             </div>
           </>
         ) : null}

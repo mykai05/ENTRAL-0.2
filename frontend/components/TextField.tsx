@@ -1,4 +1,4 @@
-import React, { type InputHTMLAttributes } from "react";
+import React, { type InputHTMLAttributes, useId } from "react";
 
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -6,12 +6,16 @@ type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 export function TextField({ id, label, error, ...props }: TextFieldProps) {
+  const generatedId = useId();
+  const fieldId = id ?? `field-${generatedId.replaceAll(":", "")}`;
+  const errorId = `${fieldId}-error`;
+
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <input id={id} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} {...props} />
+      <label htmlFor={fieldId}>{label}</label>
+      <input id={fieldId} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined} {...props} />
       {error ? (
-        <p className="field-error" id={`${id}-error`}>
+        <p className="field-error" id={errorId}>
           {error}
         </p>
       ) : null}

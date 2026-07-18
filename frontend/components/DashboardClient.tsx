@@ -7,6 +7,7 @@ import { ApiError, apiFetch } from "../lib/api";
 import { Button } from "./Button";
 import { Logo } from "./Logo";
 import { NeuronsCommandCenter } from "./NeuronsCommandCenter";
+import { clearAuthenticatedUserSession, writeAuthenticatedUserSession } from "../lib/auth-session";
 
 type User = {
   email: string;
@@ -20,28 +21,11 @@ type DashboardResponse = {
   user: User;
 };
 
-const authenticatedUserSessionKey = "entral-authenticated-user";
 const localModeStatuses = new Set([401, 404, 408, 502, 503]);
 
 function displayName(name: string) {
   const trimmed = name.trim();
   return trimmed ? `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}` : "Operator";
-}
-
-function writeSessionValue(key: string, value: string) {
-  try {
-    window.sessionStorage.setItem(key, value);
-  } catch {
-    // Session storage is a convenience for the Academy handoff, not a load blocker.
-  }
-}
-
-function removeSessionValue(key: string) {
-  try {
-    window.sessionStorage.removeItem(key);
-  } catch {
-    // Sign-out should still proceed even if the browser blocks session storage.
-  }
 }
 
 export function DashboardClient() {
@@ -57,11 +41,11 @@ export function DashboardClient() {
       const nextUser = { ...dashboard.user, name: displayName(dashboard.user.name) };
       const authDetail = {
         email: nextUser.email,
+        role: nextUser.role,
         userId: nextUser.id
       };
       setUser(nextUser);
-      writeSessionValue(authenticatedUserSessionKey, JSON.stringify(authDetail));
-      window.dispatchEvent(new CustomEvent("entral:user-authenticated", { detail: authDetail }));
+      writeAuthenticatedUserSession(authDetail);
     } catch (loadError) {
       if (loadError instanceof ApiError && localModeStatuses.has(loadError.status)) {
         setUser(null);
@@ -80,8 +64,7 @@ export function DashboardClient() {
 
   async function handleLogout() {
     await apiFetch("/logout", { method: "POST" }).catch(() => null);
-    removeSessionValue(authenticatedUserSessionKey);
-    window.dispatchEvent(new Event("entral:user-signed-out"));
+    clearAuthenticatedUserSession();
     router.replace("/dashboard");
     router.refresh();
   }

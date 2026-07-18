@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Command, ExternalLink, HelpCircle } from "lucide-react";
+import { Command, ExternalLink, HelpCircle, X } from "lucide-react";
+import { useDialogFocus } from "../lib/dialog-focus";
 
 type PaletteAction = {
   description: string;
@@ -52,15 +53,16 @@ export function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [query, setQuery] = useState("");
+  const paletteRef = useDialogFocus<HTMLElement>(isOpen, () => setIsOpen(false));
+  const helpRef = useDialogFocus<HTMLElement>(showHelp, () => setShowHelp(false));
 
   const actions = useMemo<PaletteAction[]>(() => [
     { description: "Return to the live hierarchy and primary command console", href: "/dashboard", id: "command-center", keywords: "dashboard hierarchy graph command center", label: "Open Command Center" },
     { description: "Launch the guided flow that creates a Marshal, business General, Commanders, Soldiers, and first intake task", href: "/dashboard#business-setup", id: "business-setup", keywords: "business setup first business wizard onboarding general marshal template create company client store", label: "Business setup", run: () => window.dispatchEvent(new Event("entral:open-business-wizard")) },
     { description: "Start a focused conversation outside the graph view", href: "/chat", id: "new-chat", keywords: "ai command conversation directive communications", label: "Open Communications" },
     { description: "Open the automation task composer", href: "/automations", id: "new-task", keywords: "task job todo automation", label: "New task" },
-    { description: "Assign work to a specialized agent", href: "/agents", id: "run-agent", keywords: "agent run assign orchestration", label: "Run agent" },
+    { description: "Create, configure, and assign work to specialized agents", href: "/agents", id: "run-agent", keywords: "agent run assign orchestration", label: "Open agents" },
     { description: "Open the agent preset gallery", href: "/agents#templates", id: "templates", keywords: "agent presets templates scraper research linkedin", label: "Agent templates" },
-    { description: "Open chat export controls", href: "/chat#export", id: "export-history", keywords: "export json csv history", label: "Export history" },
     { description: "Review policies and audit logs", href: "/admin", id: "governance", keywords: "policy audit admin governance", label: "Governance & Audit" },
     { description: "Run browser automation jobs", href: "/automations", id: "automation", keywords: "scrape browser job", label: "Automation console" },
     { description: "Tune neon color, brightness, and onboarding", id: "settings", keywords: "theme customizer accent color settings tutorial academy", label: "Open settings", run: () => window.dispatchEvent(new Event("entral:open-settings")) },
@@ -166,10 +168,14 @@ export function CommandPalette() {
       </button>
       {isOpen ? (
         <div className="overlay-backdrop" role="presentation" onMouseDown={() => setIsOpen(false)}>
-          <section className="command-palette" role="dialog" aria-label="Command palette" onMouseDown={(event) => event.stopPropagation()}>
+          <section className="command-palette" ref={paletteRef} role="dialog" aria-label="Command palette" aria-modal="true" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
+            <button className="icon-button dialog-close-button" type="button" onClick={() => setIsOpen(false)} aria-label="Close command palette">
+              <X aria-hidden="true" size={18} />
+            </button>
             <div className="command-input">
               <Command aria-hidden="true" size={20} />
-              <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleQueryKeyDown} placeholder="Search setup, pages, agents, exports..." />
+              <label className="sr-only" htmlFor="command-palette-search">Search commands and pages</label>
+              <input id="command-palette-search" data-dialog-initial-focus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleQueryKeyDown} placeholder="Search setup, pages, agents, exports..." />
             </div>
             <p className="command-palette-hint">Type what you want ENTRAL to do, then press Enter or click an action.</p>
             <div className="command-results">
@@ -190,10 +196,13 @@ export function CommandPalette() {
       ) : null}
       {showHelp ? (
         <div className="overlay-backdrop" role="presentation" onMouseDown={() => setShowHelp(false)}>
-          <section className="shortcut-panel" role="dialog" aria-label="Keyboard shortcuts" onMouseDown={(event) => event.stopPropagation()}>
+          <section className="shortcut-panel" ref={helpRef} role="dialog" aria-label="Keyboard shortcuts" aria-modal="true" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
             <header>
               <HelpCircle aria-hidden="true" size={22} />
               <h2>Keyboard Shortcuts</h2>
+              <button className="icon-button" data-dialog-initial-focus type="button" onClick={() => setShowHelp(false)} aria-label="Close keyboard shortcuts">
+                <X aria-hidden="true" size={18} />
+              </button>
             </header>
             {shortcuts.map((shortcut) => (
               <div key={shortcut.keys}>

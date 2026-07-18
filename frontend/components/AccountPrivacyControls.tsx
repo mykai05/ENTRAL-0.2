@@ -95,7 +95,7 @@ export function AccountPrivacyControls({ onDeleted }: AccountPrivacyControlsProp
         </div>
         <p className="settings-helper">Download a JSON copy of saved account, command, chat, agent, automation, and merch workspace data. No external provider is contacted.</p>
         <div className="settings-actions">
-          <Button disabled={isExporting} onClick={() => void handleExport()} type="button" variant="secondary">
+          <Button isLoading={isExporting} onClick={() => void handleExport()} type="button" variant="secondary">
             <Download aria-hidden="true" size={18} />
             {isExporting ? "Preparing export" : "Download export"}
           </Button>
@@ -132,7 +132,7 @@ export function AccountPrivacyControls({ onDeleted }: AccountPrivacyControlsProp
           Required phrase: <strong>{accountDeletionConfirmation}</strong>
         </p>
         <div className="settings-actions">
-          <Button disabled={isDeleting || !password || !confirmation} type="submit" variant="secondary">
+          <Button disabled={!password || !confirmation} isLoading={isDeleting} type="submit" variant="danger">
             <ShieldCheck aria-hidden="true" size={18} />
             {isDeleting ? "Deleting account" : "Delete account"}
           </Button>

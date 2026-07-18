@@ -4497,13 +4497,6 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
         <span>{selectedAutomationLevel.description}</span>
       </p>
 
-      <div className="merch-ops-actions">
-        <button type="button" onClick={onRefreshStores} disabled={isLoadingStores}>
-          {isLoadingStores ? <Loader2 aria-hidden="true" size={15} /> : <RefreshCcw aria-hidden="true" size={15} />}
-          Refresh stores
-        </button>
-      </div>
-
       <div className="merch-revenue-card">
         <div className="merch-tool-title">
           <Gauge aria-hidden="true" size={16} />
@@ -4769,10 +4762,6 @@ export function MerchOperationsPanel({ isLoadingStores, onEvent, onRefreshStores
           <label>
             <span>Live Unlock Phrase</span>
             <input value={liveExecutorUnlockPhrase} onChange={(event) => setLiveExecutorUnlockPhrase(event.target.value)} placeholder="Owner phrase required to arm" />
-          </label>
-          <label>
-            <span>Shopify Draft Phrase</span>
-            <input value={shopifyDraftUnlockPhrase} onChange={(event) => setShopifyDraftUnlockPhrase(event.target.value)} placeholder="Shopify phrase required to execute" />
           </label>
           <label>
             <span>Connectors Approved</span>

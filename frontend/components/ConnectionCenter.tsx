@@ -104,7 +104,9 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
     };
   }, [onEvent, onRegistryLoad]);
 
-  const groupedTools = useMemo(() => toolsByCategory(tools), [tools]);
+  const visibleTools = useMemo(() => tools.filter((tool) => tool.status !== "Coming Soon" && !/placeholder/i.test(tool.name)), [tools]);
+  const hiddenRoadmapCount = tools.length - visibleTools.length;
+  const groupedTools = useMemo(() => toolsByCategory(visibleTools), [visibleTools]);
   const developmentHealthClass = developmentStatus?.health.status.toLowerCase() ?? "gray";
 
   async function testTool(tool: ToolRegistryEntry) {
@@ -156,7 +158,7 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
         </div>
         <span className={isLoading ? "connection-center-status loading" : "connection-center-status"}>
           <PlugZap aria-hidden="true" size={14} />
-          {isLoading ? "Syncing" : `${tools.length} tools`}
+          {isLoading ? "Syncing" : `${visibleTools.length} available`}
         </span>
       </header>
       <ModeStatusStrip
@@ -181,6 +183,9 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
           }
         ]}
       />
+      {hiddenRoadmapCount > 0 ? (
+        <p className="control-hint">{hiddenRoadmapCount} planned integrations are hidden until they have a testable workflow.</p>
+      ) : null}
 
       {developmentStatus ? (
         <section className={`development-status-panel health-${developmentHealthClass}`} aria-label="ENTRAL development status">
@@ -257,10 +262,12 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
                     <FlaskConical aria-hidden="true" size={14} />
                     Test
                   </button>
-                  <button type="button" disabled={busyToolId === tool.id} onClick={() => void mockExecute(tool)}>
-                    <Sparkles aria-hidden="true" size={14} />
-                    Mock
-                  </button>
+                  {tool.status === "Mock Mode" || tool.availableActions.some((action) => action.endsWith(".mock")) ? (
+                    <button type="button" disabled={busyToolId === tool.id} onClick={() => void mockExecute(tool)}>
+                      <Sparkles aria-hidden="true" size={14} />
+                      Preview mock
+                    </button>
+                  ) : null}
                 </div>
               </article>
             ))}

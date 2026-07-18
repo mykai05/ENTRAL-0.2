@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { Eye, MonitorUp, ShieldAlert, Square } from "lucide-react";
 import { Button } from "./Button";
+import { useDialogFocus } from "../lib/dialog-focus";
 
 export type ScreenShareControlsHandle = {
   getLatestScreenshot: () => Promise<string | null>;
@@ -37,6 +38,7 @@ export const ScreenShareControls = forwardRef<ScreenShareControlsHandle, ScreenS
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const latestFrameRef = useRef<string | null>(null);
+    const noticeRef = useDialogFocus<HTMLDivElement>(showNotice, () => setShowNotice(false));
 
     const captureFrame = useCallback(() => {
       const video = videoRef.current;
@@ -169,11 +171,11 @@ export const ScreenShareControls = forwardRef<ScreenShareControlsHandle, ScreenS
         </div>
         {isSharing ? <span className="live-indicator" role="status">Live screen context enabled</span> : null}
         {showNotice ? (
-          <div className="privacy-notice" role="dialog" aria-label="Screen sharing privacy notice">
+          <div className="privacy-notice" ref={noticeRef} role="dialog" aria-label="Screen sharing privacy notice" aria-modal="true" tabIndex={-1}>
             <ShieldAlert aria-hidden="true" size={22} />
             <p>The AI will see everything on your screen. This can be stopped at any time.</p>
             <div className="row-actions">
-              <Button type="button" onClick={() => void startSharing()}>
+              <Button type="button" data-dialog-initial-focus onClick={() => void startSharing()}>
                 Start sharing
               </Button>
               <Button type="button" variant="secondary" onClick={() => setShowNotice(false)}>

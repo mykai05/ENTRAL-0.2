@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Brain, GraduationCap, Mic, Palette, RotateCcw, Settings, SlidersHorizontal, UserRound, Volume2, X } from "lucide-react";
 import { AccountPrivacyControls } from "./AccountPrivacyControls";
 import { Button } from "./Button";
@@ -8,6 +9,7 @@ import { ModeBadge } from "./ModeStatus";
 import { neonPresets, useTheme } from "./ThemeProvider";
 import { useOnboarding } from "./OnboardingTour";
 import { speechModeLabels, useVoice } from "./VoiceProvider";
+import { useDialogFocus } from "../lib/dialog-focus";
 
 const memoryKey = "entral-ai-memory-enabled";
 const profileKey = "entral-account-settings";
@@ -30,6 +32,7 @@ function writeSettingsStorage(key: string, value: string) {
 }
 
 export function SettingsPanel() {
+  const pathname = usePathname();
   const { settings, updateSettings } = useTheme();
   const { mode, openLibrary, openTour, progress, setMode } = useOnboarding();
   const { isSpeechSupported, settings: voiceSettings, updateVoiceSettings, voices } = useVoice();
@@ -40,6 +43,7 @@ export function SettingsPanel() {
   const [profileSaved, setProfileSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
   const profileSavedTimerRef = useRef<number | null>(null);
+  const dialogRef = useDialogFocus<HTMLElement>(isOpen, () => setIsOpen(false));
 
   useEffect(() => {
     setMemoryEnabled(readSettingsStorage(memoryKey) === "true");
@@ -88,19 +92,6 @@ export function SettingsPanel() {
     });
   }
 
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    }
-
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [isOpen]);
-
   function saveAccountSettings(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     writeSettingsStorage(profileKey, JSON.stringify({ email: profileEmail, name: profileName }));
@@ -115,13 +106,13 @@ export function SettingsPanel() {
 
   return (
     <>
-      <button className="settings-trigger" data-academy="settings" type="button" onClick={() => setIsOpen(true)} aria-label="Open settings">
+      {pathname !== "/dashboard" ? <button className="settings-trigger" data-academy="settings" type="button" onClick={() => setIsOpen(true)} aria-label="Open settings">
         <Settings aria-hidden="true" size={18} />
         <span>Settings</span>
-      </button>
+      </button> : null}
       {isOpen ? (
         <div className="overlay-backdrop" role="presentation" onMouseDown={() => setIsOpen(false)}>
-          <section className="settings-panel" role="dialog" aria-label="ENTRAL settings" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+          <section className="settings-panel" ref={dialogRef} role="dialog" aria-label="ENTRAL settings" aria-modal="true" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
             <header className="panel-heading">
               <div>
                 <p className="eyebrow">Control room</p>
@@ -132,31 +123,39 @@ export function SettingsPanel() {
               </button>
             </header>
 
-            <div className="settings-tabs" role="tablist" aria-label="Settings categories">
-              <button aria-selected={activeTab === "appearance"} className={activeTab === "appearance" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("appearance")}>
+            <div className="settings-tabs" role="tablist" aria-label="Settings categories" onKeyDown={(event) => {
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+              event.preventDefault();
+              const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("[role='tab']"));
+              const currentIndex = tabs.indexOf(document.activeElement as HTMLButtonElement);
+              const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+              tabs[nextIndex]?.focus();
+              tabs[nextIndex]?.click();
+            }}>
+              <button aria-controls="settings-panel-appearance" id="settings-tab-appearance" tabIndex={activeTab === "appearance" ? 0 : -1} aria-selected={activeTab === "appearance"} className={activeTab === "appearance" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("appearance")}>
                 <Palette aria-hidden="true" size={16} />
                 Appearance
               </button>
-              <button aria-selected={activeTab === "account"} className={activeTab === "account" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("account")}>
+              <button aria-controls="settings-panel-account" id="settings-tab-account" tabIndex={activeTab === "account" ? 0 : -1} aria-selected={activeTab === "account"} className={activeTab === "account" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("account")}>
                 <UserRound aria-hidden="true" size={16} />
                 Account
               </button>
-              <button aria-selected={activeTab === "assistant"} className={activeTab === "assistant" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("assistant")}>
+              <button aria-controls="settings-panel-assistant" id="settings-tab-assistant" tabIndex={activeTab === "assistant" ? 0 : -1} aria-selected={activeTab === "assistant"} className={activeTab === "assistant" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("assistant")}>
                 <Brain aria-hidden="true" size={16} />
                 Command AI
               </button>
-              <button aria-selected={activeTab === "voice"} className={activeTab === "voice" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("voice")}>
+              <button aria-controls="settings-panel-voice" id="settings-tab-voice" tabIndex={activeTab === "voice" ? 0 : -1} aria-selected={activeTab === "voice"} className={activeTab === "voice" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("voice")}>
                 <Volume2 aria-hidden="true" size={16} />
                 Voice
               </button>
-              <button aria-selected={activeTab === "academy"} className={activeTab === "academy" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("academy")}>
+              <button aria-controls="settings-panel-academy" id="settings-tab-academy" tabIndex={activeTab === "academy" ? 0 : -1} aria-selected={activeTab === "academy"} className={activeTab === "academy" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("academy")}>
                 <GraduationCap aria-hidden="true" size={16} />
                 Academy
               </button>
             </div>
 
             {activeTab === "appearance" ? (
-              <>
+              <div id="settings-panel-appearance" role="tabpanel" aria-labelledby="settings-tab-appearance" tabIndex={0}>
                 <div className="settings-section">
                   <div className="section-title-row">
                     <Palette aria-hidden="true" size={18} />
@@ -227,11 +226,11 @@ export function SettingsPanel() {
                     Reset theme
                   </Button>
                 </div>
-              </>
+              </div>
             ) : null}
 
             {activeTab === "account" ? (
-              <>
+              <div id="settings-panel-account" role="tabpanel" aria-labelledby="settings-tab-account" tabIndex={0}>
                 <form className="settings-section account-settings-form" onSubmit={saveAccountSettings}>
                   <div className="section-title-row">
                     <UserRound aria-hidden="true" size={18} />
@@ -247,25 +246,17 @@ export function SettingsPanel() {
                     <span>Email</span>
                     <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="you@example.com" />
                   </label>
-                  <label>
-                    <span>Current password</span>
-                    <input type="password" placeholder="Current password" autoComplete="current-password" />
-                  </label>
-                  <label>
-                    <span>New password</span>
-                    <input type="password" placeholder="New password" autoComplete="new-password" />
-                  </label>
                   <div className="settings-actions">
                     <Button type="submit" variant="secondary">Save account settings</Button>
                     {profileSaved ? <span className="settings-saved" role="status">Saved locally</span> : null}
                   </div>
                 </form>
                 <AccountPrivacyControls />
-              </>
+              </div>
             ) : null}
 
             {activeTab === "assistant" ? (
-              <>
+              <div id="settings-panel-assistant" role="tabpanel" aria-labelledby="settings-tab-assistant" tabIndex={0}>
                 <div className="settings-section">
                   <div className="section-title-row">
                     <Brain aria-hidden="true" size={18} />
@@ -279,29 +270,17 @@ export function SettingsPanel() {
                     <input checked={memoryEnabled} onChange={(event) => updateMemory(event.target.checked)} type="checkbox" />
                   </label>
                 </div>
-                <div className="settings-actions">
-                  <Button type="button" onClick={() => openTour()} variant="secondary">
-                    Replay tutorial
-                  </Button>
-                </div>
-              </>
+              </div>
             ) : null}
 
             {activeTab === "voice" ? (
-              <>
+              <div id="settings-panel-voice" role="tabpanel" aria-labelledby="settings-tab-voice" tabIndex={0}>
                 <div className="settings-section">
                   <div className="section-title-row">
                     <Volume2 aria-hidden="true" size={18} />
                     <h3>Speech output</h3>
                   </div>
                   {!isSpeechSupported ? <p className="settings-helper" role="status">Speech output is not supported in this browser.</p> : null}
-                  <label className="switch-row">
-                    <span>
-                      <strong>Enable speech</strong>
-                      <small>ENTRAL speaks command reports according to the selected mode.</small>
-                    </span>
-                    <input checked={voiceSettings.mode !== "silent"} onChange={(event) => updateVoiceSettings({ mode: event.target.checked ? "reports" : "silent" })} type="checkbox" />
-                  </label>
                   <label className="color-field">
                     <span>Speech mode</span>
                     <select value={voiceSettings.mode} onChange={(event) => updateVoiceSettings({ mode: event.target.value as typeof voiceSettings.mode })}>
@@ -350,11 +329,11 @@ export function SettingsPanel() {
                     <input checked={voiceSettings.wakeWordEnabled} onChange={(event) => updateVoiceSettings({ wakeWordEnabled: event.target.checked })} type="checkbox" />
                   </label>
                 </div>
-              </>
+              </div>
             ) : null}
 
             {activeTab === "academy" ? (
-              <>
+              <div id="settings-panel-academy" role="tabpanel" aria-labelledby="settings-tab-academy" tabIndex={0}>
                 <div className="settings-section">
                   <div className="section-title-row">
                     <GraduationCap aria-hidden="true" size={18} />
@@ -384,7 +363,7 @@ export function SettingsPanel() {
                     Open tutorial library
                   </Button>
                 </div>
-              </>
+              </div>
             ) : null}
           </section>
         </div>

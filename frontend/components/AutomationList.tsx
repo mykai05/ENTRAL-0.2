@@ -102,7 +102,7 @@ export function AutomationList({ jobs, isLoading, onRefresh, onCancel, onRetry }
                   <td>
                     <div className="row-actions">
                       {job.status === "pending" || job.status === "scheduled" ? (
-                        <Button type="button" variant="secondary" onClick={() => void onCancel(job.id)} aria-label="Cancel job">
+                        <Button type="button" variant="danger" onClick={() => void onCancel(job.id)} aria-label="Cancel job">
                           <X aria-hidden="true" size={18} />
                           Cancel
                         </Button>

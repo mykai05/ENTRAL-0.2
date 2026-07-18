@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const frontendUrl = process.env.E2E_FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backendUrl = process.env.E2E_BACKEND_URL ?? "http://127.0.0.1:4000";
+const frontendTarget = new URL(frontendUrl);
 const pnpm = process.env.E2E_PNPM_PATH
   ?? process.env.npm_execpath
   ?? join(repoRoot, ".corepack/v1/pnpm/9.12.3/bin/pnpm.cjs");
@@ -109,7 +110,18 @@ async function ensureServers() {
   await waitForHttp(`${backendUrl}/health`, "Memory backend");
 
   if (!await fetchOk(frontendUrl)) {
-    spawnServer("frontend", [pnpm, "--filter", "@entral/frontend", "dev"], {
+    spawnServer("frontend", [
+      pnpm,
+      "--filter",
+      "@entral/frontend",
+      "exec",
+      "next",
+      "dev",
+      "-H",
+      frontendTarget.hostname,
+      "-p",
+      frontendTarget.port || "3000"
+    ], {
       API_PROXY_URL: backendUrl,
       NEXT_PUBLIC_API_URL: ""
     });
@@ -276,6 +288,11 @@ const tests = [
         await enterWorkspace(page, uniqueEmail("mobile"));
         await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Mobile command console");
         await expectVisible(page.getByLabel("Mobile command tabs"), "Mobile command tabs");
+        const academyClose = page.getByRole("button", { name: "Close ENTRAL Academy" });
+        await academyClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => undefined);
+        if (await academyClose.count() && await academyClose.isVisible()) {
+          await academyClose.click();
+        }
         await page.getByRole("button", { name: "Close command console and view graph" }).click();
         await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command reopen button");
         const graphPressed = await page.getByRole("button", { name: "View command graph" }).getAttribute("aria-pressed");
@@ -305,6 +322,61 @@ const tests = [
         }
       } finally {
         await context.close();
+      }
+    }
+  },
+  {
+    name: "secondary routes remain responsive, keyboard-usable, and console-clean",
+    run: async () => {
+      for (const viewport of [{ width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+        const { context, page } = await newPage({ viewport, isMobile: viewport.width === 390, deviceScaleFactor: viewport.width === 390 ? 2 : 1 });
+        const runtimeErrors = [];
+        page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
+        page.on("console", (message) => {
+          const text = message.text();
+          const expectedAccessOrRouteResponse = /Failed to load resource.*status of (401|403|404)/i.test(text);
+          if (message.type() === "error" && !expectedAccessOrRouteResponse) runtimeErrors.push(`console: ${text}`);
+        });
+
+        try {
+          for (const pathname of ["/agents", "/automations", "/chat", "/admin", "/route-not-found"]) {
+            await page.goto(`${frontendUrl}${pathname}`);
+            await page.waitForLoadState("domcontentloaded");
+            const dimensions = await page.evaluate(() => ({
+              documentWidth: document.documentElement.scrollWidth,
+              viewportWidth: window.innerWidth
+            }));
+
+            if (dimensions.documentWidth > dimensions.viewportWidth + 2) {
+              throw new Error(`${pathname} overflows at ${viewport.width}px: ${dimensions.documentWidth}px document width.`);
+            }
+
+            const duplicateCommandCenterActions = await page.evaluate(() => Array.from(document.querySelectorAll("a, button"))
+              .filter((element) => element.textContent?.trim() === "Command Center" && element.getBoundingClientRect().width > 0)
+              .length);
+            if (duplicateCommandCenterActions > 1) {
+              throw new Error(`${pathname} exposes ${duplicateCommandCenterActions} visible Command Center actions at ${viewport.width}px.`);
+            }
+          }
+
+          await page.goto(`${frontendUrl}/agents`);
+          const settingsTrigger = page.getByRole("button", { name: "Open settings" });
+          await expectVisible(settingsTrigger, "Settings trigger");
+          await settingsTrigger.focus();
+          await settingsTrigger.click();
+          const settingsDialog = page.getByRole("dialog", { name: "ENTRAL settings" });
+          await expectVisible(settingsDialog, "Settings dialog");
+          await page.keyboard.press("Escape");
+          if (await settingsDialog.isVisible()) throw new Error("Escape did not close Settings.");
+          const focusReturned = await settingsTrigger.evaluate((element) => document.activeElement === element);
+          if (!focusReturned) throw new Error("Settings did not restore focus to its trigger.");
+
+          if (runtimeErrors.length > 0) {
+            throw new Error(`Unexpected browser errors at ${viewport.width}px:\n${runtimeErrors.join("\n")}`);
+          }
+        } finally {
+          await context.close();
+        }
       }
     }
   }

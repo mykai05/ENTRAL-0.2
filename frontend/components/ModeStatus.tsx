@@ -52,6 +52,24 @@ export const authenticatedModeItems: ModeStatusItem[] = [
   }
 ];
 
+export const localModeItems: ModeStatusItem[] = [
+  {
+    description: "Workspace changes remain in this browser until an owner session is available.",
+    label: "Local workspace",
+    mode: "mock"
+  },
+  {
+    description: "Disconnected providers stay clearly simulated before trust.",
+    label: "Mock when disconnected",
+    mode: "mock"
+  },
+  {
+    description: "External writes require scoped permission and approval.",
+    label: "Read-only until approved",
+    mode: "read-only"
+  }
+];
+
 export function ModeBadge({ children, className = "", mode }: ModeBadgeProps) {
   const Icon = modeIcons[mode];
 

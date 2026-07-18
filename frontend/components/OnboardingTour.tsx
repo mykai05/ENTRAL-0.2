@@ -4,6 +4,7 @@ import React, { createContext, type ReactNode, useContext, useEffect, useMemo, u
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, Bot, CheckCircle2, ChevronLeft, ChevronRight, Command, Compass, GraduationCap, Layers3, MonitorUp, Play, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { Button } from "./Button";
+import { useDialogFocus } from "../lib/dialog-focus";
 
 type AcademyMode = "beginner" | "advanced";
 
@@ -426,6 +427,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [academyPlacement, setAcademyPlacement] = useState<AcademyPlacement>("center");
   const [spotlightStepId, setSpotlightStepId] = useState<string | null>(null);
   const [spotlightMissingTarget, setSpotlightMissingTarget] = useState(false);
+  const academyDialogRef = useDialogFocus<HTMLElement>(isOpen, closeAcademy);
   const dismissedInCurrentSessionRef = useRef(false);
   const academyStateRef = useRef(academyState);
   const isOpenRef = useRef(isOpen);
@@ -848,7 +850,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       ) : null}
       {isOpen ? (
         <div className={`overlay-backdrop onboarding-backdrop academy-backdrop academy-backdrop--${academyPlacement}`} role="presentation">
-          <section className={`onboarding-tour academy-shell academy-shell--${academyPlacement}`} role="dialog" aria-label="ENTRAL Academy" aria-modal="true">
+          <section className={`onboarding-tour academy-shell academy-shell--${academyPlacement}`} ref={academyDialogRef} role="dialog" aria-label="ENTRAL Academy" aria-modal="true" tabIndex={-1}>
             <button className="icon-button tour-close" type="button" onClick={closeAcademy} aria-label="Close ENTRAL Academy">
               <X aria-hidden="true" size={18} />
             </button>

@@ -24,10 +24,11 @@ describe("ModeStatus", () => {
     expect(screen.getByText("Mock Mode")).toBeInTheDocument();
   });
 
-  it("adds the mode strip to authenticated app headers", () => {
+  it("adds the real mode strip only to confirmed authenticated app headers", async () => {
+    window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({ role: "USER" }));
     render(<AppHeader title="Agent Management" subtitle="Create and review agents." />);
 
-    expect(screen.getByRole("group", { name: "Authenticated workspace mode status" })).toHaveTextContent("Real account");
+    expect(await screen.findByRole("group", { name: "Authenticated workspace mode status" })).toHaveTextContent("Real account");
     expect(screen.getAllByRole("link", { name: "Agents" }).some((link) => link.getAttribute("aria-current") === "page")).toBe(true);
   });
 });

@@ -1,0 +1,308 @@
+[
+  {
+    "route": "dashboard",
+    "viewport": "desktop",
+    "documentWidth": 1440,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "ENTRAL",
+      "ENTRAL Command",
+      "ENTRAL"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/dashboard",
+    "viewportWidth": 1440,
+    "visibleButtons": 42,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 1
+  },
+  {
+    "route": "agents",
+    "viewport": "desktop",
+    "documentWidth": 1440,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Agent Management",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/agents",
+    "viewportWidth": 1440,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "automations",
+    "viewport": "desktop",
+    "documentWidth": 1440,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Task Automation",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/automations",
+    "viewportWidth": 1440,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "chat",
+    "viewport": "desktop",
+    "documentWidth": 1440,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Communications",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/chat",
+    "viewportWidth": 1440,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "admin",
+    "viewport": "desktop",
+    "documentWidth": 1440,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Governance & Audit",
+      "Admin access required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/admin",
+    "viewportWidth": 1440,
+    "visibleButtons": 3,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 1
+  },
+  {
+    "route": "not-found",
+    "viewport": "desktop",
+    "documentWidth": 1440,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Page not found"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/route-not-found",
+    "viewportWidth": 1440,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "dashboard",
+    "viewport": "tablet",
+    "documentWidth": 768,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "ENTRAL",
+      "ENTRAL Command",
+      "ENTRAL"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/dashboard",
+    "viewportWidth": 768,
+    "visibleButtons": 31,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 1
+  },
+  {
+    "route": "agents",
+    "viewport": "tablet",
+    "documentWidth": 768,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Agent Management",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/agents",
+    "viewportWidth": 768,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "automations",
+    "viewport": "tablet",
+    "documentWidth": 768,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Task Automation",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/automations",
+    "viewportWidth": 768,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "chat",
+    "viewport": "tablet",
+    "documentWidth": 768,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Communications",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/chat",
+    "viewportWidth": 768,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "admin",
+    "viewport": "tablet",
+    "documentWidth": 768,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Governance & Audit",
+      "Admin access required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/admin",
+    "viewportWidth": 768,
+    "visibleButtons": 3,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 1
+  },
+  {
+    "route": "not-found",
+    "viewport": "tablet",
+    "documentWidth": 768,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Page not found"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/route-not-found",
+    "viewportWidth": 768,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "dashboard",
+    "viewport": "mobile",
+    "documentWidth": 390,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "ENTRAL",
+      "ENTRAL Command",
+      "ENTRAL"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/dashboard",
+    "viewportWidth": 390,
+    "visibleButtons": 31,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 1
+  },
+  {
+    "route": "agents",
+    "viewport": "mobile",
+    "documentWidth": 390,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Agent Management",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/agents",
+    "viewportWidth": 390,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "automations",
+    "viewport": "mobile",
+    "documentWidth": 390,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Task Automation",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/automations",
+    "viewportWidth": 390,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "chat",
+    "viewport": "mobile",
+    "documentWidth": 390,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Communications",
+      "Owner session required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/chat",
+    "viewportWidth": 390,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  },
+  {
+    "route": "admin",
+    "viewport": "mobile",
+    "documentWidth": 390,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Governance & Audit",
+      "Admin access required"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/admin",
+    "viewportWidth": 390,
+    "visibleButtons": 3,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 1
+  },
+  {
+    "route": "not-found",
+    "viewport": "mobile",
+    "documentWidth": 390,
+    "duplicateVisibleActions": [],
+    "headings": [
+      "Page not found"
+    ],
+    "horizontalOverflow": false,
+    "title": "Entral",
+    "url": "/route-not-found",
+    "viewportWidth": 390,
+    "visibleButtons": 2,
+    "visibleDisabledButtons": 0,
+    "visibleInputs": 0
+  }
+]

@@ -72,29 +72,31 @@ export function AutomationForm({ onCreated }: AutomationFormProps) {
       <div>
         <label htmlFor="automation-url">URL</label>
         <input
+          aria-describedby={`automation-url-help${errors.url ? " automation-url-error" : ""}`}
+          aria-invalid={Boolean(errors.url)}
           id="automation-url"
           name="url"
           type="url"
           placeholder="https://example.com"
           required
         />
-        <small>Paste the public page ENTRAL should inspect.</small>
-        {errors.url ? <p className="field-error">{errors.url}</p> : null}
+        <small id="automation-url-help">Paste the public page ENTRAL should inspect.</small>
+        {errors.url ? <p className="field-error" id="automation-url-error">{errors.url}</p> : null}
       </div>
       <div>
         <label htmlFor="automation-selector">Selector</label>
-        <input id="automation-selector" name="selector" type="text" placeholder="h1" />
-        <small>Optional. Leave blank to review the page title and visible text.</small>
-        {errors.selector ? <p className="field-error">{errors.selector}</p> : null}
+        <input aria-describedby={`automation-selector-help${errors.selector ? " automation-selector-error" : ""}`} aria-invalid={Boolean(errors.selector)} id="automation-selector" name="selector" type="text" placeholder="h1" />
+        <small id="automation-selector-help">Optional. Leave blank to review the page title and visible text.</small>
+        {errors.selector ? <p className="field-error" id="automation-selector-error">{errors.selector}</p> : null}
       </div>
       <div>
         <label htmlFor="automation-scheduled-at">Schedule</label>
-        <input id="automation-scheduled-at" name="scheduledAt" type="datetime-local" />
-        <small>Optional. Leave blank to run immediately.</small>
-        {errors.scheduledAt ? <p className="field-error">{errors.scheduledAt}</p> : null}
+        <input aria-describedby={`automation-scheduled-help${errors.scheduledAt ? " automation-scheduled-error" : ""}`} aria-invalid={Boolean(errors.scheduledAt)} id="automation-scheduled-at" name="scheduledAt" type="datetime-local" />
+        <small id="automation-scheduled-help">Optional. Leave blank to run immediately.</small>
+        {errors.scheduledAt ? <p className="field-error" id="automation-scheduled-error">{errors.scheduledAt}</p> : null}
       </div>
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
-      <Button type="submit" disabled={isSubmitting}>
+      <Button type="submit" isLoading={isSubmitting}>
         <Play aria-hidden="true" size={20} />
         {isSubmitting ? "Queueing..." : "Run task"}
       </Button>

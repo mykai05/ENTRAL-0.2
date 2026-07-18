@@ -104,7 +104,7 @@ export function AgentDetail({
       </header>
       <div className="agent-controls">
         <Button type="button" variant={agent.runInBackground ? "secondary" : "primary"} onClick={() => void onToggleBackground(!agent.runInBackground)}>
-          {agent.runInBackground ? "Background On" : "Enable Background"}
+          {agent.runInBackground ? "Disable background" : "Enable background"}
         </Button>
         {agent.isPaused ? (
           <Button type="button" variant="secondary" onClick={() => void onResume()}>
@@ -155,7 +155,9 @@ export function AgentDetail({
                 </Button>
               ) : null}
               {schedule.status !== "revoked" ? (
-                <Button type="button" variant="secondary" onClick={() => void onScheduleRevoke(schedule.id)}>
+                <Button type="button" variant="danger" onClick={() => {
+                  if (window.confirm(`Revoke the schedule “${schedule.title}”?`)) void onScheduleRevoke(schedule.id);
+                }}>
                   <Ban aria-hidden="true" size={18} />
                   Revoke
                 </Button>
@@ -174,7 +176,9 @@ export function AgentDetail({
             {task.result?.summary ? <p>{task.result.summary}</p> : null}
             {task.error ? <p className="form-error">{task.error}</p> : null}
             {task.status === "queued" || task.status === "running" ? (
-              <Button type="button" variant="secondary" onClick={() => void onCancelTask(task.id)}>
+              <Button type="button" variant="danger" onClick={() => {
+                if (window.confirm(`Cancel the active task “${task.title}”?`)) void onCancelTask(task.id);
+              }}>
                 <Ban aria-hidden="true" size={18} />
                 Cancel
               </Button>

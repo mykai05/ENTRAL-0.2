@@ -1,0 +1,356 @@
+[
+  {
+    "route": "dashboard",
+    "viewport": "desktop",
+    "buttons": 401,
+    "dialogs": 0,
+    "disabledButtons": 160,
+    "documentWidth": 1440,
+    "headings": [
+      "ENTRAL",
+      "ENTRAL Command",
+      "Revenue Opportunity Factory",
+      "Launch Sprint",
+      "Revenue Opportunity Control",
+      "Launch Checklist",
+      "Launch Readiness Board",
+      "Launch Handoff Packets"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 91,
+    "links": 0,
+    "title": "Entral",
+    "url": "/dashboard",
+    "viewportWidth": 1440
+  },
+  {
+    "route": "agents",
+    "viewport": "desktop",
+    "buttons": 19,
+    "dialogs": 0,
+    "disabledButtons": 2,
+    "documentWidth": 1425,
+    "headings": [
+      "Agent Management",
+      "Agents",
+      "Template Gallery"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 18,
+    "links": 12,
+    "title": "Entral",
+    "url": "/agents",
+    "viewportWidth": 1440
+  },
+  {
+    "route": "automations",
+    "viewport": "desktop",
+    "buttons": 6,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 1425,
+    "headings": [
+      "Task Automation",
+      "Browser Operations",
+      "Jobs"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 3,
+    "links": 12,
+    "title": "Entral",
+    "url": "/automations",
+    "viewportWidth": 1440
+  },
+  {
+    "route": "chat",
+    "viewport": "desktop",
+    "buttons": 18,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 1425,
+    "headings": [
+      "Communications",
+      "Command threads",
+      "ENTRAL Communications"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 2,
+    "links": 12,
+    "title": "Entral",
+    "url": "/chat",
+    "viewportWidth": 1440
+  },
+  {
+    "route": "admin",
+    "viewport": "desktop",
+    "buttons": 6,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 1425,
+    "headings": [
+      "Governance & Audit",
+      "Background Agent Controls",
+      "Policies",
+      "Audit Log"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 6,
+    "links": 12,
+    "title": "Entral",
+    "url": "/admin",
+    "viewportWidth": 1440
+  },
+  {
+    "route": "not-found",
+    "viewport": "desktop",
+    "buttons": 2,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 1440,
+    "headings": [
+      "Page not found"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 0,
+    "links": 2,
+    "title": "Entral",
+    "url": "/route-not-found",
+    "viewportWidth": 1440
+  },
+  {
+    "route": "dashboard",
+    "viewport": "tablet",
+    "buttons": 401,
+    "dialogs": 0,
+    "disabledButtons": 160,
+    "documentWidth": 768,
+    "headings": [
+      "ENTRAL",
+      "ENTRAL Command",
+      "Revenue Opportunity Factory",
+      "Launch Sprint",
+      "Revenue Opportunity Control",
+      "Launch Checklist",
+      "Launch Readiness Board",
+      "Launch Handoff Packets"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 91,
+    "links": 0,
+    "title": "Entral",
+    "url": "/dashboard",
+    "viewportWidth": 768
+  },
+  {
+    "route": "agents",
+    "viewport": "tablet",
+    "buttons": 19,
+    "dialogs": 0,
+    "disabledButtons": 2,
+    "documentWidth": 897,
+    "headings": [
+      "Agent Management",
+      "Agents",
+      "Template Gallery"
+    ],
+    "horizontalOverflow": true,
+    "inputs": 18,
+    "links": 12,
+    "title": "Entral",
+    "url": "/agents",
+    "viewportWidth": 768
+  },
+  {
+    "route": "automations",
+    "viewport": "tablet",
+    "buttons": 6,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 897,
+    "headings": [
+      "Task Automation",
+      "Browser Operations",
+      "Jobs"
+    ],
+    "horizontalOverflow": true,
+    "inputs": 3,
+    "links": 12,
+    "title": "Entral",
+    "url": "/automations",
+    "viewportWidth": 768
+  },
+  {
+    "route": "chat",
+    "viewport": "tablet",
+    "buttons": 18,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 897,
+    "headings": [
+      "Communications",
+      "Command threads",
+      "ENTRAL Communications"
+    ],
+    "horizontalOverflow": true,
+    "inputs": 2,
+    "links": 12,
+    "title": "Entral",
+    "url": "/chat",
+    "viewportWidth": 768
+  },
+  {
+    "route": "admin",
+    "viewport": "tablet",
+    "buttons": 6,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 897,
+    "headings": [
+      "Governance & Audit",
+      "Background Agent Controls",
+      "Policies",
+      "Audit Log"
+    ],
+    "horizontalOverflow": true,
+    "inputs": 6,
+    "links": 12,
+    "title": "Entral",
+    "url": "/admin",
+    "viewportWidth": 768
+  },
+  {
+    "route": "not-found",
+    "viewport": "tablet",
+    "buttons": 2,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 768,
+    "headings": [
+      "Page not found"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 0,
+    "links": 2,
+    "title": "Entral",
+    "url": "/route-not-found",
+    "viewportWidth": 768
+  },
+  {
+    "route": "dashboard",
+    "viewport": "mobile",
+    "buttons": 401,
+    "dialogs": 0,
+    "disabledButtons": 160,
+    "documentWidth": 390,
+    "headings": [
+      "ENTRAL",
+      "ENTRAL Command",
+      "Revenue Opportunity Factory",
+      "Launch Sprint",
+      "Revenue Opportunity Control",
+      "Launch Checklist",
+      "Launch Readiness Board",
+      "Launch Handoff Packets"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 91,
+    "links": 0,
+    "title": "Entral",
+    "url": "/dashboard",
+    "viewportWidth": 390
+  },
+  {
+    "route": "agents",
+    "viewport": "mobile",
+    "buttons": 19,
+    "dialogs": 0,
+    "disabledButtons": 2,
+    "documentWidth": 375,
+    "headings": [
+      "Agent Management",
+      "Agents",
+      "Template Gallery"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 18,
+    "links": 12,
+    "title": "Entral",
+    "url": "/agents",
+    "viewportWidth": 390
+  },
+  {
+    "route": "automations",
+    "viewport": "mobile",
+    "buttons": 6,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 375,
+    "headings": [
+      "Task Automation",
+      "Browser Operations",
+      "Jobs"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 3,
+    "links": 12,
+    "title": "Entral",
+    "url": "/automations",
+    "viewportWidth": 390
+  },
+  {
+    "route": "chat",
+    "viewport": "mobile",
+    "buttons": 18,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 375,
+    "headings": [
+      "Communications",
+      "Command threads",
+      "ENTRAL Communications"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 2,
+    "links": 12,
+    "title": "Entral",
+    "url": "/chat",
+    "viewportWidth": 390
+  },
+  {
+    "route": "admin",
+    "viewport": "mobile",
+    "buttons": 6,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 375,
+    "headings": [
+      "Governance & Audit",
+      "Background Agent Controls",
+      "Policies",
+      "Audit Log"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 6,
+    "links": 12,
+    "title": "Entral",
+    "url": "/admin",
+    "viewportWidth": 390
+  },
+  {
+    "route": "not-found",
+    "viewport": "mobile",
+    "buttons": 2,
+    "dialogs": 0,
+    "disabledButtons": 0,
+    "documentWidth": 390,
+    "headings": [
+      "Page not found"
+    ],
+    "horizontalOverflow": false,
+    "inputs": 0,
+    "links": 2,
+    "title": "Entral",
+    "url": "/route-not-found",
+    "viewportWidth": 390
+  }
+]

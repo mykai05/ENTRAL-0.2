@@ -5,7 +5,6 @@ import { Ban, PauseCircle, Plus, RefreshCw, ShieldCheck } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
 import { policyFormSchema } from "../lib/validation";
 import { Button } from "./Button";
-import { CurlSnippet } from "./CurlSnippet";
 import { ModeStatusStrip } from "./ModeStatus";
 import { SkeletonList } from "./Skeleton";
 
@@ -150,25 +149,29 @@ export function AdminDashboard() {
   const [mfaCode, setMfaCode] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [permissionState, setPermissionState] = useState<"checking" | "authorized" | "denied" | "error">("checking");
 
   const adminHeaders = useMemo(() => (
     mfaCode ? { "x-admin-mfa-code": mfaCode } : undefined
   ), [mfaCode]);
 
-  const loadOverview = useCallback(async () => {
+  const loadOverview = useCallback(async (verificationCode = "") => {
     setError("");
+    setIsLoading(true);
 
     try {
       const response = await apiFetch<AdminOverview>("/admin/overview", {
-        headers: adminHeaders
+        headers: verificationCode ? { "x-admin-mfa-code": verificationCode } : undefined
       });
       setOverview(response);
+      setPermissionState("authorized");
     } catch (loadError) {
       setError(loadError instanceof ApiError ? loadError.message : "Unable to load admin dashboard.");
+      setPermissionState(loadError instanceof ApiError && (loadError.status === 401 || loadError.status === 403) ? "denied" : "error");
     } finally {
       setIsLoading(false);
     }
-  }, [adminHeaders]);
+  }, []);
 
   useEffect(() => {
     void loadOverview();
@@ -232,6 +235,7 @@ export function AdminDashboard() {
   }
 
   async function deletePolicy(policy: Policy) {
+    if (!window.confirm(`Delete the policy “${policy.name}”? This cannot be undone.`)) return;
     try {
       await apiFetch(`/admin/policies/${policy.id}`, {
         headers: adminHeaders,
@@ -244,6 +248,7 @@ export function AdminDashboard() {
   }
 
   async function pauseAllAgents() {
+    if (!window.confirm("Pause every background agent and active schedule?")) return;
     try {
       await apiFetch("/admin/agents/pause-all", {
         headers: adminHeaders,
@@ -256,6 +261,7 @@ export function AdminDashboard() {
   }
 
   async function revokeTask(taskId: string) {
+    if (!window.confirm("Revoke this active agent task?")) return;
     try {
       await apiFetch(`/admin/agent-tasks/${taskId}/revoke`, {
         headers: adminHeaders,
@@ -267,9 +273,8 @@ export function AdminDashboard() {
     }
   }
 
-  return (
-    <section className="admin-dashboard" aria-label="Governance admin dashboard">
-      <form className="admin-mfa" onSubmit={(event) => { event.preventDefault(); void loadOverview(); }}>
+  const verificationForm = (
+      <form className="admin-mfa" onSubmit={(event) => { event.preventDefault(); void loadOverview(mfaCode); }}>
         <div>
           <label htmlFor="admin-mfa-code">Admin verification code</label>
           <input
@@ -286,6 +291,24 @@ export function AdminDashboard() {
           Refresh
         </Button>
       </form>
+  );
+
+  if (permissionState !== "authorized") {
+    return (
+      <section className="admin-dashboard" aria-label="Governance access verification">
+        {verificationForm}
+        <section className="permission-state" role={permissionState === "error" ? "alert" : "status"}>
+          <ShieldCheck aria-hidden="true" size={28} />
+          <h2>{isLoading ? "Verifying admin access" : permissionState === "denied" ? "Admin access required" : "Governance unavailable"}</h2>
+          <p>{isLoading ? "Checking your current workspace permissions." : error || "Sign in with an administrator account and enter a verification code if your workspace requires one."}</p>
+        </section>
+      </section>
+    );
+  }
+
+  return (
+    <section className="admin-dashboard" aria-label="Governance admin dashboard">
+      {verificationForm}
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       {isLoading ? <SkeletonList count={4} label="Loading governance controls" /> : null}
@@ -316,7 +339,7 @@ export function AdminDashboard() {
             <h2>Background Agent Controls</h2>
             <p>{overview.health.activeSchedules} active schedules, {overview.health.enabledPolicies} enabled policies.</p>
           </div>
-          <Button type="button" variant="secondary" onClick={() => void pauseAllAgents()}>
+          <Button type="button" variant="danger" onClick={() => void pauseAllAgents()}>
             <PauseCircle aria-hidden="true" size={20} />
             Pause all agents
           </Button>
@@ -327,7 +350,7 @@ export function AdminDashboard() {
               <strong>{task.title}</strong>
               <span>{task.agentName} - {task.action} - {task.status}</span>
             </div>
-            <Button type="button" variant="secondary" onClick={() => void revokeTask(task.id)}>
+            <Button type="button" variant="danger" onClick={() => void revokeTask(task.id)}>
               <Ban aria-hidden="true" size={18} />
               Revoke
             </Button>
@@ -390,7 +413,7 @@ export function AdminDashboard() {
                 <Button type="button" variant="secondary" onClick={() => void updatePolicy(policy, !policy.enabled)}>
                   {policy.enabled ? "Disable" : "Enable"}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => void deletePolicy(policy)}>
+                <Button type="button" variant="danger" onClick={() => void deletePolicy(policy)}>
                   Delete
                 </Button>
               </div>
@@ -398,22 +421,6 @@ export function AdminDashboard() {
           ))}
         </div>
       </section>
-
-      <CurlSnippet
-        body={{
-          name: "Block sensitive data requests",
-          enabled: true,
-          effect: "block",
-          severity: "high",
-          rule: {
-            kind: "blocked_keywords",
-            keywords: ["password", "api key", "private key"]
-          }
-        }}
-        method="POST"
-        path="/admin/policies"
-        title="Create policy"
-      />
 
       <section className="admin-panel" aria-label="Audit log">
         <header>

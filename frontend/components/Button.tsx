@@ -2,12 +2,19 @@ import React, { type ButtonHTMLAttributes, type ReactNode } from "react";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "ghost";
+  isLoading?: boolean;
+  variant?: "primary" | "secondary" | "ghost" | "danger";
 };
 
-export function Button({ children, className = "", variant = "primary", ...props }: ButtonProps) {
+export function Button({ children, className = "", disabled, isLoading = false, type = "button", variant = "primary", ...props }: ButtonProps) {
   return (
-    <button className={`button button-${variant} ${className}`} {...props}>
+    <button
+      aria-busy={isLoading || undefined}
+      className={`button button-${variant} ${className}`}
+      disabled={disabled || isLoading}
+      type={type}
+      {...props}
+    >
       {children}
     </button>
   );

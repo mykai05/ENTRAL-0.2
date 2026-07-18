@@ -247,7 +247,8 @@ export function AgentTaskForm({ activeAgent, defaults, onAssigned }: AgentTaskFo
         <input id="agent-task-webhook" name="webhookUrl" placeholder="https://hooks.example.com/agent-task" type="url" />
       </div>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
-      <Button type="submit" disabled={isSubmitting || !activeAgent}>
+      {!activeAgent ? <p className="control-hint" id="agent-task-disabled-reason">Select or create an agent before assigning work.</p> : null}
+      <Button type="submit" aria-describedby={!activeAgent ? "agent-task-disabled-reason" : undefined} disabled={isSubmitting || !activeAgent}>
         <Send aria-hidden="true" size={20} />
         {isSubmitting ? "Assigning..." : "Assign task"}
       </Button>
@@ -359,7 +360,8 @@ export function AgentScheduleForm({ activeAgent, defaults, onScheduled }: AgentS
         Run once immediately
       </label>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
-      <Button type="submit" disabled={isSubmitting || !activeAgent}>
+      {!activeAgent ? <p className="control-hint" id="agent-schedule-disabled-reason">Select or create an agent before creating a schedule.</p> : null}
+      <Button type="submit" aria-describedby={!activeAgent ? "agent-schedule-disabled-reason" : undefined} disabled={isSubmitting || !activeAgent}>
         <Bot aria-hidden="true" size={20} />
         {isSubmitting ? "Scheduling..." : "Create schedule"}
       </Button>

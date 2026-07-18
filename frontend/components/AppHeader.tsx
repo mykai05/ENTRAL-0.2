@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import React, { type ReactNode } from "react";
+import React, { type ReactNode, useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "./BrandMark";
-import { ModeStatusStrip, authenticatedModeItems } from "./ModeStatus";
+import { ModeStatusStrip, authenticatedModeItems, localModeItems } from "./ModeStatus";
+import { readAuthenticatedUserSession } from "../lib/auth-session";
 
 type AppHeaderProps = {
   actions?: ReactNode;
@@ -17,16 +18,20 @@ const navItems = [
   { href: "/dashboard", label: "Command Center" },
   { href: "/chat", label: "Communications" },
   { href: "/automations", label: "Automations" },
-  { href: "/agents", label: "Agents" },
-  { href: "/admin", label: "Governance" }
+  { href: "/agents", label: "Agents" }
 ];
 
-function NavLinks() {
+function readSessionRole() {
+  return readAuthenticatedUserSession()?.role ?? null;
+}
+
+function NavLinks({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...navItems, { href: "/admin", label: "Governance" }] : navItems;
 
   return (
     <>
-      {navItems.map((item) => (
+      {items.map((item) => (
         <Link
           aria-current={pathname.startsWith(item.href) ? "page" : undefined}
           className={pathname.startsWith(item.href) ? "app-nav-link active" : "app-nav-link"}
@@ -41,6 +46,31 @@ function NavLinks() {
 }
 
 export function AppHeader({ actions, subtitle, title }: AppHeaderProps) {
+  const [sessionRole, setSessionRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSessionRole(readSessionRole());
+
+    function handleAuthenticated(event: Event) {
+      const detail = event instanceof CustomEvent ? event.detail as { role?: string } | undefined : undefined;
+      setSessionRole(detail?.role ?? readSessionRole());
+    }
+
+    function handleSignedOut() {
+      setSessionRole(null);
+    }
+
+    window.addEventListener("entral:user-authenticated", handleAuthenticated);
+    window.addEventListener("entral:user-signed-out", handleSignedOut);
+    return () => {
+      window.removeEventListener("entral:user-authenticated", handleAuthenticated);
+      window.removeEventListener("entral:user-signed-out", handleSignedOut);
+    };
+  }, []);
+
+  const isAuthenticated = sessionRole === "USER" || sessionRole === "ADMIN";
+  const isAdmin = sessionRole === "ADMIN";
+
   return (
     <header className="app-header">
       <div className="app-header-main">
@@ -51,7 +81,7 @@ export function AppHeader({ actions, subtitle, title }: AppHeaderProps) {
         </div>
       </div>
       <nav className="app-nav" aria-label="Primary navigation">
-        <NavLinks />
+        <NavLinks isAdmin={isAdmin} />
       </nav>
       <details className="mobile-nav">
         <summary aria-label="Open navigation menu">
@@ -59,15 +89,15 @@ export function AppHeader({ actions, subtitle, title }: AppHeaderProps) {
           Menu
         </summary>
         <nav aria-label="Mobile navigation">
-          <NavLinks />
+          <NavLinks isAdmin={isAdmin} />
         </nav>
       </details>
       {actions ? <div className="nav-actions">{actions}</div> : null}
       <ModeStatusStrip
-        ariaLabel="Authenticated workspace mode status"
+        ariaLabel={isAuthenticated ? "Authenticated workspace mode status" : "Local workspace mode status"}
         className="app-mode-strip"
         compact
-        items={authenticatedModeItems}
+        items={isAuthenticated ? authenticatedModeItems : localModeItems}
       />
     </header>
   );

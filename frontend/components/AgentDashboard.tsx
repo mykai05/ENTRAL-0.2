@@ -7,8 +7,8 @@ import { AgentCreateForm, AgentScheduleForm, AgentTaskForm, type Agent, type Age
 import { AgentList } from "./AgentList";
 import { AgentDetail, type AgentLog, type AgentMessage, type AgentSchedule, type AgentTask } from "./AgentDetail";
 import { AgentTemplateGallery, type AgentTemplate } from "./AgentTemplateGallery";
-import { CurlSnippet } from "./CurlSnippet";
 import { DataPortability } from "./DataPortability";
+import { clearAuthenticatedUserSession } from "../lib/auth-session";
 
 type AgentListResponse = {
   items: Agent[];
@@ -33,12 +33,15 @@ export function AgentDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isAgentSidebarOpen, setIsAgentSidebarOpen] = useState(true);
+  const [accessState, setAccessState] = useState<"checking" | "authorized" | "denied" | "unavailable">("checking");
 
   const activeAgent = useMemo(() => agents.find((agent) => agent.id === activeAgentId) ?? null, [activeAgentId, agents]);
 
   const handleUnauthorized = useCallback((errorValue: unknown) => {
     if (errorValue instanceof ApiError && errorValue.status === 401) {
       setError("Owner authentication is required for saved agent operations. The local command center remains available.");
+      setAccessState("denied");
+      clearAuthenticatedUserSession();
       return true;
     }
 
@@ -74,9 +77,11 @@ export function AgentDashboard() {
       if (selectedId) {
         await loadAgentDetail(selectedId);
       }
+      setAccessState("authorized");
     } catch (refreshError) {
       if (!handleUnauthorized(refreshError)) {
         setError(refreshError instanceof Error ? refreshError.message : "Unable to load agents.");
+        setAccessState("unavailable");
       }
     } finally {
       setIsLoading(false);
@@ -180,32 +185,6 @@ export function AgentDashboard() {
     }
   }, [activeAgent, handleUnauthorized, refresh]);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") {
-        return;
-      }
-
-      const target = event.target;
-      const isEditableTarget = target instanceof HTMLElement
-        && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
-      const hasOpenOverlay = Boolean(document.querySelector(".overlay-backdrop, [role='dialog']"));
-
-      if (isEditableTarget || hasOpenOverlay) {
-        return;
-      }
-
-      const activeTask = tasks.find((task) => task.status === "queued" || task.status === "running");
-
-      if (activeTask) {
-        void cancelTask(activeTask.id);
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cancelTask, tasks]);
-
   async function importAgents(data: unknown) {
     const items = Array.isArray(data) ? data : (data as { agents?: unknown[] }).agents;
 
@@ -243,6 +222,15 @@ export function AgentDashboard() {
     });
   }
 
+  if (accessState !== "authorized") {
+    return (
+      <section className="permission-state" role={accessState === "unavailable" ? "alert" : "status"}>
+        <h2>{accessState === "checking" ? "Loading agents" : accessState === "denied" ? "Owner session required" : "Agents unavailable"}</h2>
+        <p>{accessState === "checking" ? "Checking saved agent access." : error}</p>
+      </section>
+    );
+  }
+
   return (
     <section className={isAgentSidebarOpen ? "agent-dashboard" : "agent-dashboard sidebar-closed"} aria-label="Agent orchestration workspace">
       {isAgentSidebarOpen ? (
@@ -256,7 +244,7 @@ export function AgentDashboard() {
             <PanelLeftClose aria-hidden="true" size={18} />
           </button>
         </div>
-        <AgentCreateForm defaults={templateDefaults} onCreated={(agent) => void handleAgentCreated(agent)} />
+        <AgentCreateForm key={`create-${JSON.stringify(templateDefaults ?? {})}`} defaults={templateDefaults} onCreated={(agent) => void handleAgentCreated(agent)} />
         <AgentList agents={agents} activeAgentId={activeAgentId} isLoading={isLoading} onSelect={(agentId) => void handleSelectAgent(agentId)} />
         <DataPortability
           csvRows={agents.map((agent) => ({
@@ -281,21 +269,8 @@ export function AgentDashboard() {
         </div>
         {error ? <p className="form-error" role="alert">{error}</p> : null}
         <AgentTemplateGallery onUseTemplate={useTemplate} />
-        <AgentTaskForm activeAgent={activeAgent} defaults={templateDefaults} onAssigned={refresh} />
-        <AgentScheduleForm activeAgent={activeAgent} defaults={templateDefaults} onScheduled={refresh} />
-        <CurlSnippet
-          body={{
-            title: templateDefaults?.title ?? "Research target account",
-            action: templateDefaults?.action ?? "research",
-            payload: {
-              instructions: templateDefaults?.instructions ?? "Find useful public details and summarize the next best action.",
-              sourceType: "manual"
-            }
-          }}
-          method="POST"
-          path={`/agents/${activeAgent?.id ?? "agent_id"}/assign`}
-          title="Assign agent task"
-        />
+        <AgentTaskForm key={`task-${JSON.stringify(templateDefaults ?? {})}`} activeAgent={activeAgent} defaults={templateDefaults} onAssigned={refresh} />
+        <AgentScheduleForm key={`schedule-${JSON.stringify(templateDefaults ?? {})}`} activeAgent={activeAgent} defaults={templateDefaults} onScheduled={refresh} />
         <AgentDetail
           agent={activeAgent}
           logs={logs}
