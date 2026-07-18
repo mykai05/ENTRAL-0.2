@@ -23,15 +23,10 @@ describe.skipIf(!integrationEnabled)("Entral Base PostgreSQL seat enforcement", 
 
     try {
       await admin.$executeRawUnsafe(`CREATE SCHEMA "${schemaName}"`);
-      const packageManagerScript = process.env.npm_execpath;
-      if (!packageManagerScript) {
-        throw new Error("The package-manager executable is unavailable for the migration harness.");
-      }
       const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
+      const prismaCli = fileURLToPath(new URL("../../node_modules/prisma/build/index.js", import.meta.url));
       const migration = spawnSync(process.execPath, [
-        packageManagerScript,
-        "exec",
-        "prisma",
+        prismaCli,
         "migrate",
         "deploy",
         "--schema",
