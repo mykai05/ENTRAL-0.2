@@ -103,9 +103,9 @@ export function VerifyEmailForm() {
     return (
       <div className="form-stack">
         <p className="form-notice" role="status">{notice}</p>
-        <Link className="button button-primary" href="/login">
+        <Link className="button button-primary" href="/dashboard">
           <CheckCircle2 aria-hidden="true" size={20} />
-          Sign in
+          Enter command center
         </Link>
       </div>
     );

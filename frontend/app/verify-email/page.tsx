@@ -9,9 +9,9 @@ export default function VerifyEmailPage() {
     <AuthCard
       title="Verify email"
       subtitle="Confirm your email before entering the private beta command center."
-      footerText="Already verified?"
-      footerLabel="Sign in"
-      footerHref="/login"
+      footerText="Need the beta brief?"
+      footerLabel="Review Entral"
+      footerHref="/onboarding"
     >
       <Suspense fallback={<AuthLoadingFallback label="Loading verification form..." />}>
         <VerifyEmailForm />
