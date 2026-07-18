@@ -6,7 +6,7 @@ const modeLabels = [
   {
     icon: CheckCircle2,
     label: "Real",
-    text: "Account creation, email verification, sign-in, and saved command-center state use production paths when the backend is connected."
+    text: "Account creation, email verification, and saved command-center state use production paths when the backend is connected."
   },
   {
     icon: Eye,
@@ -37,13 +37,11 @@ const betaBoundaries = [
 type PublicBetaBriefProps = {
   createHref?: string;
   showActions?: boolean;
-  signInHref?: string;
 };
 
 export function PublicBetaBrief({
   createHref = "/signup",
-  showActions = true,
-  signInHref = "/login"
+  showActions = true
 }: PublicBetaBriefProps) {
   return (
     <section className="public-brief" aria-labelledby="public-brief-title">
@@ -87,7 +85,7 @@ export function PublicBetaBrief({
             <h3 id="guardrails-title">Guardrails</h3>
           </div>
           <ul className="brief-list">
-            <li>External posting, commerce updates, outreach, and ad work require human approval.</li>
+          <li>External posting, commerce updates, outreach, and ad work require human approval.</li>
             <li>Sensitive actions are permission-checked, logged, and designed for cost limits.</li>
             <li>Unconnected integrations remain mock or read-only until credentials and policy are configured.</li>
           </ul>
@@ -111,9 +109,6 @@ export function PublicBetaBrief({
           <Link href={createHref} className="button button-primary">
             Create verified account
             <ArrowRight aria-hidden="true" size={18} />
-          </Link>
-          <Link href={signInHref} className="button button-secondary">
-            Sign in
           </Link>
         </div>
       ) : null}

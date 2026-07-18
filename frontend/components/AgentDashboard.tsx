@@ -40,7 +40,7 @@ export function AgentDashboard() {
 
   const handleUnauthorized = useCallback((errorValue: unknown) => {
     if (errorValue instanceof ApiError && errorValue.status === 401) {
-      router.push("/login?next=/agents");
+      router.push("/onboarding?next=/agents");
       return true;
     }
 

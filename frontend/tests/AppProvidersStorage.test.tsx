@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "../components/AppProviders";
 
 const navigationMocks = vi.hoisted(() => ({
-  pathname: "/login"
+  pathname: "/onboarding"
 }));
 
 vi.mock("next/navigation", () => ({
@@ -19,7 +19,7 @@ describe("AppProviders storage resilience", () => {
   });
 
   it("renders public entry pages even when browser storage is blocked", () => {
-    navigationMocks.pathname = "/login";
+    navigationMocks.pathname = "/onboarding";
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("storage unavailable");
     });
@@ -30,12 +30,12 @@ describe("AppProviders storage resilience", () => {
     render(
       <AppProviders>
         <main>
-          <h1>Sign in to ENTRAL</h1>
+          <h1>Entral beta brief</h1>
         </main>
       </AppProviders>
     );
 
-    expect(screen.getByRole("heading", { name: "Sign in to ENTRAL" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Entral beta brief" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /settings/i })).not.toBeInTheDocument();
   });
 });

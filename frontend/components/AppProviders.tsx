@@ -15,7 +15,6 @@ export function AppProviders({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isPublicEntry = pathname === "/"
     || pathname?.startsWith("/forgot-password")
-    || pathname?.startsWith("/login")
     || pathname?.startsWith("/onboarding")
     || pathname?.startsWith("/reset-password")
     || pathname?.startsWith("/signup")

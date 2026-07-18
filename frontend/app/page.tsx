@@ -112,9 +112,6 @@ export default function LandingPage() {
               Read beta brief
               <ArrowRight aria-hidden="true" size={20} />
             </Link>
-            <Link href="/login" className="button button-secondary">
-              Sign in
-            </Link>
           </div>
           <div className="hero-safety-strip" aria-label="Public safety guarantees">
             {heroSignals.map((signal) => (

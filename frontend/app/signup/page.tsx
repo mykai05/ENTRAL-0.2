@@ -10,9 +10,9 @@ export default function SignupPage() {
       modeLabel={isDemoMode ? "Local demo action" : "Real account action"}
       title="Create account"
       subtitle={isDemoMode ? "Create a temporary local demo account." : "Create a verified private beta account after reviewing ENTRAL's safety context."}
-      footerText="Already have an account?"
-      footerLabel="Sign in"
-      footerHref="/login"
+      footerText="Need the beta brief?"
+      footerLabel="Review Entral"
+      footerHref="/onboarding"
     >
       <SignupForm />
     </AuthCard>

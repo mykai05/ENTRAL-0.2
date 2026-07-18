@@ -118,9 +118,16 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
+    const user = publicUser(result.user);
+    setAuthCookie(reply, signAuthToken({
+      sub: result.user.id,
+      email: result.user.email,
+      role: normalizeUserRole(result.user.role)
+    }));
+
     return reply.send({
-      message: "Email verified. You can now sign in.",
-      user: publicUser(result.user)
+      message: "Email verified. You can now enter the ENTRAL command center.",
+      user
     });
   });
 
@@ -158,11 +165,16 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    clearAuthCookie(reply);
+    const user = publicUser(result.user);
+    setAuthCookie(reply, signAuthToken({
+      sub: result.user.id,
+      email: result.user.email,
+      role: normalizeUserRole(result.user.role)
+    }));
 
     return reply.send({
-      message: "Password reset. Sign in with your new password.",
-      user: publicUser(result.user)
+      message: "Password reset. You can now enter the ENTRAL command center.",
+      user
     });
   });
 

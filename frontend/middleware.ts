@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
   const isAutomations = request.nextUrl.pathname.startsWith("/automations");
   const isAgents = request.nextUrl.pathname.startsWith("/agents");
   const isAdmin = request.nextUrl.pathname.startsWith("/admin");
-  const isAuthPage = request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup";
+  const isAuthPage = request.nextUrl.pathname === "/signup";
 
   if ((isDashboard || isChat || isAutomations || isAgents || isAdmin) && !token) {
     const url = request.nextUrl.clone();
@@ -39,7 +39,6 @@ export const config = {
     "/agents",
     "/admin/:path*",
     "/admin",
-    "/login",
     "/signup"
   ]
 };

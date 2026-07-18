@@ -19,9 +19,7 @@ describe("public onboarding", () => {
   });
 
   it("shows first-use safety context before account creation", async () => {
-    const page = await OnboardingPage({
-      searchParams: Promise.resolve({ next: "/dashboard" })
-    });
+    const page = OnboardingPage();
 
     render(page);
 
@@ -30,7 +28,7 @@ describe("public onboarding", () => {
     expect(screen.getByText(/External posting, commerce updates, outreach, and ad work require human approval/i)).toBeInTheDocument();
     expect(screen.getByText(/ENTRAL prepares business operations; it does not claim to run the business for you/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /create verified account/i })).toHaveAttribute("href", "/signup");
-    expect(screen.getAllByRole("link", { name: /sign in/i }).every((link) => link.getAttribute("href") === "/login?next=%2Fdashboard")).toBe(true);
+    expect(screen.queryByRole("link", { name: /sign in/i })).not.toBeInTheDocument();
   });
 
   it("keeps public metadata aligned with the approved positioning", () => {
