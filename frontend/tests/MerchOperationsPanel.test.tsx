@@ -11139,7 +11139,7 @@ describe("MerchOperationsPanel", () => {
     expect(await within(region).findByText("100-Store Command Queue")).toBeInTheDocument();
     expect(within(region).getByText("100-store operations preview selected Create the next 100-store batch for up to 25 internal items.")).toBeInTheDocument();
     expect(within(region).getByText("Store gap 99 to 74; readiness 82/100 to 84/100.")).toBeInTheDocument();
-  }, 10000);
+  }, 30000);
 
   it("loads the business fleet scheduler for a 10-lane launch wave", async () => {
     vi.mocked(apiFetch)

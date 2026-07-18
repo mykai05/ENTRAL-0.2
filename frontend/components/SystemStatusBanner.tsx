@@ -9,6 +9,9 @@ type HealthPayload = {
     error?: string;
     ok?: boolean;
     status?: number | null;
+    upstream?: {
+      message?: string;
+    } | string | null;
   };
   frontend?: {
     ok?: boolean;
@@ -22,6 +25,17 @@ type SystemStatus = {
   requestId?: string;
   state: "checking" | "healthy" | "degraded";
 };
+
+function isLocalOnlyMode(payload: HealthPayload | null) {
+  if (!payload?.frontend?.ok) return false;
+  if (payload.backend?.configured === false) return true;
+
+  const upstreamMessage = typeof payload.backend?.upstream === "string"
+    ? payload.backend.upstream
+    : payload.backend?.upstream?.message;
+
+  return payload.backend?.status === 404 && upstreamMessage === "Application not found";
+}
 
 export function SystemStatusBanner() {
   const [status, setStatus] = useState<SystemStatus>({ message: "", state: "checking" });
@@ -41,6 +55,11 @@ export function SystemStatusBanner() {
         const payload = await response.json().catch(() => null) as HealthPayload | null;
 
         if (response.ok && payload?.ok) {
+          setStatus({ message: "", state: "healthy" });
+          return;
+        }
+
+        if (isLocalOnlyMode(payload)) {
           setStatus({ message: "", state: "healthy" });
           return;
         }

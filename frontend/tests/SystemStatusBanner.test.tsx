@@ -37,4 +37,28 @@ describe("SystemStatusBanner", () => {
     expect(screen.getByText(/Real account actions may fail/i)).toBeInTheDocument();
     expect(screen.getByText("Request health-test")).toBeInTheDocument();
   });
+
+  it("stays hidden when the command center is intentionally using local-only mode", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({
+        backend: {
+          configured: true,
+          ok: false,
+          status: 404,
+          upstream: { message: "Application not found" }
+        },
+        frontend: { ok: true },
+        ok: false
+      }),
+      { status: 502 }
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SystemStatusBanner />);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByText("System health degraded")).not.toBeInTheDocument();
+  });
 });

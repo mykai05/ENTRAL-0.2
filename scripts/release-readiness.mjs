@@ -1,6 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { findForbiddenPositioning, publicPositioningRoots } from "./release-positioning.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const liveUrl = process.env.ENTRAL_LIVE_URL ?? "https://entral-0-2-frontend.vercel.app";
@@ -77,26 +78,6 @@ const requiredChecks = [
     label: "Package exposes release readiness check",
     text: "\"release:check\""
   }
-];
-
-const forbiddenPatterns = [
-  { label: "dark web", pattern: /\bdark web\b/i },
-  { label: "Tor", pattern: /\bTor\b/ },
-  { label: "full autonomy", pattern: /\bfull autonomy\b/i },
-  { label: "runs your entire business", pattern: /\bruns your entire business\b/i },
-  { label: "automated Shopify", pattern: /\bautomated Shopify\b/i },
-  { label: "Shopify launching", pattern: /\bShopify launching\b/i },
-  { label: "autonomous", pattern: /\bautonomous\b/i }
-];
-
-const scanRoots = [
-  "README.md",
-  "DEPLOYMENT.md",
-  "frontend/app",
-  "frontend/components",
-  "frontend/lib",
-  "backend/src",
-  "e2e"
 ];
 
 const skipSegments = new Set([
@@ -177,7 +158,7 @@ async function runRequiredChecks() {
 
 async function runForbiddenCopyScan() {
   const findings = [];
-  const files = (await Promise.all(scanRoots.map((entry) => walkFiles(entry)))).flat();
+  const files = (await Promise.all(publicPositioningRoots.map((entry) => walkFiles(entry)))).flat();
 
   for (const file of files) {
     const relative = toRelative(file);
@@ -185,15 +166,13 @@ async function runForbiddenCopyScan() {
     const lines = content.split(/\r?\n/);
 
     lines.forEach((line, index) => {
-      for (const forbidden of forbiddenPatterns) {
-        if (forbidden.pattern.test(line)) {
-          findings.push({
-            file: relative,
-            line: index + 1,
-            label: forbidden.label,
-            text: line.trim()
-          });
-        }
+      for (const forbidden of findForbiddenPositioning(line)) {
+        findings.push({
+          file: relative,
+          line: index + 1,
+          label: forbidden.label,
+          text: line.trim()
+        });
       }
     });
   }
