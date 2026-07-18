@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "../components/AppProviders";
 import { MemberDashboardClient } from "../components/MemberDashboardClient";
 import { buildMemberNeurons, MemberNeuronGraph } from "../components/MemberNeuronGraph";
+import { buildMemberGraphModel } from "../components/member-graph-model";
 import { MemberRecoveryClient } from "../components/MemberRecoveryClient";
 import { MemberSignInClient } from "../components/MemberSignInClient";
 import { safeMemberReturnPath } from "../lib/member";
@@ -259,7 +260,7 @@ describe("member workspace presentation", () => {
 
     expect(neurons).toHaveLength(7);
     expect(neurons[0]).toMatchObject({ id: "core", label: "Analytical Works", metric: "Entral core" });
-    expect(neurons.find((neuron) => neuron.id === "priority")).toMatchObject({ metric: "1 active" });
+    expect(neurons.find((neuron) => neuron.id === "priorities")).toMatchObject({ metric: "1 active / 1 total" });
     expect(neurons.find((neuron) => neuron.id === "work")?.supportingItems).toContain("Map the operating workflow - in progress");
     expect(JSON.stringify(neurons)).not.toContain("token");
     expect(JSON.stringify(neurons)).not.toContain("prompt");
@@ -270,7 +271,7 @@ describe("member workspace presentation", () => {
     render(<MemberNeuronGraph overview={overview} />);
 
     expect(screen.getByRole("heading", { name: "Entral command field" })).toBeInTheDocument();
-    const priorities = screen.getByRole("button", { name: "Priorities: 1 active" });
+    const priorities = screen.getByRole("button", { name: "Priorities: 1 active / 1 total. Status: active" });
     expect(priorities).toHaveAttribute("aria-pressed", "false");
     await user.click(priorities);
     expect(priorities).toHaveAttribute("aria-pressed", "true");
@@ -296,18 +297,110 @@ describe("member workspace presentation", () => {
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
     render(<MemberNeuronGraph overview={overview} />);
 
-    expect(await screen.findByRole("button", { name: "Resume motion" })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByText("Reduced motion")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /motion/i })).not.toBeInTheDocument();
     expect(document.querySelector(".member-neural-map")).toHaveClass("motion-paused");
+  });
+
+  it("builds a complete deterministic organization graph from every returned member record", () => {
+    const model = buildMemberGraphModel(overview);
+
+    expect(model.nodes).toHaveLength(17);
+    expect(model.edges).toHaveLength(17);
+    expect(model.nodes.map((node) => node.kind)).toEqual(expect.arrayContaining([
+      "health-assessment",
+      "priority",
+      "task",
+      "task-rollup",
+      "member",
+      "finding",
+      "recommendation",
+      "summary-record",
+      "accomplishment",
+      "next-priority"
+    ]));
+    expect(model.nodes.find((node) => node.kind === "task-rollup")).toMatchObject({ metric: "3 records" });
+    expect(model.edges).toContainEqual(expect.objectContaining({ kind: "assignment" }));
+    expect(buildMemberGraphModel(overview)).toEqual(model);
+  });
+
+  it("lays out the maximum published graph with unique bounded nodes", () => {
+    const members = Array.from({ length: 5 }, (_, index) => ({
+      id: `member-${index}`,
+      joinedAt: `2026-07-0${index + 1}T00:00:00.000Z`,
+      name: `Member ${index + 1}`,
+      role: index === 0 ? "OWNER" as const : "MEMBER" as const
+    }));
+    const maxOverview: MemberOverviewResponse = {
+      ...overview,
+      members,
+      recentTasks: Array.from({ length: 8 }, (_, index) => ({
+        assignedTo: { id: members[index % members.length].id, name: members[index % members.length].name },
+        dueDate: null,
+        id: "duplicate-task-id",
+        status: index % 2 ? "IN_PROGRESS" : "TODO",
+        title: `Visible task ${index + 1}`,
+        updatedAt: `2026-07-${String(18 - index).padStart(2, "0")}T00:00:00.000Z`
+      })),
+      taskSummary: { done: 0, inProgress: 4, overdue: 1, todo: 8, total: 12 },
+      workspace: {
+        ...overview.workspace!,
+        findingsAndRecommendations: Array.from({ length: 20 }, (_, index) => ({
+          detail: `Finding detail ${index + 1}`,
+          id: "duplicate-finding-id",
+          recommendation: `Recommendation ${index + 1}`,
+          severity: index % 3 === 0 ? "risk" as const : "information" as const,
+          title: `Finding ${index + 1}`
+        })),
+        monthlyOperatingSummary: {
+          ...overview.workspace!.monthlyOperatingSummary!,
+          accomplishments: Array.from({ length: 8 }, (_, index) => `Accomplishment ${index + 1}`),
+          nextPriorities: Array.from({ length: 8 }, (_, index) => `Next priority ${index + 1}`)
+        },
+        objectivesAndPriorities: Array.from({ length: 12 }, (_, index) => ({
+          id: "duplicate-priority-id",
+          priority: index % 2 ? "medium" as const : "high" as const,
+          progress: index * 8,
+          status: index % 2 ? "active" as const : "planned" as const,
+          title: `Priority ${index + 1}`
+        }))
+      }
+    };
+    const model = buildMemberGraphModel(maxOverview);
+
+    expect(model.nodes).toHaveLength(91);
+    expect(model.edges).toHaveLength(98);
+    expect(new Set(model.nodes.map((node) => node.id)).size).toBe(91);
+    for (const node of model.nodes) {
+      expect(node.x).toBeGreaterThanOrEqual(3);
+      expect(node.x).toBeLessThanOrEqual(97);
+      expect(node.y).toBeGreaterThanOrEqual(3);
+      expect(node.y).toBeLessThanOrEqual(97);
+    }
+  });
+
+  it("renders the full graph with every approved record and no internal command controls", () => {
+    render(<MemberNeuronGraph overview={overview} variant="full" />);
+
+    expect(screen.getByRole("heading", { name: "Full organization graph" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Improve scheduling visibility: 65% complete. Status: active" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Standardize hand-offs recommendation: Recommended action. Status: watch" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Completed the dispatch map: Accomplishment. Status: stable" })).toBeInTheDocument();
+    expect(screen.queryByText("Raw prompts")).not.toBeInTheDocument();
+    expect(screen.queryByText("Agent controls")).not.toBeInTheDocument();
   });
 
   it("keeps the member graph source independent from internal command and connector modules", () => {
     const source = readFileSync(resolve(process.cwd(), "components", "MemberNeuronGraph.tsx"), "utf8");
+    const modelSource = readFileSync(resolve(process.cwd(), "components", "member-graph-model.ts"), "utf8");
 
-    expect(source).not.toContain("NeuronsCommandCenter");
-    expect(source).not.toContain("../lib/api");
-    expect(source).not.toContain("../lib/command");
-    expect(source).not.toContain("ConnectionCenter");
-    expect(source).not.toContain("MerchOperationsPanel");
+    for (const memberGraphSource of [source, modelSource]) {
+      expect(memberGraphSource).not.toContain("NeuronsCommandCenter");
+      expect(memberGraphSource).not.toContain("../lib/api");
+      expect(memberGraphSource).not.toContain("../lib/command");
+      expect(memberGraphSource).not.toContain("ConnectionCenter");
+      expect(memberGraphSource).not.toContain("MerchOperationsPanel");
+    }
   });
 
   it("shows allowlisted organization work, real published operating data, and the enforced seat allowance", async () => {
@@ -323,7 +416,7 @@ describe("member workspace presentation", () => {
     expect(screen.getByText("2 of 5")).toBeInTheDocument();
     expect(screen.getByText("Delivery and capacity are steady.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Entral command field" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Analytical Works: Entral core" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Analytical Works: Entral core. Status: active" })).toBeInTheDocument();
     expect(screen.getByText("Improve scheduling visibility")).toBeInTheDocument();
     expect(screen.getByText("Standardize hand-offs")).toBeInTheDocument();
     expect(screen.getByText("Operations are becoming more predictable")).toBeInTheDocument();
@@ -333,6 +426,44 @@ describe("member workspace presentation", () => {
     expect(screen.queryByText("Agents")).not.toBeInTheDocument();
     expect(screen.queryByText("Connectors")).not.toBeInTheDocument();
     expect(screen.queryByText("Raw prompts")).not.toBeInTheDocument();
+  });
+
+  it("opens the complete graph as a first-class member view", async () => {
+    navigation.pathname = "/member/graph";
+    api.apiFetch.mockResolvedValueOnce(overview);
+    render(<MemberDashboardClient initialSession={session} view="graph" />);
+
+    expect(await screen.findByRole("heading", { name: "Full organization graph" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Full graph" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Map the operating workflow: in progress. Status: active" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Work overview" })).not.toBeInTheDocument();
+  });
+
+  it("returns an expired graph session to the full graph after sign in", async () => {
+    navigation.pathname = "/member/graph";
+    api.apiFetch.mockRejectedValueOnce(new ApiError(401, "Authentication is required.", null));
+    render(<MemberDashboardClient initialSession={session} view="graph" />);
+
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith("/member/sign-in?returnTo=%2Fmember%2Fgraph"));
+    expect(navigation.refresh).toHaveBeenCalled();
+  });
+
+  it("keeps sign-out failure recovery scoped to sign out", async () => {
+    const user = userEvent.setup();
+    navigation.pathname = "/member";
+    api.apiFetch
+      .mockResolvedValueOnce(overview)
+      .mockRejectedValueOnce(new Error("Session service unavailable"))
+      .mockRejectedValueOnce(new Error("Session service unavailable"));
+    render(<MemberDashboardClient initialSession={session} />);
+
+    await screen.findByRole("heading", { name: "Work overview" });
+    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Sign out failed");
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+
+    await waitFor(() => expect(api.apiFetch).toHaveBeenNthCalledWith(3, "/logout", { method: "POST" }));
+    expect(api.apiFetch).toHaveBeenCalledTimes(3);
   });
 
   it("renders a clean operating-view empty state without dead controls", async () => {
@@ -370,7 +501,7 @@ describe("member workspace presentation", () => {
     render(<MemberDashboardClient initialSession={session} />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("This organization is no longer available to your account.");
-    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
     expect(screen.queryByText("Map the operating workflow")).not.toBeInTheDocument();
   });
 
@@ -452,5 +583,20 @@ describe("member workspace presentation", () => {
       json: { email: "ada@example.com", flow: "member" },
       method: "POST"
     }));
+  });
+
+  it("associates password mismatch feedback with the confirmation field", async () => {
+    const user = userEvent.setup();
+    render(<MemberRecoveryClient token="valid-reset-token" />);
+
+    await user.type(screen.getByLabelText("New password"), "correct-horse-battery");
+    await user.type(screen.getByLabelText("Confirm new password"), "different-password");
+    await user.click(screen.getByRole("button", { name: "Update password" }));
+
+    const confirmation = screen.getByLabelText("Confirm new password");
+    expect(confirmation).toHaveAttribute("aria-invalid", "true");
+    expect(confirmation).toHaveAccessibleDescription("Passwords must match.");
+    expect(confirmation).toHaveFocus();
+    expect(api.apiFetch).not.toHaveBeenCalled();
   });
 });

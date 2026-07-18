@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -9,8 +10,10 @@ import {
   ClipboardList,
   FileText,
   HeartPulse,
+  LayoutDashboard,
   Loader2,
   LogOut,
+  Network,
   RefreshCw,
   SearchCheck,
   ShieldCheck,
@@ -20,7 +23,7 @@ import {
 import { ApiError, apiFetch } from "../lib/api";
 import { clearAuthenticatedUserSession } from "../lib/auth-session";
 import type { MemberOrganizationsResponse, MemberOverviewResponse } from "../lib/member";
-import { sovereignProtocolUrl } from "../lib/member";
+import { memberSignInPath, sovereignProtocolUrl } from "../lib/member";
 import { BrandMark } from "./BrandMark";
 import { Button } from "./Button";
 import { MemberNeuronGraph } from "./MemberNeuronGraph";
@@ -46,11 +49,23 @@ function formattedMonth(value: string) {
     .format(new Date(`${value}-01T00:00:00.000Z`));
 }
 
-export function MemberDashboardClient({ initialSession }: { initialSession: MemberOrganizationsResponse }) {
+function roleLabel(role: "MEMBER" | "OWNER") {
+  return role === "OWNER" ? "Owner" : "Member";
+}
+
+export function MemberDashboardClient({
+  initialSession,
+  view = "dashboard"
+}: {
+  initialSession: MemberOrganizationsResponse;
+  view?: "dashboard" | "graph";
+}) {
   const router = useRouter();
   const [organizationId, setOrganizationId] = useState(initialSession.organizations[0]?.id ?? "");
   const [overview, setOverview] = useState<MemberOverviewResponse | null>(null);
-  const [error, setError] = useState("");
+  const [workspaceError, setWorkspaceError] = useState("");
+  const [canRetryWorkspace, setCanRetryWorkspace] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const [isLoading, setIsLoading] = useState(Boolean(organizationId));
   const [isSigningOut, setIsSigningOut] = useState(false);
   const activeOverviewRequest = useRef<AbortController | null>(null);
@@ -70,7 +85,8 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
     const requestedOrganizationId = organizationId;
     activeOverviewRequest.current = controller;
     overviewRequestGeneration.current = generation;
-    setError("");
+    setWorkspaceError("");
+    setCanRetryWorkspace(false);
     setIsLoading(true);
     setOverview(null);
 
@@ -82,22 +98,25 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
 
       if (controller.signal.aborted || overviewRequestGeneration.current !== generation) return;
       if (response.organization.id !== requestedOrganizationId) {
-        setError("Entral returned data for a different organization. Refresh and try again.");
+        setWorkspaceError("Entral returned data for a different organization. Refresh and try again.");
+        setCanRetryWorkspace(true);
         return;
       }
       setOverview(response);
     } catch (requestError) {
       if (controller.signal.aborted || overviewRequestGeneration.current !== generation) return;
       if (requestError instanceof ApiError && requestError.status === 401) {
-        router.replace("/member/sign-in?returnTo=%2Fmember");
+        router.replace(memberSignInPath(view === "graph" ? "/member/graph" : "/member"));
         router.refresh();
         return;
       }
 
       if (requestError instanceof ApiError && requestError.status === 404) {
-        setError("This organization is no longer available to your account.");
+        setWorkspaceError("This organization is no longer available to your account.");
+        setCanRetryWorkspace(false);
       } else {
-        setError(requestError instanceof Error ? requestError.message : "Entral could not load this workspace.");
+        setWorkspaceError(requestError instanceof Error ? requestError.message : "Entral could not load this workspace.");
+        setCanRetryWorkspace(true);
       }
       setOverview(null);
     } finally {
@@ -105,7 +124,7 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
         setIsLoading(false);
       }
     }
-  }, [organizationId, router]);
+  }, [organizationId, router, view]);
 
   useEffect(() => {
     void loadOverview();
@@ -114,7 +133,7 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
 
   async function handleLogout() {
     if (isSigningOut) return;
-    setError("");
+    setSignOutError("");
     setIsSigningOut(true);
 
     try {
@@ -123,7 +142,7 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
       router.replace("/member/sign-in");
       router.refresh();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Sign out failed. Try again.");
+      setSignOutError(requestError instanceof Error ? requestError.message : "Sign out failed. Try again.");
       setIsSigningOut(false);
     }
   }
@@ -131,11 +150,21 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
   return (
     <main className="member-workspace" id="main-content">
       <header className="member-header">
-        <BrandMark href="/member" />
+        <div className="member-header-primary">
+          <BrandMark href="/member" />
+          <nav className="member-navigation" aria-label="Member workspace">
+            <Link aria-current={view === "dashboard" ? "page" : undefined} href="/member">
+              <LayoutDashboard aria-hidden="true" size={16} />Workspace
+            </Link>
+            <Link aria-current={view === "graph" ? "page" : undefined} href="/member/graph">
+              <Network aria-hidden="true" size={16} />Full graph
+            </Link>
+          </nav>
+        </div>
         <div className="member-header-account">
-          <span>{initialSession.user.email}</span>
+          <span title={initialSession.user.email}>{initialSession.user.email}</span>
           <Button isLoading={isSigningOut} onClick={handleLogout} variant="secondary">
-            <LogOut aria-hidden="true" size={17} />
+            {isSigningOut ? <Loader2 aria-hidden="true" className="spin" size={17} /> : <LogOut aria-hidden="true" size={17} />}
             Sign out
           </Button>
         </div>
@@ -143,9 +172,9 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
 
       <section className="member-intro" aria-labelledby="member-heading">
         <div>
-          <p className="eyebrow">Member workspace</p>
-          <h1 id="member-heading">Welcome, {initialSession.user.name}</h1>
-          <p>Review the organization work that has been approved for member visibility.</p>
+          <p className="eyebrow">{view === "graph" ? "Organization intelligence" : "Member workspace"}</p>
+          <h1 id="member-heading">{view === "graph" ? "Full organization graph" : `Welcome, ${initialSession.user.name}`}</h1>
+          <p>{view === "graph" ? "Explore every approved operating signal available to your organization." : "Review the organization work that has been approved for member visibility."}</p>
         </div>
         {initialSession.organizations.length > 1 ? (
           <label className="member-organization-select">
@@ -159,11 +188,19 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
         ) : null}
       </section>
 
-      {error ? (
+      {signOutError ? (
         <section className="member-error" role="alert">
           <AlertCircle aria-hidden="true" size={20} />
-          <div><strong>Workspace unavailable</strong><p>{error}</p></div>
-          {organizationId ? <Button onClick={() => void loadOverview()} variant="secondary"><RefreshCw aria-hidden="true" size={17} />Retry</Button> : null}
+          <div><strong>Sign out failed</strong><p>{signOutError}</p></div>
+          <Button onClick={() => void handleLogout()} variant="secondary"><RefreshCw aria-hidden="true" size={17} />Try again</Button>
+        </section>
+      ) : null}
+
+      {workspaceError ? (
+        <section className="member-error" role="alert">
+          <AlertCircle aria-hidden="true" size={20} />
+          <div><strong>Workspace unavailable</strong><p>{workspaceError}</p></div>
+          {organizationId && canRetryWorkspace ? <Button onClick={() => void loadOverview()} variant="secondary"><RefreshCw aria-hidden="true" size={17} />Retry</Button> : null}
         </section>
       ) : null}
 
@@ -191,12 +228,16 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
               <h2>{overview.organization.name}</h2>
             </div>
             <dl>
-              <div><dt>Your role</dt><dd>{overview.organization.role}</dd></div>
+              <div><dt>Your role</dt><dd>{roleLabel(overview.organization.role)}</dd></div>
               <div><dt>Entral Base seats</dt><dd>{overview.organization.memberCount} of {overview.organization.memberLimit}</dd></div>
             </dl>
           </section>
 
-          <MemberNeuronGraph overview={overview} />
+          {view === "graph" ? (
+            <MemberNeuronGraph overview={overview} variant="full" />
+          ) : (
+            <>
+              <MemberNeuronGraph overview={overview} />
 
           <section className="member-metrics" aria-labelledby="work-overview-heading">
             <div className="member-section-heading">
@@ -237,7 +278,7 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
               </div>
               <ul className="member-list">
                 {overview.members.map((member) => (
-                  <li key={member.id}><span aria-hidden="true">{member.name.charAt(0).toUpperCase()}</span><div><strong>{member.name}</strong><small>{member.role}</small></div></li>
+                  <li key={member.id}><span aria-hidden="true">{member.name.charAt(0).toUpperCase()}</span><div><strong>{member.name}</strong><small>{roleLabel(member.role)}</small></div></li>
                 ))}
               </ul>
             </section>
@@ -341,10 +382,12 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
             </section>
           )}
 
-          <section className="member-panel member-subscription-state" aria-labelledby="subscription-heading">
-            <CircleSlash2 aria-hidden="true" size={18} />
-            <div><h2 id="subscription-heading">Subscription management unavailable</h2><p>{overview.availability.subscription.reason}</p></div>
-          </section>
+              <section className="member-panel member-subscription-state" aria-labelledby="subscription-heading">
+                <CircleSlash2 aria-hidden="true" size={18} />
+                <div><h2 id="subscription-heading">Subscription management unavailable</h2><p>{overview.availability.subscription.reason}</p></div>
+              </section>
+            </>
+          )}
           <footer className="member-footer">
             <p>Need help with your Entral workspace or a separately scoped implementation?</p>
             <a href={`${sovereignProtocolUrl()}/contact`}>Support and consultation</a>
