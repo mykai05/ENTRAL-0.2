@@ -409,7 +409,7 @@ describe("member workspace presentation", () => {
     const user = userEvent.setup();
     render(<MemberNeuronsCommandCenter overview={overview} />);
 
-    expect(screen.getByRole("heading", { name: "Neurons command field" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Neurons command field" })).toBeInTheDocument();
     expect(screen.getByLabelText("3D field view controls")).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: "Neuron orbit speed" })).toHaveValue("0.72");
     expect(screen.getByRole("slider", { name: "Neuron field gravity" })).toHaveValue("1");
@@ -475,7 +475,7 @@ describe("member workspace presentation", () => {
 
     expect(await screen.findByRole("heading", { name: "Full organization graph" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Full graph" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("heading", { name: "Neurons command field" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Neurons command field" })).toBeInTheDocument();
     expect(screen.getByText("Map the operating workflow")).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: "Neuron orbit speed" })).toBeInTheDocument();
     expect(await screen.findByRole("alert")).toHaveTextContent("3D rendering is unavailable");
