@@ -9,7 +9,6 @@ import {
   Layers3,
   LineChart,
   LockKeyhole,
-  LogIn,
   Megaphone,
   ShieldCheck
 } from "lucide-react";
@@ -75,10 +74,6 @@ export default function LandingPage() {
       <nav className="top-nav" aria-label="Main navigation">
         <BrandMark />
         <div className="nav-actions">
-          <Link href="/login" className="nav-link">
-            <LogIn aria-hidden="true" size={18} />
-            Sign in
-          </Link>
           <Link href="/onboarding" className="button button-primary">
             Read brief
             <ArrowRight aria-hidden="true" size={18} />
