@@ -145,6 +145,20 @@ export const revenueBusinessFleetSeedGapConfirmation = "CREATE INTERNAL BUSINESS
 export const revenueBusinessFleetGapAccelerationConfirmation = "RUN INTERNAL BUSINESS FLEET GAP ACCELERATION";
 export const revenueBusinessFleetLiveLaunchPackageConfirmation = "RECORD INTERNAL BUSINESS FLEET LIVE LAUNCH PACKAGE";
 export const revenueBusinessFleetProviderApprovalReviewConfirmation = "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS";
+export const revenueBusinessFleetLaunchExecutionQueueConfirmation = "RECORD INTERNAL BUSINESS FLEET LAUNCH EXECUTION QUEUE";
+export const revenueBusinessFleetLaunchWorkerAssignmentsConfirmation = "RECORD INTERNAL BUSINESS FLEET LAUNCH WORKER ASSIGNMENTS";
+export const revenueBusinessFleetManualLaunchEvidenceConfirmation = "RECORD INTERNAL BUSINESS FLEET MANUAL LAUNCH EVIDENCE";
+export const revenueBusinessFleetManualLaunchEvidencePhrase = "CONFIRM OPERATOR COMPLETED BUSINESS FLEET MANUAL LAUNCH STEP";
+export const revenueBusinessFleetLaunchOutcomeSignalsConfirmation = "RECORD INTERNAL BUSINESS FLEET LAUNCH OUTCOME SIGNALS";
+export const revenueBusinessFleetLaunchCashCycleConfirmation = "RECORD INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND";
+export const revenueBusinessFleetLaunchCashCycleCommandQueueConfirmation = "RESOLVE INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND QUEUE";
+export const revenueBusinessFleetIncomeSprintCommandConfirmation = "RECORD INTERNAL BUSINESS FLEET INCOME SPRINT COMMANDS";
+export const revenueBusinessFleetIncomeSprintCommandQueueConfirmation = "RESOLVE INTERNAL BUSINESS FLEET INCOME SPRINT COMMAND QUEUE";
+export const revenueBusinessFleetLaunchNightCommandConfirmation = "RECORD INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMANDS";
+export const revenueBusinessFleetLaunchNightCommandQueueConfirmation = "RESOLVE INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMAND QUEUE";
+export const revenueBusinessFleetLaunchNightSupervisorActionConfirmation = "APPLY INTERNAL BUSINESS FLEET LAUNCH NIGHT SUPERVISOR ACTION";
+export const revenueBusinessFleetLaunchNightSupervisorRunNextConfirmation = "RUN INTERNAL BUSINESS FLEET LAUNCH NIGHT NEXT SUPERVISOR ACTION";
+export const revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewConfirmation = "PREVIEW INTERNAL BUSINESS FLEET LAUNCH NIGHT RUN UNTIL BLOCKED";
 export const revenueMoneyArmyBatchPipelineConfirmation = "RUN INTERNAL MONEY ARMY BATCH PIPELINE";
 export const revenueHundredStoreOperationsApplyConfirmation = "RUN INTERNAL 100 STORE OPERATIONS STEP";
 export const revenueHundredStoreAppConnectionPacketsConfirmation = "RECORD INTERNAL 100 STORE APP CONNECTION PACKETS";
@@ -782,6 +796,292 @@ export const revenueBusinessFleetProviderApprovalReviewQuerySchema = z.object({
   status: z.enum(["pending", "approved", "rejected", "all"]).default("pending")
 });
 
+export const revenueBusinessFleetLaunchExecutionQueueQuerySchema = z.object({
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
+});
+
+export const revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema = z.object({
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
+});
+
+export const revenueBusinessFleetManualLaunchEvidenceQuerySchema = z.object({
+  assignmentIds: z.array(z.string().trim().min(1).max(220)).max(50).default([]),
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
+});
+
+export const revenueBusinessFleetLaunchControlQuerySchema = z.object({
+  launchWaveSize: z.coerce.number().int().min(1).max(100).default(10),
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxParallelLaunches: z.coerce.number().int().min(1).max(1_000).default(10),
+  maxParallelScaleActions: z.coerce.number().int().min(1).max(2_000).default(25),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema,
+  targetBusinesses: z.coerce.number().int().min(1).max(100_000).default(1_000)
+});
+
+const revenueBusinessFleetScaleTargetsQuerySchema = z.preprocess((value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") return value.split(",").map((item) => item.trim()).filter(Boolean);
+
+  return undefined;
+}, z.array(z.coerce.number().int().min(1).max(100_000)).min(1).max(5).default([10, 100, 1_000]));
+
+export const revenueBusinessFleetSwarmReadinessQuerySchema = revenueBusinessFleetLaunchControlQuerySchema.extend({
+  scaleTargets: revenueBusinessFleetScaleTargetsQuerySchema,
+  starterBusinesses: z.coerce.number().int().min(1).max(100).default(10)
+});
+
+export const revenueBusinessFleetLaunchOutcomeSignalsQuerySchema = z.object({
+  launchWaveSize: z.coerce.number().int().min(1).max(100).default(10),
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxParallelLaunches: z.coerce.number().int().min(1).max(1_000).default(10),
+  maxParallelScaleActions: z.coerce.number().int().min(1).max(2_000).default(25),
+  maxSignals: z.coerce.number().int().min(1).max(50).default(10),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema,
+  targetBusinesses: z.coerce.number().int().min(1).max(100_000).default(1_000)
+});
+
+export const revenueBusinessFleetLaunchCashCycleQuerySchema = z.object({
+  launchWaveSize: z.coerce.number().int().min(1).max(100).default(10),
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxParallelLaunches: z.coerce.number().int().min(1).max(1_000).default(10),
+  maxParallelScaleActions: z.coerce.number().int().min(1).max(2_000).default(25),
+  maxSignals: z.coerce.number().int().min(1).max(50).default(10),
+  maxSteps: z.coerce.number().int().min(1).max(20).default(8),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema,
+  targetBusinesses: z.coerce.number().int().min(1).max(100_000).default(1_000)
+});
+
+export const applyRevenueBusinessFleetLaunchCashCycleSchema = revenueBusinessFleetLaunchCashCycleQuerySchema.extend({
+  confirm: z.literal(revenueBusinessFleetLaunchCashCycleConfirmation),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500)
+});
+
+const revenueBusinessFleetLaunchCashCycleCommandQueueStatusSchema = z.enum(["queued", "applied", "skipped", "blocked"]);
+
+const revenueBusinessFleetLaunchCashCycleCommandQueueStatusesSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => typeof item === "string"
+        ? item.split(",").map((part) => part.trim()).filter(Boolean)
+        : [item]);
+    }
+
+    return value;
+  },
+  z.array(revenueBusinessFleetLaunchCashCycleCommandQueueStatusSchema).min(1).max(4).default(["queued", "blocked"])
+);
+
+export const revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema = z.object({
+  maxCommands: z.coerce.number().int().min(1).max(50).default(10),
+  statuses: revenueBusinessFleetLaunchCashCycleCommandQueueStatusesSchema
+});
+
+export const applyRevenueBusinessFleetLaunchCashCycleCommandQueueSchema = revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema.extend({
+  commandRecordIds: z.array(z.string().trim().min(1).max(160)).max(50).default([]),
+  confirm: z.literal(revenueBusinessFleetLaunchCashCycleCommandQueueConfirmation),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500),
+  resolution: z.enum(["applied", "skipped", "blocked"]).default("applied")
+});
+
+export const revenueBusinessFleetIncomeSprintQuerySchema = z.object({
+  launchWaveSize: z.coerce.number().int().min(1).max(100).default(10),
+  maxCommands: z.coerce.number().int().min(1).max(50).default(10),
+  maxLanes: z.coerce.number().int().min(1).max(25).default(10),
+  maxParallelLaunches: z.coerce.number().int().min(1).max(1_000).default(10),
+  maxParallelScaleActions: z.coerce.number().int().min(1).max(2_000).default(25),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema,
+  targetBusinesses: z.coerce.number().int().min(1).max(100_000).default(1_000)
+});
+
+export const revenueBusinessFleetLaunchNightQuerySchema = revenueBusinessFleetIncomeSprintQuerySchema.extend({
+  launchNightSize: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10)
+});
+
+export const revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema = revenueBusinessFleetLaunchNightQuerySchema.extend({
+  maxChecklistItems: z.coerce.number().int().min(1).max(50).default(10)
+});
+
+export const revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema = revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema.extend({
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxConsoleItems: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxSignals: z.coerce.number().int().min(1).max(50).default(10)
+});
+
+export const revenueBusinessFleetLaunchNightSupervisorQuerySchema = revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema.extend({
+  maxSupervisorItems: z.coerce.number().int().min(1).max(50).default(10)
+});
+
+export const revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema = revenueBusinessFleetLaunchNightSupervisorQuerySchema.extend({
+  maxActions: z.coerce.number().int().min(1).max(25).default(10)
+});
+
+export const applyRevenueBusinessFleetLaunchNightSupervisorActionSchema = revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.extend({
+  actionId: z.string().trim().min(1).max(320).optional(),
+  adSpend: moneyAmountSchema.optional(),
+  confirm: z.literal(revenueBusinessFleetLaunchNightSupervisorActionConfirmation),
+  dryRun: z.boolean().default(true),
+  grossRevenue: moneyAmountSchema.optional(),
+  netProfit: z.coerce.number().finite().min(-999_999_999).max(999_999_999).optional(),
+  note: optionalTrimmedString(500),
+  unitsSold: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  visits: z.coerce.number().int().min(0).max(1_000_000_000).optional()
+});
+
+export const applyRevenueBusinessFleetLaunchNightSupervisorRunNextSchema = revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.extend({
+  adSpend: moneyAmountSchema.optional(),
+  confirm: z.literal(revenueBusinessFleetLaunchNightSupervisorRunNextConfirmation),
+  dryRun: z.boolean().default(true),
+  grossRevenue: moneyAmountSchema.optional(),
+  netProfit: z.coerce.number().finite().min(-999_999_999).max(999_999_999).optional(),
+  note: optionalTrimmedString(500),
+  unitsSold: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  visits: z.coerce.number().int().min(0).max(1_000_000_000).optional()
+});
+
+export const revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewSchema = revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.extend({
+  adSpend: moneyAmountSchema.optional(),
+  confirm: z.literal(revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewConfirmation),
+  grossRevenue: moneyAmountSchema.optional(),
+  maxRunSteps: z.coerce.number().int().min(1).max(5).default(5),
+  netProfit: z.coerce.number().finite().min(-999_999_999).max(999_999_999).optional(),
+  note: optionalTrimmedString(500),
+  unitsSold: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  visits: z.coerce.number().int().min(0).max(1_000_000_000).optional()
+});
+
+export const applyRevenueBusinessFleetLaunchNightCommandSchema = revenueBusinessFleetLaunchNightQuerySchema.extend({
+  confirm: z.literal(revenueBusinessFleetLaunchNightCommandConfirmation),
+  dryRun: z.boolean().default(true),
+  laneIds: z.array(z.string().trim().min(1).max(160)).max(25).default([]),
+  note: optionalTrimmedString(500)
+});
+
+const revenueBusinessFleetLaunchNightCommandQueueStatusSchema = z.enum(["queued", "applied", "skipped", "blocked"]);
+
+const revenueBusinessFleetLaunchNightCommandQueueStatusesSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => typeof item === "string"
+        ? item.split(",").map((part) => part.trim()).filter(Boolean)
+        : [item]);
+    }
+
+    return value;
+  },
+  z.array(revenueBusinessFleetLaunchNightCommandQueueStatusSchema).min(1).max(4).default(["queued", "blocked"])
+);
+
+export const revenueBusinessFleetLaunchNightCommandQueueQuerySchema = z.object({
+  maxCommands: z.coerce.number().int().min(1).max(50).default(10),
+  statuses: revenueBusinessFleetLaunchNightCommandQueueStatusesSchema
+});
+
+export const applyRevenueBusinessFleetLaunchNightCommandQueueSchema = revenueBusinessFleetLaunchNightCommandQueueQuerySchema.extend({
+  commandRecordIds: z.array(z.string().trim().min(1).max(160)).max(50).default([]),
+  confirm: z.literal(revenueBusinessFleetLaunchNightCommandQueueConfirmation),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500),
+  resolution: z.enum(["applied", "skipped", "blocked"]).default("applied")
+});
+
+export const applyRevenueBusinessFleetIncomeSprintCommandSchema = revenueBusinessFleetIncomeSprintQuerySchema.extend({
+  confirm: z.literal(revenueBusinessFleetIncomeSprintCommandConfirmation),
+  dryRun: z.boolean().default(true),
+  laneIds: z.array(z.string().trim().min(1).max(160)).max(25).default([]),
+  note: optionalTrimmedString(500)
+});
+
+const revenueBusinessFleetIncomeSprintCommandQueueStatusSchema = z.enum(["queued", "applied", "skipped", "blocked"]);
+
+const revenueBusinessFleetIncomeSprintCommandQueueStatusesSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => typeof item === "string"
+        ? item.split(",").map((part) => part.trim()).filter(Boolean)
+        : [item]);
+    }
+
+    return value;
+  },
+  z.array(revenueBusinessFleetIncomeSprintCommandQueueStatusSchema).min(1).max(4).default(["queued", "blocked"])
+);
+
+export const revenueBusinessFleetIncomeSprintCommandQueueQuerySchema = z.object({
+  maxCommands: z.coerce.number().int().min(1).max(50).default(10),
+  statuses: revenueBusinessFleetIncomeSprintCommandQueueStatusesSchema
+});
+
+export const applyRevenueBusinessFleetIncomeSprintCommandQueueSchema = revenueBusinessFleetIncomeSprintCommandQueueQuerySchema.extend({
+  commandRecordIds: z.array(z.string().trim().min(1).max(160)).max(50).default([]),
+  confirm: z.literal(revenueBusinessFleetIncomeSprintCommandQueueConfirmation),
+  dryRun: z.boolean().default(true),
+  note: optionalTrimmedString(500),
+  resolution: z.enum(["applied", "skipped", "blocked"]).default("applied")
+});
+
 export const applyRevenueBusinessFleetProviderApprovalReviewSchema = z.object({
   action: z.enum(["approve", "reject"]).default("approve"),
   confirm: z.literal(revenueBusinessFleetProviderApprovalReviewConfirmation),
@@ -791,6 +1091,94 @@ export const applyRevenueBusinessFleetProviderApprovalReviewSchema = z.object({
   note: optionalTrimmedString(500),
   packetIds: z.array(z.string().trim().min(1).max(160)).max(50).default([]),
   sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
+});
+
+export const applyRevenueBusinessFleetLaunchExecutionQueueSchema = z.object({
+  confirm: z.literal(revenueBusinessFleetLaunchExecutionQueueConfirmation),
+  dryRun: z.boolean().default(true),
+  leaseIds: z.array(z.string().trim().min(1).max(200)).max(50).default([]),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  note: optionalTrimmedString(500),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
+});
+
+export const applyRevenueBusinessFleetLaunchWorkerAssignmentsSchema = z.object({
+  assignmentIds: z.array(z.string().trim().min(1).max(220)).max(50).default([]),
+  confirm: z.literal(revenueBusinessFleetLaunchWorkerAssignmentsConfirmation),
+  dryRun: z.boolean().default(true),
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10),
+  note: optionalTrimmedString(500),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
+});
+
+export const applyRevenueBusinessFleetManualLaunchEvidenceSchema = z.object({
+  approvalPhrase: z.literal(revenueBusinessFleetManualLaunchEvidencePhrase),
+  assignmentIds: z.array(z.string().trim().min(1).max(220)).max(50).default([]),
+  completedAt: z.string().datetime().optional(),
+  confirm: z.literal(revenueBusinessFleetManualLaunchEvidenceConfirmation),
+  dryRun: z.boolean().default(true),
+  evidenceCategory: z.enum(["operator_notes", "storefront", "listing_preview", "post_launch_risk_check", "cash_loop_ready"]).default("operator_notes"),
+  evidenceNote: optionalTrimmedString(1200),
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10),
+  operatorCompletedManualStep: z.boolean().default(true),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema
+});
+
+export const applyRevenueBusinessFleetLaunchOutcomeSignalsSchema = z.object({
+  adSpend: moneyAmountSchema.default(0),
+  confirm: z.literal(revenueBusinessFleetLaunchOutcomeSignalsConfirmation),
+  digitalDeliveryCost: moneyAmountSchema.default(0),
+  discounts: moneyAmountSchema.default(0),
+  dryRun: z.boolean().default(true),
+  grossRevenue: moneyAmountSchema.default(0),
+  impressions: z.coerce.number().int().min(0).max(1_000_000_000).default(0),
+  launchWaveSize: z.coerce.number().int().min(1).max(100).default(10),
+  maxAssignments: z.coerce.number().int().min(1).max(50).default(10),
+  maxAssignmentsPerWorker: z.coerce.number().int().min(1).max(10).default(1),
+  maxLeases: z.coerce.number().int().min(1).max(50).default(10),
+  maxLeasesPerShard: z.coerce.number().int().min(1).max(10).default(1),
+  maxParallelLaunches: z.coerce.number().int().min(1).max(1_000).default(10),
+  maxParallelScaleActions: z.coerce.number().int().min(1).max(2_000).default(25),
+  maxSignals: z.coerce.number().int().min(1).max(50).default(10),
+  maxStores: z.coerce.number().int().min(1).max(25).default(10),
+  maxWorkers: z.coerce.number().int().min(1).max(100).default(10),
+  netProfit: z.coerce.number().finite().min(-999_999_999).max(999_999_999).optional(),
+  note: optionalTrimmedString(1200),
+  periodEnd: z.string().datetime().optional(),
+  periodStart: z.string().datetime().optional(),
+  platformFees: moneyAmountSchema.default(0),
+  productionCost: moneyAmountSchema.default(0),
+  qualityFloor: z.coerce.number().int().min(0).max(100).default(75),
+  refunds: moneyAmountSchema.default(0),
+  shardCount: z.coerce.number().int().min(1).max(100).default(10),
+  shippingCost: moneyAmountSchema.default(0),
+  signalIds: z.array(z.string().trim().min(1).max(220)).max(50).default([]),
+  source: z.literal("manual").default("manual"),
+  sourceKeys: revenueBusinessFleetSourceKeysQuerySchema,
+  targetBusinesses: z.coerce.number().int().min(1).max(100_000).default(1_000),
+  unitsSold: z.coerce.number().int().min(0).max(1_000_000).default(0),
+  visits: z.coerce.number().int().min(0).max(1_000_000_000).default(0)
+}).refine((input) => !input.periodEnd || !input.periodStart || Date.parse(input.periodEnd) >= Date.parse(input.periodStart), {
+  message: "Launch outcome signal period end must be after period start.",
+  path: ["periodEnd"]
 });
 
 export const revenueMoneyArmyBatchPipelineQuerySchema = z.object({
@@ -2141,6 +2529,35 @@ export type ApplyRevenueBusinessFleetLiveLaunchPackageInput = z.infer<typeof app
 export type RevenueBusinessFleetLaunchGateQueryInput = z.infer<typeof revenueBusinessFleetLaunchGateQuerySchema>;
 export type RevenueBusinessFleetProviderApprovalReviewQueryInput = z.infer<typeof revenueBusinessFleetProviderApprovalReviewQuerySchema>;
 export type ApplyRevenueBusinessFleetProviderApprovalReviewInput = z.infer<typeof applyRevenueBusinessFleetProviderApprovalReviewSchema>;
+export type RevenueBusinessFleetLaunchExecutionQueueQueryInput = z.infer<typeof revenueBusinessFleetLaunchExecutionQueueQuerySchema>;
+export type ApplyRevenueBusinessFleetLaunchExecutionQueueInput = z.infer<typeof applyRevenueBusinessFleetLaunchExecutionQueueSchema>;
+export type RevenueBusinessFleetLaunchWorkerAssignmentsQueryInput = z.infer<typeof revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema>;
+export type ApplyRevenueBusinessFleetLaunchWorkerAssignmentsInput = z.infer<typeof applyRevenueBusinessFleetLaunchWorkerAssignmentsSchema>;
+export type RevenueBusinessFleetManualLaunchEvidenceQueryInput = z.infer<typeof revenueBusinessFleetManualLaunchEvidenceQuerySchema>;
+export type ApplyRevenueBusinessFleetManualLaunchEvidenceInput = z.infer<typeof applyRevenueBusinessFleetManualLaunchEvidenceSchema>;
+export type RevenueBusinessFleetLaunchControlQueryInput = z.infer<typeof revenueBusinessFleetLaunchControlQuerySchema>;
+export type RevenueBusinessFleetSwarmReadinessQueryInput = z.infer<typeof revenueBusinessFleetSwarmReadinessQuerySchema>;
+export type RevenueBusinessFleetLaunchOutcomeSignalsQueryInput = z.infer<typeof revenueBusinessFleetLaunchOutcomeSignalsQuerySchema>;
+export type RevenueBusinessFleetLaunchCashCycleQueryInput = z.infer<typeof revenueBusinessFleetLaunchCashCycleQuerySchema>;
+export type ApplyRevenueBusinessFleetLaunchCashCycleInput = z.infer<typeof applyRevenueBusinessFleetLaunchCashCycleSchema>;
+export type RevenueBusinessFleetLaunchCashCycleCommandQueueQueryInput = z.infer<typeof revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema>;
+export type ApplyRevenueBusinessFleetLaunchCashCycleCommandQueueInput = z.infer<typeof applyRevenueBusinessFleetLaunchCashCycleCommandQueueSchema>;
+export type RevenueBusinessFleetIncomeSprintQueryInput = z.infer<typeof revenueBusinessFleetIncomeSprintQuerySchema>;
+export type RevenueBusinessFleetLaunchNightQueryInput = z.infer<typeof revenueBusinessFleetLaunchNightQuerySchema>;
+export type RevenueBusinessFleetLaunchNightExecutionChecklistQueryInput = z.infer<typeof revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema>;
+export type RevenueBusinessFleetLaunchNightOperatorConsoleQueryInput = z.infer<typeof revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema>;
+export type RevenueBusinessFleetLaunchNightSupervisorQueryInput = z.infer<typeof revenueBusinessFleetLaunchNightSupervisorQuerySchema>;
+export type RevenueBusinessFleetLaunchNightSupervisorActionsQueryInput = z.infer<typeof revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema>;
+export type ApplyRevenueBusinessFleetLaunchNightSupervisorActionInput = z.infer<typeof applyRevenueBusinessFleetLaunchNightSupervisorActionSchema>;
+export type ApplyRevenueBusinessFleetLaunchNightSupervisorRunNextInput = z.infer<typeof applyRevenueBusinessFleetLaunchNightSupervisorRunNextSchema>;
+export type RevenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewInput = z.infer<typeof revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewSchema>;
+export type ApplyRevenueBusinessFleetLaunchNightCommandInput = z.infer<typeof applyRevenueBusinessFleetLaunchNightCommandSchema>;
+export type RevenueBusinessFleetLaunchNightCommandQueueQueryInput = z.infer<typeof revenueBusinessFleetLaunchNightCommandQueueQuerySchema>;
+export type ApplyRevenueBusinessFleetLaunchNightCommandQueueInput = z.infer<typeof applyRevenueBusinessFleetLaunchNightCommandQueueSchema>;
+export type ApplyRevenueBusinessFleetIncomeSprintCommandInput = z.infer<typeof applyRevenueBusinessFleetIncomeSprintCommandSchema>;
+export type RevenueBusinessFleetIncomeSprintCommandQueueQueryInput = z.infer<typeof revenueBusinessFleetIncomeSprintCommandQueueQuerySchema>;
+export type ApplyRevenueBusinessFleetIncomeSprintCommandQueueInput = z.infer<typeof applyRevenueBusinessFleetIncomeSprintCommandQueueSchema>;
+export type ApplyRevenueBusinessFleetLaunchOutcomeSignalsInput = z.infer<typeof applyRevenueBusinessFleetLaunchOutcomeSignalsSchema>;
 export type RevenueMoneyArmyBatchPipelineQueryInput = z.infer<typeof revenueMoneyArmyBatchPipelineQuerySchema>;
 export type ApplyRevenueMoneyArmyBatchPipelineInput = z.infer<typeof applyRevenueMoneyArmyBatchPipelineSchema>;
 export type RevenueMoneyArmyGenerateScoreBatchQueryInput = z.infer<typeof revenueMoneyArmyGenerateScoreBatchQuerySchema>;

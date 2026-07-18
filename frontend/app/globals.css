@@ -7167,6 +7167,82 @@ body:has(.command-center-page) .palette-trigger {
   padding: 0.64rem;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.merch-workflow-section {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 240, 0.08);
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.merch-workflow-section > summary {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  gap: 0.18rem 0.7rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  list-style: none;
+  min-height: 3.15rem;
+  padding: 0.66rem 0.72rem;
+}
+
+.merch-workflow-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.merch-workflow-section > summary::after {
+  color: var(--muted);
+  content: "+";
+  font-size: 1rem;
+  font-weight: 900;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.merch-workflow-section[open] > summary {
+  border-bottom: 1px solid rgba(255, 255, 240, 0.08);
+}
+
+.merch-workflow-section[open] > summary::after {
+  content: "−";
+}
+
+.merch-workflow-section > summary span {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.merch-workflow-section > summary small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  grid-column: 1;
+  line-height: 1.35;
+}
+
+.merch-workflow-section > .merch-ops-actions,
+.merch-workflow-section > .merch-ops-grid,
+.merch-workbench-stack,
+.merch-results-stack {
+  margin: 0.68rem;
+}
+
+.merch-workbench-stack,
+.merch-results-stack {
+  display: grid;
+  gap: 0.68rem;
+}
+
 .revenue-engine-result {
   display: grid;
   gap: 0.58rem;
@@ -8820,12 +8896,12 @@ body:has(.command-center-page) .palette-trigger {
   .command-center-chat {
     bottom: 1rem;
     right: 1rem;
-    top: auto;
+    top: 6rem;
     width: min(26rem, calc(58vw - 1.5rem));
   }
 
   .command-side-panel {
-    bottom: calc(56dvh + 2rem);
+    bottom: 1rem;
     max-height: none;
     right: 1rem;
     top: 6rem;

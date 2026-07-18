@@ -1412,6 +1412,195 @@ export type RevenueBusinessFleetSchedulerResponse = {
   plan: RevenueBusinessFleetPlan;
 };
 
+export type RevenueBusinessFleetIncomeSprintLaneStatus =
+  | "ready_to_launch"
+  | "cash_command_ready"
+  | "cash_command_blocked"
+  | "provider_approval_needed"
+  | "quality_repair"
+  | "launch_candidate"
+  | "watch_only"
+  | "blocked";
+export type RevenueBusinessFleetIncomeSprintCashCommandState = "none" | "runnable" | "blocked" | "resolved";
+
+export type RevenueBusinessFleetIncomeSprintLane = {
+  assetScore: RevenueAssetScoreBreakdown;
+  blockers: string[];
+  businessId: string;
+  businessName: string;
+  cashCommandState: RevenueBusinessFleetIncomeSprintCashCommandState;
+  externalExecution: false;
+  gateStatus: RevenueBusinessFleetLaunchGateStatus | null;
+  nextInternalAction: {
+    endpoint: string;
+    label: string;
+    state: string;
+  };
+  priorityScore: number;
+  profitVelocity: number;
+  providerContacted: false;
+  reason: string;
+  recommendation: RevenueAssetRotationDecision;
+  scheduleState: RevenueBusinessFleetScheduleState;
+  shardId: string;
+  status: RevenueBusinessFleetIncomeSprintLaneStatus;
+  topAsset: RevenueBusinessFleetBusiness["topAsset"];
+  trackedAssets: number;
+};
+
+export type RevenueBusinessFleetIncomeSprintPlan = {
+  assetPortfolio: {
+    generatedAt: string;
+    summary: string;
+    totals: RevenueAssetPortfolio["totals"];
+  };
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  cashCommandContext: {
+    nextCommandId: string | null;
+    state: RevenueBusinessFleetIncomeSprintCashCommandState;
+    summary: string;
+    totals: RevenueBusinessFleetLaunchCashCycleCommandQueuePlan["totals"];
+  };
+  externalExecution: false;
+  generatedAt: string;
+  lanes: RevenueBusinessFleetIncomeSprintLane[];
+  launchGate: {
+    summary: string;
+    totals: RevenueBusinessFleetLaunchGatePlan["totals"];
+  };
+  mode: "Revenue Business Fleet Income Sprint Board";
+  options: {
+    launchWaveSize: number;
+    maxCommands: number;
+    maxLanes: number;
+    maxParallelLaunches: number;
+    maxParallelScaleActions: number;
+    maxStores: number;
+    qualityFloor: number;
+    shardCount: number;
+    sourceKeys: string[];
+    targetBusinesses: number;
+  };
+  providerContacted: false;
+  scheduler: {
+    capacity: RevenueBusinessFleetPlan["capacity"];
+    summary: string;
+    totals: RevenueBusinessFleetPlan["totals"];
+  };
+  summary: string;
+  totals: {
+    blocked: number;
+    cashCommandBlocked: number;
+    cashCommandReady: number;
+    externalExecutionLocked: number;
+    lanes: number;
+    launchCandidates: number;
+    profitVelocity: number;
+    providerApprovalNeeded: number;
+    providerContacted: number;
+    qualityRepair: number;
+    readyToLaunch: number;
+    targetBusinesses: number;
+    targetGap: number;
+    watchOnly: number;
+  };
+};
+
+export type RevenueBusinessFleetIncomeSprintResponse = {
+  plan: RevenueBusinessFleetIncomeSprintPlan;
+};
+
+export type RevenueBusinessFleetIncomeSprintApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    blockedCommands: number;
+    commandRecordIds: string[];
+    commandRecordsCreated: number;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    selectedLaneIds: string[];
+    summary: string;
+  };
+  commandRecords: PortfolioCommandRecordSnapshot[];
+  commands: PortfolioCommandItem[];
+  plan: RevenueBusinessFleetIncomeSprintPlan;
+};
+
+export type RevenueBusinessFleetIncomeSprintCommandQueueResolution = "applied" | "skipped" | "blocked";
+
+export type RevenueBusinessFleetIncomeSprintCommandQueueItem = {
+  action: PortfolioCommandAction | string;
+  commandHash: string;
+  commandRecord: PortfolioCommandRecordSnapshot;
+  commandRecordId: string;
+  externalExecution: false;
+  externalExecutionLocked: true;
+  nextInternalState: string;
+  providerContacted: false;
+  reason: string;
+  recommendedEndpoint: string;
+  recommendedResolution: RevenueBusinessFleetIncomeSprintCommandQueueResolution;
+  riskLevel: PortfolioCommandRiskLevel | string;
+  runnable: boolean;
+  sourceModule: string;
+  status: PortfolioCommandRecordStatus;
+  targetName: string;
+  targetType: PortfolioCommandTargetType | string;
+};
+
+export type RevenueBusinessFleetIncomeSprintCommandQueuePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  commands: RevenueBusinessFleetIncomeSprintCommandQueueItem[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Income Sprint Command Queue";
+  options: {
+    maxCommands: number;
+    statuses: PortfolioCommandRecordStatus[];
+  };
+  providerContacted: false;
+  summary: string;
+  totals: {
+    applied: number;
+    blocked: number;
+    commands: number;
+    externalExecutionLocked: number;
+    highRisk: number;
+    providerContacted: number;
+    queued: number;
+    runnable: number;
+    skipped: number;
+  };
+};
+
+export type RevenueBusinessFleetIncomeSprintCommandQueueResponse = {
+  plan: RevenueBusinessFleetIncomeSprintCommandQueuePlan;
+};
+
+export type RevenueBusinessFleetIncomeSprintCommandQueueApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    commandRecordIds: string[];
+    commandRecordsResolved: number;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    resolution: RevenueBusinessFleetIncomeSprintCommandQueueResolution;
+    statusUpdates: Array<{
+      commandRecordId: string;
+      fromStatus: PortfolioCommandRecordStatus;
+      reason: string;
+      targetName: string;
+      toStatus: RevenueBusinessFleetIncomeSprintCommandQueueResolution;
+    }>;
+    summary: string;
+  };
+  plan: RevenueBusinessFleetIncomeSprintCommandQueuePlan;
+};
+
 export type RevenueHundredStoreOperationsStatus =
   | "ready_for_100_store_internal_operations"
   | "ready_to_build_to_100"
@@ -2839,6 +3028,28 @@ export type RevenueBusinessFleetLaunchGateItem = {
   storeId: string;
 };
 
+export type RevenueBusinessFleetManualLaunchQueueItem = {
+  action: "manual_launch_review";
+  approvalId: string | null;
+  artifactSlots: number;
+  businessName: string;
+  credentialScopes: string[];
+  externalExecution: false;
+  manualSteps: string[];
+  nextInternalState: "ready_for_operator_manual_launch";
+  packetId: string;
+  priority: number;
+  providerContacted: false;
+  providerPayloadCount: number;
+  readinessScore: number;
+  requestManifests: number;
+  riskLevel: "low" | "medium" | "high" | string;
+  sourceKey: string | null;
+  status: "ready_for_manual_launch";
+  storeId: string;
+  summary: string;
+};
+
 export type RevenueBusinessFleetLaunchGatePlan = {
   auditEvents: string[];
   blockedExternalActions: string[];
@@ -2852,6 +3063,7 @@ export type RevenueBusinessFleetLaunchGatePlan = {
     readinessTotals: RevenueLaunchReadinessPlan["totals"];
   };
   providerContacted: false;
+  readyQueue: RevenueBusinessFleetManualLaunchQueueItem[];
   statusCounts: {
     approvalNeeded: number;
     blocked: number;
@@ -2864,6 +3076,7 @@ export type RevenueBusinessFleetLaunchGatePlan = {
     approvalNeeded: number;
     blocked: number;
     handoffRecordsOpen: number;
+    manualLaunchReady: number;
     operationsPacks: number;
     operationsReady: number;
     payloadsPrepared: number;
@@ -2952,6 +3165,1306 @@ export type RevenueBusinessFleetProviderApprovalReviewApplyResponse = {
   launchGate: RevenueBusinessFleetLaunchGatePlan;
   plan: RevenueBusinessFleetProviderApprovalReviewPlan;
   selectedPackets: RevenueBusinessFleetProviderApprovalReviewItem[];
+};
+
+export type RevenueBusinessFleetLaunchExecutionLeaseStatus =
+  | "approval_hold"
+  | "blocked"
+  | "quality_hold"
+  | "ready_to_claim"
+  | "waiting_parallel_capacity";
+
+export type RevenueBusinessFleetLaunchExecutionLease = {
+  action: "operator_manual_launch";
+  approvalId: string | null;
+  blockers: string[];
+  businessName: string;
+  claimOrder: number | null;
+  dedupeKey: string;
+  expectedInternalEffect: string;
+  expiresAt: string;
+  externalExecution: false;
+  idempotencyKey: string;
+  leaseId: string;
+  manualSteps: string[];
+  nextInternalState: string;
+  packetId: string;
+  priority: number;
+  providerContacted: false;
+  qualityGates: {
+    approvalPresent: boolean;
+    manualStepsPresent: boolean;
+    providerPayloadsPresent: boolean;
+    readinessScoreFloorPassed: boolean;
+    requestManifestsPresent: boolean;
+    riskAccepted: boolean;
+  };
+  readinessScore: number;
+  reason: string;
+  requestManifests: number;
+  riskLevel: string;
+  shardId: string;
+  sourceKey: string | null;
+  status: RevenueBusinessFleetLaunchExecutionLeaseStatus;
+  storeId: string;
+  summary: string;
+};
+
+export type RevenueBusinessFleetLaunchExecutionQueuePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  launchGate: {
+    readyQueue: number;
+    statusCounts: RevenueBusinessFleetLaunchGatePlan["statusCounts"];
+    summary: string;
+    totals: RevenueBusinessFleetLaunchGatePlan["totals"];
+  };
+  leases: RevenueBusinessFleetLaunchExecutionLease[];
+  mode: "Revenue Business Fleet Launch Execution Queue";
+  providerContacted: false;
+  qualityFloor: number;
+  shardPolicy: {
+    maxLeasesPerShard: number;
+    shardCount: number;
+  };
+  summary: string;
+  targetedSourceKeys: string[];
+  totals: {
+    approvalHold: number;
+    blocked: number;
+    cleanParallelLeases: number;
+    duplicateDedupeKeys: number;
+    leases: number;
+    maxSelectableLeases: number;
+    qualityHold: number;
+    readyToClaim: number;
+    storesEvaluated: number;
+    waitingParallelCapacity: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchExecutionQueueResponse = {
+  plan: RevenueBusinessFleetLaunchExecutionQueuePlan;
+};
+
+export type RevenueBusinessFleetLaunchExecutionQueueApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    leasesPreviewed: number;
+    leasesRecorded: number;
+    leasesSelected: number;
+    providerContacted: false;
+    summary: string;
+  };
+  plan: RevenueBusinessFleetLaunchExecutionQueuePlan;
+  selectedLeases: RevenueBusinessFleetLaunchExecutionLease[];
+};
+
+export type RevenueBusinessFleetLaunchWorkerAssignmentStatus =
+  | "approval_hold"
+  | "blocked"
+  | "ready_to_assign"
+  | "waiting_dependency";
+
+export type RevenueBusinessFleetLaunchWorkerAssignment = {
+  assignmentId: string;
+  blockedExternalActions: string[];
+  claimOrder: number;
+  completionGate: "record_manual_launch_evidence";
+  dedupeKey: string;
+  evidenceRequired: string[];
+  expectedInternalEffect: string;
+  externalExecution: false;
+  idempotencyKey: string;
+  lane: "manual_launch_operator";
+  leaseExpiresAt: string;
+  leaseId: string;
+  nextInternalState: string;
+  packetId: string;
+  priority: number;
+  providerContacted: false;
+  readinessScore: number;
+  retryPolicy: {
+    backoffMinutes: number;
+    maxAttempts: number;
+    requiresFreshQueueAfterFailure: boolean;
+  };
+  riskLevel: string;
+  shardId: string;
+  sourceKey: string | null;
+  status: RevenueBusinessFleetLaunchWorkerAssignmentStatus;
+  storeId: string;
+  storeName: string;
+  summary: string;
+  workerId: string;
+  workerName: string;
+};
+
+export type RevenueBusinessFleetLaunchWorkerLanePlan = {
+  assignments: RevenueBusinessFleetLaunchWorkerAssignment[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  lane: "manual_launch_operator";
+  nextInternalAction: string;
+  providerContacted: false;
+  status: "ready" | "approval_hold" | "waiting" | "blocked";
+  summary: string;
+  totals: {
+    approvalHold: number;
+    assigned: number;
+    blocked: number;
+    readyToAssign: number;
+    waitingDependency: number;
+  };
+  workerCapacity: number;
+  workerId: string;
+  workerName: string;
+};
+
+export type RevenueBusinessFleetLaunchWorkerAssignmentsPlan = {
+  assignments: RevenueBusinessFleetLaunchWorkerAssignment[];
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Launch Worker Assignment Plan";
+  providerContacted: false;
+  queue: {
+    summary: string;
+    totals: RevenueBusinessFleetLaunchExecutionQueuePlan["totals"];
+  };
+  summary: string;
+  targetedSourceKeys: string[];
+  totals: {
+    approvalHold: number;
+    assigned: number;
+    blocked: number;
+    duplicateDedupeKeys: number;
+    evidencePacketsRequired: number;
+    maxSelectableAssignments: number;
+    readyToAssign: number;
+    waitingDependency: number;
+    workerCount: number;
+  };
+  workers: RevenueBusinessFleetLaunchWorkerLanePlan[];
+};
+
+export type RevenueBusinessFleetLaunchWorkerAssignmentsResponse = {
+  plan: RevenueBusinessFleetLaunchWorkerAssignmentsPlan;
+};
+
+export type RevenueBusinessFleetLaunchWorkerAssignmentsApplyResponse = {
+  applied: {
+    assignmentsPreviewed: number;
+    assignmentsRecorded: number;
+    assignmentsSelected: number;
+    auditLogId: string | null;
+    dryRun: boolean;
+    evidencePacketsRequired: number;
+    externalExecution: false;
+    providerContacted: false;
+    readyToAssign: number;
+    statusCounts: Record<string, number>;
+    storesCovered: number;
+    summary: string;
+    workerCounts: Record<string, number>;
+    workersCovered: number;
+  };
+  assignments: RevenueBusinessFleetLaunchWorkerAssignment[];
+  plan: RevenueBusinessFleetLaunchWorkerAssignmentsPlan;
+};
+
+export type RevenueBusinessFleetManualLaunchEvidenceStatus =
+  | "blocked"
+  | "completed"
+  | "ready_for_evidence";
+
+export type RevenueBusinessFleetManualLaunchEvidencePacket = {
+  assignmentId: string;
+  auditLogId: string | null;
+  blockers: string[];
+  businessName: string;
+  completionGate: "record_manual_launch_evidence";
+  dedupeKey: string;
+  evidenceCategory: string;
+  evidenceRequired: string[];
+  externalExecution: false;
+  leaseId: string;
+  nextInternalState: string;
+  operatorCompletedManualStep: boolean;
+  packetId: string;
+  providerContacted: false;
+  readinessScore: number;
+  reason: string;
+  retryPolicy: RevenueBusinessFleetLaunchWorkerAssignment["retryPolicy"];
+  riskLevel: string;
+  shardId: string;
+  sourceKey: string | null;
+  status: RevenueBusinessFleetManualLaunchEvidenceStatus;
+  storeId: string;
+  summary: string;
+  workerId: string;
+  workerName: string;
+};
+
+export type RevenueBusinessFleetManualLaunchEvidencePlan = {
+  assignments: {
+    summary: string;
+    totals: RevenueBusinessFleetLaunchWorkerAssignmentsPlan["totals"];
+  };
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Manual Launch Evidence";
+  packets: RevenueBusinessFleetManualLaunchEvidencePacket[];
+  providerContacted: false;
+  summary: string;
+  targetedSourceKeys: string[];
+  totals: {
+    blocked: number;
+    completed: number;
+    evidencePackets: number;
+    maxSelectableEvidence: number;
+    readyForEvidence: number;
+    storesCovered: number;
+    workersCovered: number;
+  };
+};
+
+export type RevenueBusinessFleetManualLaunchEvidenceResponse = {
+  plan: RevenueBusinessFleetManualLaunchEvidencePlan;
+};
+
+export type RevenueBusinessFleetManualLaunchEvidenceApplyResponse = {
+  applied: {
+    approvalPhrase: "CONFIRM OPERATOR COMPLETED BUSINESS FLEET MANUAL LAUNCH STEP";
+    auditLogIds: string[];
+    blockedExternalActions: string[];
+    blockedPackets: number;
+    completedAt: string;
+    dryRun: boolean;
+    evidenceCategory: string;
+    evidencePreviewed: number;
+    evidenceRecorded: number;
+    evidenceSelected: number;
+    externalExecution: false;
+    operatorCompletedManualStep: boolean;
+    providerContacted: false;
+    summary: string;
+  };
+  packets: RevenueBusinessFleetManualLaunchEvidencePacket[];
+  plan: RevenueBusinessFleetManualLaunchEvidencePlan;
+  selectedPackets: RevenueBusinessFleetManualLaunchEvidencePacket[];
+};
+
+export type RevenueBusinessFleetLaunchControlStatus =
+  | "blocked"
+  | "needs_execution_queue"
+  | "needs_launch_gap"
+  | "needs_launch_package"
+  | "needs_provider_approval"
+  | "needs_worker_assignment"
+  | "ready_for_launch_wave"
+  | "ready_for_operator_launch";
+
+export type RevenueBusinessFleetLaunchControlStage = {
+  nextInternalState: string;
+  readyCount: number;
+  reason: string;
+  stage: string;
+  status: "blocked" | "ready" | "waiting";
+  totalCount: number;
+};
+
+export type RevenueBusinessFleetLaunchControlPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Launch Control Tower";
+  nextAction: {
+    endpoint: string;
+    label: string;
+    reason: string;
+    state: RevenueBusinessFleetLaunchControlStatus;
+  };
+  providerContacted: false;
+  stages: RevenueBusinessFleetLaunchControlStage[];
+  summary: string;
+  swarm: {
+    capacityUtilizationPercent: number;
+    configuredShards: number;
+    configuredWorkers: number;
+    maxAssignmentsPerWorker: number;
+    maxWorkerAssignments: number;
+    requestedLaunchWaveSize: number;
+    safeLaunchReady: number;
+    targetBusinesses: number;
+    targetGap: number;
+  };
+  targetedSourceKeys: string[];
+  totals: {
+    approvalNeeded: number;
+    blocked: number;
+    evidenceCompleted: number;
+    evidenceReady: number;
+    executionReady: number;
+    launchGateReady: number;
+    launchWaveCandidates: number;
+    repairRequired: number;
+    safeLaunchReady: number;
+    storesEvaluated: number;
+    workerReady: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchControlResponse = {
+  plan: RevenueBusinessFleetLaunchControlPlan;
+};
+
+export type RevenueBusinessFleetSwarmReadinessStatus =
+  | "blocked"
+  | "needs_batch_expansion"
+  | "needs_more_clean_lanes"
+  | "ready_now";
+
+export type RevenueBusinessFleetSwarmScalePresetStatus =
+  | "blocked"
+  | "current_ready"
+  | "needs_more_clean_lanes"
+  | "needs_more_clean_lanes_and_batches"
+  | "needs_partitioned_batches";
+
+export type RevenueBusinessFleetSwarmBatchStatus =
+  | "ready_to_stage"
+  | "waiting_for_capacity"
+  | "waiting_for_clean_lanes";
+
+export type RevenueBusinessFleetSwarmReadinessTarget = {
+  cleanLanesReady: number;
+  currentBatchCapacity: number;
+  gapToTarget: number;
+  launchWavesAtBatchCapacity: number | null;
+  launchWavesAtCurrentCleanRate: number | null;
+  limitingStage: RevenueBusinessFleetLaunchControlStage | null;
+  nextInternalAction: RevenueBusinessFleetLaunchControlPlan["nextAction"];
+  readinessStatus: RevenueBusinessFleetSwarmReadinessStatus;
+  reason: string;
+  targetBusinesses: number;
+};
+
+export type RevenueBusinessFleetSwarmBatch = {
+  batchNumber: number;
+  batchSize: number;
+  cleanLanesReady: number;
+  endLane: number;
+  gapToBatch: number;
+  nextInternalState: string;
+  startLane: number;
+  status: RevenueBusinessFleetSwarmBatchStatus;
+};
+
+export type RevenueBusinessFleetSwarmBatchPlan = {
+  batches: RevenueBusinessFleetSwarmBatch[];
+  cleanLanesNow: number;
+  hiddenBatches: number;
+  perCycleCapacity: number;
+  requiredCycles: number;
+  summary: string;
+  targetBusinesses: number;
+};
+
+export type RevenueBusinessFleetSwarmScalePreset = {
+  batchPlan: RevenueBusinessFleetSwarmBatchPlan;
+  cleanLaneGap: number;
+  cleanLanesNow: number;
+  config: {
+    maxAssignments: number;
+    maxAssignmentsPerWorker: number;
+    maxLeases: number;
+    maxLeasesPerShard: number;
+    maxParallelLaunches: number;
+    maxParallelScaleActions: number;
+    maxStores: number;
+    maxWorkers: number;
+    qualityFloor: number;
+    shardCount: number;
+  };
+  label: string;
+  limitingStage: RevenueBusinessFleetLaunchControlStage | null;
+  nextInternalState: string;
+  perCycleCapacity: number;
+  preset: string;
+  reason: string;
+  requiredCyclesAtPresetCapacity: number | null;
+  status: RevenueBusinessFleetSwarmScalePresetStatus;
+  targetBusinesses: number;
+};
+
+export type RevenueBusinessFleetSwarmReadinessPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  chainOfCommand: RevenueBusinessFleetLaunchControlStage[];
+  externalExecution: false;
+  generatedAt: string;
+  launchControl: {
+    nextAction: RevenueBusinessFleetLaunchControlPlan["nextAction"];
+    summary: string;
+    swarm: RevenueBusinessFleetLaunchControlPlan["swarm"];
+    totals: RevenueBusinessFleetLaunchControlPlan["totals"];
+  };
+  limitingStage: RevenueBusinessFleetLaunchControlStage | null;
+  mode: "Revenue Business Fleet Swarm Readiness";
+  providerContacted: false;
+  scalePresets: RevenueBusinessFleetSwarmScalePreset[];
+  summary: string;
+  targetedSourceKeys: string[];
+  targets: RevenueBusinessFleetSwarmReadinessTarget[];
+  totals: {
+    blockedStages: number;
+    cleanLaneGapToStarter: number;
+    cleanLanesNow: number;
+    configuredShards: number;
+    configuredWorkers: number;
+    currentBatchCapacity: number;
+    launchWaveSize: number;
+    maxAssignments: number;
+    maxAssignmentsPerWorker: number;
+    maxLeases: number;
+    maxLeasesPerShard: number;
+    qualityFloor: number;
+    scaleTargets: number[];
+    starterBusinesses: number;
+    starterReady: boolean;
+    targetBusinesses: number;
+    workerCapacity: number;
+  };
+};
+
+export type RevenueBusinessFleetSwarmReadinessResponse = {
+  plan: RevenueBusinessFleetSwarmReadinessPlan;
+};
+
+export type RevenueBusinessFleetLaunchNightLaneStatus =
+  | "ready_for_operator_launch"
+  | "ready_for_launch_wave"
+  | "sprint_command_ready"
+  | "cash_command_ready"
+  | "needs_provider_approval"
+  | "needs_quality_repair"
+  | "needs_launch_package"
+  | "needs_execution_queue"
+  | "needs_worker_assignment"
+  | "needs_manual_evidence"
+  | "launch_candidate"
+  | "watch_only"
+  | "blocked";
+
+export type RevenueBusinessFleetLaunchNightCommandState = "none" | "runnable" | "blocked" | "resolved";
+
+export type RevenueBusinessFleetLaunchNightLane = {
+  assetScore: RevenueAssetScoreBreakdown;
+  blockers: string[];
+  businessId: string;
+  businessName: string;
+  cashCommandState: RevenueBusinessFleetLaunchNightCommandState;
+  externalExecution: false;
+  gateStatus: RevenueBusinessFleetLaunchGateStatus | null;
+  launchabilityScore: number;
+  nextInternalAction: {
+    endpoint: string;
+    label: string;
+    reason?: string;
+    state: string;
+  };
+  priorityScore: number;
+  profitVelocity: number;
+  providerContacted: false;
+  reason: string;
+  recommendation: RevenueAssetRotationDecision;
+  scheduleState: RevenueBusinessFleetScheduleState;
+  shardId: string;
+  sprintCommandState: RevenueBusinessFleetLaunchNightCommandState;
+  status: RevenueBusinessFleetLaunchNightLaneStatus;
+  tonightSlot: number;
+};
+
+export type RevenueBusinessFleetLaunchNightPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  commandQueues: {
+    cash: RevenueBusinessFleetLaunchCashCycleCommandQueuePlan["totals"];
+    sprint: RevenueBusinessFleetIncomeSprintCommandQueuePlan["totals"];
+  };
+  externalExecution: false;
+  generatedAt: string;
+  lanes: RevenueBusinessFleetLaunchNightLane[];
+  launchControl: {
+    nextAction: RevenueBusinessFleetLaunchControlPlan["nextAction"];
+    summary: string;
+    swarm: RevenueBusinessFleetLaunchControlPlan["swarm"];
+    totals: RevenueBusinessFleetLaunchControlPlan["totals"];
+  };
+  mode: "Revenue Business Fleet Launch Night Board";
+  options: {
+    launchNightSize: number;
+    launchWaveSize: number;
+    maxCommands: number;
+    maxLanes: number;
+    maxStores: number;
+    maxWorkers: number;
+    qualityFloor: number;
+    shardCount: number;
+    sourceKeys: string[];
+    targetBusinesses: number;
+  };
+  providerContacted: false;
+  summary: string;
+  totals: {
+    blocked: number;
+    cashCommandReady: number;
+    commandReady: number;
+    externalExecutionLocked: number;
+    lanes: number;
+    launchNightSize: number;
+    launchWaveReady: number;
+    needsExecutionQueue: number;
+    needsLaunchPackage: number;
+    needsManualEvidence: number;
+    needsProviderApproval: number;
+    needsQualityRepair: number;
+    needsWorkerAssignment: number;
+    operatorLaunchReady: number;
+    providerContacted: number;
+    readyNow: number;
+    sprintCommandReady: number;
+    watchOnly: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchNightResponse = {
+  plan: RevenueBusinessFleetLaunchNightPlan;
+};
+
+export type RevenueBusinessFleetLaunchNightApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    blockedCommands: number;
+    commandRecordIds: string[];
+    commandRecordsCreated: number;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    selectedLaneIds: string[];
+    summary: string;
+  };
+  commandRecords: PortfolioCommandRecordSnapshot[];
+  commands: PortfolioCommandItem[];
+  plan: RevenueBusinessFleetLaunchNightPlan;
+};
+
+export type RevenueBusinessFleetLaunchNightCommandQueueResolution = "applied" | "skipped" | "blocked";
+
+export type RevenueBusinessFleetLaunchNightCommandQueueItem = {
+  action: PortfolioCommandAction | string;
+  commandHash: string;
+  commandRecord: PortfolioCommandRecordSnapshot;
+  commandRecordId: string;
+  externalExecution: false;
+  externalExecutionLocked: true;
+  nextInternalState: string;
+  providerContacted: false;
+  reason: string;
+  recommendedEndpoint: string;
+  recommendedResolution: RevenueBusinessFleetLaunchNightCommandQueueResolution;
+  riskLevel: PortfolioCommandRiskLevel | string;
+  runnable: boolean;
+  sourceModule: string;
+  status: PortfolioCommandRecordStatus;
+  targetName: string;
+  targetType: PortfolioCommandTargetType | string;
+};
+
+export type RevenueBusinessFleetLaunchNightCommandQueuePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  commands: RevenueBusinessFleetLaunchNightCommandQueueItem[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Launch Night Command Queue";
+  options: {
+    maxCommands: number;
+    statuses: PortfolioCommandRecordStatus[];
+  };
+  providerContacted: false;
+  summary: string;
+  totals: {
+    applied: number;
+    blocked: number;
+    commands: number;
+    externalExecutionLocked: number;
+    highRisk: number;
+    providerContacted: number;
+    queued: number;
+    runnable: number;
+    skipped: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchNightCommandQueueResponse = {
+  plan: RevenueBusinessFleetLaunchNightCommandQueuePlan;
+};
+
+export type RevenueBusinessFleetLaunchNightCommandQueueApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    commandRecordIds: string[];
+    commandRecordsResolved: number;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    resolution: RevenueBusinessFleetLaunchNightCommandQueueResolution;
+    statusUpdates: Array<{
+      commandRecordId: string;
+      fromStatus: PortfolioCommandRecordStatus;
+      reason: string;
+      targetName: string;
+      toStatus: RevenueBusinessFleetLaunchNightCommandQueueResolution;
+    }>;
+    summary: string;
+  };
+  plan: RevenueBusinessFleetLaunchNightCommandQueuePlan;
+};
+
+export type RevenueBusinessFleetLaunchNightExecutionChecklistItemStatus =
+  | "already_resolved"
+  | "blocked"
+  | "ready_to_resolve"
+  | "waiting_on_command_record"
+  | "waiting_on_dependency"
+  | "watch";
+
+export type RevenueBusinessFleetLaunchNightExecutionChecklistItem = {
+  action: PortfolioCommandAction | string;
+  blockers: string[];
+  businessId: string;
+  businessName: string;
+  commandHash: string | null;
+  commandRecordId: string | null;
+  endpoint: string;
+  expectedInternalEffect: string;
+  externalExecution: false;
+  laneStatus: RevenueBusinessFleetLaunchNightLaneStatus;
+  launchabilityScore: number;
+  nextInternalState: string;
+  priority: number;
+  providerContacted: false;
+  reason: string;
+  recommendedResolution: RevenueBusinessFleetLaunchNightCommandQueueResolution | null;
+  riskLevel: PortfolioCommandRiskLevel | string;
+  status: RevenueBusinessFleetLaunchNightExecutionChecklistItemStatus;
+  tonightSlot: number;
+};
+
+export type RevenueBusinessFleetLaunchNightExecutionChecklistPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  checklist: RevenueBusinessFleetLaunchNightExecutionChecklistItem[];
+  commandQueue: {
+    summary: string;
+    totals: RevenueBusinessFleetLaunchNightCommandQueuePlan["totals"];
+  };
+  externalExecution: false;
+  generatedAt: string;
+  launchNight: {
+    summary: string;
+    totals: RevenueBusinessFleetLaunchNightPlan["totals"];
+  };
+  mode: "Revenue Business Fleet Launch Night Execution Checklist";
+  options: {
+    launchNightSize: number;
+    maxChecklistItems: number;
+    maxCommands: number;
+    sourceKeys: string[];
+  };
+  providerContacted: false;
+  summary: string;
+  totals: {
+    alreadyResolved: number;
+    blocked: number;
+    checklistItems: number;
+    externalExecutionLocked: number;
+    providerContacted: number;
+    readyToResolve: number;
+    waitingOnCommandRecord: number;
+    waitingOnDependency: number;
+    watch: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchNightExecutionChecklistResponse = {
+  plan: RevenueBusinessFleetLaunchNightExecutionChecklistPlan;
+};
+
+export type RevenueBusinessFleetLaunchNightOperatorConsoleStatus =
+  | "blocked"
+  | "monitor_rotation"
+  | "record_launch_command"
+  | "record_manual_evidence"
+  | "record_outcome_signal"
+  | "resolve_launch_command"
+  | "waiting"
+  | "watch";
+
+export type RevenueBusinessFleetLaunchNightOperatorConsoleItem = {
+  action: PortfolioCommandAction | string;
+  assignmentId: string | null;
+  blockers: string[];
+  businessId: string;
+  businessName: string;
+  checklistStatus: RevenueBusinessFleetLaunchNightExecutionChecklistItemStatus;
+  commandRecordId: string | null;
+  endpoint: string;
+  evidenceAuditLogId: string | null;
+  evidencePacketId: string | null;
+  evidenceStatus: RevenueBusinessFleetManualLaunchEvidenceStatus | null;
+  expectedInternalEffect: string;
+  externalExecution: false;
+  launchabilityScore: number;
+  nextInternalState: string;
+  operatorStepRequired: boolean;
+  outcomeSignalId: string | null;
+  priority: number;
+  providerContacted: false;
+  reason: string;
+  recommendedOutcomeAction: RevenueAssetRotationDecision | null;
+  signalStatus: RevenueBusinessFleetLaunchOutcomeSignalStatus | null;
+  status: RevenueBusinessFleetLaunchNightOperatorConsoleStatus;
+  tonightSlot: number;
+};
+
+export type RevenueBusinessFleetLaunchNightOperatorConsolePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  checklist: {
+    summary: string;
+    totals: RevenueBusinessFleetLaunchNightExecutionChecklistPlan["totals"];
+  };
+  consoleItems: RevenueBusinessFleetLaunchNightOperatorConsoleItem[];
+  evidence: {
+    summary: string;
+    totals: RevenueBusinessFleetManualLaunchEvidencePlan["totals"];
+  };
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Launch Night Operator Console";
+  options: {
+    launchNightSize: number;
+    launchWaveSize: number;
+    maxConsoleItems: number;
+    maxSignals: number;
+    sourceKeys: string[];
+  };
+  outcomeSignals: {
+    summary: string;
+    totals: RevenueBusinessFleetLaunchOutcomeSignalsPlan["totals"];
+  };
+  providerContacted: false;
+  summary: string;
+  totals: {
+    blocked: number;
+    consoleItems: number;
+    externalExecutionLocked: number;
+    monitorRotation: number;
+    operatorStepRequired: number;
+    providerContacted: number;
+    readyForManualEvidence: number;
+    readyForOutcomeSignal: number;
+    recordLaunchCommand: number;
+    resolveLaunchCommand: number;
+    waiting: number;
+    watch: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchNightOperatorConsoleResponse = {
+  plan: RevenueBusinessFleetLaunchNightOperatorConsolePlan;
+};
+
+export type RevenueBusinessFleetLaunchNightSupervisorStatus =
+  | "advance_cash_cycle"
+  | "blocked"
+  | "monitor_rotation"
+  | "record_launch_commands"
+  | "record_manual_evidence"
+  | "record_outcome_signals"
+  | "resolve_launch_commands"
+  | "waiting";
+
+export type RevenueBusinessFleetLaunchNightSupervisorStageStatus = "blocked" | "ready" | "waiting" | "watch";
+
+export type RevenueBusinessFleetLaunchNightSupervisorPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  canStartTonight: boolean;
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Launch Night Supervisor";
+  nextAction: {
+    endpoint: string;
+    label: string;
+    reason: string;
+    state: string;
+  };
+  options: {
+    launchNightSize: number;
+    launchWaveSize: number;
+    maxSupervisorItems: number;
+    sourceKeys: string[];
+    targetBusinesses: number;
+  };
+  providerContacted: false;
+  stageCards: Array<{
+    blocked: number;
+    endpoint: string;
+    label: string;
+    ready: number;
+    reason: string;
+    status: RevenueBusinessFleetLaunchNightSupervisorStageStatus;
+    total: number;
+  }>;
+  summary: string;
+  supervisorItems: Array<{
+    assignmentId: string | null;
+    businessId: string;
+    businessName: string;
+    commandRecordId: string | null;
+    endpoint: string;
+    nextInternalState: string;
+    outcomeSignalId: string | null;
+    reason: string;
+    selectable: boolean;
+    status: RevenueBusinessFleetLaunchNightOperatorConsoleStatus;
+    tonightSlot: number;
+  }>;
+  totals: {
+    actionableConsoleItems: number;
+    blockedConsoleItems: number;
+    cashCycleApprovalRequired: number;
+    cashCycleBlocked: number;
+    cashCycleReady: number;
+    consoleItems: number;
+    launchNightSize: number;
+    monitorRotation: number;
+    readyForManualEvidence: number;
+    readyForOutcomeSignal: number;
+    readyNow: number;
+    safeLaunchReady: number;
+    targetBusinesses: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchNightSupervisorResponse = {
+  plan: RevenueBusinessFleetLaunchNightSupervisorPlan;
+};
+
+export type RevenueBusinessFleetLaunchNightSupervisorActionType =
+  | "advance_cash_cycle"
+  | "monitor_rotation"
+  | "record_launch_commands"
+  | "record_manual_evidence"
+  | "record_outcome_signals"
+  | "repair_blocker"
+  | "resolve_launch_commands"
+  | "wait";
+
+export type RevenueBusinessFleetLaunchNightSupervisorAction = {
+  actionId: string;
+  actionType: RevenueBusinessFleetLaunchNightSupervisorActionType;
+  approvalPhrase: string | null;
+  blockedExternalActions: string[];
+  confirm: string | null;
+  dryRunSupported: boolean;
+  endpoint: string;
+  externalExecution: false;
+  label: string;
+  method: "GET" | "POST";
+  nextInternalState: string;
+  payloadPreview: Record<string, unknown> | null;
+  providerContacted: false;
+  reason: string;
+  recordSupported: boolean;
+  selectedIds: {
+    assignmentIds: string[];
+    commandRecordIds: string[];
+    laneIds: string[];
+    signalIds: string[];
+  };
+};
+
+export type RevenueBusinessFleetLaunchNightSupervisorActionsPlan = {
+  actions: RevenueBusinessFleetLaunchNightSupervisorAction[];
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Launch Night Supervisor Action Queue";
+  options: {
+    launchNightSize: number;
+    launchWaveSize: number;
+    maxActions: number;
+    maxSupervisorItems: number;
+    sourceKeys: string[];
+    targetBusinesses: number;
+  };
+  providerContacted: false;
+  summary: string;
+  supervisor: {
+    canStartTonight: boolean;
+    nextAction: RevenueBusinessFleetLaunchNightSupervisorPlan["nextAction"];
+    summary: string;
+    totals: RevenueBusinessFleetLaunchNightSupervisorPlan["totals"];
+  };
+  totals: {
+    actions: number;
+    dryRunSupported: number;
+    externalExecutionLocked: number;
+    getActions: number;
+    postActions: number;
+    providerContacted: number;
+    recordSupported: number;
+    selectedIdentifiers: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchNightSupervisorActionsResponse = {
+  plan: RevenueBusinessFleetLaunchNightSupervisorActionsPlan;
+};
+
+export type RevenueBusinessFleetLaunchNightSupervisorActionApplyResponse = {
+  action: RevenueBusinessFleetLaunchNightSupervisorAction | null;
+  applied: {
+    actionId: string | null;
+    actionType: RevenueBusinessFleetLaunchNightSupervisorActionType | null;
+    auditLogId: string | null;
+    auditLogIds: string[];
+    blockedReason: string | null;
+    delegatedEndpoint: string | null;
+    delegatedSummary: string | null;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    recordSupported: boolean;
+    requiredConfirmation: string;
+    selectedIdentifiers: number;
+    status: "blocked" | "previewed" | "recorded";
+    summary: string;
+  };
+  delegated: unknown;
+  plan: RevenueBusinessFleetLaunchNightSupervisorActionsPlan;
+};
+
+export type RevenueBusinessFleetLaunchNightRunUntilBlockedPreviewStep = {
+  actionId: string;
+  actionType: RevenueBusinessFleetLaunchNightSupervisorActionType;
+  blockedReason: string | null;
+  confirm: string | null;
+  dryRunSupported: boolean;
+  endpoint: string;
+  externalExecution: false;
+  label: string;
+  method: "GET" | "POST";
+  nextInternalState: string;
+  payloadPreview: Record<string, unknown> | null;
+  providerContacted: false;
+  reason: string;
+  recordSupported: boolean;
+  selectedIds: RevenueBusinessFleetLaunchNightSupervisorAction["selectedIds"];
+  selectedIdentifiers: number;
+  sequence: number;
+  status: "blocked" | "would_preview";
+};
+
+export type RevenueBusinessFleetLaunchNightRunUntilBlockedPreviewPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  maxRunSteps: number;
+  mode: "Revenue Business Fleet Launch Night Run Until Blocked Preview";
+  providerContacted: false;
+  requiredConfirmation: string;
+  sequence: RevenueBusinessFleetLaunchNightRunUntilBlockedPreviewStep[];
+  stopReason: "action_blocked" | "queue_exhausted" | "step_cap_reached";
+  summary: string;
+  supervisor: RevenueBusinessFleetLaunchNightSupervisorActionsPlan["supervisor"];
+  totals: {
+    blocked: number;
+    externalExecutionLocked: number;
+    providerContacted: number;
+    queueActions: number;
+    selectedIdentifiers: number;
+    steps: number;
+    wouldPreview: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchNightRunUntilBlockedPreviewResponse = {
+  plan: RevenueBusinessFleetLaunchNightRunUntilBlockedPreviewPlan;
+};
+
+export type RevenueBusinessFleetLaunchOutcomeSignalStatus =
+  | "blocked"
+  | "ready_for_signal"
+  | "signal_recorded"
+  | "waiting_for_manual_evidence";
+
+export type RevenueBusinessFleetLaunchOutcomeSignalPacket = {
+  blockers: string[];
+  businessName: string;
+  evidenceAuditLogId: string | null;
+  externalExecution: false;
+  grossRevenue: number;
+  latestSnapshotId: string | null;
+  latestSnapshotPeriodEnd: string | null;
+  netProfit: number;
+  nextInternalState: string;
+  packetId: string;
+  profitVelocity: number;
+  providerContacted: false;
+  readinessScore: number;
+  reason: string;
+  recommendedAction: RevenueAssetRotationDecision;
+  signalId: string;
+  sourceKey: string;
+  status: RevenueBusinessFleetLaunchOutcomeSignalStatus;
+  storeId: string;
+  summary: string;
+};
+
+export type RevenueBusinessFleetLaunchOutcomeSignalsPlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  launchControl: {
+    nextAction: RevenueBusinessFleetLaunchControlPlan["nextAction"];
+    summary: string;
+    totals: RevenueBusinessFleetLaunchControlPlan["totals"];
+  };
+  mode: "Revenue Business Fleet Launch Outcome Signals";
+  packets: RevenueBusinessFleetLaunchOutcomeSignalPacket[];
+  performanceDigest: {
+    generatedAt: string;
+    summary: string;
+    totals: RevenuePerformanceDigest["totals"];
+  };
+  providerContacted: false;
+  summary: string;
+  targetedSourceKeys: string[];
+  totals: {
+    grossRevenue: number;
+    maxSelectableSignals: number;
+    netProfit: number;
+    readyForSignal: number;
+    signalPackets: number;
+    signalRecorded: number;
+    storesCovered: number;
+    waitingForManualEvidence: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchOutcomeSignalsResponse = {
+  plan: RevenueBusinessFleetLaunchOutcomeSignalsPlan;
+};
+
+export type RevenueBusinessFleetLaunchOutcomeSignalsApplyResponse = {
+  applied: {
+    auditLogIds: string[];
+    blockedReason?: string;
+    dryRun: boolean;
+    externalExecution: false;
+    grossRevenue: number;
+    netProfit: number;
+    providerContacted: false;
+    signalsPreviewed: number;
+    signalsRecorded: number;
+    signalsSelected: number;
+    snapshotIds: string[];
+    summary: string;
+  };
+  digest: RevenuePerformanceDigest;
+  plan: RevenueBusinessFleetLaunchOutcomeSignalsPlan;
+  portfolio: RevenueAssetPortfolio;
+  selectedPackets: RevenueBusinessFleetLaunchOutcomeSignalPacket[];
+  snapshots: RevenuePerformanceDigest["snapshots"];
+};
+
+export type RevenueBusinessFleetLaunchCashCycleStepStatus = "approval_required" | "blocked" | "ready" | "waiting";
+
+export type RevenueBusinessFleetLaunchCashCycleStep = {
+  blockedExternalActions: string[];
+  confirmation: string | null;
+  endpoint: string;
+  externalExecution: false;
+  id: string;
+  label: string;
+  maxItems: number;
+  nextInternalState: string;
+  providerContacted: false;
+  reason: string;
+  status: RevenueBusinessFleetLaunchCashCycleStepStatus;
+};
+
+export type RevenueBusinessFleetLaunchCashCyclePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  externalExecution: false;
+  generatedAt: string;
+  launchControl: {
+    nextAction: RevenueBusinessFleetLaunchControlPlan["nextAction"];
+    summary: string;
+    swarm: RevenueBusinessFleetLaunchControlPlan["swarm"];
+    totals: RevenueBusinessFleetLaunchControlPlan["totals"];
+  };
+  mode: "Revenue Business Fleet Launch Cash Cycle";
+  nextStep: RevenueBusinessFleetLaunchCashCycleStep | null;
+  outcomeSignals: {
+    summary: string;
+    totals: RevenueBusinessFleetLaunchOutcomeSignalsPlan["totals"];
+  };
+  portfolioPressure: {
+    killPressure: FinancialPortfolioPressure;
+    reason: string;
+    recommendation: FinancialPortfolioSignal["recommendation"];
+    scalePressure: FinancialPortfolioPressure;
+    trackedAssets: number;
+  };
+  portfolioTotals: RevenueAssetPortfolio["totals"];
+  providerContacted: false;
+  scheduler: {
+    capacity: RevenueBusinessFleetPlan["capacity"];
+    summary: string;
+    totals: RevenueBusinessFleetPlan["totals"];
+  };
+  steps: RevenueBusinessFleetLaunchCashCycleStep[];
+  summary: string;
+  targetBusinesses: number;
+  totals: {
+    approvalRequired: number;
+    blocked: number;
+    killRecommendations: number;
+    pauseRecommendations: number;
+    portfolioKillPressure: number;
+    portfolioScalePressure: number;
+    ready: number;
+    readyOutcomeSignals: number;
+    recordedOutcomeSignals: number;
+    safeLaunchReady: number;
+    scaleRecommendations: number;
+    steps: number;
+    waiting: number;
+    waitingForEvidence: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchCashCycleResponse = {
+  plan: RevenueBusinessFleetLaunchCashCyclePlan;
+};
+
+export type RevenueBusinessFleetLaunchCashCycleApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    commandRecordId: string | null;
+    commandRecordsCreated: number;
+    dryRun: boolean;
+    externalExecution: false;
+    nextStepId: string | null;
+    nextStepStatus: RevenueBusinessFleetLaunchCashCycleStepStatus | null;
+    providerContacted: false;
+    summary: string;
+  };
+  command: PortfolioCommandItem | null;
+  commandRecord: PortfolioCommandRecordSnapshot | null;
+  plan: RevenueBusinessFleetLaunchCashCyclePlan;
+};
+
+export type RevenueBusinessFleetLaunchCashCycleCommandQueueResolution = "applied" | "skipped" | "blocked";
+
+export type RevenueBusinessFleetLaunchCashCycleCommandQueueItem = {
+  action: PortfolioCommandAction | string;
+  commandHash: string;
+  commandRecord: PortfolioCommandRecordSnapshot;
+  commandRecordId: string;
+  externalExecution: false;
+  externalExecutionLocked: true;
+  nextInternalState: string;
+  providerContacted: false;
+  reason: string;
+  recommendedEndpoint: string;
+  recommendedResolution: RevenueBusinessFleetLaunchCashCycleCommandQueueResolution;
+  riskLevel: PortfolioCommandRiskLevel | string;
+  runnable: boolean;
+  sourceModule: string;
+  status: PortfolioCommandRecordStatus;
+  targetName: string;
+  targetType: PortfolioCommandTargetType | string;
+};
+
+export type RevenueBusinessFleetLaunchCashCycleCommandQueuePlan = {
+  auditEvents: string[];
+  blockedExternalActions: string[];
+  commands: RevenueBusinessFleetLaunchCashCycleCommandQueueItem[];
+  externalExecution: false;
+  generatedAt: string;
+  mode: "Revenue Business Fleet Launch Cash Cycle Command Queue";
+  options: {
+    maxCommands: number;
+    statuses: PortfolioCommandRecordStatus[];
+  };
+  providerContacted: false;
+  summary: string;
+  totals: {
+    applied: number;
+    blocked: number;
+    commands: number;
+    externalExecutionLocked: number;
+    highRisk: number;
+    providerContacted: number;
+    queued: number;
+    runnable: number;
+    skipped: number;
+  };
+};
+
+export type RevenueBusinessFleetLaunchCashCycleCommandQueueResponse = {
+  plan: RevenueBusinessFleetLaunchCashCycleCommandQueuePlan;
+};
+
+export type RevenueBusinessFleetLaunchCashCycleCommandQueueApplyResponse = {
+  applied: {
+    auditLogId: string | null;
+    commandRecordIds: string[];
+    commandRecordsResolved: number;
+    dryRun: boolean;
+    externalExecution: false;
+    providerContacted: false;
+    resolution: RevenueBusinessFleetLaunchCashCycleCommandQueueResolution;
+    statusUpdates: Array<{
+      commandRecordId: string;
+      fromStatus: PortfolioCommandRecordStatus;
+      reason: string;
+      targetName: string;
+      toStatus: RevenueBusinessFleetLaunchCashCycleCommandQueueResolution;
+    }>;
+    summary: string;
+  };
+  plan: RevenueBusinessFleetLaunchCashCycleCommandQueuePlan;
 };
 
 export type RevenueBusinessFleetLaunchWaveSelection = {

@@ -20,11 +20,14 @@ describe("MessageBubble", () => {
     expect(screen.getByText("[ENTRAL]")).toBeInTheDocument();
     expect(screen.getByText("Plan")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy command transmission" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /regenerate/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /fork conversation/i })).not.toBeInTheDocument();
   });
 
   it("labels user messages", () => {
     renderBubble("user", "Draft my next steps.");
 
     expect(screen.getByText("[OPERATOR]")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });

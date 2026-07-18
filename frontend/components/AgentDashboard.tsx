@@ -119,7 +119,7 @@ export function AgentDashboard() {
     });
   }
 
-  async function mutateAgent(action: "pause" | "resume" | "restart") {
+  async function mutateAgent(action: "pause" | "resume") {
     if (!activeAgent) {
       return;
     }
@@ -182,32 +182,6 @@ export function AgentDashboard() {
     }
   }, [activeAgent, handleUnauthorized, refresh]);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") {
-        return;
-      }
-
-      const target = event.target;
-      const isEditableTarget = target instanceof HTMLElement
-        && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
-      const hasOpenOverlay = Boolean(document.querySelector(".overlay-backdrop, [role='dialog']"));
-
-      if (isEditableTarget || hasOpenOverlay) {
-        return;
-      }
-
-      const activeTask = tasks.find((task) => task.status === "queued" || task.status === "running");
-
-      if (activeTask) {
-        void cancelTask(activeTask.id);
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cancelTask, tasks]);
-
   async function importAgents(data: unknown) {
     const items = Array.isArray(data) ? data : (data as { agents?: unknown[] }).agents;
 
@@ -254,9 +228,6 @@ export function AgentDashboard() {
             <p className="eyebrow">Control</p>
             <h2>Agents</h2>
           </div>
-          <button className="sidebar-toggle-button" type="button" onClick={() => setIsAgentSidebarOpen(false)} aria-label="Close agents sidebar">
-            <PanelLeftClose aria-hidden="true" size={18} />
-          </button>
         </div>
         <AgentCreateForm defaults={templateDefaults} onCreated={(agent) => void handleAgentCreated(agent)} />
         <AgentList agents={agents} activeAgentId={activeAgentId} isLoading={isLoading} onSelect={(agentId) => void handleSelectAgent(agentId)} />
@@ -304,7 +275,6 @@ export function AgentDashboard() {
           messages={messages}
           onCancelTask={cancelTask}
           onPause={() => mutateAgent("pause")}
-          onRestart={() => mutateAgent("restart")}
           onResume={() => mutateAgent("resume")}
           onToggleBackground={toggleBackground}
           onSchedulePause={(scheduleId) => mutateSchedule(scheduleId, "pause")}

@@ -483,23 +483,36 @@ function removeLocalStorageValue(key: string) {
   }
 }
 
-const commandCenterModeItems: ModeStatusItem[] = [
-  {
-    description: "Hierarchy, reports, and workspace data are saved locally or through ENTRAL APIs.",
-    label: "Real workspace",
-    mode: "real"
-  },
-  {
-    description: "Tool and product actions stay simulated until credentials and approval paths are configured.",
-    label: "Mock tools labeled",
-    mode: "mock"
-  },
-  {
-    description: "External publishing, commerce, outreach, and browser actions require scoped approval.",
-    label: "Read-only before trust",
-    mode: "read-only"
-  }
-];
+const commandCenterModeItems: ModeStatusItem[] = process.env.NEXT_PUBLIC_ENTRAL_RUNTIME_MODE === "demo"
+  ? [
+      {
+        description: "Accounts, hierarchy state, and operational records reset when the local demo backend stops.",
+        label: "Temporary demo workspace",
+        mode: "mock"
+      },
+      {
+        description: "Provider tests and writes require the canonical backend and configured credentials.",
+        label: "Provider writes unavailable",
+        mode: "read-only"
+      }
+    ]
+  : [
+      {
+        description: "Hierarchy, reports, and workspace data are saved locally or through ENTRAL APIs.",
+        label: "Real workspace",
+        mode: "real"
+      },
+      {
+        description: "Tool and product actions stay simulated until credentials and approval paths are configured.",
+        label: "Mock tools labeled",
+        mode: "mock"
+      },
+      {
+        description: "External publishing, commerce, outreach, and browser actions require scoped approval.",
+        label: "Read-only before trust",
+        mode: "read-only"
+      }
+    ];
 
 const businessCapabilityBlueprints: CapabilityBlueprint[] = [
   {
@@ -2001,10 +2014,16 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       if (detail?.target === "command-console" || detail?.target === "command-task-list" || detail?.target === "voice-controls") {
         setIsCommandConsoleOpen(true);
         setCommandConsoleSection("command");
+        if (isCompactCommandViewport()) {
+          setIsPanelOpen(false);
+        }
       }
 
       if (detail?.target === "command-inspector") {
         setIsPanelOpen(true);
+        if (isCompactCommandViewport()) {
+          setIsCommandConsoleOpen(false);
+        }
       }
 
       if (detail?.target === "business-wizard") {
@@ -2019,6 +2038,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         setIsCommandConsoleOpen(true);
         setIsControlsOpen(true);
         setCommandConsoleSection("setup");
+        if (isCompactCommandViewport()) {
+          setIsPanelOpen(false);
+        }
       }
     }
 
@@ -2095,6 +2117,19 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     updatePreference();
     mediaQuery.addEventListener("change", updatePreference);
     return () => mediaQuery.removeEventListener("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1050px)");
+    const reconcileCompactPanels = () => {
+      if (mediaQuery.matches) {
+        setIsPanelOpen(false);
+      }
+    };
+
+    reconcileCompactPanels();
+    mediaQuery.addEventListener("change", reconcileCompactPanels);
+    return () => mediaQuery.removeEventListener("change", reconcileCompactPanels);
   }, []);
 
   useEffect(() => {
@@ -3759,6 +3794,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     setIsCommandConsoleOpen(true);
     setCommandConsoleSection(section);
 
+    if (isCompactCommandViewport()) {
+      setIsPanelOpen(false);
+    }
+
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
       setMobileTab("command");
       setIsPanelOpen(false);
@@ -4769,6 +4808,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
   }
 
+  function isCompactCommandViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 1050px)").matches;
+  }
+
   function focusMobileCommandInput() {
     if (!isMobileCommandViewport()) {
       return;
@@ -4815,7 +4858,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }
 
   function toggleInfoPanel() {
-    setIsPanelOpen((open) => !open);
+    const nextOpen = !isPanelOpen;
+    setIsPanelOpen(nextOpen);
+
+    if (nextOpen && isCompactCommandViewport()) {
+      setIsCommandConsoleOpen(false);
+    }
   }
 
   function routeWorkspaceAction(label: string, href?: string, eventName?: string) {
@@ -6490,45 +6538,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </button>
       </div>
 
-      <details className="command-mobile-nav" data-academy="command-nav">
-        <summary>
-          <Menu aria-hidden="true" size={16} />
-          Navigate
-        </summary>
-        <nav aria-label="Mobile Command OS navigation">
-          <button className={selectedNodeId === "entral" ? "active" : ""} type="button" onClick={() => {
-            const entral = graphRef.current.nodes.find((node) => node.id === "entral");
-            if (entral) focusCommandNode(entral);
-          }}>
-            ENTRAL overview
-          </button>
-          <button type="button" onClick={() => setStatusHighlight(["working", "thinking"], "Highlighted active working and thinking hierarchy nodes.")}>
-            Active nodes
-          </button>
-          <button type="button" onClick={() => setStatusHighlight(["error", "waiting", "offline"], "Highlighted error, waiting, and offline nodes.")}>
-            Alerts
-          </button>
-          {marshalNodes.map((node) => (
-            <button className={selectedNodeId === node.id ? "active" : ""} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
-              <span style={{ "--group-color": groupMap.get(node.groupId)?.color ?? settings.accentColor } as React.CSSProperties} />
-              {node.name}
-            </button>
-          ))}
-          {generalNodes.slice(0, 6).map((node) => (
-            <button className={selectedNodeId === node.id ? "active child" : "child"} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
-              {node.name} / General
-            </button>
-          ))}
-          <div className="command-mobile-nav-actions">
-            <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
-            <button type="button" onClick={openGraphControls}>Controls</button>
-            <button type="button" onClick={() => openSettings()}>Settings</button>
-            <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
-            <button type="button" onClick={() => requestNodeAuthorization("general")}>Add General</button>
-          </div>
-        </nav>
-      </details>
-
       <section className={`command-mobile-panel tab-${mobileTab}`} aria-label="Mobile command access">
         {mobileTab === "hierarchy" ? (
           <>
@@ -6688,41 +6697,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           ))}
         </details>
         <details open>
-          <summary>Command</summary>
-          <button type="button" onClick={() => {
-            const entral = graphRef.current.nodes.find((node) => node.id === "entral");
-            if (entral) focusCommandNode(entral);
-          }}>ENTRAL Overview</button>
+          <summary>Status</summary>
           <button type="button" onClick={() => setStatusHighlight(["working", "thinking"], "Highlighted active working and thinking hierarchy nodes.")}>Active Nodes</button>
           <button type="button" onClick={() => setStatusHighlight(["error", "waiting", "offline"], "Highlighted error, waiting, and offline nodes.")}>Alerts</button>
-          <button type="button" onClick={() => respond("Latest activity is visible in the Activity Feed. Local execution logs are preserved per node.")}>Logs</button>
         </details>
         <details open>
           <summary>Tasks</summary>
-          <button type="button" onClick={() => requestWorkflowAuthorization("start merch store launch workflow")}>
-            <span className="task-dot task-assigned" />
-            Generate launch workflow
-          </button>
-          <button type="button" onClick={openProductBatchGenerator}>
-            <span className="task-dot task-running" />
-            Product batch generator
-          </button>
-          <button type="button" onClick={() => {
-            setIsControlsOpen(true);
-            setCommandConsoleSection("tools");
-            void loadApprovalQueue();
-          }}>
-            <span className="task-dot task-pending" />
-            Approval queue
-          </button>
-          <button type="button" onClick={() => {
-            setIsControlsOpen(true);
-            setCommandConsoleSection("tools");
-            void loadMerchStores(true);
-          }}>
-            <span className="task-dot task-running" />
-            Pricing & reports
-          </button>
           {visibleTasks.length > 0 ? visibleTasks.map((task) => (
             <button key={task.id} type="button" onClick={() => {
               const assigned = task.assignedEntityId ? graphRef.current.nodes.find((node) => node.id === task.assignedEntityId) : null;
@@ -6734,59 +6714,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           )) : (
             <button type="button" onClick={() => executeCommand("Create task Review the command hierarchy")}>Create first task</button>
           )}
-        </details>
-        <details open>
-          <summary>Marshals</summary>
-          {marshalNodes.map((node) => (
-            <button className={selectedNodeId === node.id ? "active" : ""} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
-              <span style={{ "--group-color": groupMap.get(node.groupId)?.color ?? settings.accentColor } as React.CSSProperties} />
-              {node.name}
-            </button>
-          ))}
-        </details>
-        <details>
-          <summary>Business Generals</summary>
-          {generalNodes.map((node) => (
-            <button className={selectedNodeId === node.id ? "active" : ""} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
-              <span style={{ "--group-color": groupMap.get(node.groupId)?.color ?? settings.accentColor } as React.CSSProperties} />
-              {node.name}
-            </button>
-          ))}
-        </details>
-        <details>
-          <summary>Structure</summary>
-          <button type="button" onClick={() => setSearch("marshal")}>Marshals</button>
-          <button type="button" onClick={() => setSearch("general")}>Business Generals</button>
-          <button type="button" onClick={() => setSearch("commander")}>Commanders</button>
-          <button type="button" onClick={() => setSearch("soldier")}>Soldiers</button>
-          <button type="button" onClick={() => openBusinessWizard()}>Guided business setup</button>
-          <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
-          <button type="button" onClick={() => requestNodeAuthorization("general")}>Add General</button>
-          <button type="button" onClick={() => requestNodeAuthorization("commander")}>Add Commander</button>
-          <button type="button" onClick={() => requestNodeAuthorization("soldier")}>Add Soldier</button>
-        </details>
-        <details>
-          <summary>Infrastructure</summary>
-          {["Memory", "Permissions", "Event Bus", "Tools", "Integrations"].map((label) => (
-            <button key={label} type="button" onClick={() => respond(`${label} is represented in local Command OS mode. External execution remains policy-gated until explicitly connected.`)}>{label}</button>
-          ))}
-        </details>
-        <details>
-          <summary>Analytics</summary>
-          {["System Metrics", "Agent Performance", "Resource Usage", "Execution Stats"].map((label) => (
-            <button key={label} type="button" onClick={() => respond(`${label} summary: ${marshalNodes.length} Marshals, ${generalNodes.length} business Generals, ${commanderNodes.length} Commanders, ${soldierNodes.length} Soldiers, ${graph.nodes.length} total command nodes.`)}>{label}</button>
-          ))}
-        </details>
-        <details>
-          <summary>Settings</summary>
-          <button type="button" onClick={() => openSettings("appearance")}>Appearance</button>
-          <button type="button" onClick={() => openSettings("account")}>Account</button>
-          <button type="button" onClick={() => openSettings("assistant")}>Command AI</button>
-          <button type="button" onClick={() => openSettings("voice")}>Voice</button>
-          <button type="button" onClick={() => openSettings("academy")}>Academy</button>
-          <button type="button" onClick={openGraphControls}>Graph Settings</button>
-          <button type="button" onClick={() => respond("Agent permissions are shown in the selected node inspector. Real permission enforcement remains policy-gated.")}>Agent Permissions</button>
-          <button type="button" onClick={() => respond("Notifications are local in this Command OS layer until real delivery channels are connected.")}>Notifications</button>
         </details>
       </nav>
 
@@ -6871,35 +6798,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             <h3>{commandConsoleSectionCopy[commandConsoleSection].title}</h3>
             <p>{commandConsoleSectionCopy[commandConsoleSection].body}</p>
           </section>
-          <div className="command-section-quick-actions" aria-label="Quick command console actions">
-            {commandConsoleSection !== "command" ? (
-              <button type="button" onClick={() => showCommandConsole("command")}>
-                Command stream
-              </button>
-            ) : null}
-            {commandConsoleSection !== "controls" ? (
-              <button type="button" onClick={openGraphControls}>
-                Graph controls
-              </button>
-            ) : null}
-            {commandConsoleSection !== "setup" ? (
-              <button type="button" onClick={() => openBusinessWizard()}>
-                Guided setup
-              </button>
-            ) : null}
-            {commandConsoleSection !== "tools" ? (
-              <button type="button" onClick={() => {
-                setCommandConsoleSection("tools");
-                setIsControlsOpen(true);
-                void loadApprovalQueue();
-              }}>
-                Tool bay
-              </button>
-            ) : null}
-            <button type="button" onClick={closeCommandConsoleForGraph}>
-              View graph
-            </button>
-          </div>
 
           {latestAiPlan ? (
             <section className="ai-brain-summary" aria-label="AI Brain interpretation">
@@ -6978,9 +6876,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <Button type="button" onClick={() => openBusinessWizard()}>
                 <Sparkles aria-hidden="true" size={16} />
                 Start guided setup
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
-                View templates
               </Button>
               <Button type="button" variant="secondary" onClick={() => executeCommand("Start voice guide")}>
                 Voice introduction
@@ -7888,69 +7783,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <span><strong>{selectedGravityBand.label}</strong> depth</span>
               </div>
               <p>{selectedNode.type === "core" ? "ENTRAL remains fixed at the center. Global gravity controls the rest of the command field." : "Gravity controls how tightly this entity is pulled toward its command orbit and how quickly it settles into formation."} {selectedGravityBand.description}</p>
-              {selectedNode.type !== "core" ? (
-                <>
-                  <label className="inspector-gravity-range">
-                    <span>Selected entity pull</span>
-                    <input
-                      aria-label={`${selectedNode.name} gravity`}
-                      type="range"
-                      min={gravityMin}
-                      max={gravityMax}
-                      step="0.01"
-                      value={selectedGravityValue}
-                      onChange={(event) => setEntityGravity(selectedNode.id, Number(event.target.value), `${selectedNode.name} gravity override set to ${formatGravity(Number(event.target.value))}.`)}
-                    />
-                    <strong>{formatGravity(selectedGravityValue)}</strong>
-                  </label>
-                  <label className="inspector-gravity-exact">
-                    <span>Exact pull</span>
-                    <input
-                      aria-label={`${selectedNode.name} exact gravity percent`}
-                      type="number"
-                      min={gravityPercentMin}
-                      max={gravityPercentMax}
-                      step="1"
-                      value={gravityToPercent(selectedGravityValue)}
-                      onChange={(event) => {
-                        const gravity = gravityFromPercentInput(event.currentTarget.value, selectedGravityValue);
-                        setEntityGravity(selectedNode.id, gravity, `${selectedNode.name} gravity override set to ${formatGravity(gravity)}.`);
-                      }}
-                    />
-                    <strong>%</strong>
-                  </label>
-                  {renderGravityNudges(selectedNode.name, selectedGravityValue, (gravity) => setEntityGravity(selectedNode.id, gravity, `${selectedNode.name} gravity override nudged to ${formatGravity(gravity)}.`))}
-                  <div
-                    aria-label={`${selectedNode.name} gravity depth: ${selectedGravityBand.label}`}
-                    className="gravity-depth-meter compact"
-                    style={{ "--gravity-depth": gravityDepthPercent(selectedGravityValue) } as React.CSSProperties}
-                  >
-                    <span aria-hidden="true"><i /></span>
-                    <small>{selectedGravityBand.label}: {selectedGravityBand.description}</small>
-                  </div>
-                  <div className="inspector-gravity-presets" aria-label={`${selectedNode.name} gravity presets`}>
-                    {gravityPresetOptions.map((preset) => (
-                      <button
-                        className={Math.abs(selectedGravityValue - preset.value) < 0.01 ? "active" : ""}
-                        key={preset.label}
-                        type="button"
-                        onClick={() => setEntityGravity(selectedNode.id, preset.value, `${selectedNode.name} gravity override set to ${preset.label} (${formatGravity(preset.value)}).`)}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="command-dynamics-actions">
-                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 0.4, `${selectedNode.name} gravity loosened to ${formatGravity(0.4)}.`)}>Loosen</button>
-                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 3, `${selectedNode.name} orbit locked at ${formatGravity(3)}.`)}>Lock orbit</button>
-                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 6, `${selectedNode.name} gravity anchored at ${formatGravity(6)}.`)}>Anchor</button>
-                    <button type="button" disabled={selectedGravityOverride === undefined} onClick={() => clearEntityGravity(selectedNode.id, selectedNode.name)}>Inherit global</button>
-                  </div>
-                </>
-              ) : null}
+              <Button type="button" variant="secondary" onClick={openGraphControls}>
+                Edit in Graph controls
+              </Button>
             </section>
 
-            {selectedSuggestedActions.length > 0 ? (
+            {selectedSuggestedActions.length > 0 && selectedChildren.length > 0 ? (
               <section className="command-suggested-actions" aria-label="Suggested actions">
                 <h3>Suggested actions</h3>
                 <div>
@@ -8087,10 +7925,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <h3>Reasoning</h3>
               <p>{selectedNode.reasoning}</p>
             </section>
-            <section>
-              <h3>Screen sharing preview</h3>
-              <div className="screen-preview-placeholder">No active screen stream. Start sharing from the command interface when needed.</div>
-            </section>
             <div className="command-metrics">
               <span><strong>{selectedNode.metrics.successRate}%</strong> success</span>
               <span><strong>{selectedNode.metrics.roi}</strong> ROI</span>
@@ -8112,10 +7946,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <Button type="button" variant="secondary" onClick={() => mutateNode(selectedNode.id, { status: selectedNode.status === "offline" ? "working" : "offline", logs: [`${selectedNode.status === "offline" ? "Resumed" : "Marked offline"} from side panel.`, ...selectedNode.logs] })}>
                 {selectedNode.status === "offline" ? <Play aria-hidden="true" size={17} /> : <Pause aria-hidden="true" size={17} />}
                 {selectedNode.status === "offline" ? "Resume" : "Offline"}
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => mutateNode(selectedNode.id, { logs: ["Reasoning trace refreshed.", ...selectedNode.logs] })}>
-                <RotateCcw aria-hidden="true" size={17} />
-                Refresh
               </Button>
               <Button type="button" variant="secondary" disabled={selectedNode.type === "core"} onClick={deleteSelectedNode}>
                 <Trash2 aria-hidden="true" size={17} />

@@ -2,9 +2,10 @@ import { spawn } from "node:child_process";
 import process from "node:process";
 
 const pnpm = ".corepack/v1/pnpm/9.12.3/bin/pnpm.cjs";
+const memoryMode = process.argv.includes("--memory");
 const commands = [
   {
-    args: [pnpm, "--filter", "@entral/backend", "dev:memory"],
+    args: [pnpm, "--filter", "@entral/backend", memoryMode ? "dev:memory" : "dev"],
     name: "backend"
   },
   {
@@ -46,7 +47,9 @@ process.on("SIGTERM", () => {
 console.log("Starting ENTRAL local dev stack...");
 console.log("Frontend: http://localhost:3000");
 console.log("Backend:  http://localhost:4000");
-console.log("Mode:     memory backend for local development");
+console.log(memoryMode
+  ? "Mode:     explicit demo backend; auth and route coverage are intentionally non-production"
+  : "Mode:     canonical backend with persistent data and production-parity routes");
 
 for (const command of commands) {
   const child = spawn(process.execPath, command.args, {
@@ -54,7 +57,8 @@ for (const command of commands) {
     env: {
       ...process.env,
       API_HOST: process.env.API_HOST ?? "0.0.0.0",
-      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000",
+      NEXT_PUBLIC_ENTRAL_RUNTIME_MODE: memoryMode ? "demo" : "full"
     },
     shell: false,
     stdio: ["ignore", "pipe", "pipe"],

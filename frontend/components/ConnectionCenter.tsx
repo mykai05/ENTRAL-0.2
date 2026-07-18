@@ -5,8 +5,6 @@ import { CheckCircle2, FlaskConical, GitBranch, LockKeyhole, PlugZap, Rocket, Sh
 import { apiFetch, ApiError } from "../lib/api";
 import {
   buildMockToolExecution,
-  buildToolTestResult,
-  defaultToolRegistry,
   toolsByCategory,
   type MockToolExecutionResult,
   type ToolRegistryEntry,
@@ -68,8 +66,9 @@ function approvalLabel(tool: ToolRegistryEntry) {
 }
 
 export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, onRegistryLoad }: ConnectionCenterProps) {
-  const [tools, setTools] = useState<ToolRegistryEntry[]>(defaultToolRegistry);
+  const [tools, setTools] = useState<ToolRegistryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [registryError, setRegistryError] = useState<string | null>(null);
   const [activeResult, setActiveResult] = useState<ToolTestResult | MockToolExecutionResult | null>(null);
   const [busyToolId, setBusyToolId] = useState<string | null>(null);
   const [developmentStatus, setDevelopmentStatus] = useState<DevelopmentStatusResponse | null>(null);
@@ -85,11 +84,15 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
         if (isCancelled) return;
         setTools(response.items);
         setDevelopmentStatus(statusResponse);
+        setRegistryError(null);
         onRegistryLoad?.(response.items);
       } catch (error) {
         if (isCancelled) return;
-        setTools(defaultToolRegistry);
-        onEvent?.(error instanceof ApiError ? "Connection Center using local registry fallback." : "Connection Center registry fallback active.");
+        const message = error instanceof ApiError ? error.message : "Connection registry is unavailable.";
+        setTools([]);
+        setDevelopmentStatus(null);
+        setRegistryError(message);
+        onEvent?.(`Connection Center unavailable: ${message}`);
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -102,7 +105,9 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
     return () => {
       isCancelled = true;
     };
-  }, [onEvent, onRegistryLoad]);
+  // The registry is a mount-time snapshot. Callback identity changes in a parent
+  // must not restart both network requests and leave the status perpetually syncing.
+  }, []);
 
   const groupedTools = useMemo(() => toolsByCategory(tools), [tools]);
   const developmentHealthClass = developmentStatus?.health.status.toLowerCase() ?? "gray";
@@ -116,10 +121,20 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
       });
       setActiveResult(response.result);
       onEvent?.(response.result.message);
-    } catch {
-      const fallback = buildToolTestResult(tool);
-      setActiveResult(fallback);
-      onEvent?.(fallback.message);
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : `${tool.name} connection test is unavailable.`;
+      const failedResult: ToolTestResult = {
+        error: message,
+        message: `${tool.name} test failed: ${message}`,
+        nextSteps: ["Confirm the canonical backend is running.", "Verify provider credentials and scopes.", "Run the connection test again."],
+        status: "Error",
+        success: false,
+        timestamp: new Date().toISOString(),
+        toolId: tool.id,
+        toolName: tool.name
+      };
+      setActiveResult(failedResult);
+      onEvent?.(failedResult.message);
     } finally {
       setBusyToolId(null);
     }
@@ -170,8 +185,8 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
             mode: "real"
           },
           {
-            description: "Missing credentials use local simulations before trust.",
-            label: "Mock Mode",
+            description: "Mock results are generated only when the operator explicitly selects Mock.",
+            label: "Explicit mock",
             mode: "mock"
           },
           {
@@ -181,6 +196,12 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
           }
         ]}
       />
+
+      {registryError ? (
+        <p className="merch-ops-error" role="alert">
+          Connection registry unavailable: {registryError}. Start the canonical backend before testing providers.
+        </p>
+      ) : null}
 
       {developmentStatus ? (
         <section className={`development-status-panel health-${developmentHealthClass}`} aria-label="ENTRAL development status">

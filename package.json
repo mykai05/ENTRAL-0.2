@@ -13,8 +13,9 @@
   "scripts": {
     "dev": "node scripts/dev-local.mjs",
     "dev:all": "node scripts/dev-local.mjs",
-    "dev:backend": "node scripts/run-pnpm.mjs --filter @entral/backend dev:memory",
-    "dev:backend:real": "node scripts/run-pnpm.mjs --filter @entral/backend dev",
+    "dev:demo": "node scripts/dev-local.mjs --memory",
+    "dev:backend": "node scripts/run-pnpm.mjs --filter @entral/backend dev",
+    "dev:backend:demo": "node scripts/run-pnpm.mjs --filter @entral/backend dev:memory",
     "dev:frontend": "node scripts/run-pnpm.mjs --filter @entral/frontend dev",
     "build": "node scripts/run-pnpm.mjs --recursive build",
     "lint": "node scripts/run-pnpm.mjs --recursive lint",

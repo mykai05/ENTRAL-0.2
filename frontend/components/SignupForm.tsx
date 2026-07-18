@@ -12,6 +12,7 @@ import { TextField } from "./TextField";
 type FieldErrors = Partial<Record<"name" | "email" | "password", string>>;
 
 export function SignupForm() {
+  const isDemoMode = process.env.NEXT_PUBLIC_ENTRAL_RUNTIME_MODE === "demo";
   const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
@@ -47,7 +48,7 @@ export function SignupForm() {
         json: parsed.data
       });
 
-      router.push(`/verify-email?email=${encodeURIComponent(parsed.data.email)}`);
+      router.push(isDemoMode ? "/dashboard" : `/verify-email?email=${encodeURIComponent(parsed.data.email)}`);
       router.refresh();
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Unable to create account.");
@@ -59,8 +60,9 @@ export function SignupForm() {
   return (
     <form className="form-stack" onSubmit={handleSubmit} noValidate>
       <p className="form-notice">
-        Private beta account creation. A real verification email is required before command-center access, and
-        disconnected systems remain mock or read-only until explicitly configured.
+        {isDemoMode
+          ? "Local demo account. Credentials and data are temporary, email verification is disabled, and provider writes remain unavailable."
+          : "Private beta account creation. A real verification email is required before command-center access, and disconnected systems remain mock or read-only until explicitly configured."}
       </p>
       <TextField
         id="name"

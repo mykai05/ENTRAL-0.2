@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Ban, Copy, Pause, Play, RotateCcw } from "lucide-react";
+import { Ban, Copy, Pause, Play } from "lucide-react";
 import { Button } from "./Button";
 import { AgentStatus } from "./AgentStatus";
 import { AutomationStatus } from "./AutomationStatus";
@@ -51,7 +51,6 @@ type AgentDetailProps = {
   messages: AgentMessage[];
   onCancelTask: (taskId: string) => Promise<void>;
   onPause: () => Promise<void>;
-  onRestart: () => Promise<void>;
   onResume: () => Promise<void>;
   onToggleBackground: (runInBackground: boolean) => Promise<void>;
   onSchedulePause: (scheduleId: string) => Promise<void>;
@@ -67,7 +66,6 @@ export function AgentDetail({
   messages,
   onCancelTask,
   onPause,
-  onRestart,
   onResume,
   onToggleBackground,
   onSchedulePause,
@@ -117,10 +115,6 @@ export function AgentDetail({
             Pause
           </Button>
         )}
-        <Button type="button" variant="secondary" onClick={() => void onRestart()}>
-          <RotateCcw aria-hidden="true" size={18} />
-          Restart
-        </Button>
       </div>
       <div className="agent-section">
         <h3>Capabilities</h3>

@@ -14,3 +14,4 @@ artifacts/site-check/
 prisma/dev.db
 prisma/dev.db-journal
 .pnpm-store/
+.local/

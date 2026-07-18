@@ -1,5 +1,6 @@
 param(
-  [switch]$OpenBrowser
+  [switch]$OpenBrowser,
+  [switch]$DemoMode
 )
 
 $ErrorActionPreference = "Stop"
@@ -94,9 +95,15 @@ function Stop-EntralPort {
     $pidValue = [int]$Matches[1]
     $process = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
 
-    if ($process -and $process.ProcessName -eq "node") {
+    $processDetails = Get-CimInstance Win32_Process -Filter "ProcessId=$pidValue" -ErrorAction SilentlyContinue
+    $commandLine = $processDetails.CommandLine
+    $isEntralProcess = $commandLine -and $commandLine.IndexOf([string]$Root, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+
+    if ($process -and $process.ProcessName -eq "node" -and $isEntralProcess) {
       Stop-Process -Id $pidValue -Force
       Write-Host "Cleared stale ENTRAL process on port $Port (PID $pidValue)."
+    } elseif ($process) {
+      throw "Port $Port is already used by $($process.ProcessName) (PID $pidValue), which is not an ENTRAL process. Stop it or choose another port before waking ENTRAL."
     }
   }
 }
@@ -133,7 +140,7 @@ if (-not $backendReady) {
   Stop-EntralPort 4000
   $stdout = Join-Path $Artifacts "entral-backend-wake-out.log"
   $stderr = Join-Path $Artifacts "entral-backend-wake-err.log"
-  $backendRunner = Join-Path $Root "scripts\run-memory-backend.ps1"
+  $backendRunner = Join-Path $Root $(if ($DemoMode) { "scripts\run-memory-backend.ps1" } else { "scripts\run-backend-dev.ps1" })
   $process = Start-Process `
     -FilePath "powershell.exe" `
     -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$backendRunner`"" `
@@ -143,7 +150,8 @@ if (-not $backendReady) {
     -WindowStyle Hidden `
     -PassThru
 
-  Write-Host "Started ENTRAL backend process (PID $($process.Id))."
+  $backendModeLabel = if ($DemoMode) { "explicit demo" } else { "canonical" }
+  Write-Host "Started ENTRAL $backendModeLabel backend process (PID $($process.Id))."
 } else {
   Write-Host "ENTRAL backend is already awake."
 }

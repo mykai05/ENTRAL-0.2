@@ -9,12 +9,10 @@ import {
   Layers3,
   LineChart,
   LockKeyhole,
-  LogIn,
   Megaphone,
   ShieldCheck
 } from "lucide-react";
 import { BrandMark } from "../components/BrandMark";
-import { PublicBetaBrief } from "../components/PublicBetaBrief";
 
 const heroSignals = [
   "Real / Mock / Read-only labels",
@@ -74,16 +72,6 @@ export default function LandingPage() {
     <main className="landing-shell">
       <nav className="top-nav" aria-label="Main navigation">
         <BrandMark />
-        <div className="nav-actions">
-          <Link href="/login" className="nav-link">
-            <LogIn aria-hidden="true" size={18} />
-            Sign in
-          </Link>
-          <Link href="/onboarding" className="button button-primary">
-            Read brief
-            <ArrowRight aria-hidden="true" size={18} />
-          </Link>
-        </div>
       </nav>
 
       <section className="landing-hero" aria-labelledby="hero-title">
@@ -177,8 +165,6 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
-
-      <PublicBetaBrief />
     </main>
   );
 }

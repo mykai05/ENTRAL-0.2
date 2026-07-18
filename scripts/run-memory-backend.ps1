@@ -1,5 +1,7 @@
 $ErrorActionPreference = "Stop"
 
+Write-Warning "ENTRAL demo backend active. Authentication and route coverage are intentionally non-production; use scripts\run-backend-dev.ps1 for canonical operation."
+
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $BackendDir = Join-Path $Root "backend"
 $NodeExe = "C:\nodejs\node.exe"

@@ -243,24 +243,6 @@ export function ChatWindow() {
     await submitChatMessage(prompt, screenshot);
   }
 
-  function handleForkConversation(index: number) {
-    setMessages((current) => current.slice(0, index + 1));
-    setActiveConversationId(null);
-    notify({ title: "Branch created", message: "Your next directive will start a fresh command thread from here.", type: "success" });
-  }
-
-  async function handleRegenerate(index: number) {
-    const previousUserMessage = messages.slice(0, index).reverse().find((message) => message.role === "user");
-
-    if (!previousUserMessage) {
-      notify({ title: "Regenerate unavailable", message: "No earlier user message was found.", type: "error" });
-      return;
-    }
-
-    setMessages((current) => current.slice(0, index));
-    await submitChatMessage(previousUserMessage.content);
-  }
-
   async function handleNewChat() {
     setActiveConversationId(null);
     setMessages([]);
@@ -322,9 +304,6 @@ export function ChatWindow() {
             <p className="eyebrow">History</p>
             <h2>Command threads</h2>
           </div>
-          <button className="sidebar-toggle-button" type="button" onClick={() => setIsConversationSidebarOpen(false)} aria-label="Close conversations sidebar">
-            <PanelLeftClose aria-hidden="true" size={18} />
-          </button>
         </div>
         <Button type="button" onClick={handleNewChat}>
           <MessageSquarePlus aria-hidden="true" size={20} />
@@ -418,12 +397,10 @@ export function ChatWindow() {
               </div>
             </div>
           ) : (
-            messages.map((message, index) => (
+            messages.map((message) => (
               <MessageBubble
                 content={message.content}
                 key={message.id}
-                onFork={() => handleForkConversation(index)}
-                onRegenerate={message.role === "assistant" ? () => void handleRegenerate(index) : undefined}
                 role={message.role}
               />
             ))

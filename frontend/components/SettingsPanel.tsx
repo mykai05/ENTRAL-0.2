@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Brain, GraduationCap, Mic, Palette, RotateCcw, Settings, SlidersHorizontal, UserRound, Volume2, X } from "lucide-react";
+import { GraduationCap, Mic, Palette, RotateCcw, Settings, SlidersHorizontal, UserRound, Volume2, X } from "lucide-react";
 import { AccountPrivacyControls } from "./AccountPrivacyControls";
 import { Button } from "./Button";
 import { ModeBadge } from "./ModeStatus";
@@ -9,9 +9,8 @@ import { neonPresets, useTheme } from "./ThemeProvider";
 import { useOnboarding } from "./OnboardingTour";
 import { speechModeLabels, useVoice } from "./VoiceProvider";
 
-const memoryKey = "entral-ai-memory-enabled";
 const profileKey = "entral-account-settings";
-type SettingsTab = "appearance" | "account" | "assistant" | "voice" | "academy";
+type SettingsTab = "appearance" | "account" | "voice" | "academy";
 
 function readSettingsStorage(key: string) {
   try {
@@ -34,7 +33,6 @@ export function SettingsPanel() {
   const { mode, openLibrary, openTour, progress, setMode } = useOnboarding();
   const { isSpeechSupported, settings: voiceSettings, updateVoiceSettings, voices } = useVoice();
   const [isOpen, setIsOpen] = useState(false);
-  const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
@@ -42,8 +40,6 @@ export function SettingsPanel() {
   const profileSavedTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setMemoryEnabled(readSettingsStorage(memoryKey) === "true");
-
     try {
       const profile = JSON.parse(readSettingsStorage(profileKey) ?? "{}") as { email?: string; name?: string };
       setProfileName(profile.name ?? "");
@@ -74,11 +70,6 @@ export function SettingsPanel() {
       }
     };
   }, []);
-
-  function updateMemory(enabled: boolean) {
-    setMemoryEnabled(enabled);
-    writeSettingsStorage(memoryKey, String(enabled));
-  }
 
   function resetTheme() {
     updateSettings({
@@ -140,10 +131,6 @@ export function SettingsPanel() {
               <button aria-selected={activeTab === "account"} className={activeTab === "account" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("account")}>
                 <UserRound aria-hidden="true" size={16} />
                 Account
-              </button>
-              <button aria-selected={activeTab === "assistant"} className={activeTab === "assistant" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("assistant")}>
-                <Brain aria-hidden="true" size={16} />
-                Command AI
               </button>
               <button aria-selected={activeTab === "voice"} className={activeTab === "voice" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("voice")}>
                 <Volume2 aria-hidden="true" size={16} />
@@ -247,43 +234,12 @@ export function SettingsPanel() {
                     <span>Email</span>
                     <input type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="you@example.com" />
                   </label>
-                  <label>
-                    <span>Current password</span>
-                    <input type="password" placeholder="Current password" autoComplete="current-password" />
-                  </label>
-                  <label>
-                    <span>New password</span>
-                    <input type="password" placeholder="New password" autoComplete="new-password" />
-                  </label>
                   <div className="settings-actions">
                     <Button type="submit" variant="secondary">Save account settings</Button>
                     {profileSaved ? <span className="settings-saved" role="status">Saved locally</span> : null}
                   </div>
                 </form>
                 <AccountPrivacyControls />
-              </>
-            ) : null}
-
-            {activeTab === "assistant" ? (
-              <>
-                <div className="settings-section">
-                  <div className="section-title-row">
-                    <Brain aria-hidden="true" size={18} />
-                    <h3>Command AI behavior</h3>
-                  </div>
-                  <label className="switch-row">
-                    <span>
-                      <strong>AI memory</strong>
-                      <small>Keep long-term context enabled for future personalization.</small>
-                    </span>
-                    <input checked={memoryEnabled} onChange={(event) => updateMemory(event.target.checked)} type="checkbox" />
-                  </label>
-                </div>
-                <div className="settings-actions">
-                  <Button type="button" onClick={() => openTour()} variant="secondary">
-                    Replay tutorial
-                  </Button>
-                </div>
               </>
             ) : null}
 

@@ -4,7 +4,20 @@ import {
   assignAgentTaskSchema,
   applyBrowserOperationsRecoverySchema,
   applyRevenueBusinessFleetGapAccelerationSchema,
+  applyRevenueBusinessFleetLaunchNightCommandSchema,
+  applyRevenueBusinessFleetLaunchExecutionQueueSchema,
+  applyRevenueBusinessFleetLaunchCashCycleSchema,
+  applyRevenueBusinessFleetLaunchCashCycleCommandQueueSchema,
+  applyRevenueBusinessFleetIncomeSprintCommandSchema,
+  applyRevenueBusinessFleetIncomeSprintCommandQueueSchema,
+  applyRevenueBusinessFleetLaunchOutcomeSignalsSchema,
+  applyRevenueBusinessFleetLaunchNightCommandQueueSchema,
+  applyRevenueBusinessFleetLaunchNightSupervisorActionSchema,
+  applyRevenueBusinessFleetLaunchNightSupervisorRunNextSchema,
+  applyRevenueBusinessFleetLaunchWorkerAssignmentsSchema,
+  applyRevenueBusinessFleetManualLaunchEvidenceSchema,
   applyRevenueBusinessFleetLiveLaunchPackageSchema,
+  applyRevenueBusinessFleetProviderApprovalReviewSchema,
   applyRevenueBusinessFleetSeedGapSchema,
   applyRevenueBusinessFleetLaunchWaveSchema,
   applyRevenueHundredStoreAppConnectionPacketsSchema,
@@ -85,6 +98,24 @@ import {
   revenueAssetControlLedgerQuerySchema,
   revenueAssetReviewQueueQuerySchema,
   revenueBusinessFleetLaunchGateQuerySchema,
+  revenueBusinessFleetLaunchControlQuerySchema,
+  revenueBusinessFleetSwarmReadinessQuerySchema,
+  revenueBusinessFleetLaunchCashCycleQuerySchema,
+  revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema,
+  revenueBusinessFleetIncomeSprintQuerySchema,
+  revenueBusinessFleetLaunchNightQuerySchema,
+  revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema,
+  revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema,
+  revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewSchema,
+  revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema,
+  revenueBusinessFleetLaunchNightSupervisorQuerySchema,
+  revenueBusinessFleetLaunchNightCommandQueueQuerySchema,
+  revenueBusinessFleetIncomeSprintCommandQueueQuerySchema,
+  revenueBusinessFleetLaunchOutcomeSignalsQuerySchema,
+  revenueBusinessFleetLaunchExecutionQueueQuerySchema,
+  revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema,
+  revenueBusinessFleetManualLaunchEvidenceQuerySchema,
+  revenueBusinessFleetProviderApprovalReviewQuerySchema,
   revenueFirstBusinessLaunchPackageQuerySchema,
   revenueMoneyArmyGenerateScoreBatchQuerySchema,
   revenueMoneyArmyBatchPipelineQuerySchema,
@@ -890,6 +921,348 @@ describe("validation schemas", () => {
       maxStores: "10",
       sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
     });
+    const providerApprovalReview = revenueBusinessFleetProviderApprovalReviewQuerySchema.parse({
+      maxPackets: "25",
+      maxStores: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      status: "pending"
+    });
+    const providerApprovalApply = applyRevenueBusinessFleetProviderApprovalReviewSchema.parse({
+      action: "approve",
+      confirm: "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS",
+      dryRun: true,
+      maxPackets: "25",
+      maxStores: "10",
+      packetIds: ["growth_packet_1"],
+      sourceKeys: ["entral-private-revenue-lane-1"]
+    });
+    const launchExecutionQueue = revenueBusinessFleetLaunchExecutionQueueQuerySchema.parse({
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxStores: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
+    });
+    const launchExecutionQueueApply = applyRevenueBusinessFleetLaunchExecutionQueueSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH EXECUTION QUEUE",
+      dryRun: true,
+      leaseIds: ["business_fleet_launch_lease_1"],
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxStores: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: ["entral-private-revenue-lane-1"]
+    });
+    const launchWorkerAssignments = revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse({
+      maxAssignments: "10",
+      maxAssignmentsPerWorker: "1",
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxStores: "10",
+      maxWorkers: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
+    });
+    const launchWorkerAssignmentsApply = applyRevenueBusinessFleetLaunchWorkerAssignmentsSchema.parse({
+      assignmentIds: ["business_fleet_launch_assignment_1"],
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH WORKER ASSIGNMENTS",
+      dryRun: true,
+      maxAssignments: "10",
+      maxAssignmentsPerWorker: "1",
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxStores: "10",
+      maxWorkers: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: ["entral-private-revenue-lane-1"]
+    });
+    const manualLaunchEvidence = revenueBusinessFleetManualLaunchEvidenceQuerySchema.parse({
+      assignmentIds: ["business_fleet_launch_assignment_1"],
+      maxAssignments: "10",
+      maxAssignmentsPerWorker: "1",
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxStores: "10",
+      maxWorkers: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
+    });
+    const launchControl = revenueBusinessFleetLaunchControlQuerySchema.parse({
+      launchWaveSize: "10",
+      maxAssignments: "10",
+      maxAssignmentsPerWorker: "1",
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxParallelLaunches: "10",
+      maxParallelScaleActions: "25",
+      maxStores: "10",
+      maxWorkers: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      targetBusinesses: "1000"
+    });
+    const launchOutcomeSignals = revenueBusinessFleetLaunchOutcomeSignalsQuerySchema.parse({
+      launchWaveSize: "10",
+      maxAssignments: "10",
+      maxAssignmentsPerWorker: "1",
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxParallelLaunches: "10",
+      maxParallelScaleActions: "25",
+      maxSignals: "10",
+      maxStores: "10",
+      maxWorkers: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      targetBusinesses: "1000"
+    });
+    const launchCashCycle = revenueBusinessFleetLaunchCashCycleQuerySchema.parse({
+      launchWaveSize: "10",
+      maxAssignments: "10",
+      maxAssignmentsPerWorker: "1",
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxParallelLaunches: "10",
+      maxParallelScaleActions: "25",
+      maxSignals: "10",
+      maxSteps: "8",
+      maxStores: "10",
+      maxWorkers: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      targetBusinesses: "1000"
+    });
+    const launchCashCycleApply = applyRevenueBusinessFleetLaunchCashCycleSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND",
+      dryRun: true,
+      launchWaveSize: "10",
+      maxSignals: "10",
+      maxSteps: "8",
+      note: "Queue tonight's next command.",
+      sourceKeys: ["entral-private-revenue-lane-1"],
+      targetBusinesses: "1000"
+    });
+    const launchCashCycleCommandQueue = revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema.parse({
+      maxCommands: "10",
+      statuses: "queued,blocked"
+    });
+    const launchCashCycleCommandQueueApply = applyRevenueBusinessFleetLaunchCashCycleCommandQueueSchema.parse({
+      commandRecordIds: ["portfolio-command-cash-cycle-1"],
+      confirm: "RESOLVE INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND QUEUE",
+      dryRun: true,
+      maxCommands: "10",
+      note: "Resolve the next internal cash command.",
+      resolution: "applied",
+      statuses: ["queued", "blocked"]
+    });
+    const incomeSprint = revenueBusinessFleetIncomeSprintQuerySchema.parse({
+      launchWaveSize: "10",
+      maxCommands: "10",
+      maxLanes: "10",
+      maxParallelLaunches: "10",
+      maxParallelScaleActions: "25",
+      maxStores: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      targetBusinesses: "1000"
+    });
+    const launchNight = revenueBusinessFleetLaunchNightQuerySchema.parse({
+      launchNightSize: "10",
+      launchWaveSize: "10",
+      maxCommands: "10",
+      maxLanes: "10",
+      maxParallelLaunches: "10",
+      maxParallelScaleActions: "25",
+      maxStores: "10",
+      maxWorkers: "10",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      targetBusinesses: "1000"
+    });
+    const swarmReadiness = revenueBusinessFleetSwarmReadinessQuerySchema.parse({
+      launchWaveSize: "10",
+      maxAssignments: "10",
+      maxAssignmentsPerWorker: "1",
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxParallelLaunches: "10",
+      maxParallelScaleActions: "25",
+      maxStores: "10",
+      maxWorkers: "10",
+      qualityFloor: "75",
+      scaleTargets: "10,100,1000",
+      shardCount: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      starterBusinesses: "10",
+      targetBusinesses: "1000"
+    });
+    const launchNightChecklist = revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema.parse({
+      launchNightSize: "10",
+      maxChecklistItems: "10",
+      maxCommands: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
+    });
+    const launchNightOperatorConsole = revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema.parse({
+      launchNightSize: "10",
+      maxChecklistItems: "10",
+      maxConsoleItems: "10",
+      maxSignals: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
+    });
+    const launchNightSupervisor = revenueBusinessFleetLaunchNightSupervisorQuerySchema.parse({
+      launchNightSize: "10",
+      maxChecklistItems: "10",
+      maxConsoleItems: "10",
+      maxSignals: "10",
+      maxSupervisorItems: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
+    });
+    const launchNightSupervisorActions = revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.parse({
+      launchNightSize: "10",
+      maxActions: "10",
+      maxChecklistItems: "10",
+      maxConsoleItems: "10",
+      maxSignals: "10",
+      maxSupervisorItems: "10",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2"
+    });
+    const launchNightSupervisorActionApply = applyRevenueBusinessFleetLaunchNightSupervisorActionSchema.parse({
+      actionId: "launch_night_supervisor:record_outcome_signals:business_fleet_launch_signal_store-1",
+      adSpend: "12.5",
+      confirm: "APPLY INTERNAL BUSINESS FLEET LAUNCH NIGHT SUPERVISOR ACTION",
+      dryRun: true,
+      grossRevenue: "75",
+      maxActions: "10",
+      maxSupervisorItems: "10",
+      netProfit: "42.5",
+      note: "Preview the next supervisor action.",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      unitsSold: "3",
+      visits: "120"
+    });
+    const launchNightSupervisorRunNext = applyRevenueBusinessFleetLaunchNightSupervisorRunNextSchema.parse({
+      adSpend: "12.5",
+      confirm: "RUN INTERNAL BUSINESS FLEET LAUNCH NIGHT NEXT SUPERVISOR ACTION",
+      dryRun: true,
+      grossRevenue: "75",
+      maxActions: "10",
+      maxSupervisorItems: "10",
+      netProfit: "42.5",
+      note: "Preview the next supervisor action.",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      unitsSold: "3",
+      visits: "120"
+    });
+    const launchNightSupervisorRunUntilBlockedPreview = revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewSchema.parse({
+      adSpend: "12.5",
+      confirm: "PREVIEW INTERNAL BUSINESS FLEET LAUNCH NIGHT RUN UNTIL BLOCKED",
+      grossRevenue: "75",
+      maxActions: "10",
+      maxRunSteps: "5",
+      maxSupervisorItems: "10",
+      netProfit: "42.5",
+      note: "Preview the bounded supervisor sequence.",
+      sourceKeys: "entral-private-revenue-lane-1,entral-private-revenue-lane-2",
+      unitsSold: "3",
+      visits: "120"
+    });
+    const launchNightApply = applyRevenueBusinessFleetLaunchNightCommandSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMANDS",
+      dryRun: true,
+      laneIds: ["store-1"],
+      launchNightSize: "10",
+      launchWaveSize: "10",
+      maxCommands: "10",
+      maxLanes: "10",
+      maxParallelLaunches: "10",
+      maxParallelScaleActions: "25",
+      maxStores: "10",
+      maxWorkers: "10",
+      note: "Record tonight's top launch-night command.",
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: ["entral-private-revenue-lane-1"],
+      targetBusinesses: "1000"
+    });
+    const launchNightCommandQueue = revenueBusinessFleetLaunchNightCommandQueueQuerySchema.parse({
+      maxCommands: "10",
+      statuses: "queued,blocked"
+    });
+    const launchNightCommandQueueApply = applyRevenueBusinessFleetLaunchNightCommandQueueSchema.parse({
+      commandRecordIds: ["portfolio-command-launch-night-1"],
+      confirm: "RESOLVE INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMAND QUEUE",
+      dryRun: true,
+      maxCommands: "10",
+      note: "Resolve the next internal launch-night command.",
+      resolution: "applied",
+      statuses: ["queued", "blocked"]
+    });
+    const incomeSprintApply = applyRevenueBusinessFleetIncomeSprintCommandSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET INCOME SPRINT COMMANDS",
+      dryRun: true,
+      laneIds: ["store-1"],
+      maxLanes: "10",
+      note: "Record tonight's top sprint command.",
+      sourceKeys: ["entral-private-revenue-lane-1"],
+      targetBusinesses: "1000"
+    });
+    const incomeSprintCommandQueue = revenueBusinessFleetIncomeSprintCommandQueueQuerySchema.parse({
+      maxCommands: "10",
+      statuses: "queued,blocked"
+    });
+    const incomeSprintCommandQueueApply = applyRevenueBusinessFleetIncomeSprintCommandQueueSchema.parse({
+      commandRecordIds: ["portfolio-command-income-sprint-1"],
+      confirm: "RESOLVE INTERNAL BUSINESS FLEET INCOME SPRINT COMMAND QUEUE",
+      dryRun: true,
+      maxCommands: "10",
+      note: "Resolve the next internal sprint command.",
+      resolution: "applied",
+      statuses: ["queued", "blocked"]
+    });
+    const manualLaunchEvidenceApply = applyRevenueBusinessFleetManualLaunchEvidenceSchema.parse({
+      approvalPhrase: "CONFIRM OPERATOR COMPLETED BUSINESS FLEET MANUAL LAUNCH STEP",
+      assignmentIds: ["business_fleet_launch_assignment_1"],
+      confirm: "RECORD INTERNAL BUSINESS FLEET MANUAL LAUNCH EVIDENCE",
+      dryRun: true,
+      evidenceCategory: "operator_notes",
+      evidenceNote: "Operator completed the manual review.",
+      maxAssignments: "10",
+      maxAssignmentsPerWorker: "1",
+      maxLeases: "10",
+      maxLeasesPerShard: "1",
+      maxStores: "10",
+      maxWorkers: "10",
+      operatorCompletedManualStep: true,
+      qualityFloor: "75",
+      shardCount: "10",
+      sourceKeys: ["entral-private-revenue-lane-1"]
+    });
+    const launchOutcomeSignalsApply = applyRevenueBusinessFleetLaunchOutcomeSignalsSchema.parse({
+      adSpend: "12.5",
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH OUTCOME SIGNALS",
+      dryRun: true,
+      grossRevenue: "75",
+      launchWaveSize: "10",
+      maxSignals: "10",
+      netProfit: "42.5",
+      periodEnd: "2026-07-17T12:00:00.000Z",
+      periodStart: "2026-07-16T12:00:00.000Z",
+      signalIds: ["business_fleet_launch_signal_store_1"],
+      source: "manual",
+      sourceKeys: ["entral-private-revenue-lane-1"],
+      unitsSold: "3",
+      visits: "120"
+    });
     const moneyArmyQuery = revenueMoneyArmyBatchPipelineQuerySchema.parse({
       launchWaveSize: "10",
       maxPackets: "25",
@@ -1060,6 +1433,119 @@ describe("validation schemas", () => {
     expect(livePackage.maxStores).toBe(10);
     expect(launchGate.maxStores).toBe(10);
     expect(launchGate.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(providerApprovalReview.maxPackets).toBe(25);
+    expect(providerApprovalReview.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(providerApprovalReview.status).toBe("pending");
+    expect(providerApprovalApply.action).toBe("approve");
+    expect(providerApprovalApply.packetIds).toEqual(["growth_packet_1"]);
+    expect(launchExecutionQueue.maxLeases).toBe(10);
+    expect(launchExecutionQueue.maxLeasesPerShard).toBe(1);
+    expect(launchExecutionQueue.qualityFloor).toBe(75);
+    expect(launchExecutionQueue.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchExecutionQueueApply.leaseIds).toEqual(["business_fleet_launch_lease_1"]);
+    expect(launchExecutionQueueApply.shardCount).toBe(10);
+    expect(launchWorkerAssignments.maxAssignments).toBe(10);
+    expect(launchWorkerAssignments.maxWorkers).toBe(10);
+    expect(launchWorkerAssignments.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchWorkerAssignmentsApply.assignmentIds).toEqual(["business_fleet_launch_assignment_1"]);
+    expect(launchWorkerAssignmentsApply.maxAssignmentsPerWorker).toBe(1);
+    expect(manualLaunchEvidence.assignmentIds).toEqual(["business_fleet_launch_assignment_1"]);
+    expect(manualLaunchEvidence.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchControl.targetBusinesses).toBe(1000);
+    expect(launchControl.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(swarmReadiness.starterBusinesses).toBe(10);
+    expect(swarmReadiness.scaleTargets).toEqual([10, 100, 1000]);
+    expect(swarmReadiness.targetBusinesses).toBe(1000);
+    expect(swarmReadiness.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(manualLaunchEvidenceApply.evidenceCategory).toBe("operator_notes");
+    expect(manualLaunchEvidenceApply.operatorCompletedManualStep).toBe(true);
+    expect(launchOutcomeSignals.maxSignals).toBe(10);
+    expect(launchOutcomeSignals.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchCashCycle.maxSteps).toBe(8);
+    expect(launchCashCycle.maxSignals).toBe(10);
+    expect(launchCashCycle.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchCashCycleApply.dryRun).toBe(true);
+    expect(launchCashCycleApply.maxSteps).toBe(8);
+    expect(launchCashCycleApply.sourceKeys).toEqual(["entral-private-revenue-lane-1"]);
+    expect(launchCashCycleCommandQueue.maxCommands).toBe(10);
+    expect(launchCashCycleCommandQueue.statuses).toEqual(["queued", "blocked"]);
+    expect(launchCashCycleCommandQueueApply.commandRecordIds).toEqual(["portfolio-command-cash-cycle-1"]);
+    expect(launchCashCycleCommandQueueApply.resolution).toBe("applied");
+    expect(incomeSprint.maxLanes).toBe(10);
+    expect(incomeSprint.maxCommands).toBe(10);
+    expect(incomeSprint.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchNight.launchNightSize).toBe(10);
+    expect(launchNight.maxWorkers).toBe(10);
+    expect(launchNight.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchNightChecklist.maxChecklistItems).toBe(10);
+    expect(launchNightChecklist.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchNightOperatorConsole.maxConsoleItems).toBe(10);
+    expect(launchNightOperatorConsole.maxSignals).toBe(10);
+    expect(launchNightOperatorConsole.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchNightSupervisor.maxSupervisorItems).toBe(10);
+    expect(launchNightSupervisor.maxConsoleItems).toBe(10);
+    expect(launchNightSupervisor.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchNightSupervisorActions.maxActions).toBe(10);
+    expect(launchNightSupervisorActions.maxSupervisorItems).toBe(10);
+    expect(launchNightSupervisorActions.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchNightSupervisorActionApply.actionId).toBe("launch_night_supervisor:record_outcome_signals:business_fleet_launch_signal_store-1");
+    expect(launchNightSupervisorActionApply.grossRevenue).toBe(75);
+    expect(launchNightSupervisorActionApply.netProfit).toBe(42.5);
+    expect(launchNightSupervisorActionApply.unitsSold).toBe(3);
+    expect(launchNightSupervisorActionApply.visits).toBe(120);
+    expect(launchNightSupervisorRunNext.grossRevenue).toBe(75);
+    expect(launchNightSupervisorRunNext.maxActions).toBe(10);
+    expect(launchNightSupervisorRunNext.netProfit).toBe(42.5);
+    expect(launchNightSupervisorRunNext.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchNightSupervisorRunUntilBlockedPreview.grossRevenue).toBe(75);
+    expect(launchNightSupervisorRunUntilBlockedPreview.maxRunSteps).toBe(5);
+    expect(launchNightSupervisorRunUntilBlockedPreview.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
+    expect(launchNightApply.dryRun).toBe(true);
+    expect(launchNightApply.laneIds).toEqual(["store-1"]);
+    expect(launchNightApply.sourceKeys).toEqual(["entral-private-revenue-lane-1"]);
+    expect(launchNightCommandQueue.maxCommands).toBe(10);
+    expect(launchNightCommandQueue.statuses).toEqual(["queued", "blocked"]);
+    expect(launchNightCommandQueueApply.commandRecordIds).toEqual(["portfolio-command-launch-night-1"]);
+    expect(launchNightCommandQueueApply.resolution).toBe("applied");
+    expect(incomeSprintApply.dryRun).toBe(true);
+    expect(incomeSprintApply.laneIds).toEqual(["store-1"]);
+    expect(incomeSprintApply.sourceKeys).toEqual(["entral-private-revenue-lane-1"]);
+    expect(incomeSprintCommandQueue.maxCommands).toBe(10);
+    expect(incomeSprintCommandQueue.statuses).toEqual(["queued", "blocked"]);
+    expect(incomeSprintCommandQueueApply.commandRecordIds).toEqual(["portfolio-command-income-sprint-1"]);
+    expect(incomeSprintCommandQueueApply.resolution).toBe("applied");
+    expect(() => applyRevenueBusinessFleetLaunchNightCommandSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchNightCommandSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMANDS",
+      laneIds: Array.from({ length: 26 }, (_, index) => `store-${index}`)
+    })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema.parse({ maxChecklistItems: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema.parse({ maxChecklistItems: "51" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema.parse({ maxConsoleItems: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema.parse({ maxConsoleItems: "51" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightSupervisorQuerySchema.parse({ maxSupervisorItems: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightSupervisorQuerySchema.parse({ maxSupervisorItems: "51" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.parse({ maxActions: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.parse({ maxActions: "26" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchNightSupervisorActionSchema.parse({ confirm: "APPLY" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchNightSupervisorRunNextSchema.parse({ confirm: "RUN" })).toThrow();
+    expect(() => revenueBusinessFleetSwarmReadinessQuerySchema.parse({ scaleTargets: "10,100,1000,5000,10000,25000" })).toThrow();
+    expect(() => revenueBusinessFleetSwarmReadinessQuerySchema.parse({ starterBusinesses: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewSchema.parse({ confirm: "PREVIEW" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewSchema.parse({
+      confirm: "PREVIEW INTERNAL BUSINESS FLEET LAUNCH NIGHT RUN UNTIL BLOCKED",
+      maxRunSteps: "6"
+    })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightCommandQueueQuerySchema.parse({ maxCommands: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightCommandQueueQuerySchema.parse({ statuses: "queued,done" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchNightCommandQueueSchema.parse({ confirm: "RESOLVE" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchNightCommandQueueSchema.parse({
+      commandRecordIds: Array.from({ length: 51 }, (_, index) => `command-${index}`),
+      confirm: "RESOLVE INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMAND QUEUE"
+    })).toThrow();
+    expect(launchOutcomeSignalsApply.signalIds).toEqual(["business_fleet_launch_signal_store_1"]);
+    expect(launchOutcomeSignalsApply.netProfit).toBe(42.5);
+    expect(launchOutcomeSignalsApply.source).toBe("manual");
     expect(moneyArmyQuery.maxPackets).toBe(25);
     expect(moneyArmyQuery.sourceKeys).toEqual(["entral-private-revenue-lane-1", "entral-private-revenue-lane-2"]);
     expect(moneyArmyApply.dryRun).toBe(true);
@@ -1082,6 +1568,82 @@ describe("validation schemas", () => {
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ shardCount: "300" })).toThrow();
     expect(() => revenueBusinessFleetSchedulerQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
+    expect(() => revenueBusinessFleetProviderApprovalReviewQuerySchema.parse({ maxPackets: "0" })).toThrow();
+    expect(() => revenueBusinessFleetProviderApprovalReviewQuerySchema.parse({ status: "done" })).toThrow();
+    expect(() => applyRevenueBusinessFleetProviderApprovalReviewSchema.parse({ confirm: "REVIEW" })).toThrow();
+    expect(() => applyRevenueBusinessFleetProviderApprovalReviewSchema.parse({
+      confirm: "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS",
+      maxPackets: 51
+    })).toThrow();
+    expect(() => revenueBusinessFleetLaunchExecutionQueueQuerySchema.parse({ maxLeases: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchExecutionQueueQuerySchema.parse({ maxLeasesPerShard: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchExecutionQueueQuerySchema.parse({ qualityFloor: "101" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchExecutionQueueSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchExecutionQueueSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH EXECUTION QUEUE",
+      leaseIds: Array.from({ length: 51 }, (_, index) => `lease-${index}`)
+    })).toThrow();
+    expect(() => revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse({ maxAssignments: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse({ maxWorkers: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse({ maxAssignmentsPerWorker: "0" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchWorkerAssignmentsSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchWorkerAssignmentsSchema.parse({
+      assignmentIds: Array.from({ length: 51 }, (_, index) => `assignment-${index}`),
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH WORKER ASSIGNMENTS"
+    })).toThrow();
+    expect(() => revenueBusinessFleetManualLaunchEvidenceQuerySchema.parse({ maxAssignments: "0" })).toThrow();
+    expect(() => applyRevenueBusinessFleetManualLaunchEvidenceSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueBusinessFleetManualLaunchEvidenceSchema.parse({
+      approvalPhrase: "CONFIRM OPERATOR COMPLETED BUSINESS FLEET MANUAL LAUNCH STEP",
+      confirm: "RECORD INTERNAL BUSINESS FLEET MANUAL LAUNCH EVIDENCE",
+      evidenceCategory: "ads"
+    })).toThrow();
+    expect(() => applyRevenueBusinessFleetManualLaunchEvidenceSchema.parse({
+      approvalPhrase: "CONFIRM",
+      confirm: "RECORD INTERNAL BUSINESS FLEET MANUAL LAUNCH EVIDENCE"
+    })).toThrow();
+    expect(() => revenueBusinessFleetLaunchControlQuerySchema.parse({ launchWaveSize: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchControlQuerySchema.parse({ maxWorkers: "101" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchControlQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchOutcomeSignalsQuerySchema.parse({ maxSignals: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchOutcomeSignalsQuerySchema.parse({ maxSignals: "51" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchCashCycleQuerySchema.parse({ maxSteps: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchCashCycleQuerySchema.parse({ maxSteps: "21" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchCashCycleSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchCashCycleSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND",
+      maxSteps: "21"
+    })).toThrow();
+    expect(() => revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema.parse({ maxCommands: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema.parse({ statuses: "queued,done" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchCashCycleCommandQueueSchema.parse({ confirm: "RESOLVE" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchCashCycleCommandQueueSchema.parse({
+      commandRecordIds: Array.from({ length: 51 }, (_, index) => `command-${index}`),
+      confirm: "RESOLVE INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND QUEUE"
+    })).toThrow();
+    expect(() => revenueBusinessFleetIncomeSprintQuerySchema.parse({ maxLanes: "0" })).toThrow();
+    expect(() => revenueBusinessFleetIncomeSprintQuerySchema.parse({ maxLanes: "26" })).toThrow();
+    expect(() => revenueBusinessFleetIncomeSprintQuerySchema.parse({ targetBusinesses: "100001" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightQuerySchema.parse({ launchNightSize: "0" })).toThrow();
+    expect(() => revenueBusinessFleetLaunchNightQuerySchema.parse({ launchNightSize: "26" })).toThrow();
+    expect(() => applyRevenueBusinessFleetIncomeSprintCommandSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueBusinessFleetIncomeSprintCommandSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET INCOME SPRINT COMMANDS",
+      laneIds: Array.from({ length: 26 }, (_, index) => `lane-${index}`)
+    })).toThrow();
+    expect(() => revenueBusinessFleetIncomeSprintCommandQueueQuerySchema.parse({ maxCommands: "0" })).toThrow();
+    expect(() => revenueBusinessFleetIncomeSprintCommandQueueQuerySchema.parse({ statuses: "queued,done" })).toThrow();
+    expect(() => applyRevenueBusinessFleetIncomeSprintCommandQueueSchema.parse({ confirm: "RESOLVE" })).toThrow();
+    expect(() => applyRevenueBusinessFleetIncomeSprintCommandQueueSchema.parse({
+      commandRecordIds: Array.from({ length: 51 }, (_, index) => `command-${index}`),
+      confirm: "RESOLVE INTERNAL BUSINESS FLEET INCOME SPRINT COMMAND QUEUE"
+    })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchOutcomeSignalsSchema.parse({ confirm: "RECORD" })).toThrow();
+    expect(() => applyRevenueBusinessFleetLaunchOutcomeSignalsSchema.parse({
+      confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH OUTCOME SIGNALS",
+      periodEnd: "2026-07-16T12:00:00.000Z",
+      periodStart: "2026-07-17T12:00:00.000Z"
+    })).toThrow();
     expect(() => revenueHundredStoreOperationsQuerySchema.parse({ targetStores: "99" })).toThrow();
     expect(() => revenueHundredStoreOperationsQuerySchema.parse({ safeBatchSize: "51" })).toThrow();
     expect(() => applyRevenueHundredStoreOperationsSchema.parse({ confirm: "RUN" })).toThrow();

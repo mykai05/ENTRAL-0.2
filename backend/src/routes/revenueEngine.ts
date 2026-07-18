@@ -8,6 +8,18 @@ import {
   applyRevenueAssetActionSchema,
   applyRevenueAssetBatchActionSchema,
   applyRevenueBusinessFleetGapAccelerationSchema,
+  applyRevenueBusinessFleetLaunchExecutionQueueSchema,
+  applyRevenueBusinessFleetLaunchWorkerAssignmentsSchema,
+  applyRevenueBusinessFleetManualLaunchEvidenceSchema,
+  applyRevenueBusinessFleetLaunchCashCycleSchema,
+  applyRevenueBusinessFleetLaunchCashCycleCommandQueueSchema,
+  applyRevenueBusinessFleetIncomeSprintCommandSchema,
+  applyRevenueBusinessFleetIncomeSprintCommandQueueSchema,
+  applyRevenueBusinessFleetLaunchNightCommandSchema,
+  applyRevenueBusinessFleetLaunchNightCommandQueueSchema,
+  applyRevenueBusinessFleetLaunchNightSupervisorActionSchema,
+  applyRevenueBusinessFleetLaunchNightSupervisorRunNextSchema,
+  applyRevenueBusinessFleetLaunchOutcomeSignalsSchema,
   applyRevenueBusinessFleetLiveLaunchPackageSchema,
   applyRevenueBusinessFleetProviderApprovalReviewSchema,
   applyRevenueBusinessFleetSeedGapSchema,
@@ -80,6 +92,23 @@ import {
   revenueBusinessFleetSchedulerQuerySchema,
   revenueHundredStoreOperationsQuerySchema,
   revenueBusinessFleetLaunchGateQuerySchema,
+  revenueBusinessFleetLaunchControlQuerySchema,
+  revenueBusinessFleetSwarmReadinessQuerySchema,
+  revenueBusinessFleetLaunchCashCycleQuerySchema,
+  revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema,
+  revenueBusinessFleetIncomeSprintQuerySchema,
+  revenueBusinessFleetLaunchNightQuerySchema,
+  revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema,
+  revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema,
+  revenueBusinessFleetLaunchNightSupervisorQuerySchema,
+  revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema,
+  revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewSchema,
+  revenueBusinessFleetLaunchNightCommandQueueQuerySchema,
+  revenueBusinessFleetIncomeSprintCommandQueueQuerySchema,
+  revenueBusinessFleetLaunchOutcomeSignalsQuerySchema,
+  revenueBusinessFleetLaunchExecutionQueueQuerySchema,
+  revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema,
+  revenueBusinessFleetManualLaunchEvidenceQuerySchema,
   revenueBusinessFleetProviderApprovalReviewQuerySchema,
   revenueMoneyArmyGenerateScoreBatchQuerySchema,
   revenueFirstBusinessLaunchPackageQuerySchema,
@@ -115,6 +144,15 @@ import {
   revenueOwnerManualLaunchApprovalConfirmation,
   revenueFirstStoreManualLaunchEvidenceConfirmation,
   revenueFirstStoreManualSignalCaptureConfirmation,
+  revenueBusinessFleetManualLaunchEvidenceConfirmation,
+  revenueBusinessFleetManualLaunchEvidencePhrase,
+  revenueBusinessFleetLaunchCashCycleConfirmation,
+  revenueBusinessFleetLaunchNightCommandConfirmation,
+  revenueBusinessFleetLaunchNightCommandQueueConfirmation,
+  revenueBusinessFleetLaunchNightSupervisorActionConfirmation,
+  revenueBusinessFleetLaunchNightSupervisorRunNextConfirmation,
+  revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewConfirmation,
+  revenueBusinessFleetLaunchOutcomeSignalsConfirmation,
   revenueWinnerClonePacketApprovalConfirmation,
   applyRevenueFirstBusinessLaunchSchema,
   applyRevenueFirstCashSprintSchema,
@@ -128,6 +166,18 @@ import {
   type ApplyRevenueAssetBatchActionInput,
   type ApplyRevenueAssetActionInput,
   type ApplyRevenueBusinessFleetGapAccelerationInput,
+  type ApplyRevenueBusinessFleetLaunchExecutionQueueInput,
+  type ApplyRevenueBusinessFleetLaunchWorkerAssignmentsInput,
+  type ApplyRevenueBusinessFleetManualLaunchEvidenceInput,
+  type ApplyRevenueBusinessFleetLaunchCashCycleInput,
+  type ApplyRevenueBusinessFleetLaunchCashCycleCommandQueueInput,
+  type ApplyRevenueBusinessFleetIncomeSprintCommandInput,
+  type ApplyRevenueBusinessFleetIncomeSprintCommandQueueInput,
+  type ApplyRevenueBusinessFleetLaunchNightCommandInput,
+  type ApplyRevenueBusinessFleetLaunchNightCommandQueueInput,
+  type ApplyRevenueBusinessFleetLaunchNightSupervisorActionInput,
+  type ApplyRevenueBusinessFleetLaunchNightSupervisorRunNextInput,
+  type ApplyRevenueBusinessFleetLaunchOutcomeSignalsInput,
   type ApplyRevenueBusinessFleetLiveLaunchPackageInput,
   type ApplyRevenueBusinessFleetProviderApprovalReviewInput,
   type ApplyRevenueBusinessFleetSeedGapInput,
@@ -198,6 +248,23 @@ import {
   type RevenueBusinessFleetSchedulerQueryInput,
   type RevenueHundredStoreOperationsQueryInput,
   type RevenueBusinessFleetLaunchGateQueryInput,
+  type RevenueBusinessFleetLaunchControlQueryInput,
+  type RevenueBusinessFleetSwarmReadinessQueryInput,
+  type RevenueBusinessFleetLaunchCashCycleQueryInput,
+  type RevenueBusinessFleetLaunchCashCycleCommandQueueQueryInput,
+  type RevenueBusinessFleetIncomeSprintQueryInput,
+  type RevenueBusinessFleetLaunchNightQueryInput,
+  type RevenueBusinessFleetLaunchNightExecutionChecklistQueryInput,
+  type RevenueBusinessFleetLaunchNightOperatorConsoleQueryInput,
+  type RevenueBusinessFleetLaunchNightSupervisorQueryInput,
+  type RevenueBusinessFleetLaunchNightSupervisorActionsQueryInput,
+  type RevenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewInput,
+  type RevenueBusinessFleetLaunchNightCommandQueueQueryInput,
+  type RevenueBusinessFleetIncomeSprintCommandQueueQueryInput,
+  type RevenueBusinessFleetLaunchOutcomeSignalsQueryInput,
+  type RevenueBusinessFleetLaunchExecutionQueueQueryInput,
+  type RevenueBusinessFleetLaunchWorkerAssignmentsQueryInput,
+  type RevenueBusinessFleetManualLaunchEvidenceQueryInput,
   type RevenueBusinessFleetProviderApprovalReviewQueryInput,
   type RevenueMoneyArmyGenerateScoreBatchQueryInput,
   type RevenueFirstBusinessLaunchPackageQueryInput,
@@ -271,10 +338,12 @@ import {
 } from "../services/facelessContentPipeline.js";
 import {
   buildPortfolioCommandCenterPlan,
+  type PortfolioCommandAction,
   type PortfolioCommandCenterPlan,
   type PortfolioCommandItem,
   type PortfolioCommandRecordSnapshot,
   type PortfolioCommandRecordStatus,
+  type PortfolioCommandRiskLevel,
   type PortfolioCommandTargetType
 } from "../services/portfolioCommandCenter.js";
 import {
@@ -5887,6 +5956,35 @@ async function buildRevenueBusinessFleetLaunchGateForUser(userId: string, input:
     sourceKey: sourceKeyForFleetGapSeedStore(store, targeted.sourceKeys),
     store
   }));
+  const operationsPackByStoreId = new Map(operationsPacks.map((pack) => [pack.storeId, pack]));
+  const readyQueue = items
+    .filter((item) => item.gateStatus === "ready_for_manual_launch")
+    .map((item, index) => {
+      const operationsPack = operationsPackByStoreId.get(item.storeId) ?? null;
+      const approvalId = item.approvalState.latestProviderApprovalId;
+
+      return {
+        action: "manual_launch_review" as const,
+        approvalId,
+        artifactSlots: operationsPack?.artifactSlots.length ?? 0,
+        businessName: item.businessName,
+        credentialScopes: operationsPack?.credentialScopes ?? [],
+        externalExecution: false as const,
+        manualSteps: operationsPack?.manualSteps.slice(0, 8) ?? [],
+        nextInternalState: "ready_for_operator_manual_launch" as const,
+        packetId: `business_fleet_manual_launch_${item.storeId}_${approvalId ?? "approved"}`,
+        priority: index + 1,
+        providerContacted: false as const,
+        providerPayloadCount: item.providerPayloadCount,
+        readinessScore: operationsPack?.readiness.overallScore ?? Math.round((item.launchReadinessScore + item.providerReadinessScore) / 2),
+        requestManifests: operationsPack?.requestManifests.length ?? 0,
+        riskLevel: operationsPack?.riskLevel ?? "medium",
+        sourceKey: item.sourceKey,
+        status: "ready_for_manual_launch" as const,
+        storeId: item.storeId,
+        summary: operationsPack?.summary ?? item.reason
+      };
+    });
   const statusCounts = {
     approvalNeeded: items.filter((item) => item.gateStatus === "approval_needed").length,
     blocked: items.filter((item) => item.gateStatus === "blocked").length,
@@ -5915,11 +6013,13 @@ async function buildRevenueBusinessFleetLaunchGateForUser(userId: string, input:
         readinessTotals: plans.readinessPlan.totals
       },
       providerContacted: false as const,
+      readyQueue,
       statusCounts,
       summary: `${items.length} packaged business lane${items.length === 1 ? "" : "s"} evaluated: ${statusCounts.readyForManualLaunch} ready for manual launch, ${statusCounts.approvalNeeded} need approval, ${statusCounts.repairRequired} need repair, ${statusCounts.blocked} blocked.`,
       targetedSourceKeys: targeted.sourceKeys,
       totals: {
         handoffRecordsOpen: plans.handoffPlan?.totals.openPacketRecords ?? 0,
+        manualLaunchReady: readyQueue.length,
         operationsPacks: plans.operationsPackPlan?.totals.packs ?? 0,
         operationsReady: plans.operationsPackPlan?.totals.readyPacks ?? 0,
         payloadsPrepared: plans.readinessPlan.totals.payloadsPrepared,
@@ -6202,6 +6302,5537 @@ async function applyRevenueBusinessFleetProviderApprovalReview(
   };
 }
 
+type RevenueBusinessFleetLaunchExecutionLeaseStatus =
+  | "approval_hold"
+  | "blocked"
+  | "quality_hold"
+  | "ready_to_claim"
+  | "waiting_parallel_capacity";
+
+type RevenueBusinessFleetManualLaunchQueuePacket = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchGateForUser>>["plan"]["readyQueue"][number];
+
+function launchExecutionLeaseStatusForPacket(
+  packet: RevenueBusinessFleetManualLaunchQueuePacket,
+  input: RevenueBusinessFleetLaunchExecutionQueueQueryInput
+): RevenueBusinessFleetLaunchExecutionLeaseStatus {
+  const riskLevel = packet.riskLevel.toLowerCase();
+
+  if (!packet.approvalId) return "approval_hold";
+  if (packet.manualSteps.length === 0 || packet.providerPayloadCount === 0 || packet.requestManifests === 0) return "blocked";
+  if (packet.readinessScore < input.qualityFloor || riskLevel === "high") return "quality_hold";
+
+  return "ready_to_claim";
+}
+
+function launchExecutionBlockersForPacket(
+  packet: RevenueBusinessFleetManualLaunchQueuePacket,
+  input: RevenueBusinessFleetLaunchExecutionQueueQueryInput
+) {
+  const blockers: string[] = [];
+  const riskLevel = packet.riskLevel.toLowerCase();
+
+  if (!packet.approvalId) blockers.push("Provider payload approval id is missing.");
+  if (packet.providerPayloadCount === 0) blockers.push("No approved provider payload drafts are attached.");
+  if (packet.requestManifests === 0) blockers.push("No locked request manifests are attached.");
+  if (packet.manualSteps.length === 0) blockers.push("No operator manual launch steps are attached.");
+  if (packet.readinessScore < input.qualityFloor) blockers.push(`Readiness score ${packet.readinessScore} is below quality floor ${input.qualityFloor}.`);
+  if (riskLevel === "high") blockers.push("High-risk operations pack must be repaired before launch claiming.");
+
+  return blockers;
+}
+
+function buildRevenueBusinessFleetLaunchExecutionLease(
+  packet: RevenueBusinessFleetManualLaunchQueuePacket,
+  input: RevenueBusinessFleetLaunchExecutionQueueQueryInput,
+  index: number,
+  generatedAtDate: Date
+) {
+  const blockers = launchExecutionBlockersForPacket(packet, input);
+  const status = launchExecutionLeaseStatusForPacket(packet, input);
+  const dedupeKey = `manual_launch:${packet.storeId}:${packet.approvalId ?? packet.packetId}`;
+  const idempotencyKey = createHash("sha1")
+    .update(`business-fleet-launch-execution:${dedupeKey}:${packet.readinessScore}:${packet.requestManifests}`)
+    .digest("hex")
+    .slice(0, 24);
+  const shardId = `launch-shard-${String((index % input.shardCount) + 1).padStart(2, "0")}`;
+  const expiresAt = new Date(generatedAtDate.getTime() + 15 * 60 * 1000).toISOString();
+
+  return {
+    action: "operator_manual_launch" as const,
+    approvalId: packet.approvalId,
+    blockers,
+    businessName: packet.businessName,
+    claimOrder: null as number | null,
+    dedupeKey,
+    expectedInternalEffect: "Claim one approved manual launch packet for operator execution review without contacting external providers.",
+    expiresAt,
+    externalExecution: false as const,
+    idempotencyKey,
+    leaseId: `business_fleet_launch_lease_${idempotencyKey}`,
+    manualSteps: packet.manualSteps,
+    nextInternalState: status === "ready_to_claim"
+      ? "operator_launch_claim_ready"
+      : status === "approval_hold"
+        ? "awaiting_provider_packet_approval"
+        : status === "quality_hold"
+          ? "repair_before_launch_claim"
+          : "blocked_rebuild_launch_packet",
+    packetId: packet.packetId,
+    priority: index + 1,
+    providerContacted: false as const,
+    qualityGates: {
+      approvalPresent: Boolean(packet.approvalId),
+      manualStepsPresent: packet.manualSteps.length > 0,
+      providerPayloadsPresent: packet.providerPayloadCount > 0,
+      readinessScoreFloorPassed: packet.readinessScore >= input.qualityFloor,
+      requestManifestsPresent: packet.requestManifests > 0,
+      riskAccepted: packet.riskLevel.toLowerCase() !== "high"
+    },
+    readinessScore: packet.readinessScore,
+    reason: blockers.length > 0
+      ? blockers[0]!
+      : `${packet.businessName} can be claimed for a manual launch execution review.`,
+    requestManifests: packet.requestManifests,
+    riskLevel: packet.riskLevel,
+    shardId,
+    sourceKey: packet.sourceKey,
+    status,
+    storeId: packet.storeId,
+    summary: packet.summary
+  };
+}
+
+function applyRevenueBusinessFleetLaunchExecutionCapacity(
+  leases: ReturnType<typeof buildRevenueBusinessFleetLaunchExecutionLease>[],
+  input: RevenueBusinessFleetLaunchExecutionQueueQueryInput
+) {
+  const claimedDedupeKeys = new Set<string>();
+  const shardCounts = new Map<string, number>();
+  let claimOrder = 0;
+
+  return leases.map((lease) => {
+    if (lease.status !== "ready_to_claim") return lease;
+
+    if (claimedDedupeKeys.has(lease.dedupeKey)) {
+      return {
+        ...lease,
+        blockers: [...lease.blockers, "Duplicate launch execution dedupe key detected."],
+        nextInternalState: "blocked_rebuild_launch_packet",
+        reason: "Duplicate launch execution dedupe key detected.",
+        status: "blocked" as const
+      };
+    }
+
+    const currentShardClaims = shardCounts.get(lease.shardId) ?? 0;
+
+    if (currentShardClaims >= input.maxLeasesPerShard) {
+      return {
+        ...lease,
+        blockers: [...lease.blockers, `Shard ${lease.shardId} already has ${input.maxLeasesPerShard} claimable launch lease${input.maxLeasesPerShard === 1 ? "" : "s"} in this cycle.`],
+        nextInternalState: "waiting_for_shard_capacity",
+        reason: `Shard ${lease.shardId} is at the configured launch claim cap.`,
+        status: "waiting_parallel_capacity" as const
+      };
+    }
+
+    claimOrder += 1;
+    claimedDedupeKeys.add(lease.dedupeKey);
+    shardCounts.set(lease.shardId, currentShardClaims + 1);
+
+    return {
+      ...lease,
+      claimOrder
+    };
+  });
+}
+
+async function buildRevenueBusinessFleetLaunchExecutionQueueForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchExecutionQueueQueryInput
+) {
+  const launchGate = await buildRevenueBusinessFleetLaunchGateForUser(userId, revenueBusinessFleetLaunchGateQuerySchema.parse({
+    maxStores: input.maxStores,
+    sourceKeys: input.sourceKeys
+  }));
+  const generatedAtDate = new Date();
+  const baseLeases = launchGate.plan.readyQueue
+    .slice(0, input.maxLeases)
+    .map((packet, index) => buildRevenueBusinessFleetLaunchExecutionLease(packet, input, index, generatedAtDate));
+  const leases = applyRevenueBusinessFleetLaunchExecutionCapacity(baseLeases, input);
+  const statusCount = (status: RevenueBusinessFleetLaunchExecutionLeaseStatus) => leases.filter((lease) => lease.status === status).length;
+  const dedupeCounts = leases.reduce<Map<string, number>>((counts, lease) => {
+    counts.set(lease.dedupeKey, (counts.get(lease.dedupeKey) ?? 0) + 1);
+
+    return counts;
+  }, new Map());
+  const duplicateDedupeKeys = Array.from(dedupeCounts.values()).filter((count) => count > 1).length;
+  const readyToClaim = statusCount("ready_to_claim");
+
+  return {
+    plan: {
+      auditEvents: [
+        "Business fleet launch execution queue derived from launch-gate ready packets.",
+        "Queue leases are internal claim/audit objects only.",
+        "No provider, marketplace, payment, social, ad, browser, or external write action was executed."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...launchGate.plan.blockedExternalActions,
+        "Calling provider, marketplace, ad, social, browser, payment, payout, bank, or upload write APIs from launch execution leases",
+        "Treating a launch execution lease as public-launch approval or proof of external provider completion",
+        "Using browser stealth, anti-detection, or platform-evasion automation"
+      ]),
+      externalExecution: false as const,
+      generatedAt: generatedAtDate.toISOString(),
+      launchGate: {
+        readyQueue: launchGate.plan.readyQueue.length,
+        statusCounts: launchGate.plan.statusCounts,
+        summary: launchGate.plan.summary,
+        totals: launchGate.plan.totals
+      },
+      leases,
+      mode: "Revenue Business Fleet Launch Execution Queue" as const,
+      providerContacted: false as const,
+      qualityFloor: input.qualityFloor,
+      shardPolicy: {
+        maxLeasesPerShard: input.maxLeasesPerShard,
+        shardCount: input.shardCount
+      },
+      summary: `${leases.length} launch execution lease${leases.length === 1 ? "" : "s"} prepared from ${launchGate.plan.readyQueue.length} manual-ready packet${launchGate.plan.readyQueue.length === 1 ? "" : "s"}: ${readyToClaim} ready to claim, ${statusCount("approval_hold")} approval-held, ${statusCount("quality_hold")} quality-held, ${statusCount("waiting_parallel_capacity")} waiting on shard capacity, ${statusCount("blocked")} blocked. External execution remains locked.`,
+      targetedSourceKeys: launchGate.plan.targetedSourceKeys,
+      totals: {
+        approvalHold: statusCount("approval_hold"),
+        blocked: statusCount("blocked"),
+        cleanParallelLeases: readyToClaim,
+        duplicateDedupeKeys,
+        leases: leases.length,
+        maxSelectableLeases: Math.min(input.maxLeases, readyToClaim),
+        qualityHold: statusCount("quality_hold"),
+        readyToClaim,
+        storesEvaluated: launchGate.plan.totals.storesEvaluated,
+        waitingParallelCapacity: statusCount("waiting_parallel_capacity")
+      }
+    }
+  };
+}
+
+async function applyRevenueBusinessFleetLaunchExecutionQueue(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchExecutionQueueInput
+) {
+  const queue = await buildRevenueBusinessFleetLaunchExecutionQueueForUser(userId, revenueBusinessFleetLaunchExecutionQueueQuerySchema.parse({
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  }));
+  const requestedLeaseIds = new Set(input.leaseIds);
+  const selectedLeases = queue.plan.leases
+    .filter((lease) => lease.status === "ready_to_claim")
+    .filter((lease) => requestedLeaseIds.size === 0 || requestedLeaseIds.has(lease.leaseId))
+    .slice(0, input.maxLeases);
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        dryRun: true,
+        externalExecution: false as const,
+        leasesPreviewed: selectedLeases.length,
+        leasesRecorded: 0,
+        leasesSelected: selectedLeases.length,
+        providerContacted: false as const,
+        summary: `${selectedLeases.length} launch execution lease${selectedLeases.length === 1 ? "" : "s"} would be recorded for internal operator claiming.`
+      },
+      plan: queue.plan,
+      selectedLeases
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.business_fleet_launch_execution_queue.recorded",
+    actorUserId: userId,
+    metadata: {
+      externalExecution: false,
+      leases: selectedLeases.map((lease) => ({
+        businessName: lease.businessName,
+        claimOrder: lease.claimOrder,
+        idempotencyKey: lease.idempotencyKey,
+        leaseId: lease.leaseId,
+        packetId: lease.packetId,
+        readinessScore: lease.readinessScore,
+        shardId: lease.shardId,
+        sourceKey: lease.sourceKey,
+        storeId: lease.storeId
+      })),
+      note: input.note ?? null,
+      providerContacted: false,
+      source: "revenue.business_fleet_launch_execution_queue"
+    },
+    outcome: "success",
+    severity: selectedLeases.length > 0 ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_business_fleet_launch_execution_queue"
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      dryRun: false,
+      externalExecution: false as const,
+      leasesPreviewed: 0,
+      leasesRecorded: selectedLeases.length,
+      leasesSelected: selectedLeases.length,
+      providerContacted: false as const,
+      summary: `${selectedLeases.length} launch execution lease${selectedLeases.length === 1 ? "" : "s"} recorded for internal operator claiming. External execution remains locked.`
+    },
+    plan: queue.plan,
+    selectedLeases
+  };
+}
+
+type RevenueBusinessFleetLaunchExecutionQueuePlan = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchExecutionQueueForUser>>["plan"];
+type RevenueBusinessFleetLaunchExecutionLease = RevenueBusinessFleetLaunchExecutionQueuePlan["leases"][number];
+type RevenueBusinessFleetLaunchWorkerAssignmentStatus =
+  | "approval_hold"
+  | "blocked"
+  | "ready_to_assign"
+  | "waiting_dependency";
+
+const revenueBusinessFleetLaunchAssignmentBlockedExternalActions = [
+  "Treating a worker assignment as permission to publish products, listings, stores, content, ads, payments, payouts, browsers, uploads, or external API writes",
+  "Using worker assignments as proof of provider completion, marketplace launch, public launch approval, or money movement",
+  "Using browser stealth, anti-detection, or platform-evasion automation"
+];
+
+function launchWorkerAssignmentStatusForLease(lease: RevenueBusinessFleetLaunchExecutionLease): RevenueBusinessFleetLaunchWorkerAssignmentStatus {
+  if (lease.status === "ready_to_claim") return "ready_to_assign";
+  if (lease.status === "approval_hold") return "approval_hold";
+  if (lease.status === "blocked") return "blocked";
+
+  return "waiting_dependency";
+}
+
+function launchWorkerDefinition(index: number) {
+  const workerNumber = index + 1;
+  const padded = String(workerNumber).padStart(2, "0");
+
+  return {
+    lane: "manual_launch_operator" as const,
+    workerId: `launch_worker_${padded}`,
+    workerName: `Launch Operator Lane ${padded}`
+  };
+}
+
+function buildRevenueBusinessFleetLaunchWorkerAssignmentsPlan(
+  queue: RevenueBusinessFleetLaunchExecutionQueuePlan,
+  input: RevenueBusinessFleetLaunchWorkerAssignmentsQueryInput
+) {
+  const sortedLeases = queue.leases.slice().sort((left, right) => (
+    (left.claimOrder || Number.MAX_SAFE_INTEGER) - (right.claimOrder || Number.MAX_SAFE_INTEGER)
+    || right.priority - left.priority
+    || left.status.localeCompare(right.status)
+    || left.businessName.localeCompare(right.businessName)
+  ));
+  const workerCounts = new Map<string, number>();
+  const claimedDedupeKeys = new Set<string>();
+  let readyClaimOrder = 0;
+  const assignments = sortedLeases.map((lease, index) => {
+    const definition = launchWorkerDefinition(index % input.maxWorkers);
+    const workerAssigned = workerCounts.get(definition.workerId) ?? 0;
+    const baseStatus = launchWorkerAssignmentStatusForLease(lease);
+    const canAssign = baseStatus === "ready_to_assign"
+      && readyClaimOrder < input.maxAssignments
+      && workerAssigned < input.maxAssignmentsPerWorker
+      && !claimedDedupeKeys.has(lease.dedupeKey);
+    const status: RevenueBusinessFleetLaunchWorkerAssignmentStatus = canAssign ? "ready_to_assign" : baseStatus === "ready_to_assign" ? "waiting_dependency" : baseStatus;
+    const claimOrder = canAssign ? readyClaimOrder + 1 : 0;
+    const assignmentId = `business_fleet_launch_assignment_${createHash("sha1").update(`business-fleet-launch-worker-assignment:${lease.leaseId}:${definition.workerId}`).digest("hex").slice(0, 24)}`;
+
+    if (canAssign) {
+      readyClaimOrder += 1;
+      workerCounts.set(definition.workerId, workerAssigned + 1);
+      claimedDedupeKeys.add(lease.dedupeKey);
+    }
+
+    return {
+      assignmentId,
+      blockedExternalActions: revenueBusinessFleetLaunchAssignmentBlockedExternalActions,
+      claimOrder,
+      completionGate: "record_manual_launch_evidence" as const,
+      dedupeKey: lease.dedupeKey,
+      evidenceRequired: [
+        "operator_manual_launch_notes",
+        "store_or_listing_preview_reference",
+        "post_launch_risk_check",
+        "cash_loop_signal_capture_ready"
+      ],
+      expectedInternalEffect: "Assign one launch execution lease to an internal operator lane for manual launch completion evidence.",
+      externalExecution: false as const,
+      idempotencyKey: createHash("sha1").update(`business-fleet-launch-worker-assignment-idempotency:${assignmentId}`).digest("hex").slice(0, 24),
+      lane: definition.lane,
+      leaseExpiresAt: lease.expiresAt,
+      leaseId: lease.leaseId,
+      nextInternalState: status === "ready_to_assign"
+        ? "operator_claim_ready"
+        : status === "approval_hold"
+          ? "awaiting_provider_packet_approval"
+          : status === "blocked"
+            ? "blocked_rebuild_launch_packet"
+            : "waiting_for_clean_launch_lease",
+      packetId: lease.packetId,
+      priority: lease.priority,
+      providerContacted: false as const,
+      readinessScore: lease.readinessScore,
+      retryPolicy: {
+        backoffMinutes: 5,
+        maxAttempts: 2,
+        requiresFreshQueueAfterFailure: true
+      },
+      riskLevel: lease.riskLevel,
+      shardId: lease.shardId,
+      sourceKey: lease.sourceKey,
+      status,
+      storeId: lease.storeId,
+      storeName: lease.businessName,
+      summary: canAssign
+        ? `${definition.workerName} can claim ${lease.businessName} manual launch execution at order ${claimOrder}.`
+        : `${definition.workerName} keeps ${lease.businessName} manual launch execution in ${status.replace(/_/g, " ")} state.`,
+      workerId: definition.workerId,
+      workerName: definition.workerName
+    };
+  });
+  const statusCount = (status: RevenueBusinessFleetLaunchWorkerAssignmentStatus) => assignments.filter((assignment) => assignment.status === status).length;
+  const workers = Array.from({ length: input.maxWorkers }, (_, index) => {
+    const definition = launchWorkerDefinition(index);
+    const workerAssignments = assignments.filter((assignment) => assignment.workerId === definition.workerId);
+    const workerStatusCount = (status: RevenueBusinessFleetLaunchWorkerAssignmentStatus) => workerAssignments.filter((assignment) => assignment.status === status).length;
+    const status = workerStatusCount("ready_to_assign") > 0
+      ? "ready"
+      : workerStatusCount("approval_hold") > 0
+        ? "approval_hold"
+        : workerStatusCount("blocked") > 0
+          ? "blocked"
+          : "waiting";
+
+    return {
+      assignments: workerAssignments,
+      blockedExternalActions: revenueBusinessFleetLaunchAssignmentBlockedExternalActions,
+      externalExecution: false as const,
+      lane: definition.lane,
+      nextInternalAction: workerStatusCount("ready_to_assign") > 0
+        ? `Claim ${workerStatusCount("ready_to_assign")} manual launch assignment${workerStatusCount("ready_to_assign") === 1 ? "" : "s"} and capture completion evidence.`
+        : workerStatusCount("approval_hold") > 0
+          ? "Resolve approval-held launch packets before this worker can claim."
+          : workerStatusCount("blocked") > 0
+            ? "Repair blocked launch leases before this worker can advance."
+            : "Wait for ready launch execution leases.",
+      providerContacted: false as const,
+      status,
+      summary: `${definition.workerName} has ${workerStatusCount("ready_to_assign")} ready assignment${workerStatusCount("ready_to_assign") === 1 ? "" : "s"}, ${workerStatusCount("approval_hold")} approval-held, ${workerStatusCount("waiting_dependency")} waiting, and ${workerStatusCount("blocked")} blocked.`,
+      totals: {
+        approvalHold: workerStatusCount("approval_hold"),
+        assigned: workerStatusCount("ready_to_assign"),
+        blocked: workerStatusCount("blocked"),
+        readyToAssign: workerStatusCount("ready_to_assign"),
+        waitingDependency: workerStatusCount("waiting_dependency")
+      },
+      workerCapacity: input.maxAssignmentsPerWorker,
+      workerId: definition.workerId,
+      workerName: definition.workerName
+    };
+  });
+  const dedupeCounts = assignments.reduce<Map<string, number>>((counts, assignment) => {
+    counts.set(assignment.dedupeKey, (counts.get(assignment.dedupeKey) ?? 0) + 1);
+
+    return counts;
+  }, new Map());
+  const duplicateDedupeKeys = Array.from(dedupeCounts.values()).filter((count) => count > 1).length;
+
+  return {
+    assignments,
+    auditEvents: [
+      "Business fleet launch worker assignment plan routed launch execution leases into capped internal operator lanes.",
+      "Assignments require evidence capture before completion and do not execute external providers.",
+      "Each assignment keeps lease id, dedupe key, shard id, worker id, retry policy, and idempotency key visible for audit and retry control."
+    ],
+    blockedExternalActions: revenueBusinessFleetLaunchAssignmentBlockedExternalActions,
+    externalExecution: false as const,
+    generatedAt: new Date().toISOString(),
+    mode: "Revenue Business Fleet Launch Worker Assignment Plan" as const,
+    providerContacted: false as const,
+    queue: {
+      summary: queue.summary,
+      totals: queue.totals
+    },
+    summary: `${statusCount("ready_to_assign")} launch worker assignment${statusCount("ready_to_assign") === 1 ? "" : "s"} ready across ${workers.length} operator lane${workers.length === 1 ? "" : "s"}; ${statusCount("approval_hold")} approval-held, ${statusCount("waiting_dependency")} waiting, and ${statusCount("blocked")} blocked. External execution remains locked.`,
+    targetedSourceKeys: queue.targetedSourceKeys,
+    totals: {
+      approvalHold: statusCount("approval_hold"),
+      assigned: statusCount("ready_to_assign"),
+      blocked: statusCount("blocked"),
+      duplicateDedupeKeys,
+      evidencePacketsRequired: statusCount("ready_to_assign"),
+      maxSelectableAssignments: Math.min(input.maxAssignments, statusCount("ready_to_assign")),
+      readyToAssign: statusCount("ready_to_assign"),
+      waitingDependency: statusCount("waiting_dependency"),
+      workerCount: workers.length
+    },
+    workers
+  };
+}
+
+async function buildRevenueBusinessFleetLaunchWorkerAssignmentsForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchWorkerAssignmentsQueryInput
+) {
+  const queue = await buildRevenueBusinessFleetLaunchExecutionQueueForUser(userId, revenueBusinessFleetLaunchExecutionQueueQuerySchema.parse({
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  }));
+
+  return {
+    plan: buildRevenueBusinessFleetLaunchWorkerAssignmentsPlan(queue.plan, input)
+  };
+}
+
+function launchWorkerAssignmentStatusCounts(assignments: ReturnType<typeof buildRevenueBusinessFleetLaunchWorkerAssignmentsPlan>["assignments"]) {
+  return assignments.reduce<Record<string, number>>((counts, assignment) => {
+    counts[assignment.status] = (counts[assignment.status] ?? 0) + 1;
+
+    return counts;
+  }, {});
+}
+
+function launchWorkerAssignmentWorkerCounts(assignments: ReturnType<typeof buildRevenueBusinessFleetLaunchWorkerAssignmentsPlan>["assignments"]) {
+  return assignments.reduce<Record<string, number>>((counts, assignment) => {
+    counts[assignment.workerId] = (counts[assignment.workerId] ?? 0) + 1;
+
+    return counts;
+  }, {});
+}
+
+async function applyRevenueBusinessFleetLaunchWorkerAssignments(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchWorkerAssignmentsInput
+) {
+  const plan = await buildRevenueBusinessFleetLaunchWorkerAssignmentsForUser(userId, revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse({
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  }));
+  const requestedAssignmentIds = new Set(input.assignmentIds);
+  const selectedAssignments = plan.plan.assignments
+    .filter((assignment) => assignment.status === "ready_to_assign")
+    .filter((assignment) => requestedAssignmentIds.size === 0 || requestedAssignmentIds.has(assignment.assignmentId))
+    .slice(0, input.maxAssignments);
+  const statusCounts = launchWorkerAssignmentStatusCounts(selectedAssignments);
+  const workerCounts = launchWorkerAssignmentWorkerCounts(selectedAssignments);
+  const storeIds = [...new Set(selectedAssignments.map((assignment) => assignment.storeId))];
+  const summary = input.dryRun
+    ? `${selectedAssignments.length} launch worker assignment${selectedAssignments.length === 1 ? "" : "s"} would be recorded for internal operator claiming.`
+    : `${selectedAssignments.length} launch worker assignment${selectedAssignments.length === 1 ? "" : "s"} recorded for internal operator claiming.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        assignmentsPreviewed: selectedAssignments.length,
+        assignmentsRecorded: 0,
+        assignmentsSelected: selectedAssignments.length,
+        auditLogId: null,
+        dryRun: true,
+        evidencePacketsRequired: selectedAssignments.length,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        readyToAssign: selectedAssignments.length,
+        statusCounts,
+        storesCovered: storeIds.length,
+        summary,
+        workerCounts,
+        workersCovered: Object.keys(workerCounts).length
+      },
+      assignments: selectedAssignments,
+      plan: plan.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.business_fleet_launch_worker_assignments.recorded",
+    actorUserId: userId,
+    metadata: {
+      assignmentTotals: plan.plan.totals,
+      assignments: selectedAssignments.map((assignment) => ({
+        assignmentId: assignment.assignmentId,
+        claimOrder: assignment.claimOrder,
+        completionGate: assignment.completionGate,
+        dedupeKey: assignment.dedupeKey,
+        evidenceRequired: assignment.evidenceRequired,
+        idempotencyKey: assignment.idempotencyKey,
+        leaseExpiresAt: assignment.leaseExpiresAt,
+        leaseId: assignment.leaseId,
+        packetId: assignment.packetId,
+        retryPolicy: assignment.retryPolicy,
+        shardId: assignment.shardId,
+        sourceKey: assignment.sourceKey,
+        status: assignment.status,
+        storeId: assignment.storeId,
+        storeName: assignment.storeName,
+        workerId: assignment.workerId,
+        workerName: assignment.workerName
+      })),
+      externalExecution: false,
+      note: input.note ?? null,
+      providerContacted: false,
+      statusCounts,
+      summary,
+      workerCounts
+    },
+    outcome: selectedAssignments.length > 0 ? "success" : "failure",
+    severity: selectedAssignments.length > 0 ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_business_fleet_launch_worker_assignments"
+  });
+
+  return {
+    applied: {
+      assignmentsPreviewed: 0,
+      assignmentsRecorded: selectedAssignments.length,
+      assignmentsSelected: selectedAssignments.length,
+      auditLogId: auditLog.id,
+      dryRun: false,
+      evidencePacketsRequired: selectedAssignments.length,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      readyToAssign: selectedAssignments.length,
+      statusCounts,
+      storesCovered: storeIds.length,
+      summary: `${summary} External execution remains locked.`,
+      workerCounts,
+      workersCovered: Object.keys(workerCounts).length
+    },
+    assignments: selectedAssignments,
+    plan: plan.plan
+  };
+}
+
+type RevenueBusinessFleetLaunchWorkerAssignmentPlan = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchWorkerAssignmentsForUser>>["plan"];
+type RevenueBusinessFleetLaunchWorkerAssignment = RevenueBusinessFleetLaunchWorkerAssignmentPlan["assignments"][number];
+type RevenueBusinessFleetManualLaunchEvidenceStatus =
+  | "blocked"
+  | "completed"
+  | "ready_for_evidence";
+
+function businessFleetManualLaunchEvidenceStatusForAssignment(assignment: RevenueBusinessFleetLaunchWorkerAssignment): RevenueBusinessFleetManualLaunchEvidenceStatus {
+  if (assignment.status !== "ready_to_assign") return "blocked";
+
+  return "ready_for_evidence";
+}
+
+function businessFleetManualLaunchEvidenceBlockers(assignment: RevenueBusinessFleetLaunchWorkerAssignment, operatorCompletedManualStep: boolean) {
+  const blockers = [
+    assignment.status === "ready_to_assign" ? null : `Assignment is ${assignment.status.replace(/_/g, " ")}.`,
+    assignment.evidenceRequired.length > 0 ? null : "Assignment has no evidence requirements.",
+    operatorCompletedManualStep ? null : "Operator completion must be true before evidence can be recorded."
+  ].filter((blocker): blocker is string => Boolean(blocker));
+
+  return blockers;
+}
+
+function businessFleetManualEvidenceCategoryLabel(category: string) {
+  return category.replace(/_/g, " ");
+}
+
+function businessFleetManualLaunchEvidencePacket(
+  assignment: RevenueBusinessFleetLaunchWorkerAssignment,
+  operatorCompletedManualStep: boolean,
+  evidenceCategory: string
+) {
+  const blockers = businessFleetManualLaunchEvidenceBlockers(assignment, operatorCompletedManualStep);
+  const status = blockers.length > 0 ? "blocked" as const : businessFleetManualLaunchEvidenceStatusForAssignment(assignment);
+
+  return {
+    assignmentId: assignment.assignmentId,
+    auditLogId: null as string | null,
+    blockers,
+    businessName: assignment.storeName,
+    completionGate: assignment.completionGate,
+    dedupeKey: assignment.dedupeKey,
+    evidenceCategory,
+    evidenceRequired: assignment.evidenceRequired,
+    externalExecution: false as const,
+    leaseId: assignment.leaseId,
+    nextInternalState: status === "ready_for_evidence" ? "manual_launch_evidence_ready_to_record" : "repair_launch_assignment_before_evidence",
+    operatorCompletedManualStep,
+    packetId: `business_fleet_manual_launch_evidence_${assignment.assignmentId}`,
+    providerContacted: false as const,
+    readinessScore: assignment.readinessScore,
+    reason: blockers[0] ?? `${assignment.storeName} is ready for ${businessFleetManualEvidenceCategoryLabel(evidenceCategory)} evidence recording.`,
+    retryPolicy: assignment.retryPolicy,
+    riskLevel: assignment.riskLevel,
+    shardId: assignment.shardId,
+    sourceKey: assignment.sourceKey,
+    status,
+    storeId: assignment.storeId,
+    summary: blockers.length > 0
+      ? `${assignment.storeName} manual launch evidence is blocked: ${blockers.join(" ")}`
+      : `${assignment.workerName} can close ${assignment.storeName} manual launch assignment with ${businessFleetManualEvidenceCategoryLabel(evidenceCategory)} evidence.`,
+    workerId: assignment.workerId,
+    workerName: assignment.workerName
+  };
+}
+
+async function buildRevenueBusinessFleetManualLaunchEvidenceForUser(
+  userId: string,
+  input: RevenueBusinessFleetManualLaunchEvidenceQueryInput
+) {
+  const assignmentsPlan = await buildRevenueBusinessFleetLaunchWorkerAssignmentsForUser(userId, revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse({
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  }));
+  const requestedAssignmentIds = new Set(input.assignmentIds);
+  const evidenceCategory = "operator_notes";
+  const packets = assignmentsPlan.plan.assignments
+    .filter((assignment) => requestedAssignmentIds.size === 0 || requestedAssignmentIds.has(assignment.assignmentId))
+    .slice(0, input.maxAssignments)
+    .map((assignment) => businessFleetManualLaunchEvidencePacket(assignment, true, evidenceCategory));
+  const statusCount = (status: RevenueBusinessFleetManualLaunchEvidenceStatus) => packets.filter((packet) => packet.status === status).length;
+
+  return {
+    plan: {
+      assignments: {
+        summary: assignmentsPlan.plan.summary,
+        totals: assignmentsPlan.plan.totals
+      },
+      auditEvents: [
+        "Business fleet manual launch evidence packets derived from ready launch worker assignments.",
+        "Evidence packets close internal launch claims only; they do not perform external launch work.",
+        "Completed evidence remains audit-log based and feeds later performance/signal capture."
+      ],
+      blockedExternalActions: [
+        ...revenueBusinessFleetLaunchAssignmentBlockedExternalActions,
+        "Recording evidence without operator completion",
+        "Treating evidence as automated provider, marketplace, browser, payment, payout, social, ad, or upload execution"
+      ],
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      mode: "Revenue Business Fleet Manual Launch Evidence" as const,
+      packets,
+      providerContacted: false as const,
+      summary: `${packets.length} manual launch evidence packet${packets.length === 1 ? "" : "s"} prepared from launch worker assignments: ${statusCount("ready_for_evidence")} ready, ${statusCount("blocked")} blocked. External execution remains locked.`,
+      targetedSourceKeys: assignmentsPlan.plan.targetedSourceKeys,
+      totals: {
+        blocked: statusCount("blocked"),
+        completed: statusCount("completed"),
+        evidencePackets: packets.length,
+        maxSelectableEvidence: Math.min(input.maxAssignments, statusCount("ready_for_evidence")),
+        readyForEvidence: statusCount("ready_for_evidence"),
+        storesCovered: new Set(packets.map((packet) => packet.storeId)).size,
+        workersCovered: new Set(packets.map((packet) => packet.workerId)).size
+      }
+    }
+  };
+}
+
+async function applyRevenueBusinessFleetManualLaunchEvidence(
+  userId: string,
+  input: ApplyRevenueBusinessFleetManualLaunchEvidenceInput
+) {
+  const assignmentsPlan = await buildRevenueBusinessFleetLaunchWorkerAssignmentsForUser(userId, revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse({
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  }));
+  const requestedAssignmentIds = new Set(input.assignmentIds);
+  const completedAt = input.completedAt ?? new Date().toISOString();
+  const packets = assignmentsPlan.plan.assignments
+    .filter((assignment) => requestedAssignmentIds.size === 0 || requestedAssignmentIds.has(assignment.assignmentId))
+    .slice(0, input.maxAssignments)
+    .map((assignment) => businessFleetManualLaunchEvidencePacket(assignment, input.operatorCompletedManualStep, input.evidenceCategory));
+  const selectedPackets = packets.filter((packet) => packet.status === "ready_for_evidence");
+  const blockedPackets = packets.filter((packet) => packet.status === "blocked");
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        approvalPhrase: input.approvalPhrase,
+        auditLogIds: [] as string[],
+        blockedExternalActions: revenueBusinessFleetLaunchAssignmentBlockedExternalActions,
+        blockedPackets: blockedPackets.length,
+        completedAt,
+        dryRun: true,
+        evidenceCategory: input.evidenceCategory,
+        evidencePreviewed: selectedPackets.length,
+        evidenceRecorded: 0,
+        evidenceSelected: selectedPackets.length,
+        externalExecution: false as const,
+        operatorCompletedManualStep: input.operatorCompletedManualStep,
+        providerContacted: false as const,
+        summary: `${selectedPackets.length} business-fleet manual launch evidence packet${selectedPackets.length === 1 ? "" : "s"} would be recorded. ${blockedPackets.length} blocked.`
+      },
+      packets,
+      plan: (await buildRevenueBusinessFleetManualLaunchEvidenceForUser(userId, revenueBusinessFleetManualLaunchEvidenceQuerySchema.parse({
+        assignmentIds: input.assignmentIds,
+        maxAssignments: input.maxAssignments,
+        maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+        maxLeases: input.maxLeases,
+        maxLeasesPerShard: input.maxLeasesPerShard,
+        maxStores: input.maxStores,
+        maxWorkers: input.maxWorkers,
+        qualityFloor: input.qualityFloor,
+        shardCount: input.shardCount,
+        sourceKeys: input.sourceKeys
+      }))).plan,
+      selectedPackets
+    };
+  }
+
+  const auditLogs = await Promise.all(selectedPackets.map((packet) => recordAuditLog({
+    action: "revenue.business_fleet.manual_launch_evidence.recorded",
+    actorUserId: userId,
+    metadata: {
+      approvalPhrase: input.approvalPhrase,
+      assignmentId: packet.assignmentId,
+      blockedExternalActions: revenueBusinessFleetLaunchAssignmentBlockedExternalActions,
+      completedAt,
+      completionGate: packet.completionGate,
+      dedupeKey: packet.dedupeKey,
+      dryRun: false,
+      evidenceCategory: input.evidenceCategory,
+      evidenceNote: input.evidenceNote ?? null,
+      evidenceRequired: packet.evidenceRequired,
+      externalExecution: false,
+      leaseId: packet.leaseId,
+      operatorCompletedManualStep: input.operatorCompletedManualStep,
+      providerContacted: false,
+      requiredConfirmation: "RECORD INTERNAL BUSINESS FLEET MANUAL LAUNCH EVIDENCE",
+      retryPolicy: packet.retryPolicy,
+      shardId: packet.shardId,
+      sourceKey: packet.sourceKey,
+      storeId: packet.storeId,
+      storeName: packet.businessName,
+      summary: `${packet.businessName} business-fleet manual launch evidence recorded: ${businessFleetManualEvidenceCategoryLabel(input.evidenceCategory)}. External execution remains locked.`,
+      workerId: packet.workerId,
+      workerName: packet.workerName
+    },
+    outcome: "success",
+    severity: "medium",
+    targetId: packet.storeId,
+    targetType: "revenue_business_fleet_manual_launch_evidence"
+  })));
+  const plan = await buildRevenueBusinessFleetManualLaunchEvidenceForUser(userId, revenueBusinessFleetManualLaunchEvidenceQuerySchema.parse({
+    assignmentIds: input.assignmentIds,
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  }));
+
+  return {
+    applied: {
+      approvalPhrase: input.approvalPhrase,
+      auditLogIds: auditLogs.map((log) => log.id),
+      blockedExternalActions: revenueBusinessFleetLaunchAssignmentBlockedExternalActions,
+      blockedPackets: blockedPackets.length,
+      completedAt,
+      dryRun: false,
+      evidenceCategory: input.evidenceCategory,
+      evidencePreviewed: 0,
+      evidenceRecorded: auditLogs.length,
+      evidenceSelected: selectedPackets.length,
+      externalExecution: false as const,
+      operatorCompletedManualStep: input.operatorCompletedManualStep,
+      providerContacted: false as const,
+      summary: `${auditLogs.length} business-fleet manual launch evidence packet${auditLogs.length === 1 ? "" : "s"} recorded. External execution remains locked.`
+    },
+    packets: plan.plan.packets.map((packet) => {
+      const auditLog = auditLogs.find((log) => log.targetId === packet.storeId);
+
+      return auditLog && packet.status === "ready_for_evidence"
+        ? {
+          ...packet,
+          auditLogId: auditLog.id,
+          nextInternalState: "manual_launch_evidence_recorded",
+          status: "completed" as const
+        }
+        : packet;
+    }),
+    plan: plan.plan,
+    selectedPackets
+  };
+}
+
+type RevenueBusinessFleetLaunchControlStatus =
+  | "blocked"
+  | "needs_launch_gap"
+  | "needs_launch_package"
+  | "needs_provider_approval"
+  | "needs_execution_queue"
+  | "needs_worker_assignment"
+  | "ready_for_operator_launch"
+  | "ready_for_launch_wave";
+
+type RevenueBusinessFleetLaunchControlStageStatus = "blocked" | "ready" | "waiting";
+
+function launchControlStage(
+  stage: string,
+  status: RevenueBusinessFleetLaunchControlStageStatus,
+  readyCount: number,
+  totalCount: number,
+  reason: string,
+  nextInternalState: string
+): {
+  nextInternalState: string;
+  readyCount: number;
+  reason: string;
+  stage: string;
+  status: RevenueBusinessFleetLaunchControlStageStatus;
+  totalCount: number;
+} {
+  return {
+    nextInternalState,
+    readyCount,
+    reason,
+    stage,
+    status,
+    totalCount
+  };
+}
+
+function businessFleetLaunchControlNextAction(context: {
+  evidenceReady: number;
+  executionReady: number;
+  launchGate: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchGateForUser>>["plan"];
+  manualLaunchReady: number;
+  scheduler: RevenueBusinessFleetPlan;
+  workerReady: number;
+}): {
+  endpoint: string;
+  label: string;
+  reason: string;
+  state: RevenueBusinessFleetLaunchControlStatus;
+} {
+  if (context.scheduler.capacity.targetGap > 0 && context.scheduler.totals.launchNow < context.scheduler.capacity.launchWaveSize) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap",
+      label: "Create or repair launch-wave candidates",
+      reason: `${context.scheduler.totals.launchNow}/${context.scheduler.capacity.launchWaveSize} businesses are currently in the launch-now lane.`,
+      state: "needs_launch_gap"
+    };
+  }
+
+  if (context.launchGate.totals.storesEvaluated === 0) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/live-package/apply",
+      label: "Record live launch packages",
+      reason: "No packaged stores are visible to the launch gate.",
+      state: "needs_launch_package"
+    };
+  }
+
+  if (context.manualLaunchReady === 0 && context.launchGate.totals.approvalNeeded > 0) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/provider-approval-review",
+      label: "Review provider approval packets",
+      reason: `${context.launchGate.totals.approvalNeeded} packaged lane${context.launchGate.totals.approvalNeeded === 1 ? "" : "s"} need internal provider approval.`,
+      state: "needs_provider_approval"
+    };
+  }
+
+  if (context.manualLaunchReady === 0) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/live-package/apply",
+      label: "Repair launch packages",
+      reason: `${context.launchGate.totals.repairRequired} packaged lane${context.launchGate.totals.repairRequired === 1 ? "" : "s"} require repair before manual launch.`,
+      state: context.launchGate.totals.repairRequired > 0 ? "needs_launch_package" : "blocked"
+    };
+  }
+
+  if (context.executionReady === 0) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-execution-queue",
+      label: "Build launch execution leases",
+      reason: `${context.manualLaunchReady} manual-ready lane${context.manualLaunchReady === 1 ? "" : "s"} need clean launch execution leases.`,
+      state: "needs_execution_queue"
+    };
+  }
+
+  if (context.workerReady === 0) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-worker-assignments",
+      label: "Assign launch workers",
+      reason: `${context.executionReady} clean launch lease${context.executionReady === 1 ? "" : "s"} need internal operator lanes.`,
+      state: "needs_worker_assignment"
+    };
+  }
+
+  if (context.evidenceReady > 0) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence/apply",
+      label: "Record manual launch evidence after operator completion",
+      reason: `${context.evidenceReady} worker assignment${context.evidenceReady === 1 ? "" : "s"} can accept post-step evidence.`,
+      state: "ready_for_operator_launch"
+    };
+  }
+
+  return {
+    endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply",
+    label: "Preview launch wave",
+    reason: "Launch wave has enough internal score and queue context for preview.",
+    state: "ready_for_launch_wave"
+  };
+}
+
+async function buildRevenueBusinessFleetLaunchControlForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchControlQueryInput
+) {
+  const schedulerInput = revenueBusinessFleetSchedulerQuerySchema.parse({
+    launchWaveSize: input.launchWaveSize,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    targetBusinesses: input.targetBusinesses
+  });
+  const launchGateInput = revenueBusinessFleetLaunchGateQuerySchema.parse({
+    maxStores: input.maxStores,
+    sourceKeys: input.sourceKeys
+  });
+  const executionInput = revenueBusinessFleetLaunchExecutionQueueQuerySchema.parse({
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  });
+  const workerInput = revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse({
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  });
+  const evidenceInput = revenueBusinessFleetManualLaunchEvidenceQuerySchema.parse({
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  });
+  const [scheduler, launchGate, executionQueue, workerAssignments, manualEvidence] = await Promise.all([
+    buildRevenueBusinessFleetSchedulerForUser(userId, schedulerInput),
+    buildRevenueBusinessFleetLaunchGateForUser(userId, launchGateInput),
+    buildRevenueBusinessFleetLaunchExecutionQueueForUser(userId, executionInput),
+    buildRevenueBusinessFleetLaunchWorkerAssignmentsForUser(userId, workerInput),
+    buildRevenueBusinessFleetManualLaunchEvidenceForUser(userId, evidenceInput)
+  ]);
+  const safeLaunchReady = Math.min(
+    launchGate.plan.totals.manualLaunchReady,
+    executionQueue.plan.totals.readyToClaim,
+    workerAssignments.plan.totals.readyToAssign,
+    manualEvidence.plan.totals.readyForEvidence
+  );
+  const nextAction = businessFleetLaunchControlNextAction({
+    evidenceReady: manualEvidence.plan.totals.readyForEvidence,
+    executionReady: executionQueue.plan.totals.readyToClaim,
+    launchGate: launchGate.plan,
+    manualLaunchReady: launchGate.plan.totals.manualLaunchReady,
+    scheduler: scheduler.plan,
+    workerReady: workerAssignments.plan.totals.readyToAssign
+  });
+  const capacityUtilizationPercent = Math.round((safeLaunchReady / Math.max(1, input.launchWaveSize)) * 100);
+  const stages = [
+    launchControlStage(
+      "fleet_scoring",
+      scheduler.plan.totals.readyParallel > 0 ? "ready" : "waiting",
+      scheduler.plan.totals.readyParallel,
+      scheduler.plan.totals.businesses,
+      scheduler.plan.summary,
+      scheduler.plan.totals.launchNow >= input.launchWaveSize ? "launch_wave_scored" : "expand_or_repair_launch_candidates"
+    ),
+    launchControlStage(
+      "launch_gate",
+      launchGate.plan.totals.manualLaunchReady > 0 ? "ready" : launchGate.plan.totals.blocked > 0 ? "blocked" : "waiting",
+      launchGate.plan.totals.manualLaunchReady,
+      launchGate.plan.totals.storesEvaluated,
+      launchGate.plan.summary,
+      launchGate.plan.totals.manualLaunchReady > 0 ? "manual_launch_ready" : "repair_or_approve_launch_packages"
+    ),
+    launchControlStage(
+      "execution_queue",
+      executionQueue.plan.totals.readyToClaim > 0 ? "ready" : executionQueue.plan.totals.blocked > 0 ? "blocked" : "waiting",
+      executionQueue.plan.totals.readyToClaim,
+      executionQueue.plan.totals.leases,
+      executionQueue.plan.summary,
+      executionQueue.plan.totals.readyToClaim > 0 ? "launch_leases_claimable" : "build_clean_launch_execution_leases"
+    ),
+    launchControlStage(
+      "worker_assignments",
+      workerAssignments.plan.totals.readyToAssign > 0 ? "ready" : workerAssignments.plan.totals.blocked > 0 ? "blocked" : "waiting",
+      workerAssignments.plan.totals.readyToAssign,
+      workerAssignments.plan.totals.readyToAssign + workerAssignments.plan.totals.waitingDependency + workerAssignments.plan.totals.approvalHold + workerAssignments.plan.totals.blocked,
+      workerAssignments.plan.summary,
+      workerAssignments.plan.totals.readyToAssign > 0 ? "operator_lanes_ready" : "assign_internal_operator_lanes"
+    ),
+    launchControlStage(
+      "manual_evidence",
+      manualEvidence.plan.totals.readyForEvidence > 0 ? "ready" : manualEvidence.plan.totals.blocked > 0 ? "blocked" : "waiting",
+      manualEvidence.plan.totals.readyForEvidence,
+      manualEvidence.plan.totals.evidencePackets,
+      manualEvidence.plan.summary,
+      manualEvidence.plan.totals.readyForEvidence > 0 ? "manual_evidence_gate_ready" : "record_operator_completion_after_manual_step"
+    )
+  ];
+
+  return {
+    plan: {
+      auditEvents: [
+        "Business fleet launch control aggregates scheduler, launch gate, execution leases, worker assignments, and manual evidence.",
+        "Control status is advisory and internal; it does not dispatch external execution.",
+        "Swarm readiness is capped by the smallest clean count across gate, lease, worker, and evidence stages."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...launchGate.plan.blockedExternalActions,
+        ...executionQueue.plan.blockedExternalActions,
+        ...workerAssignments.plan.blockedExternalActions,
+        ...manualEvidence.plan.blockedExternalActions,
+        "Auto-launching stores, listings, ads, payments, payouts, browser sessions, uploads, or provider writes from launch control",
+        "Using browser stealth, anti-detection, or platform-evasion automation"
+      ]),
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      mode: "Revenue Business Fleet Launch Control Tower" as const,
+      nextAction,
+      providerContacted: false as const,
+      stages,
+      summary: `${safeLaunchReady}/${input.launchWaveSize} launch lane${input.launchWaveSize === 1 ? "" : "s"} are clean across gate, queue, worker, and evidence stages. Next: ${nextAction.label}.`,
+      swarm: {
+        capacityUtilizationPercent,
+        configuredShards: input.shardCount,
+        configuredWorkers: input.maxWorkers,
+        maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+        maxWorkerAssignments: input.maxWorkers * input.maxAssignmentsPerWorker,
+        requestedLaunchWaveSize: input.launchWaveSize,
+        safeLaunchReady,
+        targetBusinesses: input.targetBusinesses,
+        targetGap: scheduler.plan.capacity.targetGap
+      },
+      targetedSourceKeys: launchGate.plan.targetedSourceKeys,
+      totals: {
+        approvalNeeded: launchGate.plan.totals.approvalNeeded,
+        blocked: launchGate.plan.totals.blocked + executionQueue.plan.totals.blocked + workerAssignments.plan.totals.blocked + manualEvidence.plan.totals.blocked,
+        evidenceCompleted: manualEvidence.plan.totals.completed,
+        evidenceReady: manualEvidence.plan.totals.readyForEvidence,
+        executionReady: executionQueue.plan.totals.readyToClaim,
+        launchGateReady: launchGate.plan.totals.manualLaunchReady,
+        launchWaveCandidates: scheduler.plan.totals.launchNow,
+        repairRequired: launchGate.plan.totals.repairRequired,
+        safeLaunchReady,
+        storesEvaluated: launchGate.plan.totals.storesEvaluated,
+        workerReady: workerAssignments.plan.totals.readyToAssign
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetSwarmReadinessStatus =
+  | "blocked"
+  | "needs_batch_expansion"
+  | "needs_more_clean_lanes"
+  | "ready_now";
+
+type RevenueBusinessFleetSwarmScalePresetStatus =
+  | "blocked"
+  | "current_ready"
+  | "needs_more_clean_lanes"
+  | "needs_more_clean_lanes_and_batches"
+  | "needs_partitioned_batches";
+
+type RevenueBusinessFleetSwarmBatchStatus =
+  | "ready_to_stage"
+  | "waiting_for_capacity"
+  | "waiting_for_clean_lanes";
+
+type RevenueBusinessFleetLaunchControlPlan = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchControlForUser>>["plan"];
+type RevenueBusinessFleetLaunchControlStage = RevenueBusinessFleetLaunchControlPlan["stages"][number];
+
+function revenueBusinessFleetSwarmPresetDefinitions(input: RevenueBusinessFleetSwarmReadinessQueryInput) {
+  return [{
+    label: "Starter 10",
+    maxAssignments: 10,
+    maxAssignmentsPerWorker: 1,
+    maxLeases: 10,
+    maxLeasesPerShard: 1,
+    maxParallelLaunches: 10,
+    maxParallelScaleActions: 25,
+    maxStores: 10,
+    maxWorkers: 10,
+    preset: "starter_10",
+    qualityFloor: input.qualityFloor,
+    shardCount: 10,
+    targetBusinesses: 10
+  }, {
+    label: "Validation 25",
+    maxAssignments: 25,
+    maxAssignmentsPerWorker: 1,
+    maxLeases: 25,
+    maxLeasesPerShard: 1,
+    maxParallelLaunches: 25,
+    maxParallelScaleActions: 50,
+    maxStores: 25,
+    maxWorkers: 25,
+    preset: "validation_25",
+    qualityFloor: input.qualityFloor,
+    shardCount: 25,
+    targetBusinesses: 25
+  }, {
+    label: "Hundred Lane",
+    maxAssignments: 50,
+    maxAssignmentsPerWorker: 1,
+    maxLeases: 50,
+    maxLeasesPerShard: 1,
+    maxParallelLaunches: 100,
+    maxParallelScaleActions: 250,
+    maxStores: 25,
+    maxWorkers: 50,
+    preset: "hundred_lane",
+    qualityFloor: input.qualityFloor,
+    shardCount: 50,
+    targetBusinesses: 100
+  }, {
+    label: "Thousand Lane",
+    maxAssignments: 50,
+    maxAssignmentsPerWorker: 1,
+    maxLeases: 50,
+    maxLeasesPerShard: 1,
+    maxParallelLaunches: 1_000,
+    maxParallelScaleActions: 2_000,
+    maxStores: 25,
+    maxWorkers: 100,
+    preset: "thousand_lane",
+    qualityFloor: input.qualityFloor,
+    shardCount: 100,
+    targetBusinesses: 1_000
+  }] as const;
+}
+
+function revenueBusinessFleetSwarmPresetCapacity(preset: ReturnType<typeof revenueBusinessFleetSwarmPresetDefinitions>[number]) {
+  return Math.min(
+    preset.targetBusinesses,
+    preset.maxLeases,
+    preset.maxAssignments,
+    preset.maxWorkers * preset.maxAssignmentsPerWorker,
+    preset.shardCount * preset.maxLeasesPerShard
+  );
+}
+
+function revenueBusinessFleetSwarmPresetStatus(input: {
+  cleanLanesNow: number;
+  perCycleCapacity: number;
+  targetBusinesses: number;
+}): RevenueBusinessFleetSwarmScalePresetStatus {
+  if (input.cleanLanesNow === 0) return "blocked";
+  if (input.cleanLanesNow >= input.targetBusinesses && input.perCycleCapacity >= input.targetBusinesses) return "current_ready";
+  if (input.cleanLanesNow >= input.targetBusinesses && input.perCycleCapacity < input.targetBusinesses) return "needs_partitioned_batches";
+  if (input.cleanLanesNow < input.targetBusinesses && input.perCycleCapacity < input.targetBusinesses) return "needs_more_clean_lanes_and_batches";
+
+  return "needs_more_clean_lanes";
+}
+
+function revenueBusinessFleetSwarmPresetReason(input: {
+  cleanLanesNow: number;
+  limitingStage: RevenueBusinessFleetLaunchControlStage | null;
+  perCycleCapacity: number;
+  status: RevenueBusinessFleetSwarmScalePresetStatus;
+  targetBusinesses: number;
+}) {
+  if (input.status === "current_ready") {
+    return `${input.targetBusinesses} clean lanes fit inside this preset's per-cycle capacity.`;
+  }
+
+  if (input.status === "blocked") {
+    return "No clean launch lanes are available; repair the limiting chain-of-command stage first.";
+  }
+
+  if (input.status === "needs_partitioned_batches") {
+    return `${input.cleanLanesNow} clean lanes are available, but this preset can process ${input.perCycleCapacity} per cycle. Partition the launch into controlled batches.`;
+  }
+
+  if (input.status === "needs_more_clean_lanes_and_batches") {
+    return `${input.cleanLanesNow}/${input.targetBusinesses} clean lanes are available and per-cycle capacity is ${input.perCycleCapacity}; expand clean lanes and run controlled batches.`;
+  }
+
+  return `${input.cleanLanesNow}/${input.targetBusinesses} clean lanes are available. Limiting stage: ${input.limitingStage?.stage.replace(/_/g, " ") ?? "unknown"}.`;
+}
+
+function buildRevenueBusinessFleetSwarmBatchPlan(input: {
+  cleanLanesNow: number;
+  limitingStage: RevenueBusinessFleetLaunchControlStage | null;
+  perCycleCapacity: number;
+  targetBusinesses: number;
+}) {
+  const requiredCycles = input.perCycleCapacity > 0 ? Math.ceil(input.targetBusinesses / input.perCycleCapacity) : 0;
+  const visibleBatchCount = Math.min(requiredCycles, 5);
+  const batches = Array.from({ length: visibleBatchCount }, (_, index) => {
+    const batchNumber = index + 1;
+    const startLane = (index * input.perCycleCapacity) + 1;
+    const endLane = Math.min(input.targetBusinesses, batchNumber * input.perCycleCapacity);
+    const batchSize = Math.max(0, endLane - startLane + 1);
+    const cleanAvailableForBatch = Math.max(0, input.cleanLanesNow - (index * input.perCycleCapacity));
+    const cleanLanesReady = Math.min(batchSize, cleanAvailableForBatch);
+    const gapToBatch = Math.max(0, batchSize - cleanLanesReady);
+    const status: RevenueBusinessFleetSwarmBatchStatus = input.perCycleCapacity === 0
+      ? "waiting_for_capacity"
+      : gapToBatch === 0
+        ? "ready_to_stage"
+        : "waiting_for_clean_lanes";
+
+    return {
+      batchNumber,
+      batchSize,
+      cleanLanesReady,
+      endLane,
+      gapToBatch,
+      nextInternalState: status === "ready_to_stage"
+        ? "ready_for_internal_batch_staging"
+        : input.limitingStage?.nextInternalState ?? "expand_clean_launch_lanes",
+      startLane,
+      status
+    };
+  });
+
+  return {
+    batches,
+    cleanLanesNow: input.cleanLanesNow,
+    hiddenBatches: Math.max(0, requiredCycles - visibleBatchCount),
+    perCycleCapacity: input.perCycleCapacity,
+    requiredCycles,
+    summary: requiredCycles === 0
+      ? "No launch batches can be partitioned until per-cycle capacity is available."
+      : `${requiredCycles} controlled internal batch${requiredCycles === 1 ? "" : "es"} required at ${input.perCycleCapacity}/cycle; showing ${visibleBatchCount}.`,
+    targetBusinesses: input.targetBusinesses
+  };
+}
+
+function buildRevenueBusinessFleetSwarmScalePresets(input: {
+  cleanLanesNow: number;
+  launchControl: RevenueBusinessFleetLaunchControlPlan;
+  query: RevenueBusinessFleetSwarmReadinessQueryInput;
+}) {
+  const limitingStage = revenueBusinessFleetSwarmLimitingStage(input.launchControl.stages);
+
+  return revenueBusinessFleetSwarmPresetDefinitions(input.query).map((preset) => {
+    const perCycleCapacity = revenueBusinessFleetSwarmPresetCapacity(preset);
+    const status = revenueBusinessFleetSwarmPresetStatus({
+      cleanLanesNow: input.cleanLanesNow,
+      perCycleCapacity,
+      targetBusinesses: preset.targetBusinesses
+    });
+
+    return {
+      config: {
+        maxAssignments: preset.maxAssignments,
+        maxAssignmentsPerWorker: preset.maxAssignmentsPerWorker,
+        maxLeases: preset.maxLeases,
+        maxLeasesPerShard: preset.maxLeasesPerShard,
+        maxParallelLaunches: preset.maxParallelLaunches,
+        maxParallelScaleActions: preset.maxParallelScaleActions,
+        maxStores: preset.maxStores,
+        maxWorkers: preset.maxWorkers,
+        qualityFloor: preset.qualityFloor,
+        shardCount: preset.shardCount
+      },
+      batchPlan: buildRevenueBusinessFleetSwarmBatchPlan({
+        cleanLanesNow: input.cleanLanesNow,
+        limitingStage,
+        perCycleCapacity,
+        targetBusinesses: preset.targetBusinesses
+      }),
+      cleanLaneGap: Math.max(0, preset.targetBusinesses - input.cleanLanesNow),
+      cleanLanesNow: input.cleanLanesNow,
+      label: preset.label,
+      limitingStage,
+      nextInternalState: status === "current_ready"
+        ? "ready_for_controlled_launch_batch"
+        : status === "needs_partitioned_batches"
+          ? "partition_launch_waves"
+          : limitingStage?.nextInternalState ?? input.launchControl.nextAction.state,
+      perCycleCapacity,
+      preset: preset.preset,
+      reason: revenueBusinessFleetSwarmPresetReason({
+        cleanLanesNow: input.cleanLanesNow,
+        limitingStage,
+        perCycleCapacity,
+        status,
+        targetBusinesses: preset.targetBusinesses
+      }),
+      requiredCyclesAtPresetCapacity: perCycleCapacity > 0 ? Math.ceil(preset.targetBusinesses / perCycleCapacity) : null,
+      status,
+      targetBusinesses: preset.targetBusinesses
+    };
+  });
+}
+
+function revenueBusinessFleetSwarmScaleTargets(input: RevenueBusinessFleetSwarmReadinessQueryInput) {
+  return Array.from(new Set([
+    input.starterBusinesses,
+    input.targetBusinesses,
+    ...input.scaleTargets
+  ])).sort((left, right) => left - right);
+}
+
+function revenueBusinessFleetSwarmLimitingStage(stages: RevenueBusinessFleetLaunchControlStage[]) {
+  return stages.slice().sort((left, right) => (
+    left.readyCount - right.readyCount
+    || left.totalCount - right.totalCount
+    || left.stage.localeCompare(right.stage)
+  ))[0] ?? null;
+}
+
+function revenueBusinessFleetSwarmTargetStatus(input: {
+  cleanLanesNow: number;
+  currentBatchCapacity: number;
+  target: number;
+}): RevenueBusinessFleetSwarmReadinessStatus {
+  if (input.cleanLanesNow >= input.target) return "ready_now";
+  if (input.cleanLanesNow === 0) return "blocked";
+  if (input.currentBatchCapacity < input.target) return "needs_batch_expansion";
+
+  return "needs_more_clean_lanes";
+}
+
+function revenueBusinessFleetSwarmTargetReason(input: {
+  cleanLanesNow: number;
+  currentBatchCapacity: number;
+  limitingStage: RevenueBusinessFleetLaunchControlStage | null;
+  nextAction: RevenueBusinessFleetLaunchControlPlan["nextAction"];
+  status: RevenueBusinessFleetSwarmReadinessStatus;
+  target: number;
+}) {
+  if (input.status === "ready_now") {
+    return `${input.target} clean lane${input.target === 1 ? "" : "s"} can run inside the current internal quality gate.`;
+  }
+
+  if (input.status === "blocked") {
+    return `No clean launch lanes are ready. Next internal action: ${input.nextAction.label}.`;
+  }
+
+  if (input.status === "needs_batch_expansion") {
+    return `${input.cleanLanesNow}/${input.target} clean lanes are ready and current per-cycle capacity is ${input.currentBatchCapacity}. Expand workers, shards, leases, assignments, and evidence throughput after the limiting stage is repaired.`;
+  }
+
+  return `${input.cleanLanesNow}/${input.target} clean lanes are ready. Limiting stage: ${input.limitingStage?.stage.replace(/_/g, " ") ?? "unknown"}.`;
+}
+
+function buildRevenueBusinessFleetSwarmReadinessTarget(input: {
+  cleanLanesNow: number;
+  currentBatchCapacity: number;
+  launchControl: RevenueBusinessFleetLaunchControlPlan;
+  target: number;
+}) {
+  const limitingStage = revenueBusinessFleetSwarmLimitingStage(input.launchControl.stages);
+  const status = revenueBusinessFleetSwarmTargetStatus({
+    cleanLanesNow: input.cleanLanesNow,
+    currentBatchCapacity: input.currentBatchCapacity,
+    target: input.target
+  });
+  const gapToTarget = Math.max(0, input.target - input.cleanLanesNow);
+
+  return {
+    cleanLanesReady: Math.min(input.cleanLanesNow, input.target),
+    currentBatchCapacity: input.currentBatchCapacity,
+    gapToTarget,
+    launchWavesAtBatchCapacity: input.currentBatchCapacity > 0 ? Math.ceil(input.target / input.currentBatchCapacity) : null,
+    launchWavesAtCurrentCleanRate: input.cleanLanesNow > 0 ? Math.ceil(input.target / input.cleanLanesNow) : null,
+    limitingStage: limitingStage ? {
+      nextInternalState: limitingStage.nextInternalState,
+      readyCount: limitingStage.readyCount,
+      reason: limitingStage.reason,
+      stage: limitingStage.stage,
+      status: limitingStage.status,
+      totalCount: limitingStage.totalCount
+    } : null,
+    nextInternalAction: input.launchControl.nextAction,
+    readinessStatus: status,
+    reason: revenueBusinessFleetSwarmTargetReason({
+      cleanLanesNow: input.cleanLanesNow,
+      currentBatchCapacity: input.currentBatchCapacity,
+      limitingStage,
+      nextAction: input.launchControl.nextAction,
+      status,
+      target: input.target
+    }),
+    targetBusinesses: input.target
+  };
+}
+
+async function buildRevenueBusinessFleetSwarmReadinessForUser(
+  userId: string,
+  input: RevenueBusinessFleetSwarmReadinessQueryInput
+) {
+  const launchControl = await buildRevenueBusinessFleetLaunchControlForUser(userId, revenueBusinessFleetLaunchControlQuerySchema.parse({
+    launchWaveSize: input.launchWaveSize,
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys,
+    targetBusinesses: input.targetBusinesses
+  }));
+  const cleanLanesNow = launchControl.plan.totals.safeLaunchReady;
+  const workerCapacity = input.maxWorkers * input.maxAssignmentsPerWorker;
+  const shardCapacity = input.shardCount * input.maxLeasesPerShard;
+  const currentBatchCapacity = Math.min(input.launchWaveSize, input.maxLeases, input.maxAssignments, workerCapacity, shardCapacity);
+  const scaleTargets = revenueBusinessFleetSwarmScaleTargets(input);
+  const targets = scaleTargets.map((target) => buildRevenueBusinessFleetSwarmReadinessTarget({
+    cleanLanesNow,
+    currentBatchCapacity,
+    launchControl: launchControl.plan,
+    target
+  }));
+  const scalePresets = buildRevenueBusinessFleetSwarmScalePresets({
+    cleanLanesNow,
+    launchControl: launchControl.plan,
+    query: input
+  });
+  const starterReady = cleanLanesNow >= input.starterBusinesses;
+  const limitingStage = revenueBusinessFleetSwarmLimitingStage(launchControl.plan.stages);
+
+  return {
+    plan: {
+      auditEvents: [
+        "Business fleet swarm readiness is derived from the launch control tower and does not create external execution.",
+        "Scale targets compare clean lanes against current worker, shard, lease, assignment, and evidence capacity.",
+        "The limiting stage is the first chain-of-command stage that prevents increasing clean launch lanes."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...launchControl.plan.blockedExternalActions,
+        "Treating swarm readiness as permission to publish stores, listings, ads, uploads, browser sessions, payments, or payouts",
+        "Bypassing launch evidence, provider approval, worker assignment, or rotation gates to inflate launch count"
+      ]),
+      chainOfCommand: launchControl.plan.stages,
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      launchControl: {
+        nextAction: launchControl.plan.nextAction,
+        summary: launchControl.plan.summary,
+        swarm: launchControl.plan.swarm,
+        totals: launchControl.plan.totals
+      },
+      limitingStage,
+      mode: "Revenue Business Fleet Swarm Readiness" as const,
+      providerContacted: false as const,
+      summary: starterReady
+        ? `Starter swarm is ready: ${cleanLanesNow}/${input.starterBusinesses} clean lane${input.starterBusinesses === 1 ? "" : "s"} available. Current per-cycle capacity is ${currentBatchCapacity}.`
+        : `Starter swarm is not ready: ${cleanLanesNow}/${input.starterBusinesses} clean lane${input.starterBusinesses === 1 ? "" : "s"} available. Next: ${launchControl.plan.nextAction.label}.`,
+      targetedSourceKeys: launchControl.plan.targetedSourceKeys,
+      scalePresets,
+      targets,
+      totals: {
+        blockedStages: launchControl.plan.stages.filter((stage) => stage.status === "blocked").length,
+        cleanLaneGapToStarter: Math.max(0, input.starterBusinesses - cleanLanesNow),
+        cleanLanesNow,
+        configuredShards: input.shardCount,
+        configuredWorkers: input.maxWorkers,
+        currentBatchCapacity,
+        launchWaveSize: input.launchWaveSize,
+        maxAssignments: input.maxAssignments,
+        maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+        maxLeases: input.maxLeases,
+        maxLeasesPerShard: input.maxLeasesPerShard,
+        qualityFloor: input.qualityFloor,
+        scaleTargets,
+        starterBusinesses: input.starterBusinesses,
+        starterReady,
+        targetBusinesses: input.targetBusinesses,
+        workerCapacity
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetLaunchOutcomeSignalStatus =
+  | "blocked"
+  | "ready_for_signal"
+  | "signal_recorded"
+  | "waiting_for_manual_evidence";
+
+async function latestBusinessFleetManualLaunchEvidenceByStore(userId: string) {
+  const logs = await prisma.auditLog.findMany({
+    orderBy: { createdAt: "desc" },
+    where: {
+      actorUserId: userId,
+      targetType: "revenue_business_fleet_manual_launch_evidence"
+    }
+  });
+  const latest = new Map<string, PublicRevenueAuditLog>();
+
+  for (const log of logs.map(publicAuditLog)) {
+    const entry = recordFromUnknown(log.entry);
+    const metadata = recordFromUnknown(entry.metadata);
+    const storeId = stringFromRecord(metadata, "storeId") ?? log.targetId;
+
+    if (storeId && !latest.has(storeId)) {
+      latest.set(storeId, log);
+    }
+  }
+
+  return latest;
+}
+
+async function latestRevenuePerformanceSnapshotByStore(userId: string, storeIds: string[]) {
+  if (storeIds.length === 0) return new Map<string, RevenuePerformanceSnapshot>();
+
+  const records = await prisma.revenuePerformanceSnapshot.findMany({
+    orderBy: { periodEnd: "desc" },
+    where: {
+      storeId: { in: Array.from(new Set(storeIds)) },
+      userId
+    }
+  });
+  const latest = new Map<string, RevenuePerformanceSnapshot>();
+
+  for (const record of records) {
+    if (!latest.has(record.storeId)) {
+      latest.set(record.storeId, performanceSnapshot(record));
+    }
+  }
+
+  return latest;
+}
+
+function businessFleetLaunchOutcomeStatus(input: {
+  evidenceLog: PublicRevenueAuditLog | null;
+  latestSnapshot: RevenuePerformanceSnapshot | null;
+}): RevenueBusinessFleetLaunchOutcomeSignalStatus {
+  if (!input.evidenceLog) return "waiting_for_manual_evidence";
+
+  if (input.latestSnapshot?.createdAt && Date.parse(input.latestSnapshot.createdAt) >= input.evidenceLog.createdAt.getTime()) {
+    return "signal_recorded";
+  }
+
+  return "ready_for_signal";
+}
+
+function buildBusinessFleetLaunchOutcomeSignalPacket(input: {
+  evidenceLog: PublicRevenueAuditLog | null;
+  latestSnapshot: RevenuePerformanceSnapshot | null;
+  packet: Awaited<ReturnType<typeof buildRevenueBusinessFleetManualLaunchEvidenceForUser>>["plan"]["packets"][number];
+  storeScore: RevenuePerformanceDigest["storeScores"][number] | null;
+}) {
+  const status = businessFleetLaunchOutcomeStatus({
+    evidenceLog: input.evidenceLog,
+    latestSnapshot: input.latestSnapshot
+  });
+  const signalId = `business_fleet_launch_signal_${input.packet.storeId}`;
+  const blockers = [
+    input.packet.status === "blocked" ? input.packet.reason : null,
+    input.evidenceLog ? null : "Business-fleet manual launch evidence audit log is required before outcome signals can be recorded."
+  ].filter((blocker): blocker is string => Boolean(blocker));
+  const recommendedAction = input.storeScore?.action ?? "watch";
+  const profitVelocity = input.storeScore?.profitVelocity ?? 0;
+  const grossRevenue = input.latestSnapshot?.grossRevenue ?? 0;
+  const netProfit = input.latestSnapshot?.netProfit ?? 0;
+
+  return {
+    blockers,
+    businessName: input.packet.businessName,
+    evidenceAuditLogId: input.evidenceLog?.id ?? null,
+    externalExecution: false as const,
+    grossRevenue,
+    latestSnapshotId: input.latestSnapshot?.id ?? null,
+    latestSnapshotPeriodEnd: input.latestSnapshot?.periodEnd ?? null,
+    netProfit,
+    nextInternalState: status === "ready_for_signal"
+      ? "record_launch_outcome_signal"
+      : status === "signal_recorded"
+        ? "monitor_score_and_rotate"
+        : "waiting_for_manual_launch_evidence",
+    packetId: input.packet.packetId,
+    profitVelocity,
+    providerContacted: false as const,
+    readinessScore: input.packet.readinessScore,
+    reason: blockers[0]
+      ?? (status === "signal_recorded"
+        ? `${input.packet.businessName} already has a post-launch performance snapshot; monitor scoring and rotate on evidence.`
+        : `${input.packet.businessName} can record a post-launch manual revenue/profit signal.`),
+    recommendedAction,
+    signalId,
+    sourceKey: input.packet.sourceKey,
+    status,
+    storeId: input.packet.storeId,
+    summary: status === "ready_for_signal"
+      ? `${input.packet.businessName} is ready for launch outcome signal capture.`
+      : status === "signal_recorded"
+        ? `${input.packet.businessName} has ${netProfit} net profit recorded from the latest launch signal.`
+        : `${input.packet.businessName} is waiting for manual launch evidence before signal capture.`
+  };
+}
+
+async function buildRevenueBusinessFleetLaunchOutcomeSignalsForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchOutcomeSignalsQueryInput
+) {
+  const [manualEvidence, launchControl, performance] = await Promise.all([
+    buildRevenueBusinessFleetManualLaunchEvidenceForUser(userId, revenueBusinessFleetManualLaunchEvidenceQuerySchema.parse({
+      maxAssignments: input.maxAssignments,
+      maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+      maxLeases: input.maxLeases,
+      maxLeasesPerShard: input.maxLeasesPerShard,
+      maxStores: input.maxStores,
+      maxWorkers: input.maxWorkers,
+      qualityFloor: input.qualityFloor,
+      shardCount: input.shardCount,
+      sourceKeys: input.sourceKeys
+    })),
+    buildRevenueBusinessFleetLaunchControlForUser(userId, revenueBusinessFleetLaunchControlQuerySchema.parse({
+      launchWaveSize: input.launchWaveSize,
+      maxAssignments: input.maxAssignments,
+      maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+      maxLeases: input.maxLeases,
+      maxLeasesPerShard: input.maxLeasesPerShard,
+      maxParallelLaunches: input.maxParallelLaunches,
+      maxParallelScaleActions: input.maxParallelScaleActions,
+      maxStores: input.maxStores,
+      maxWorkers: input.maxWorkers,
+      qualityFloor: input.qualityFloor,
+      shardCount: input.shardCount,
+      sourceKeys: input.sourceKeys,
+      targetBusinesses: input.targetBusinesses
+    })),
+    buildPerformanceDigestForUser(userId, revenuePerformanceQuerySchema.parse({}))
+  ]);
+  const evidenceLogsByStore = await latestBusinessFleetManualLaunchEvidenceByStore(userId);
+  const storeIds = manualEvidence.plan.packets.map((packet) => packet.storeId);
+  const latestSnapshotsByStore = await latestRevenuePerformanceSnapshotByStore(userId, storeIds);
+  const storeScoresByStore = new Map(performance.digest.storeScores.map((score) => [score.storeId, score]));
+  const packets = manualEvidence.plan.packets
+    .slice(0, input.maxSignals)
+    .map((packet) => buildBusinessFleetLaunchOutcomeSignalPacket({
+      evidenceLog: evidenceLogsByStore.get(packet.storeId) ?? null,
+      latestSnapshot: latestSnapshotsByStore.get(packet.storeId) ?? null,
+      packet,
+      storeScore: storeScoresByStore.get(packet.storeId) ?? null
+    }));
+  const statusCount = (status: RevenueBusinessFleetLaunchOutcomeSignalStatus) => packets.filter((packet) => packet.status === status).length;
+  const netProfit = packets.reduce((sum, packet) => sum + packet.netProfit, 0);
+  const grossRevenue = packets.reduce((sum, packet) => sum + packet.grossRevenue, 0);
+
+  return {
+    plan: {
+      auditEvents: [
+        "Business fleet launch outcome signals are derived from recorded manual launch evidence and persisted performance snapshots.",
+        "Outcome signals feed the existing Revenue Performance ledger and scored Revenue Engine portfolio.",
+        "No provider, marketplace, payment, ad, browser, upload, payout, or external write action is executed."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...launchControl.plan.blockedExternalActions,
+        "Recording launch outcome signals before manual launch evidence exists",
+        "Importing external analytics, payment, marketplace, provider, ad, social, or browser data without approved read-only connectors",
+        "Moving money, publishing listings, changing ads, or contacting providers from outcome signal capture"
+      ]),
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      launchControl: {
+        nextAction: launchControl.plan.nextAction,
+        summary: launchControl.plan.summary,
+        totals: launchControl.plan.totals
+      },
+      mode: "Revenue Business Fleet Launch Outcome Signals" as const,
+      packets,
+      performanceDigest: {
+        generatedAt: performance.digest.generatedAt,
+        summary: performance.digest.summary,
+        totals: performance.digest.totals
+      },
+      providerContacted: false as const,
+      summary: `${statusCount("ready_for_signal")} launch outcome signal${statusCount("ready_for_signal") === 1 ? "" : "s"} ready, ${statusCount("signal_recorded")} already recorded, and ${statusCount("waiting_for_manual_evidence")} waiting for manual evidence. Recorded net profit across visible lanes is ${Math.round(netProfit * 100) / 100}.`,
+      targetedSourceKeys: manualEvidence.plan.targetedSourceKeys,
+      totals: {
+        grossRevenue: Math.round(grossRevenue * 100) / 100,
+        maxSelectableSignals: Math.min(input.maxSignals, statusCount("ready_for_signal")),
+        netProfit: Math.round(netProfit * 100) / 100,
+        readyForSignal: statusCount("ready_for_signal"),
+        signalPackets: packets.length,
+        signalRecorded: statusCount("signal_recorded"),
+        storesCovered: new Set(packets.map((packet) => packet.storeId)).size,
+        waitingForManualEvidence: statusCount("waiting_for_manual_evidence")
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetLaunchCashCycleStepStatus = "approval_required" | "blocked" | "ready" | "waiting";
+
+function businessFleetLaunchCashCycleStep(input: {
+  blockedExternalActions?: string[];
+  confirmation?: string | null;
+  endpoint: string;
+  id: string;
+  label: string;
+  maxItems: number;
+  nextInternalState: string;
+  reason: string;
+  status: RevenueBusinessFleetLaunchCashCycleStepStatus;
+}) {
+  return {
+    blockedExternalActions: input.blockedExternalActions ?? [],
+    confirmation: input.confirmation ?? null,
+    endpoint: input.endpoint,
+    externalExecution: false as const,
+    id: input.id,
+    label: input.label,
+    maxItems: input.maxItems,
+    nextInternalState: input.nextInternalState,
+    providerContacted: false as const,
+    reason: input.reason,
+    status: input.status
+  };
+}
+
+async function buildRevenueBusinessFleetLaunchCashCycleForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchCashCycleQueryInput
+) {
+  const launchControlInput = revenueBusinessFleetLaunchControlQuerySchema.parse({
+    launchWaveSize: input.launchWaveSize,
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys,
+    targetBusinesses: input.targetBusinesses
+  });
+  const outcomeSignalsInput = revenueBusinessFleetLaunchOutcomeSignalsQuerySchema.parse({
+    ...launchControlInput,
+    maxSignals: input.maxSignals
+  });
+  const schedulerInput = revenueBusinessFleetSchedulerQuerySchema.parse({
+    launchWaveSize: input.launchWaveSize,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    targetBusinesses: input.targetBusinesses
+  });
+  const [launchControl, outcomeSignals, portfolio, financial, scheduler] = await Promise.all([
+    buildRevenueBusinessFleetLaunchControlForUser(userId, launchControlInput),
+    buildRevenueBusinessFleetLaunchOutcomeSignalsForUser(userId, outcomeSignalsInput),
+    buildAssetPortfolioForUser(userId, revenueEngineQuerySchema.parse({})),
+    buildFinancialOrchestratorForUser(userId, financialOrchestratorQuerySchema.parse({})),
+    buildRevenueBusinessFleetSchedulerForUser(userId, schedulerInput)
+  ]);
+  const scalePressure = financial.plan.portfolioSignal.scalePressure.pressureScore;
+  const killPressure = financial.plan.portfolioSignal.killPressure.pressureScore;
+  const safeEnvelopeClear = !launchControl.plan.externalExecution
+    && !outcomeSignals.plan.externalExecution
+    && !portfolio.externalExecution
+    && !financial.plan.externalExecution
+    && !scheduler.plan.externalExecution;
+  const allSteps = [
+    businessFleetLaunchCashCycleStep({
+      confirmation: "REVIEW INTERNAL SAFETY ENVELOPE",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-control",
+      id: "safety_gate_snapshot",
+      label: "Verify internal safety envelope",
+      maxItems: input.launchWaveSize,
+      nextInternalState: safeEnvelopeClear ? "internal_advisory_cycle_ready" : "external_execution_lock_violation",
+      reason: safeEnvelopeClear
+        ? "All composed plans are advisory-only and show external execution locked."
+        : "One or more composed plans reported external execution; stop before launch work.",
+      status: safeEnvelopeClear ? "ready" : "blocked"
+    }),
+    businessFleetLaunchCashCycleStep({
+      confirmation: "RECORD INTERNAL BUSINESS FLEET MANUAL LAUNCH EVIDENCE",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence/apply",
+      id: "manual_launch_evidence",
+      label: "Record completed manual launch evidence",
+      maxItems: launchControl.plan.totals.evidenceReady,
+      nextInternalState: launchControl.plan.totals.evidenceReady > 0 ? "record_manual_launch_evidence" : "waiting_for_operator_completion",
+      reason: launchControl.plan.totals.evidenceReady > 0
+        ? `${launchControl.plan.totals.evidenceReady} operator-completed launch lane${launchControl.plan.totals.evidenceReady === 1 ? "" : "s"} can accept evidence.`
+        : "No launch lane has reached the evidence gate yet.",
+      status: launchControl.plan.totals.evidenceReady > 0
+        ? "ready"
+        : launchControl.plan.totals.blocked > 0 ? "blocked" : "waiting"
+    }),
+    businessFleetLaunchCashCycleStep({
+      confirmation: "RECORD INTERNAL BUSINESS FLEET LAUNCH OUTCOME SIGNALS",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply",
+      id: "launch_outcome_signals",
+      label: "Record revenue and profit outcome signals",
+      maxItems: Math.max(outcomeSignals.plan.totals.readyForSignal, outcomeSignals.plan.totals.signalRecorded),
+      nextInternalState: outcomeSignals.plan.totals.readyForSignal > 0
+        ? "record_launch_outcome_signal"
+        : outcomeSignals.plan.totals.signalRecorded > 0 ? "monitor_score_and_rotate" : "waiting_for_manual_launch_evidence",
+      reason: outcomeSignals.plan.totals.readyForSignal > 0
+        ? `${outcomeSignals.plan.totals.readyForSignal} lane${outcomeSignals.plan.totals.readyForSignal === 1 ? "" : "s"} can record post-launch revenue/profit signals.`
+        : outcomeSignals.plan.totals.signalRecorded > 0
+          ? `${outcomeSignals.plan.totals.signalRecorded} lane${outcomeSignals.plan.totals.signalRecorded === 1 ? "" : "s"} already have outcome signals; move into scoring and rotation.`
+          : "Outcome signals are waiting on manual launch evidence.",
+      status: outcomeSignals.plan.totals.readyForSignal > 0 || outcomeSignals.plan.totals.signalRecorded > 0
+        ? "ready"
+        : outcomeSignals.plan.totals.waitingForManualEvidence > 0 ? "waiting" : "blocked"
+    }),
+    businessFleetLaunchCashCycleStep({
+      confirmation: "APPLY INTERNAL ASSET ACTION",
+      endpoint: "/merch/revenue-engine/review-queue",
+      id: "weak_lane_rotation",
+      label: "Cut or pause weak lanes",
+      maxItems: portfolio.totals.pause + portfolio.totals.kill,
+      nextInternalState: portfolio.totals.kill > 0 ? "kill_underperforming_assets" : portfolio.totals.pause > 0 ? "pause_underperforming_assets" : "watch_rotation_pressure",
+      reason: portfolio.totals.kill + portfolio.totals.pause > 0
+        ? `${portfolio.totals.kill} kill and ${portfolio.totals.pause} pause recommendation${portfolio.totals.kill + portfolio.totals.pause === 1 ? "" : "s"} are visible in the scored portfolio.`
+        : `Kill pressure is ${killPressure}/100 with no current pause/kill queue.`,
+      status: portfolio.totals.kill + portfolio.totals.pause > 0 || killPressure >= 45 ? "ready" : "waiting"
+    }),
+    businessFleetLaunchCashCycleStep({
+      confirmation: "REVIEW INTERNAL SCALING BUDGETS",
+      endpoint: "/merch/financial-orchestrator/scaling-budgets/review",
+      id: "scale_winner_review",
+      label: "Review winning lanes for scale capital",
+      maxItems: portfolio.totals.scale,
+      nextInternalState: portfolio.totals.scale > 0 ? "review_scale_budget_packets" : "watch_for_scale_evidence",
+      reason: portfolio.totals.scale > 0
+        ? `${portfolio.totals.scale} scored asset${portfolio.totals.scale === 1 ? "" : "s"} are in scale recommendation.`
+        : `Scale pressure is ${scalePressure}/100 with no current scale queue.`,
+      status: portfolio.totals.scale > 0 || scalePressure >= 60 ? "approval_required" : "waiting"
+    }),
+    businessFleetLaunchCashCycleStep({
+      confirmation: "REVIEW INTERNAL FINANCIAL ORCHESTRATOR",
+      endpoint: "/merch/financial-orchestrator/plan",
+      id: "financial_allocation_review",
+      label: "Review allocation pressure",
+      maxItems: financial.plan.totals.scalingBudgetPackets + financial.plan.totals.payoutIntents,
+      nextInternalState: financial.plan.totals.distributableProfit > 0 ? "review_profit_split_and_budget_queue" : "waiting_for_profit_signal",
+      reason: financial.plan.totals.distributableProfit > 0
+        ? `${financial.plan.totals.distributableProfit} distributable profit is visible to the orchestrator.`
+        : "No distributable profit is visible yet; keep launch signals moving.",
+      status: financial.plan.totals.distributableProfit > 0 || financial.plan.totals.scalingBudgetPackets > 0
+        ? "approval_required"
+        : "waiting"
+    }),
+    businessFleetLaunchCashCycleStep({
+      confirmation: "RUN INTERNAL BUSINESS FLEET LAUNCH WAVE",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply",
+      id: "next_launch_wave",
+      label: "Prepare next internal launch wave",
+      maxItems: launchControl.plan.totals.safeLaunchReady,
+      nextInternalState: launchControl.plan.totals.safeLaunchReady > 0 ? "preview_next_launch_wave" : "repair_launch_lane_capacity",
+      reason: launchControl.plan.totals.safeLaunchReady > 0
+        ? `${launchControl.plan.totals.safeLaunchReady} clean lane${launchControl.plan.totals.safeLaunchReady === 1 ? "" : "s"} can be considered for the next internal launch wave.`
+        : "No clean lane is ready for the next launch wave.",
+      status: launchControl.plan.totals.safeLaunchReady > 0 && outcomeSignals.plan.totals.readyForSignal === 0
+        ? "ready"
+        : "waiting"
+    }),
+    businessFleetLaunchCashCycleStep({
+      confirmation: "CREATE INTERNAL BUSINESS FLEET GAP SEEDS",
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply",
+      id: "launch_gap_refill",
+      label: "Refill launch gap seeds",
+      maxItems: scheduler.plan.capacity.targetGap,
+      nextInternalState: scheduler.plan.capacity.targetGap > 0 ? "create_gap_seed_candidates" : "maintain_candidate_buffer",
+      reason: scheduler.plan.capacity.targetGap > 0
+        ? `${scheduler.plan.capacity.targetGap} additional business candidate${scheduler.plan.capacity.targetGap === 1 ? "" : "s"} are needed to keep the target swarm full.`
+        : "Business candidate capacity is currently filled against target.",
+      status: scheduler.plan.capacity.targetGap > 0 || launchControl.plan.nextAction.state === "needs_launch_gap" ? "ready" : "waiting"
+    })
+  ];
+  const steps = allSteps.slice(0, input.maxSteps);
+  const statusCount = (status: RevenueBusinessFleetLaunchCashCycleStepStatus) => steps.filter((step) => step.status === status).length;
+  const nextStep = steps.find((step) => step.status === "ready")
+    ?? steps.find((step) => step.status === "approval_required")
+    ?? steps[0]
+    ?? null;
+
+  return {
+    plan: {
+      auditEvents: [
+        "Launch cash cycle composes launch control, outcome signals, scored portfolio, and Financial Orchestrator pressure.",
+        "Cycle steps are advisory/internal; no provider, payment, browser, marketplace, ad, upload, payout, or external write action is executed.",
+        "The first scalable swarm target is clean 10-lane throughput with outcome signals before expanding lane count."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...launchControl.plan.blockedExternalActions,
+        ...outcomeSignals.plan.blockedExternalActions,
+        ...portfolio.blockedExternalActions,
+        ...financial.plan.blockedExternalActions,
+        ...scheduler.plan.blockedExternalActions,
+        "Moving money, releasing budgets, publishing listings, changing ads, contacting providers, running browsers, or uploading content from launch cash cycle",
+        "Expanding swarm lanes without outcome signals, quality gates, and rotation evidence"
+      ]),
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      launchControl: {
+        nextAction: launchControl.plan.nextAction,
+        summary: launchControl.plan.summary,
+        swarm: launchControl.plan.swarm,
+        totals: launchControl.plan.totals
+      },
+      mode: "Revenue Business Fleet Launch Cash Cycle" as const,
+      nextStep,
+      outcomeSignals: {
+        summary: outcomeSignals.plan.summary,
+        totals: outcomeSignals.plan.totals
+      },
+      portfolioPressure: {
+        killPressure: financial.plan.portfolioSignal.killPressure,
+        reason: financial.plan.portfolioSignal.reason,
+        recommendation: financial.plan.portfolioSignal.recommendation,
+        scalePressure: financial.plan.portfolioSignal.scalePressure,
+        trackedAssets: financial.plan.portfolioSignal.trackedAssets
+      },
+      portfolioTotals: portfolio.totals,
+      providerContacted: false as const,
+      scheduler: {
+        capacity: scheduler.plan.capacity,
+        summary: scheduler.plan.summary,
+        totals: scheduler.plan.totals
+      },
+      steps,
+      summary: `${statusCount("ready")} cash-cycle step${statusCount("ready") === 1 ? "" : "s"} ready, ${statusCount("approval_required")} approval review${statusCount("approval_required") === 1 ? "" : "s"}, and ${launchControl.plan.totals.safeLaunchReady}/${input.launchWaveSize} clean launch lane${input.launchWaveSize === 1 ? "" : "s"}. Next: ${nextStep?.label ?? "No action"}.`,
+      targetBusinesses: input.targetBusinesses,
+      totals: {
+        approvalRequired: statusCount("approval_required"),
+        blocked: statusCount("blocked"),
+        killRecommendations: portfolio.totals.kill,
+        pauseRecommendations: portfolio.totals.pause,
+        portfolioKillPressure: killPressure,
+        portfolioScalePressure: scalePressure,
+        ready: statusCount("ready"),
+        readyOutcomeSignals: outcomeSignals.plan.totals.readyForSignal,
+        recordedOutcomeSignals: outcomeSignals.plan.totals.signalRecorded,
+        safeLaunchReady: launchControl.plan.totals.safeLaunchReady,
+        scaleRecommendations: portfolio.totals.scale,
+        steps: steps.length,
+        waiting: statusCount("waiting"),
+        waitingForEvidence: outcomeSignals.plan.totals.waitingForManualEvidence
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetLaunchCashCyclePlanResult = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchCashCycleForUser>>["plan"];
+type RevenueBusinessFleetLaunchCashCycleStep = RevenueBusinessFleetLaunchCashCyclePlanResult["steps"][number];
+
+function businessFleetLaunchCashCycleCommandHash(step: RevenueBusinessFleetLaunchCashCycleStep, action: PortfolioCommandAction) {
+  return `portfolio:business_fleet_launch_cash_cycle:${step.id}:${action}:${step.nextInternalState}`
+    .toLowerCase()
+    .replace(/[^a-z0-9:_-]+/g, "_");
+}
+
+function businessFleetLaunchCashCycleCommandAction(
+  step: RevenueBusinessFleetLaunchCashCycleStep,
+  plan: RevenueBusinessFleetLaunchCashCyclePlanResult
+): PortfolioCommandAction {
+  if (step.id === "weak_lane_rotation") {
+    if (plan.portfolioTotals.kill > 0) return "kill";
+    if (plan.portfolioTotals.pause > 0) return "pause";
+    return "watch";
+  }
+
+  if (step.id === "scale_winner_review") return "review_scale_budget";
+  if (step.id === "financial_allocation_review") return "review_payout";
+  if (step.id === "launch_gap_refill") return "generate";
+  if (step.id === "manual_launch_evidence" || step.id === "launch_outcome_signals" || step.id === "next_launch_wave") return "prepare_launch";
+
+  return "record_governance";
+}
+
+function businessFleetLaunchCashCycleCommandRisk(step: RevenueBusinessFleetLaunchCashCycleStep): PortfolioCommandRiskLevel {
+  if (step.status === "blocked") return "high";
+  if (step.status === "approval_required") return "medium";
+  return "low";
+}
+
+function businessFleetLaunchCashCycleCommandPriority(step: RevenueBusinessFleetLaunchCashCycleStep) {
+  if (step.status === "ready") return 8;
+  if (step.status === "approval_required") return 18;
+  if (step.status === "blocked") return 88;
+  return 64;
+}
+
+function businessFleetLaunchCashCycleCommandTargetType(step: RevenueBusinessFleetLaunchCashCycleStep): PortfolioCommandTargetType {
+  return step.id === "financial_allocation_review" || step.id === "scale_winner_review" ? "finance" : "portfolio";
+}
+
+function businessFleetLaunchCashCycleCommand(
+  plan: RevenueBusinessFleetLaunchCashCyclePlanResult
+): PortfolioCommandItem | null {
+  const step = plan.nextStep;
+
+  if (!step) return null;
+
+  const action = businessFleetLaunchCashCycleCommandAction(step, plan);
+
+  return {
+    action,
+    approvalGate: {
+      externalExecutionLocked: true,
+      humanApprovalRequired: true,
+      status: "Required"
+    },
+    blockedExternalActions: uniqueStrings([
+      ...plan.blockedExternalActions,
+      ...step.blockedExternalActions
+    ]),
+    commandHash: businessFleetLaunchCashCycleCommandHash(step, action),
+    expectedInternalEffect: `Queue the ${step.label} cash-cycle command for internal review only; external systems remain locked.`,
+    externalExecution: false as const,
+    priority: businessFleetLaunchCashCycleCommandPriority(step),
+    providerContacted: false as const,
+    reason: step.reason,
+    recommendedStatus: null,
+    riskLevel: businessFleetLaunchCashCycleCommandRisk(step),
+    sourceModule: "revenue_business_fleet_launch_cash_cycle",
+    targetId: `business_fleet_launch_cash_cycle:${step.id}`,
+    targetName: step.label,
+    targetType: businessFleetLaunchCashCycleCommandTargetType(step)
+  };
+}
+
+async function applyRevenueBusinessFleetLaunchCashCycle(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchCashCycleInput
+) {
+  const current = await buildRevenueBusinessFleetLaunchCashCycleForUser(userId, revenueBusinessFleetLaunchCashCycleQuerySchema.parse(input));
+  const command = businessFleetLaunchCashCycleCommand(current.plan);
+  const summary = command
+    ? `Cash-cycle command ${command.action.replace(/_/g, " ")} for ${command.targetName} ${input.dryRun ? "would be queued" : "queued"} internally.`
+    : "No cash-cycle command is available because the current plan has no next step.";
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        commandRecordId: null,
+        commandRecordsCreated: command ? 1 : 0,
+        dryRun: true,
+        externalExecution: false as const,
+        nextStepId: current.plan.nextStep?.id ?? null,
+        nextStepStatus: current.plan.nextStep?.status ?? null,
+        providerContacted: false as const,
+        summary
+      },
+      command,
+      commandRecord: null,
+      plan: current.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.business_fleet.launch_cash_cycle.command_recorded",
+    actorUserId: userId,
+    metadata: {
+      blockedExternalActions: current.plan.blockedExternalActions,
+      command,
+      externalExecution: false,
+      note: input.note ?? null,
+      planSummary: current.plan.summary,
+      portfolioPressure: current.plan.portfolioPressure,
+      providerContacted: false,
+      targetBusinesses: current.plan.targetBusinesses,
+      totals: current.plan.totals
+    },
+    outcome: "success",
+    severity: command?.riskLevel === "high" ? "high" : command?.riskLevel === "medium" ? "medium" : "low",
+    targetId: command?.targetId ?? null,
+    targetType: "revenue_business_fleet_launch_cash_cycle"
+  });
+  const commandRecord = command
+    ? await prisma.portfolioCommandAction.create({
+      data: {
+        action: command.action,
+        auditLogId: auditLog.id,
+        commandHash: command.commandHash,
+        controlJson: stringifySecureJson({
+          approvalGate: command.approvalGate,
+          blockedExternalActions: command.blockedExternalActions,
+          cashCycleStep: current.plan.nextStep,
+          expectedInternalEffect: command.expectedInternalEffect,
+          externalExecution: false,
+          launchControl: current.plan.launchControl,
+          outcomeSignals: current.plan.outcomeSignals,
+          portfolioPressure: current.plan.portfolioPressure,
+          providerContacted: false,
+          sourceModule: command.sourceModule
+        }),
+        externalExecution: false,
+        priority: command.priority,
+        providerContacted: false,
+        reason: command.reason,
+        recommendedStatus: command.recommendedStatus,
+        riskLevel: command.riskLevel,
+        sourceModule: command.sourceModule,
+        status: command.riskLevel === "high" ? "blocked" : "queued",
+        targetId: command.targetId,
+        targetName: command.targetName,
+        targetType: command.targetType,
+        userId
+      }
+    })
+    : null;
+  const refreshed = await buildRevenueBusinessFleetLaunchCashCycleForUser(userId, revenueBusinessFleetLaunchCashCycleQuerySchema.parse(input));
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      commandRecordId: commandRecord?.id ?? null,
+      commandRecordsCreated: commandRecord ? 1 : 0,
+      dryRun: false,
+      externalExecution: false as const,
+      nextStepId: current.plan.nextStep?.id ?? null,
+      nextStepStatus: current.plan.nextStep?.status ?? null,
+      providerContacted: false as const,
+      summary
+    },
+    command,
+    commandRecord: commandRecord ? portfolioCommandRecordSnapshot(commandRecord) : null,
+    plan: refreshed.plan
+  };
+}
+
+type RevenueBusinessFleetLaunchCashCycleCommandQueueResolution = "applied" | "skipped" | "blocked";
+type RevenueBusinessFleetLaunchCashCycleCommandQueueStatus = PortfolioCommandRecordStatus;
+
+const revenueBusinessFleetLaunchCashCycleSourceModule = "revenue_business_fleet_launch_cash_cycle";
+const revenueBusinessFleetLaunchCashCycleCommandStatuses: RevenueBusinessFleetLaunchCashCycleCommandQueueStatus[] = ["queued", "applied", "skipped", "blocked"];
+
+function revenueBusinessFleetLaunchCashCycleCommandStatus(status: string): RevenueBusinessFleetLaunchCashCycleCommandQueueStatus {
+  return revenueBusinessFleetLaunchCashCycleCommandStatuses.includes(status as RevenueBusinessFleetLaunchCashCycleCommandQueueStatus)
+    ? status as RevenueBusinessFleetLaunchCashCycleCommandQueueStatus
+    : "blocked";
+}
+
+function revenueBusinessFleetLaunchCashCycleCommandEndpoint(record: PortfolioCommandRecordSnapshot, step: Record<string, unknown>) {
+  const endpoint = stringFromRecord(step, "endpoint");
+
+  if (endpoint) return endpoint;
+  if (record.action === "review_scale_budget") return "/merch/financial-orchestrator/scaling-budgets/review";
+  if (record.action === "review_payout") return "/merch/financial-orchestrator/plan";
+  if (record.action === "generate") return "/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply";
+  if (record.action === "prepare_launch") return "/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply";
+
+  return "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle";
+}
+
+function revenueBusinessFleetLaunchCashCycleCommandRecommendedResolution(
+  status: RevenueBusinessFleetLaunchCashCycleCommandQueueStatus,
+  riskLevel: string
+): RevenueBusinessFleetLaunchCashCycleCommandQueueResolution {
+  if (status === "applied") return "applied";
+  if (status === "skipped") return "skipped";
+  if (status === "blocked" || riskLevel === "high") return "blocked";
+
+  return "applied";
+}
+
+function revenueBusinessFleetLaunchCashCycleCommandReason(input: {
+  record: PortfolioCommandRecordSnapshot;
+  recommendedResolution: RevenueBusinessFleetLaunchCashCycleCommandQueueResolution;
+  status: RevenueBusinessFleetLaunchCashCycleCommandQueueStatus;
+}) {
+  if (input.status === "applied") return "Command already resolved internally; no provider or external execution was contacted.";
+  if (input.status === "skipped") return "Command was skipped internally and remains available only as audit context.";
+  if (input.recommendedResolution === "blocked") return "Command requires operator review before it can move because risk or status is blocked.";
+
+  return input.record.reason;
+}
+
+function revenueBusinessFleetLaunchCashCycleCommandQueueItem(record: PortfolioCommandRecordSnapshot) {
+  const status = revenueBusinessFleetLaunchCashCycleCommandStatus(record.status);
+  const control = recordFromUnknown(record.control);
+  const step = recordFromUnknown(control.cashCycleStep);
+  const plannedState = stringFromRecord(step, "nextInternalState") ?? "cash_cycle_command_review";
+  const recommendedResolution = revenueBusinessFleetLaunchCashCycleCommandRecommendedResolution(status, record.riskLevel);
+  const runnable = status === "queued" && recommendedResolution === "applied" && record.riskLevel !== "high";
+  const reason = revenueBusinessFleetLaunchCashCycleCommandReason({
+    record,
+    recommendedResolution,
+    status
+  });
+
+  return {
+    action: record.action,
+    commandHash: record.commandHash,
+    commandRecord: record,
+    commandRecordId: record.id,
+    externalExecution: false as const,
+    externalExecutionLocked: true as const,
+    nextInternalState: status === "queued" ? plannedState : `cash_cycle_command_${status}_internal`,
+    providerContacted: false as const,
+    reason,
+    recommendedEndpoint: revenueBusinessFleetLaunchCashCycleCommandEndpoint(record, step),
+    recommendedResolution,
+    riskLevel: record.riskLevel,
+    runnable,
+    sourceModule: record.sourceModule,
+    status,
+    targetName: record.targetName,
+    targetType: record.targetType
+  };
+}
+
+async function buildRevenueBusinessFleetLaunchCashCycleCommandQueueForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchCashCycleCommandQueueQueryInput
+) {
+  const commandRecords = await prisma.portfolioCommandAction.findMany({
+    orderBy: [
+      { priority: "asc" },
+      { createdAt: "desc" }
+    ],
+    take: input.maxCommands,
+    where: {
+      sourceModule: revenueBusinessFleetLaunchCashCycleSourceModule,
+      status: {
+        in: input.statuses
+      },
+      userId
+    }
+  });
+  const commands = commandRecords
+    .map(portfolioCommandRecordSnapshot)
+    .map(revenueBusinessFleetLaunchCashCycleCommandQueueItem);
+  const totals = {
+    applied: commands.filter((item) => item.status === "applied").length,
+    blocked: commands.filter((item) => item.status === "blocked").length,
+    commands: commands.length,
+    externalExecutionLocked: commands.filter((item) => item.externalExecutionLocked).length,
+    highRisk: commands.filter((item) => item.riskLevel === "high").length,
+    providerContacted: 0,
+    queued: commands.filter((item) => item.status === "queued").length,
+    runnable: commands.filter((item) => item.runnable).length,
+    skipped: commands.filter((item) => item.status === "skipped").length
+  };
+
+  return {
+    plan: {
+      auditEvents: [
+        "Cash-cycle command queue reads PortfolioCommandAction records from the launch cash-cycle source module.",
+        "Resolve actions only update internal command status; external execution and provider contact remain locked."
+      ],
+      blockedExternalActions: [
+        "Moving money from cash-cycle command queue",
+        "Releasing budgets from cash-cycle command queue",
+        "Publishing listings from cash-cycle command queue",
+        "Changing ads from cash-cycle command queue",
+        "Contacting providers from cash-cycle command queue",
+        "Running browsers from cash-cycle command queue",
+        "Uploading content from cash-cycle command queue"
+      ],
+      commands,
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      mode: "Revenue Business Fleet Launch Cash Cycle Command Queue" as const,
+      options: {
+        maxCommands: input.maxCommands,
+        statuses: input.statuses
+      },
+      providerContacted: false as const,
+      summary: `${totals.commands} cash-cycle command${totals.commands === 1 ? "" : "s"} visible; ${totals.runnable} runnable, ${totals.blocked} blocked, and ${totals.applied + totals.skipped} already resolved.`,
+      totals
+    }
+  };
+}
+
+function revenueBusinessFleetLaunchCashCycleCommandSelectable(input: {
+  item: ReturnType<typeof revenueBusinessFleetLaunchCashCycleCommandQueueItem>;
+  resolution: RevenueBusinessFleetLaunchCashCycleCommandQueueResolution;
+}) {
+  if (input.item.status === "applied" || input.item.status === "skipped") return false;
+  if (input.resolution === "applied") return input.item.runnable;
+
+  return input.item.status === "queued" || input.item.status === "blocked";
+}
+
+async function buildExplicitRevenueBusinessFleetLaunchCashCycleCommandQueueItems(userId: string, commandRecordIds: string[]) {
+  if (commandRecordIds.length === 0) return [];
+
+  const records = await prisma.portfolioCommandAction.findMany({
+    orderBy: [
+      { priority: "asc" },
+      { createdAt: "desc" }
+    ],
+    where: {
+      id: {
+        in: commandRecordIds
+      },
+      sourceModule: revenueBusinessFleetLaunchCashCycleSourceModule,
+      userId
+    }
+  });
+
+  return records
+    .map(portfolioCommandRecordSnapshot)
+    .map(revenueBusinessFleetLaunchCashCycleCommandQueueItem);
+}
+
+async function applyRevenueBusinessFleetLaunchCashCycleCommandQueue(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchCashCycleCommandQueueInput
+) {
+  const current = await buildRevenueBusinessFleetLaunchCashCycleCommandQueueForUser(userId, {
+    maxCommands: input.maxCommands,
+    statuses: input.statuses
+  });
+  const explicitItems = await buildExplicitRevenueBusinessFleetLaunchCashCycleCommandQueueItems(userId, input.commandRecordIds);
+  const baseItems = explicitItems.length > 0 ? explicitItems : current.plan.commands;
+  const selectedCommands = baseItems
+    .filter((item) => revenueBusinessFleetLaunchCashCycleCommandSelectable({
+      item,
+      resolution: input.resolution
+    }))
+    .slice(0, input.maxCommands);
+  const statusUpdates = selectedCommands.map((item) => ({
+    commandRecordId: item.commandRecordId,
+    fromStatus: item.status,
+    reason: item.reason,
+    targetName: item.targetName,
+    toStatus: input.resolution
+  }));
+  const summary = input.dryRun
+    ? `${selectedCommands.length} cash-cycle command${selectedCommands.length === 1 ? "" : "s"} would be marked ${input.resolution} internally.`
+    : `${selectedCommands.length} cash-cycle command${selectedCommands.length === 1 ? "" : "s"} marked ${input.resolution} internally.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+        commandRecordsResolved: selectedCommands.length,
+        dryRun: true,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        resolution: input.resolution,
+        statusUpdates,
+        summary
+      },
+      plan: current.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.business_fleet.launch_cash_cycle.command_queue_resolved",
+    actorUserId: userId,
+    metadata: {
+      commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+      externalExecution: false,
+      note: input.note ?? null,
+      providerContacted: false,
+      resolution: input.resolution,
+      statusUpdates,
+      summary
+    },
+    outcome: "success",
+    severity: selectedCommands.some((item) => item.riskLevel === "high") || input.resolution === "blocked" ? "medium" : "low",
+    targetId: selectedCommands[0]?.commandRecordId ?? null,
+    targetType: "revenue_business_fleet_launch_cash_cycle_command_queue"
+  });
+
+  if (selectedCommands.length > 0) {
+    await prisma.portfolioCommandAction.updateMany({
+      data: {
+        status: input.resolution
+      },
+      where: {
+        externalExecution: false,
+        id: {
+          in: selectedCommands.map((item) => item.commandRecordId)
+        },
+        providerContacted: false,
+        sourceModule: revenueBusinessFleetLaunchCashCycleSourceModule,
+        status: {
+          in: ["queued", "blocked"]
+        },
+        userId
+      }
+    });
+  }
+
+  const refreshed = await buildRevenueBusinessFleetLaunchCashCycleCommandQueueForUser(userId, {
+    maxCommands: input.maxCommands,
+    statuses: input.statuses
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+      commandRecordsResolved: selectedCommands.length,
+      dryRun: false,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      resolution: input.resolution,
+      statusUpdates,
+      summary
+    },
+    plan: refreshed.plan
+  };
+}
+
+type RevenueBusinessFleetIncomeSprintLaneStatus =
+  | "ready_to_launch"
+  | "cash_command_ready"
+  | "cash_command_blocked"
+  | "provider_approval_needed"
+  | "quality_repair"
+  | "launch_candidate"
+  | "watch_only"
+  | "blocked";
+type RevenueBusinessFleetIncomeSprintCashCommandState = "none" | "runnable" | "blocked" | "resolved";
+
+function incomeSprintClamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function incomeSprintCashCommandState(commandQueue: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchCashCycleCommandQueueForUser>>["plan"]): RevenueBusinessFleetIncomeSprintCashCommandState {
+  if (commandQueue.totals.runnable > 0) return "runnable";
+  if (commandQueue.totals.blocked > 0) return "blocked";
+  if (commandQueue.totals.applied > 0 || commandQueue.totals.skipped > 0) return "resolved";
+
+  return "none";
+}
+
+function incomeSprintLaneStatus(input: {
+  business: RevenueBusinessFleetPlan["businesses"][number];
+  cashCommandState: RevenueBusinessFleetIncomeSprintCashCommandState;
+  gateItem: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchGateForUser>>["plan"]["items"][number] | null;
+}): RevenueBusinessFleetIncomeSprintLaneStatus {
+  if (input.cashCommandState === "blocked" && input.business.lane === "launch_now") return "cash_command_blocked";
+  if (input.gateItem?.gateStatus === "ready_for_manual_launch" && input.business.scheduleState === "ready_parallel") return "ready_to_launch";
+  if (input.cashCommandState === "runnable" && input.business.scheduleState === "ready_parallel") return "cash_command_ready";
+  if (input.gateItem?.gateStatus === "approval_needed") return "provider_approval_needed";
+  if (input.gateItem?.gateStatus === "repair_required" || input.business.qualityGate.status === "block" || input.business.lane === "quality_repair") return "quality_repair";
+  if (input.business.scheduleState === "blocked" || input.business.lane === "kill") return "blocked";
+  if (input.business.lane === "launch_now") return "launch_candidate";
+
+  return "watch_only";
+}
+
+function incomeSprintPriority(input: {
+  business: RevenueBusinessFleetPlan["businesses"][number];
+  cashCommandState: RevenueBusinessFleetIncomeSprintCashCommandState;
+  gateItem: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchGateForUser>>["plan"]["items"][number] | null;
+  status: RevenueBusinessFleetIncomeSprintLaneStatus;
+}) {
+  const scheduleBonus = input.business.scheduleState === "ready_parallel"
+    ? 16
+    : input.business.scheduleState === "queued"
+      ? 6
+      : -12;
+  const gateBonus = input.gateItem?.gateStatus === "ready_for_manual_launch"
+    ? 18
+    : input.gateItem?.gateStatus === "approval_needed"
+      ? 5
+      : input.gateItem?.gateStatus === "repair_required"
+        ? -14
+        : 0;
+  const cashBonus = input.cashCommandState === "runnable"
+    ? 8
+    : input.cashCommandState === "blocked"
+      ? -18
+      : 0;
+  const statusBonus: Record<RevenueBusinessFleetIncomeSprintLaneStatus, number> = {
+    blocked: -30,
+    cash_command_blocked: -22,
+    cash_command_ready: 10,
+    launch_candidate: 4,
+    provider_approval_needed: 2,
+    quality_repair: -18,
+    ready_to_launch: 24,
+    watch_only: -6
+  };
+  const velocityBonus = Math.min(18, Math.max(0, input.business.profitVelocity * 3));
+
+  return incomeSprintClamp(Math.round(
+    input.business.score.finalRank
+    + velocityBonus
+    + scheduleBonus
+    + gateBonus
+    + cashBonus
+    + statusBonus[input.status]
+  ), 0, 100);
+}
+
+function incomeSprintNextAction(input: {
+  business: RevenueBusinessFleetPlan["businesses"][number];
+  cashCommandState: RevenueBusinessFleetIncomeSprintCashCommandState;
+  commandQueue: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchCashCycleCommandQueueForUser>>["plan"];
+  gateItem: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchGateForUser>>["plan"]["items"][number] | null;
+  readyPacket: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchGateForUser>>["plan"]["readyQueue"][number] | null;
+  status: RevenueBusinessFleetIncomeSprintLaneStatus;
+}) {
+  const runnableCommand = input.commandQueue.commands.find((command) => command.runnable) ?? null;
+  const blockedCommand = input.commandQueue.commands.find((command) => command.status === "blocked") ?? null;
+
+  if (input.cashCommandState === "blocked" && blockedCommand) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/commands",
+      label: "Review blocked cash command",
+      state: "cash_command_blocked_review"
+    };
+  }
+
+  if (input.cashCommandState === "runnable" && runnableCommand) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/commands/apply",
+      label: "Resolve cash command",
+      state: "cash_command_queue_ready"
+    };
+  }
+
+  if (input.readyPacket) {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence",
+      label: "Prepare operator launch evidence",
+      state: input.readyPacket.nextInternalState
+    };
+  }
+
+  if (input.gateItem) return input.gateItem.nextInternalAction;
+
+  return input.business.nextInternalAction;
+}
+
+async function buildRevenueBusinessFleetIncomeSprintForUser(
+  userId: string,
+  input: RevenueBusinessFleetIncomeSprintQueryInput
+) {
+  const schedulerInput = revenueBusinessFleetSchedulerQuerySchema.parse({
+    launchWaveSize: input.launchWaveSize,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    targetBusinesses: input.targetBusinesses
+  });
+  const [schedulerContext, assetPortfolio, launchGate, commandQueue] = await Promise.all([
+    buildRevenueBusinessFleetSchedulerForUser(userId, schedulerInput),
+    buildAssetPortfolioForUser(userId, revenueEngineQuerySchema.parse({})),
+    buildRevenueBusinessFleetLaunchGateForUser(userId, revenueBusinessFleetLaunchGateQuerySchema.parse({
+      maxStores: input.maxStores,
+      sourceKeys: input.sourceKeys
+    })),
+    buildRevenueBusinessFleetLaunchCashCycleCommandQueueForUser(userId, revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema.parse({
+      maxCommands: input.maxCommands,
+      statuses: ["queued", "blocked"]
+    }))
+  ]);
+  const storeAssetsByStoreId = new Map(assetPortfolio.assets
+    .filter((asset) => asset.assetType === "store")
+    .map((asset) => [asset.storeId, asset]));
+  const gateItemsByStoreId = new Map(launchGate.plan.items.map((item) => [item.storeId, item]));
+  const readyPacketsByStoreId = new Map(launchGate.plan.readyQueue.map((item) => [item.storeId, item]));
+  const cashCommandState = incomeSprintCashCommandState(commandQueue.plan);
+  const laneCandidates = schedulerContext.plan.businesses.map((business) => {
+    const gateItem = gateItemsByStoreId.get(business.businessId) ?? null;
+    const readyPacket = readyPacketsByStoreId.get(business.businessId) ?? null;
+    const storeAsset = storeAssetsByStoreId.get(business.businessId) ?? null;
+    const status = incomeSprintLaneStatus({
+      business,
+      cashCommandState,
+      gateItem
+    });
+    const priorityScore = incomeSprintPriority({
+      business,
+      cashCommandState,
+      gateItem,
+      status
+    });
+    const nextInternalAction = incomeSprintNextAction({
+      business,
+      cashCommandState,
+      commandQueue: commandQueue.plan,
+      gateItem,
+      readyPacket,
+      status
+    });
+
+    return {
+      assetScore: storeAsset?.assetScore ?? {
+        economicsScore: business.score.economicsScore,
+        finalRank: business.score.finalRank,
+        readinessScore: business.score.readinessScore,
+        riskPenalty: Math.max(0, business.score.killPressure),
+        velocity: Math.round(business.profitVelocity)
+      },
+      blockers: uniqueStrings([
+        ...(business.qualityGate.status === "block" ? business.qualityGate.reasons : []),
+        gateItem?.gateStatus === "approval_needed" ? "Provider approval is still pending." : "",
+        gateItem?.gateStatus === "repair_required" ? gateItem.reason : "",
+        cashCommandState === "blocked" && business.lane === "launch_now" ? "Cash-cycle command queue has a blocked command." : ""
+      ]),
+      businessId: business.businessId,
+      businessName: business.businessName,
+      cashCommandState,
+      externalExecution: false as const,
+      gateStatus: gateItem?.gateStatus ?? null,
+      nextInternalAction,
+      priorityScore,
+      profitVelocity: business.profitVelocity,
+      providerContacted: false as const,
+      reason: status === "ready_to_launch"
+        ? `${business.businessName} is ready for manual launch review with score ${business.score.finalRank}/100.`
+        : status === "cash_command_ready"
+          ? `${business.businessName} is ready once the runnable cash command is resolved internally.`
+          : gateItem?.reason ?? business.nextInternalAction.reason,
+      recommendation: business.topAsset?.recommendation ?? storeAsset?.recommendation ?? "watch",
+      scheduleState: business.scheduleState,
+      shardId: business.shardId,
+      status,
+      topAsset: business.topAsset,
+      trackedAssets: business.trackedAssets
+    };
+  });
+  const lanes = laneCandidates
+    .sort((left, right) => right.priorityScore - left.priorityScore || right.assetScore.finalRank - left.assetScore.finalRank || right.profitVelocity - left.profitVelocity)
+    .slice(0, input.maxLanes);
+  const statusCount = (status: RevenueBusinessFleetIncomeSprintLaneStatus) => lanes.filter((lane) => lane.status === status).length;
+  const topLane = lanes[0] ?? null;
+  const summary = topLane
+    ? `${lanes.length} income sprint lane${lanes.length === 1 ? "" : "s"} ranked for the next operating window. Top lane: ${topLane.businessName} at ${topLane.priorityScore}/100 with next state ${topLane.nextInternalAction.state}.`
+    : "No income sprint lanes are available yet; create or accelerate launch-gap seeds first.";
+
+  return {
+    plan: {
+      assetPortfolio: {
+        generatedAt: assetPortfolio.generatedAt,
+        summary: assetPortfolio.summary,
+        totals: assetPortfolio.totals
+      },
+      auditEvents: [
+        "Income sprint board composes the scored asset portfolio, business fleet scheduler, launch gate, and cash command queue.",
+        "Board is read-only and only recommends the next internal action for each lane."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...schedulerContext.plan.blockedExternalActions,
+        ...assetPortfolio.blockedExternalActions,
+        ...launchGate.plan.blockedExternalActions,
+        ...commandQueue.plan.blockedExternalActions
+      ]),
+      cashCommandContext: {
+        nextCommandId: commandQueue.plan.commands.find((command) => command.runnable)?.commandRecordId ?? commandQueue.plan.commands[0]?.commandRecordId ?? null,
+        state: cashCommandState,
+        summary: commandQueue.plan.summary,
+        totals: commandQueue.plan.totals
+      },
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      lanes,
+      launchGate: {
+        summary: launchGate.plan.summary,
+        totals: launchGate.plan.totals
+      },
+      mode: "Revenue Business Fleet Income Sprint Board" as const,
+      options: input,
+      providerContacted: false as const,
+      scheduler: {
+        capacity: schedulerContext.plan.capacity,
+        summary: schedulerContext.plan.summary,
+        totals: schedulerContext.plan.totals
+      },
+      summary,
+      totals: {
+        blocked: statusCount("blocked"),
+        cashCommandBlocked: statusCount("cash_command_blocked"),
+        cashCommandReady: statusCount("cash_command_ready"),
+        externalExecutionLocked: lanes.length,
+        lanes: lanes.length,
+        launchCandidates: statusCount("launch_candidate"),
+        profitVelocity: Math.round(lanes.reduce((total, lane) => total + lane.profitVelocity, 0) * 100) / 100,
+        providerApprovalNeeded: statusCount("provider_approval_needed"),
+        providerContacted: 0,
+        qualityRepair: statusCount("quality_repair"),
+        readyToLaunch: statusCount("ready_to_launch"),
+        targetBusinesses: input.targetBusinesses,
+        targetGap: schedulerContext.plan.capacity.targetGap,
+        watchOnly: statusCount("watch_only")
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetIncomeSprintPlanResult = Awaited<ReturnType<typeof buildRevenueBusinessFleetIncomeSprintForUser>>["plan"];
+type RevenueBusinessFleetIncomeSprintLane = RevenueBusinessFleetIncomeSprintPlanResult["lanes"][number];
+
+function businessFleetIncomeSprintCommandHash(lane: RevenueBusinessFleetIncomeSprintLane, action: PortfolioCommandAction) {
+  return `portfolio:business_fleet_income_sprint:${lane.businessId}:${action}:${lane.nextInternalAction.state}`
+    .toLowerCase()
+    .replace(/[^a-z0-9:_-]+/g, "_");
+}
+
+function businessFleetIncomeSprintCommandAction(lane: RevenueBusinessFleetIncomeSprintLane): PortfolioCommandAction {
+  if (lane.status === "ready_to_launch" || lane.status === "launch_candidate") return "prepare_launch";
+  if (lane.status === "quality_repair") return "revise";
+  if (lane.status === "blocked") return "watch";
+
+  return "record_governance";
+}
+
+function businessFleetIncomeSprintCommandRisk(lane: RevenueBusinessFleetIncomeSprintLane): PortfolioCommandRiskLevel {
+  if (lane.status === "blocked" || lane.status === "cash_command_blocked") return "high";
+  if (lane.status === "quality_repair" || lane.status === "provider_approval_needed" || lane.status === "cash_command_ready") return "medium";
+
+  return "low";
+}
+
+function businessFleetIncomeSprintCommandRecordStatus(lane: RevenueBusinessFleetIncomeSprintLane): PortfolioCommandRecordStatus {
+  return businessFleetIncomeSprintCommandRisk(lane) === "high" ? "blocked" : "queued";
+}
+
+function businessFleetIncomeSprintLaneSelectable(lane: RevenueBusinessFleetIncomeSprintLane) {
+  return lane.status !== "watch_only";
+}
+
+function businessFleetIncomeSprintCommand(lane: RevenueBusinessFleetIncomeSprintLane, plan: RevenueBusinessFleetIncomeSprintPlanResult): PortfolioCommandItem {
+  const action = businessFleetIncomeSprintCommandAction(lane);
+  const riskLevel = businessFleetIncomeSprintCommandRisk(lane);
+
+  return {
+    action,
+    approvalGate: {
+      externalExecutionLocked: true,
+      humanApprovalRequired: true,
+      status: "Required"
+    },
+    blockedExternalActions: uniqueStrings([
+      ...plan.blockedExternalActions,
+      ...lane.blockers
+    ]),
+    commandHash: businessFleetIncomeSprintCommandHash(lane, action),
+    expectedInternalEffect: `Queue ${lane.businessName} for ${lane.nextInternalAction.label} from the income sprint board; external execution remains locked.`,
+    externalExecution: false as const,
+    priority: Math.max(1, 100 - lane.priorityScore),
+    providerContacted: false as const,
+    reason: lane.reason,
+    recommendedStatus: lane.nextInternalAction.state,
+    riskLevel,
+    sourceModule: "revenue_business_fleet_income_sprint",
+    targetId: lane.businessId,
+    targetName: lane.businessName,
+    targetType: "store"
+  };
+}
+
+async function applyRevenueBusinessFleetIncomeSprintCommand(
+  userId: string,
+  input: ApplyRevenueBusinessFleetIncomeSprintCommandInput
+) {
+  const current = await buildRevenueBusinessFleetIncomeSprintForUser(userId, revenueBusinessFleetIncomeSprintQuerySchema.parse(input));
+  const requestedLaneIds = new Set(input.laneIds);
+  const selectedLanes = current.plan.lanes
+    .filter((lane) => requestedLaneIds.size === 0 || requestedLaneIds.has(lane.businessId))
+    .filter(businessFleetIncomeSprintLaneSelectable)
+    .slice(0, input.maxLanes);
+  const commands = selectedLanes.map((lane) => businessFleetIncomeSprintCommand(lane, current.plan));
+  const summary = input.dryRun
+    ? `${commands.length} income sprint command${commands.length === 1 ? "" : "s"} would be recorded internally.`
+    : `${commands.length} income sprint command${commands.length === 1 ? "" : "s"} recorded internally.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        blockedCommands: commands.filter((command) => command.riskLevel === "high").length,
+        commandRecordIds: [] as string[],
+        commandRecordsCreated: commands.length,
+        dryRun: true,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        selectedLaneIds: selectedLanes.map((lane) => lane.businessId),
+        summary
+      },
+      commandRecords: [] as PortfolioCommandRecordSnapshot[],
+      commands,
+      plan: current.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.business_fleet.income_sprint.commands_recorded",
+    actorUserId: userId,
+    metadata: {
+      commands: commands.map((command) => ({
+        action: command.action,
+        commandHash: command.commandHash,
+        riskLevel: command.riskLevel,
+        targetId: command.targetId,
+        targetName: command.targetName
+      })),
+      externalExecution: false,
+      note: input.note ?? null,
+      providerContacted: false,
+      selectedLaneIds: selectedLanes.map((lane) => lane.businessId),
+      summary
+    },
+    outcome: "success",
+    severity: commands.some((command) => command.riskLevel === "high") ? "high" : commands.some((command) => command.riskLevel === "medium") ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_business_fleet_income_sprint"
+  });
+  const commandRecords = await Promise.all(commands.map((command) => prisma.portfolioCommandAction.create({
+    data: {
+      action: command.action,
+      auditLogId: auditLog.id,
+      commandHash: command.commandHash,
+      controlJson: stringifySecureJson({
+        approvalGate: command.approvalGate,
+        blockedExternalActions: command.blockedExternalActions,
+        cashCommandContext: current.plan.cashCommandContext,
+        expectedInternalEffect: command.expectedInternalEffect,
+        externalExecution: false,
+        incomeSprintLane: selectedLanes.find((lane) => lane.businessId === command.targetId) ?? null,
+        nextInternalAction: selectedLanes.find((lane) => lane.businessId === command.targetId)?.nextInternalAction ?? null,
+        providerContacted: false,
+        sourceModule: command.sourceModule
+      }),
+      externalExecution: false,
+      priority: command.priority,
+      providerContacted: false,
+      reason: command.reason,
+      recommendedStatus: command.recommendedStatus,
+      riskLevel: command.riskLevel,
+      sourceModule: command.sourceModule,
+      status: businessFleetIncomeSprintCommandRecordStatus(selectedLanes.find((lane) => lane.businessId === command.targetId) ?? selectedLanes[0]!),
+      targetId: command.targetId,
+      targetName: command.targetName,
+      targetType: command.targetType,
+      userId
+    }
+  })));
+  const refreshed = await buildRevenueBusinessFleetIncomeSprintForUser(userId, revenueBusinessFleetIncomeSprintQuerySchema.parse(input));
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      blockedCommands: commands.filter((command) => command.riskLevel === "high").length,
+      commandRecordIds: commandRecords.map((record) => record.id),
+      commandRecordsCreated: commandRecords.length,
+      dryRun: false,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      selectedLaneIds: selectedLanes.map((lane) => lane.businessId),
+      summary
+    },
+    commandRecords: commandRecords.map(portfolioCommandRecordSnapshot),
+    commands,
+    plan: refreshed.plan
+  };
+}
+
+type RevenueBusinessFleetIncomeSprintCommandQueueResolution = "applied" | "skipped" | "blocked";
+type RevenueBusinessFleetIncomeSprintCommandQueueStatus = PortfolioCommandRecordStatus;
+
+const revenueBusinessFleetIncomeSprintSourceModule = "revenue_business_fleet_income_sprint";
+const revenueBusinessFleetIncomeSprintCommandStatuses: RevenueBusinessFleetIncomeSprintCommandQueueStatus[] = ["queued", "applied", "skipped", "blocked"];
+
+function revenueBusinessFleetIncomeSprintCommandStatus(status: string): RevenueBusinessFleetIncomeSprintCommandQueueStatus {
+  return revenueBusinessFleetIncomeSprintCommandStatuses.includes(status as RevenueBusinessFleetIncomeSprintCommandQueueStatus)
+    ? status as RevenueBusinessFleetIncomeSprintCommandQueueStatus
+    : "blocked";
+}
+
+function revenueBusinessFleetIncomeSprintCommandEndpoint(record: PortfolioCommandRecordSnapshot, nextInternalAction: Record<string, unknown>) {
+  const endpoint = stringFromRecord(nextInternalAction, "endpoint");
+
+  if (endpoint) return endpoint;
+  if (record.action === "prepare_launch") return "/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply";
+  if (record.action === "revise") return "/merch/revenue-engine/portfolio/action";
+  if (record.action === "record_governance") return "/merch/revenue-engine/business-fleet-scheduler/income-sprint";
+
+  return "/merch/portfolio-command-center";
+}
+
+function revenueBusinessFleetIncomeSprintCommandRecommendedResolution(
+  status: RevenueBusinessFleetIncomeSprintCommandQueueStatus,
+  riskLevel: string
+): RevenueBusinessFleetIncomeSprintCommandQueueResolution {
+  if (status === "applied") return "applied";
+  if (status === "skipped") return "skipped";
+  if (status === "blocked" || riskLevel === "high") return "blocked";
+
+  return "applied";
+}
+
+function revenueBusinessFleetIncomeSprintCommandReason(input: {
+  record: PortfolioCommandRecordSnapshot;
+  recommendedResolution: RevenueBusinessFleetIncomeSprintCommandQueueResolution;
+  status: RevenueBusinessFleetIncomeSprintCommandQueueStatus;
+}) {
+  if (input.status === "applied") return "Income sprint command already resolved internally; no provider or external execution was contacted.";
+  if (input.status === "skipped") return "Income sprint command was skipped internally and remains available only as audit context.";
+  if (input.recommendedResolution === "blocked") return "Income sprint command requires operator review because risk or status is blocked.";
+
+  return input.record.reason;
+}
+
+function revenueBusinessFleetIncomeSprintCommandQueueItem(record: PortfolioCommandRecordSnapshot) {
+  const status = revenueBusinessFleetIncomeSprintCommandStatus(record.status);
+  const control = recordFromUnknown(record.control);
+  const nextInternalAction = recordFromUnknown(control.nextInternalAction);
+  const lane = recordFromUnknown(control.incomeSprintLane);
+  const plannedState = record.recommendedStatus
+    ?? stringFromRecord(nextInternalAction, "state")
+    ?? stringFromRecord(recordFromUnknown(lane.nextInternalAction), "state")
+    ?? "income_sprint_command_review";
+  const recommendedResolution = revenueBusinessFleetIncomeSprintCommandRecommendedResolution(status, record.riskLevel);
+  const runnable = status === "queued" && recommendedResolution === "applied" && record.riskLevel !== "high";
+  const reason = revenueBusinessFleetIncomeSprintCommandReason({
+    record,
+    recommendedResolution,
+    status
+  });
+
+  return {
+    action: record.action,
+    commandHash: record.commandHash,
+    commandRecord: record,
+    commandRecordId: record.id,
+    externalExecution: false as const,
+    externalExecutionLocked: true as const,
+    nextInternalState: status === "queued" ? plannedState : `income_sprint_command_${status}_internal`,
+    providerContacted: false as const,
+    reason,
+    recommendedEndpoint: revenueBusinessFleetIncomeSprintCommandEndpoint(record, nextInternalAction),
+    recommendedResolution,
+    riskLevel: record.riskLevel,
+    runnable,
+    sourceModule: record.sourceModule,
+    status,
+    targetName: record.targetName,
+    targetType: record.targetType
+  };
+}
+
+async function buildRevenueBusinessFleetIncomeSprintCommandQueueForUser(
+  userId: string,
+  input: RevenueBusinessFleetIncomeSprintCommandQueueQueryInput
+) {
+  const commandRecords = await prisma.portfolioCommandAction.findMany({
+    orderBy: [
+      { priority: "asc" },
+      { createdAt: "desc" }
+    ],
+    take: input.maxCommands,
+    where: {
+      sourceModule: revenueBusinessFleetIncomeSprintSourceModule,
+      status: {
+        in: input.statuses
+      },
+      userId
+    }
+  });
+  const commands = commandRecords
+    .map(portfolioCommandRecordSnapshot)
+    .map(revenueBusinessFleetIncomeSprintCommandQueueItem);
+  const totals = {
+    applied: commands.filter((item) => item.status === "applied").length,
+    blocked: commands.filter((item) => item.status === "blocked").length,
+    commands: commands.length,
+    externalExecutionLocked: commands.filter((item) => item.externalExecutionLocked).length,
+    highRisk: commands.filter((item) => item.riskLevel === "high").length,
+    providerContacted: 0,
+    queued: commands.filter((item) => item.status === "queued").length,
+    runnable: commands.filter((item) => item.runnable).length,
+    skipped: commands.filter((item) => item.status === "skipped").length
+  };
+
+  return {
+    plan: {
+      auditEvents: [
+        "Income sprint command queue reads PortfolioCommandAction records from the income sprint source module.",
+        "Resolve actions only update internal command status; external execution and provider contact remain locked."
+      ],
+      blockedExternalActions: [
+        "Moving money from income sprint command queue",
+        "Releasing budgets from income sprint command queue",
+        "Publishing listings from income sprint command queue",
+        "Changing ads from income sprint command queue",
+        "Contacting providers from income sprint command queue",
+        "Running browsers from income sprint command queue",
+        "Uploading content from income sprint command queue"
+      ],
+      commands,
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      mode: "Revenue Business Fleet Income Sprint Command Queue" as const,
+      options: {
+        maxCommands: input.maxCommands,
+        statuses: input.statuses
+      },
+      providerContacted: false as const,
+      summary: `${totals.commands} income sprint command${totals.commands === 1 ? "" : "s"} visible; ${totals.runnable} runnable, ${totals.blocked} blocked, and ${totals.applied + totals.skipped} already resolved.`,
+      totals
+    }
+  };
+}
+
+function revenueBusinessFleetIncomeSprintCommandSelectable(input: {
+  item: ReturnType<typeof revenueBusinessFleetIncomeSprintCommandQueueItem>;
+  resolution: RevenueBusinessFleetIncomeSprintCommandQueueResolution;
+}) {
+  if (input.item.status === "applied" || input.item.status === "skipped") return false;
+  if (input.resolution === "applied") return input.item.runnable;
+
+  return input.item.status === "queued" || input.item.status === "blocked";
+}
+
+async function buildExplicitRevenueBusinessFleetIncomeSprintCommandQueueItems(userId: string, commandRecordIds: string[]) {
+  if (commandRecordIds.length === 0) return [];
+
+  const records = await prisma.portfolioCommandAction.findMany({
+    orderBy: [
+      { priority: "asc" },
+      { createdAt: "desc" }
+    ],
+    where: {
+      id: {
+        in: commandRecordIds
+      },
+      sourceModule: revenueBusinessFleetIncomeSprintSourceModule,
+      userId
+    }
+  });
+
+  return records
+    .map(portfolioCommandRecordSnapshot)
+    .map(revenueBusinessFleetIncomeSprintCommandQueueItem);
+}
+
+async function applyRevenueBusinessFleetIncomeSprintCommandQueue(
+  userId: string,
+  input: ApplyRevenueBusinessFleetIncomeSprintCommandQueueInput
+) {
+  const current = await buildRevenueBusinessFleetIncomeSprintCommandQueueForUser(userId, {
+    maxCommands: input.maxCommands,
+    statuses: input.statuses
+  });
+  const explicitItems = await buildExplicitRevenueBusinessFleetIncomeSprintCommandQueueItems(userId, input.commandRecordIds);
+  const baseItems = explicitItems.length > 0 ? explicitItems : current.plan.commands;
+  const selectedCommands = baseItems
+    .filter((item) => revenueBusinessFleetIncomeSprintCommandSelectable({
+      item,
+      resolution: input.resolution
+    }))
+    .slice(0, input.maxCommands);
+  const statusUpdates = selectedCommands.map((item) => ({
+    commandRecordId: item.commandRecordId,
+    fromStatus: item.status,
+    reason: item.reason,
+    targetName: item.targetName,
+    toStatus: input.resolution
+  }));
+  const summary = input.dryRun
+    ? `${selectedCommands.length} income sprint command${selectedCommands.length === 1 ? "" : "s"} would be marked ${input.resolution} internally.`
+    : `${selectedCommands.length} income sprint command${selectedCommands.length === 1 ? "" : "s"} marked ${input.resolution} internally.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+        commandRecordsResolved: selectedCommands.length,
+        dryRun: true,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        resolution: input.resolution,
+        statusUpdates,
+        summary
+      },
+      plan: current.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.business_fleet.income_sprint.command_queue_resolved",
+    actorUserId: userId,
+    metadata: {
+      commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+      externalExecution: false,
+      note: input.note ?? null,
+      providerContacted: false,
+      resolution: input.resolution,
+      statusUpdates,
+      summary
+    },
+    outcome: "success",
+    severity: selectedCommands.some((item) => item.riskLevel === "high") || input.resolution === "blocked" ? "medium" : "low",
+    targetId: selectedCommands[0]?.commandRecordId ?? null,
+    targetType: "revenue_business_fleet_income_sprint_command_queue"
+  });
+
+  if (selectedCommands.length > 0) {
+    await prisma.portfolioCommandAction.updateMany({
+      data: {
+        status: input.resolution
+      },
+      where: {
+        externalExecution: false,
+        id: {
+          in: selectedCommands.map((item) => item.commandRecordId)
+        },
+        providerContacted: false,
+        sourceModule: revenueBusinessFleetIncomeSprintSourceModule,
+        status: {
+          in: ["queued", "blocked"]
+        },
+        userId
+      }
+    });
+  }
+
+  const refreshed = await buildRevenueBusinessFleetIncomeSprintCommandQueueForUser(userId, {
+    maxCommands: input.maxCommands,
+    statuses: input.statuses
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+      commandRecordsResolved: selectedCommands.length,
+      dryRun: false,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      resolution: input.resolution,
+      statusUpdates,
+      summary
+    },
+    plan: refreshed.plan
+  };
+}
+
+type RevenueBusinessFleetLaunchNightLaneStatus =
+  | "ready_for_operator_launch"
+  | "ready_for_launch_wave"
+  | "sprint_command_ready"
+  | "cash_command_ready"
+  | "needs_provider_approval"
+  | "needs_quality_repair"
+  | "needs_launch_package"
+  | "needs_execution_queue"
+  | "needs_worker_assignment"
+  | "needs_manual_evidence"
+  | "launch_candidate"
+  | "watch_only"
+  | "blocked";
+type RevenueBusinessFleetLaunchNightCommandState = "none" | "runnable" | "blocked" | "resolved";
+
+function launchNightCommandState(commands: Array<{ riskLevel: string; runnable: boolean; status: PortfolioCommandRecordStatus; targetName: string }>, lane: RevenueBusinessFleetIncomeSprintLane): RevenueBusinessFleetLaunchNightCommandState {
+  const matchingCommands = commands.filter((command) => command.targetName === lane.businessName);
+
+  if (matchingCommands.some((command) => command.runnable)) return "runnable";
+  if (matchingCommands.some((command) => command.status === "blocked" || command.riskLevel === "high")) return "blocked";
+  if (matchingCommands.some((command) => command.status === "applied" || command.status === "skipped")) return "resolved";
+
+  return "none";
+}
+
+function launchNightStatus(input: {
+  cashCommandState: RevenueBusinessFleetLaunchNightCommandState;
+  lane: RevenueBusinessFleetIncomeSprintLane;
+  launchControlState: RevenueBusinessFleetLaunchControlStatus;
+  sprintCommandState: RevenueBusinessFleetLaunchNightCommandState;
+}): RevenueBusinessFleetLaunchNightLaneStatus {
+  if (input.sprintCommandState === "blocked" || input.cashCommandState === "blocked" || input.lane.status === "blocked") return "blocked";
+  if (input.sprintCommandState === "runnable") return "sprint_command_ready";
+  if (input.cashCommandState === "runnable" || input.lane.status === "cash_command_ready") return "cash_command_ready";
+  if (input.lane.status === "provider_approval_needed" || input.lane.gateStatus === "approval_needed") return "needs_provider_approval";
+  if (input.lane.status === "quality_repair" || input.lane.gateStatus === "repair_required") return "needs_quality_repair";
+  if (input.launchControlState === "needs_launch_package") return "needs_launch_package";
+  if (input.launchControlState === "needs_execution_queue") return "needs_execution_queue";
+  if (input.launchControlState === "needs_worker_assignment") return "needs_worker_assignment";
+  if (input.launchControlState === "ready_for_operator_launch" && input.lane.gateStatus === "ready_for_manual_launch") return "ready_for_operator_launch";
+  if (input.launchControlState === "ready_for_operator_launch") return "needs_manual_evidence";
+  if (input.launchControlState === "ready_for_launch_wave" && input.lane.scheduleState === "ready_parallel") return "ready_for_launch_wave";
+  if (input.lane.status === "launch_candidate" || input.lane.status === "ready_to_launch") return "launch_candidate";
+
+  return "watch_only";
+}
+
+function launchNightNextInternalAction(input: {
+  lane: RevenueBusinessFleetIncomeSprintLane;
+  launchControl: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchControlForUser>>["plan"];
+  status: RevenueBusinessFleetLaunchNightLaneStatus;
+}) {
+  if (input.status === "sprint_command_ready") {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/income-sprint/commands/apply",
+      label: "Resolve sprint command queue",
+      state: "sprint_command_queue_ready"
+    };
+  }
+
+  if (input.status === "cash_command_ready") {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/commands/apply",
+      label: "Resolve cash command queue",
+      state: "cash_command_queue_ready"
+    };
+  }
+
+  if (input.status === "ready_for_operator_launch" || input.status === "needs_manual_evidence") {
+    return input.launchControl.nextAction;
+  }
+
+  if (input.status === "needs_execution_queue" || input.status === "needs_worker_assignment" || input.status === "needs_launch_package") {
+    return input.launchControl.nextAction;
+  }
+
+  return input.lane.nextInternalAction;
+}
+
+function launchNightStatusReason(input: {
+  lane: RevenueBusinessFleetIncomeSprintLane;
+  launchControl: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchControlForUser>>["plan"];
+  status: RevenueBusinessFleetLaunchNightLaneStatus;
+}) {
+  if (input.status === "ready_for_operator_launch") return `${input.lane.businessName} is ready for the operator launch step; record evidence after completion.`;
+  if (input.status === "ready_for_launch_wave") return `${input.lane.businessName} can enter launch-wave preview with external execution still locked.`;
+  if (input.status === "sprint_command_ready") return "Sprint command is queued and runnable; resolve it before advancing this lane.";
+  if (input.status === "cash_command_ready") return "Cash-cycle command is queued and runnable; resolve it before advancing launch capital context.";
+  if (input.status === "needs_execution_queue" || input.status === "needs_worker_assignment" || input.status === "needs_launch_package" || input.status === "needs_manual_evidence") return input.launchControl.nextAction.reason;
+
+  return input.lane.reason;
+}
+
+async function buildRevenueBusinessFleetLaunchNightForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchNightQueryInput
+) {
+  const incomeSprintInput = revenueBusinessFleetIncomeSprintQuerySchema.parse({
+    ...input,
+    maxLanes: Math.min(input.maxLanes, input.launchNightSize)
+  });
+  const launchControlInput = revenueBusinessFleetLaunchControlQuerySchema.parse({
+    ...input,
+    launchWaveSize: input.launchWaveSize
+  });
+  const commandQueueInput = revenueBusinessFleetIncomeSprintCommandQueueQuerySchema.parse({
+    maxCommands: input.maxCommands,
+    statuses: ["queued", "blocked", "applied", "skipped"]
+  });
+  const cashCommandQueueInput = revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema.parse({
+    maxCommands: input.maxCommands,
+    statuses: ["queued", "blocked", "applied", "skipped"]
+  });
+  const [incomeSprint, launchControl, sprintCommandQueue, cashCommandQueue] = await Promise.all([
+    buildRevenueBusinessFleetIncomeSprintForUser(userId, incomeSprintInput),
+    buildRevenueBusinessFleetLaunchControlForUser(userId, launchControlInput),
+    buildRevenueBusinessFleetIncomeSprintCommandQueueForUser(userId, commandQueueInput),
+    buildRevenueBusinessFleetLaunchCashCycleCommandQueueForUser(userId, cashCommandQueueInput)
+  ]);
+  const lanes = incomeSprint.plan.lanes.slice(0, input.launchNightSize).map((lane, index) => {
+    const sprintCommandState = launchNightCommandState(sprintCommandQueue.plan.commands, lane);
+    const cashCommandState = lane.cashCommandState === "runnable"
+      ? "runnable"
+      : lane.cashCommandState === "blocked"
+        ? "blocked"
+        : lane.cashCommandState === "resolved"
+          ? "resolved"
+          : launchNightCommandState(cashCommandQueue.plan.commands, lane);
+    const status = launchNightStatus({
+      cashCommandState,
+      lane,
+      launchControlState: launchControl.plan.nextAction.state,
+      sprintCommandState
+    });
+    const nextInternalAction = launchNightNextInternalAction({
+      lane,
+      launchControl: launchControl.plan,
+      status
+    });
+    const launchabilityScore = incomeSprintClamp(Math.round(
+      lane.priorityScore
+      + (status === "ready_for_operator_launch" || status === "ready_for_launch_wave" ? 10 : 0)
+      + (sprintCommandState === "resolved" ? 4 : 0)
+      - (status === "blocked" ? 35 : 0)
+      - (status === "needs_quality_repair" ? 20 : 0)
+      - (status === "needs_provider_approval" ? 12 : 0)
+    ), 0, 100);
+
+    return {
+      assetScore: lane.assetScore,
+      blockers: uniqueStrings([
+        ...lane.blockers,
+        status === "blocked" ? "Launch-night lane is blocked by command, cash, or scheduler risk." : "",
+        status === "needs_execution_queue" || status === "needs_worker_assignment" || status === "needs_launch_package" || status === "needs_manual_evidence" ? launchControl.plan.nextAction.reason : ""
+      ]),
+      businessId: lane.businessId,
+      businessName: lane.businessName,
+      cashCommandState,
+      externalExecution: false as const,
+      gateStatus: lane.gateStatus,
+      launchabilityScore,
+      nextInternalAction,
+      priorityScore: lane.priorityScore,
+      profitVelocity: lane.profitVelocity,
+      providerContacted: false as const,
+      reason: launchNightStatusReason({
+        lane,
+        launchControl: launchControl.plan,
+        status
+      }),
+      recommendation: lane.recommendation,
+      scheduleState: lane.scheduleState,
+      shardId: lane.shardId,
+      sprintCommandState,
+      status,
+      tonightSlot: index + 1
+    };
+  });
+  const statusCount = (status: RevenueBusinessFleetLaunchNightLaneStatus) => lanes.filter((lane) => lane.status === status).length;
+  const readyNow = statusCount("ready_for_operator_launch") + statusCount("ready_for_launch_wave");
+  const commandReady = statusCount("sprint_command_ready") + statusCount("cash_command_ready");
+
+  return {
+    plan: {
+      auditEvents: [
+        "Launch-night board composes income sprint lanes, launch control, sprint command queue, and cash command queue.",
+        "Board is read-only; it does not launch stores, move funds, contact providers, or run browsers.",
+        "The first operating target is the clean launch-night lane count, not the configured long-range business target."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...incomeSprint.plan.blockedExternalActions,
+        ...launchControl.plan.blockedExternalActions,
+        ...sprintCommandQueue.plan.blockedExternalActions,
+        ...cashCommandQueue.plan.blockedExternalActions
+      ]),
+      commandQueues: {
+        cash: cashCommandQueue.plan.totals,
+        sprint: sprintCommandQueue.plan.totals
+      },
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      lanes,
+      launchControl: {
+        nextAction: launchControl.plan.nextAction,
+        summary: launchControl.plan.summary,
+        swarm: launchControl.plan.swarm,
+        totals: launchControl.plan.totals
+      },
+      mode: "Revenue Business Fleet Launch Night Board" as const,
+      options: {
+        launchNightSize: input.launchNightSize,
+        launchWaveSize: input.launchWaveSize,
+        maxCommands: input.maxCommands,
+        maxLanes: input.maxLanes,
+        maxStores: input.maxStores,
+        maxWorkers: input.maxWorkers,
+        qualityFloor: input.qualityFloor,
+        shardCount: input.shardCount,
+        sourceKeys: input.sourceKeys,
+        targetBusinesses: input.targetBusinesses
+      },
+      providerContacted: false as const,
+      summary: `${lanes.length} launch-night lane${lanes.length === 1 ? "" : "s"} ranked; ${readyNow} ready now, ${commandReady} waiting on command resolution, ${statusCount("needs_provider_approval")} approval, ${statusCount("needs_quality_repair")} repair, ${statusCount("blocked")} blocked.`,
+      totals: {
+        blocked: statusCount("blocked"),
+        cashCommandReady: statusCount("cash_command_ready"),
+        commandReady,
+        externalExecutionLocked: lanes.length,
+        lanes: lanes.length,
+        launchNightSize: input.launchNightSize,
+        launchWaveReady: statusCount("ready_for_launch_wave"),
+        needsExecutionQueue: statusCount("needs_execution_queue"),
+        needsLaunchPackage: statusCount("needs_launch_package"),
+        needsManualEvidence: statusCount("needs_manual_evidence"),
+        needsProviderApproval: statusCount("needs_provider_approval"),
+        needsQualityRepair: statusCount("needs_quality_repair"),
+        needsWorkerAssignment: statusCount("needs_worker_assignment"),
+        operatorLaunchReady: statusCount("ready_for_operator_launch"),
+        providerContacted: 0,
+        readyNow,
+        sprintCommandReady: statusCount("sprint_command_ready"),
+        watchOnly: statusCount("watch_only")
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetLaunchNightPlanResult = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchNightForUser>>["plan"];
+type RevenueBusinessFleetLaunchNightLane = RevenueBusinessFleetLaunchNightPlanResult["lanes"][number];
+
+function businessFleetLaunchNightCommandHash(lane: RevenueBusinessFleetLaunchNightLane, action: PortfolioCommandAction) {
+  return `portfolio:business_fleet_launch_night:${lane.businessId}:${action}:${lane.nextInternalAction.state}`
+    .toLowerCase()
+    .replace(/[^a-z0-9:_-]+/g, "_");
+}
+
+function businessFleetLaunchNightCommandAction(lane: RevenueBusinessFleetLaunchNightLane): PortfolioCommandAction {
+  if (lane.status === "ready_for_operator_launch" || lane.status === "ready_for_launch_wave" || lane.status === "launch_candidate") return "prepare_launch";
+  if (lane.status === "needs_quality_repair") return "revise";
+  if (lane.status === "blocked") return "watch";
+
+  return "record_governance";
+}
+
+function businessFleetLaunchNightCommandRisk(lane: RevenueBusinessFleetLaunchNightLane): PortfolioCommandRiskLevel {
+  if (lane.status === "blocked") return "high";
+  if (
+    lane.status === "cash_command_ready"
+    || lane.status === "sprint_command_ready"
+    || lane.status === "needs_provider_approval"
+    || lane.status === "needs_quality_repair"
+    || lane.status === "needs_launch_package"
+    || lane.status === "needs_execution_queue"
+    || lane.status === "needs_worker_assignment"
+    || lane.status === "needs_manual_evidence"
+  ) return "medium";
+
+  return "low";
+}
+
+function businessFleetLaunchNightCommandRecordStatus(lane: RevenueBusinessFleetLaunchNightLane): PortfolioCommandRecordStatus {
+  return businessFleetLaunchNightCommandRisk(lane) === "high" ? "blocked" : "queued";
+}
+
+function businessFleetLaunchNightLaneSelectable(lane: RevenueBusinessFleetLaunchNightLane) {
+  return lane.status !== "watch_only";
+}
+
+function businessFleetLaunchNightCommand(lane: RevenueBusinessFleetLaunchNightLane, plan: RevenueBusinessFleetLaunchNightPlanResult): PortfolioCommandItem {
+  const action = businessFleetLaunchNightCommandAction(lane);
+  const riskLevel = businessFleetLaunchNightCommandRisk(lane);
+
+  return {
+    action,
+    approvalGate: {
+      externalExecutionLocked: true,
+      humanApprovalRequired: true,
+      status: "Required"
+    },
+    blockedExternalActions: uniqueStrings([
+      ...plan.blockedExternalActions,
+      ...lane.blockers
+    ]),
+    commandHash: businessFleetLaunchNightCommandHash(lane, action),
+    expectedInternalEffect: `Queue launch-night slot ${lane.tonightSlot} (${lane.businessName}) for ${lane.nextInternalAction.label}; external execution remains locked.`,
+    externalExecution: false as const,
+    priority: Math.max(1, 100 - lane.launchabilityScore + lane.tonightSlot),
+    providerContacted: false as const,
+    reason: lane.reason,
+    recommendedStatus: lane.nextInternalAction.state,
+    riskLevel,
+    sourceModule: "revenue_business_fleet_launch_night",
+    targetId: lane.businessId,
+    targetName: lane.businessName,
+    targetType: "store"
+  };
+}
+
+async function applyRevenueBusinessFleetLaunchNightCommand(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchNightCommandInput
+) {
+  const current = await buildRevenueBusinessFleetLaunchNightForUser(userId, revenueBusinessFleetLaunchNightQuerySchema.parse(input));
+  const requestedLaneIds = new Set(input.laneIds);
+  const selectedLanes = current.plan.lanes
+    .filter((lane) => requestedLaneIds.size === 0 || requestedLaneIds.has(lane.businessId))
+    .filter(businessFleetLaunchNightLaneSelectable)
+    .slice(0, input.launchNightSize);
+  const commands = selectedLanes.map((lane) => businessFleetLaunchNightCommand(lane, current.plan));
+  const summary = input.dryRun
+    ? `${commands.length} launch-night command${commands.length === 1 ? "" : "s"} would be recorded internally.`
+    : `${commands.length} launch-night command${commands.length === 1 ? "" : "s"} recorded internally.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        blockedCommands: commands.filter((command) => command.riskLevel === "high").length,
+        commandRecordIds: [] as string[],
+        commandRecordsCreated: commands.length,
+        dryRun: true,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        selectedLaneIds: selectedLanes.map((lane) => lane.businessId),
+        summary
+      },
+      commandRecords: [] as PortfolioCommandRecordSnapshot[],
+      commands,
+      plan: current.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.business_fleet.launch_night.commands_recorded",
+    actorUserId: userId,
+    metadata: {
+      commands: commands.map((command) => ({
+        action: command.action,
+        commandHash: command.commandHash,
+        riskLevel: command.riskLevel,
+        targetId: command.targetId,
+        targetName: command.targetName
+      })),
+      externalExecution: false,
+      launchNightSize: input.launchNightSize,
+      note: input.note ?? null,
+      providerContacted: false,
+      selectedLaneIds: selectedLanes.map((lane) => lane.businessId),
+      summary
+    },
+    outcome: "success",
+    severity: commands.some((command) => command.riskLevel === "high") ? "high" : commands.some((command) => command.riskLevel === "medium") ? "medium" : "low",
+    targetId: null,
+    targetType: "revenue_business_fleet_launch_night"
+  });
+  const commandRecords = await Promise.all(commands.map((command) => {
+    const lane = selectedLanes.find((item) => item.businessId === command.targetId) ?? selectedLanes[0]!;
+
+    return prisma.portfolioCommandAction.create({
+      data: {
+        action: command.action,
+        auditLogId: auditLog.id,
+        commandHash: command.commandHash,
+        controlJson: stringifySecureJson({
+          approvalGate: command.approvalGate,
+          blockedExternalActions: command.blockedExternalActions,
+          commandQueues: current.plan.commandQueues,
+          expectedInternalEffect: command.expectedInternalEffect,
+          externalExecution: false,
+          launchControl: current.plan.launchControl,
+          launchNightLane: lane,
+          nextInternalAction: lane.nextInternalAction,
+          providerContacted: false,
+          sourceModule: command.sourceModule
+        }),
+        externalExecution: false,
+        priority: command.priority,
+        providerContacted: false,
+        reason: command.reason,
+        recommendedStatus: command.recommendedStatus,
+        riskLevel: command.riskLevel,
+        sourceModule: command.sourceModule,
+        status: businessFleetLaunchNightCommandRecordStatus(lane),
+        targetId: command.targetId,
+        targetName: command.targetName,
+        targetType: command.targetType,
+        userId
+      }
+    });
+  }));
+  const refreshed = await buildRevenueBusinessFleetLaunchNightForUser(userId, revenueBusinessFleetLaunchNightQuerySchema.parse(input));
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      blockedCommands: commands.filter((command) => command.riskLevel === "high").length,
+      commandRecordIds: commandRecords.map((record) => record.id),
+      commandRecordsCreated: commandRecords.length,
+      dryRun: false,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      selectedLaneIds: selectedLanes.map((lane) => lane.businessId),
+      summary
+    },
+    commandRecords: commandRecords.map(portfolioCommandRecordSnapshot),
+    commands,
+    plan: refreshed.plan
+  };
+}
+
+type RevenueBusinessFleetLaunchNightCommandQueueResolution = "applied" | "skipped" | "blocked";
+type RevenueBusinessFleetLaunchNightCommandQueueStatus = PortfolioCommandRecordStatus;
+
+const revenueBusinessFleetLaunchNightSourceModule = "revenue_business_fleet_launch_night";
+const revenueBusinessFleetLaunchNightCommandStatuses: RevenueBusinessFleetLaunchNightCommandQueueStatus[] = ["queued", "applied", "skipped", "blocked"];
+
+function revenueBusinessFleetLaunchNightCommandStatus(status: string): RevenueBusinessFleetLaunchNightCommandQueueStatus {
+  return revenueBusinessFleetLaunchNightCommandStatuses.includes(status as RevenueBusinessFleetLaunchNightCommandQueueStatus)
+    ? status as RevenueBusinessFleetLaunchNightCommandQueueStatus
+    : "blocked";
+}
+
+function revenueBusinessFleetLaunchNightCommandEndpoint(record: PortfolioCommandRecordSnapshot, nextInternalAction: Record<string, unknown>) {
+  const endpoint = stringFromRecord(nextInternalAction, "endpoint");
+
+  if (endpoint) return endpoint;
+  if (record.action === "prepare_launch") return "/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence";
+  if (record.action === "revise") return "/merch/revenue-engine/portfolio/action";
+  if (record.action === "watch" || record.action === "record_governance") return "/merch/revenue-engine/business-fleet-scheduler/launch-night";
+
+  return "/merch/portfolio-command-center";
+}
+
+function revenueBusinessFleetLaunchNightCommandRecommendedResolution(
+  status: RevenueBusinessFleetLaunchNightCommandQueueStatus,
+  riskLevel: string
+): RevenueBusinessFleetLaunchNightCommandQueueResolution {
+  if (status === "applied") return "applied";
+  if (status === "skipped") return "skipped";
+  if (status === "blocked" || riskLevel === "high") return "blocked";
+
+  return "applied";
+}
+
+function revenueBusinessFleetLaunchNightCommandReason(input: {
+  record: PortfolioCommandRecordSnapshot;
+  recommendedResolution: RevenueBusinessFleetLaunchNightCommandQueueResolution;
+  status: RevenueBusinessFleetLaunchNightCommandQueueStatus;
+}) {
+  if (input.status === "applied") return "Launch-night command already resolved internally; no provider, browser, store, or payment system was contacted.";
+  if (input.status === "skipped") return "Launch-night command was skipped internally and remains available only as audit context.";
+  if (input.recommendedResolution === "blocked") return "Launch-night command requires operator review because risk or status is blocked.";
+
+  return input.record.reason;
+}
+
+function revenueBusinessFleetLaunchNightCommandQueueItem(record: PortfolioCommandRecordSnapshot) {
+  const status = revenueBusinessFleetLaunchNightCommandStatus(record.status);
+  const control = recordFromUnknown(record.control);
+  const nextInternalAction = recordFromUnknown(control.nextInternalAction);
+  const lane = recordFromUnknown(control.launchNightLane);
+  const plannedState = record.recommendedStatus
+    ?? stringFromRecord(nextInternalAction, "state")
+    ?? stringFromRecord(recordFromUnknown(lane.nextInternalAction), "state")
+    ?? "launch_night_command_review";
+  const recommendedResolution = revenueBusinessFleetLaunchNightCommandRecommendedResolution(status, record.riskLevel);
+  const runnable = status === "queued" && recommendedResolution === "applied" && record.riskLevel !== "high";
+  const reason = revenueBusinessFleetLaunchNightCommandReason({
+    record,
+    recommendedResolution,
+    status
+  });
+
+  return {
+    action: record.action,
+    commandHash: record.commandHash,
+    commandRecord: record,
+    commandRecordId: record.id,
+    externalExecution: false as const,
+    externalExecutionLocked: true as const,
+    nextInternalState: status === "queued" ? plannedState : `launch_night_command_${status}_internal`,
+    providerContacted: false as const,
+    reason,
+    recommendedEndpoint: revenueBusinessFleetLaunchNightCommandEndpoint(record, nextInternalAction),
+    recommendedResolution,
+    riskLevel: record.riskLevel,
+    runnable,
+    sourceModule: record.sourceModule,
+    status,
+    targetName: record.targetName,
+    targetType: record.targetType
+  };
+}
+
+async function buildRevenueBusinessFleetLaunchNightCommandQueueForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchNightCommandQueueQueryInput
+) {
+  const commandRecords = await prisma.portfolioCommandAction.findMany({
+    orderBy: [
+      { priority: "asc" },
+      { createdAt: "desc" }
+    ],
+    take: input.maxCommands,
+    where: {
+      sourceModule: revenueBusinessFleetLaunchNightSourceModule,
+      status: {
+        in: input.statuses
+      },
+      userId
+    }
+  });
+  const commands = commandRecords
+    .map(portfolioCommandRecordSnapshot)
+    .map(revenueBusinessFleetLaunchNightCommandQueueItem);
+  const totals = {
+    applied: commands.filter((item) => item.status === "applied").length,
+    blocked: commands.filter((item) => item.status === "blocked").length,
+    commands: commands.length,
+    externalExecutionLocked: commands.filter((item) => item.externalExecutionLocked).length,
+    highRisk: commands.filter((item) => item.riskLevel === "high").length,
+    providerContacted: 0,
+    queued: commands.filter((item) => item.status === "queued").length,
+    runnable: commands.filter((item) => item.runnable).length,
+    skipped: commands.filter((item) => item.status === "skipped").length
+  };
+
+  return {
+    plan: {
+      auditEvents: [
+        "Launch-night command queue reads PortfolioCommandAction records from the launch-night source module.",
+        "Resolve actions only update internal command status; external execution, provider contact, browser work, and money movement remain locked."
+      ],
+      blockedExternalActions: [
+        "Launching stores from launch-night command queue",
+        "Moving money from launch-night command queue",
+        "Releasing budgets from launch-night command queue",
+        "Publishing listings from launch-night command queue",
+        "Changing ads from launch-night command queue",
+        "Contacting providers from launch-night command queue",
+        "Running browsers from launch-night command queue",
+        "Uploading content from launch-night command queue"
+      ],
+      commands,
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      mode: "Revenue Business Fleet Launch Night Command Queue" as const,
+      options: {
+        maxCommands: input.maxCommands,
+        statuses: input.statuses
+      },
+      providerContacted: false as const,
+      summary: `${totals.commands} launch-night command${totals.commands === 1 ? "" : "s"} visible; ${totals.runnable} runnable, ${totals.blocked} blocked, and ${totals.applied + totals.skipped} already resolved.`,
+      totals
+    }
+  };
+}
+
+function revenueBusinessFleetLaunchNightCommandSelectable(input: {
+  item: ReturnType<typeof revenueBusinessFleetLaunchNightCommandQueueItem>;
+  resolution: RevenueBusinessFleetLaunchNightCommandQueueResolution;
+}) {
+  if (input.item.status === "applied" || input.item.status === "skipped") return false;
+  if (input.resolution === "applied") return input.item.runnable;
+
+  return input.item.status === "queued" || input.item.status === "blocked";
+}
+
+async function buildExplicitRevenueBusinessFleetLaunchNightCommandQueueItems(userId: string, commandRecordIds: string[]) {
+  if (commandRecordIds.length === 0) return [];
+
+  const records = await prisma.portfolioCommandAction.findMany({
+    orderBy: [
+      { priority: "asc" },
+      { createdAt: "desc" }
+    ],
+    where: {
+      id: {
+        in: commandRecordIds
+      },
+      sourceModule: revenueBusinessFleetLaunchNightSourceModule,
+      userId
+    }
+  });
+
+  return records
+    .map(portfolioCommandRecordSnapshot)
+    .map(revenueBusinessFleetLaunchNightCommandQueueItem);
+}
+
+async function applyRevenueBusinessFleetLaunchNightCommandQueue(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchNightCommandQueueInput
+) {
+  const current = await buildRevenueBusinessFleetLaunchNightCommandQueueForUser(userId, {
+    maxCommands: input.maxCommands,
+    statuses: input.statuses
+  });
+  const explicitItems = await buildExplicitRevenueBusinessFleetLaunchNightCommandQueueItems(userId, input.commandRecordIds);
+  const baseItems = explicitItems.length > 0 ? explicitItems : current.plan.commands;
+  const selectedCommands = baseItems
+    .filter((item) => revenueBusinessFleetLaunchNightCommandSelectable({
+      item,
+      resolution: input.resolution
+    }))
+    .slice(0, input.maxCommands);
+  const statusUpdates = selectedCommands.map((item) => ({
+    commandRecordId: item.commandRecordId,
+    fromStatus: item.status,
+    reason: item.reason,
+    targetName: item.targetName,
+    toStatus: input.resolution
+  }));
+  const summary = input.dryRun
+    ? `${selectedCommands.length} launch-night command${selectedCommands.length === 1 ? "" : "s"} would be marked ${input.resolution} internally.`
+    : `${selectedCommands.length} launch-night command${selectedCommands.length === 1 ? "" : "s"} marked ${input.resolution} internally.`;
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogId: null,
+        commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+        commandRecordsResolved: selectedCommands.length,
+        dryRun: true,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        resolution: input.resolution,
+        statusUpdates,
+        summary
+      },
+      plan: current.plan
+    };
+  }
+
+  const auditLog = await recordAuditLog({
+    action: "revenue.business_fleet.launch_night.command_queue_resolved",
+    actorUserId: userId,
+    metadata: {
+      commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+      externalExecution: false,
+      note: input.note ?? null,
+      providerContacted: false,
+      resolution: input.resolution,
+      statusUpdates,
+      summary
+    },
+    outcome: "success",
+    severity: selectedCommands.some((item) => item.riskLevel === "high") || input.resolution === "blocked" ? "medium" : "low",
+    targetId: selectedCommands[0]?.commandRecordId ?? null,
+    targetType: "revenue_business_fleet_launch_night_command_queue"
+  });
+
+  if (selectedCommands.length > 0) {
+    await prisma.portfolioCommandAction.updateMany({
+      data: {
+        status: input.resolution
+      },
+      where: {
+        externalExecution: false,
+        id: {
+          in: selectedCommands.map((item) => item.commandRecordId)
+        },
+        providerContacted: false,
+        sourceModule: revenueBusinessFleetLaunchNightSourceModule,
+        status: {
+          in: ["queued", "blocked"]
+        },
+        userId
+      }
+    });
+  }
+
+  const refreshed = await buildRevenueBusinessFleetLaunchNightCommandQueueForUser(userId, {
+    maxCommands: input.maxCommands,
+    statuses: input.statuses
+  });
+
+  return {
+    applied: {
+      auditLogId: auditLog.id,
+      commandRecordIds: selectedCommands.map((item) => item.commandRecordId),
+      commandRecordsResolved: selectedCommands.length,
+      dryRun: false,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      resolution: input.resolution,
+      statusUpdates,
+      summary
+    },
+    plan: refreshed.plan
+  };
+}
+
+type RevenueBusinessFleetLaunchNightExecutionChecklistItemStatus =
+  | "already_resolved"
+  | "blocked"
+  | "ready_to_resolve"
+  | "waiting_on_command_record"
+  | "waiting_on_dependency"
+  | "watch";
+
+type RevenueBusinessFleetLaunchNightCommandQueueItem = ReturnType<typeof revenueBusinessFleetLaunchNightCommandQueueItem>;
+
+function launchNightExecutionChecklistStatus(input: {
+  command: RevenueBusinessFleetLaunchNightCommandQueueItem | null;
+  lane: RevenueBusinessFleetLaunchNightLane;
+}): RevenueBusinessFleetLaunchNightExecutionChecklistItemStatus {
+  if (input.lane.status === "blocked" || input.command?.status === "blocked" || input.command?.riskLevel === "high") return "blocked";
+  if (input.command?.runnable) return "ready_to_resolve";
+  if (input.command?.status === "applied" || input.command?.status === "skipped") return "already_resolved";
+  if (input.lane.status === "watch_only") return "watch";
+  if (businessFleetLaunchNightLaneSelectable(input.lane)) return "waiting_on_command_record";
+
+  return "waiting_on_dependency";
+}
+
+function launchNightExecutionChecklistEndpoint(input: {
+  command: RevenueBusinessFleetLaunchNightCommandQueueItem | null;
+  lane: RevenueBusinessFleetLaunchNightLane;
+  status: RevenueBusinessFleetLaunchNightExecutionChecklistItemStatus;
+}) {
+  if (input.status === "ready_to_resolve") return "/merch/revenue-engine/business-fleet-scheduler/launch-night/commands/apply";
+  if (input.status === "waiting_on_command_record") return "/merch/revenue-engine/business-fleet-scheduler/launch-night/apply";
+  if (input.command?.recommendedEndpoint) return input.command.recommendedEndpoint;
+
+  return input.lane.nextInternalAction.endpoint;
+}
+
+function launchNightExecutionChecklistReason(input: {
+  command: RevenueBusinessFleetLaunchNightCommandQueueItem | null;
+  lane: RevenueBusinessFleetLaunchNightLane;
+  status: RevenueBusinessFleetLaunchNightExecutionChecklistItemStatus;
+}) {
+  if (input.status === "ready_to_resolve") return "Launch-night command is queued and runnable; resolve the internal record before the lane advances.";
+  if (input.status === "waiting_on_command_record") return "Lane is ranked for tonight but has no launch-night command record yet; record launch-night commands first.";
+  if (input.status === "already_resolved") return "Launch-night command is already resolved internally; continue with the lane's next internal action.";
+  if (input.status === "blocked") return input.command?.reason ?? input.lane.reason;
+  if (input.status === "watch") return "Lane is visible for context only and should not enter tonight's execution set.";
+
+  return input.lane.reason;
+}
+
+async function buildRevenueBusinessFleetLaunchNightExecutionChecklistForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchNightExecutionChecklistQueryInput
+) {
+  const launchNightInput = revenueBusinessFleetLaunchNightQuerySchema.parse(input);
+  const commandQueueInput = revenueBusinessFleetLaunchNightCommandQueueQuerySchema.parse({
+    maxCommands: input.maxCommands,
+    statuses: ["queued", "blocked", "applied", "skipped"]
+  });
+  const [launchNight, commandQueue] = await Promise.all([
+    buildRevenueBusinessFleetLaunchNightForUser(userId, launchNightInput),
+    buildRevenueBusinessFleetLaunchNightCommandQueueForUser(userId, commandQueueInput)
+  ]);
+  const commandByTargetId = new Map(commandQueue.plan.commands.map((command) => [command.commandRecord.targetId, command]));
+  const checklist = launchNight.plan.lanes
+    .slice(0, input.maxChecklistItems)
+    .map((lane) => {
+      const command = commandByTargetId.get(lane.businessId) ?? commandQueue.plan.commands.find((item) => item.targetName === lane.businessName) ?? null;
+      const status = launchNightExecutionChecklistStatus({ command, lane });
+      const endpoint = launchNightExecutionChecklistEndpoint({ command, lane, status });
+      const reason = launchNightExecutionChecklistReason({ command, lane, status });
+
+      return {
+        action: command?.action ?? businessFleetLaunchNightCommandAction(lane),
+        blockers: uniqueStrings([
+          ...lane.blockers,
+          command?.riskLevel === "high" ? "Launch-night command is high risk." : "",
+          command?.status === "blocked" ? "Launch-night command record is blocked." : ""
+        ]),
+        businessId: lane.businessId,
+        businessName: lane.businessName,
+        commandHash: command?.commandHash ?? null,
+        commandRecordId: command?.commandRecordId ?? null,
+        endpoint,
+        expectedInternalEffect: command?.commandRecord.control
+          ? stringFromRecord(recordFromUnknown(command.commandRecord.control), "expectedInternalEffect") ?? `Advance ${lane.businessName} through ${lane.nextInternalAction.label} internally.`
+          : `Record launch-night command context for ${lane.businessName}; external execution remains locked.`,
+        externalExecution: false as const,
+        laneStatus: lane.status,
+        launchabilityScore: lane.launchabilityScore,
+        nextInternalState: status === "ready_to_resolve"
+          ? command?.nextInternalState ?? "launch_night_command_review"
+          : lane.nextInternalAction.state,
+        priority: status === "ready_to_resolve" ? 1 : status === "waiting_on_command_record" ? 2 : status === "already_resolved" ? 4 : status === "blocked" ? 8 : 6,
+        providerContacted: false as const,
+        reason,
+        recommendedResolution: command?.recommendedResolution ?? null,
+        riskLevel: command?.riskLevel ?? businessFleetLaunchNightCommandRisk(lane),
+        status,
+        tonightSlot: lane.tonightSlot
+      };
+    })
+    .sort((left, right) => left.priority - right.priority || left.tonightSlot - right.tonightSlot);
+  const statusCount = (status: RevenueBusinessFleetLaunchNightExecutionChecklistItemStatus) => checklist.filter((item) => item.status === status).length;
+
+  return {
+    plan: {
+      auditEvents: [
+        "Execution checklist composes ranked launch-night lanes with persisted launch-night command records.",
+        "Checklist is read-only; it does not launch stores, move money, contact providers, run browsers, publish listings, or upload content."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...launchNight.plan.blockedExternalActions,
+        ...commandQueue.plan.blockedExternalActions,
+        "Treating checklist review as external launch execution"
+      ]),
+      checklist,
+      commandQueue: {
+        summary: commandQueue.plan.summary,
+        totals: commandQueue.plan.totals
+      },
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      launchNight: {
+        summary: launchNight.plan.summary,
+        totals: launchNight.plan.totals
+      },
+      mode: "Revenue Business Fleet Launch Night Execution Checklist" as const,
+      options: {
+        launchNightSize: input.launchNightSize,
+        maxChecklistItems: input.maxChecklistItems,
+        maxCommands: input.maxCommands,
+        sourceKeys: input.sourceKeys
+      },
+      providerContacted: false as const,
+      summary: `${checklist.length} launch-night checklist item${checklist.length === 1 ? "" : "s"} prepared: ${statusCount("ready_to_resolve")} ready to resolve, ${statusCount("waiting_on_command_record")} waiting on command records, ${statusCount("already_resolved")} resolved, ${statusCount("blocked")} blocked.`,
+      totals: {
+        alreadyResolved: statusCount("already_resolved"),
+        blocked: statusCount("blocked"),
+        checklistItems: checklist.length,
+        externalExecutionLocked: checklist.filter((item) => item.externalExecution === false).length,
+        providerContacted: 0,
+        readyToResolve: statusCount("ready_to_resolve"),
+        waitingOnCommandRecord: statusCount("waiting_on_command_record"),
+        waitingOnDependency: statusCount("waiting_on_dependency"),
+        watch: statusCount("watch")
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetLaunchNightOperatorConsoleStatus =
+  | "blocked"
+  | "monitor_rotation"
+  | "record_launch_command"
+  | "record_manual_evidence"
+  | "record_outcome_signal"
+  | "resolve_launch_command"
+  | "waiting"
+  | "watch";
+
+type RevenueBusinessFleetLaunchNightExecutionChecklistItem = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchNightExecutionChecklistForUser>>["plan"]["checklist"][number];
+type RevenueBusinessFleetManualLaunchEvidencePacket = Awaited<ReturnType<typeof buildRevenueBusinessFleetManualLaunchEvidenceForUser>>["plan"]["packets"][number];
+type RevenueBusinessFleetLaunchOutcomeSignalPacket = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchOutcomeSignalsForUser>>["plan"]["packets"][number];
+
+function launchNightOperatorConsoleStatus(input: {
+  checklist: RevenueBusinessFleetLaunchNightExecutionChecklistItem;
+  evidence: RevenueBusinessFleetManualLaunchEvidencePacket | null;
+  signal: RevenueBusinessFleetLaunchOutcomeSignalPacket | null;
+}): RevenueBusinessFleetLaunchNightOperatorConsoleStatus {
+  if (input.checklist.status === "blocked" || input.evidence?.status === "blocked" || input.signal?.status === "blocked") return "blocked";
+  if (input.checklist.status === "ready_to_resolve") return "resolve_launch_command";
+  if (input.checklist.status === "waiting_on_command_record") return "record_launch_command";
+  if (input.checklist.status === "watch") return "watch";
+
+  const evidenceRecorded = Boolean(input.signal?.evidenceAuditLogId || input.evidence?.auditLogId);
+
+  if (input.evidence?.status === "ready_for_evidence" && !evidenceRecorded) return "record_manual_evidence";
+  if (input.signal?.status === "ready_for_signal") return "record_outcome_signal";
+  if (input.signal?.status === "signal_recorded") return "monitor_rotation";
+  if (input.signal?.status === "waiting_for_manual_evidence") return "record_manual_evidence";
+
+  return "waiting";
+}
+
+function launchNightOperatorConsoleEndpoint(status: RevenueBusinessFleetLaunchNightOperatorConsoleStatus) {
+  if (status === "resolve_launch_command") return "/merch/revenue-engine/business-fleet-scheduler/launch-night/commands/apply";
+  if (status === "record_launch_command") return "/merch/revenue-engine/business-fleet-scheduler/launch-night/apply";
+  if (status === "record_manual_evidence") return "/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence/apply";
+  if (status === "record_outcome_signal") return "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply";
+  if (status === "monitor_rotation") return "/merch/revenue-engine/portfolio";
+
+  return "/merch/revenue-engine/business-fleet-scheduler/launch-night/operator-console";
+}
+
+function launchNightOperatorConsoleNextState(status: RevenueBusinessFleetLaunchNightOperatorConsoleStatus) {
+  if (status === "resolve_launch_command") return "resolve_launch_night_command";
+  if (status === "record_launch_command") return "record_launch_night_command";
+  if (status === "record_manual_evidence") return "record_operator_completed_manual_launch_evidence";
+  if (status === "record_outcome_signal") return "record_launch_outcome_signal";
+  if (status === "monitor_rotation") return "monitor_score_and_rotate";
+  if (status === "watch") return "watch_rotation_pressure";
+  if (status === "blocked") return "repair_launch_console_blocker";
+
+  return "waiting_for_launch_dependency";
+}
+
+function launchNightOperatorConsolePriority(status: RevenueBusinessFleetLaunchNightOperatorConsoleStatus) {
+  if (status === "resolve_launch_command") return 1;
+  if (status === "record_launch_command") return 2;
+  if (status === "record_manual_evidence") return 3;
+  if (status === "record_outcome_signal") return 4;
+  if (status === "monitor_rotation") return 5;
+  if (status === "waiting") return 6;
+  if (status === "watch") return 7;
+
+  return 8;
+}
+
+function launchNightOperatorConsoleReason(input: {
+  checklist: RevenueBusinessFleetLaunchNightExecutionChecklistItem;
+  evidence: RevenueBusinessFleetManualLaunchEvidencePacket | null;
+  signal: RevenueBusinessFleetLaunchOutcomeSignalPacket | null;
+  status: RevenueBusinessFleetLaunchNightOperatorConsoleStatus;
+}) {
+  if (input.status === "resolve_launch_command") return "Launch command is queued and runnable; resolve the internal command record before the operator lane advances.";
+  if (input.status === "record_launch_command") return "Lane is ranked for tonight but still needs an internal launch-night command record.";
+  if (input.status === "record_manual_evidence") return "Operator must complete the manual launch step, then record evidence so outcome signals can be captured.";
+  if (input.status === "record_outcome_signal") return "Manual launch evidence exists; record revenue, profit, and conversion outcome signals into the performance ledger.";
+  if (input.status === "monitor_rotation") return "Outcome signal is already recorded; monitor scored portfolio rotation for scale, watch, pause, or kill.";
+  if (input.status === "watch") return "Lane is visible for context only and should not enter tonight's execution set.";
+  if (input.status === "blocked") {
+    return uniqueStrings([
+      ...input.checklist.blockers,
+      ...(input.evidence?.blockers ?? []),
+      ...(input.signal?.blockers ?? [])
+    ])[0] ?? input.checklist.reason;
+  }
+
+  return input.signal?.reason ?? input.evidence?.reason ?? input.checklist.reason;
+}
+
+async function buildRevenueBusinessFleetLaunchNightOperatorConsoleForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchNightOperatorConsoleQueryInput
+) {
+  const checklistInput = revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema.parse(input);
+  const evidenceInput = revenueBusinessFleetManualLaunchEvidenceQuerySchema.parse({
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys
+  });
+  const signalInput = revenueBusinessFleetLaunchOutcomeSignalsQuerySchema.parse({
+    launchWaveSize: input.launchWaveSize,
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    maxSignals: input.maxSignals,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys,
+    targetBusinesses: input.targetBusinesses
+  });
+  const [checklist, manualEvidence, outcomeSignals] = await Promise.all([
+    buildRevenueBusinessFleetLaunchNightExecutionChecklistForUser(userId, checklistInput),
+    buildRevenueBusinessFleetManualLaunchEvidenceForUser(userId, evidenceInput),
+    buildRevenueBusinessFleetLaunchOutcomeSignalsForUser(userId, signalInput)
+  ]);
+  const evidenceByStoreId = new Map(manualEvidence.plan.packets.map((packet) => [packet.storeId, packet]));
+  const signalByStoreId = new Map(outcomeSignals.plan.packets.map((packet) => [packet.storeId, packet]));
+  const consoleItems = checklist.plan.checklist
+    .slice(0, input.maxConsoleItems)
+    .map((checklistItem) => {
+      const evidence = evidenceByStoreId.get(checklistItem.businessId) ?? null;
+      const signal = signalByStoreId.get(checklistItem.businessId) ?? null;
+      const status = launchNightOperatorConsoleStatus({ checklist: checklistItem, evidence, signal });
+      const blockers = uniqueStrings([
+        ...checklistItem.blockers,
+        ...(evidence?.blockers ?? []),
+        ...(signal?.blockers ?? [])
+      ]);
+
+      return {
+        action: checklistItem.action,
+        assignmentId: evidence?.assignmentId ?? null,
+        blockers,
+        businessId: checklistItem.businessId,
+        businessName: checklistItem.businessName,
+        checklistStatus: checklistItem.status,
+        commandRecordId: checklistItem.commandRecordId,
+        endpoint: launchNightOperatorConsoleEndpoint(status),
+        evidenceAuditLogId: signal?.evidenceAuditLogId ?? evidence?.auditLogId ?? null,
+        evidencePacketId: evidence?.packetId ?? null,
+        evidenceStatus: evidence?.status ?? null,
+        expectedInternalEffect: checklistItem.expectedInternalEffect,
+        externalExecution: false as const,
+        launchabilityScore: checklistItem.launchabilityScore,
+        nextInternalState: launchNightOperatorConsoleNextState(status),
+        operatorStepRequired: status === "record_manual_evidence",
+        outcomeSignalId: signal?.signalId ?? null,
+        priority: launchNightOperatorConsolePriority(status),
+        providerContacted: false as const,
+        reason: launchNightOperatorConsoleReason({ checklist: checklistItem, evidence, signal, status }),
+        recommendedOutcomeAction: signal?.recommendedAction ?? null,
+        signalStatus: signal?.status ?? null,
+        status,
+        tonightSlot: checklistItem.tonightSlot
+      };
+    })
+    .sort((left, right) => left.priority - right.priority || left.tonightSlot - right.tonightSlot);
+  const statusCount = (status: RevenueBusinessFleetLaunchNightOperatorConsoleStatus) => consoleItems.filter((item) => item.status === status).length;
+
+  return {
+    plan: {
+      auditEvents: [
+        "Operator console composes launch-night checklist, manual launch evidence readiness, and launch outcome signal readiness.",
+        "Console is read-only; it does not perform manual launch steps, contact providers, run browsers, publish listings, upload content, move money, or call external systems.",
+        "The launch-night flow remains command-record gated before evidence and outcome signals can advance scoring."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...checklist.plan.blockedExternalActions,
+        ...manualEvidence.plan.blockedExternalActions,
+        ...outcomeSignals.plan.blockedExternalActions,
+        "Treating the operator console as automated external launch execution"
+      ]),
+      checklist: {
+        summary: checklist.plan.summary,
+        totals: checklist.plan.totals
+      },
+      consoleItems,
+      evidence: {
+        summary: manualEvidence.plan.summary,
+        totals: manualEvidence.plan.totals
+      },
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      mode: "Revenue Business Fleet Launch Night Operator Console" as const,
+      options: {
+        launchNightSize: input.launchNightSize,
+        launchWaveSize: input.launchWaveSize,
+        maxConsoleItems: input.maxConsoleItems,
+        maxSignals: input.maxSignals,
+        sourceKeys: input.sourceKeys
+      },
+      outcomeSignals: {
+        summary: outcomeSignals.plan.summary,
+        totals: outcomeSignals.plan.totals
+      },
+      providerContacted: false as const,
+      summary: `${consoleItems.length} launch-night operator item${consoleItems.length === 1 ? "" : "s"} staged: ${statusCount("record_manual_evidence")} need evidence, ${statusCount("record_outcome_signal")} need outcome signals, ${statusCount("monitor_rotation")} ready for rotation monitoring, ${statusCount("blocked")} blocked.`,
+      totals: {
+        blocked: statusCount("blocked"),
+        consoleItems: consoleItems.length,
+        externalExecutionLocked: consoleItems.filter((item) => item.externalExecution === false).length,
+        monitorRotation: statusCount("monitor_rotation"),
+        operatorStepRequired: consoleItems.filter((item) => item.operatorStepRequired).length,
+        providerContacted: 0,
+        readyForManualEvidence: statusCount("record_manual_evidence"),
+        readyForOutcomeSignal: statusCount("record_outcome_signal"),
+        recordLaunchCommand: statusCount("record_launch_command"),
+        resolveLaunchCommand: statusCount("resolve_launch_command"),
+        waiting: statusCount("waiting"),
+        watch: statusCount("watch")
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetLaunchNightSupervisorStatus =
+  | "advance_cash_cycle"
+  | "blocked"
+  | "monitor_rotation"
+  | "record_launch_commands"
+  | "record_manual_evidence"
+  | "record_outcome_signals"
+  | "resolve_launch_commands"
+  | "waiting";
+
+type RevenueBusinessFleetLaunchNightSupervisorConsolePlan = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchNightOperatorConsoleForUser>>["plan"];
+type RevenueBusinessFleetLaunchNightSupervisorCashCyclePlan = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchCashCycleForUser>>["plan"];
+type RevenueBusinessFleetLaunchNightSupervisorLaunchNightPlan = Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchNightForUser>>["plan"];
+
+function launchNightSupervisorStatus(input: {
+  cashCycle: RevenueBusinessFleetLaunchNightSupervisorCashCyclePlan;
+  console: RevenueBusinessFleetLaunchNightSupervisorConsolePlan;
+}): RevenueBusinessFleetLaunchNightSupervisorStatus {
+  const totals = input.console.totals;
+
+  if (totals.blocked > 0) return "blocked";
+  if (totals.resolveLaunchCommand > 0) return "resolve_launch_commands";
+  if (totals.recordLaunchCommand > 0) return "record_launch_commands";
+  if (totals.readyForManualEvidence > 0) return "record_manual_evidence";
+  if (totals.readyForOutcomeSignal > 0) return "record_outcome_signals";
+  if (input.cashCycle.nextStep?.status === "ready" || input.cashCycle.nextStep?.status === "approval_required") return "advance_cash_cycle";
+  if (totals.monitorRotation > 0) return "monitor_rotation";
+
+  return "waiting";
+}
+
+function launchNightSupervisorNextAction(input: {
+  cashCycle: RevenueBusinessFleetLaunchNightSupervisorCashCyclePlan;
+  console: RevenueBusinessFleetLaunchNightSupervisorConsolePlan;
+  status: RevenueBusinessFleetLaunchNightSupervisorStatus;
+}) {
+  const totals = input.console.totals;
+
+  if (input.status === "blocked") {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/operator-console",
+      label: "Repair blocked launch rows",
+      reason: input.console.consoleItems.find((item) => item.status === "blocked")?.reason ?? "One or more launch-night rows are blocked.",
+      state: "repair_launch_console_blocker"
+    };
+  }
+
+  if (input.status === "resolve_launch_commands") {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/commands/apply",
+      label: "Resolve launch-night commands",
+      reason: `${totals.resolveLaunchCommand} launch-night command${totals.resolveLaunchCommand === 1 ? "" : "s"} can be resolved internally.`,
+      state: "resolve_launch_night_command_queue"
+    };
+  }
+
+  if (input.status === "record_launch_commands") {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/apply",
+      label: "Record launch-night commands",
+      reason: `${totals.recordLaunchCommand} launch-night lane${totals.recordLaunchCommand === 1 ? "" : "s"} need internal command records.`,
+      state: "record_launch_night_commands"
+    };
+  }
+
+  if (input.status === "record_manual_evidence") {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence/apply",
+      label: "Record manual launch evidence",
+      reason: `${totals.readyForManualEvidence} launch lane${totals.readyForManualEvidence === 1 ? "" : "s"} need operator-completed manual evidence before outcome scoring.`,
+      state: "record_operator_completed_manual_launch_evidence"
+    };
+  }
+
+  if (input.status === "record_outcome_signals") {
+    return {
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply",
+      label: "Record outcome signals",
+      reason: `${totals.readyForOutcomeSignal} launch lane${totals.readyForOutcomeSignal === 1 ? "" : "s"} have evidence and need revenue/profit signal capture.`,
+      state: "record_launch_outcome_signals"
+    };
+  }
+
+  if (input.status === "advance_cash_cycle" && input.cashCycle.nextStep) {
+    return {
+      endpoint: input.cashCycle.nextStep.endpoint,
+      label: input.cashCycle.nextStep.label,
+      reason: input.cashCycle.nextStep.reason,
+      state: input.cashCycle.nextStep.nextInternalState
+    };
+  }
+
+  if (input.status === "monitor_rotation") {
+    return {
+      endpoint: "/merch/revenue-engine/portfolio",
+      label: "Monitor scored rotation",
+      reason: `${totals.monitorRotation} launched lane${totals.monitorRotation === 1 ? "" : "s"} have recorded signals and should be watched for scale, pause, or kill pressure.`,
+      state: "monitor_score_and_rotate"
+    };
+  }
+
+  return {
+    endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/supervisor",
+    label: "Wait for launch dependencies",
+    reason: "No launch-night row is currently actionable; load upstream fleet, launch gate, evidence, and command stages.",
+    state: "waiting_for_launch_dependency"
+  };
+}
+
+function launchNightSupervisorStageStatus(ready: number, blocked: number, waiting = 0) {
+  if (blocked > 0) return "blocked";
+  if (ready > 0) return "ready";
+  if (waiting > 0) return "waiting";
+
+  return "watch";
+}
+
+async function buildRevenueBusinessFleetLaunchNightSupervisorForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchNightSupervisorQueryInput
+) {
+  const [operatorConsole, cashCycle, launchNight] = await Promise.all([
+    buildRevenueBusinessFleetLaunchNightOperatorConsoleForUser(userId, revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema.parse(input)),
+    buildRevenueBusinessFleetLaunchCashCycleForUser(userId, revenueBusinessFleetLaunchCashCycleQuerySchema.parse(input)),
+    buildRevenueBusinessFleetLaunchNightForUser(userId, revenueBusinessFleetLaunchNightQuerySchema.parse(input))
+  ]);
+  const status = launchNightSupervisorStatus({ cashCycle: cashCycle.plan, console: operatorConsole.plan });
+  const nextAction = launchNightSupervisorNextAction({ cashCycle: cashCycle.plan, console: operatorConsole.plan, status });
+  const actionableConsoleItems = operatorConsole.plan.totals.recordLaunchCommand
+    + operatorConsole.plan.totals.resolveLaunchCommand
+    + operatorConsole.plan.totals.readyForManualEvidence
+    + operatorConsole.plan.totals.readyForOutcomeSignal;
+  const canStartTonight = launchNight.plan.totals.readyNow > 0
+    && cashCycle.plan.launchControl.swarm.safeLaunchReady > 0
+    && operatorConsole.plan.totals.blocked === 0
+    && operatorConsole.plan.consoleItems.length > 0;
+  const supervisorItems = operatorConsole.plan.consoleItems.slice(0, input.maxSupervisorItems).map((item) => ({
+    assignmentId: item.assignmentId,
+    businessId: item.businessId,
+    businessName: item.businessName,
+    commandRecordId: item.commandRecordId,
+    endpoint: item.endpoint,
+    nextInternalState: item.nextInternalState,
+    outcomeSignalId: item.outcomeSignalId,
+    reason: item.reason,
+    selectable: item.status === "record_manual_evidence" || item.status === "record_outcome_signal",
+    status: item.status,
+    tonightSlot: item.tonightSlot
+  }));
+
+  return {
+    plan: {
+      auditEvents: [
+        "Launch-night supervisor aggregates launch-night lanes, command queue state, operator console rows, outcome signal readiness, and cash-cycle readiness.",
+        "Supervisor is read-only and only recommends the next internal action; it does not contact providers, run browsers, publish listings, upload content, execute ad spend, move money, or call external systems."
+      ],
+      blockedExternalActions: uniqueStrings([
+        ...operatorConsole.plan.blockedExternalActions,
+        ...cashCycle.plan.blockedExternalActions,
+        "Treating the launch-night supervisor as external execution"
+      ]),
+      canStartTonight,
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      mode: "Revenue Business Fleet Launch Night Supervisor" as const,
+      nextAction,
+      options: {
+        launchNightSize: input.launchNightSize,
+        launchWaveSize: input.launchWaveSize,
+        maxSupervisorItems: input.maxSupervisorItems,
+        sourceKeys: input.sourceKeys,
+        targetBusinesses: input.targetBusinesses
+      },
+      providerContacted: false as const,
+      stageCards: [
+        {
+          blocked: launchNight.plan.totals.blocked,
+          endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night",
+          label: "Launch Night",
+          ready: launchNight.plan.totals.readyNow,
+          reason: launchNight.plan.summary,
+          status: launchNightSupervisorStageStatus(launchNight.plan.totals.readyNow, launchNight.plan.totals.blocked),
+          total: launchNight.plan.totals.lanes
+        },
+        {
+          blocked: operatorConsole.plan.totals.blocked,
+          endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/operator-console",
+          label: "Operator Console",
+          ready: actionableConsoleItems,
+          reason: operatorConsole.plan.summary,
+          status: launchNightSupervisorStageStatus(actionableConsoleItems, operatorConsole.plan.totals.blocked, operatorConsole.plan.totals.waiting),
+          total: operatorConsole.plan.totals.consoleItems
+        },
+        {
+          blocked: 0,
+          endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply",
+          label: "Outcome Signals",
+          ready: operatorConsole.plan.totals.readyForOutcomeSignal,
+          reason: operatorConsole.plan.outcomeSignals.summary,
+          status: launchNightSupervisorStageStatus(operatorConsole.plan.totals.readyForOutcomeSignal, 0, operatorConsole.plan.outcomeSignals.totals.waitingForManualEvidence),
+          total: operatorConsole.plan.outcomeSignals.totals.signalPackets
+        },
+        {
+          blocked: cashCycle.plan.totals.blocked,
+          endpoint: cashCycle.plan.nextStep?.endpoint ?? "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle",
+          label: "Cash Cycle",
+          ready: cashCycle.plan.totals.ready,
+          reason: cashCycle.plan.summary,
+          status: launchNightSupervisorStageStatus(cashCycle.plan.totals.ready, cashCycle.plan.totals.blocked, cashCycle.plan.totals.waiting),
+          total: cashCycle.plan.totals.steps
+        }
+      ],
+      summary: canStartTonight
+        ? `${launchNight.plan.totals.readyNow}/${input.launchNightSize} launch-night lane${launchNight.plan.totals.readyNow === 1 ? "" : "s"} are startable. Next: ${nextAction.label}.`
+        : `${launchNight.plan.totals.readyNow}/${input.launchNightSize} launch-night lane${launchNight.plan.totals.readyNow === 1 ? "" : "s"} ready; supervisor status ${status.replace(/_/g, " ")}. Next: ${nextAction.label}.`,
+      supervisorItems,
+      totals: {
+        actionableConsoleItems,
+        blockedConsoleItems: operatorConsole.plan.totals.blocked,
+        cashCycleApprovalRequired: cashCycle.plan.totals.approvalRequired,
+        cashCycleBlocked: cashCycle.plan.totals.blocked,
+        cashCycleReady: cashCycle.plan.totals.ready,
+        consoleItems: operatorConsole.plan.totals.consoleItems,
+        launchNightSize: input.launchNightSize,
+        monitorRotation: operatorConsole.plan.totals.monitorRotation,
+        readyForManualEvidence: operatorConsole.plan.totals.readyForManualEvidence,
+        readyForOutcomeSignal: operatorConsole.plan.totals.readyForOutcomeSignal,
+        readyNow: launchNight.plan.totals.readyNow,
+        safeLaunchReady: cashCycle.plan.launchControl.swarm.safeLaunchReady,
+        targetBusinesses: input.targetBusinesses
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetLaunchNightSupervisorActionType =
+  | "advance_cash_cycle"
+  | "monitor_rotation"
+  | "record_launch_commands"
+  | "record_manual_evidence"
+  | "record_outcome_signals"
+  | "repair_blocker"
+  | "resolve_launch_commands"
+  | "wait";
+
+type RevenueBusinessFleetLaunchNightSupervisorActionMethod = "GET" | "POST";
+
+function limitedSupervisorActionIds(values: Array<string | null | undefined>, limit: number) {
+  return uniqueStrings(values.filter((value): value is string => Boolean(value))).slice(0, limit);
+}
+
+function buildRevenueBusinessFleetLaunchNightSupervisorAction(input: {
+  actionType: RevenueBusinessFleetLaunchNightSupervisorActionType;
+  approvalPhrase?: string | null;
+  blockedExternalActions: string[];
+  confirm?: string | null;
+  dryRunSupported: boolean;
+  endpoint: string;
+  label: string;
+  method: RevenueBusinessFleetLaunchNightSupervisorActionMethod;
+  nextInternalState: string;
+  payloadPreview: Record<string, unknown> | null;
+  reason: string;
+  recordSupported: boolean;
+  selectedIds?: {
+    assignmentIds?: string[];
+    commandRecordIds?: string[];
+    laneIds?: string[];
+    signalIds?: string[];
+  };
+}) {
+  const selectedIds = {
+    assignmentIds: input.selectedIds?.assignmentIds ?? [],
+    commandRecordIds: input.selectedIds?.commandRecordIds ?? [],
+    laneIds: input.selectedIds?.laneIds ?? [],
+    signalIds: input.selectedIds?.signalIds ?? []
+  };
+  const selectedKey = uniqueStrings([
+    ...selectedIds.commandRecordIds,
+    ...selectedIds.laneIds,
+    ...selectedIds.assignmentIds,
+    ...selectedIds.signalIds
+  ]).slice(0, 3).join(":") || input.nextInternalState;
+
+  return {
+    actionId: `launch_night_supervisor:${input.actionType}:${selectedKey}`,
+    actionType: input.actionType,
+    approvalPhrase: input.approvalPhrase ?? null,
+    blockedExternalActions: input.blockedExternalActions,
+    confirm: input.confirm ?? null,
+    dryRunSupported: input.dryRunSupported,
+    endpoint: input.endpoint,
+    externalExecution: false as const,
+    label: input.label,
+    method: input.method,
+    nextInternalState: input.nextInternalState,
+    payloadPreview: input.payloadPreview,
+    providerContacted: false as const,
+    reason: input.reason,
+    recordSupported: input.recordSupported,
+    selectedIds
+  };
+}
+
+async function buildRevenueBusinessFleetLaunchNightSupervisorActionsForUser(
+  userId: string,
+  input: RevenueBusinessFleetLaunchNightSupervisorActionsQueryInput
+) {
+  const supervisor = await buildRevenueBusinessFleetLaunchNightSupervisorForUser(
+    userId,
+    revenueBusinessFleetLaunchNightSupervisorQuerySchema.parse(input)
+  );
+  const itemLimit = Math.min(10, input.maxSupervisorItems);
+  const supervisorItems = supervisor.plan.supervisorItems;
+  const actionBlockedExternalActions = uniqueStrings([
+    ...supervisor.plan.blockedExternalActions,
+    "Executing provider, browser, marketplace, ad, payout, payment, upload, or external write actions from supervisor action queue"
+  ]);
+  const resolveCommandRecordIds = limitedSupervisorActionIds(
+    supervisorItems
+      .filter((item) => item.status === "resolve_launch_command")
+      .map((item) => item.commandRecordId),
+    itemLimit
+  );
+  const launchCommandLaneIds = limitedSupervisorActionIds(
+    supervisorItems
+      .filter((item) => item.status === "record_launch_command")
+      .map((item) => item.businessId),
+    itemLimit
+  );
+  const evidenceAssignmentIds = limitedSupervisorActionIds(
+    supervisorItems
+      .filter((item) => item.status === "record_manual_evidence")
+      .map((item) => item.assignmentId),
+    itemLimit
+  );
+  const outcomeSignalIds = limitedSupervisorActionIds(
+    supervisorItems
+      .filter((item) => item.status === "record_outcome_signal")
+      .map((item) => item.outcomeSignalId),
+    itemLimit
+  );
+  const actions = [
+    resolveCommandRecordIds.length > 0
+      ? buildRevenueBusinessFleetLaunchNightSupervisorAction({
+        actionType: "resolve_launch_commands",
+        blockedExternalActions: actionBlockedExternalActions,
+        confirm: revenueBusinessFleetLaunchNightCommandQueueConfirmation,
+        dryRunSupported: true,
+        endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/commands/apply",
+        label: "Resolve launch-night command queue",
+        method: "POST",
+        nextInternalState: "resolve_launch_night_command_queue",
+        payloadPreview: {
+          commandRecordIds: resolveCommandRecordIds,
+          confirm: revenueBusinessFleetLaunchNightCommandQueueConfirmation,
+          dryRun: true,
+          maxCommands: input.maxCommands,
+          note: "Prepared from Business Fleet launch-night supervisor actions.",
+          resolution: "applied",
+          statuses: ["queued", "blocked"]
+        },
+        reason: `${resolveCommandRecordIds.length} launch-night command record${resolveCommandRecordIds.length === 1 ? "" : "s"} can be resolved internally before lane advancement.`,
+        recordSupported: true,
+        selectedIds: {
+          commandRecordIds: resolveCommandRecordIds
+        }
+      })
+      : null,
+    launchCommandLaneIds.length > 0
+      ? buildRevenueBusinessFleetLaunchNightSupervisorAction({
+        actionType: "record_launch_commands",
+        blockedExternalActions: actionBlockedExternalActions,
+        confirm: revenueBusinessFleetLaunchNightCommandConfirmation,
+        dryRunSupported: true,
+        endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/apply",
+        label: "Record launch-night commands",
+        method: "POST",
+        nextInternalState: "record_launch_night_commands",
+        payloadPreview: {
+          confirm: revenueBusinessFleetLaunchNightCommandConfirmation,
+          dryRun: true,
+          laneIds: launchCommandLaneIds,
+          launchNightSize: input.launchNightSize,
+          launchWaveSize: input.launchWaveSize,
+          maxCommands: input.maxCommands,
+          maxLanes: input.maxLanes,
+          maxParallelLaunches: input.maxParallelLaunches,
+          maxParallelScaleActions: input.maxParallelScaleActions,
+          maxStores: input.maxStores,
+          maxWorkers: input.maxWorkers,
+          note: "Prepared from Business Fleet launch-night supervisor actions.",
+          qualityFloor: input.qualityFloor,
+          shardCount: input.shardCount,
+          sourceKeys: input.sourceKeys,
+          targetBusinesses: input.targetBusinesses
+        },
+        reason: `${launchCommandLaneIds.length} launch-night lane${launchCommandLaneIds.length === 1 ? "" : "s"} need internal command records.`,
+        recordSupported: true,
+        selectedIds: {
+          laneIds: launchCommandLaneIds
+        }
+      })
+      : null,
+    evidenceAssignmentIds.length > 0
+      ? buildRevenueBusinessFleetLaunchNightSupervisorAction({
+        actionType: "record_manual_evidence",
+        approvalPhrase: revenueBusinessFleetManualLaunchEvidencePhrase,
+        blockedExternalActions: actionBlockedExternalActions,
+        confirm: revenueBusinessFleetManualLaunchEvidenceConfirmation,
+        dryRunSupported: true,
+        endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence/apply",
+        label: "Record manual launch evidence",
+        method: "POST",
+        nextInternalState: "record_operator_completed_manual_launch_evidence",
+        payloadPreview: {
+          approvalPhrase: revenueBusinessFleetManualLaunchEvidencePhrase,
+          assignmentIds: evidenceAssignmentIds,
+          confirm: revenueBusinessFleetManualLaunchEvidenceConfirmation,
+          dryRun: true,
+          evidenceCategory: "operator_notes",
+          evidenceNote: "Prepared from Business Fleet launch-night supervisor actions.",
+          maxAssignments: input.maxAssignments,
+          maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+          maxLeases: input.maxLeases,
+          maxLeasesPerShard: input.maxLeasesPerShard,
+          maxStores: input.maxStores,
+          maxWorkers: input.maxWorkers,
+          operatorCompletedManualStep: true,
+          qualityFloor: input.qualityFloor,
+          shardCount: input.shardCount,
+          sourceKeys: input.sourceKeys
+        },
+        reason: `${evidenceAssignmentIds.length} assignment${evidenceAssignmentIds.length === 1 ? "" : "s"} need operator-completed manual launch evidence before outcome signals.`,
+        recordSupported: true,
+        selectedIds: {
+          assignmentIds: evidenceAssignmentIds
+        }
+      })
+      : null,
+    outcomeSignalIds.length > 0
+      ? buildRevenueBusinessFleetLaunchNightSupervisorAction({
+        actionType: "record_outcome_signals",
+        blockedExternalActions: actionBlockedExternalActions,
+        confirm: revenueBusinessFleetLaunchOutcomeSignalsConfirmation,
+        dryRunSupported: true,
+        endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply",
+        label: "Record outcome signals",
+        method: "POST",
+        nextInternalState: "record_launch_outcome_signals",
+        payloadPreview: {
+          adSpend: 0,
+          confirm: revenueBusinessFleetLaunchOutcomeSignalsConfirmation,
+          digitalDeliveryCost: 0,
+          discounts: 0,
+          dryRun: true,
+          grossRevenue: 0,
+          impressions: 0,
+          launchWaveSize: input.launchWaveSize,
+          maxAssignments: input.maxAssignments,
+          maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+          maxLeases: input.maxLeases,
+          maxLeasesPerShard: input.maxLeasesPerShard,
+          maxParallelLaunches: input.maxParallelLaunches,
+          maxParallelScaleActions: input.maxParallelScaleActions,
+          maxSignals: input.maxSignals,
+          maxStores: input.maxStores,
+          maxWorkers: input.maxWorkers,
+          netProfit: 0,
+          note: "Prepared from Business Fleet launch-night supervisor actions.",
+          platformFees: 0,
+          productionCost: 0,
+          qualityFloor: input.qualityFloor,
+          refunds: 0,
+          shardCount: input.shardCount,
+          shippingCost: 0,
+          signalIds: outcomeSignalIds,
+          source: "manual",
+          sourceKeys: input.sourceKeys,
+          targetBusinesses: input.targetBusinesses,
+          unitsSold: 0,
+          visits: 0
+        },
+        reason: `${outcomeSignalIds.length} launch outcome signal${outcomeSignalIds.length === 1 ? "" : "s"} can feed scored rotation and financial pressure.`,
+        recordSupported: true,
+        selectedIds: {
+          signalIds: outcomeSignalIds
+        }
+      })
+      : null,
+    supervisor.plan.totals.cashCycleReady + supervisor.plan.totals.cashCycleApprovalRequired > 0
+      ? buildRevenueBusinessFleetLaunchNightSupervisorAction({
+        actionType: "advance_cash_cycle",
+        blockedExternalActions: actionBlockedExternalActions,
+        confirm: revenueBusinessFleetLaunchCashCycleConfirmation,
+        dryRunSupported: true,
+        endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/apply",
+        label: "Record cash-cycle command",
+        method: "POST",
+        nextInternalState: supervisor.plan.nextAction.state,
+        payloadPreview: {
+          confirm: revenueBusinessFleetLaunchCashCycleConfirmation,
+          dryRun: true,
+          launchWaveSize: input.launchWaveSize,
+          maxAssignments: input.maxAssignments,
+          maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+          maxLeases: input.maxLeases,
+          maxLeasesPerShard: input.maxLeasesPerShard,
+          maxParallelLaunches: input.maxParallelLaunches,
+          maxParallelScaleActions: input.maxParallelScaleActions,
+          maxSignals: input.maxSignals,
+          maxStores: input.maxStores,
+          maxWorkers: input.maxWorkers,
+          note: "Prepared from Business Fleet launch-night supervisor actions.",
+          qualityFloor: input.qualityFloor,
+          shardCount: input.shardCount,
+          sourceKeys: input.sourceKeys,
+          targetBusinesses: input.targetBusinesses
+        },
+        reason: `Cash cycle has ${supervisor.plan.totals.cashCycleReady} ready step${supervisor.plan.totals.cashCycleReady === 1 ? "" : "s"} and ${supervisor.plan.totals.cashCycleApprovalRequired} approval review${supervisor.plan.totals.cashCycleApprovalRequired === 1 ? "" : "s"} available for internal command recording.`,
+        recordSupported: true
+      })
+      : null,
+    supervisor.plan.totals.monitorRotation > 0
+      ? buildRevenueBusinessFleetLaunchNightSupervisorAction({
+        actionType: "monitor_rotation",
+        blockedExternalActions: actionBlockedExternalActions,
+        dryRunSupported: false,
+        endpoint: "/merch/revenue-engine/portfolio",
+        label: "Monitor scored rotation",
+        method: "GET",
+        nextInternalState: "monitor_score_and_rotate",
+        payloadPreview: null,
+        reason: `${supervisor.plan.totals.monitorRotation} launched lane${supervisor.plan.totals.monitorRotation === 1 ? "" : "s"} have signals and should be checked for scale, watch, pause, or kill pressure.`,
+        recordSupported: false
+      })
+      : null,
+    supervisor.plan.totals.blockedConsoleItems > 0
+      ? buildRevenueBusinessFleetLaunchNightSupervisorAction({
+        actionType: "repair_blocker",
+        blockedExternalActions: actionBlockedExternalActions,
+        dryRunSupported: false,
+        endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/operator-console",
+        label: "Repair blocked launch rows",
+        method: "GET",
+        nextInternalState: "repair_launch_console_blocker",
+        payloadPreview: null,
+        reason: `${supervisor.plan.totals.blockedConsoleItems} launch-night console row${supervisor.plan.totals.blockedConsoleItems === 1 ? "" : "s"} are blocked and should be repaired before scaling lane count.`,
+        recordSupported: false
+      })
+      : null
+  ].filter((action): action is NonNullable<typeof action> => Boolean(action));
+  const recommendedActions = actions.length > 0
+    ? actions.slice(0, input.maxActions)
+    : [buildRevenueBusinessFleetLaunchNightSupervisorAction({
+      actionType: "wait",
+      blockedExternalActions: actionBlockedExternalActions,
+      dryRunSupported: false,
+      endpoint: "/merch/revenue-engine/business-fleet-scheduler/launch-night/supervisor",
+      label: "Wait for launch dependencies",
+      method: "GET",
+      nextInternalState: "waiting_for_launch_dependency",
+      payloadPreview: null,
+      reason: "No launch-night row is currently actionable; load upstream fleet, launch gate, evidence, command queue, and outcome signal stages.",
+      recordSupported: false
+    })];
+  const totalSelectedIds = recommendedActions.reduce((sum, action) => sum
+    + action.selectedIds.assignmentIds.length
+    + action.selectedIds.commandRecordIds.length
+    + action.selectedIds.laneIds.length
+    + action.selectedIds.signalIds.length, 0);
+
+  return {
+    plan: {
+      actions: recommendedActions,
+      auditEvents: [
+        "Supervisor action queue converts launch-night supervisor state into bounded internal action payload previews.",
+        "Queue is read-only and does not execute external actions, move money, contact providers, run browsers, publish listings, upload content, or change ad spend.",
+        "Payload previews target existing internal apply endpoints so later one-click controls can preserve the current command chain."
+      ],
+      blockedExternalActions: actionBlockedExternalActions,
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      mode: "Revenue Business Fleet Launch Night Supervisor Action Queue" as const,
+      options: {
+        launchNightSize: input.launchNightSize,
+        launchWaveSize: input.launchWaveSize,
+        maxActions: input.maxActions,
+        maxSupervisorItems: input.maxSupervisorItems,
+        sourceKeys: input.sourceKeys,
+        targetBusinesses: input.targetBusinesses
+      },
+      providerContacted: false as const,
+      summary: `${recommendedActions.length} supervisor action${recommendedActions.length === 1 ? "" : "s"} prepared for ${supervisor.plan.canStartTonight ? "startable" : "not-startable"} launch-night state. Next: ${recommendedActions[0]?.label ?? supervisor.plan.nextAction.label}.`,
+      supervisor: {
+        canStartTonight: supervisor.plan.canStartTonight,
+        nextAction: supervisor.plan.nextAction,
+        summary: supervisor.plan.summary,
+        totals: supervisor.plan.totals
+      },
+      totals: {
+        actions: recommendedActions.length,
+        dryRunSupported: recommendedActions.filter((action) => action.dryRunSupported).length,
+        externalExecutionLocked: recommendedActions.filter((action) => action.externalExecution === false).length,
+        getActions: recommendedActions.filter((action) => action.method === "GET").length,
+        postActions: recommendedActions.filter((action) => action.method === "POST").length,
+        providerContacted: 0,
+        recordSupported: recommendedActions.filter((action) => action.recordSupported).length,
+        selectedIdentifiers: totalSelectedIds
+      }
+    }
+  };
+}
+
+type RevenueBusinessFleetLaunchNightSupervisorAction = ReturnType<typeof buildRevenueBusinessFleetLaunchNightSupervisorAction>;
+
+type RevenueBusinessFleetLaunchNightSupervisorMetricInput = {
+  adSpend?: number;
+  grossRevenue?: number;
+  netProfit?: number;
+  unitsSold?: number;
+  visits?: number;
+};
+
+function revenueBusinessFleetLaunchNightSupervisorOutcomeMetricsProvided(input: RevenueBusinessFleetLaunchNightSupervisorMetricInput) {
+  return input.adSpend !== undefined
+    || input.grossRevenue !== undefined
+    || input.netProfit !== undefined
+    || input.unitsSold !== undefined
+    || input.visits !== undefined;
+}
+
+function revenueBusinessFleetLaunchNightSupervisorApplyPayload(
+  action: RevenueBusinessFleetLaunchNightSupervisorAction,
+  input: ApplyRevenueBusinessFleetLaunchNightSupervisorActionInput
+) {
+  if (!action.payloadPreview) return null;
+
+  const payload: Record<string, unknown> = {
+    ...action.payloadPreview,
+    dryRun: input.dryRun
+  };
+
+  if (input.note) {
+    if (action.actionType === "record_manual_evidence") {
+      payload.evidenceNote = input.note;
+    } else {
+      payload.note = input.note;
+    }
+  }
+
+  if (action.actionType === "record_outcome_signals") {
+    if (input.adSpend !== undefined) payload.adSpend = input.adSpend;
+    if (input.grossRevenue !== undefined) payload.grossRevenue = input.grossRevenue;
+    if (input.netProfit !== undefined) payload.netProfit = input.netProfit;
+    if (input.unitsSold !== undefined) payload.unitsSold = input.unitsSold;
+    if (input.visits !== undefined) {
+      payload.impressions = input.visits;
+      payload.visits = input.visits;
+    }
+  }
+
+  return payload;
+}
+
+async function applyRevenueBusinessFleetLaunchNightSupervisorAction(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchNightSupervisorActionInput
+) {
+  const actionQueue = await buildRevenueBusinessFleetLaunchNightSupervisorActionsForUser(
+    userId,
+    revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.parse(input)
+  );
+  const action = input.actionId
+    ? actionQueue.plan.actions.find((item) => item.actionId === input.actionId) ?? null
+    : actionQueue.plan.actions.find((item) => item.recordSupported && item.method === "POST") ?? null;
+  const selectedIdentifiers = action
+    ? action.selectedIds.assignmentIds.length
+      + action.selectedIds.commandRecordIds.length
+      + action.selectedIds.laneIds.length
+      + action.selectedIds.signalIds.length
+    : 0;
+
+  if (!action) {
+    return {
+      action: null,
+      applied: {
+        actionId: input.actionId ?? null,
+        actionType: null,
+        auditLogId: null,
+        auditLogIds: [] as string[],
+        blockedReason: "No matching supervisor action is available.",
+        delegatedEndpoint: null,
+        delegatedSummary: null,
+        dryRun: input.dryRun,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        recordSupported: false,
+        requiredConfirmation: revenueBusinessFleetLaunchNightSupervisorActionConfirmation,
+        selectedIdentifiers: 0,
+        status: "blocked" as const,
+        summary: "No matching launch-night supervisor action is available to apply."
+      },
+      delegated: null,
+      plan: actionQueue.plan
+    };
+  }
+
+  if (!action.recordSupported || action.method !== "POST" || !action.payloadPreview) {
+    return {
+      action,
+      applied: {
+        actionId: action.actionId,
+        actionType: action.actionType,
+        auditLogId: null,
+        auditLogIds: [] as string[],
+        blockedReason: "Supervisor action is advisory-only and does not support internal recording.",
+        delegatedEndpoint: action.endpoint,
+        delegatedSummary: null,
+        dryRun: input.dryRun,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        recordSupported: false,
+        requiredConfirmation: revenueBusinessFleetLaunchNightSupervisorActionConfirmation,
+        selectedIdentifiers,
+        status: "blocked" as const,
+        summary: `${action.label} is advisory-only; no internal apply function was called.`
+      },
+      delegated: null,
+      plan: actionQueue.plan
+    };
+  }
+
+  if (!input.dryRun && action.actionType === "record_outcome_signals" && !revenueBusinessFleetLaunchNightSupervisorOutcomeMetricsProvided(input)) {
+    return {
+      action,
+      applied: {
+        actionId: action.actionId,
+        actionType: action.actionType,
+        auditLogId: null,
+        auditLogIds: [] as string[],
+        blockedReason: "Recording outcome signals from the supervisor requires dashboard performance fields.",
+        delegatedEndpoint: action.endpoint,
+        delegatedSummary: null,
+        dryRun: input.dryRun,
+        externalExecution: false as const,
+        providerContacted: false as const,
+        recordSupported: true,
+        requiredConfirmation: revenueBusinessFleetLaunchNightSupervisorActionConfirmation,
+        selectedIdentifiers,
+        status: "blocked" as const,
+        summary: "Outcome signal recording was blocked because no revenue, profit, unit, visit, or spend fields were provided."
+      },
+      delegated: null,
+      plan: actionQueue.plan
+    };
+  }
+
+  const payload = revenueBusinessFleetLaunchNightSupervisorApplyPayload(action, input);
+  let delegated: unknown;
+
+  if (!payload) {
+    delegated = null;
+  } else if (action.actionType === "resolve_launch_commands") {
+    delegated = await applyRevenueBusinessFleetLaunchNightCommandQueue(userId, applyRevenueBusinessFleetLaunchNightCommandQueueSchema.parse(payload));
+  } else if (action.actionType === "record_launch_commands") {
+    delegated = await applyRevenueBusinessFleetLaunchNightCommand(userId, applyRevenueBusinessFleetLaunchNightCommandSchema.parse(payload));
+  } else if (action.actionType === "record_manual_evidence") {
+    delegated = await applyRevenueBusinessFleetManualLaunchEvidence(userId, applyRevenueBusinessFleetManualLaunchEvidenceSchema.parse(payload));
+  } else if (action.actionType === "record_outcome_signals") {
+    delegated = await applyRevenueBusinessFleetLaunchOutcomeSignals(userId, applyRevenueBusinessFleetLaunchOutcomeSignalsSchema.parse(payload));
+  } else if (action.actionType === "advance_cash_cycle") {
+    delegated = await applyRevenueBusinessFleetLaunchCashCycle(userId, applyRevenueBusinessFleetLaunchCashCycleSchema.parse(payload));
+  } else {
+    delegated = null;
+  }
+
+  const delegatedRecord = recordFromUnknown(delegated);
+  const delegatedApplied = recordFromUnknown(delegatedRecord.applied);
+  const delegatedSummary = stringFromRecord(delegatedApplied, "summary");
+  const auditLogId = stringFromRecord(delegatedApplied, "auditLogId");
+  const auditLogIds = Array.isArray(delegatedApplied.auditLogIds)
+    ? delegatedApplied.auditLogIds.filter((item): item is string => typeof item === "string")
+    : [];
+  const refreshed = input.dryRun
+    ? actionQueue
+    : await buildRevenueBusinessFleetLaunchNightSupervisorActionsForUser(
+      userId,
+      revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.parse(input)
+    );
+
+  return {
+    action,
+    applied: {
+      actionId: action.actionId,
+      actionType: action.actionType,
+      auditLogId: auditLogId ?? null,
+      auditLogIds,
+      blockedReason: null,
+      delegatedEndpoint: action.endpoint,
+      delegatedSummary,
+      dryRun: input.dryRun,
+      externalExecution: false as const,
+      providerContacted: false as const,
+      recordSupported: true,
+      requiredConfirmation: revenueBusinessFleetLaunchNightSupervisorActionConfirmation,
+      selectedIdentifiers,
+      status: input.dryRun ? "previewed" as const : "recorded" as const,
+      summary: `${input.dryRun ? "Previewed" : "Recorded"} supervisor action ${action.label}. ${delegatedSummary ?? "Delegated internal apply completed."}`
+    },
+    delegated,
+    plan: refreshed.plan
+  };
+}
+
+async function runRevenueBusinessFleetLaunchNightSupervisorNextAction(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchNightSupervisorRunNextInput
+) {
+  const response = await applyRevenueBusinessFleetLaunchNightSupervisorAction(
+    userId,
+    applyRevenueBusinessFleetLaunchNightSupervisorActionSchema.parse({
+      ...input,
+      actionId: undefined,
+      confirm: revenueBusinessFleetLaunchNightSupervisorActionConfirmation,
+      note: input.note ?? "Run-next executed from Business Fleet launch-night supervisor."
+    })
+  );
+
+  return {
+    ...response,
+    runNext: {
+      dryRun: input.dryRun,
+      externalExecution: false as const,
+      mode: "Revenue Business Fleet Launch Night Supervisor Run Next" as const,
+      providerContacted: false as const,
+      requiredConfirmation: revenueBusinessFleetLaunchNightSupervisorRunNextConfirmation,
+      selectedActionId: response.applied.actionId,
+      selectedActionType: response.applied.actionType,
+      status: response.applied.status,
+      summary: response.applied.summary
+    }
+  };
+}
+
+function revenueBusinessFleetLaunchNightSupervisorPreviewBlocker(
+  action: RevenueBusinessFleetLaunchNightSupervisorAction,
+  input: RevenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewInput
+) {
+  if (!action.recordSupported || action.method !== "POST" || !action.payloadPreview) {
+    return "Supervisor action is advisory-only and cannot be recorded through the internal apply chain.";
+  }
+
+  if (action.actionType === "record_outcome_signals" && !revenueBusinessFleetLaunchNightSupervisorOutcomeMetricsProvided(input)) {
+    return "Outcome signal action needs revenue, profit, unit, visit, or spend fields before it can be recorded.";
+  }
+
+  return null;
+}
+
+function revenueBusinessFleetLaunchNightSupervisorPreviewPayload(
+  action: RevenueBusinessFleetLaunchNightSupervisorAction,
+  input: RevenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewInput
+) {
+  if (!action.payloadPreview) return null;
+
+  return revenueBusinessFleetLaunchNightSupervisorApplyPayload(action, applyRevenueBusinessFleetLaunchNightSupervisorActionSchema.parse({
+    ...input,
+    actionId: action.actionId,
+    confirm: revenueBusinessFleetLaunchNightSupervisorActionConfirmation,
+    dryRun: true,
+    note: input.note ?? "Previewed from Business Fleet launch-night run-until-blocked sequence."
+  }));
+}
+
+async function previewRevenueBusinessFleetLaunchNightSupervisorRunUntilBlocked(
+  userId: string,
+  input: RevenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewInput
+) {
+  const actionQueue = await buildRevenueBusinessFleetLaunchNightSupervisorActionsForUser(
+    userId,
+    revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.parse(input)
+  );
+  const steps = [];
+  let stopReason: "action_blocked" | "queue_exhausted" | "step_cap_reached" = "queue_exhausted";
+
+  for (const action of actionQueue.plan.actions.slice(0, input.maxRunSteps)) {
+    const blocker = revenueBusinessFleetLaunchNightSupervisorPreviewBlocker(action, input);
+    const selectedIdentifiers = action.selectedIds.assignmentIds.length
+      + action.selectedIds.commandRecordIds.length
+      + action.selectedIds.laneIds.length
+      + action.selectedIds.signalIds.length;
+    const payloadPreview = blocker ? action.payloadPreview : revenueBusinessFleetLaunchNightSupervisorPreviewPayload(action, input);
+
+    steps.push({
+      actionId: action.actionId,
+      actionType: action.actionType,
+      blockedReason: blocker,
+      confirm: action.confirm,
+      dryRunSupported: action.dryRunSupported,
+      endpoint: action.endpoint,
+      externalExecution: false as const,
+      label: action.label,
+      method: action.method,
+      nextInternalState: action.nextInternalState,
+      payloadPreview,
+      providerContacted: false as const,
+      reason: action.reason,
+      recordSupported: action.recordSupported,
+      selectedIds: action.selectedIds,
+      selectedIdentifiers,
+      sequence: steps.length + 1,
+      status: blocker ? "blocked" as const : "would_preview" as const
+    });
+
+    if (blocker) {
+      stopReason = "action_blocked";
+      break;
+    }
+  }
+
+  if (steps.length >= input.maxRunSteps && actionQueue.plan.actions.length > input.maxRunSteps && stopReason !== "action_blocked") {
+    stopReason = "step_cap_reached";
+  } else if (steps.length === actionQueue.plan.actions.length && stopReason !== "action_blocked") {
+    stopReason = "queue_exhausted";
+  }
+
+  const blockedStep = steps.find((step) => step.status === "blocked") ?? null;
+  const previewableSteps = steps.filter((step) => step.status === "would_preview").length;
+
+  return {
+    plan: {
+      auditEvents: [
+        "Run-until-blocked preview reads the current supervisor action queue and composes a bounded internal sequence.",
+        "Preview does not call internal apply functions, mutate command records, move money, contact providers, run browsers, publish listings, upload content, or change ad spend.",
+        "Use the run-next or row-level supervisor action controls to execute one internal action at a time after preview review."
+      ],
+      blockedExternalActions: actionQueue.plan.blockedExternalActions,
+      externalExecution: false as const,
+      generatedAt: new Date().toISOString(),
+      maxRunSteps: input.maxRunSteps,
+      mode: "Revenue Business Fleet Launch Night Run Until Blocked Preview" as const,
+      providerContacted: false as const,
+      requiredConfirmation: revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewConfirmation,
+      sequence: steps,
+      stopReason,
+      summary: `${steps.length} supervisor step${steps.length === 1 ? "" : "s"} previewed; ${previewableSteps} can be previewed internally before stop reason ${stopReason.replace(/_/g, " ")}.`,
+      supervisor: {
+        canStartTonight: actionQueue.plan.supervisor.canStartTonight,
+        nextAction: actionQueue.plan.supervisor.nextAction,
+        summary: actionQueue.plan.supervisor.summary,
+        totals: actionQueue.plan.supervisor.totals
+      },
+      totals: {
+        blocked: blockedStep ? 1 : 0,
+        externalExecutionLocked: steps.filter((step) => step.externalExecution === false).length,
+        providerContacted: 0,
+        queueActions: actionQueue.plan.totals.actions,
+        selectedIdentifiers: steps.reduce((sum, step) => sum + step.selectedIdentifiers, 0),
+        steps: steps.length,
+        wouldPreview: previewableSteps
+      }
+    }
+  };
+}
+
+function buildBusinessFleetLaunchOutcomePerformanceSnapshot(
+  input: ApplyRevenueBusinessFleetLaunchOutcomeSignalsInput,
+  packet: Awaited<ReturnType<typeof buildRevenueBusinessFleetLaunchOutcomeSignalsForUser>>["plan"]["packets"][number]
+): IngestRevenuePerformanceInput["snapshots"][number] {
+  const periodEnd = input.periodEnd ? new Date(input.periodEnd) : new Date();
+  const periodStart = input.periodStart ? new Date(input.periodStart) : new Date(periodEnd.getTime() - 86_400_000);
+  const netProfit = input.netProfit ?? calculateRevenuePerformanceNetProfit({
+    adSpend: input.adSpend,
+    digitalDeliveryCost: input.digitalDeliveryCost,
+    discounts: input.discounts,
+    grossRevenue: input.grossRevenue,
+    platformFees: input.platformFees,
+    productionCost: input.productionCost,
+    refunds: input.refunds,
+    shippingCost: input.shippingCost,
+    storeId: packet.storeId,
+    periodEnd: periodEnd.toISOString(),
+    periodStart: periodStart.toISOString()
+  });
+  const notes = [
+    `Business-fleet launch outcome signal for ${packet.businessName}.`,
+    `Evidence audit log: ${packet.evidenceAuditLogId ?? "missing"}.`,
+    `Recommended action before capture: ${packet.recommendedAction}.`,
+    input.note ? `Operator note: ${input.note}` : null,
+    "No external analytics import, provider call, ad spend execution, payout, payment, browser action, upload, marketplace write, or API write executed."
+  ].filter((item): item is string => Boolean(item)).join(" ");
+
+  return {
+    adSpend: input.adSpend,
+    digitalDeliveryCost: input.digitalDeliveryCost,
+    discounts: input.discounts,
+    grossRevenue: input.grossRevenue,
+    impressions: input.impressions,
+    netProfit,
+    notes,
+    periodEnd: periodEnd.toISOString(),
+    periodStart: periodStart.toISOString(),
+    platformFees: input.platformFees,
+    productId: null,
+    productionCost: input.productionCost,
+    refunds: input.refunds,
+    shippingCost: input.shippingCost,
+    source: "manual",
+    storeId: packet.storeId,
+    unitsSold: input.unitsSold,
+    visits: input.visits
+  };
+}
+
+async function applyRevenueBusinessFleetLaunchOutcomeSignals(
+  userId: string,
+  input: ApplyRevenueBusinessFleetLaunchOutcomeSignalsInput
+) {
+  const current = await buildRevenueBusinessFleetLaunchOutcomeSignalsForUser(userId, revenueBusinessFleetLaunchOutcomeSignalsQuerySchema.parse({
+    launchWaveSize: input.launchWaveSize,
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    maxSignals: input.maxSignals,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys,
+    targetBusinesses: input.targetBusinesses
+  }));
+  const requestedSignalIds = new Set(input.signalIds);
+  const selectedPackets = current.plan.packets
+    .filter((packet) => packet.status === "ready_for_signal")
+    .filter((packet) => requestedSignalIds.size === 0 || requestedSignalIds.has(packet.signalId))
+    .slice(0, input.maxSignals);
+  const snapshots = selectedPackets.map((packet) => buildBusinessFleetLaunchOutcomePerformanceSnapshot(input, packet));
+  const existing = await buildPerformanceDigestForUser(userId, revenuePerformanceQuerySchema.parse({}));
+  const incomingSnapshots = snapshots.map((snapshot) => normalizeRevenuePerformanceSnapshot({
+    ...snapshot,
+    netProfit: snapshot.netProfit ?? calculateRevenuePerformanceNetProfit(snapshot)
+  }));
+  const previewDigest = buildRevenuePerformanceDigest({
+    options: existing.digest.options,
+    products: existing.products,
+    snapshots: [...existing.digest.snapshots, ...incomingSnapshots],
+    stores: existing.stores.map((store) => storeSnapshot(store))
+  });
+  const netProfit = incomingSnapshots.reduce((sum, snapshot) => sum + snapshot.netProfit, 0);
+  const grossRevenue = incomingSnapshots.reduce((sum, snapshot) => sum + snapshot.grossRevenue, 0);
+
+  if (input.dryRun) {
+    return {
+      applied: {
+        auditLogIds: [] as string[],
+        dryRun: true,
+        externalExecution: false as const,
+        grossRevenue: Math.round(grossRevenue * 100) / 100,
+        netProfit: Math.round(netProfit * 100) / 100,
+        providerContacted: false as const,
+        signalsPreviewed: incomingSnapshots.length,
+        signalsRecorded: 0,
+        signalsSelected: selectedPackets.length,
+        snapshotIds: [] as string[],
+        summary: `${incomingSnapshots.length} business-fleet launch outcome signal${incomingSnapshots.length === 1 ? "" : "s"} would be recorded into the performance ledger.`
+      },
+      digest: previewDigest,
+      plan: current.plan,
+      portfolio: await buildAssetPortfolioForUser(userId, revenueEngineQuerySchema.parse({})),
+      selectedPackets,
+      snapshots: incomingSnapshots
+    };
+  }
+
+  const ownership = await validatePerformanceSnapshotOwnership(userId, snapshots);
+
+  if (ownership.error) {
+    return {
+      applied: {
+        auditLogIds: [] as string[],
+        blockedReason: ownership.error,
+        dryRun: false,
+        externalExecution: false as const,
+        grossRevenue: Math.round(grossRevenue * 100) / 100,
+        netProfit: Math.round(netProfit * 100) / 100,
+        providerContacted: false as const,
+        signalsPreviewed: 0,
+        signalsRecorded: 0,
+        signalsSelected: selectedPackets.length,
+        snapshotIds: [] as string[],
+        summary: `Business-fleet launch outcome signals were not recorded: ${ownership.error}`
+      },
+      digest: existing.digest,
+      plan: current.plan,
+      portfolio: await buildAssetPortfolioForUser(userId, revenueEngineQuerySchema.parse({})),
+      selectedPackets,
+      snapshots: incomingSnapshots
+    };
+  }
+
+  const created = await prisma.$transaction(snapshots.map((snapshot) => prisma.revenuePerformanceSnapshot.create({
+    data: createPerformanceSnapshotData(userId, snapshot)
+  })));
+  await rollupPerformanceStores(userId, snapshots.map((snapshot) => snapshot.storeId));
+  const createdSnapshots = created.map(performanceSnapshot);
+  const auditLogs = await Promise.all(createdSnapshots.map((snapshot) => {
+    const packet = selectedPackets.find((item) => item.storeId === snapshot.storeId);
+
+    return recordAuditLog({
+      action: "revenue.business_fleet.launch_outcome_signal.recorded",
+      actorUserId: userId,
+      metadata: {
+        adSpend: snapshot.adSpend,
+        dryRun: false,
+        evidenceAuditLogId: packet?.evidenceAuditLogId ?? null,
+        externalExecution: false,
+        grossRevenue: snapshot.grossRevenue,
+        netProfit: snapshot.netProfit,
+        note: input.note ?? null,
+        packetId: packet?.packetId ?? null,
+        periodEnd: snapshot.periodEnd,
+        periodStart: snapshot.periodStart,
+        providerContacted: false,
+        recommendedAction: packet?.recommendedAction ?? "watch",
+        requiredConfirmation: revenueBusinessFleetLaunchOutcomeSignalsConfirmation,
+        signalId: packet?.signalId ?? null,
+        snapshotId: snapshot.id,
+        sourceKey: packet?.sourceKey ?? null,
+        storeId: snapshot.storeId,
+        storeName: packet?.businessName ?? null,
+        summary: `${packet?.businessName ?? "Business fleet lane"} launch outcome signal recorded: ${snapshot.unitsSold} unit${snapshot.unitsSold === 1 ? "" : "s"}, ${snapshot.grossRevenue} gross revenue, ${snapshot.netProfit} net profit. External execution remains locked.`,
+        unitsSold: snapshot.unitsSold,
+        visits: snapshot.visits
+      },
+      outcome: "success",
+      severity: snapshot.grossRevenue > 0 || snapshot.netProfit > 0 ? "medium" : "low",
+      targetId: snapshot.storeId,
+      targetType: "revenue_business_fleet_launch_outcome_signal"
+    });
+  }));
+  const [refreshed, portfolio] = await Promise.all([
+    buildPerformanceDigestForUser(userId, revenuePerformanceQuerySchema.parse({})),
+    buildAssetPortfolioForUser(userId, revenueEngineQuerySchema.parse({}))
+  ]);
+  const refreshedPlan = await buildRevenueBusinessFleetLaunchOutcomeSignalsForUser(userId, revenueBusinessFleetLaunchOutcomeSignalsQuerySchema.parse({
+    launchWaveSize: input.launchWaveSize,
+    maxAssignments: input.maxAssignments,
+    maxAssignmentsPerWorker: input.maxAssignmentsPerWorker,
+    maxLeases: input.maxLeases,
+    maxLeasesPerShard: input.maxLeasesPerShard,
+    maxParallelLaunches: input.maxParallelLaunches,
+    maxParallelScaleActions: input.maxParallelScaleActions,
+    maxSignals: input.maxSignals,
+    maxStores: input.maxStores,
+    maxWorkers: input.maxWorkers,
+    qualityFloor: input.qualityFloor,
+    shardCount: input.shardCount,
+    sourceKeys: input.sourceKeys,
+    targetBusinesses: input.targetBusinesses
+  }));
+
+  return {
+    applied: {
+      auditLogIds: auditLogs.map((log) => log.id),
+      dryRun: false,
+      externalExecution: false as const,
+      grossRevenue: Math.round(grossRevenue * 100) / 100,
+      netProfit: Math.round(netProfit * 100) / 100,
+      providerContacted: false as const,
+      signalsPreviewed: 0,
+      signalsRecorded: created.length,
+      signalsSelected: selectedPackets.length,
+      snapshotIds: created.map((snapshot) => snapshot.id),
+      summary: `${created.length} business-fleet launch outcome signal${created.length === 1 ? "" : "s"} recorded into the performance ledger.`
+    },
+    digest: refreshed.digest,
+    plan: refreshedPlan.plan,
+    portfolio,
+    selectedPackets,
+    snapshots: createdSnapshots
+  };
+}
+
 async function buildRevenueAssetControlLedgerForUser(userId: string, options: RevenueAssetControlLedgerQueryInput): Promise<RevenueAssetControlLedgerPlan> {
   const where: Prisma.RevenueAssetControlRecordWhereInput = {
     userId
@@ -6291,7 +11922,9 @@ async function buildRevenueAssetControlRecoveryForUser(userId: string, options: 
 const revenueCashLoopEvidenceTargetTypes = [
   "revenue_first_store_owner_launch_approval",
   "revenue_first_store_manual_launch_evidence",
+  "revenue_business_fleet_manual_launch_evidence",
   "revenue_first_store_manual_signal_snapshot",
+  "revenue_business_fleet_launch_outcome_signal",
   "revenue_winner_clone_packet_approval"
 ] as const;
 
@@ -6300,7 +11933,9 @@ type PublicRevenueAuditLog = ReturnType<typeof publicAuditLog>;
 function revenueCashLoopEvidenceType(targetType: string): RevenuePortfolioDashboardCashLoopEvidenceReceipt["evidenceType"] | null {
   if (targetType === "revenue_first_store_owner_launch_approval") return "owner_launch_approval";
   if (targetType === "revenue_first_store_manual_launch_evidence") return "manual_launch_evidence";
+  if (targetType === "revenue_business_fleet_manual_launch_evidence") return "manual_launch_evidence";
   if (targetType === "revenue_first_store_manual_signal_snapshot") return "manual_signal_snapshot";
+  if (targetType === "revenue_business_fleet_launch_outcome_signal") return "manual_signal_snapshot";
   if (targetType === "revenue_winner_clone_packet_approval") return "winner_clone_packet_approval";
 
   return null;
@@ -12788,6 +18423,383 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
 
     const input = applyRevenueBusinessFleetProviderApprovalReviewSchema.parse(request.body);
     const response = await applyRevenueBusinessFleetProviderApprovalReview(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-execution-queue", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchExecutionQueueQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchExecutionQueueForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-execution-queue/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchExecutionQueueSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetLaunchExecutionQueue(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-worker-assignments", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchWorkerAssignmentsQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchWorkerAssignmentsForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-worker-assignments/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchWorkerAssignmentsSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetLaunchWorkerAssignments(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetManualLaunchEvidenceQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetManualLaunchEvidenceForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-control", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchControlQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchControlForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap/swarm-readiness", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetSwarmReadinessQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetSwarmReadinessForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchOutcomeSignalsQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchOutcomeSignalsForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchCashCycleQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchCashCycleForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchCashCycleSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetLaunchCashCycle(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/commands", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchCashCycleCommandQueueQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchCashCycleCommandQueueForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/income-sprint", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetIncomeSprintQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetIncomeSprintForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-night", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchNightQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchNightForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-night/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchNightCommandSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetLaunchNightCommand(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-night/commands", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchNightCommandQueueQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchNightCommandQueueForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-night/execution-checklist", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchNightExecutionChecklistQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchNightExecutionChecklistForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-night/operator-console", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchNightOperatorConsoleQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchNightOperatorConsoleForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-night/supervisor", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchNightSupervisorQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchNightSupervisorForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/launch-night/supervisor/actions", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetLaunchNightSupervisorActionsQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetLaunchNightSupervisorActionsForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-night/supervisor/actions/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchNightSupervisorActionSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetLaunchNightSupervisorAction(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-night/supervisor/actions/run-next", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchNightSupervisorRunNextSchema.parse(request.body);
+    const response = await runRevenueBusinessFleetLaunchNightSupervisorNextAction(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-night/supervisor/actions/run-until-blocked/preview", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = revenueBusinessFleetLaunchNightSupervisorRunUntilBlockedPreviewSchema.parse(request.body);
+    const response = await previewRevenueBusinessFleetLaunchNightSupervisorRunUntilBlocked(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-night/commands/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchNightCommandQueueSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetLaunchNightCommandQueue(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/income-sprint/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetIncomeSprintCommandSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetIncomeSprintCommand(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.get("/merch/revenue-engine/business-fleet-scheduler/income-sprint/commands", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const query = revenueBusinessFleetIncomeSprintCommandQueueQuerySchema.parse(request.query);
+    const response = await buildRevenueBusinessFleetIncomeSprintCommandQueueForUser(currentUser.sub, query);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/income-sprint/commands/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetIncomeSprintCommandQueueSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetIncomeSprintCommandQueue(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/commands/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchCashCycleCommandQueueSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetLaunchCashCycleCommandQueue(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetManualLaunchEvidenceSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetManualLaunchEvidence(currentUser.sub, input);
+
+    return reply.send(response);
+  });
+
+  app.post("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+
+    if (!currentUser) {
+      return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+    }
+
+    const input = applyRevenueBusinessFleetLaunchOutcomeSignalsSchema.parse(request.body);
+    const response = await applyRevenueBusinessFleetLaunchOutcomeSignals(currentUser.sub, input);
 
     return reply.send(response);
   });

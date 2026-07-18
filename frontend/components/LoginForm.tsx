@@ -12,7 +12,29 @@ import { TextField } from "./TextField";
 
 type FieldErrors = Partial<Record<"email" | "password", string>>;
 
+const defaultPostLoginPath = "/dashboard";
+
+export function safeLoginNextPath(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return defaultPostLoginPath;
+  }
+
+  try {
+    const baseUrl = new URL("https://entral.local");
+    const nextUrl = new URL(value, baseUrl);
+
+    if (nextUrl.origin !== baseUrl.origin) {
+      return defaultPostLoginPath;
+    }
+
+    return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+  } catch {
+    return defaultPostLoginPath;
+  }
+}
+
 export function LoginForm() {
+  const isDemoMode = process.env.NEXT_PUBLIC_ENTRAL_RUNTIME_MODE === "demo";
   const router = useRouter();
   const searchParams = useSearchParams();
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -50,7 +72,7 @@ export function LoginForm() {
         json: parsed.data
       });
 
-      router.push(searchParams.get("next") ?? "/dashboard");
+      router.push(safeLoginNextPath(searchParams.get("next")));
       router.refresh();
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "Unable to sign in.");
@@ -64,7 +86,11 @@ export function LoginForm() {
 
   return (
     <form className="form-stack" onSubmit={handleSubmit} noValidate>
-      <p className="form-notice">Real account access. Email verification is required before the command center opens.</p>
+      <p className="form-notice">
+        {isDemoMode
+          ? "Local demo access. Accounts and passwords are temporary, email verification is disabled, and data resets when the demo backend stops."
+          : "Real account access. Email verification is required before the command center opens."}
+      </p>
       <TextField
         id="email"
         label="Email"
