@@ -1,12 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
 import { prisma } from "../db.js";
-import { clearAuthCookie, requireAuth } from "../auth.js";
+import { clearAuthCookie, requireAuth, setPrivateNoStoreHeaders } from "../auth.js";
 import { deleteAccountSchema } from "../schemas.js";
 import { recordAuditLog } from "../services/audit.js";
 import { buildAccountExport, deleteAccountAndWorkspace, summarizeAccountExport } from "../services/privacy.js";
 
 export async function accountRoutes(app: FastifyInstance) {
+  app.addHook("onRequest", (_request, reply, done) => {
+    setPrivateNoStoreHeaders(reply);
+    done();
+  });
+
   app.get("/account/export", { preHandler: requireAuth }, async (request, reply) => {
     const currentUser = request.user;
 

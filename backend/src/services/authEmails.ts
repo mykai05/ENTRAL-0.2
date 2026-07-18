@@ -8,6 +8,7 @@ type AuthEmailInput = {
 };
 
 type UserEmailInput = {
+  flow?: "internal" | "member";
   name: string;
   to: string;
   token: string;
@@ -78,32 +79,33 @@ async function deliverAuthEmail(input: AuthEmailInput) {
   };
 }
 
-export function buildVerificationUrl(token: string) {
-  return authUrl("/verify-email", token);
+export function buildVerificationUrl(token: string, flow: "internal" | "member" = "internal") {
+  return authUrl(flow === "member" ? "/member/verify-email" : "/verify-email", token);
 }
 
-export function buildPasswordResetUrl(token: string) {
-  return authUrl("/reset-password", token);
+export function buildPasswordResetUrl(token: string, flow: "internal" | "member" = "internal") {
+  return authUrl(flow === "member" ? "/member/password-reset" : "/reset-password", token);
 }
 
 export function verificationEmailContent(input: UserEmailInput) {
-  const url = buildVerificationUrl(input.token);
+  const url = buildVerificationUrl(input.token, input.flow);
   const name = escapeHtml(input.name);
+  const destination = input.flow === "member" ? "member workspace" : "private beta command center";
 
   return {
     html: shellHtml(
       "Verify your ENTRAL email",
-      `Hi ${name}, verify this email address before entering the private beta command center. This link expires in 24 hours.`,
+      `Hi ${name}, verify this email address before entering the ${destination}. This link expires in 24 hours.`,
       "Verify email",
       url
     ),
     subject: "Verify your ENTRAL email",
-    text: `Hi ${input.name}, verify this email address before entering the private beta command center: ${url}\n\nThis link expires in 24 hours.`
+    text: `Hi ${input.name}, verify this email address before entering the ${destination}: ${url}\n\nThis link expires in 24 hours.`
   };
 }
 
 export function passwordResetEmailContent(input: UserEmailInput) {
-  const url = buildPasswordResetUrl(input.token);
+  const url = buildPasswordResetUrl(input.token, input.flow);
   const name = escapeHtml(input.name);
 
   return {

@@ -36,11 +36,13 @@ async function proxyRequest(request: Request, context: RouteContext) {
       {
         error: "API Proxy Error",
         message: "ENTRAL could not reach the backend. Real account actions may be temporarily unavailable.",
-        requestId,
-        upstream: error instanceof Error ? error.message : "Unknown proxy failure"
+        requestId
       },
       {
-        headers: { "x-request-id": requestId },
+        headers: {
+          "cache-control": "private, no-store",
+          "x-request-id": requestId
+        },
         status: 502
       }
     );

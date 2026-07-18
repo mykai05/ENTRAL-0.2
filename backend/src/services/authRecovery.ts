@@ -8,6 +8,7 @@ const emailVerificationExpiryHours = 24;
 const passwordResetExpiryHours = 1;
 
 type AuthRouteContext = {
+  flow?: "internal" | "member";
   requestId?: string;
 };
 
@@ -15,8 +16,13 @@ type AuthUserRecord = {
   email: string;
   emailVerifiedAt?: Date | null;
   id: string;
+  internalAccess?: boolean;
   name: string;
 };
+
+function authFlow(context: AuthRouteContext) {
+  return context.flow === "member" ? "member" : "internal";
+}
 
 function emailAuditMetadata(email: string) {
   return {
@@ -43,6 +49,7 @@ export async function issueEmailVerification(user: AuthUserRecord, context: Auth
   await prisma.emailVerificationToken.create({
     data: {
       expiresAt: dateHoursFromNow(emailVerificationExpiryHours),
+      flow: authFlow(context),
       tokenHash,
       userId: user.id
     }
@@ -50,6 +57,7 @@ export async function issueEmailVerification(user: AuthUserRecord, context: Auth
 
   try {
     const delivery = await sendVerificationEmail({
+      flow: context.flow,
       name: user.name,
       to: user.email,
       token
@@ -93,7 +101,7 @@ export async function requestEmailVerification(email: string, context: AuthRoute
     where: { email }
   });
 
-  if (!user) {
+  if (!user || (authFlow(context) === "internal" && user.internalAccess !== true)) {
     await recordAuditLog({
       action: "auth.email_verification.requested",
       metadata: emailAuditMetadata(email),
@@ -153,7 +161,11 @@ export async function confirmEmailVerification(token: string, context: AuthRoute
     targetType: "User"
   });
 
-  return { ok: true as const, user };
+  return {
+    flow: verificationToken.flow === "member" ? "member" as const : "internal" as const,
+    ok: true as const,
+    user
+  };
 }
 
 export async function requestPasswordReset(email: string, context: AuthRouteContext = {}) {
@@ -161,7 +173,7 @@ export async function requestPasswordReset(email: string, context: AuthRouteCont
     where: { email }
   });
 
-  if (!user) {
+  if (!user || (authFlow(context) === "internal" && user.internalAccess !== true)) {
     await recordAuditLog({
       action: "auth.password_reset.requested",
       metadata: emailAuditMetadata(email),
@@ -186,6 +198,7 @@ export async function requestPasswordReset(email: string, context: AuthRouteCont
   await prisma.passwordResetToken.create({
     data: {
       expiresAt: dateHoursFromNow(passwordResetExpiryHours),
+      flow: authFlow(context),
       tokenHash,
       userId: user.id
     }
@@ -193,6 +206,7 @@ export async function requestPasswordReset(email: string, context: AuthRouteCont
 
   try {
     const delivery = await sendPasswordResetEmail({
+      flow: context.flow,
       name: user.name,
       to: user.email,
       token
@@ -281,5 +295,9 @@ export async function confirmPasswordReset(token: string, password: string, cont
     targetType: "User"
   });
 
-  return { ok: true as const, user };
+  return {
+    flow: passwordResetToken.flow === "member" ? "member" as const : "internal" as const,
+    ok: true as const,
+    user
+  };
 }

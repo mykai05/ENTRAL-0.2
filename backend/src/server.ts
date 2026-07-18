@@ -18,7 +18,10 @@ import { merchStoreRoutes } from "./routes/merchStores.js";
 import { podProductRoutes } from "./routes/podProducts.js";
 import { revenueEngineRoutes } from "./routes/revenueEngine.js";
 import { adminRoutes } from "./routes/admin.js";
+import { memberRoutes } from "./routes/member.js";
+import { memberTaskVisibilityRoutes } from "./routes/memberTaskVisibility.js";
 import { env } from "./env.js";
+import { enforceSessionBoundary, requireTrustedOrigin } from "./auth.js";
 import type { AiService } from "./services/openaiService.js";
 import { startAutomationWorker } from "./services/automationQueue.js";
 import { startAgentOrchestrator } from "./services/agentOrchestrator.js";
@@ -58,6 +61,8 @@ export async function buildServer(options: BuildServerOptions = {}) {
     reply.header("x-request-id", request.id);
     done();
   });
+  app.addHook("preValidation", requireTrustedOrigin);
+  app.addHook("preValidation", enforceSessionBoundary);
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {
@@ -100,6 +105,8 @@ export async function buildServer(options: BuildServerOptions = {}) {
   app.get("/api/v1/health", async (request) => buildHealthPayload(request.id));
   await ensureDefaultPolicies();
   await app.register(authRoutes, { prefix: "/api/v1" });
+  await app.register(memberRoutes, { prefix: "/api/v1" });
+  await app.register(memberTaskVisibilityRoutes, { prefix: "/api/v1" });
   await app.register(accountRoutes, { prefix: "/api/v1" });
   await app.register(dashboardRoutes, { prefix: "/api/v1" });
   await app.register(taskRoutes, { prefix: "/api/v1" });

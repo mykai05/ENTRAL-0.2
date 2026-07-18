@@ -34,4 +34,38 @@ describe("direct command-center entry", () => {
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("https://entral.test/dashboard");
   });
+
+  it.each([
+    "/",
+    "/admin",
+    "/agents",
+    "/automations",
+    "/chat",
+    "/dashboard"
+  ])("redirects a member session away from the internal surface %s before rendering", (pathname) => {
+    const payload = Buffer.from(JSON.stringify({
+      aud: "entral-member",
+      exp: Math.floor(Date.now() / 1000) + 300,
+      session: "member"
+    })).toString("base64url");
+    const response = middleware(new NextRequest(`https://entral.test${pathname}`, {
+      headers: { cookie: `entral_token=header.${payload}.signature` }
+    }));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://entral.test/member");
+  });
+
+  it("does not treat an expired session hint as an active member session", () => {
+    const payload = Buffer.from(JSON.stringify({
+      aud: "entral-member",
+      exp: Math.floor(Date.now() / 1000) - 1,
+      session: "member"
+    })).toString("base64url");
+    const response = middleware(new NextRequest("https://entral.test/dashboard", {
+      headers: { cookie: `entral_token=header.${payload}.signature` }
+    }));
+
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
 });

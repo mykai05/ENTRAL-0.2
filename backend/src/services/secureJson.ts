@@ -27,6 +27,20 @@ function isEncryptedEnvelope(value: unknown): value is EncryptedEnvelope {
   );
 }
 
+export function secureJsonEncryptionConfigured() {
+  return Boolean(env.DATA_ENCRYPTION_KEY);
+}
+
+export function isEncryptedSecureJson(value: string | null | undefined) {
+  if (!value) return false;
+
+  try {
+    return isEncryptedEnvelope(JSON.parse(value) as unknown);
+  } catch {
+    return false;
+  }
+}
+
 export function stringifySecureJson(value: unknown) {
   const plaintext = JSON.stringify(value);
   const key = encryptionKey();

@@ -19,6 +19,19 @@ describe("auth email content", () => {
     expect(buildPasswordResetUrl("reset-token")).toBe("https://app.entral.test/reset-password?token=reset-token");
   });
 
+  it("keeps member recovery and verification links inside the member experience", async () => {
+    const { buildPasswordResetUrl, buildVerificationUrl, verificationEmailContent } = await import("../src/services/authEmails.js");
+
+    expect(buildVerificationUrl("verify-token", "member")).toBe("https://app.entral.test/member/verify-email?token=verify-token");
+    expect(buildPasswordResetUrl("reset-token", "member")).toBe("https://app.entral.test/member/password-reset?token=reset-token");
+    expect(verificationEmailContent({
+      flow: "member",
+      name: "Ada",
+      to: "ada@example.com",
+      token: "verify-token"
+    }).text).toContain("member workspace");
+  });
+
   it("keeps the safety positioning in auth emails", async () => {
     const { verificationEmailContent } = await import("../src/services/authEmails.js");
     const content = verificationEmailContent({

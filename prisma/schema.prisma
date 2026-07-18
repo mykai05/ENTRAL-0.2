@@ -13,6 +13,7 @@ model User {
   email        String       @unique
   passwordHash String
   role         String       @default("USER")
+  internalAccess Boolean    @default(false)
   emailVerifiedAt DateTime?
   lastDashboardSeenAt DateTime?
   createdAt    DateTime     @default(now())
@@ -51,6 +52,7 @@ model User {
   commandReports CommandOSReport[]
   policiesCreated Policy[]      @relation("PolicyCreatedBy")
   auditLogs   AuditLog[]
+  memberWorkspacesPublished MemberWorkspaceSnapshot[] @relation("MemberWorkspacePublishedBy")
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
   growthApprovalPackets GrowthApprovalPacket[] @relation("GrowthApprovalOwner")
@@ -66,6 +68,7 @@ model EmailVerificationToken {
   tokenHash  String    @unique
   expiresAt  DateTime
   consumedAt DateTime?
+  flow       String    @default("internal")
   createdAt  DateTime  @default(now())
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -79,6 +82,7 @@ model PasswordResetToken {
   tokenHash  String    @unique
   expiresAt  DateTime
   consumedAt DateTime?
+  flow       String    @default("internal")
   createdAt  DateTime  @default(now())
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1138,10 +1142,30 @@ model Team {
   id        String       @id @default(cuid())
   name      String
   slug      String       @unique
+  memberAccessEnabled Boolean @default(false)
+  memberSeatLimit Int    @default(5)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   members   TeamMember[]
   tasks     Task[]
+  memberWorkspace MemberWorkspaceSnapshot?
+}
+
+model MemberWorkspaceSnapshot {
+  id            String   @id @default(cuid())
+  teamId        String   @unique
+  snapshotJson  String
+  schemaVersion Int      @default(1)
+  version       Int      @default(1)
+  publishedAt   DateTime @default(now())
+  publishedById String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  publishedBy   User?    @relation("MemberWorkspacePublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  @@index([teamId, publishedAt])
+  @@index([publishedById, publishedAt])
 }
 
 model TeamMember {
@@ -1161,6 +1185,7 @@ model Task {
   title        String
   description  String?
   status       String     @default("TODO")
+  memberVisible Boolean   @default(false)
   dueDate      DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -1172,6 +1197,7 @@ model Task {
   assignedTo   User?      @relation("TaskAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
 
   @@index([teamId, status])
+  @@index([teamId, memberVisible, status])
   @@index([createdById])
   @@index([assignedToId])
 }
