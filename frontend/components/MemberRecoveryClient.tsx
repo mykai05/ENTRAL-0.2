@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { FormEvent, useState } from "react";
+import React, { FormEvent, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
 import { Button } from "./Button";
@@ -13,20 +13,24 @@ export function MemberRecoveryClient({ token }: { token?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [confirmationError, setConfirmationError] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const confirmationRef = useRef<HTMLInputElement | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
 
     if (token && password !== confirmation) {
-      setError("Passwords must match.");
+      setConfirmationError("Passwords must match.");
+      confirmationRef.current?.focus();
       return;
     }
 
     setError("");
+    setConfirmationError("");
     setMessage("");
     setIsSubmitting(true);
 
@@ -70,7 +74,20 @@ export function MemberRecoveryClient({ token }: { token?: string }) {
       {token ? (
         <>
           <TextField autoComplete="new-password" label="New password" minLength={12} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
-          <TextField autoComplete="new-password" label="Confirm new password" minLength={12} onChange={(event) => setConfirmation(event.target.value)} required type="password" value={confirmation} />
+          <TextField
+            autoComplete="new-password"
+            error={confirmationError}
+            inputRef={confirmationRef}
+            label="Confirm new password"
+            minLength={12}
+            onChange={(event) => {
+              setConfirmation(event.target.value);
+              if (confirmationError) setConfirmationError("");
+            }}
+            required
+            type="password"
+            value={confirmation}
+          />
         </>
       ) : (
         <TextField autoComplete="email" label="Email address" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />

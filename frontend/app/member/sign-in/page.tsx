@@ -19,7 +19,7 @@ export default async function MemberSignInPage({
   return (
     <main className="member-auth-shell" id="main-content">
       <section className="member-auth-card">
-        <div className="member-auth-brand"><BrandMark href="/member/sign-in" /><span>Member access</span></div>
+        <div className="member-auth-brand"><BrandMark href="/member/sign-in" label="Entral" /><span>Member access</span></div>
         <MemberSignInClient returnTo={safeMemberReturnPath(params.returnTo)} />
       </section>
     </main>

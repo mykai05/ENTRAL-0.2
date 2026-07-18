@@ -46,8 +46,10 @@ body {
     linear-gradient(180deg, #050505 0%, #07090d 48%, #050505 100%),
     var(--bg);
   color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
   filter: saturate(var(--neon-saturation)) brightness(var(--neon-brightness));
   overflow-x: hidden;
 }
@@ -9810,13 +9812,54 @@ textarea {
   z-index: 10;
 }
 
+.member-header-primary,
+.member-navigation {
+  align-items: center;
+  display: flex;
+}
+
+.member-header-primary {
+  gap: clamp(1rem, 2.5vw, 2rem);
+  min-width: 0;
+}
+
+.member-navigation {
+  gap: 0.35rem;
+}
+
+.member-navigation a {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: 0.42rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.7rem;
+  text-decoration: none;
+}
+
+.member-navigation a:hover,
+.member-navigation a[aria-current="page"] {
+  background: rgba(var(--neon-accent-rgb), 0.08);
+  border-color: rgba(var(--neon-accent-rgb), 0.22);
+  color: var(--ink);
+}
+
 .member-header-account {
   gap: 0.85rem;
+  min-width: 0;
 }
 
 .member-header-account > span {
   color: var(--muted);
   font-size: 0.88rem;
+  max-width: clamp(9rem, 21vw, 22rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .member-intro {
@@ -9828,10 +9871,11 @@ textarea {
 }
 
 .member-intro h1 {
-  font-size: clamp(2rem, 5vw, 4.2rem);
-  letter-spacing: -0.04em;
-  line-height: 1;
+  font-size: clamp(2rem, 5vw, 3.7rem);
+  letter-spacing: -0.025em;
+  line-height: 1.04;
   margin: 0.25rem 0 0.7rem;
+  text-wrap: balance;
 }
 
 .member-intro p,
@@ -9940,7 +9984,9 @@ textarea {
 
 .member-organization-bar h2,
 .member-section-heading h2 {
+  line-height: 1.18;
   margin: 0;
+  text-wrap: balance;
 }
 
 .member-organization-bar dl {
@@ -10008,11 +10054,16 @@ textarea {
 
 .member-neural-map-heading h2 {
   font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.018em;
+  line-height: 1.15;
+  text-wrap: balance;
 }
 
 .member-neural-map-heading > div > p:last-child {
   color: var(--muted);
   margin-top: 0.25rem;
+  max-width: 54rem;
+  text-wrap: pretty;
 }
 
 .member-access-badge {
@@ -10059,6 +10110,28 @@ textarea {
   color: var(--brand);
 }
 
+.member-motion-state,
+.member-graph-count {
+  align-items: center;
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 700;
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0.4rem 0.65rem;
+}
+
+.member-motion-state {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.member-graph-count {
+  color: var(--ink);
+}
+
 .member-neural-layout {
   display: grid;
   gap: 1rem;
@@ -10066,6 +10139,11 @@ textarea {
   min-height: 35rem;
   position: relative;
   z-index: 1;
+}
+
+.member-neural-map-full .member-neural-layout {
+  grid-template-columns: minmax(0, 2.35fr) minmax(19rem, 0.72fr);
+  min-height: 52rem;
 }
 
 .member-neural-stage {
@@ -10077,6 +10155,10 @@ textarea {
   min-height: 35rem;
   overflow: hidden;
   position: relative;
+}
+
+.member-neural-map-full .member-neural-stage {
+  min-height: 52rem;
 }
 
 .member-neural-atmosphere {
@@ -10123,6 +10205,16 @@ textarea {
 .member-neural-orbit.orbit-two {
   stroke: rgba(255, 0, 255, 0.09);
   stroke-dasharray: 1 3;
+}
+
+.member-neural-orbit.orbit-three {
+  stroke: rgba(var(--neon-accent-rgb), 0.08);
+  stroke-dasharray: 0.5 2;
+}
+
+.member-neural-connections line.assignment-edge {
+  stroke: rgba(255, 0, 255, 0.36);
+  stroke-dasharray: 1 4;
 }
 
 .member-neuron {
@@ -10172,7 +10264,7 @@ textarea {
 }
 
 .member-neuron.status-quiet {
-  opacity: 0.76;
+  opacity: 0.88;
 }
 
 .member-neuron-icon {
@@ -10188,7 +10280,7 @@ textarea {
   width: 2rem;
 }
 
-.member-neuron > span:last-child {
+.member-neuron-copy {
   display: grid;
   min-width: 0;
 }
@@ -10207,6 +10299,75 @@ textarea {
 .member-neuron small {
   color: var(--muted);
   font-size: 0.68rem;
+  text-transform: capitalize;
+}
+
+.member-neural-map-full .member-neuron-depth-2,
+.member-neural-map-full .member-neuron-depth-3 {
+  border-radius: 50%;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.35rem;
+  width: 2.75rem;
+  z-index: 2;
+}
+
+.member-neural-map-full .member-neuron-depth-0,
+.member-neural-map-full .member-neuron-depth-1 {
+  max-width: 14rem;
+  width: 14rem;
+}
+
+.member-neural-map-full .member-neuron-depth-3 {
+  background: rgba(8, 12, 18, 0.97);
+  border-style: dashed;
+}
+
+.member-neural-map-full .member-neuron-depth-2 .member-neuron-icon,
+.member-neural-map-full .member-neuron-depth-3 .member-neuron-icon {
+  height: 1.8rem;
+  width: 1.8rem;
+}
+
+.member-neural-map-full .member-neuron-depth-2 .member-neuron-copy,
+.member-neural-map-full .member-neuron-depth-3 .member-neuron-copy {
+  background: rgba(3, 7, 11, 0.98);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.22);
+  border-radius: 9px;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.48);
+  left: 50%;
+  max-width: 13rem;
+  min-width: 8.5rem;
+  opacity: 0;
+  padding: 0.42rem 0.55rem;
+  pointer-events: none;
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  transform: translate(-50%, -0.2rem);
+  transition: opacity 140ms ease, transform 140ms ease;
+  visibility: hidden;
+  white-space: normal;
+  z-index: 8;
+}
+
+.member-neural-map-full .member-neuron-depth-2:hover .member-neuron-copy,
+.member-neural-map-full .member-neuron-depth-2:focus-visible .member-neuron-copy,
+.member-neural-map-full .member-neuron-depth-2[aria-pressed="true"] .member-neuron-copy,
+.member-neural-map-full .member-neuron-depth-3:hover .member-neuron-copy,
+.member-neural-map-full .member-neuron-depth-3:focus-visible .member-neuron-copy,
+.member-neural-map-full .member-neuron-depth-3[aria-pressed="true"] .member-neuron-copy {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
+.member-neural-map-full .member-neuron-depth-2 strong,
+.member-neural-map-full .member-neuron-depth-2 small,
+.member-neural-map-full .member-neuron-depth-3 strong,
+.member-neural-map-full .member-neuron-depth-3 small {
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .member-neuron-inspector {
@@ -10237,7 +10398,9 @@ textarea {
 }
 
 .member-neuron-inspector-title h3 {
+  line-height: 1.2;
   overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .member-neuron-metric {
@@ -10271,6 +10434,25 @@ textarea {
   margin-top: auto;
   overflow-wrap: anywhere;
   padding-top: 1rem;
+}
+
+.member-graph-disclosure {
+  border-top: 1px solid rgba(var(--neon-accent-rgb), 0.12);
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 1rem 0 0;
+  padding-top: 0.85rem;
+  position: relative;
+  z-index: 1;
+}
+
+.member-auth-card .eyebrow,
+.member-workspace .eyebrow {
+  color: var(--brand);
+  font-size: 0.75rem;
+  letter-spacing: 0.075em;
+  line-height: 1.25;
+  margin: 0 0 0.42rem;
 }
 
 @keyframes member-neural-signal {
@@ -10498,7 +10680,9 @@ textarea {
 
 .member-workspace-grid h3 {
   font-size: 1rem;
+  line-height: 1.25;
   margin: 0;
+  text-wrap: balance;
 }
 
 .member-health-summary {
@@ -10669,6 +10853,10 @@ textarea {
 }
 
 @media (max-width: 900px) {
+  .member-header-account > span {
+    display: none;
+  }
+
   .member-content-grid,
   .member-workspace-grid {
     grid-template-columns: 1fr;
@@ -10682,6 +10870,15 @@ textarea {
     min-height: 17rem;
   }
 
+  .member-neural-map-full .member-neural-layout {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: auto;
+  }
+
+  .member-neural-map-full .member-neural-stage {
+    min-height: 48rem;
+  }
+
   .member-metric-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -10693,12 +10890,36 @@ textarea {
   }
 
   .member-header {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.55rem 0.8rem;
     min-height: 4.5rem;
+    padding-block: 0.55rem;
   }
 
-  .member-header .brand-mark > span,
-  .member-header-account > span {
+  .member-header-primary {
+    display: contents;
+  }
+
+  .member-header .brand-mark > span {
     display: none;
+  }
+
+  .member-header .brand-mark {
+    flex: 1 1 auto;
+  }
+
+  .member-navigation {
+    display: grid;
+    flex: 1 0 100%;
+    gap: 0.45rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    order: 3;
+  }
+
+  .member-navigation a {
+    justify-content: center;
+    min-height: 44px;
   }
 
   .member-header-account .button {
@@ -10724,6 +10945,63 @@ textarea {
   .member-neural-layout,
   .member-neural-stage {
     min-height: 30rem;
+  }
+
+  .member-neural-map-full .member-neural-stage {
+    display: grid;
+    gap: 0.6rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: auto;
+    overflow: visible;
+    padding: 0.75rem;
+  }
+
+  .member-neural-map-full .member-neural-connections,
+  .member-neural-map-full .member-neural-atmosphere {
+    display: none;
+  }
+
+  .member-neural-map-full .member-neuron,
+  .member-neural-map-full .member-neuron-core,
+  .member-neural-map-full .member-neuron-depth-2,
+  .member-neural-map-full .member-neuron-depth-3 {
+    border-radius: 12px;
+    justify-content: flex-start;
+    left: auto !important;
+    max-width: none;
+    min-height: 3.25rem;
+    padding: 0.55rem;
+    position: relative;
+    text-align: left;
+    top: auto !important;
+    transform: none;
+    width: auto;
+  }
+
+  .member-neural-map-full .member-neuron:hover,
+  .member-neural-map-full .member-neuron:focus-visible,
+  .member-neural-map-full .member-neuron[aria-pressed="true"] {
+    transform: none;
+  }
+
+  .member-neural-map-full .member-neuron-core {
+    grid-column: 1 / -1;
+  }
+
+  .member-neural-map-full .member-neuron-depth-2 .member-neuron-copy,
+  .member-neural-map-full .member-neuron-depth-3 .member-neuron-copy {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    left: auto;
+    max-width: none;
+    min-width: 0;
+    opacity: 1;
+    padding: 0;
+    position: static;
+    top: auto;
+    transform: none;
+    visibility: visible;
   }
 
   .member-neuron {
@@ -10755,6 +11033,26 @@ textarea {
 
   .member-neuron:not(.member-neuron-core) small {
     display: none;
+  }
+
+  .member-neural-map-full .member-neuron:not(.member-neuron-core) > .member-neuron-copy {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    left: auto;
+    max-width: none;
+    min-width: 0;
+    opacity: 1;
+    padding: 0;
+    position: static;
+    top: auto;
+    transform: none;
+    visibility: visible;
+    width: auto;
+  }
+
+  .member-neural-map-full .member-neuron:not(.member-neuron-core) small {
+    display: block;
   }
 
   .member-organization-select {
@@ -10826,5 +11124,24 @@ textarea {
 
   .member-metric-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .member-neural-map-full .member-neural-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .member-neural-map-controls {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .member-motion-toggle,
+  .member-motion-state,
+  .member-access-badge,
+  .member-graph-count {
+    justify-content: center;
+    min-height: 44px;
   }
 }
