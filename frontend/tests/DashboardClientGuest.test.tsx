@@ -35,10 +35,10 @@ vi.mock("../components/NeuronsCommandCenter", () => ({
 describe("DashboardClient guest entry", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    apiMocks.apiFetch.mockRejectedValue(new ApiError(401, "Unauthorized", null));
   });
 
-  it("opens the local command center instead of redirecting to account creation", async () => {
+  it.each([401, 404, 408, 502, 503])("opens the local command center when the backend returns %s", async (status) => {
+    apiMocks.apiFetch.mockRejectedValue(new ApiError(status, "Backend unavailable", null));
     render(<DashboardClient />);
 
     expect(await screen.findByLabelText("ENTRAL Command Center")).toHaveTextContent("Local operator");

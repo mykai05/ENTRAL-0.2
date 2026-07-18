@@ -474,7 +474,8 @@ export function buildRevenuePerformanceDigest(input: {
   stores: RevenueEngineStoreSnapshot[];
 }): RevenuePerformanceDigest {
   const options = withRevenuePerformanceOptions(input.options);
-  const cutoff = Date.now() - options.windowDays * 86_400_000;
+  const generatedAt = input.generatedAt ?? new Date().toISOString();
+  const cutoff = dateMs(generatedAt) - options.windowDays * 86_400_000;
   const snapshots = input.snapshots
     .filter((snapshot) => dateMs(snapshot.periodEnd) >= cutoff)
     .map((snapshot) => normalizeRevenuePerformanceSnapshot(snapshot))
@@ -529,7 +530,7 @@ export function buildRevenuePerformanceDigest(input: {
       "Using browser stealth, anti-detection, or platform-evasion automation"
     ],
     externalExecution: false,
-    generatedAt: input.generatedAt ?? new Date().toISOString(),
+    generatedAt,
     mode: "Internal Performance Velocity Ledger",
     options,
     productScores,

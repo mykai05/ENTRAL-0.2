@@ -21,6 +21,7 @@ type DashboardResponse = {
 };
 
 const authenticatedUserSessionKey = "entral-authenticated-user";
+const localModeStatuses = new Set([401, 404, 408, 502, 503]);
 
 function displayName(name: string) {
   const trimmed = name.trim();
@@ -62,7 +63,7 @@ export function DashboardClient() {
       writeSessionValue(authenticatedUserSessionKey, JSON.stringify(authDetail));
       window.dispatchEvent(new CustomEvent("entral:user-authenticated", { detail: authDetail }));
     } catch (loadError) {
-      if (loadError instanceof ApiError && loadError.status === 401) {
+      if (loadError instanceof ApiError && localModeStatuses.has(loadError.status)) {
         setUser(null);
         return;
       }
@@ -71,7 +72,7 @@ export function DashboardClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     void loadDashboard();

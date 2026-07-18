@@ -2496,6 +2496,49 @@ describe("Revenue Engine", () => {
     ]));
   });
 
+  it("anchors historical performance windows to the requested digest time", () => {
+    const historicalProduct = product({
+      id: "historical_product",
+      productName: "Historical Product",
+      status: "Published"
+    });
+    const digest = buildRevenuePerformanceDigest({
+      generatedAt: "2020-02-01T12:00:00.000Z",
+      options: { windowDays: 30 },
+      products: [historicalProduct],
+      stores: [scaleStore],
+      snapshots: [
+        normalizeRevenuePerformanceSnapshot({
+          grossRevenue: 100,
+          netProfit: 40,
+          periodEnd: "2020-01-15T00:00:00.000Z",
+          periodStart: "2020-01-14T00:00:00.000Z",
+          productId: historicalProduct.id,
+          storeId: scaleStore.id,
+          unitsSold: 4,
+          visits: 100
+        }),
+        normalizeRevenuePerformanceSnapshot({
+          grossRevenue: 900,
+          netProfit: 500,
+          periodEnd: "2019-12-01T00:00:00.000Z",
+          periodStart: "2019-11-30T00:00:00.000Z",
+          productId: historicalProduct.id,
+          storeId: scaleStore.id,
+          unitsSold: 20,
+          visits: 500
+        })
+      ]
+    });
+
+    expect(digest.generatedAt).toBe("2020-02-01T12:00:00.000Z");
+    expect(digest.totals).toMatchObject({
+      grossRevenue: 100,
+      netProfit: 40,
+      snapshots: 1
+    });
+  });
+
   it("queues internal rotation changes for weak assets without deleting data", () => {
     const weakStore: RevenueEngineStoreSnapshot = {
       ...scaleStore,
