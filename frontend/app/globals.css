@@ -9762,10 +9762,40 @@ textarea {
 }
 
 .member-workspace {
+  isolation: isolate;
   margin: 0 auto;
   max-width: 88rem;
   min-height: 100dvh;
   padding: 0 clamp(1rem, 4vw, 3rem) 4rem;
+  position: relative;
+}
+
+.member-workspace::before,
+.member-workspace::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+}
+
+.member-workspace::before {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(var(--neon-accent-rgb), 0.16), transparent 26rem),
+    radial-gradient(circle at 82% 36%, rgba(255, 0, 255, 0.08), transparent 24rem),
+    radial-gradient(circle at 48% 88%, rgba(var(--neon-accent-rgb), 0.08), transparent 30rem);
+  inset: 0;
+}
+
+.member-workspace::after {
+  background-image:
+    radial-gradient(circle, rgba(var(--neon-accent-rgb), 0.34) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255, 0, 255, 0.22) 0 1px, transparent 1.5px);
+  background-position: 0 0, 47px 31px;
+  background-size: 88px 88px, 131px 131px;
+  inset: 5rem 0 auto;
+  height: min(72rem, 90vh);
+  mask-image: radial-gradient(ellipse at center, #000 0%, transparent 74%);
+  opacity: 0.32;
 }
 
 .member-header {
@@ -9934,6 +9964,333 @@ textarea {
 .member-organization-bar dd {
   font-weight: 900;
   margin: 0;
+}
+
+.member-neural-map {
+  background:
+    linear-gradient(135deg, rgba(var(--neon-accent-rgb), 0.075), transparent 32%),
+    rgba(5, 8, 12, 0.94);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.28);
+  border-radius: 22px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34), inset 0 0 54px rgba(var(--neon-accent-rgb), 0.035);
+  margin-bottom: 1rem;
+  overflow: hidden;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  position: relative;
+}
+
+.member-neural-map::before {
+  background:
+    linear-gradient(rgba(var(--neon-accent-rgb), 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--neon-accent-rgb), 0.04) 1px, transparent 1px);
+  background-size: 42px 42px;
+  content: "";
+  inset: 0;
+  mask-image: linear-gradient(to bottom, #000, transparent 92%);
+  pointer-events: none;
+  position: absolute;
+}
+
+.member-neural-map-heading {
+  align-items: flex-end;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.member-neural-map-heading h2,
+.member-neural-map-heading p {
+  margin: 0;
+}
+
+.member-neural-map-heading h2 {
+  font-size: clamp(1.45rem, 3vw, 2rem);
+}
+
+.member-neural-map-heading > div > p:last-child {
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.member-access-badge {
+  align-items: center;
+  background: rgba(var(--neon-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.24);
+  border-radius: 999px;
+  color: var(--brand);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 900;
+  gap: 0.4rem;
+  letter-spacing: 0.05em;
+  padding: 0.45rem 0.7rem;
+  text-transform: uppercase;
+}
+
+.member-neural-map-controls {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.55rem;
+}
+
+.member-motion-toggle {
+  align-items: center;
+  background: rgba(9, 13, 18, 0.88);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.2);
+  border-radius: 999px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 850;
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0.4rem 0.65rem;
+}
+
+.member-motion-toggle:hover,
+.member-motion-toggle[aria-pressed="true"] {
+  border-color: rgba(var(--neon-accent-rgb), 0.55);
+  color: var(--brand);
+}
+
+.member-neural-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.75fr) minmax(17rem, 0.65fr);
+  min-height: 35rem;
+  position: relative;
+  z-index: 1;
+}
+
+.member-neural-stage {
+  background:
+    radial-gradient(circle at center, rgba(var(--neon-accent-rgb), 0.13), transparent 35%),
+    rgba(2, 6, 9, 0.78);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.16);
+  border-radius: 18px;
+  min-height: 35rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.member-neural-atmosphere {
+  animation: member-neural-breathe 8s ease-in-out infinite;
+  background: conic-gradient(from 45deg, transparent, rgba(var(--neon-accent-rgb), 0.07), transparent 35%, rgba(255, 0, 255, 0.055), transparent 70%);
+  border-radius: 50%;
+  filter: blur(8px);
+  height: 70%;
+  left: 15%;
+  position: absolute;
+  top: 15%;
+  width: 70%;
+}
+
+.member-neural-map.motion-paused .member-neural-atmosphere,
+.member-neural-map.motion-paused .member-neural-connections line {
+  animation-play-state: paused;
+}
+
+.member-neural-connections {
+  height: 100%;
+  inset: 0;
+  overflow: visible;
+  position: absolute;
+  width: 100%;
+}
+
+.member-neural-connections line {
+  animation: member-neural-signal 4s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(var(--neon-accent-rgb), 0.8));
+  stroke: rgba(var(--neon-accent-rgb), 0.54);
+  stroke-dasharray: 2 3;
+  stroke-width: 0.28;
+  vector-effect: non-scaling-stroke;
+}
+
+.member-neural-orbit {
+  fill: none;
+  stroke: rgba(var(--neon-accent-rgb), 0.12);
+  stroke-width: 0.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.member-neural-orbit.orbit-two {
+  stroke: rgba(255, 0, 255, 0.09);
+  stroke-dasharray: 1 3;
+}
+
+.member-neuron {
+  align-items: center;
+  background: rgba(7, 14, 19, 0.96);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.32);
+  border-radius: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  gap: 0.6rem;
+  max-width: 11.5rem;
+  min-height: 3.4rem;
+  padding: 0.55rem 0.7rem;
+  position: absolute;
+  text-align: left;
+  transform: translate(-50%, -50%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  width: max-content;
+}
+
+.member-neuron:hover,
+.member-neuron[aria-pressed="true"] {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px rgba(var(--neon-accent-rgb), 0.25), 0 0 26px rgba(var(--neon-accent-rgb), 0.18);
+  transform: translate(-50%, -50%) scale(1.035);
+}
+
+.member-neuron:focus-visible {
+  transform: translate(-50%, -50%) scale(1.035);
+}
+
+.member-neuron-core {
+  background: rgba(2, 19, 24, 0.98);
+  border-color: rgba(var(--neon-accent-rgb), 0.7);
+  box-shadow: 0 0 42px rgba(var(--neon-accent-rgb), 0.2);
+  max-width: 13rem;
+  min-height: 4.25rem;
+}
+
+.member-neuron.status-attention {
+  border-color: rgba(255, 95, 109, 0.68);
+}
+
+.member-neuron.status-watch {
+  border-color: rgba(255, 205, 99, 0.6);
+}
+
+.member-neuron.status-quiet {
+  opacity: 0.76;
+}
+
+.member-neuron-icon {
+  align-items: center;
+  background: rgba(var(--neon-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.2);
+  border-radius: 50%;
+  color: var(--brand);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.member-neuron > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.member-neuron strong,
+.member-neuron small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-neuron strong {
+  font-size: 0.82rem;
+}
+
+.member-neuron small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.member-neuron-inspector {
+  align-self: stretch;
+  background: rgba(6, 11, 15, 0.9);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.18);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.2rem;
+}
+
+.member-neuron-inspector.status-attention {
+  border-color: rgba(255, 95, 109, 0.34);
+}
+
+.member-neuron-inspector-title {
+  align-items: center;
+  display: flex;
+  gap: 0.7rem;
+}
+
+.member-neuron-inspector-title h3,
+.member-neuron-inspector-title p,
+.member-neuron-inspector > p {
+  margin: 0;
+}
+
+.member-neuron-inspector-title h3 {
+  overflow-wrap: anywhere;
+}
+
+.member-neuron-metric {
+  color: var(--brand);
+  display: block;
+  font-size: clamp(1.5rem, 4vw, 2.3rem);
+  line-height: 1.05;
+  margin: 1.4rem 0 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+.member-neuron-inspector > p,
+.member-neuron-inspector li {
+  color: var(--muted);
+}
+
+.member-neuron-inspector ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+  padding-left: 1.15rem;
+}
+
+.member-neuron-boundary {
+  align-items: center;
+  border-top: 1px solid rgba(var(--neon-accent-rgb), 0.12);
+  color: var(--brand);
+  display: flex;
+  font-size: 0.75rem;
+  gap: 0.5rem;
+  margin-top: auto;
+  overflow-wrap: anywhere;
+  padding-top: 1rem;
+}
+
+@keyframes member-neural-signal {
+  to { stroke-dashoffset: -10; }
+}
+
+@keyframes member-neural-breathe {
+  0%, 100% { opacity: 0.62; transform: scale(0.96) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.04) rotate(8deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-neural-atmosphere,
+  .member-neural-connections line {
+    animation: none;
+  }
+
+  .member-neuron {
+    transition: none;
+  }
 }
 
 .member-metrics,
@@ -10317,6 +10674,14 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .member-neural-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .member-neuron-inspector {
+    min-height: 17rem;
+  }
+
   .member-metric-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -10345,6 +10710,51 @@ textarea {
   .member-organization-bar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .member-neural-map-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .member-neural-map-controls {
+    flex-wrap: wrap;
+  }
+
+  .member-neural-layout,
+  .member-neural-stage {
+    min-height: 30rem;
+  }
+
+  .member-neuron {
+    border-radius: 50%;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0.4rem;
+    width: 3rem;
+  }
+
+  .member-neuron-core {
+    border-radius: 14px;
+    min-height: 3.8rem;
+    width: min(10.5rem, 38vw);
+  }
+
+  .member-neuron:not(.member-neuron-core) > span:last-child {
+    background: rgba(3, 7, 10, 0.92);
+    border: 1px solid rgba(var(--neon-accent-rgb), 0.15);
+    border-radius: 7px;
+    left: 50%;
+    max-width: 7rem;
+    padding: 0.2rem 0.35rem;
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    transform: translateX(-50%);
+    width: max-content;
+  }
+
+  .member-neuron:not(.member-neuron-core) small {
+    display: none;
   }
 
   .member-organization-select {

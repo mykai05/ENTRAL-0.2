@@ -23,6 +23,7 @@ import type { MemberOrganizationsResponse, MemberOverviewResponse } from "../lib
 import { sovereignProtocolUrl } from "../lib/member";
 import { BrandMark } from "./BrandMark";
 import { Button } from "./Button";
+import { MemberNeuronGraph } from "./MemberNeuronGraph";
 
 const statusLabels: Record<string, string> = {
   ARCHIVED: "Archived",
@@ -194,6 +195,8 @@ export function MemberDashboardClient({ initialSession }: { initialSession: Memb
               <div><dt>Entral Base seats</dt><dd>{overview.organization.memberCount} of {overview.organization.memberLimit}</dd></div>
             </dl>
           </section>
+
+          <MemberNeuronGraph overview={overview} />
 
           <section className="member-metrics" aria-labelledby="work-overview-heading">
             <div className="member-section-heading">

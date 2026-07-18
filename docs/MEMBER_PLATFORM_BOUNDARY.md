@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The `/member` surface is the member-facing Entral application boundary. It is intentionally separate from the internal command center and does not render or return agent controls, prompts, connectors, administrative diagnostics, governance controls, or cross-organization records.
+The `/member` surface is the member-facing Entral application boundary. It gives each provisioned organization its own Entral dashboard and organization neural map while remaining separate from the Sovereign internal command center. It does not render or return Sovereign agent controls, prompts, connectors, administrative diagnostics, governance controls, or cross-organization records.
 
 ## Authentication and sessions
 
@@ -49,12 +49,17 @@ The first supported member overview is read-only and limited to:
 - Organization member names and roles.
 - The current member-seat count and enforced Entral Base allowance.
 - A typed, organization-scoped published operating snapshot containing business health, objectives and priorities, findings and recommendations, and a monthly operating summary.
+- A seven-node organization neural map derived only from those already authorized overview fields. The map connects the organization core to business health, priorities, active work, the organization team, operating summaries, and findings. It does not query the internal Command OS or executable agent tables.
+
+The neural map is an organization operating view, not a representation of autonomous execution. Every node is either a fixed Entral operating domain or a summary of current organization-scoped records. Selecting a node changes only the local inspector; it performs no network mutation. Motion is restrained, pauses when the map or page is not visible, can be paused manually, and honors the browser's reduced-motion preference on first render.
+
+Member roles returned to the browser are normalized to the public `OWNER | MEMBER` allowlist. Unknown or internal role strings fail closed to `MEMBER`. Both public roles may inspect the current read-only map. Any future owner-only write must be independently authorized on the server; the role badge is not an authorization boundary.
 
 `MemberWorkspaceSnapshot` is one compact publication record per organization. Its JSON payload is validated against a strict allowlist before storage and again before member delivery; internal prompts, diagnostics, controls, and arbitrary fields are rejected rather than passed through. `PUT /api/v1/admin/organizations/:organizationId/member-workspace` is internal-admin-only, supports optimistic version checks, serializes concurrent publication, and writes the snapshot and a content-minimal audit record in one transaction. The audit stores counts and a hash, not the full operating narrative. A missing snapshot or an intentionally empty section renders as a clean read-only empty state with no dead member controls.
 
 Production publication fails closed when `DATA_ENCRYPTION_KEY` is absent. When the key is configured, the published snapshot is stored in the existing AES-256-GCM secure-JSON envelope. Republishing content identical to a legacy plaintext row still rewrites that row into an encrypted envelope and records the storage-only re-encryption in the same audit transaction. This requirement is intentionally scoped to member-workspace publication so existing secure-JSON callers keep their established behavior.
 
-This change does not add a public or member-facing approval control. Authorized internal tooling can publish or withdraw a task through `PATCH /api/v1/admin/tasks/:taskId/member-visibility`; that endpoint requires an Entral administrator, is rate-limited, is idempotent for repeated state, and atomically records the actor, organization, previous state, resulting state, request, and task in the audit log with the visibility mutation. Subscription management remains explicitly unavailable because no approved billing provider or subscription lifecycle exists.
+This change does not add a public or member-facing approval, agent-execution, scheduling, connector, or command-routing control. Authorized internal tooling can publish or withdraw a task through `PATCH /api/v1/admin/tasks/:taskId/member-visibility`; that endpoint requires an Entral administrator, is rate-limited, is idempotent for repeated state, and atomically records the actor, organization, previous state, resulting state, request, and task in the audit log with the visibility mutation. Subscription management remains explicitly unavailable because no approved billing provider or subscription lifecycle exists.
 
 ## Request protections
 
@@ -83,7 +88,7 @@ No billing provider, price, subscription model, billing secret, or billing-deriv
 
 ## Verification
 
-The implementation includes tests for trusted-origin handling, no-Origin cookie rejection, non-browser compatibility, authentication requirements, organization scoping, cross-tenant denial before published-workspace lookup, private caching, strict member DTO projection, production encryption fail-closed behavior, AES-GCM snapshot storage, plaintext snapshot re-encryption, open-redirect rejection, browser token stripping, login body/content-type limits, member recovery routing, internal-chrome exclusion, real and empty published-workspace states, multi-organization response races and identity mismatches, five-seat reporting, sixth-seat rejection, over-limit access rejection, serializable provisioning, optimistic publication conflicts, and audit-failure rollback for both seat provisioning and workspace publication.
+The implementation includes tests for trusted-origin handling, no-Origin cookie rejection, non-browser compatibility, authentication requirements, organization scoping, cross-tenant denial before published-workspace lookup, private caching, strict member DTO projection, public role normalization, production encryption fail-closed behavior, AES-GCM snapshot storage, plaintext snapshot re-encryption, open-redirect rejection, browser token stripping, login body/content-type limits, member recovery routing, internal-chrome exclusion, real and empty published-workspace states, neural-map safe-field derivation, keyboard node selection, manual motion control, multi-organization response races and identity mismatches, five-seat reporting, sixth-seat rejection, over-limit access rejection, serializable provisioning, optimistic publication conflicts, and audit-failure rollback for both seat provisioning and workspace publication.
 
 The migration at `prisma/migrations/20260718000000_add_member_platform_boundaries/migration.sql` creates the closed member boundary, the five-seat database guards, and the one-snapshot-per-organization storage model. Apply it with the established `pnpm prisma:deploy` release process only after database backup and deployment approval.
 

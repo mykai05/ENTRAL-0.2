@@ -1,10 +1,12 @@
+export type MemberOrganizationRole = "MEMBER" | "OWNER";
+
 export type MemberOrganization = {
   id: string;
   joinedAt: string;
   memberCount: number;
   memberLimit: number;
   name: string;
-  role: string;
+  role: MemberOrganizationRole;
   slug: string;
 };
 
@@ -31,14 +33,14 @@ export type MemberOverviewResponse = {
     id: string;
     joinedAt: string;
     name: string;
-    role: string;
+    role: MemberOrganizationRole;
   }>;
   organization: {
     id: string;
     memberCount: number;
     memberLimit: number;
     name: string;
-    role: string;
+    role: MemberOrganizationRole;
     slug: string;
   };
   recentTasks: Array<{

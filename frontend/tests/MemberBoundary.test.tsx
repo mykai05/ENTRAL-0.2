@@ -1,10 +1,13 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "../components/AppProviders";
 import { MemberDashboardClient } from "../components/MemberDashboardClient";
+import { buildMemberNeurons, MemberNeuronGraph } from "../components/MemberNeuronGraph";
 import { MemberRecoveryClient } from "../components/MemberRecoveryClient";
 import { MemberSignInClient } from "../components/MemberSignInClient";
 import { safeMemberReturnPath } from "../lib/member";
@@ -104,6 +107,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("member redirect and browser credential boundaries", () => {
@@ -250,6 +254,62 @@ describe("protected member session loading", () => {
 });
 
 describe("member workspace presentation", () => {
+  it("builds the Entral neural map only from organization-scoped overview data", () => {
+    const neurons = buildMemberNeurons(overview);
+
+    expect(neurons).toHaveLength(7);
+    expect(neurons[0]).toMatchObject({ id: "core", label: "Analytical Works", metric: "Entral core" });
+    expect(neurons.find((neuron) => neuron.id === "priority")).toMatchObject({ metric: "1 active" });
+    expect(neurons.find((neuron) => neuron.id === "work")?.supportingItems).toContain("Map the operating workflow - in progress");
+    expect(JSON.stringify(neurons)).not.toContain("token");
+    expect(JSON.stringify(neurons)).not.toContain("prompt");
+  });
+
+  it("provides a keyboard-accessible organization neuron inspector", async () => {
+    const user = userEvent.setup();
+    render(<MemberNeuronGraph overview={overview} />);
+
+    expect(screen.getByRole("heading", { name: "Entral command field" })).toBeInTheDocument();
+    const priorities = screen.getByRole("button", { name: "Priorities: 1 active" });
+    expect(priorities).toHaveAttribute("aria-pressed", "false");
+    await user.click(priorities);
+    expect(priorities).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Improve scheduling visibility - 65%")).toBeInTheDocument();
+    expect(screen.getByText("Bound to Analytical Works")).toBeInTheDocument();
+  });
+
+  it("lets a member pause and resume decorative graph motion", async () => {
+    const user = userEvent.setup();
+    render(<MemberNeuronGraph overview={overview} />);
+
+    const pause = screen.getByRole("button", { name: "Pause motion" });
+    expect(pause).toHaveAttribute("aria-pressed", "false");
+    await user.click(pause);
+    const resume = screen.getByRole("button", { name: "Resume motion" });
+    expect(resume).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelector(".member-neural-map")).toHaveClass("motion-paused");
+    await user.click(resume);
+    expect(screen.getByRole("button", { name: "Pause motion" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("honors reduced-motion preference when the graph first renders", async () => {
+    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
+    render(<MemberNeuronGraph overview={overview} />);
+
+    expect(await screen.findByRole("button", { name: "Resume motion" })).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelector(".member-neural-map")).toHaveClass("motion-paused");
+  });
+
+  it("keeps the member graph source independent from internal command and connector modules", () => {
+    const source = readFileSync(resolve(process.cwd(), "components", "MemberNeuronGraph.tsx"), "utf8");
+
+    expect(source).not.toContain("NeuronsCommandCenter");
+    expect(source).not.toContain("../lib/api");
+    expect(source).not.toContain("../lib/command");
+    expect(source).not.toContain("ConnectionCenter");
+    expect(source).not.toContain("MerchOperationsPanel");
+  });
+
   it("shows allowlisted organization work, real published operating data, and the enforced seat allowance", async () => {
     navigation.pathname = "/member";
     api.apiFetch.mockResolvedValueOnce(overview);
@@ -262,6 +322,8 @@ describe("member workspace presentation", () => {
     expect(taskTitle.closest("li")?.textContent).not.toContain("Â");
     expect(screen.getByText("2 of 5")).toBeInTheDocument();
     expect(screen.getByText("Delivery and capacity are steady.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Entral command field" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Analytical Works: Entral core" })).toBeInTheDocument();
     expect(screen.getByText("Improve scheduling visibility")).toBeInTheDocument();
     expect(screen.getByText("Standardize hand-offs")).toBeInTheDocument();
     expect(screen.getByText("Operations are becoming more predictable")).toBeInTheDocument();
