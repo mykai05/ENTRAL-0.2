@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
 import { prisma } from "../db.js";
-import { clearAuthCookie, requireAuth, setAuthCookie, signAuthToken } from "../auth.js";
+import { clearAuthCookie, requireAdmin, requireAuth, setAuthCookie, setPrivateNoStoreHeaders, signAuthToken } from "../auth.js";
 import { createUserWithTeam, normalizeUserRole, publicUser } from "../services/users.js";
 import {
   confirmEmailVerificationSchema,
@@ -19,8 +19,32 @@ import {
   requestPasswordReset
 } from "../services/authRecovery.js";
 
+async function authorizedSessionForUser(
+  user: { id: string; internalAccess: boolean },
+  requestedFlow: "internal" | "member"
+) {
+  if (requestedFlow === "internal" && user.internalAccess) {
+    return "internal" as const;
+  }
+
+  const organizationCount = await prisma.teamMember.count({
+    where: {
+      userId: user.id,
+      team: { memberAccessEnabled: true }
+    }
+  });
+
+  return organizationCount > 0 ? "member" as const : null;
+}
+
 export async function authRoutes(app: FastifyInstance) {
+  app.addHook("onRequest", (_request, reply, done) => {
+    setPrivateNoStoreHeaders(reply);
+    done();
+  });
+
   app.post("/signup", {
+    preHandler: requireAdmin,
     config: {
       rateLimit: {
         max: 10,
@@ -32,7 +56,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     try {
       const { user, team } = await createUserWithTeam(input);
-      await issueEmailVerification(user, { requestId: request.id });
+      await issueEmailVerification(user, { flow: "member", requestId: request.id });
 
       return reply.code(201).send({
         id: user.id,
@@ -44,7 +68,7 @@ export async function authRoutes(app: FastifyInstance) {
           slug: team.slug
         },
         verificationRequired: true,
-        message: "Account created. Verify your email before signing in to the ENTRAL command center."
+        message: "Account created. Verify your email before signing in to Entral."
       });
     } catch (error) {
       if (error instanceof Error && error.message === "EMAIL_TAKEN") {
@@ -78,7 +102,27 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    const token = signAuthToken({ sub: user.id, email: user.email, role: normalizeUserRole(user.role) });
+    if (input.flow === "internal" && !user.internalAccess) {
+      return reply.code(403).send({
+        error: "Forbidden",
+        message: "This account is not authorized for the internal Entral command center."
+      });
+    }
+
+    const session = await authorizedSessionForUser(user, input.flow);
+    if (!session) {
+      return reply.code(403).send({
+        error: "Forbidden",
+        message: "This account is not assigned to a provisioned member organization."
+      });
+    }
+
+    const token = signAuthToken({
+      sub: user.id,
+      email: user.email,
+      role: normalizeUserRole(user.role),
+      session
+    });
     setAuthCookie(reply, token);
 
     return reply.send({ token, user: publicUser(user) });
@@ -93,7 +137,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
   }, async (request, reply) => {
     const input = requestEmailVerificationSchema.parse(request.body);
-    await requestEmailVerification(input.email, { requestId: request.id });
+    await requestEmailVerification(input.email, { flow: input.flow, requestId: request.id });
 
     return reply.send({
       message: "If this email belongs to an unverified ENTRAL account, a verification link has been sent."
@@ -119,14 +163,24 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const user = publicUser(result.user);
-    setAuthCookie(reply, signAuthToken({
-      sub: result.user.id,
-      email: result.user.email,
-      role: normalizeUserRole(result.user.role)
-    }));
+    const session = await authorizedSessionForUser(result.user, result.flow);
+    if (session) {
+      setAuthCookie(reply, signAuthToken({
+        sub: result.user.id,
+        email: result.user.email,
+        role: normalizeUserRole(result.user.role),
+        session
+      }));
+    } else {
+      clearAuthCookie(reply);
+    }
 
     return reply.send({
-      message: "Email verified. You can now enter the ENTRAL command center.",
+      message: session === "internal"
+        ? "Email verified. You can now enter the ENTRAL command center."
+        : session === "member"
+          ? "Email verified. You can now sign in to Entral."
+          : "Email verified. Member access has not been provisioned for this account.",
       user
     });
   });
@@ -140,7 +194,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
   }, async (request, reply) => {
     const input = requestPasswordResetSchema.parse(request.body);
-    await requestPasswordReset(input.email, { requestId: request.id });
+    await requestPasswordReset(input.email, { flow: input.flow, requestId: request.id });
 
     return reply.send({
       message: "If this email belongs to an ENTRAL account, a password reset link has been sent."
@@ -166,14 +220,24 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const user = publicUser(result.user);
-    setAuthCookie(reply, signAuthToken({
-      sub: result.user.id,
-      email: result.user.email,
-      role: normalizeUserRole(result.user.role)
-    }));
+    const session = await authorizedSessionForUser(result.user, result.flow);
+    if (session) {
+      setAuthCookie(reply, signAuthToken({
+        sub: result.user.id,
+        email: result.user.email,
+        role: normalizeUserRole(result.user.role),
+        session
+      }));
+    } else {
+      clearAuthCookie(reply);
+    }
 
     return reply.send({
-      message: "Password reset. You can now enter the ENTRAL command center.",
+      message: session === "internal"
+        ? "Password reset. You can now enter the ENTRAL command center."
+        : session === "member"
+          ? "Password reset. You can now sign in to Entral."
+          : "Password reset. Member access has not been provisioned for this account.",
       user
     });
   });

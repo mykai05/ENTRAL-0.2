@@ -19,11 +19,13 @@ describe("auth recovery workflows", () => {
       email: "ada@example.com",
       emailVerifiedAt: null,
       id: "user_123",
+      internalAccess: false,
       name: "Ada Lovelace"
     };
     const resetRecord = {
       consumedAt: null,
       expiresAt: new Date(Date.now() + 60_000),
+      flow: "member",
       id: "reset_123",
       tokenHash: hashAuthToken(rawToken),
       user,
@@ -54,6 +56,7 @@ describe("auth recovery workflows", () => {
     const result = await confirmPasswordReset(rawToken, "new-secure-password");
 
     expect(result.ok).toBe(true);
+    expect(result).toMatchObject({ flow: "member" });
     expect(findUnique).toHaveBeenCalledWith({
       include: { user: true },
       where: { tokenHash: hashAuthToken(rawToken) }

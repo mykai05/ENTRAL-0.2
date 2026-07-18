@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const emailSchema = z.string().trim().email().transform((value) => value.toLowerCase());
+const authFlowSchema = z.enum(["internal", "member"]).default("internal");
 
 export const signupSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -10,13 +11,15 @@ export const signupSchema = z.object({
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1).max(128)
+  password: z.string().min(1).max(128),
+  flow: authFlowSchema
 });
 
 const authTokenSchema = z.string().trim().min(32).max(256);
 
 export const requestPasswordResetSchema = z.object({
-  email: emailSchema
+  email: emailSchema,
+  flow: authFlowSchema
 });
 
 export const confirmPasswordResetSchema = z.object({
@@ -25,7 +28,8 @@ export const confirmPasswordResetSchema = z.object({
 });
 
 export const requestEmailVerificationSchema = z.object({
-  email: emailSchema
+  email: emailSchema,
+  flow: authFlowSchema
 });
 
 export const confirmEmailVerificationSchema = z.object({
@@ -2092,6 +2096,27 @@ export const auditLogListQuerySchema = z.object({
 export const adminAgentTaskParamsSchema = z.object({
   taskId: z.string().cuid()
 });
+
+export const memberTaskVisibilityParamsSchema = z.object({
+  taskId: z.string().cuid()
+});
+
+export const updateMemberTaskVisibilitySchema = z.object({
+  visible: z.boolean()
+});
+
+export const memberOrganizationAccessParamsSchema = z.object({
+  organizationId: z.string().cuid()
+});
+
+export const updateMemberOrganizationAccessSchema = z.object({
+  enabled: z.boolean()
+});
+
+export const provisionMemberSeatSchema = z.object({
+  role: z.enum(["MEMBER", "OWNER"]).default("MEMBER"),
+  userId: z.string().cuid()
+}).strict();
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

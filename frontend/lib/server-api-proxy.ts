@@ -33,7 +33,7 @@ export function missingApiProxyResponse() {
       error: "API proxy is not configured.",
       message: "Set API_PROXY_URL to the Railway backend URL."
     },
-    { status: 503 }
+    { headers: { "cache-control": "private, no-store" }, status: 503 }
   );
 }
 

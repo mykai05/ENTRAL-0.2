@@ -1,6 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { ClientErrorBoundary } from "./ClientErrorBoundary";
 import { CommandPalette } from "./CommandPalette";
 import { OnboardingProvider } from "./OnboardingTour";
@@ -11,6 +12,16 @@ import { ToastProvider } from "./ToastProvider";
 import { VoiceProvider } from "./VoiceProvider";
 
 export function AppProviders({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+
+  if (pathname.startsWith("/member")) {
+    return (
+      <ThemeProvider>
+        <ClientErrorBoundary>{children}</ClientErrorBoundary>
+      </ThemeProvider>
+    );
+  }
+
   const appChrome = (
     <>
       <SystemStatusBanner />

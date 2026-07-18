@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 import { parseSecureJson, stableJsonHash, stringifySecureJson } from "./secureJson.js";
 
@@ -16,7 +17,10 @@ export type AuditEntry = {
   targetType: string;
 };
 
-export async function recordAuditLog(entry: AuditEntry) {
+export async function recordAuditLog(
+  entry: AuditEntry,
+  client: Prisma.TransactionClient | typeof prisma = prisma
+) {
   const timestamp = new Date().toISOString();
   const fullEntry = {
     ...entry,
@@ -28,7 +32,7 @@ export async function recordAuditLog(entry: AuditEntry) {
     timestamp
   };
 
-  return prisma.auditLog.create({
+  return client.auditLog.create({
     data: {
       actorUserId: fullEntry.actorUserId,
       action: fullEntry.action,
