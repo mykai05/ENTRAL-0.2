@@ -102,6 +102,26 @@ describe("member organization routes", () => {
     await app.close();
   });
 
+  it("fails closed to the member role when a stored role is not public", async () => {
+    mocks.userFindUnique.mockResolvedValueOnce({ id: "user-1", name: "Ada Lovelace", email: "ada@example.com" });
+    mocks.teamMemberFindMany.mockResolvedValueOnce([{
+      joinedAt: new Date("2026-07-01T12:00:00.000Z"),
+      role: "INTERNAL_SUPERUSER",
+      team: { _count: { members: 1 }, id: organizationId, memberAccessEnabled: true, memberSeatLimit: 5, name: "Analytical Works", slug: "analytical-works" }
+    }]);
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: "/api/v1/member/organizations"
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().organizations[0].role).toBe("MEMBER");
+    expect(response.body).not.toContain("INTERNAL_SUPERUSER");
+    await app.close();
+  });
+
   it("scopes every overview query to the verified organization", async () => {
     mocks.teamMemberFindUnique.mockResolvedValueOnce({
       role: "OWNER",

@@ -9,7 +9,7 @@ const memberSessionSchema = z.object({
     memberCount: z.number().int().nonnegative(),
     memberLimit: z.number().int().positive().max(5),
     name: z.string().min(1).max(160),
-    role: z.string().min(1).max(40),
+    role: z.enum(["MEMBER", "OWNER"]),
     slug: z.string().min(1).max(160)
   })),
   user: z.object({

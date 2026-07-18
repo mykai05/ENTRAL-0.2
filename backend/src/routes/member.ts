@@ -16,6 +16,10 @@ const unavailableSubscription = {
 
 const ENTRAL_BASE_MEMBER_LIMIT = 5;
 
+function publicMemberRole(value: string) {
+  return value === "OWNER" ? "OWNER" as const : "MEMBER" as const;
+}
+
 const unavailableMemberFeatures = {
   subscription: {
     ...unavailableSubscription
@@ -78,7 +82,7 @@ export async function memberRoutes(app: FastifyInstance) {
         memberCount: membership.team._count.members,
         memberLimit: Math.min(membership.team.memberSeatLimit, ENTRAL_BASE_MEMBER_LIMIT),
         name: membership.team.name,
-        role: membership.role,
+        role: publicMemberRole(membership.role),
         slug: membership.team.slug
       })),
       user
@@ -181,7 +185,7 @@ export async function memberRoutes(app: FastifyInstance) {
         memberCount: membership.team._count.members,
         memberLimit: Math.min(membership.team.memberSeatLimit, ENTRAL_BASE_MEMBER_LIMIT),
         name: membership.team.name,
-        role: membership.role,
+        role: publicMemberRole(membership.role),
         slug: membership.team.slug
       },
       recentTasks,
@@ -196,7 +200,7 @@ export async function memberRoutes(app: FastifyInstance) {
         id: member.user.id,
         joinedAt: member.joinedAt,
         name: member.user.name,
-        role: member.role
+        role: publicMemberRole(member.role)
       })),
       workspace
     });
