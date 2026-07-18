@@ -6,9 +6,11 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const frontendUrl = process.env.E2E_FRONTEND_URL ?? "http://localhost:3000";
+const frontendUrl = process.env.E2E_FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backendUrl = process.env.E2E_BACKEND_URL ?? "http://127.0.0.1:4000";
-const pnpm = join(repoRoot, ".corepack/v1/pnpm/9.12.3/bin/pnpm.cjs");
+const pnpm = process.env.E2E_PNPM_PATH
+  ?? process.env.npm_execpath
+  ?? join(repoRoot, ".corepack/v1/pnpm/9.12.3/bin/pnpm.cjs");
 const backendRequire = createRequire(new URL("../backend/package.json", import.meta.url));
 const { chromium } = backendRequire("playwright-core");
 const spawned = [];
@@ -98,6 +100,8 @@ async function ensureServers() {
   if (!await fetchOk(`${backendUrl}/health`)) {
     spawnServer("backend", [pnpm, "--filter", "@entral/backend", "dev:memory"], {
       API_HOST: "127.0.0.1",
+      DATABASE_URL: "postgresql://entral:entral@127.0.0.1:5432/entral_e2e",
+      JWT_SECRET: "entral-e2e-local-only-secret-32-characters",
       OPENAI_API_KEY: ""
     });
   }
@@ -171,37 +175,37 @@ async function newPage(options = {}) {
 }
 
 async function enterWorkspace(page, email = uniqueEmail("operator")) {
-  await page.goto(`${frontendUrl}/signup`);
-  await page.getByLabel("Name").fill("E2E Operator");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("password123");
-  await page.getByRole("button", { name: /create account/i }).click();
-  await expectUrl(page, /\/verify-email\?email=/, "Email verification handoff");
+  const response = await page.context().request.post(`${frontendUrl}/api/v1/signup`, {
+    data: {
+      email,
+      name: "E2E Operator",
+      password: "password123"
+    }
+  });
+
+  if (!response.ok()) {
+    throw new Error(`E2E owner-session setup failed with HTTP ${response.status()}.`);
+  }
+
   await page.goto(`${frontendUrl}/dashboard`);
-  await expectUrl(page, /\/dashboard$/, "Dashboard after account creation");
+  await expectUrl(page, /\/dashboard$/, "Authenticated dashboard");
   await expectVisible(page.getByLabel("ENTRAL Command Center"), "Command Center");
   return email;
 }
 
 const tests = [
   {
-    name: "public landing explains the supervised command center before signup",
+    name: "root URL opens the command center without an account screen",
     run: async () => {
       const { context, page } = await newPage();
       try {
         await page.goto(frontendUrl);
-        await expectVisible(page.getByRole("heading", { exact: true, name: "Entral" }), "Landing hero");
-        await expectVisible(page.getByText("An AI command center for organizing, planning, monitoring, and safely preparing business operations.").first(), "Approved positioning");
-        await expectVisible(page.getByRole("heading", { name: /one command layer for supervised business preparation/i }), "Supervised preparation explainer");
-        await expectVisible(page.getByText(/It does not post, buy ads, update stores, contact customers, or change external systems without scoped permission/i), "Public boundary statement");
-        const nextSectionVisible = await page.evaluate(() => {
-          const nextSection = document.querySelector(".public-explainer");
-          if (!nextSection) return false;
-          const rect = nextSection.getBoundingClientRect();
-          return rect.top < window.innerHeight;
-        });
-        if (!nextSectionVisible) {
-          throw new Error("Landing hero does not leave the next public explanation section visible in the first viewport.");
+        await expectUrl(page, /\/dashboard$/, "Direct command-center entry");
+        await expectVisible(page.getByLabel("ENTRAL Command Center"), "Command Center");
+        await expectVisible(page.getByLabel("Command center mode status"), "Command center mode status");
+
+        if (await page.getByText(/create verified account|private beta brief/i).count()) {
+          throw new Error("A retired public account or beta-brief control is still visible.");
         }
       } finally {
         await context.close();
@@ -209,23 +213,23 @@ const tests = [
     }
   },
   {
-    name: "auth redirects protected routes to the private beta brief",
+    name: "legacy public account routes return to the command center",
     run: async () => {
       const { context, page } = await newPage();
       try {
-        await page.goto(`${frontendUrl}/dashboard`);
-        await expectUrl(page, /\/onboarding\?next=%2Fdashboard$/, "Onboarding redirect");
-        await expectVisible(page.getByRole("heading", { name: /know what entral is before entering/i }), "Private beta brief");
-        await expectVisible(page.getByText("Real").first(), "Real mode label");
-        await expectVisible(page.getByText("Mock").first(), "Mock mode label");
-        await expectVisible(page.getByText("Read-only").first(), "Read-only mode label");
+        for (const pathname of ["/onboarding", "/signup", "/verify-email", "/forgot-password", "/reset-password"]) {
+          await page.goto(`${frontendUrl}${pathname}`);
+          await expectUrl(page, /\/dashboard$/, `${pathname} retirement redirect`);
+        }
+
+        await expectVisible(page.getByLabel("ENTRAL Command Center"), "Command Center");
       } finally {
         await context.close();
       }
     }
   },
   {
-    name: "account creation opens dashboard with visible mode labels",
+    name: "owner session opens dashboard with visible mode labels",
     run: async () => {
       const { context, page } = await newPage();
       try {

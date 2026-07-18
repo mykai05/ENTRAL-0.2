@@ -39,25 +39,6 @@ function publicUrlSchema(label: string) {
   }, `${label} URL must use a public HTTP(S) host.`);
 }
 
-export const signupFormSchema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters."),
-  email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters.")
-});
-
-export const emailOnlyFormSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address.")
-});
-
-export const resetPasswordFormSchema = z.object({
-  token: z.string().trim().min(32, "Use the reset link from your email."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-  confirmPassword: z.string().min(8, "Confirm your new password.")
-}).refine((value) => value.password === value.confirmPassword, {
-  message: "Passwords must match.",
-  path: ["confirmPassword"]
-});
-
 export const taskFormSchema = z.object({
   title: z.string().trim().min(2, "Task title must be at least 2 characters.").max(140),
   description: z.string().trim().max(2000).optional()
@@ -187,9 +168,6 @@ export const policyFormSchema = z.object({
   severity: z.enum(["low", "medium", "high", "critical"]).default("medium")
 });
 
-export type SignupFormInput = z.infer<typeof signupFormSchema>;
-export type EmailOnlyFormInput = z.infer<typeof emailOnlyFormSchema>;
-export type ResetPasswordFormInput = z.infer<typeof resetPasswordFormSchema>;
 export type TaskFormInput = z.infer<typeof taskFormSchema>;
 export type ClientMerchStoreFormInput = z.infer<typeof clientMerchStoreFormSchema>;
 export type PodProductFormInput = z.infer<typeof podProductFormSchema>;

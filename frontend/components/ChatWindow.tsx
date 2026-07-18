@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { MessageSquarePlus, PanelLeftClose, PanelLeftOpen, Sparkles, Trash2 } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
 import { commandSourceLabel, commandSpeakerFromPrefix } from "../lib/command-communications";
@@ -78,7 +77,6 @@ function messageFromApi(message: { id?: string; messageId?: string; role?: strin
 }
 
 export function ChatWindow() {
-  const router = useRouter();
   const { notify } = useToast();
   const { speak } = useVoice();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -96,12 +94,12 @@ export function ChatWindow() {
 
   const handleUnauthorized = useCallback((errorValue: unknown) => {
     if (errorValue instanceof ApiError && errorValue.status === 401) {
-      router.push("/onboarding?next=/chat");
+      setError("Owner authentication is required for saved communications. The local command center remains available.");
       return true;
     }
 
     return false;
-  }, [router]);
+  }, []);
 
   const loadConversations = useCallback(async () => {
     const response = await apiFetch<ConversationListResponse>("/ai/conversations");

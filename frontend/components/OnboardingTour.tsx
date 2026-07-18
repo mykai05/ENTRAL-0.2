@@ -488,9 +488,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }
 
   function requireSignedInForAcademy() {
-    if (signedInUserKey) return true;
-    router.push("/onboarding?next=/dashboard");
-    return false;
+    return true;
   }
 
   function openAt(stepId?: string, nextView: "tour" | "library" = "tour") {

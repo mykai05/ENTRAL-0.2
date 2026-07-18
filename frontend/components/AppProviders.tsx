@@ -1,7 +1,6 @@
 "use client";
 
 import React, { type ReactNode } from "react";
-import { usePathname } from "next/navigation";
 import { ClientErrorBoundary } from "./ClientErrorBoundary";
 import { CommandPalette } from "./CommandPalette";
 import { OnboardingProvider } from "./OnboardingTour";
@@ -12,15 +11,7 @@ import { ToastProvider } from "./ToastProvider";
 import { VoiceProvider } from "./VoiceProvider";
 
 export function AppProviders({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const isPublicEntry = pathname === "/"
-    || pathname?.startsWith("/forgot-password")
-    || pathname?.startsWith("/onboarding")
-    || pathname?.startsWith("/reset-password")
-    || pathname?.startsWith("/signup")
-    || pathname?.startsWith("/verify-email");
-
-  const appChrome = isPublicEntry ? children : (
+  const appChrome = (
     <>
       <SystemStatusBanner />
       <OnboardingProvider>
