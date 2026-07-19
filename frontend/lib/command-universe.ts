@@ -173,4 +173,3 @@ export function selectCommandUniverseVisibility(
     totalCount: nodes.length
   };
 }
-
