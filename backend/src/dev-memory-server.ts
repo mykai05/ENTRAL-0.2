@@ -8368,7 +8368,7 @@ app.get("/api/v1/command-os/state", { preHandler: requireAuth }, async (request)
   return { snapshot: state.commandSnapshots.get(user.id) ?? null };
 });
 
-app.put("/api/v1/command-os/state", { preHandler: requireAuth }, async (request) => {
+app.put("/api/v1/command-os/state", { bodyLimit: 10 * 1024 * 1024, preHandler: requireAuth }, async (request) => {
   const user = currentUserOrThrow(request);
   const body = request.body as { source?: string; state?: Record<string, unknown> };
   const existing = state.commandSnapshots.get(user.id);

@@ -1918,10 +1918,10 @@ const commandOSTaskSchema = z.object({
 }).passthrough();
 
 export const commandOSStateSchema = z.object({
-  edges: z.array(commandOSEdgeSchema).max(2500),
-  groups: z.array(commandOSGroupSchema).max(500),
-  nodes: z.array(commandOSNodeSchema).min(1).max(1000),
-  tasks: z.array(commandOSTaskSchema).max(2500)
+  edges: z.array(commandOSEdgeSchema).max(12_500),
+  groups: z.array(commandOSGroupSchema).max(1500),
+  nodes: z.array(commandOSNodeSchema).min(1).max(5000),
+  tasks: z.array(commandOSTaskSchema).max(5000)
 }).passthrough();
 
 export const commandOSSnapshotSchema = z.object({
@@ -1930,7 +1930,7 @@ export const commandOSSnapshotSchema = z.object({
 }).superRefine((input, context) => {
   const size = JSON.stringify(input.state).length;
 
-  if (size > 2_000_000) {
+  if (size > 8_000_000) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Command OS state is too large to persist safely."

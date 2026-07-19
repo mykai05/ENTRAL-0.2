@@ -180,10 +180,10 @@ const academySteps: AcademyStep[] = [
     moduleId: "business-guide",
     route: "/dashboard",
     target: "business-wizard",
-    title: "Create your first business"
+    title: "Add a portfolio business"
   },
   {
-    description: "Templates reduce setup time. ENTRAL currently supports POD/Merch, Website Agency, Content Agency, E-commerce Brand, SaaS Startup, Local Service Business, and Custom Blank Structure.",
+    description: "Templates reduce setup time. ENTRAL supports Professional Services, Website Agency, Content Agency, E-commerce Brand, SaaS Startup, Local Service Business, and Custom Blank Structure.",
     guidedTask: "Review the template buttons and choose the one closest to your business model.",
     id: "templates",
     mode: "both",
@@ -223,14 +223,14 @@ const academySteps: AcademyStep[] = [
     title: "Use voice commands"
   },
   {
-    description: "The Merch/POD template creates the operating lane for client merch: intake, brand, design, listing, compliance, launch, marketing, and reporting.",
-    guidedTask: "Open Business setup and choose POD / Merch Business. Review the generated Commanders and Soldiers before approving anything.",
-    id: "merch-pod",
+    description: "A portfolio may contain many independent business Generals. Each General owns its Commanders, Soldiers, tasks, and reports without flattening the wider command universe.",
+    guidedTask: "Open Business setup, preview two different business templates, and review how each becomes a separate General before approving anything.",
+    id: "portfolio-scale",
     mode: "both",
     moduleId: "merch-guide",
     route: "/dashboard",
     target: "business-wizard",
-    title: "Launch a Merch/POD structure"
+    title: "Operate a multi-business portfolio"
   },
   {
     description: "ENTRAL repairs local state on refresh: broken edges are rebuilt and interrupted active tasks are marked failed for review.",

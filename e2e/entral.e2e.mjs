@@ -286,13 +286,20 @@ const tests = [
       });
       try {
         await enterWorkspace(page, uniqueEmail("mobile"));
-        await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Mobile command console");
         await expectVisible(page.getByLabel("Mobile command tabs"), "Mobile command tabs");
         const academyClose = page.getByRole("button", { name: "Close ENTRAL Academy" });
         await academyClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => undefined);
         if (await academyClose.count() && await academyClose.isVisible()) {
           await academyClose.click();
         }
+
+        await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command open button");
+        const initialGraphPressed = await page.getByRole("button", { name: "View command graph" }).getAttribute("aria-pressed");
+        if (initialGraphPressed !== "true") {
+          throw new Error("The mobile command center did not open on the graph tab.");
+        }
+        await page.getByRole("button", { name: "Open Command tab" }).click();
+        await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Mobile command console");
         await page.getByRole("button", { name: "Close command console and view graph" }).click();
         await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command reopen button");
         const graphPressed = await page.getByRole("button", { name: "View command graph" }).getAttribute("aria-pressed");
