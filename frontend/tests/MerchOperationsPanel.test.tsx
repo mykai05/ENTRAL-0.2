@@ -6322,6 +6322,29 @@ function businessFleetLaunchControlResponse(): RevenueBusinessFleetLaunchControl
 function businessFleetSwarmReadinessResponse(): RevenueBusinessFleetSwarmReadinessResponse {
   const launchControl = businessFleetLaunchControlResponse().plan;
   const scaleTargets = [10, 100, 1000];
+  const batchPlan = (targetBusinesses: number, perCycleCapacity: number) => {
+    const requiredCycles = Math.ceil(targetBusinesses / perCycleCapacity);
+    const firstBatchSize = Math.min(targetBusinesses, perCycleCapacity);
+
+    return {
+      batches: [{
+        batchNumber: 1,
+        batchSize: firstBatchSize,
+        cleanLanesReady: 1,
+        endLane: firstBatchSize,
+        gapToBatch: firstBatchSize - 1,
+        nextInternalState: "launch_wave_scored",
+        startLane: 1,
+        status: "waiting_for_clean_lanes" as const
+      }],
+      cleanLanesNow: 1,
+      hiddenBatches: Math.max(0, requiredCycles - 1),
+      perCycleCapacity,
+      requiredCycles,
+      summary: `${requiredCycles} controlled internal batch${requiredCycles === 1 ? "" : "es"} required at ${perCycleCapacity}/cycle; showing 1.`,
+      targetBusinesses
+    };
+  };
 
   return {
     plan: {
@@ -6340,6 +6363,7 @@ function businessFleetSwarmReadinessResponse(): RevenueBusinessFleetSwarmReadine
       mode: "Revenue Business Fleet Swarm Readiness",
       providerContacted: false,
       scalePresets: [{
+        batchPlan: batchPlan(10, 10),
         cleanLaneGap: 9,
         cleanLanesNow: 1,
         config: {
@@ -6364,6 +6388,7 @@ function businessFleetSwarmReadinessResponse(): RevenueBusinessFleetSwarmReadine
         status: "needs_more_clean_lanes",
         targetBusinesses: 10
       }, {
+        batchPlan: batchPlan(25, 25),
         cleanLaneGap: 24,
         cleanLanesNow: 1,
         config: {
@@ -6388,6 +6413,7 @@ function businessFleetSwarmReadinessResponse(): RevenueBusinessFleetSwarmReadine
         status: "needs_more_clean_lanes",
         targetBusinesses: 25
       }, {
+        batchPlan: batchPlan(100, 50),
         cleanLaneGap: 99,
         cleanLanesNow: 1,
         config: {
@@ -6412,6 +6438,7 @@ function businessFleetSwarmReadinessResponse(): RevenueBusinessFleetSwarmReadine
         status: "needs_more_clean_lanes_and_batches",
         targetBusinesses: 100
       }, {
+        batchPlan: batchPlan(1000, 50),
         cleanLaneGap: 999,
         cleanLanesNow: 1,
         config: {
