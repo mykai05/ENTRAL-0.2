@@ -25,6 +25,19 @@ export type MemberAvailability = {
   state?: "not_configured";
 };
 
+export type MemberCommandRank = "commander" | "emperor" | "general" | "marshal" | "soldier";
+export type MemberCommandStatus = "error" | "idle" | "offline" | "thinking" | "waiting" | "working";
+
+export type MemberCommandHierarchy = {
+  nodes: Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    rank: MemberCommandRank;
+    status: MemberCommandStatus;
+  }>;
+};
+
 export type MemberOverviewResponse = {
   availability: {
     subscription: MemberAvailability;
@@ -64,6 +77,7 @@ export type MemberOverviewResponse = {
       status: "stable" | "watch" | "attention";
       summary: string;
     } | null;
+    commandHierarchy?: MemberCommandHierarchy | null;
     findingsAndRecommendations: Array<{
       detail: string;
       id: string;

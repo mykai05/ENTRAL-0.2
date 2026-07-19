@@ -43,6 +43,10 @@ const colorStoragePrefix = "entral-member-command-field-colors";
 
 const defaultBranchColors: BranchColors = {
   core: "#00f0ff",
+  marshal: "#9b7bff",
+  general: "#39ff9a",
+  commander: "#ff4fd8",
+  soldier: "#ffd166",
   health: "#39ff14",
   priorities: "#ff00ff",
   work: "#00bfff",
@@ -55,16 +59,20 @@ const colorPresets: Array<{ colors: BranchColors; label: string }> = [
   { label: "Entral neon", colors: defaultBranchColors },
   {
     label: "Deep ocean",
-    colors: { core: "#5ef2ff", health: "#56f0bd", priorities: "#8c9eff", work: "#00b8d9", team: "#7c6cff", summary: "#b9e4ff", findings: "#ff7d9c" }
+    colors: { core: "#5ef2ff", marshal: "#9da8ff", general: "#56f0bd", commander: "#4cc9f0", soldier: "#b9e4ff", health: "#56f0bd", priorities: "#8c9eff", work: "#00b8d9", team: "#7c6cff", summary: "#b9e4ff", findings: "#ff7d9c" }
   },
   {
     label: "Signal spectrum",
-    colors: { core: "#ffffff", health: "#00ff87", priorities: "#ff4fd8", work: "#00d9ff", team: "#b56cff", summary: "#ffcf4a", findings: "#ff5b55" }
+    colors: { core: "#ffffff", marshal: "#b56cff", general: "#00ff87", commander: "#ff4fd8", soldier: "#ffcf4a", health: "#00ff87", priorities: "#ff4fd8", work: "#00d9ff", team: "#b56cff", summary: "#ffcf4a", findings: "#ff5b55" }
   }
 ];
 
 const branchLabels: Record<MemberGraphBranch, string> = {
   core: "Entral core",
+  marshal: "Marshals",
+  general: "Business Generals",
+  commander: "Commanders",
+  soldier: "Soldiers",
   health: "Business health",
   priorities: "Priorities",
   work: "Visible work",
@@ -72,6 +80,15 @@ const branchLabels: Record<MemberGraphBranch, string> = {
   summary: "Operating summary",
   findings: "Findings"
 };
+
+function hierarchyLayer(node: MemberNeuron3D) {
+  if (node.branch === "core") return "ENTRAL";
+  if (node.branch === "marshal") return "Marshal";
+  if (node.branch === "general") return "General";
+  if (node.branch === "commander") return "Commander";
+  if (node.branch === "soldier") return "Soldier";
+  return node.depth > 3 ? "Operating record" : "Operating signal";
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -503,7 +520,7 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
       glContext.enable(glContext.DEPTH_TEST);
 
       drawPoints(starPoints, "#6eeeff", 2.5, 0.16 * controls.brightness, matrix);
-      for (const radius of [250, 435, 585]) {
+      for (const radius of [240, 370, 440, 475]) {
         const orbit = Array.from({ length: 97 }, (_, index) => {
           const angle = (Math.PI * 2 * index) / 96;
           return { x: Math.cos(angle) * radius * fieldScale, y: 0, z: Math.sin(angle) * radius * fieldScale };
@@ -647,13 +664,14 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
     <section className="member-3d-command-center" aria-labelledby="member-3d-heading" ref={commandCenterRef}>
       <header className="member-3d-header">
         <div>
-          <p className="eyebrow"><Sparkles aria-hidden="true" size={15} />Entral AI command center</p>
-          <h2 id="member-3d-heading">Neurons command field</h2>
-          <p>{overview.organization.name}&apos;s approved operating intelligence in a live 3D organization map.</p>
+          <p className="eyebrow"><Sparkles aria-hidden="true" size={15} />Entral member command system</p>
+          <h2 id="member-3d-heading">Command Universe</h2>
+          <p>ENTRAL routes {overview.organization.name}&apos;s visible operating structure through Marshals, Business Generals, Commanders, and Soldiers.</p>
         </div>
         <div className="member-3d-header-status">
-          <span><Activity aria-hidden="true" size={15} />{scene.nodes.length} neurons</span>
+          <span><Activity aria-hidden="true" size={15} />{scene.totalNodeCount} command nodes</span>
           <span>{scene.edges.length} links</span>
+          <span>{scene.hierarchySource === "published" ? "Published hierarchy" : "Starter hierarchy"}</span>
           <span>Tenant bound</span>
         </div>
       </header>
@@ -676,7 +694,7 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
         <aside className="member-3d-hierarchy" aria-label="Organization neuron hierarchy">
           <div className="member-3d-panel-heading">
             <Network aria-hidden="true" size={18} />
-            <div><span>Organization map</span><strong>Hierarchy</strong></div>
+            <div><span>Organization map</span><strong>Chain of command</strong></div>
           </div>
           <label className="member-3d-search">
             <Search aria-hidden="true" size={16} />
@@ -759,7 +777,7 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
           <p>{selectedNode.detail}</p>
           <dl>
             <div><dt>Command branch</dt><dd>{branchLabels[selectedNode.branch]}</dd></div>
-            <div><dt>Hierarchy layer</dt><dd>{selectedNode.depth === 0 ? "Core" : selectedNode.depth === 1 ? "Domain" : selectedNode.depth === 2 ? "Record" : "Recommendation"}</dd></div>
+            <div><dt>Hierarchy layer</dt><dd>{hierarchyLayer(selectedNode)}</dd></div>
             <div><dt>Access</dt><dd>{overview.organization.role === "OWNER" ? "Owner" : "Member"}</dd></div>
           </dl>
           <div className="member-3d-supporting">
@@ -805,7 +823,7 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
 
       {fullscreenError ? <p className="member-3d-control-error" role="alert">{fullscreenError}</p> : null}
 
-      <p className="member-3d-disclosure">This command field is read-only and contains only records authorized for this organization. Visual controls change the local view; they do not execute agents or alter business data.</p>
+      <p className="member-3d-disclosure">This command universe is read-only and organization-scoped. {scene.hierarchySource === "published" ? "Its chain of command was published for this organization." : "It is showing the organization starter hierarchy until an approved hierarchy is published."} Visual controls change only the local view; internal prompts, approvals, diagnostics, and execution controls are never exposed here.{scene.hiddenNodeCount ? ` ${scene.hiddenNodeCount} lower-level nodes are hidden by the rendering safety budget.` : ""}</p>
     </section>
   );
 }

@@ -56,8 +56,8 @@ export function MemberNeuronGraph({
 }) {
   const model = useMemo(() => buildMemberGraphModel(overview), [overview]);
   const nodes = useMemo(
-    () => variant === "full" ? model.nodes : model.nodes.filter((node) => node.depth < 2),
-    [model.nodes, variant]
+    () => variant === "full" ? model.nodes : buildMemberSummaryNeurons(overview),
+    [model.nodes, overview, variant]
   );
   const nodeIds = useMemo(() => new Set(nodes.map((node) => node.id)), [nodes]);
   const edges = useMemo(

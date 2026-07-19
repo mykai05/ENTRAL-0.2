@@ -150,6 +150,11 @@ describe("member organization routes", () => {
       publishedAt: new Date("2026-07-18T00:00:00.000Z"),
       snapshotJson: JSON.stringify({
         businessHealth: { score: 78, status: "stable", summary: "Delivery is steady." },
+        commandHierarchy: { nodes: [
+          { id: "entral", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
+          { id: "operations", name: "Operations Marshal", parentId: "entral", rank: "marshal", status: "working" },
+          { id: "company", name: "Analytical Works General", parentId: "operations", rank: "general", status: "working" }
+        ] },
         findingsAndRecommendations: [],
         monthlyOperatingSummary: null,
         objectivesAndPriorities: [{ id: "objective-1", priority: "high", progress: 60, status: "active", title: "Improve scheduling" }]
@@ -182,6 +187,9 @@ describe("member organization routes", () => {
     expect(response.json()).toMatchObject({
       workspace: {
         businessHealth: { score: 78, status: "stable" },
+        commandHierarchy: { nodes: expect.arrayContaining([
+          expect.objectContaining({ id: "company", rank: "general" })
+        ]) },
         objectivesAndPriorities: [{ id: "objective-1", title: "Improve scheduling" }],
         version: 2
       }
