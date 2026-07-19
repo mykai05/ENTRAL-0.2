@@ -262,7 +262,7 @@ describe("member workspace presentation", () => {
     const neurons = buildMemberNeurons(overview);
 
     expect(neurons).toHaveLength(7);
-    expect(neurons[0]).toMatchObject({ id: "core", label: "Analytical Works", metric: "Entral core" });
+    expect(neurons[0]).toMatchObject({ id: "core", label: "ENTRAL", metric: "Central command" });
     expect(neurons.find((neuron) => neuron.id === "priorities")).toMatchObject({ metric: "1 active / 1 total" });
     expect(neurons.find((neuron) => neuron.id === "work")?.supportingItems).toContain("Map the operating workflow - in progress");
     expect(JSON.stringify(neurons)).not.toContain("token");
@@ -308,8 +308,8 @@ describe("member workspace presentation", () => {
   it("builds a complete deterministic organization graph from every returned member record", () => {
     const model = buildMemberGraphModel(overview);
 
-    expect(model.nodes).toHaveLength(17);
-    expect(model.edges).toHaveLength(17);
+    expect(model.nodes).toHaveLength(43);
+    expect(model.edges).toHaveLength(43);
     expect(model.nodes.map((node) => node.kind)).toEqual(expect.arrayContaining([
       "health-assessment",
       "priority",
@@ -325,6 +325,35 @@ describe("member workspace presentation", () => {
     expect(model.nodes.find((node) => node.kind === "task-rollup")).toMatchObject({ metric: "3 records" });
     expect(model.edges).toContainEqual(expect.objectContaining({ kind: "assignment" }));
     expect(buildMemberGraphModel(overview)).toEqual(model);
+  });
+
+  it("renders an organization-published multi-business chain of command instead of the starter hierarchy", () => {
+    const multiBusinessOverview: MemberOverviewResponse = {
+      ...overview,
+      workspace: {
+        ...overview.workspace!,
+        commandHierarchy: { nodes: [
+          { id: "entral-published", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
+          { id: "portfolio", name: "Portfolio Marshal", parentId: "entral-published", rank: "marshal", status: "working" },
+          { id: "alpha", name: "Alpha Builders General", parentId: "portfolio", rank: "general", status: "working" },
+          { id: "beta", name: "Beta Services General", parentId: "portfolio", rank: "general", status: "idle" },
+          { id: "alpha-ops", name: "Alpha Operations Commander", parentId: "alpha", rank: "commander", status: "working" },
+          { id: "alpha-delivery", name: "Alpha Delivery Soldier", parentId: "alpha-ops", rank: "soldier", status: "idle" }
+        ] }
+      }
+    };
+    const model = buildMemberGraphModel(multiBusinessOverview);
+    const scene = buildMemberNeuronScene3D(multiBusinessOverview);
+
+    expect(model.hierarchySource).toBe("published");
+    expect(model.nodes.filter((node) => node.branch === "general").map((node) => node.label)).toEqual([
+      "Alpha Builders General",
+      "Beta Services General"
+    ]);
+    expect(scene.hierarchySource).toBe("published");
+    expect(scene.nodes.find((node) => node.label === "Alpha Delivery Soldier")?.parentId).toBe("command:alpha-ops");
+    expect(JSON.stringify(scene)).not.toContain("prompt");
+    expect(JSON.stringify(scene)).not.toContain("diagnostic");
   });
 
   it("lays out the maximum published graph with unique bounded nodes", () => {
@@ -371,9 +400,9 @@ describe("member workspace presentation", () => {
     };
     const model = buildMemberGraphModel(maxOverview);
 
-    expect(model.nodes).toHaveLength(91);
-    expect(model.edges).toHaveLength(98);
-    expect(new Set(model.nodes.map((node) => node.id)).size).toBe(91);
+    expect(model.nodes).toHaveLength(117);
+    expect(model.edges).toHaveLength(124);
+    expect(new Set(model.nodes.map((node) => node.id)).size).toBe(117);
     for (const node of model.nodes) {
       expect(node.x).toBeGreaterThanOrEqual(3);
       expect(node.x).toBeLessThanOrEqual(97);
@@ -382,7 +411,7 @@ describe("member workspace presentation", () => {
     }
 
     const scene = buildMemberNeuronScene3D(maxOverview);
-    expect(scene.nodes).toHaveLength(91);
+    expect(scene.nodes).toHaveLength(117);
     expect(scene.edges).toEqual(model.edges);
     expect(buildMemberNeuronScene3D(maxOverview)).toEqual(scene);
     expect(scene.nodes.find((node) => node.id === "core")).toMatchObject({ x3: 0, y3: 0, z3: 0 });
@@ -392,6 +421,46 @@ describe("member workspace presentation", () => {
       expect(Number.isFinite(node.z3)).toBe(true);
       expect(Math.hypot(node.x3, node.y3, node.z3)).toBeLessThan(700);
     }
+  });
+
+  it("bounds a 5,000-node member hierarchy while preserving the upper command chain", () => {
+    const hierarchy: NonNullable<NonNullable<MemberOverviewResponse["workspace"]>["commandHierarchy"]>["nodes"] = [
+      { id: "entral-large", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
+      { id: "portfolio-large", name: "Portfolio Marshal", parentId: "entral-large", rank: "marshal", status: "working" }
+    ];
+    for (let generalIndex = 0; generalIndex < 100; generalIndex += 1) {
+      const generalId = `general-${generalIndex}`;
+      hierarchy.push({ id: generalId, name: `Business ${generalIndex} General`, parentId: "portfolio-large", rank: "general", status: "idle" });
+      for (let commanderIndex = 0; commanderIndex < 10; commanderIndex += 1) {
+        const commanderId = `${generalId}-commander-${commanderIndex}`;
+        hierarchy.push({ id: commanderId, name: `Commander ${generalIndex}-${commanderIndex}`, parentId: generalId, rank: "commander", status: "idle" });
+      }
+    }
+    let soldierIndex = 0;
+    while (hierarchy.length < 5_000) {
+      const commanderIndex = soldierIndex % 1_000;
+      const generalIndex = Math.floor(commanderIndex / 10);
+      const localCommanderIndex = commanderIndex % 10;
+      hierarchy.push({
+        id: `soldier-${soldierIndex}`,
+        name: `Soldier ${soldierIndex}`,
+        parentId: `general-${generalIndex}-commander-${localCommanderIndex}`,
+        rank: "soldier",
+        status: "idle"
+      });
+      soldierIndex += 1;
+    }
+
+    const scene = buildMemberNeuronScene3D({
+      ...overview,
+      workspace: { ...overview.workspace!, commandHierarchy: { nodes: hierarchy } }
+    });
+
+    expect(scene.nodes).toHaveLength(900);
+    expect(scene.totalNodeCount).toBeGreaterThan(5_000);
+    expect(scene.hiddenNodeCount).toBe(scene.totalNodeCount - 900);
+    expect(scene.nodes.filter((node) => node.branch === "general")).toHaveLength(100);
+    expect(scene.nodes[0]).toMatchObject({ id: "core", label: "ENTRAL" });
   });
 
   it("renders the full graph with every approved record and no internal command controls", () => {
@@ -409,7 +478,10 @@ describe("member workspace presentation", () => {
     const user = userEvent.setup();
     render(<MemberNeuronsCommandCenter overview={overview} />);
 
-    expect(await screen.findByRole("heading", { name: "Neurons command field" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Command Universe" })).toBeInTheDocument();
+    expect(screen.getAllByText("Business Generals").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Commanders").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Soldiers").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("3D field view controls")).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: "Neuron orbit speed" })).toHaveValue("0.72");
     expect(screen.getByRole("slider", { name: "Neuron field gravity" })).toHaveValue("1");
@@ -422,7 +494,7 @@ describe("member workspace presentation", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("3D rendering is unavailable");
     expect(screen.getByText("Map the operating workflow")).toBeInTheDocument();
     expect(screen.getByText("Bound to Analytical Works")).toBeInTheDocument();
-    expect(screen.getByText(/Visual controls change the local view/)).toBeInTheDocument();
+    expect(screen.getByText(/Visual controls change only the local view/)).toBeInTheDocument();
     expect(screen.queryByText("Raw prompts")).not.toBeInTheDocument();
     expect(screen.queryByText("Agent controls")).not.toBeInTheDocument();
   });
@@ -456,7 +528,7 @@ describe("member workspace presentation", () => {
     expect(screen.getByText("2 of 5")).toBeInTheDocument();
     expect(screen.getByText("Delivery and capacity are steady.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Entral command field" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Analytical Works: Entral core. Status: active" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ENTRAL: Central command. Status: active" })).toBeInTheDocument();
     expect(screen.getByText("Improve scheduling visibility")).toBeInTheDocument();
     expect(screen.getByText("Standardize hand-offs")).toBeInTheDocument();
     expect(screen.getByText("Operations are becoming more predictable")).toBeInTheDocument();
@@ -475,7 +547,7 @@ describe("member workspace presentation", () => {
 
     expect(await screen.findByRole("heading", { name: "Full organization graph" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Full graph" })).toHaveAttribute("aria-current", "page");
-    expect(await screen.findByRole("heading", { name: "Neurons command field" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Command Universe" })).toBeInTheDocument();
     expect(screen.getByText("Map the operating workflow")).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: "Neuron orbit speed" })).toBeInTheDocument();
     expect(await screen.findByRole("alert")).toHaveTextContent("3D rendering is unavailable");

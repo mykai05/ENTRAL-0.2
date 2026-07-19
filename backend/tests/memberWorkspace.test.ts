@@ -40,4 +40,49 @@ describe("member workspace DTO boundary", () => {
       businessHealth: { ...safeSnapshot.businessHealth, internalDiagnostic: "do not publish" }
     }).success).toBe(false);
   });
+
+  it("accepts a sanitized multi-business command hierarchy", async () => {
+    const { memberWorkspaceSnapshotSchema } = await import("../src/services/memberWorkspace.js");
+    const result = memberWorkspaceSnapshotSchema.safeParse({
+      ...safeSnapshot,
+      commandHierarchy: {
+        nodes: [
+          { id: "entral", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
+          { id: "operations", name: "Operations Marshal", parentId: "entral", rank: "marshal", status: "working" },
+          { id: "company-a", name: "Company A General", parentId: "operations", rank: "general", status: "working" },
+          { id: "company-b", name: "Company B General", parentId: "operations", rank: "general", status: "idle" },
+          { id: "delivery", name: "Delivery Commander", parentId: "company-a", rank: "commander", status: "idle" },
+          { id: "worker", name: "Delivery Soldier", parentId: "delivery", rank: "soldier", status: "idle" }
+        ]
+      }
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects malformed hierarchy links and internal command data", async () => {
+    const { memberWorkspaceSnapshotSchema } = await import("../src/services/memberWorkspace.js");
+    const invalidParent = memberWorkspaceSnapshotSchema.safeParse({
+      ...safeSnapshot,
+      commandHierarchy: { nodes: [
+        { id: "entral", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
+        { id: "soldier", name: "Orphan Soldier", parentId: "entral", rank: "soldier", status: "idle" }
+      ] }
+    });
+    const internalData = memberWorkspaceSnapshotSchema.safeParse({
+      ...safeSnapshot,
+      commandHierarchy: { nodes: [{
+        id: "entral",
+        internalPrompt: "must remain private",
+        logs: ["must remain private"],
+        name: "ENTRAL",
+        parentId: null,
+        rank: "emperor",
+        status: "thinking"
+      }] }
+    });
+
+    expect(invalidParent.success).toBe(false);
+    expect(internalData.success).toBe(false);
+  });
 });
