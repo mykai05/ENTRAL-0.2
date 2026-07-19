@@ -10,7 +10,11 @@ import { MemberDashboardClient } from "../components/MemberDashboardClient";
 import { buildMemberNeurons, MemberNeuronGraph } from "../components/MemberNeuronGraph";
 import { MemberNeuronsCommandCenter } from "../components/MemberNeuronsCommandCenter";
 import { buildMemberGraphModel } from "../components/member-graph-model";
-import { buildMemberNeuronScene3D } from "../components/member-neurons-3d";
+import {
+  buildMemberNeuronScene3D,
+  memberOrbitTrackPoints,
+  positionMemberNeuronScene3D
+} from "../components/member-neurons-3d";
 import { MemberRecoveryClient } from "../components/MemberRecoveryClient";
 import { MemberSignInClient } from "../components/MemberSignInClient";
 import { safeMemberReturnPath } from "../lib/member";
@@ -352,6 +356,8 @@ describe("member workspace presentation", () => {
     ]);
     expect(scene.hierarchySource).toBe("published");
     expect(scene.nodes.find((node) => node.label === "Alpha Delivery Soldier")?.parentId).toBe("command:alpha-ops");
+    expect(scene.orbits.some((orbit) => orbit.parentId === "core" && orbit.branch === "marshal")).toBe(true);
+    expect(scene.orbits.some((orbit) => orbit.parentId === "command:portfolio" && orbit.branch === "general")).toBe(true);
     expect(JSON.stringify(scene)).not.toContain("prompt");
     expect(JSON.stringify(scene)).not.toContain("diagnostic");
   });
@@ -419,7 +425,40 @@ describe("member workspace presentation", () => {
       expect(Number.isFinite(node.x3)).toBe(true);
       expect(Number.isFinite(node.y3)).toBe(true);
       expect(Number.isFinite(node.z3)).toBe(true);
-      expect(Math.hypot(node.x3, node.y3, node.z3)).toBeLessThan(700);
+      expect(Math.hypot(node.x3, node.y3, node.z3)).toBeLessThan(1200);
+    }
+  });
+
+  it("keeps ENTRAL fixed while every command layer orbits its direct parent", () => {
+    const scene = buildMemberNeuronScene3D(overview);
+    const start = positionMemberNeuronScene3D(scene.nodes, 0);
+    const later = positionMemberNeuronScene3D(scene.nodes, 12);
+    const core = scene.nodes.find((node) => node.id === "core")!;
+    const marshal = scene.nodes.find((node) => node.branch === "marshal" && node.id === "command:portfolio-marshal")!;
+    const general = scene.nodes.find((node) => node.branch === "general")!;
+    const commander = scene.nodes.find((node) => node.branch === "commander")!;
+    const soldier = scene.nodes.find((node) => node.branch === "soldier" && node.parentId === commander.id)!;
+
+    expect(start.get(core.id)).toEqual({ x: 0, y: 0, z: 0 });
+    expect(later.get(core.id)).toEqual({ x: 0, y: 0, z: 0 });
+    for (const node of [marshal, general, commander, soldier]) {
+      const parentAtStart = start.get(node.parentId!)!;
+      const nodeAtStart = start.get(node.id)!;
+      const parentLater = later.get(node.parentId!)!;
+      const nodeLater = later.get(node.id)!;
+      expect(Math.hypot(nodeAtStart.x - parentAtStart.x, nodeAtStart.y - parentAtStart.y, nodeAtStart.z - parentAtStart.z)).toBeCloseTo(node.orbitRadius, 5);
+      expect(Math.hypot(nodeLater.x - parentLater.x, nodeLater.y - parentLater.y, nodeLater.z - parentLater.z)).toBeCloseTo(node.orbitRadius, 5);
+      expect(nodeLater).not.toEqual(nodeAtStart);
+    }
+
+    const marshalTrack = scene.orbits.find((orbit) => orbit.parentId === "core" && orbit.branch === "marshal")!;
+    const trackPoints = memberOrbitTrackPoints(marshalTrack, start.get("core")!);
+    expect(trackPoints).toHaveLength(97);
+    expect(trackPoints[0].x).toBeCloseTo(trackPoints.at(-1)!.x, 10);
+    expect(trackPoints[0].y).toBeCloseTo(trackPoints.at(-1)!.y, 10);
+    expect(trackPoints[0].z).toBeCloseTo(trackPoints.at(-1)!.z, 10);
+    for (const point of trackPoints.slice(0, -1)) {
+      expect(Math.hypot(point.x, point.y, point.z)).toBeCloseTo(marshalTrack.radius, 5);
     }
   });
 
@@ -460,6 +499,8 @@ describe("member workspace presentation", () => {
     expect(scene.totalNodeCount).toBeGreaterThan(5_000);
     expect(scene.hiddenNodeCount).toBe(scene.totalNodeCount - 900);
     expect(scene.nodes.filter((node) => node.branch === "general")).toHaveLength(100);
+    expect(scene.nodes.filter((node) => node.branch === "commander").length).toBeGreaterThan(0);
+    expect(scene.nodes.filter((node) => node.branch === "soldier").length).toBeGreaterThan(0);
     expect(scene.nodes[0]).toMatchObject({ id: "core", label: "ENTRAL" });
   });
 
@@ -478,15 +519,15 @@ describe("member workspace presentation", () => {
     const user = userEvent.setup();
     render(<MemberNeuronsCommandCenter overview={overview} />);
 
-    expect(await screen.findByRole("heading", { name: "Command Universe" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "ENTRAL Orbital Command" })).toBeInTheDocument();
     expect(screen.getAllByText("Business Generals").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Commanders").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Soldiers").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("3D field view controls")).toBeInTheDocument();
-    expect(screen.getByRole("slider", { name: "Neuron orbit speed" })).toHaveValue("0.72");
-    expect(screen.getByRole("slider", { name: "Neuron field gravity" })).toHaveValue("1");
-    expect(screen.getByRole("slider", { name: "Neuron camera sensitivity" })).toHaveValue("1");
-    expect(screen.getByRole("slider", { name: "Neuron field brightness" })).toHaveValue("1");
+    expect(screen.getByRole("slider", { name: "Command orbit speed" })).toHaveValue("0.72");
+    expect(screen.getByRole("slider", { name: "Command orbit spacing" })).toHaveValue("1");
+    expect(screen.getByRole("slider", { name: "Orbital camera sensitivity" })).toHaveValue("1");
+    expect(screen.getByRole("slider", { name: "Orbital system brightness" })).toHaveValue("1");
     expect(screen.getByLabelText("Entral core color")).toHaveValue("#00f0ff");
     expect(screen.getByRole("button", { name: "Pause" })).toHaveAttribute("aria-pressed", "false");
     await user.click(screen.getByRole("button", { name: "Pause" }));
@@ -547,9 +588,9 @@ describe("member workspace presentation", () => {
 
     expect(await screen.findByRole("heading", { name: "Full organization graph" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Full graph" })).toHaveAttribute("aria-current", "page");
-    expect(await screen.findByRole("heading", { name: "Command Universe" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "ENTRAL Orbital Command" })).toBeInTheDocument();
     expect(screen.getByText("Map the operating workflow")).toBeInTheDocument();
-    expect(screen.getByRole("slider", { name: "Neuron orbit speed" })).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: "Command orbit speed" })).toBeInTheDocument();
     expect(await screen.findByRole("alert")).toHaveTextContent("3D rendering is unavailable");
     expect(screen.queryByRole("heading", { name: "Work overview" })).not.toBeInTheDocument();
   });

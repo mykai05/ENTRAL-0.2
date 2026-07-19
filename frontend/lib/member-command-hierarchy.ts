@@ -31,10 +31,10 @@ export function createMemberStarterHierarchy(organizationName: string): MemberCo
   }];
 
   for (const [id, name] of marshals) {
-    nodes.push({ id, name, parentId: "entral", rank: "marshal", status: id === "operations-marshal" ? "working" : "idle" });
+    nodes.push({ id, name, parentId: "entral", rank: "marshal", status: id === "portfolio-marshal" ? "working" : "idle" });
   }
 
-  nodes.push({ id: generalId, name: `${organizationName} General`, parentId: "operations-marshal", rank: "general", status: "working" });
+  nodes.push({ id: generalId, name: `${organizationName} General`, parentId: "portfolio-marshal", rank: "general", status: "working" });
   for (const [commanderId, name, soldiers] of commanders) {
     nodes.push({ id: commanderId, name, parentId: generalId, rank: "commander", status: "idle" });
     for (const soldierName of soldiers) {

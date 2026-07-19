@@ -23,7 +23,9 @@ import type { MemberOverviewResponse } from "../lib/member";
 import type { MemberGraphBranch, MemberGraphStatus } from "./member-graph-model";
 import {
   buildMemberNeuronScene3D,
+  memberOrbitTrackPoints,
   memberBranchOrder,
+  positionMemberNeuronScene3D,
   type MemberNeuron3D
 } from "./member-neurons-3d";
 
@@ -38,7 +40,7 @@ type Matrix4 = [
   number, number, number, number
 ];
 
-const defaultCamera: CameraState = { distance: 1150, pitch: -0.16, yaw: 0.58 };
+const defaultCamera: CameraState = { distance: 820, pitch: -0.27, yaw: 0.42 };
 const colorStoragePrefix = "entral-member-command-field-colors";
 
 const defaultBranchColors: BranchColors = {
@@ -239,12 +241,47 @@ function matchesSearch(node: MemberNeuron3D, search: string) {
   return `${node.label} ${node.metric} ${node.status} ${node.detail} ${branchLabels[node.branch]}`.toLowerCase().includes(normalized);
 }
 
+function fitDistance(nodes: MemberNeuron3D[]) {
+  const commandNodes = nodes.filter((node) => ["core", "marshal", "general", "commander", "soldier"].includes(node.branch));
+  const extent = commandNodes.reduce((largest, node) => Math.max(largest, Math.hypot(node.x3, node.y3, node.z3)), 0);
+  return clamp(extent * 1.62, 840, 2200);
+}
+
+function responsiveFitDistance(nodes: MemberNeuron3D[], width: number, height: number) {
+  const baseDistance = fitDistance(nodes);
+  const aspect = Math.max(0.35, width / Math.max(1, height));
+  const narrowViewportFactor = aspect < 0.8 ? 1.28 / aspect : 1;
+  return clamp(baseDistance * narrowViewportFactor, baseDistance, 3200);
+}
+
+function orderedCommandNodes(nodes: MemberNeuron3D[]) {
+  const commandNodes = nodes.filter((node) => ["core", "marshal", "general", "commander", "soldier"].includes(node.branch));
+  const children = new Map<string | null, MemberNeuron3D[]>();
+  for (const node of commandNodes) {
+    children.set(node.parentId, [...(children.get(node.parentId) ?? []), node]);
+  }
+  for (const siblings of children.values()) siblings.sort((first, second) => first.label.localeCompare(second.label));
+  const ordered: MemberNeuron3D[] = [];
+  const visit = (parentId: string | null) => {
+    for (const node of children.get(parentId) ?? []) {
+      ordered.push(node);
+      visit(node.id);
+    }
+  };
+  visit(null);
+  return ordered;
+}
+
 export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverviewResponse }) {
   const scene = useMemo(() => buildMemberNeuronScene3D(overview), [overview]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const commandCenterRef = useRef<HTMLElement | null>(null);
+  const coreStarRef = useRef<HTMLDivElement | null>(null);
   const selectedLabelRef = useRef<HTMLDivElement | null>(null);
-  const cameraRef = useRef<CameraState>({ ...defaultCamera });
+  const hierarchyLabelRefs = useRef(new Map<string, HTMLSpanElement>());
+  const cameraRef = useRef<CameraState>({ ...defaultCamera, distance: fitDistance(scene.nodes) });
+  const cameraAdjustedRef = useRef(false);
+  const orbitClockRef = useRef(0);
   const selectedIdRef = useRef("core");
   const renderingActiveRef = useRef(true);
   const projectedRef = useRef<ProjectedNeuron[]>([]);
@@ -254,7 +291,7 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
   const [branchColors, setBranchColors] = useState<BranchColors>(defaultBranchColors);
   const [orbitSpeed, setOrbitSpeed] = useState(0.72);
   const [brightness, setBrightness] = useState(1);
-  const [gravity, setGravity] = useState(1);
+  const [orbitSpacing, setOrbitSpacing] = useState(1);
   const [cameraSensitivity, setCameraSensitivity] = useState(1);
   const [showParticles, setShowParticles] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
@@ -268,11 +305,21 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
   const selectedNode = scene.nodes.find((node) => node.id === selectedId) ?? scene.nodes[0];
   const filteredNodes = useMemo(() => scene.nodes.filter((node) => matchesSearch(node, search)), [scene.nodes, search]);
   const visibleIds = useMemo(() => new Set(filteredNodes.map((node) => node.id)), [filteredNodes]);
-  const controlsRef = useRef({ branchColors, brightness, gravity, isPaused, orbitSpeed, showParticles, visibleIds });
+  const commandTreeNodes = useMemo(() => orderedCommandNodes(scene.nodes), [scene.nodes]);
+  const displayedCommandNodes = useMemo(() => {
+    const candidates = search.trim() ? commandTreeNodes.filter((node) => visibleIds.has(node.id)) : commandTreeNodes;
+    return candidates.slice(0, 250);
+  }, [commandTreeNodes, search, visibleIds]);
+  const persistentLabelNodes = useMemo(() => {
+    const highCommand = commandTreeNodes.filter((node) => node.branch === "core" || node.branch === "marshal" || node.branch === "general");
+    return highCommand.slice(0, 24);
+  }, [commandTreeNodes]);
+  const persistentLabelIds = useMemo(() => new Set(persistentLabelNodes.map((node) => node.id)), [persistentLabelNodes]);
+  const controlsRef = useRef({ branchColors, brightness, isPaused, orbitSpacing, orbitSpeed, showParticles, visibleIds });
 
   useEffect(() => {
-    controlsRef.current = { branchColors, brightness, gravity, isPaused, orbitSpeed, showParticles, visibleIds };
-  }, [branchColors, brightness, gravity, isPaused, orbitSpeed, showParticles, visibleIds]);
+    controlsRef.current = { branchColors, brightness, isPaused, orbitSpacing, orbitSpeed, showParticles, visibleIds };
+  }, [branchColors, brightness, isPaused, orbitSpacing, orbitSpeed, showParticles, visibleIds]);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -281,7 +328,9 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
   useEffect(() => {
     setSelectedId("core");
     setSearch("");
-    cameraRef.current = { ...defaultCamera };
+    cameraRef.current = { ...defaultCamera, distance: fitDistance(scene.nodes) };
+    cameraAdjustedRef.current = false;
+    orbitClockRef.current = 0;
     setColorsReady(false);
     try {
       const raw = window.localStorage.getItem(`${colorStoragePrefix}:${overview.organization.id}`);
@@ -299,7 +348,7 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
     } finally {
       setColorsReady(true);
     }
-  }, [overview.organization.id]);
+  }, [overview.organization.id, scene.nodes]);
 
   useEffect(() => {
     if (!colorsReady) return;
@@ -448,6 +497,12 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
 
     function resize() {
       const rectangle = canvasElement.getBoundingClientRect();
+      if (!cameraAdjustedRef.current) {
+        cameraRef.current = {
+          ...cameraRef.current,
+          distance: responsiveFitDistance(scene.nodes, rectangle.width, rectangle.height)
+        };
+      }
       const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
       const width = Math.max(1, Math.round(rectangle.width * pixelRatio));
       const height = Math.max(1, Math.round(rectangle.height * pixelRatio));
@@ -507,11 +562,11 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
         animationFrame = window.requestAnimationFrame(render);
         return;
       }
-      const fieldScale = clamp(1.38 - controls.gravity * 0.34, 0.68, 1.24);
-      const fieldPoint = (node: MemberNeuron3D): Vec3 => ({ x: node.x3 * fieldScale, y: node.y3 * fieldScale, z: node.z3 * fieldScale });
       const delta = Math.min(0.05, Math.max(0, (time - previousTime) / 1000));
       previousTime = time;
-      if (!controls.isPaused) cameraRef.current.yaw += delta * controls.orbitSpeed * 0.13;
+      if (!controls.isPaused) orbitClockRef.current += delta * controls.orbitSpeed;
+      const positions = positionMemberNeuronScene3D(scene.nodes, orbitClockRef.current, controls.orbitSpacing);
+      const fieldPoint = (node: MemberNeuron3D): Vec3 => positions.get(node.id) ?? { x: 0, y: 0, z: 0 };
       const matrix = cameraMatrix(cameraRef.current, canvasElement.width, canvasElement.height);
       glContext.clearColor(0.003, 0.012, 0.02, 1);
       glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
@@ -520,12 +575,20 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
       glContext.enable(glContext.DEPTH_TEST);
 
       drawPoints(starPoints, "#6eeeff", 2.5, 0.16 * controls.brightness, matrix);
-      for (const radius of [240, 370, 440, 475]) {
-        const orbit = Array.from({ length: 97 }, (_, index) => {
-          const angle = (Math.PI * 2 * index) / 96;
-          return { x: Math.cos(angle) * radius * fieldScale, y: 0, z: Math.sin(angle) * radius * fieldScale };
-        });
-        drawLine(orbit, controls.branchColors.core, radius === 250 ? 0.13 : 0.075, matrix, glContext.LINE_STRIP);
+      for (const track of scene.orbits) {
+        if (track.family === "records") continue;
+        const center = positions.get(track.parentId);
+        if (!center) continue;
+        const alpha = track.family === "command"
+          ? track.depth === 1 ? 0.3 : track.depth === 2 ? 0.2 : track.depth === 3 ? 0.13 : 0.075
+          : track.family === "signals" ? 0.07 : 0.035;
+        drawLine(
+          memberOrbitTrackPoints(track, center, controls.orbitSpacing),
+          controls.branchColors[track.branch],
+          alpha * controls.brightness,
+          matrix,
+          glContext.LINE_STRIP
+        );
       }
 
       scene.edges.forEach((edge, index) => {
@@ -558,13 +621,23 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
         const isSelected = node.id === selectedIdRef.current;
         const branchColor = controls.branchColors[node.branch];
         const pulse = controls.isPaused ? 1 : 1 + Math.sin(time * 0.0024 + node.depth) * 0.08;
-        const baseSize = node.depth === 0 ? 128 : node.depth === 1 ? 62 : node.depth === 2 ? 40 : 30;
+        const baseSize = node.branch === "core" ? 168
+          : node.branch === "marshal" ? 68
+          : node.branch === "general" ? 48
+          : node.branch === "commander" ? 34
+          : node.branch === "soldier" ? 23
+          : node.depth <= 3 ? 28 : 20;
         const alpha = (isVisible ? 1 : 0.13) * controls.brightness;
         const point = fieldPoint(node);
+        if (node.branch === "core") {
+          drawPoint(point, branchColor, baseSize * 2.25 * pulse, 0.055 * alpha, matrix);
+          drawPoint(point, "#7bf7ff", baseSize * 1.72 * pulse, 0.11 * alpha, matrix);
+          drawPoint(point, "#ffffff", baseSize * 1.28 * pulse, 0.2 * alpha, matrix);
+        }
         drawPoint(point, branchColor, baseSize * 1.85 * pulse, (isSelected ? 0.24 : 0.1) * alpha, matrix);
         drawPoint(point, statusColor(node.status), baseSize * 1.24 * pulse, 0.32 * alpha, matrix);
         drawPoint(point, branchColor, baseSize * pulse, 0.95 * alpha, matrix);
-        if (node.depth === 0) drawPoint(point, "#ffffff", 28, 1, matrix);
+        if (node.branch === "core") drawPoint(point, "#ffffff", 34, 1, matrix);
         const projection = projectPoint(point, matrix, canvasElement.width, canvasElement.height);
         projected.push({
           id: node.id,
@@ -575,10 +648,28 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
         });
       });
       projectedRef.current = projected;
+      const coreProjection = projected.find((point) => point.id === "core");
+      const coreStar = coreStarRef.current;
+      if (coreStar) {
+        coreStar.hidden = !coreProjection?.visible;
+        if (coreProjection) coreStar.style.transform = `translate3d(${coreProjection.x}px, ${coreProjection.y}px, 0) translate(-50%, -50%)`;
+      }
+      for (const node of persistentLabelNodes) {
+        const label = hierarchyLabelRefs.current.get(node.id);
+        const projection = projected.find((point) => point.id === node.id);
+        if (!label) continue;
+        const shouldShow = controls.visibleIds.has(node.id) && Boolean(projection?.visible);
+        label.hidden = !shouldShow;
+        if (projection) {
+          label.style.transform = node.branch === "core"
+            ? `translate3d(${projection.x}px, ${projection.y}px, 0) translate(-50%, 4.35rem)`
+            : `translate3d(${projection.x}px, ${projection.y}px, 0) translate(-50%, calc(-100% - 1.15rem))`;
+        }
+      }
       const selectedProjection = projected.find((point) => point.id === selectedIdRef.current);
       const label = selectedLabelRef.current;
       if (label) {
-        const shouldShow = controlsRef.current.visibleIds.has(selectedIdRef.current) && Boolean(selectedProjection?.visible);
+        const shouldShow = !persistentLabelIds.has(selectedIdRef.current) && controlsRef.current.visibleIds.has(selectedIdRef.current) && Boolean(selectedProjection?.visible);
         label.hidden = !shouldShow;
         if (selectedProjection) label.style.transform = `translate3d(${selectedProjection.x}px, ${selectedProjection.y}px, 0) translate(-50%, calc(-100% - 1rem))`;
       }
@@ -601,14 +692,22 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
       glContext.deleteProgram(pointProgram);
       glContext.deleteProgram(lineProgram);
     };
-  }, [rendererGeneration, scene]);
+  }, [persistentLabelIds, persistentLabelNodes, rendererGeneration, scene]);
 
   function updateCamera(updater: (camera: CameraState) => CameraState) {
+    cameraAdjustedRef.current = true;
     cameraRef.current = updater(cameraRef.current);
   }
 
   function resetCamera() {
-    cameraRef.current = { ...defaultCamera };
+    cameraAdjustedRef.current = false;
+    const canvas = canvasRef.current;
+    cameraRef.current = {
+      ...defaultCamera,
+      distance: canvas
+        ? responsiveFitDistance(scene.nodes, canvas.clientWidth, canvas.clientHeight)
+        : fitDistance(scene.nodes)
+    };
   }
 
   function selectFromCanvas(clientX: number, clientY: number) {
@@ -665,8 +764,8 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
       <header className="member-3d-header">
         <div>
           <p className="eyebrow"><Sparkles aria-hidden="true" size={15} />Entral member command system</p>
-          <h2 id="member-3d-heading">Command Universe</h2>
-          <p>ENTRAL routes {overview.organization.name}&apos;s visible operating structure through Marshals, Business Generals, Commanders, and Soldiers.</p>
+          <h2 id="member-3d-heading">ENTRAL Orbital Command</h2>
+          <p>ENTRAL is the fixed command sun. Marshals orbit ENTRAL; Generals orbit their Marshal; Commanders orbit their General; and Soldiers orbit their Commander.</p>
         </div>
         <div className="member-3d-header-status">
           <span><Activity aria-hidden="true" size={15} />{scene.totalNodeCount} command nodes</span>
@@ -677,9 +776,9 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
       </header>
 
       <div className="member-3d-toolbar" aria-label="3D field view controls">
-        <button onClick={() => updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance - 120, 520, 1900) }))} type="button"><ZoomIn aria-hidden="true" size={16} />Zoom</button>
-        <button onClick={() => updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance + 120, 520, 1900) }))} type="button"><ZoomOut aria-hidden="true" size={16} />Out</button>
-        <button onClick={resetCamera} type="button"><Crosshair aria-hidden="true" size={16} />Fit field</button>
+        <button onClick={() => updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance - 140, 480, 3600) }))} type="button"><ZoomIn aria-hidden="true" size={16} />Zoom in</button>
+        <button onClick={() => updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance + 140, 480, 3600) }))} type="button"><ZoomOut aria-hidden="true" size={16} />Zoom out</button>
+        <button onClick={resetCamera} type="button"><Crosshair aria-hidden="true" size={16} />Fit system</button>
         <button aria-pressed={isPaused} onClick={() => setIsPaused((current) => !current)} type="button">
           {isPaused ? <Play aria-hidden="true" size={16} /> : <Pause aria-hidden="true" size={16} />}
           {isPaused ? "Resume" : "Pause"}
@@ -691,32 +790,50 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
       </div>
 
       <div className="member-3d-layout">
-        <aside className="member-3d-hierarchy" aria-label="Organization neuron hierarchy">
+        <aside className="member-3d-hierarchy" aria-label="Organization command hierarchy">
           <div className="member-3d-panel-heading">
             <Network aria-hidden="true" size={18} />
             <div><span>Organization map</span><strong>Chain of command</strong></div>
           </div>
           <label className="member-3d-search">
             <Search aria-hidden="true" size={16} />
-            <span className="sr-only">Search neurons</span>
-            <input onChange={(event) => setSearch(event.target.value)} placeholder="Search neurons..." type="search" value={search} />
+            <span className="sr-only">Search command bodies</span>
+            <input onChange={(event) => setSearch(event.target.value)} placeholder="Search command bodies..." type="search" value={search} />
           </label>
+          <div className="member-3d-command-tree" aria-label="ENTRAL chain of command">
+            <span className="member-3d-list-label">ENTRAL chain</span>
+            {displayedCommandNodes.length ? displayedCommandNodes.map((node) => (
+              <button
+                aria-pressed={node.id === selectedId}
+                key={node.id}
+                onClick={() => setSelectedId(node.id)}
+                style={{ "--tree-depth": search.trim() ? 0 : node.depth, "--branch-color": branchColors[node.branch] } as React.CSSProperties}
+                type="button"
+              >
+                <span className="member-3d-tree-guide" aria-hidden="true" />
+                <span className="member-3d-color-dot" />
+                <span><strong>{node.label}</strong><small>{hierarchyLayer(node)} <span aria-hidden="true">&middot;</span> {statusLabel(node.status)}</small></span>
+              </button>
+            )) : <p>No matching command nodes.</p>}
+            {commandTreeNodes.length > displayedCommandNodes.length ? <small className="member-3d-list-limit">Showing the first {displayedCommandNodes.length} command nodes. Search to locate a specific entity.</small> : null}
+          </div>
           <div className="member-3d-branch-list">
-            {memberBranchOrder.map((branch) => {
+            <span className="member-3d-list-label">Operating signals</span>
+            {memberBranchOrder.filter((branch) => !["core", "marshal", "general", "commander", "soldier"].includes(branch)).map((branch) => {
               const nodes = filteredNodes.filter((node) => node.branch === branch);
               const total = scene.nodes.filter((node) => node.branch === branch).length;
               return (
-                <details key={branch} open={branch === "core" || nodes.some((node) => node.id === selectedId)}>
+                <details key={branch} open={nodes.some((node) => node.id === selectedId)}>
                   <summary>
                     <span className="member-3d-color-dot" style={{ "--branch-color": branchColors[branch] } as React.CSSProperties} />
-                    <span><strong>{branchLabels[branch]}</strong><small>{nodes.length === total ? total : `${nodes.length} of ${total}`} neuron{total === 1 ? "" : "s"}</small></span>
+                    <span><strong>{branchLabels[branch]}</strong><small>{nodes.length === total ? total : `${nodes.length} of ${total}`} signal{total === 1 ? "" : "s"}</small></span>
                   </summary>
                   <div>
                     {nodes.length ? nodes.map((node) => (
                       <button aria-pressed={node.id === selectedId} key={node.id} onClick={() => setSelectedId(node.id)} type="button">
                         <span>{node.label}</span><small>{node.metric} <span aria-hidden="true">&middot;</span> {statusLabel(node.status)}</small>
                       </button>
-                    )) : <p>No matching neurons.</p>}
+                    )) : <p>No matching signals.</p>}
                   </div>
                 </details>
               );
@@ -727,14 +844,14 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
         <div className="member-3d-stage">
           <canvas
             aria-describedby="member-3d-instructions"
-            aria-label={`3D interactive Entral neuron graph for ${overview.organization.name}`}
+            aria-label={`3D interactive ENTRAL orbital command system for ${overview.organization.name}`}
             onKeyDown={(event) => {
               if (event.key === "ArrowLeft") updateCamera((camera) => ({ ...camera, yaw: camera.yaw - 0.12 }));
               else if (event.key === "ArrowRight") updateCamera((camera) => ({ ...camera, yaw: camera.yaw + 0.12 }));
               else if (event.key === "ArrowUp") updateCamera((camera) => ({ ...camera, pitch: clamp(camera.pitch - 0.08, -1.18, 1.18) }));
               else if (event.key === "ArrowDown") updateCamera((camera) => ({ ...camera, pitch: clamp(camera.pitch + 0.08, -1.18, 1.18) }));
-              else if (event.key === "+" || event.key === "=") updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance - 100, 520, 1900) }));
-              else if (event.key === "-") updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance + 100, 520, 1900) }));
+              else if (event.key === "+" || event.key === "=") updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance - 120, 480, 3600) }));
+              else if (event.key === "-") updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance + 120, 480, 3600) }));
               else if (event.key === "Home") resetCamera();
               else return;
               event.preventDefault();
@@ -745,7 +862,7 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
             onPointerUp={handlePointerUp}
             onWheel={(event) => {
               event.preventDefault();
-              updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance + event.deltaY * 0.7 * cameraSensitivity, 520, 1900) }));
+              updateCamera((camera) => ({ ...camera, distance: clamp(camera.distance + event.deltaY * 0.7 * cameraSensitivity, 480, 3600) }));
             }}
             ref={canvasRef}
             role="img"
@@ -755,22 +872,38 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
             <div className="member-3d-webgl-error" role="alert">
               <Network aria-hidden="true" size={24} />
               <strong>3D rendering is unavailable</strong>
-              <p>Your approved organization neurons remain available in the hierarchy and inspector.</p>
+              <p>Your approved command hierarchy remains available in the chain and inspector.</p>
             </div>
           ) : null}
+          <div className="member-3d-orbital-labels" aria-hidden="true">
+            <div className="member-3d-core-star" hidden ref={coreStarRef}><span /></div>
+            {persistentLabelNodes.map((node) => (
+              <span
+                className={`member-3d-orbital-label rank-${node.branch}${node.id === selectedId ? " selected" : ""}`}
+                key={node.id}
+                ref={(element) => {
+                  if (element) hierarchyLabelRefs.current.set(node.id, element);
+                  else hierarchyLabelRefs.current.delete(node.id);
+                }}
+                style={{ "--branch-color": branchColors[node.branch] } as React.CSSProperties}
+              >
+                <strong>{node.label}</strong><small>{hierarchyLayer(node)}</small>
+              </span>
+            ))}
+          </div>
           {showLabels ? (
             <div className="member-3d-selected-label" hidden ref={selectedLabelRef}>
               <strong>{selectedNode.label}</strong><span>{selectedNode.metric}</span>
             </div>
           ) : null}
-          <div className="member-3d-stage-badge"><span />Live organization field</div>
-          <p id="member-3d-instructions">Drag to orbit. Scroll or use plus and minus to zoom. Use arrow keys to rotate. Select any neuron for its approved details.</p>
+          <div className="member-3d-stage-badge"><span />Live orbital hierarchy</div>
+          <p id="member-3d-instructions">ENTRAL remains fixed at the center while each command rank orbits its direct authority. Drag to rotate, scroll to zoom, and select any body for approved details.</p>
         </div>
 
-        <aside className="member-3d-inspector" aria-label="Selected neuron details" aria-live="polite">
+        <aside className="member-3d-inspector" aria-label="Selected command body details" aria-live="polite">
           <div className="member-3d-panel-heading">
             <span className="member-3d-color-dot large" style={{ "--branch-color": branchColors[selectedNode.branch] } as React.CSSProperties} />
-            <div><span>Selected neuron</span><strong>{selectedNode.label}</strong></div>
+            <div><span>Selected command body</span><strong>{selectedNode.label}</strong></div>
           </div>
           <span className={`member-3d-status status-${selectedNode.status}`}>{statusLabel(selectedNode.status)}</span>
           <strong className="member-3d-metric">{selectedNode.metric}</strong>
@@ -788,16 +921,16 @@ export function MemberNeuronsCommandCenter({ overview }: { overview: MemberOverv
         </aside>
       </div>
 
-      <div className="member-3d-controls" aria-label="Neuron field appearance and motion controls">
+      <div className="member-3d-controls" aria-label="Orbital system appearance and motion controls">
         <div className="member-3d-controls-heading">
           <SlidersHorizontal aria-hidden="true" size={18} />
           <div><span>Command field controls</span><strong>Motion and color</strong></div>
         </div>
         <div className="member-3d-control-grid">
-          <label><span>Orbit speed</span><input aria-label="Neuron orbit speed" max="2.2" min="0" onChange={(event) => setOrbitSpeed(Number(event.target.value))} step="0.05" type="range" value={orbitSpeed} /><strong>{orbitSpeed.toFixed(2)}x</strong></label>
-          <label><span>Field gravity</span><input aria-label="Neuron field gravity" max="2" min="0.4" onChange={(event) => setGravity(Number(event.target.value))} step="0.05" type="range" value={gravity} /><strong>{gravity.toFixed(2)}g</strong></label>
-          <label><span>Camera sensitivity</span><input aria-label="Neuron camera sensitivity" max="1.8" min="0.35" onChange={(event) => setCameraSensitivity(Number(event.target.value))} step="0.05" type="range" value={cameraSensitivity} /><strong>{cameraSensitivity.toFixed(2)}x</strong></label>
-          <label><span>Field brightness</span><input aria-label="Neuron field brightness" max="1.5" min="0.45" onChange={(event) => setBrightness(Number(event.target.value))} step="0.05" type="range" value={brightness} /><strong>{Math.round(brightness * 100)}%</strong></label>
+          <label><span>Orbit speed</span><input aria-label="Command orbit speed" max="2.2" min="0" onChange={(event) => setOrbitSpeed(Number(event.target.value))} step="0.05" type="range" value={orbitSpeed} /><strong>{orbitSpeed.toFixed(2)}x</strong></label>
+          <label><span>Orbit spacing</span><input aria-label="Command orbit spacing" max="1.35" min="0.7" onChange={(event) => setOrbitSpacing(Number(event.target.value))} step="0.05" type="range" value={orbitSpacing} /><strong>{orbitSpacing.toFixed(2)}x</strong></label>
+          <label><span>Camera sensitivity</span><input aria-label="Orbital camera sensitivity" max="1.8" min="0.35" onChange={(event) => setCameraSensitivity(Number(event.target.value))} step="0.05" type="range" value={cameraSensitivity} /><strong>{cameraSensitivity.toFixed(2)}x</strong></label>
+          <label><span>System brightness</span><input aria-label="Orbital system brightness" max="1.5" min="0.45" onChange={(event) => setBrightness(Number(event.target.value))} step="0.05" type="range" value={brightness} /><strong>{Math.round(brightness * 100)}%</strong></label>
           <button aria-pressed={showParticles} onClick={() => setShowParticles((current) => !current)} type="button">{showParticles ? <Eye aria-hidden="true" size={16} /> : <EyeOff aria-hidden="true" size={16} />}Signal particles</button>
           <button aria-pressed={showLabels} onClick={() => setShowLabels((current) => !current)} type="button">{showLabels ? <Eye aria-hidden="true" size={16} /> : <EyeOff aria-hidden="true" size={16} />}Selected label</button>
           {isReducedMotion ? <span className="member-3d-reduced-motion"><Pause aria-hidden="true" size={15} />Reduced-motion preference detected</span> : null}

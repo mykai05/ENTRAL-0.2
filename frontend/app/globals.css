@@ -10255,6 +10255,93 @@ textarea {
   box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.12);
 }
 
+.member-3d-command-tree {
+  border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+  display: grid;
+  gap: 0.18rem;
+  margin-bottom: 0.7rem;
+  padding-bottom: 0.7rem;
+}
+
+.member-3d-list-label {
+  color: #7b98a3;
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  margin: 0.2rem 0 0.38rem;
+  text-transform: uppercase;
+}
+
+.member-3d-command-tree > button {
+  --branch-color: #00f0ff;
+  --tree-depth: 0;
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 0.48rem;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  min-height: 2.75rem;
+  padding: 0.42rem 0.48rem 0.42rem calc(0.28rem + var(--tree-depth) * 0.68rem);
+  position: relative;
+  text-align: left;
+}
+
+.member-3d-command-tree > button:hover,
+.member-3d-command-tree > button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--branch-color), transparent 93%);
+  border-color: color-mix(in srgb, var(--branch-color), transparent 70%);
+}
+
+.member-3d-command-tree > button > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.member-3d-command-tree > button strong,
+.member-3d-command-tree > button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-3d-command-tree > button strong {
+  font-size: 0.7rem;
+}
+
+.member-3d-command-tree > button small,
+.member-3d-command-tree > p,
+.member-3d-list-limit {
+  color: var(--muted);
+  font-size: 0.61rem;
+}
+
+.member-3d-tree-guide {
+  border-bottom: 1px solid color-mix(in srgb, var(--branch-color), transparent 68%);
+  border-left: 1px solid color-mix(in srgb, var(--branch-color), transparent 75%);
+  border-radius: 0 0 0 5px;
+  height: 1.45rem;
+  margin-left: calc(var(--tree-depth) * -0.68rem);
+  width: calc(0.22rem + var(--tree-depth) * 0.68rem);
+}
+
+.member-3d-command-tree > button:first-of-type .member-3d-tree-guide {
+  border: 0;
+  height: 0;
+  width: 0;
+}
+
+.member-3d-list-limit {
+  display: block;
+  line-height: 1.45;
+  padding: 0.55rem 0.35rem 0;
+}
+
 .member-3d-branch-list {
   display: grid;
   gap: 0.32rem;
@@ -10358,8 +10445,9 @@ textarea {
 
 .member-3d-stage {
   background:
-    radial-gradient(circle at 50% 46%, rgba(0, 240, 255, 0.075), transparent 30%),
-    radial-gradient(circle at 60% 48%, rgba(255, 0, 255, 0.035), transparent 47%),
+    radial-gradient(circle at 50% 50%, rgba(195, 252, 255, 0.13), transparent 5%),
+    radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.09), transparent 24%),
+    radial-gradient(circle at 62% 44%, rgba(155, 123, 255, 0.045), transparent 46%),
     #010509;
   min-height: 46rem;
   overflow: hidden;
@@ -10367,8 +10455,11 @@ textarea {
 }
 
 .member-3d-stage::after {
-  background-image: radial-gradient(rgba(127, 240, 255, 0.28) 0.55px, transparent 0.7px);
-  background-size: 29px 29px;
+  background-image:
+    radial-gradient(rgba(193, 248, 255, 0.34) 0.55px, transparent 0.75px),
+    radial-gradient(rgba(155, 123, 255, 0.22) 0.45px, transparent 0.65px);
+  background-position: 0 0, 13px 17px;
+  background-size: 31px 31px, 47px 47px;
   content: "";
   inset: 0;
   mask-image: radial-gradient(circle, #000 0, transparent 78%);
@@ -10446,6 +10537,106 @@ textarea {
   position: absolute;
   top: 0;
   z-index: 4;
+}
+
+.member-3d-orbital-labels {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 4;
+}
+
+.member-3d-core-star {
+  height: 7.5rem;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 7.5rem;
+}
+
+.member-3d-core-star[hidden] {
+  display: none;
+}
+
+.member-3d-core-star::before,
+.member-3d-core-star::after,
+.member-3d-core-star span {
+  border-radius: 50%;
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.member-3d-core-star::before {
+  animation: member-3d-core-breathe 4.8s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(209, 253, 255, 0.28), rgba(0, 240, 255, 0.12) 32%, transparent 70%);
+  filter: blur(6px);
+  transform: scale(1.45);
+}
+
+.member-3d-core-star::after {
+  background: radial-gradient(circle, #fff 0 7%, #c8fcff 12%, #44f5ff 24%, rgba(0, 240, 255, 0.55) 42%, rgba(0, 240, 255, 0.08) 65%, transparent 72%);
+  box-shadow: 0 0 2.5rem rgba(0, 240, 255, 0.7), 0 0 6rem rgba(0, 240, 255, 0.3);
+}
+
+.member-3d-core-star span {
+  border: 1px solid rgba(191, 252, 255, 0.28);
+  inset: 1.2rem;
+}
+
+.member-3d-orbital-label {
+  --branch-color: #00f0ff;
+  background: rgba(2, 8, 13, 0.84);
+  border: 1px solid color-mix(in srgb, var(--branch-color), transparent 58%);
+  border-radius: 999px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.48), 0 0 16px color-mix(in srgb, var(--branch-color), transparent 84%);
+  display: grid;
+  left: 0;
+  max-width: 11rem;
+  padding: 0.26rem 0.52rem;
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+}
+
+.member-3d-orbital-label[hidden] {
+  display: none;
+}
+
+.member-3d-orbital-label strong {
+  color: #f4feff;
+  font-size: 0.61rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-3d-orbital-label small {
+  color: color-mix(in srgb, var(--branch-color), #d9faff 32%);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.member-3d-orbital-label.rank-core {
+  background: radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.2), transparent 60%), rgba(0, 27, 35, 0.92);
+  border-color: rgba(162, 251, 255, 0.82);
+  border-radius: 12px;
+  box-shadow: 0 0 42px rgba(0, 240, 255, 0.3), 0 12px 38px rgba(0, 0, 0, 0.68);
+  min-width: 7.5rem;
+  padding: 0.5rem 0.72rem;
+  text-align: center;
+}
+
+.member-3d-orbital-label.rank-core strong {
+  font-size: 0.84rem;
+  letter-spacing: 0.12em;
+}
+
+.member-3d-orbital-label.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--branch-color), transparent 60%), 0 0 28px color-mix(in srgb, var(--branch-color), transparent 66%);
 }
 
 .member-3d-selected-label[hidden] {
@@ -10713,6 +10904,11 @@ textarea {
   50% { opacity: 1; transform: scale(1.12); }
 }
 
+@keyframes member-3d-core-breathe {
+  0%, 100% { opacity: 0.62; transform: scale(1.34); }
+  50% { opacity: 1; transform: scale(1.52); }
+}
+
 @media (max-width: 1180px) {
   .member-3d-layout {
     grid-template-columns: minmax(12rem, 0.42fr) minmax(25rem, 1.6fr);
@@ -10743,7 +10939,7 @@ textarea {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 820px) {
   .member-3d-command-center {
     border-radius: 18px;
   }
@@ -10807,8 +11003,15 @@ textarea {
   }
 }
 
+@media (max-width: 520px) {
+  .member-3d-orbital-label.rank-marshal {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .member-3d-stage-badge span {
+  .member-3d-stage-badge span,
+  .member-3d-core-star::before {
     animation: none;
   }
 
