@@ -33,7 +33,7 @@ export async function commandOSRoutes(app: FastifyInstance) {
     return reply.send({ snapshot });
   });
 
-  app.put("/command-os/state", { preHandler: requireAuth }, async (request, reply) => {
+  app.put("/command-os/state", { bodyLimit: 10 * 1024 * 1024, preHandler: requireAuth }, async (request, reply) => {
     const currentUser = request.user;
 
     if (!currentUser) {

@@ -399,6 +399,44 @@ describe("validation schemas", () => {
     expect(result.state.nodes[0].commandType).toBe("emperor");
   });
 
+  it("accepts a portfolio-scale Command OS topology beyond the former one-thousand-node ceiling", () => {
+    const memory = {
+      instructions: "Preserve command memory.",
+      notes: [],
+      recentTasks: [],
+      role: "Portfolio command",
+      taskResults: []
+    };
+    const nodes = Array.from({ length: 1200 }, (_, index) => ({
+      children: [],
+      commandType: index === 0 ? "emperor" as const : "general" as const,
+      currentTask: null,
+      groupId: index === 0 ? "core" : "portfolio-marshal",
+      id: index === 0 ? "entral" : `business-${index}`,
+      logs: [],
+      memory,
+      name: index === 0 ? "ENTRAL" : `Business ${index} General`,
+      parentId: index === 0 ? null : "portfolio-marshal",
+      status: "idle" as const,
+      taskHistory: [],
+      type: index === 0 ? "core" as const : "agent" as const
+    }));
+    const result = commandOSSnapshotSchema.parse({
+      source: "dashboard",
+      state: {
+        edges: [],
+        groups: [
+          { color: "#00F0FF", id: "core", name: "ENTRAL Core" },
+          { color: "#00F0FF", id: "portfolio-marshal", name: "Portfolio Marshal" }
+        ],
+        nodes,
+        tasks: []
+      }
+    });
+
+    expect(result.state.nodes).toHaveLength(1200);
+  });
+
   it("validates scrape automation jobs", () => {
     const result = createAutomationJobSchema.parse({
       type: "scrape",
