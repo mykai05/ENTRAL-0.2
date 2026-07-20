@@ -23,6 +23,23 @@ export function AppProviders({ children }: { children: ReactNode }) {
     );
   }
 
+  if (usesFullCommandCenter) {
+    return (
+      <ThemeProvider>
+        <ToastProvider>
+          <VoiceProvider>
+            <ClientErrorBoundary>
+              <OnboardingProvider>
+                {children}
+                <SettingsPanel hideTrigger surface="member" />
+              </OnboardingProvider>
+            </ClientErrorBoundary>
+          </VoiceProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    );
+  }
+
   const appChrome = (
     <>
       <SystemStatusBanner />

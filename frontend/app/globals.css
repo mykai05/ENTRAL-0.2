@@ -12356,3 +12356,132 @@ textarea {
     max-width: 12.5rem;
   }
 }
+
+/* Member command center: graph-first chrome with one clear action per job. */
+.command-center-page.member-surface .command-os-nav,
+.command-center-page.member-surface .command-center-chat,
+.command-center-page.member-surface .command-side-panel {
+  backdrop-filter: blur(30px) saturate(1.08);
+  background: linear-gradient(180deg, rgba(4, 10, 16, 0.9), rgba(2, 6, 10, 0.78));
+  border-color: rgba(var(--neon-accent-rgb), 0.22);
+  box-shadow: 0 28px 84px rgba(0, 0, 0, 0.54), inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.command-center-page.member-surface .command-os-nav {
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+}
+
+.command-center-page.member-surface.nav-closed .command-os-nav {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-1rem);
+  visibility: hidden;
+}
+
+.command-center-page.member-surface .command-center-chat {
+  width: clamp(27rem, 28vw, 31rem);
+}
+
+.command-center-page.member-surface .command-console-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.command-center-page.member-surface .command-console-section-intro,
+.command-center-page.member-surface .ai-brain-summary,
+.command-center-page.member-surface .command-console-controls,
+.command-center-page.member-surface .command-side-panel section {
+  border-color: rgba(var(--neon-accent-rgb), 0.14);
+}
+
+.command-center-page.member-surface .member-node-overview {
+  gap: 0.75rem;
+}
+
+.command-center-page.member-surface .member-node-overview dl {
+  display: grid;
+  gap: 0.42rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.command-center-page.member-surface .member-node-overview dl > div {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.1);
+  border-radius: 12px;
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.56rem 0.62rem;
+}
+
+.command-center-page.member-surface .member-node-overview dt {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.command-center-page.member-surface .member-node-overview dd {
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.command-center-page.member-surface .member-command-totals {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.command-center-page.member-surface .member-command-totals span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.command-center-page.member-surface .member-command-totals strong {
+  color: var(--ink);
+}
+
+@media (max-width: 820px) {
+  .command-center-page.member-surface .command-center-top-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 2.75rem);
+  }
+
+  .command-center-page.member-surface .command-center-top-actions .member-navigation-action,
+  .command-center-page.member-surface .command-center-top-actions .member-inspector-action,
+  .command-center-page.member-surface .command-center-top-actions .member-settings-action {
+    display: none;
+  }
+
+  .command-center-page.member-surface .command-chat-close,
+  .command-center-page.member-surface .command-chat-reopen {
+    display: none;
+  }
+
+  .command-center-page.member-surface .command-icon-button,
+  .command-center-page.member-surface .command-mobile-panel header button,
+  .command-center-page.member-surface .command-mobile-empty button,
+  .command-center-page.member-surface .command-mobile-action-grid button,
+  .command-center-page.member-surface .command-mobile-card-list button,
+  .command-center-page.member-surface .command-mobile-tree-node > button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .command-center-page.member-surface .command-mobile-tabs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .command-center-page.member-surface .command-mobile-panel {
+    border-radius: 20px;
+  }
+
+  .command-center-page.member-surface .command-center-chat {
+    border-radius: 20px;
+    width: auto;
+  }
+}

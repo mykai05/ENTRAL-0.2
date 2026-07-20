@@ -15,6 +15,11 @@ const memoryKey = "entral-ai-memory-enabled";
 const profileKey = "entral-account-settings";
 type SettingsTab = "appearance" | "account" | "assistant" | "voice" | "academy";
 
+type SettingsPanelProps = {
+  hideTrigger?: boolean;
+  surface?: "internal" | "member";
+};
+
 function readSettingsStorage(key: string) {
   try {
     return window.localStorage.getItem(key);
@@ -31,8 +36,9 @@ function writeSettingsStorage(key: string, value: string) {
   }
 }
 
-export function SettingsPanel() {
+export function SettingsPanel({ hideTrigger = false, surface = "internal" }: SettingsPanelProps = {}) {
   const pathname = usePathname();
+  const isMemberSurface = surface === "member";
   const { settings, updateSettings } = useTheme();
   const { mode, openLibrary, openTour, progress, setMode } = useOnboarding();
   const { isSpeechSupported, settings: voiceSettings, updateVoiceSettings, voices } = useVoice();
@@ -59,7 +65,8 @@ export function SettingsPanel() {
 
     function openSettings(event: Event) {
       const detail = event instanceof CustomEvent ? event.detail as { tab?: SettingsTab } | undefined : undefined;
-      setActiveTab(detail?.tab ?? "appearance");
+      const requestedTab = detail?.tab ?? "appearance";
+      setActiveTab(isMemberSurface && (requestedTab === "account" || requestedTab === "assistant") ? "appearance" : requestedTab);
       setIsOpen(true);
     }
 
@@ -77,7 +84,7 @@ export function SettingsPanel() {
         window.clearTimeout(profileSavedTimerRef.current);
       }
     };
-  }, []);
+  }, [isMemberSurface]);
 
   function updateMemory(enabled: boolean) {
     setMemoryEnabled(enabled);
@@ -106,7 +113,7 @@ export function SettingsPanel() {
 
   return (
     <>
-      {pathname !== "/dashboard" ? <button className="settings-trigger" data-academy="settings" type="button" onClick={() => setIsOpen(true)} aria-label="Open settings">
+      {!hideTrigger && pathname !== "/dashboard" ? <button className="settings-trigger" data-academy="settings" type="button" onClick={() => setIsOpen(true)} aria-label="Open settings">
         <Settings aria-hidden="true" size={18} />
         <span>Settings</span>
       </button> : null}
@@ -136,14 +143,18 @@ export function SettingsPanel() {
                 <Palette aria-hidden="true" size={16} />
                 Appearance
               </button>
-              <button aria-controls="settings-panel-account" id="settings-tab-account" tabIndex={activeTab === "account" ? 0 : -1} aria-selected={activeTab === "account"} className={activeTab === "account" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("account")}>
-                <UserRound aria-hidden="true" size={16} />
-                Account
-              </button>
-              <button aria-controls="settings-panel-assistant" id="settings-tab-assistant" tabIndex={activeTab === "assistant" ? 0 : -1} aria-selected={activeTab === "assistant"} className={activeTab === "assistant" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("assistant")}>
-                <Brain aria-hidden="true" size={16} />
-                Command AI
-              </button>
+              {!isMemberSurface ? (
+                <>
+                  <button aria-controls="settings-panel-account" id="settings-tab-account" tabIndex={activeTab === "account" ? 0 : -1} aria-selected={activeTab === "account"} className={activeTab === "account" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("account")}>
+                    <UserRound aria-hidden="true" size={16} />
+                    Account
+                  </button>
+                  <button aria-controls="settings-panel-assistant" id="settings-tab-assistant" tabIndex={activeTab === "assistant" ? 0 : -1} aria-selected={activeTab === "assistant"} className={activeTab === "assistant" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("assistant")}>
+                    <Brain aria-hidden="true" size={16} />
+                    Command AI
+                  </button>
+                </>
+              ) : null}
               <button aria-controls="settings-panel-voice" id="settings-tab-voice" tabIndex={activeTab === "voice" ? 0 : -1} aria-selected={activeTab === "voice"} className={activeTab === "voice" ? "active" : ""} role="tab" type="button" onClick={() => setActiveTab("voice")}>
                 <Volume2 aria-hidden="true" size={16} />
                 Voice
@@ -229,7 +240,7 @@ export function SettingsPanel() {
               </div>
             ) : null}
 
-            {activeTab === "account" ? (
+            {!isMemberSurface && activeTab === "account" ? (
               <div id="settings-panel-account" role="tabpanel" aria-labelledby="settings-tab-account" tabIndex={0}>
                 <form className="settings-section account-settings-form" onSubmit={saveAccountSettings}>
                   <div className="section-title-row">
@@ -255,7 +266,7 @@ export function SettingsPanel() {
               </div>
             ) : null}
 
-            {activeTab === "assistant" ? (
+            {!isMemberSurface && activeTab === "assistant" ? (
               <div id="settings-panel-assistant" role="tabpanel" aria-labelledby="settings-tab-assistant" tabIndex={0}>
                 <div className="settings-section">
                   <div className="section-title-row">

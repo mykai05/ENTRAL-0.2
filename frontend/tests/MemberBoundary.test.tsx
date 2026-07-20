@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "../components/AppProviders";
@@ -731,6 +731,26 @@ describe("member workspace presentation", () => {
     expect(screen.getByText("Member only")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open command palette" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open settings" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the member command center palette-free and limits settings to safe presentation controls", async () => {
+    navigation.pathname = "/member/dashboard";
+    render(<AppProviders><main>Member command center</main></AppProviders>);
+
+    expect(screen.getByText("Member command center")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open command palette" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open settings" })).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent("entral:open-settings", { detail: { tab: "account" } }));
+    });
+
+    expect(await screen.findByRole("dialog", { name: "ENTRAL settings" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Appearance" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Voice" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Academy" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Account" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Command AI" })).not.toBeInTheDocument();
   });
 
   it("classifies recovery requests as member flow", async () => {
