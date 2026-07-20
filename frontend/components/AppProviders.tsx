@@ -13,8 +13,9 @@ import { VoiceProvider } from "./VoiceProvider";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const usesFullCommandCenter = pathname === "/member/dashboard" || pathname.startsWith("/member/dashboard/");
 
-  if (pathname.startsWith("/member")) {
+  if (pathname.startsWith("/member") && !usesFullCommandCenter) {
     return (
       <ThemeProvider>
         <ClientErrorBoundary>{children}</ClientErrorBoundary>

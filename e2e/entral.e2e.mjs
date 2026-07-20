@@ -9,6 +9,7 @@ const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const frontendUrl = process.env.E2E_FRONTEND_URL ?? "http://127.0.0.1:3000";
 const backendUrl = process.env.E2E_BACKEND_URL ?? "http://127.0.0.1:4000";
 const frontendTarget = new URL(frontendUrl);
+const backendTarget = new URL(backendUrl);
 const pnpm = process.env.E2E_PNPM_PATH
   ?? process.env.npm_execpath
   ?? join(repoRoot, ".corepack/v1/pnpm/9.12.3/bin/pnpm.cjs");
@@ -101,6 +102,7 @@ async function ensureServers() {
   if (!await fetchOk(`${backendUrl}/health`)) {
     spawnServer("backend", [pnpm, "--filter", "@entral/backend", "dev:memory"], {
       API_HOST: "127.0.0.1",
+      API_PORT: backendTarget.port || "4000",
       DATABASE_URL: "postgresql://entral:entral@127.0.0.1:5432/entral_e2e",
       JWT_SECRET: "entral-e2e-local-only-secret-32-characters",
       OPENAI_API_KEY: ""
@@ -293,11 +295,13 @@ const tests = [
           await academyClose.click();
         }
 
-        await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command open button");
-        const initialGraphPressed = await page.getByRole("button", { name: "View command graph" }).getAttribute("aria-pressed");
-        if (initialGraphPressed !== "true") {
-          throw new Error("The mobile command center did not open on the graph tab.");
+        await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Initial mobile command console");
+        const initialCommandPressed = await page.getByRole("button", { name: "Open Command tab" }).getAttribute("aria-pressed");
+        if (initialCommandPressed !== "true") {
+          throw new Error("The mobile command center did not open on the command tab.");
         }
+        await page.getByRole("button", { name: "View command graph" }).click();
+        await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command open button");
         await page.getByRole("button", { name: "Open Command tab" }).click();
         await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Mobile command console");
         await page.getByRole("button", { name: "Close command console and view graph" }).click();
