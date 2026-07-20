@@ -49,7 +49,7 @@ The first supported member overview is read-only and limited to:
 - Organization member names and roles.
 - The current member-seat count and enforced Entral Base allowance.
 - A typed, organization-scoped published operating snapshot containing business health, objectives and priorities, findings and recommendations, a monthly operating summary, and an optional sanitized chain of command.
-- A compact seven-node organization neural-map summary on `/member` plus the read-only multi-business ENTRAL Orbital Command system at `/member/graph`. Both are derived only from the same already authorized overview response; neither queries the internal Command OS or executable agent tables.
+- A compact seven-node organization neural-map summary on `/member` plus the read-only multi-business North Star system at `/member/north-star`. Both are derived only from the same already authorized overview response; neither queries the internal Command OS or executable agent tables. `/member/dashboard` retains the full Command Center presentation as a separate advanced screen, and the legacy `/member/graph` address redirects to North Star.
 
 The compact neural map is an organization operating view, not a representation of autonomous execution. The complete member graph is a nested orbital command system: ENTRAL is the fixed sun, Marshals orbit ENTRAL, each General orbits its Marshal, each Commander orbits its General, and each Soldier orbits its Commander. Operating signals use separate subordinate tracks so they do not disrupt the command hierarchy. A published organization hierarchy may contain multiple Generals and up to 5,000 sanitized nodes. The WebGL renderer draws at most 900 nodes at once, preserves representative nodes from every command rank, and discloses how many lower-level nodes were omitted from the current rendering.
 
@@ -57,7 +57,7 @@ The hierarchy DTO contains only `id`, `name`, `parentId`, `rank`, and operating 
 
 Approved business health, priorities, work, team, summaries, findings, and recommendations remain attached to the organization General as operating-signal branches. Exact assignee links are created only when a returned task references a returned organization member; the browser cannot supply or substitute an organization identifier.
 
-Every graph node is therefore either a sanitized command-hierarchy node, a fixed Entral operating domain, or a representation of an organization-scoped record already present in `MemberOverviewResponse`. The compact `/member` map remains a deliberately restrained dashboard summary. The complete `/member/graph` route uses Entral's WebGL planetary visual language: a luminous Entral sun, parent-centered orbital tracks, rank-specific orbital motion, persistent high-command labels, a depth-first searchable chain of command, selected-body inspector, full-screen mode, and local speed, spacing, brightness, particle, label, palette, and per-branch color controls. The camera remains stable unless the member moves it; command bodies perform the orbital motion. It does not import or render the internal `NeuronsCommandCenter`, and it has no command input, agent execution, connector, or mutation path.
+Every graph node is therefore either a sanitized command-hierarchy node, a fixed Entral operating domain, or a representation of an organization-scoped record already present in `MemberOverviewResponse`. The compact `/member` map remains a deliberately restrained dashboard summary. The dedicated `/member/north-star` route uses Entral's simplified member WebGL planetary view: a luminous Entral sun, parent-centered orbital tracks, rank-specific orbital motion, persistent high-command labels, a depth-first searchable chain of command, selected-body inspector, full-screen mode, and local speed, spacing, brightness, particle, label, palette, and per-branch color controls. The camera remains stable unless the member moves it; command bodies perform the orbital motion. North Star does not import or render the internal `NeuronsCommandCenter`, and it has no command input, agent execution, connector, or mutation path.
 
 Selecting a command body or changing the 3D controls changes only the local rendering. The scene builder accepts only `MemberOverviewResponse`, the already authorized DTO returned for the verified organization, and performs no network request. Color preferences are stored locally under an organization-specific browser key and contain colors only. The complete view makes record counts and source limits explicit instead of implying that truncated API data is exhaustive. The canvas supports pointer rotation, wheel zoom, arrow-key rotation, plus/minus zoom, Home reset, visible focus, and a hierarchy that remains fully usable if WebGL is unavailable. Orbital motion can be paused, reduced-motion preference pauses it by default, and responsive layouts intentionally move the hierarchy and inspector below the planetary system on narrow screens to preserve touch targets and eliminate horizontal overflow.
 
@@ -67,7 +67,17 @@ Member roles returned to the browser are normalized to the public `OWNER | MEMBE
 
 Production publication fails closed when `DATA_ENCRYPTION_KEY` is absent. When the key is configured, the published snapshot is stored in the existing AES-256-GCM secure-JSON envelope. Republishing content identical to a legacy plaintext row still rewrites that row into an encrypted envelope and records the storage-only re-encryption in the same audit transaction. This requirement is intentionally scoped to member-workspace publication so existing secure-JSON callers keep their established behavior.
 
-This change does not add a public or member-facing approval, agent-execution, scheduling, connector, or command-routing control. Authorized internal tooling can publish or withdraw a task through `PATCH /api/v1/admin/tasks/:taskId/member-visibility`; that endpoint requires an Entral administrator, is rate-limited, is idempotent for repeated state, and atomically records the actor, organization, previous state, resulting state, request, and task in the audit log with the visibility mutation. Subscription management remains explicitly unavailable because no approved billing provider or subscription lifecycle exists.
+The later production-agent extension adds one narrowly scoped member execution:
+organization owners can run Business Discovery against public web sources from
+the member workspace. It does not expose arbitrary prompts, agent creation,
+agent routing, Microsoft writes, internal Command OS operations, connectors, or
+other agent tools. Authorized internal tooling can publish or withdraw a task
+through `PATCH /api/v1/admin/tasks/:taskId/member-visibility`; that endpoint
+requires an Entral administrator, is rate-limited, is idempotent for repeated
+state, and atomically records the actor, organization, previous state, resulting
+state, request, and task in the audit log with the visibility mutation.
+Subscription management remains explicitly unavailable because no approved
+billing provider or subscription lifecycle exists.
 
 ## Request protections
 
@@ -91,6 +101,26 @@ Backend configuration continues to use:
 Frontend configuration adds:
 
 - `NEXT_PUBLIC_SP_COMMAND_URL`: the public Sovereign Protocol origin used for the real support and consultation link. It contains no credentials and defaults to `https://spcommand.com`.
+- `SOVEREIGN_AGENT_API_URL`: the server-only HTTPS origin of the private Sovereign agent service.
+- `SOVEREIGN_AGENT_API_TOKEN`: the server-only service bearer credential.
+- `SOVEREIGN_AGENT_STORE_URL`: the server-only private Sites D1 result-history endpoint.
+- `SOVEREIGN_AGENT_STORE_TOKEN`: the server-only D1 bridge credential.
+
+The browser receives none of these values. The authenticated backend-for-
+frontend validates trusted browser origin, user role, organization membership,
+request schema, URL schemes, durable execution claim, upstream health and result
+schema, exact organization/user bindings, and stored response bindings. It uses
+five-second control-plane timeouts, retains an execution lease after unknown
+provider outcomes, and returns safe structured errors without upstream payloads
+or hosts.
+
+The member agent screen lists the nine governed roles so clients can understand
+the operating chain without mistaking status for authority. Business Discovery
+is marked as the one live member execution. Intake & Evidence, Leakage Analysis,
+Pricing & ROI, Proposal Assembly, and Quality & Compliance are shown as
+policy-gated runtimes; Contact Inbox and Website Operations as Microsoft control-
+plane services; Microsoft Operations as approval gated. Disabled execution has
+a visible reason rather than a dead control.
 
 No billing provider, price, subscription model, billing secret, or billing-derived entitlement has been added to Entral. `memberAccessEnabled` is a deliberate internal provisioning decision independent of payment state. Billing remains outside this repository boundary until an approved provider and tested subscription architecture exist.
 
@@ -100,6 +130,6 @@ The implementation includes tests for trusted-origin handling, no-Origin cookie 
 
 The migration at `prisma/migrations/20260718000000_add_member_platform_boundaries/migration.sql` creates the closed member boundary, the five-seat database guards, and the one-snapshot-per-organization storage model. Apply it with the established `pnpm prisma:deploy` release process only after database backup and deployment approval.
 
-`backend/tests/memberSeatPostgres.integration.test.ts` is an opt-in environment-parity harness. It creates a random disposable schema, applies the actual migration set, verifies direct and concurrent sixth-seat rejection plus over-limit enablement rejection, then drops the schema. Run it only against a disposable database by setting both `TEST_DATABASE_URL` and `RUN_POSTGRES_INTEGRATION=1` before the backend test command. On 2026-07-18 PostgreSQL 15.18 was installed locally and the harness passed against the dedicated `entral_test` database. The complete backend run with this opt-in test enabled passed 60 files and 293 tests.
+`backend/tests/memberSeatPostgres.integration.test.ts` is an opt-in environment-parity harness. It creates a random disposable schema, applies the actual migration set, verifies direct and concurrent sixth-seat rejection plus over-limit enablement rejection, then drops the schema. Run it only against a disposable database by setting both `TEST_DATABASE_URL` and `RUN_POSTGRES_INTEGRATION=1` before the backend test command. On 2026-07-19 the harness passed against a disposable localhost-only PostgreSQL 15 cluster. The standard backend suite passed 60 files and 298 tests, and the parity assertion passed separately against the actual migration chain. The complete frontend suite passed 54 files and 259 tests. Lint, both production builds, release readiness, and the production dependency audit also passed; the audit reported zero known vulnerabilities after the Fastify 5 security upgrade.
 
-Deployment of a reviewed build follows the established Entral release workflow. The graph introduces no migration, environment variable, privileged endpoint, writable member action, or billing dependency.
+Deployment of a reviewed build follows the established Entral release workflow. The member route separation and North Star screen introduce no migration, environment variable, privileged endpoint, writable member action, or billing dependency.

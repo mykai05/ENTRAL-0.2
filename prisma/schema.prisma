@@ -53,6 +53,7 @@ model User {
   policiesCreated Policy[]      @relation("PolicyCreatedBy")
   auditLogs   AuditLog[]
   memberWorkspacesPublished MemberWorkspaceSnapshot[] @relation("MemberWorkspacePublishedBy")
+  memberAgentRuns MemberAgentRun[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
   growthApprovalPackets GrowthApprovalPacket[] @relation("GrowthApprovalOwner")
@@ -1149,6 +1150,30 @@ model Team {
   members   TeamMember[]
   tasks     Task[]
   memberWorkspace MemberWorkspaceSnapshot?
+  memberAgentRuns MemberAgentRun[]
+}
+
+model MemberAgentRun {
+  id             String   @id @default(cuid())
+  teamId         String
+  requestedById  String
+  kind           String
+  status         String   @default("queued")
+  idempotencyKey String
+  requestJson    String
+  resultJson     String?
+  errorCode      String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  team           Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  requestedBy    User     @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, idempotencyKey])
+  @@index([teamId, createdAt])
+  @@index([status, createdAt])
+  @@index([requestedById, createdAt])
 }
 
 model MemberWorkspaceSnapshot {

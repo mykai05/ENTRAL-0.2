@@ -74,6 +74,7 @@ export const API_BASE_URL = resolveApiBaseUrl();
 
 type ApiOptions = RequestInit & {
   json?: unknown;
+  sameOrigin?: boolean;
   timeoutMs?: number;
 };
 
@@ -90,7 +91,7 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { json, timeoutMs = 15000, ...requestOptions } = options;
+  const { json, sameOrigin = false, timeoutMs = 15000, ...requestOptions } = options;
   const headers = new Headers(options.headers);
   const timeoutController = options.signal ? undefined : new AbortController();
   const timeout = timeoutController ? setTimeout(() => timeoutController.abort(), timeoutMs) : undefined;
@@ -102,7 +103,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   let response: Response;
 
   try {
-    response = await fetch(`${resolveApiBaseUrl()}/api/v1${path}`, {
+    response = await fetch(sameOrigin ? path : `${resolveApiBaseUrl()}/api/v1${path}`, {
       ...requestOptions,
       headers,
       credentials: "include",

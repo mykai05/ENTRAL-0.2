@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { resolveApiBaseUrl } from "../lib/api";
+import { describe, expect, it, vi } from "vitest";
+import { apiFetch, resolveApiBaseUrl } from "../lib/api";
 import { apiProxyBase } from "../lib/server-api-proxy";
 
 describe("resolveApiBaseUrl", () => {
@@ -30,6 +30,24 @@ describe("resolveApiBaseUrl", () => {
 
   it("keeps a real backend URL outside the browser when one is configured", () => {
     expect(resolveApiBaseUrl("", "production", "https://entral-0-2-production.up.railway.app/")).toBe("https://entral-0-2-production.up.railway.app");
+  });
+});
+
+describe("apiFetch", () => {
+  it("keeps explicit member BFF requests outside the generic API v1 proxy", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ runs: [] }), {
+      headers: { "content-type": "application/json" },
+      status: 200
+    }));
+    vi.stubGlobal("fetch", fetcher);
+
+    await apiFetch("/api/member/organizations/org-1/agent-runs", { sameOrigin: true });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/api/member/organizations/org-1/agent-runs",
+      expect.objectContaining({ credentials: "include" })
+    );
+    vi.unstubAllGlobals();
   });
 });
 

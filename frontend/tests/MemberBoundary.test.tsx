@@ -587,13 +587,14 @@ describe("member workspace presentation", () => {
     expect(screen.queryByText("Raw prompts")).not.toBeInTheDocument();
   });
 
-  it("opens the complete graph as a first-class member view", async () => {
-    navigation.pathname = "/member/graph";
+  it("opens North Star as a first-class member view", async () => {
+    navigation.pathname = "/member/north-star";
     api.apiFetch.mockResolvedValueOnce(overview);
-    render(<MemberDashboardClient initialSession={session} view="graph" />);
+    render(<MemberDashboardClient initialSession={session} view="north-star" />);
 
-    expect(await screen.findByRole("heading", { name: "Full organization graph" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Full graph" })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByRole("heading", { name: "North Star" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "North Star" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Command Center" })).toHaveAttribute("href", "/member/dashboard");
     expect(await screen.findByRole("heading", { name: "ENTRAL Orbital Command" })).toBeInTheDocument();
     expect(screen.getByText("Map the operating workflow")).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: "Command orbit speed" })).toBeInTheDocument();
@@ -601,13 +602,27 @@ describe("member workspace presentation", () => {
     expect(screen.queryByRole("heading", { name: "Work overview" })).not.toBeInTheDocument();
   });
 
-  it("returns an expired graph session to the full graph after sign in", async () => {
-    navigation.pathname = "/member/graph";
+  it("returns an expired North Star session to North Star after sign in", async () => {
+    navigation.pathname = "/member/north-star";
     api.apiFetch.mockRejectedValueOnce(new ApiError(401, "Authentication is required.", null));
-    render(<MemberDashboardClient initialSession={session} view="graph" />);
+    render(<MemberDashboardClient initialSession={session} view="north-star" />);
 
-    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith("/member/sign-in?returnTo=%2Fmember%2Fgraph"));
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith("/member/sign-in?returnTo=%2Fmember%2Fnorth-star"));
     expect(navigation.refresh).toHaveBeenCalled();
+  });
+
+  it("keeps the member routes separated by purpose", () => {
+    const memberPage = readFileSync(resolve(process.cwd(), "app", "member", "page.tsx"), "utf8");
+    const northStarPage = readFileSync(resolve(process.cwd(), "app", "member", "north-star", "page.tsx"), "utf8");
+    const commandCenterPage = readFileSync(resolve(process.cwd(), "app", "member", "dashboard", "page.tsx"), "utf8");
+    const legacyGraphPage = readFileSync(resolve(process.cwd(), "app", "member", "graph", "page.tsx"), "utf8");
+
+    expect(memberPage).toContain("MemberDashboardClient");
+    expect(memberPage).not.toContain('redirect("/member/dashboard")');
+    expect(northStarPage).toContain('view="north-star"');
+    expect(northStarPage).toContain('memberSignInPath("/member/north-star")');
+    expect(commandCenterPage).toContain("MemberCommandCenterClient");
+    expect(legacyGraphPage).toContain('redirect("/member/north-star")');
   });
 
   it("keeps sign-out failure recovery scoped to sign out", async () => {
@@ -621,11 +636,12 @@ describe("member workspace presentation", () => {
 
     await screen.findByRole("heading", { name: "Work overview" });
     await user.click(screen.getByRole("button", { name: "Sign out" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Sign out failed");
+    const signOutFailure = await screen.findByText("Sign out failed");
+    expect(signOutFailure.closest('[role="alert"]')).toHaveTextContent("Session service unavailable");
     await user.click(screen.getByRole("button", { name: "Try again" }));
 
-    await waitFor(() => expect(api.apiFetch).toHaveBeenNthCalledWith(3, "/logout", { method: "POST" }));
-    expect(api.apiFetch).toHaveBeenCalledTimes(3);
+    await waitFor(() => expect(api.apiFetch).toHaveBeenNthCalledWith(4, "/logout", { method: "POST" }));
+    expect(api.apiFetch).toHaveBeenCalledTimes(4);
   });
 
   it("renders a clean operating-view empty state without dead controls", async () => {

@@ -1,18 +1,49 @@
 import { NextResponse } from "next/server";
-import { apiProxyBase, sanitizedResponseHeaders } from "../../lib/server-api-proxy";
+import { apiProxyBase } from "../../lib/server-api-proxy";
 
 export const dynamic = "force-dynamic";
+
+function sovereignAgentHealthUrl() {
+  try {
+    const url = new URL(process.env.SOVEREIGN_AGENT_API_URL?.trim() ?? "");
+    const local = ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
+    if ((process.env.NODE_ENV === "production" && (url.protocol !== "https:" || local)) || url.username || url.password) return null;
+    return new URL("/health", url);
+  } catch {
+    return null;
+  }
+}
 
 function responseRequestId(request: Request) {
   return request.headers.get("x-request-id") ?? crypto.randomUUID();
 }
 
+async function fetchHealth(url: string | URL) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    return await fetch(url, { cache: "no-store", method: "GET", signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function responseHeaders(requestId: string) {
+  return {
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+    "x-request-id": requestId,
+    "x-robots-tag": "noindex, nofollow"
+  };
+}
+
 export async function GET(request: Request) {
   const baseUrl = apiProxyBase();
+  const agentHealthUrl = sovereignAgentHealthUrl();
   const requestId = responseRequestId(request);
   const timestamp = new Date().toISOString();
 
-  if (!baseUrl) {
+  if (!baseUrl || !agentHealthUrl) {
     return NextResponse.json(
       {
         backend: {
@@ -25,56 +56,60 @@ export async function GET(request: Request) {
           service: "entral-frontend",
           timestamp
         },
+        sovereignCommand: {
+          configured: Boolean(agentHealthUrl),
+          ok: false,
+          status: null
+        },
         ok: false,
         requestId
       },
       {
-        headers: { "x-request-id": requestId },
+        headers: responseHeaders(requestId),
         status: 503
       }
     );
   }
 
   try {
-    const response = await fetch(`${baseUrl}/health`, {
-      cache: "no-store",
-      method: "GET"
-    });
-    const contentType = response.headers.get("content-type") ?? "";
-    const payload = contentType.includes("application/json")
-      ? await response.json().catch(() => null)
-      : await response.text().catch(() => null);
+    const [response, agentResponse] = await Promise.all([
+      fetchHealth(`${baseUrl}/health`),
+      fetchHealth(agentHealthUrl)
+    ]);
+    const agentPayload = await agentResponse.json().catch(() => null) as { execution_enabled?: unknown } | null;
+    const agentReady = agentResponse.ok && agentPayload?.execution_enabled === true;
 
     return NextResponse.json(
       {
         backend: {
           configured: true,
           ok: response.ok,
-          status: response.status,
-          upstream: payload
+          status: response.status
         },
         frontend: {
           ok: true,
           service: "entral-frontend",
           timestamp
         },
-        ok: response.ok,
+        sovereignCommand: {
+          configured: true,
+          executionEnabled: agentReady,
+          ok: agentReady,
+          status: agentResponse.status
+        },
+        ok: response.ok && agentReady,
         requestId
       },
       {
-        headers: {
-          ...Object.fromEntries(sanitizedResponseHeaders(response.headers).entries()),
-          "x-request-id": requestId
-        },
-        status: response.ok ? 200 : 502
+        headers: responseHeaders(requestId),
+        status: response.ok && agentReady ? 200 : 502
       }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         backend: {
           configured: true,
-          error: error instanceof Error ? error.message : "Unknown backend health error.",
           ok: false,
           status: null
         },
@@ -83,11 +118,16 @@ export async function GET(request: Request) {
           service: "entral-frontend",
           timestamp
         },
+        sovereignCommand: {
+          configured: true,
+          ok: false,
+          status: null
+        },
         ok: false,
         requestId
       },
       {
-        headers: { "x-request-id": requestId },
+        headers: responseHeaders(requestId),
         status: 502
       }
     );

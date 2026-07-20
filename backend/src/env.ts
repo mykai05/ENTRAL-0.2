@@ -84,7 +84,11 @@ const envSchema = z.object({
   AUTONOMY_MIN_INTERVAL_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
   DATA_ENCRYPTION_KEY: optionalTrimmedString,
   ADMIN_MFA_CODE: optionalTrimmedString,
-  ALERT_WEBHOOK_URL: optionalTrimmedString
+  ALERT_WEBHOOK_URL: optionalTrimmedString,
+  SOVEREIGN_COMMAND_ENABLED: booleanFromEnv.default(false),
+  SOVEREIGN_COMMAND_API_URL: optionalTrimmedString,
+  SOVEREIGN_COMMAND_API_TOKEN: optionalTrimmedString,
+  SOVEREIGN_COMMAND_TIMEOUT_MS: z.coerce.number().int().min(10_000).max(300_000).default(120_000)
 }).superRefine((value, context) => {
   if (value.NODE_ENV === "production" && value.AUTH_EMAIL_PROVIDER === "console") {
     context.addIssue({
@@ -109,6 +113,34 @@ const envSchema = z.object({
         path: ["AUTH_EMAIL_FROM"],
         message: "AUTH_EMAIL_FROM is required when AUTH_EMAIL_PROVIDER is resend."
       });
+    }
+  }
+
+  if (value.SOVEREIGN_COMMAND_ENABLED) {
+    if (value.NODE_ENV === "production" && !value.DATA_ENCRYPTION_KEY) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["DATA_ENCRYPTION_KEY"],
+        message: "DATA_ENCRYPTION_KEY is required for production Sovereign Command records."
+      });
+    }
+    if (!value.SOVEREIGN_COMMAND_API_URL) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["SOVEREIGN_COMMAND_API_URL"], message: "SOVEREIGN_COMMAND_API_URL is required when Sovereign Command is enabled." });
+    } else {
+      try {
+        const url = new URL(value.SOVEREIGN_COMMAND_API_URL);
+        const local = ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
+        if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["SOVEREIGN_COMMAND_API_URL"], message: "Sovereign Command must use an HTTP(S) URL without embedded credentials." });
+        } else if (value.NODE_ENV === "production" && (url.protocol !== "https:" || local)) {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ["SOVEREIGN_COMMAND_API_URL"], message: "Production Sovereign Command must use a non-local HTTPS origin." });
+        }
+      } catch {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["SOVEREIGN_COMMAND_API_URL"], message: "SOVEREIGN_COMMAND_API_URL must be a valid URL." });
+      }
+    }
+    if (!value.SOVEREIGN_COMMAND_API_TOKEN || value.SOVEREIGN_COMMAND_API_TOKEN.length < 32) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["SOVEREIGN_COMMAND_API_TOKEN"], message: "SOVEREIGN_COMMAND_API_TOKEN must contain at least 32 characters." });
     }
   }
 });
@@ -164,7 +196,11 @@ export const env = envSchema.parse({
   AUTONOMY_MIN_INTERVAL_MINUTES: process.env.AUTONOMY_MIN_INTERVAL_MINUTES,
   DATA_ENCRYPTION_KEY: process.env.DATA_ENCRYPTION_KEY,
   ADMIN_MFA_CODE: process.env.ADMIN_MFA_CODE,
-  ALERT_WEBHOOK_URL: process.env.ALERT_WEBHOOK_URL
+  ALERT_WEBHOOK_URL: process.env.ALERT_WEBHOOK_URL,
+  SOVEREIGN_COMMAND_ENABLED: process.env.SOVEREIGN_COMMAND_ENABLED,
+  SOVEREIGN_COMMAND_API_URL: process.env.SOVEREIGN_COMMAND_API_URL,
+  SOVEREIGN_COMMAND_API_TOKEN: process.env.SOVEREIGN_COMMAND_API_TOKEN,
+  SOVEREIGN_COMMAND_TIMEOUT_MS: process.env.SOVEREIGN_COMMAND_TIMEOUT_MS
 });
 
 export const isProduction = env.NODE_ENV === "production";

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default async function MemberGraphPage() {
-  redirect("/member/dashboard");
+  redirect("/member/north-star");
 }

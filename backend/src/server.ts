@@ -20,12 +20,14 @@ import { revenueEngineRoutes } from "./routes/revenueEngine.js";
 import { adminRoutes } from "./routes/admin.js";
 import { memberRoutes } from "./routes/member.js";
 import { memberTaskVisibilityRoutes } from "./routes/memberTaskVisibility.js";
+import { memberAgentRoutes } from "./routes/memberAgents.js";
 import { env } from "./env.js";
 import { enforceSessionBoundary, requireTrustedOrigin } from "./auth.js";
 import type { AiService } from "./services/openaiService.js";
 import { startAutomationWorker } from "./services/automationQueue.js";
 import { startAgentOrchestrator } from "./services/agentOrchestrator.js";
 import { startAutonomyScheduler } from "./services/autonomyScheduler.js";
+import { startMemberAgentRunner } from "./services/sovereignCommand.js";
 import { buildHealthPayload } from "./services/health.js";
 import { emitOperationalAlert } from "./services/operationalMonitoring.js";
 import { ensureDefaultPolicies } from "./services/policyEngine.js";
@@ -78,8 +80,13 @@ export async function buildServer(options: BuildServerOptions = {}) {
     }
 
     request.log.error({ err: error, requestId: request.id }, "Unhandled API error");
-    const statusCode = "statusCode" in error && typeof error.statusCode === "number" ? error.statusCode : 500;
-    const message = statusCode >= 500 ? "Something went wrong." : error.message;
+    const errorRecord = typeof error === "object" && error !== null
+      ? error as { message?: unknown; statusCode?: unknown }
+      : {};
+    const statusCode = typeof errorRecord.statusCode === "number" ? errorRecord.statusCode : 500;
+    const message = statusCode >= 500
+      ? "Something went wrong."
+      : typeof errorRecord.message === "string" ? errorRecord.message : "Request failed.";
 
     if (statusCode >= 500) {
       void emitOperationalAlert({
@@ -106,6 +113,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await ensureDefaultPolicies();
   await app.register(authRoutes, { prefix: "/api/v1" });
   await app.register(memberRoutes, { prefix: "/api/v1" });
+  await app.register(memberAgentRoutes, { prefix: "/api/v1" });
   await app.register(memberTaskVisibilityRoutes, { prefix: "/api/v1" });
   await app.register(accountRoutes, { prefix: "/api/v1" });
   await app.register(dashboardRoutes, { prefix: "/api/v1" });
@@ -123,10 +131,12 @@ export async function buildServer(options: BuildServerOptions = {}) {
   const stopAutomationWorker = startAutomationWorker(app.log);
   const stopAgentOrchestrator = startAgentOrchestrator(app.log);
   const stopAutonomyScheduler = startAutonomyScheduler(app.log);
+  const stopMemberAgentRunner = startMemberAgentRunner(app.log);
   app.addHook("onClose", async () => {
     stopAutomationWorker();
     stopAgentOrchestrator();
     stopAutonomyScheduler();
+    stopMemberAgentRunner();
   });
 
   return app;

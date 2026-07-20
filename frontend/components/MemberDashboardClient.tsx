@@ -28,6 +28,7 @@ import { BrandMark } from "./BrandMark";
 import { Button } from "./Button";
 import { MemberNeuronGraph } from "./MemberNeuronGraph";
 import { MemberNeuronsCommandCenter } from "./MemberNeuronsCommandCenter";
+import { MemberAgentWorkspace } from "./MemberAgentWorkspace";
 
 const statusLabels: Record<string, string> = {
   ARCHIVED: "Archived",
@@ -59,7 +60,7 @@ export function MemberDashboardClient({
   view = "dashboard"
 }: {
   initialSession: MemberOrganizationsResponse;
-  view?: "dashboard" | "graph";
+  view?: "dashboard" | "north-star";
 }) {
   const router = useRouter();
   const [organizationId, setOrganizationId] = useState(initialSession.organizations[0]?.id ?? "");
@@ -107,7 +108,7 @@ export function MemberDashboardClient({
     } catch (requestError) {
       if (controller.signal.aborted || overviewRequestGeneration.current !== generation) return;
       if (requestError instanceof ApiError && requestError.status === 401) {
-        router.replace(memberSignInPath(view === "graph" ? "/member/graph" : "/member"));
+        router.replace(memberSignInPath(view === "north-star" ? "/member/north-star" : "/member"));
         router.refresh();
         return;
       }
@@ -157,8 +158,11 @@ export function MemberDashboardClient({
             <Link aria-current={view === "dashboard" ? "page" : undefined} href="/member">
               <LayoutDashboard aria-hidden="true" size={16} />Workspace
             </Link>
-            <Link aria-current={view === "graph" ? "page" : undefined} href="/member/graph">
-              <Network aria-hidden="true" size={16} />Full graph
+            <Link aria-current={view === "north-star" ? "page" : undefined} href="/member/north-star">
+              <Network aria-hidden="true" size={16} />North Star
+            </Link>
+            <Link href="/member/dashboard">
+              <ShieldCheck aria-hidden="true" size={16} />Command Center
             </Link>
           </nav>
         </div>
@@ -173,9 +177,9 @@ export function MemberDashboardClient({
 
       <section className="member-intro" aria-labelledby="member-heading">
         <div>
-          <p className="eyebrow">{view === "graph" ? "Organization intelligence" : "Member workspace"}</p>
-          <h1 id="member-heading">{view === "graph" ? "Full organization graph" : `Welcome, ${initialSession.user.name}`}</h1>
-          <p>{view === "graph" ? "Explore every approved operating signal available to your organization." : "Review the organization work that has been approved for member visibility."}</p>
+          <p className="eyebrow">{view === "north-star" ? "Organization intelligence" : "Member workspace"}</p>
+          <h1 id="member-heading">{view === "north-star" ? "North Star" : `Welcome, ${initialSession.user.name}`}</h1>
+          <p>{view === "north-star" ? "See how approved priorities, operating signals, and the chain of command align around Entral." : "Review the organization work that has been approved for member visibility."}</p>
         </div>
         {initialSession.organizations.length > 1 ? (
           <label className="member-organization-select">
@@ -234,11 +238,16 @@ export function MemberDashboardClient({
             </dl>
           </section>
 
-          {view === "graph" ? (
+          {view === "north-star" ? (
             <MemberNeuronsCommandCenter overview={overview} />
           ) : (
             <>
               <MemberNeuronGraph overview={overview} />
+              <MemberAgentWorkspace
+                organizationId={overview.organization.id}
+                organizationName={overview.organization.name}
+                role={overview.organization.role}
+              />
 
           <section className="member-metrics" aria-labelledby="work-overview-heading">
             <div className="member-section-heading">

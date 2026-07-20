@@ -8212,8 +8212,13 @@ await app.register(cors, {
 });
 
 app.setErrorHandler((error, _request, reply) => {
-  const statusCode = "statusCode" in error && typeof error.statusCode === "number" ? error.statusCode : 500;
-  const message = statusCode >= 500 ? "Something went wrong." : error.message;
+  const errorRecord = typeof error === "object" && error !== null
+    ? error as { message?: unknown; statusCode?: unknown }
+    : {};
+  const statusCode = typeof errorRecord.statusCode === "number" ? errorRecord.statusCode : 500;
+  const message = statusCode >= 500
+    ? "Something went wrong."
+    : typeof errorRecord.message === "string" ? errorRecord.message : "Request failed.";
   return reply.code(statusCode).send({
     error: statusCode >= 500 ? "Internal Server Error" : "Request Error",
     message
