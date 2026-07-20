@@ -114,7 +114,7 @@ export function safeMemberReturnPath(value: string | string[] | undefined) {
   const candidate = Array.isArray(value) ? value[0] : value;
 
   if (!candidate) {
-    return "/member";
+    return "/member/dashboard";
   }
 
   try {
@@ -124,16 +124,16 @@ export function safeMemberReturnPath(value: string | string[] | undefined) {
     const isAuthenticationPath = memberAuthPaths.some((path) => url.pathname === path || url.pathname.startsWith(`${path}/`));
 
     if (url.origin !== base || !isProtectedMemberPath || isAuthenticationPath) {
-      return "/member";
+      return "/member/dashboard";
     }
 
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
-    return "/member";
+    return "/member/dashboard";
   }
 }
 
-export function memberSignInPath(returnTo = "/member") {
+export function memberSignInPath(returnTo = "/member/dashboard") {
   return `/member/sign-in?returnTo=${encodeURIComponent(safeMemberReturnPath(returnTo))}`;
 }
 

@@ -14051,8 +14051,13 @@ app.post("/api/v1/admin/agent-tasks/:taskId/revoke", { preHandler: requireAuth }
 seedDemo();
 
 try {
-  await app.listen({ host: process.env.API_HOST ?? "0.0.0.0", port: 4000 });
-  app.log.info("ENTRAL memory backend ready at http://localhost:4000");
+  const configuredPort = Number.parseInt(process.env.API_PORT ?? "4000", 10);
+  const port = Number.isInteger(configuredPort) && configuredPort > 0 && configuredPort <= 65_535
+    ? configuredPort
+    : 4000;
+
+  await app.listen({ host: process.env.API_HOST ?? "0.0.0.0", port });
+  app.log.info(`ENTRAL memory backend ready at http://localhost:${port}`);
 } catch (error) {
   app.log.error(error);
   process.exit(1);

@@ -17,7 +17,7 @@ import {
 } from "../components/member-neurons-3d";
 import { MemberRecoveryClient } from "../components/MemberRecoveryClient";
 import { MemberSignInClient } from "../components/MemberSignInClient";
-import { safeMemberReturnPath } from "../lib/member";
+import { memberSignInPath, safeMemberReturnPath } from "../lib/member";
 import { loadMemberSession } from "../lib/member-session.server";
 import type { MemberOrganizationsResponse, MemberOverviewResponse } from "../lib/member";
 import { POST as memberLoginPost } from "../app/api/member/login/route";
@@ -120,12 +120,13 @@ afterEach(() => {
 
 describe("member redirect and browser credential boundaries", () => {
   it.each([
-    [undefined, "/member"],
+    [undefined, "/member/dashboard"],
     ["/member?organization=one", "/member?organization=one"],
-    ["/member/sign-in", "/member"],
-    ["https://attacker.example/member", "/member"],
-    ["//attacker.example/member", "/member"],
-    ["/dashboard", "/member"]
+    ["/member/sign-in", "/member/dashboard"],
+    ["https://attacker.example/member", "/member/dashboard"],
+    ["//attacker.example/member", "/member/dashboard"],
+    ["/dashboard", "/member/dashboard"],
+    ["/member/dashboard", "/member/dashboard"]
   ])("normalizes return path %s", (input, expected) => {
     expect(safeMemberReturnPath(input)).toBe(expected);
   });
@@ -149,6 +150,11 @@ describe("member redirect and browser credential boundaries", () => {
     }));
     expect(window.sessionStorage.length).toBe(0);
     expect(window.localStorage.getItem("entral_token")).toBeNull();
+  });
+
+  it("sends a member to the authenticated Command Center by default", () => {
+    expect(memberSignInPath()).toBe("/member/sign-in?returnTo=%2Fmember%2Fdashboard");
+    expect(safeMemberReturnPath("/member/dashboard")).toBe("/member/dashboard");
   });
 
   it("strips the backend token from the dedicated browser login payload", () => {

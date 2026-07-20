@@ -70,8 +70,6 @@ import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../l
 import { creationBlockedTransmission, hierarchyNameFromCommandText, nextCommandPlaceholderName } from "../lib/command-creation";
 import { createAiActionPlan, createAiAuditEntry, formatActionPlanSummary, type AiActionPlan, type AiAuditEntry } from "../lib/ai-brain";
 import { buildMockToolExecution, defaultToolRegistry, toolById, type MockToolExecutionResult, type ToolRegistryEntry } from "../lib/tool-registry";
-import { useDialogFocus } from "../lib/dialog-focus";
-import { buildCommandUniversePlacements, selectCommandUniverseVisibility } from "../lib/command-universe";
 
 type GraphStatus = CommandStatus;
 
@@ -394,8 +392,7 @@ const defaultCamera: CameraState = {
   yaw: 0.82
 };
 
-const legacyGraphControlsKey = "entral-command-center-controls";
-const graphControlsKey = "entral-command-universe-controls-v2";
+const graphControlsKey = "entral-command-center-controls";
 const gravityMin = 0;
 const gravityMax = 12;
 const gravityPercentMin = gravityMin * 100;
@@ -446,7 +443,7 @@ const defaultGraphControls: GraphControlSettings = {
   entityGravity: {},
   glowIntensity: 1,
   gravity: 0.72,
-  orbitPattern: "tilted",
+  orbitPattern: "flat",
   orbitSpeed: 0.85,
   particleSize: 1,
   showRings: true,
@@ -486,23 +483,36 @@ function removeLocalStorageValue(key: string) {
   }
 }
 
-const commandCenterModeItems: ModeStatusItem[] = [
-  {
-    description: "Hierarchy, reports, and workspace data are saved locally or through ENTRAL APIs.",
-    label: "Real workspace",
-    mode: "real"
-  },
-  {
-    description: "Tool and product actions stay simulated until credentials and approval paths are configured.",
-    label: "Mock tools labeled",
-    mode: "mock"
-  },
-  {
-    description: "External publishing, commerce, outreach, and browser actions require scoped approval.",
-    label: "Read-only before trust",
-    mode: "read-only"
-  }
-];
+const commandCenterModeItems: ModeStatusItem[] = process.env.NEXT_PUBLIC_ENTRAL_RUNTIME_MODE === "demo"
+  ? [
+      {
+        description: "Accounts, hierarchy state, and operational records reset when the local demo backend stops.",
+        label: "Temporary demo workspace",
+        mode: "mock"
+      },
+      {
+        description: "Provider tests and writes require the canonical backend and configured credentials.",
+        label: "Provider writes unavailable",
+        mode: "read-only"
+      }
+    ]
+  : [
+      {
+        description: "Hierarchy, reports, and workspace data are saved locally or through ENTRAL APIs.",
+        label: "Real workspace",
+        mode: "real"
+      },
+      {
+        description: "Tool and product actions stay simulated until credentials and approval paths are configured.",
+        label: "Mock tools labeled",
+        mode: "mock"
+      },
+      {
+        description: "External publishing, commerce, outreach, and browser actions require scoped approval.",
+        label: "Read-only before trust",
+        mode: "read-only"
+      }
+    ];
 
 const businessCapabilityBlueprints: CapabilityBlueprint[] = [
   {
@@ -559,22 +569,22 @@ const businessTemplates: BusinessTemplate[] = [
   {
     color: "#00F0FF",
     commanders: [
-      { name: "Research Commander", soldiers: ["Business Profile Soldier", "Market Signal Soldier", "Competitor Soldier", "Evidence Soldier"] },
-      { name: "Strategy Commander", soldiers: ["Objective Soldier", "Priority Soldier", "Offer Soldier", "Risk Soldier"] },
-      { name: "Operations Commander", soldiers: ["Workflow Soldier", "Capacity Soldier", "Quality Soldier", "Issue Soldier"] },
-      { name: "Customer Commander", soldiers: ["Journey Soldier", "Feedback Soldier", "Retention Soldier"] },
-      { name: "Growth Commander", soldiers: ["Channel Soldier", "Campaign Soldier", "Conversion Soldier", "Partnership Soldier"] },
-      { name: "Delivery Commander", soldiers: ["Project Soldier", "Milestone Soldier", "Handoff Soldier", "Implementation QA Soldier"] },
-      { name: "Finance Commander", soldiers: ["Margin Soldier", "Cash Flow Soldier", "Forecast Soldier", "Variance Soldier"] },
-      { name: "Reporting Commander", soldiers: ["Weekly Brief Soldier", "Operating Summary Soldier", "Opportunity Soldier", "Decision Log Soldier"] }
+      { name: "Client Intake Commander", soldiers: ["Business Profile Soldier", "Audience Soldier", "Offer Soldier", "Notes Soldier"] },
+      { name: "Brand Commander", soldiers: ["Brand Voice Soldier", "Color Direction Soldier", "Style Direction Soldier", "Collection Theme Soldier"] },
+      { name: "Design Commander", soldiers: ["Design Concept Soldier", "Prompt Soldier", "Typography Soldier", "Mockup Soldier", "Variation Soldier"] },
+      { name: "Listing Commander", soldiers: ["Title Soldier", "Description Soldier", "Tags Soldier", "SEO Soldier", "Materials Soldier"] },
+      { name: "Compliance Commander", soldiers: ["Trademark Risk Soldier", "Copyright Risk Soldier", "AI Disclosure Soldier", "Production Partner Soldier", "Prohibited Content Soldier"] },
+      { name: "Store Launch Commander", soldiers: ["Etsy Setup Soldier", "Printify Setup Soldier", "Shopify Setup Soldier", "Product Publish Checklist Soldier", "Launch QA Soldier"] },
+      { name: "Marketing Commander", soldiers: ["Instagram Caption Soldier", "TikTok Script Soldier", "Email Launch Soldier", "QR Flyer Soldier", "Promo Calendar Soldier"] },
+      { name: "Reporting Commander", soldiers: ["Weekly Report Soldier", "Sales Report Soldier", "Product Performance Soldier", "Opportunity Report Soldier"] }
     ],
-    description: "A complete operating structure for a service, consulting, contracting, or owner-operated company.",
-    generalType: "Operating Business",
-    id: "professional-services-business",
-    label: "Professional Services",
-    marshalName: "Portfolio Marshal",
-    marshalType: "Portfolio Theater",
-    starterCommands: ["profile the business", "map operating priorities", "identify constraints", "prepare first 30-day plan", "generate an operating brief"]
+    description: "Best for a done-for-you POD or client merch store with approvals before publishing.",
+    generalType: "POD Store",
+    id: "pod-merch-store",
+    label: "POD / Merch Business",
+    marshalName: "Merch Marshal",
+    marshalType: "Merch Theater",
+    starterCommands: ["define target audience", "generate product ideas", "create design concepts", "review compliance", "build launch package"]
   },
   {
     color: "#00BFFF",
@@ -711,12 +721,9 @@ function readStoredGraphControls(): GraphControlSettings {
   }
 
   try {
-    const currentControls = readLocalStorageValue(graphControlsKey);
-    const parsed = JSON.parse(currentControls ?? readLocalStorageValue(legacyGraphControlsKey) ?? "{}") as Partial<GraphControlSettings>;
+    const parsed = JSON.parse(readLocalStorageValue(graphControlsKey) ?? "{}") as Partial<GraphControlSettings>;
     const storedOrbitPattern = parsed.orbitPattern;
-    const orbitPattern: OrbitPattern = !currentControls && storedOrbitPattern === "flat"
-      ? "tilted"
-      : storedOrbitPattern && orbitPatternOptions.some((option) => option.value === storedOrbitPattern)
+    const orbitPattern: OrbitPattern = storedOrbitPattern && orbitPatternOptions.some((option) => option.value === storedOrbitPattern)
       ? storedOrbitPattern
       : defaultGraphControls.orbitPattern;
     const entityGravity = Object.fromEntries(
@@ -1103,8 +1110,7 @@ function createInitialState(): GraphState3D {
 
 const legacyCommandStateKey = "entral-command-os-state-v1";
 const previousCommandStateKey = "entral-command-os-state-v2";
-const previousUniverseCommandStateKey = "entral-command-os-state-v3";
-const commandStateKey = "entral-command-os-state-v4";
+const commandStateKey = "entral-command-os-state-v3";
 const commandStateUpdatedKey = "entral-command-os-state-updated-at";
 
 function hasStoredCommandState() {
@@ -1114,16 +1120,9 @@ function hasStoredCommandState() {
 
   return Boolean(
     readLocalStorageValue(commandStateKey)
-      ?? readLocalStorageValue(previousUniverseCommandStateKey)
       ?? readLocalStorageValue(previousCommandStateKey)
       ?? readLocalStorageValue(legacyCommandStateKey)
   );
-}
-
-function isEntralOnlyLegacyState(input: Partial<GraphState3D> | null | undefined) {
-  if (!Array.isArray(input?.nodes) || input.nodes.length !== 1 || (input.tasks?.length ?? 0) > 0) return false;
-  const root = input.nodes[0] as Partial<GraphNode3D>;
-  return root.id === "entral" && root.commandType === "emperor" && !root.tools?.includes("portfolio_router");
 }
 
 function normalizeCommandStatus(status: unknown): GraphStatus {
@@ -1157,8 +1156,7 @@ function defaultMemoryForNode(node: Pick<GraphNode3D, "name" | "role">): Command
 
 function normalizeGraphState(input: Partial<GraphState3D> | null | undefined): GraphState3D {
   const fallback = createInitialState();
-  const source = isEntralOnlyLegacyState(input) ? fallback : input;
-  const rawNodes = Array.isArray(source?.nodes) && source.nodes.length > 0 ? source.nodes : fallback.nodes;
+  const rawNodes = Array.isArray(input?.nodes) && input.nodes.length > 0 ? input.nodes : fallback.nodes;
   const nodes = rawNodes.map((rawNode) => {
     const node = rawNode as Partial<GraphNode3D>;
     const id = typeof node.id === "string" ? node.id : createCommandId(node.name ?? "node", "node");
@@ -1228,16 +1226,16 @@ function normalizeGraphState(input: Partial<GraphState3D> | null | undefined): G
 
     return normalized;
   });
-  const groups = Array.isArray(source?.groups) && source.groups.length > 0 ? source.groups : fallback.groups;
-  const edges = Array.isArray(source?.edges) && source.edges.length > 0
-    ? source.edges
+  const groups = Array.isArray(input?.groups) && input.groups.length > 0 ? input.groups : fallback.groups;
+  const edges = Array.isArray(input?.edges) && input.edges.length > 0
+    ? input.edges
     : nodes.filter((node) => node.parentId).map((node) => ({
       id: `e-${node.parentId}-${node.id}`,
       label: `${node.commandType} link`,
       source: node.parentId as string,
       target: node.id
     }));
-  const tasks = Array.isArray(source?.tasks) ? source.tasks.map((task) => ({
+  const tasks = Array.isArray(input?.tasks) ? input.tasks.map((task) => ({
     assignedEntityId: typeof task.assignedEntityId === "string" ? task.assignedEntityId : null,
     assignedEntityType: task.assignedEntityType ?? null,
     commanderId: typeof task.commanderId === "string" ? task.commanderId : null,
@@ -1279,7 +1277,6 @@ function readStoredCommandState(): GraphState3D {
 
   try {
     const storedValue = readLocalStorageValue(commandStateKey)
-      ?? readLocalStorageValue(previousUniverseCommandStateKey)
       ?? readLocalStorageValue(previousCommandStateKey)
       ?? readLocalStorageValue(legacyCommandStateKey);
     const parsed = JSON.parse(storedValue ?? "null") as Partial<GraphState3D> | null;
@@ -1521,9 +1518,9 @@ function orbitMeta(index: number): OrbitMeta {
     phase: index * 1.31,
     radius: 285 + index * 74,
     speed: 0.12 + index * 0.028,
-    tiltX: -0.28 + index * 0.07,
-    tiltY: 0.18 + index * 0.055,
-    tiltZ: -0.08 + index * 0.075
+    tiltX: -0.72 + index * 0.34,
+    tiltY: 0.28 + index * 0.22,
+    tiltZ: index * 0.42
   };
 }
 
@@ -1652,8 +1649,31 @@ function parentNodeFromMoveCommand(text: string, nodes: GraphNode3D[]) {
   return null;
 }
 
+function descendantIdsFromNodes(nodeId: string, nodes: GraphNode3D[]) {
+  const descendants: string[] = [];
+  const stack = nodes.filter((node) => node.parentId === nodeId).map((node) => node.id);
+
+  while (stack.length > 0) {
+    const id = stack.pop() as string;
+    descendants.push(id);
+    stack.push(...nodes.filter((node) => node.parentId === id).map((node) => node.id));
+  }
+
+  return descendants;
+}
+
 function visibleNodeIdsForSelection(selectedId: string | null, nodes: GraphNode3D[]) {
-  return selectCommandUniverseVisibility(nodes, selectedId).ids;
+  const selected = selectedId ? nodes.find((node) => node.id === selectedId) : null;
+
+  if (!selected || selected.commandType === "emperor") {
+    return new Set(nodes.map((node) => node.id));
+  }
+
+  if (selected.commandType === "soldier") {
+    return new Set([selected.id, selected.parentId].filter((id): id is string => Boolean(id)));
+  }
+
+  return new Set([selected.id, ...descendantIdsFromNodes(selected.id, nodes)]);
 }
 
 function nodeVisualSize(node: GraphNode3D) {
@@ -1726,7 +1746,7 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
   return Math.hypot(first.x - second.x, first.y - second.y);
 }
 
-export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void; user?: DashboardUser | null }) {
+export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void; user?: DashboardUser | null }) {
   const { settings, updateSettings } = useTheme();
   const { isSpeaking, settings: voiceSettings, speak, stopSpeaking } = useVoice();
   const [graph, dispatchGraph] = useReducer(commandOSReducer<GraphNode3D>, undefined as unknown as GraphState3D, readStoredCommandState);
@@ -1751,10 +1771,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
   const [commandHistory, setCommandHistory] = useState<CommandConsoleMessage[]>([
     {
       content: formatCommandReport({
-        analysis: "The strategic command universe is online. Marshals own operating theaters, business Generals can be added without a one-business workspace restriction, Commanders own departments, and Soldiers execute bounded work.",
-        nextActions: ["Review the command universe.", "Add a business General.", "Open guided business setup.", "Focus a theater."],
+        analysis: "No command structures are loaded by default. Marshals, business Generals, Commanders, and Soldiers will be created only when directed by the operator.",
+        nextActions: ["Type help.", "Create your first Marshal.", "Open guided business setup.", "Start tutorial."],
         recommendation: "Use ENTRAL as the strategic authority for navigation, delegation, reports, and graph control.",
-        situation: "ENTRAL Command Universe online. Chain of command restored."
+        situation: "ENTRAL Command System online. No command structures detected. Awaiting directives."
       }),
       id: "system-boot",
       role: "system",
@@ -1765,7 +1785,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([
     {
       id: "activity-boot",
-      message: "ENTRAL online. Portfolio-scale chain of command restored.",
+      message: "ENTRAL online. Awaiting first command structure.",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -1773,18 +1793,18 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
   const [isThinking, setIsThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("Voice command channel ready.");
-  const [statusMessage, setStatusMessage] = useState("ENTRAL Command Universe online. Select a theater or add a business.");
+  const [statusMessage, setStatusMessage] = useState("ENTRAL Command System online. Awaiting directives.");
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [activeStatusFilter, setActiveStatusFilter] = useState<GraphStatus[] | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
-  const [isCommandConsoleOpen, setIsCommandConsoleOpen] = useState(false);
+  const [isCommandConsoleOpen, setIsCommandConsoleOpen] = useState(true);
   const [commandConsoleSection, setCommandConsoleSection] = useState<CommandConsoleSection>("command");
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isWebGlReady, setIsWebGlReady] = useState(true);
   const [businessWizard, setBusinessWizard] = useState<BusinessWizardState>(defaultBusinessWizard);
   const [pendingAuthorization, setPendingAuthorization] = useState<PendingAuthorization | null>(null);
-  const [mobileTab, setMobileTab] = useState<MobileCommandTab>("graph");
+  const [mobileTab, setMobileTab] = useState<MobileCommandTab>("command");
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(() => readStoredGraphControls());
   const [merchStores, setMerchStores] = useState<ClientMerchStore[]>([]);
   const [productBatchForm, setProductBatchForm] = useState<ProductBatchFormState>(() => defaultProductBatchForm());
@@ -1994,10 +2014,16 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
       if (detail?.target === "command-console" || detail?.target === "command-task-list" || detail?.target === "voice-controls") {
         setIsCommandConsoleOpen(true);
         setCommandConsoleSection("command");
+        if (isCompactCommandViewport()) {
+          setIsPanelOpen(false);
+        }
       }
 
       if (detail?.target === "command-inspector") {
         setIsPanelOpen(true);
+        if (isCompactCommandViewport()) {
+          setIsCommandConsoleOpen(false);
+        }
       }
 
       if (detail?.target === "business-wizard") {
@@ -2012,6 +2038,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
         setIsCommandConsoleOpen(true);
         setIsControlsOpen(true);
         setCommandConsoleSection("setup");
+        if (isCompactCommandViewport()) {
+          setIsPanelOpen(false);
+        }
       }
     }
 
@@ -2088,6 +2117,19 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
     updatePreference();
     mediaQuery.addEventListener("change", updatePreference);
     return () => mediaQuery.removeEventListener("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1050px)");
+    const reconcileCompactPanels = () => {
+      if (mediaQuery.matches) {
+        setIsPanelOpen(false);
+      }
+    };
+
+    reconcileCompactPanels();
+    mediaQuery.addEventListener("change", reconcileCompactPanels);
+    return () => mediaQuery.removeEventListener("change", reconcileCompactPanels);
   }, []);
 
   useEffect(() => {
@@ -2522,25 +2564,23 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
       const alpha = dimmed ? 0.18 : 0.72;
 
       if (node.commandType === "marshal") {
-        const radius = size * 0.76 * pulse;
-        const halo: Vec3[] = [];
-        const equator: Vec3[] = [];
+        const radius = size * 1.42 * pulse;
+        const square = [
+          billboardPoint(node, axes, -radius, -radius),
+          billboardPoint(node, axes, radius, -radius),
+          billboardPoint(node, axes, radius, radius),
+          billboardPoint(node, axes, -radius, radius),
+          billboardPoint(node, axes, -radius, -radius)
+        ];
 
-        for (let index = 0; index <= 28; index += 1) {
-          const angle = (index / 28) * Math.PI * 2;
-          halo.push(billboardPoint(node, axes, Math.cos(angle) * radius, Math.sin(angle) * radius));
-          equator.push(billboardPoint(node, axes, Math.cos(angle) * radius * 1.28, Math.sin(angle) * radius * 0.3));
-        }
-
-        drawPolyline(halo, accent, alpha);
-        drawPolyline(equator, color, alpha * 0.52);
-        drawLine([billboardPoint(node, axes, -radius * 0.42, 0), billboardPoint(node, axes, radius * 0.42, 0)], color, alpha * 0.46);
-        drawLine([billboardPoint(node, axes, 0, -radius * 0.42), billboardPoint(node, axes, 0, radius * 0.42)], color, alpha * 0.46);
+        drawPolyline(square, accent, alpha);
+        drawLine([billboardPoint(node, axes, -radius * 0.72, 0), billboardPoint(node, axes, radius * 0.72, 0)], color, alpha * 0.58);
+        drawLine([billboardPoint(node, axes, 0, -radius * 0.72), billboardPoint(node, axes, 0, radius * 0.72)], color, alpha * 0.58);
         return;
       }
 
       if (node.commandType === "general") {
-        const radius = size * 0.72 * pulse;
+        const radius = size * 1.34 * pulse;
         const diamond = [
           billboardPoint(node, axes, 0, -radius),
           billboardPoint(node, axes, radius * 0.9, 0),
@@ -2556,7 +2596,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
       }
 
       if (node.commandType === "commander") {
-        const radius = size * 0.68 * pulse;
+        const radius = size * 1.25 * pulse;
         const triangle = [
           billboardPoint(node, axes, 0, -radius),
           billboardPoint(node, axes, radius * 0.96, radius * 0.72),
@@ -2570,7 +2610,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
       }
 
       if (node.commandType === "soldier") {
-        const radius = size * 0.62 * pulse;
+        const radius = size * 0.95 * pulse;
         drawLine([billboardPoint(node, axes, -radius, -radius), billboardPoint(node, axes, radius, radius)], accent, alpha * 0.62);
         drawLine([billboardPoint(node, axes, -radius, radius), billboardPoint(node, axes, radius, -radius)], color, alpha * 0.42);
       }
@@ -2602,23 +2642,14 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
 
       const groups = new Map(graphNow.groups.map((group) => [group.id, group]));
       const nodes = new Map(graphNow.nodes.map((node) => [node.id, node]));
-      const universePlacements = buildCommandUniversePlacements(renderNodes);
       const selectedForRender = selectedRef.current ? nodes.get(selectedRef.current) ?? null : null;
       const visibleNodeIds = visibleNodeIdsForSelection(selectedRef.current, renderNodes);
       const visibleNodes = renderNodes.filter((node) => visibleNodeIds.has(node.id));
       const visibleEdges = graphNow.edges.filter((edge) => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target));
-      const visibleChildrenByParent = new Map<string, GraphNode3D[]>();
-
-      for (const node of visibleNodes) {
-        if (!node.parentId) continue;
-        const children = visibleChildrenByParent.get(node.parentId) ?? [];
-        children.push(node);
-        visibleChildrenByParent.set(node.parentId, children);
-      }
-
       const showHierarchyRings = !selectedForRender || selectedForRender.commandType === "emperor" || selectedForRender.commandType === "marshal" || selectedForRender.commandType === "general";
       const activeGroups = graphNow.groups.filter((group) => group.id !== "core");
       const groupIndexes = new Map(activeGroups.map((group, index) => [group.id, index]));
+      const parentLocalIndexes = new Map<string, number>();
       const orbitTightness = gravityTightness(controlsNow.gravity);
       const orbitPattern = controlsNow.orbitPattern;
 
@@ -2649,14 +2680,19 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
         if (node.commandType !== "marshal") {
           const parentId = node.parentId ?? node.groupId;
           const parent = nodes.get(parentId);
-          const placement = universePlacements.get(node.id);
+          const localIndex = parentLocalIndexes.get(parentId) ?? 0;
+          parentLocalIndexes.set(parentId, localIndex + 1);
 
           const parentCenter = parent && parent.commandType !== "emperor"
             ? { x: parent.x, y: parent.y, z: parent.z }
             : marshalCenter;
-          const localRadius = (placement?.radius ?? (node.commandType === "general" ? 138 : node.commandType === "commander" ? 82 : 38)) * effectiveTightness;
+          const localRadius = node.commandType === "general"
+            ? (132 + localIndex * 18) * effectiveTightness
+            : node.commandType === "commander"
+            ? (86 + localIndex * 13) * effectiveTightness
+            : (36 + localIndex * 7) * effectiveTightness;
           const localMeta: OrbitMeta = {
-            phase: placement?.angle ?? motion.phase,
+            phase: motion.phase + localIndex * 0.64,
             radius: localRadius,
             speed: node.commandType === "general" ? 0.22 + stableNumber(node.id, 19) * 0.08 : node.commandType === "commander" ? 0.28 + stableNumber(node.id, 23) * 0.1 : 0.48 + stableNumber(node.id, 29) * 0.16,
             tiltX: motion.localTiltX,
@@ -2767,42 +2803,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
               haloPoints.push({ x: point.x + groupCenter.x, y: point.y * 0.18 + groupCenter.y, z: point.z + groupCenter.z });
             }
             drawPolyline(haloPoints, group.color, active ? 0.18 : 0.08);
-          }
-        }
-      }
-
-      if (controlsNow.showRings) {
-        for (const parent of visibleNodes) {
-          if (parent.commandType === "soldier") continue;
-          const children = visibleChildrenByParent.get(parent.id) ?? [];
-          if (children.length === 0) continue;
-
-          const shellRadii = new Map<number, number>();
-          for (const child of children) {
-            const placement = universePlacements.get(child.id);
-            if (placement) shellRadii.set(placement.shell, placement.radius * gravityTightness(nodeGravity(child, controlsNow)));
-          }
-
-          const parentActive = emphasized.size === 0 || emphasized.has(parent.id) || children.some((child) => emphasized.has(child.id));
-          const parentColor = groups.get(parent.groupId)?.color ?? settings.accentColor;
-
-          for (const [shell, radius] of shellRadii) {
-            const ringMeta: OrbitMeta = {
-              phase: stableNumber(`${parent.id}-${shell}`, 37) * Math.PI * 2,
-              radius,
-              speed: 0,
-              tiltX: -0.12 + stableNumber(parent.id, shell + 41) * 0.24,
-              tiltY: stableNumber(parent.id, shell + 47) * 0.18,
-              tiltZ: -0.08 + stableNumber(parent.id, shell + 53) * 0.16
-            };
-            const points: Vec3[] = [];
-
-            for (let segment = 0; segment <= 72; segment += 1) {
-              const point = orbitPoint(ringMeta, (segment / 72) * Math.PI * 2, orbitPattern);
-              points.push({ x: point.x + parent.x, y: point.y + parent.y, z: point.z + parent.z });
-            }
-
-            drawPolyline(points, parentColor, parentActive ? 0.2 : 0.07);
           }
         }
       }
@@ -3793,6 +3793,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
   function showCommandConsole(section: CommandConsoleSection = "command") {
     setIsCommandConsoleOpen(true);
     setCommandConsoleSection(section);
+
+    if (isCompactCommandViewport()) {
+      setIsPanelOpen(false);
+    }
 
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
       setMobileTab("command");
@@ -4804,6 +4808,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
     return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
   }
 
+  function isCompactCommandViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 1050px)").matches;
+  }
+
   function focusMobileCommandInput() {
     if (!isMobileCommandViewport()) {
       return;
@@ -4850,7 +4858,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
   }
 
   function toggleInfoPanel() {
-    setIsPanelOpen((open) => !open);
+    const nextOpen = !isPanelOpen;
+    setIsPanelOpen(nextOpen);
+
+    if (nextOpen && isCompactCommandViewport()) {
+      setIsCommandConsoleOpen(false);
+    }
   }
 
   function routeWorkspaceAction(label: string, href?: string, eventName?: string) {
@@ -6219,7 +6232,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
   const generalNodes = graph.nodes.filter((node) => node.commandType === "general");
   const commanderNodes = graph.nodes.filter((node) => node.commandType === "commander");
   const soldierNodes = graph.nodes.filter((node) => node.commandType === "soldier");
-  const universeVisibility = selectCommandUniverseVisibility(graph.nodes, selectedNodeId);
   const selectedChildren = selectedNode ? graph.nodes.filter((node) => node.parentId === selectedNode.id) : [];
   const selectedParent = selectedNode?.parentId ? nodeMap.get(selectedNode.parentId) : null;
   const selectedLineage = selectedNode ? lineageForNode(selectedNode.id, graph.nodes) : [];
@@ -6310,10 +6322,9 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
     marshals: selectedScopeNodes.filter((node) => node.commandType === "marshal").length,
     soldiers: selectedScopeNodes.filter((node) => node.commandType === "soldier").length
   } : null;
-  const selectedSuggestedActions = getInspectorSuggestedActions(selectedNode)
-    .filter((action) => !(selectedChildren.length === 0 && selectedNode?.commandType === "emperor" && action.label === "Create Marshal"));
+  const selectedSuggestedActions = getInspectorSuggestedActions(selectedNode);
   const visibleTasks = graph.tasks.slice(0, 8);
-  const userBusinessGenerals = generalNodes.filter((node) => node.id !== "sovereign-protocol-general" && node.id !== "entral-general");
+  const userBusinessGenerals = generalNodes.filter((node) => node.id !== "entral-general");
   const selectedTemplate = businessTemplates.find((template) => template.id === businessWizard.templateId) ?? businessTemplates[0];
   const recoverySummary = getCommandRecoverySummary(graph);
   const recoveryMarshalNode = recoverySummary.marshalId ? nodeMap.get(recoverySummary.marshalId) ?? null : null;
@@ -6324,7 +6335,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
     selectedNode
   });
   const pendingRemovalNode = pendingRemovalId ? nodeMap.get(pendingRemovalId) ?? null : null;
-  const removalDialogRef = useDialogFocus<HTMLElement>(Boolean(pendingRemovalNode), () => setPendingRemovalId(null));
   const pendingRemovalChildren = pendingRemovalNode ? descendantIdsFor(pendingRemovalNode.id, graph.nodes) : [];
   const pendingRemovalParent = pendingRemovalNode?.parentId ? nodeMap.get(pendingRemovalNode.parentId) : null;
   const pendingRemovalScopeIds = new Set(pendingRemovalNode ? [pendingRemovalNode.id, ...pendingRemovalChildren] : []);
@@ -6498,33 +6508,11 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
       <header className="command-center-brand" data-academy="command-brand" aria-label="Command center status">
         <Logo />
         <div>
-          <p className="eyebrow">Command universe</p>
+          <p className="eyebrow">Command center</p>
           <h1>ENTRAL</h1>
-          <span>{user?.name ? `${user.name}'s multi-business command layer` : "Portfolio-scale operating system"}</span>
+          <span>{user?.name ? `${user.name}'s central command layer` : "Supervised operations graph"}</span>
         </div>
       </header>
-      <section className="command-universe-hud" aria-label="Command universe summary">
-        <header>
-          <div>
-            <p className="eyebrow">Live hierarchy</p>
-            <h2>ENTRAL → Marshals → Generals → Commanders → Soldiers</h2>
-          </div>
-          <span className="command-universe-live"><i aria-hidden="true" /> Governed</span>
-        </header>
-        <dl>
-          <div><dt>Marshals</dt><dd>{marshalNodes.length}</dd></div>
-          <div><dt>Businesses</dt><dd>{generalNodes.length}</dd></div>
-          <div><dt>Departments</dt><dd>{commanderNodes.length}</dd></div>
-          <div><dt>Execution units</dt><dd>{soldierNodes.length}</dd></div>
-        </dl>
-        <footer>
-          <p>{universeVisibility.hiddenCount > 0 ? `Showing ${universeVisibility.renderedCount.toLocaleString()} of ${universeVisibility.totalCount.toLocaleString()} nodes. Focus a business for complete branch detail.` : `${universeVisibility.totalCount.toLocaleString()} nodes mapped across the active portfolio.`}</p>
-          <div>
-            <button type="button" onClick={() => openBusinessWizard()}><Plus aria-hidden="true" size={15} /> Add business</button>
-            <button type="button" onClick={() => executeCommand("Show hierarchy")}><Crosshair aria-hidden="true" size={15} /> Fit universe</button>
-          </div>
-        </footer>
-      </section>
       <div className="command-center-mode-strip" data-academy="mode-status">
         <ModeStatusStrip ariaLabel="Command center mode status" compact items={commandCenterModeItems} />
       </div>
@@ -6545,51 +6533,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
         <button className="command-icon-button" data-academy="settings" type="button" onClick={() => openSettings()} aria-label="Open command center settings">
           <Settings aria-hidden="true" size={18} />
         </button>
-        {user && onLogout ? (
-          <button className="command-icon-button" type="button" onClick={onLogout} aria-label="Sign out">
-            <LogOut aria-hidden="true" size={18} />
-          </button>
-        ) : null}
+        <button className="command-icon-button" type="button" onClick={onLogout} aria-label="Sign out">
+          <LogOut aria-hidden="true" size={18} />
+        </button>
       </div>
-
-      <details className="command-mobile-nav" data-academy="command-nav">
-        <summary>
-          <Menu aria-hidden="true" size={16} />
-          Navigate
-        </summary>
-        <nav aria-label="Mobile Command OS navigation">
-          <button className={selectedNodeId === "entral" ? "active" : ""} type="button" onClick={() => {
-            const entral = graphRef.current.nodes.find((node) => node.id === "entral");
-            if (entral) focusCommandNode(entral);
-          }}>
-            ENTRAL overview
-          </button>
-          <button type="button" onClick={() => setStatusHighlight(["working", "thinking"], "Highlighted active working and thinking hierarchy nodes.")}>
-            Active nodes
-          </button>
-          <button type="button" onClick={() => setStatusHighlight(["error", "waiting", "offline"], "Highlighted error, waiting, and offline nodes.")}>
-            Alerts
-          </button>
-          {marshalNodes.map((node) => (
-            <button className={selectedNodeId === node.id ? "active" : ""} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
-              <span style={{ "--group-color": groupMap.get(node.groupId)?.color ?? settings.accentColor } as React.CSSProperties} />
-              {node.name}
-            </button>
-          ))}
-          {generalNodes.slice(0, 6).map((node) => (
-            <button className={selectedNodeId === node.id ? "active child" : "child"} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
-              {node.name} / General
-            </button>
-          ))}
-          <div className="command-mobile-nav-actions">
-            <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
-            <button type="button" onClick={openGraphControls}>Controls</button>
-            <button type="button" onClick={() => openSettings()}>Settings</button>
-            <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
-            <button type="button" onClick={() => requestNodeAuthorization("general")}>Add General</button>
-          </div>
-        </nav>
-      </details>
 
       <section className={`command-mobile-panel tab-${mobileTab}`} aria-label="Mobile command access">
         {mobileTab === "hierarchy" ? (
@@ -6722,10 +6669,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
         </div>
         <div className="command-level-key" aria-label="Hierarchy visual key">
           <span className="level-core">ENTRAL nucleus</span>
-          <span className="level-marshal">Marshal planet</span>
-          <span className="level-general">Business General system</span>
-          <span className="level-commander">Commander moon</span>
-          <span className="level-soldier">Soldier satellite</span>
+          <span className="level-marshal">Marshal square</span>
+          <span className="level-general">Business General diamond</span>
+          <span className="level-commander">Commander triangle</span>
+          <span className="level-soldier">Soldier point</span>
         </div>
         <details open>
           <summary>Hierarchy</summary>
@@ -6749,14 +6696,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
             </React.Fragment>
           ))}
         </details>
-        <details>
-          <summary>Command</summary>
+        <details open>
+          <summary>Status</summary>
           <button type="button" onClick={() => setStatusHighlight(["working", "thinking"], "Highlighted active working and thinking hierarchy nodes.")}>Active Nodes</button>
           <button type="button" onClick={() => setStatusHighlight(["error", "waiting", "offline"], "Highlighted error, waiting, and offline nodes.")}>Alerts</button>
-          <button type="button" onClick={() => openBusinessWizard()}>Add business General</button>
-          <button type="button" onClick={() => executeCommand("ENTRAL report")}>Portfolio report</button>
         </details>
-        <details>
+        <details open>
           <summary>Tasks</summary>
           {visibleTasks.length > 0 ? visibleTasks.map((task) => (
             <button key={task.id} type="button" onClick={() => {
@@ -6769,36 +6714,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
           )) : (
             <button type="button" onClick={() => executeCommand("Create task Review the command hierarchy")}>Create first task</button>
           )}
-        </details>
-        <details>
-          <summary>Marshals</summary>
-          {marshalNodes.map((node) => (
-            <button className={selectedNodeId === node.id ? "active" : ""} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
-              <span style={{ "--group-color": groupMap.get(node.groupId)?.color ?? settings.accentColor } as React.CSSProperties} />
-              {node.name}
-            </button>
-          ))}
-        </details>
-        <details>
-          <summary>Business Generals</summary>
-          {generalNodes.map((node) => (
-            <button className={selectedNodeId === node.id ? "active" : ""} key={node.id} type="button" onClick={() => focusCommandNode(node)}>
-              <span style={{ "--group-color": groupMap.get(node.groupId)?.color ?? settings.accentColor } as React.CSSProperties} />
-              {node.name}
-            </button>
-          ))}
-        </details>
-        <details>
-          <summary>Structure</summary>
-          <button type="button" onClick={() => setSearch("marshal")}>Marshals</button>
-          <button type="button" onClick={() => setSearch("general")}>Business Generals</button>
-          <button type="button" onClick={() => setSearch("commander")}>Commanders</button>
-          <button type="button" onClick={() => setSearch("soldier")}>Soldiers</button>
-          <button type="button" onClick={() => openBusinessWizard()}>Guided business setup</button>
-          <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
-          <button type="button" onClick={() => requestNodeAuthorization("general")}>Add General</button>
-          <button type="button" onClick={() => requestNodeAuthorization("commander")}>Add Commander</button>
-          <button type="button" onClick={() => requestNodeAuthorization("soldier")}>Add Soldier</button>
         </details>
       </nav>
 
@@ -6883,6 +6798,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
             <h3>{commandConsoleSectionCopy[commandConsoleSection].title}</h3>
             <p>{commandConsoleSectionCopy[commandConsoleSection].body}</p>
           </section>
+
           {latestAiPlan ? (
             <section className="ai-brain-summary" aria-label="AI Brain interpretation">
               <div>
@@ -6919,7 +6835,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
           <div className={["voice-command-status", isListening ? "listening" : "", isSpeaking ? "speaking" : ""].filter(Boolean).join(" ")} data-academy="voice-controls" role="status" aria-live="polite">
             {isListening ? <Mic aria-hidden="true" size={15} /> : isSpeaking ? <Volume2 aria-hidden="true" size={15} /> : <MicOff aria-hidden="true" size={15} />}
             <span>{isListening ? "Microphone active. Speak directive." : isSpeaking ? "ENTRAL speaking." : voiceStatus}</span>
-            {isSpeaking ? <button type="button" onClick={stopSpeaking}>Stop speech</button> : null}
+            <button type="button" onClick={stopSpeaking} disabled={!isSpeaking}>Stop speech</button>
           </div>
 
           {recoverySummary.hasRecoveryMarshal ? (
@@ -6976,7 +6892,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
             <header>
               <div>
                 <p className="eyebrow">Guided setup</p>
-                <h3>Add a portfolio business</h3>
+                <h3>Build first business</h3>
                 <span>{selectedTemplate.description}</span>
               </div>
               <button type="button" onClick={() => updateBusinessWizard({ isOpen: false })} aria-label="Close business setup">
@@ -6984,13 +6900,14 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
               </button>
             </header>
 
-            <div className="business-template-grid" aria-label="Business templates">
+            <div className="business-template-grid" role="list" aria-label="Business templates">
               {businessTemplates.map((template) => (
                 <button
                   className={template.id === businessWizard.templateId ? "active" : ""}
                   key={template.id}
                   type="button"
                   onClick={() => updateBusinessWizard({ templateId: template.id })}
+                  role="listitem"
                 >
                   <span style={{ "--template-color": template.color } as React.CSSProperties} />
                   <strong>{template.label}</strong>
@@ -7730,18 +7647,6 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
             onPointerUp={voiceSettings.pushToTalk ? stopVoiceRecognition : undefined}
             onPointerCancel={voiceSettings.pushToTalk ? stopVoiceRecognition : undefined}
             onPointerLeave={voiceSettings.pushToTalk && isListening ? stopVoiceRecognition : undefined}
-            onKeyDown={voiceSettings.pushToTalk ? (event) => {
-              if ((event.key === " " || event.key === "Enter") && !event.repeat) {
-                event.preventDefault();
-                startVoiceRecognition();
-              }
-            } : undefined}
-            onKeyUp={voiceSettings.pushToTalk ? (event) => {
-              if (event.key === " " || event.key === "Enter") {
-                event.preventDefault();
-                stopVoiceRecognition();
-              }
-            } : undefined}
           >
             {isListening ? <Mic aria-hidden="true" size={18} /> : <MicOff aria-hidden="true" size={18} />}
           </button>
@@ -7768,7 +7673,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
 
       {pendingRemovalNode ? (
         <div className="command-confirm-backdrop" role="presentation">
-          <section className="command-confirm-dialog" ref={removalDialogRef} role="dialog" aria-modal="true" aria-labelledby="command-remove-title" tabIndex={-1}>
+          <section className="command-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="command-remove-title">
             <div className="command-confirm-icon">
               <AlertTriangle aria-hidden="true" size={22} />
             </div>
@@ -7796,7 +7701,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
               <Button type="button" variant="secondary" onClick={() => setPendingRemovalId(null)}>
                 Cancel
               </Button>
-              <Button type="button" variant="danger" onClick={confirmRemoveNode}>
+              <Button type="button" onClick={confirmRemoveNode}>
                 <Trash2 aria-hidden="true" size={17} />
                 Confirm Remove
               </Button>
@@ -7805,7 +7710,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
         </div>
       ) : null}
 
-      <aside className={isPanelOpen ? "command-side-panel open" : "command-side-panel"} data-academy="command-inspector" aria-label="Neuron side information panel" aria-hidden={!isPanelOpen} inert={isPanelOpen ? undefined : true}>
+      <aside className={isPanelOpen ? "command-side-panel open" : "command-side-panel"} data-academy="command-inspector" aria-label="Neuron side information panel" aria-hidden={!isPanelOpen}>
         {selectedNode ? (
           <>
             <header>
@@ -7878,69 +7783,12 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
                 <span><strong>{selectedGravityBand.label}</strong> depth</span>
               </div>
               <p>{selectedNode.type === "core" ? "ENTRAL remains fixed at the center. Global gravity controls the rest of the command field." : "Gravity controls how tightly this entity is pulled toward its command orbit and how quickly it settles into formation."} {selectedGravityBand.description}</p>
-              {selectedNode.type !== "core" ? (
-                <>
-                  <label className="inspector-gravity-range">
-                    <span>Selected entity pull</span>
-                    <input
-                      aria-label={`${selectedNode.name} gravity`}
-                      type="range"
-                      min={gravityMin}
-                      max={gravityMax}
-                      step="0.01"
-                      value={selectedGravityValue}
-                      onChange={(event) => setEntityGravity(selectedNode.id, Number(event.target.value), `${selectedNode.name} gravity override set to ${formatGravity(Number(event.target.value))}.`)}
-                    />
-                    <strong>{formatGravity(selectedGravityValue)}</strong>
-                  </label>
-                  <label className="inspector-gravity-exact">
-                    <span>Exact pull</span>
-                    <input
-                      aria-label={`${selectedNode.name} exact gravity percent`}
-                      type="number"
-                      min={gravityPercentMin}
-                      max={gravityPercentMax}
-                      step="1"
-                      value={gravityToPercent(selectedGravityValue)}
-                      onChange={(event) => {
-                        const gravity = gravityFromPercentInput(event.currentTarget.value, selectedGravityValue);
-                        setEntityGravity(selectedNode.id, gravity, `${selectedNode.name} gravity override set to ${formatGravity(gravity)}.`);
-                      }}
-                    />
-                    <strong>%</strong>
-                  </label>
-                  {renderGravityNudges(selectedNode.name, selectedGravityValue, (gravity) => setEntityGravity(selectedNode.id, gravity, `${selectedNode.name} gravity override nudged to ${formatGravity(gravity)}.`))}
-                  <div
-                    aria-label={`${selectedNode.name} gravity depth: ${selectedGravityBand.label}`}
-                    className="gravity-depth-meter compact"
-                    style={{ "--gravity-depth": gravityDepthPercent(selectedGravityValue) } as React.CSSProperties}
-                  >
-                    <span aria-hidden="true"><i /></span>
-                    <small>{selectedGravityBand.label}: {selectedGravityBand.description}</small>
-                  </div>
-                  <div className="inspector-gravity-presets" aria-label={`${selectedNode.name} gravity presets`}>
-                    {gravityPresetOptions.map((preset) => (
-                      <button
-                        className={Math.abs(selectedGravityValue - preset.value) < 0.01 ? "active" : ""}
-                        key={preset.label}
-                        type="button"
-                        onClick={() => setEntityGravity(selectedNode.id, preset.value, `${selectedNode.name} gravity override set to ${preset.label} (${formatGravity(preset.value)}).`)}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="command-dynamics-actions">
-                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 0.4, `${selectedNode.name} gravity loosened to ${formatGravity(0.4)}.`)}>Loosen</button>
-                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 3, `${selectedNode.name} orbit locked at ${formatGravity(3)}.`)}>Lock orbit</button>
-                    <button type="button" onClick={() => setEntityGravity(selectedNode.id, 6, `${selectedNode.name} gravity anchored at ${formatGravity(6)}.`)}>Anchor</button>
-                    <button type="button" disabled={selectedGravityOverride === undefined} onClick={() => clearEntityGravity(selectedNode.id, selectedNode.name)}>Inherit global</button>
-                  </div>
-                </>
-              ) : null}
+              <Button type="button" variant="secondary" onClick={openGraphControls}>
+                Edit in Graph controls
+              </Button>
             </section>
 
-            {selectedSuggestedActions.length > 0 ? (
+            {selectedSuggestedActions.length > 0 && selectedChildren.length > 0 ? (
               <section className="command-suggested-actions" aria-label="Suggested actions">
                 <h3>Suggested actions</h3>
                 <div>
@@ -8099,10 +7947,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout?: () => void
                 {selectedNode.status === "offline" ? <Play aria-hidden="true" size={17} /> : <Pause aria-hidden="true" size={17} />}
                 {selectedNode.status === "offline" ? "Resume" : "Offline"}
               </Button>
-              {selectedNode.type !== "core" ? <Button type="button" variant="danger" onClick={deleteSelectedNode}>
+              <Button type="button" variant="secondary" disabled={selectedNode.type === "core"} onClick={deleteSelectedNode}>
                 <Trash2 aria-hidden="true" size={17} />
                 Delete
-              </Button> : null}
+              </Button>
             </div>
           </>
         ) : null}
