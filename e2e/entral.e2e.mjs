@@ -296,21 +296,21 @@ const tests = [
         }
 
         await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Initial mobile command console");
-        const initialCommandPressed = await page.getByRole("button", { name: "Open Command tab" }).getAttribute("aria-pressed");
-        if (initialCommandPressed !== "true") {
+        const initialCommandSelected = await page.getByRole("tab", { name: "Open Command tab" }).getAttribute("aria-selected");
+        if (initialCommandSelected !== "true") {
           throw new Error("The mobile command center did not open on the command tab.");
         }
-        await page.getByRole("button", { name: "View command graph" }).click();
+        await page.getByRole("tab", { name: "View command graph" }).click();
         await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command open button");
-        await page.getByRole("button", { name: "Open Command tab" }).click();
+        await page.getByRole("tab", { name: "Open Command tab" }).click();
         await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Mobile command console");
         await page.getByRole("button", { name: "Close command console and view graph" }).click();
         await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command reopen button");
-        const graphPressed = await page.getByRole("button", { name: "View command graph" }).getAttribute("aria-pressed");
-        if (graphPressed !== "true") {
+        const graphSelected = await page.getByRole("tab", { name: "View command graph" }).getAttribute("aria-selected");
+        if (graphSelected !== "true") {
           throw new Error("Closing the mobile command console did not activate the graph tab.");
         }
-        await page.getByRole("button", { name: "Open Command tab" }).click();
+        await page.getByRole("tab", { name: "Open Command tab" }).click();
         await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Reopened mobile command console");
         const commandInput = page.getByLabel("ENTRAL command directive");
         await expectVisible(commandInput, "Mobile command directive input");
@@ -322,7 +322,7 @@ const tests = [
         await commandInput.fill(mobileDirective);
         await page.getByRole("button", { name: "Send command" }).click();
         await expectVisible(page.locator(".command-console-message.operator").filter({ hasText: mobileDirective }), "Mobile command history entry");
-        const hierarchyTab = page.getByRole("button", { name: /open hierarchy tab/i });
+        const hierarchyTab = page.getByRole("tab", { name: /open hierarchy tab/i });
         await expectVisible(hierarchyTab, "Hierarchy mobile tab");
         await hierarchyTab.click();
         await expectVisible(page.getByLabel("Mobile command access"), "Mobile hierarchy panel");

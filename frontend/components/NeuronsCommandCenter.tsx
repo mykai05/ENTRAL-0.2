@@ -70,8 +70,17 @@ import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../l
 import { creationBlockedTransmission, hierarchyNameFromCommandText, nextCommandPlaceholderName } from "../lib/command-creation";
 import { createAiActionPlan, createAiAuditEntry, formatActionPlanSummary, type AiActionPlan, type AiAuditEntry } from "../lib/ai-brain";
 import { buildMockToolExecution, defaultToolRegistry, toolById, type MockToolExecutionResult, type ToolRegistryEntry } from "../lib/tool-registry";
+import { useDialogFocus } from "../lib/dialog-focus";
 
 type GraphStatus = CommandStatus;
+
+type CommandCenterSurface = "internal" | "member";
+
+type NeuronsCommandCenterProps = {
+  onLogout: () => void;
+  surface?: CommandCenterSurface;
+  user?: DashboardUser | null;
+};
 
 type Vec3 = {
   x: number;
@@ -1746,7 +1755,8 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
   return Math.hypot(first.x - second.x, first.y - second.y);
 }
 
-export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void; user?: DashboardUser | null }) {
+export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: NeuronsCommandCenterProps) {
+  const isMemberSurface = surface === "member";
   const { settings, updateSettings } = useTheme();
   const { isSpeaking, settings: voiceSettings, speak, stopSpeaking } = useVoice();
   const [graph, dispatchGraph] = useReducer(commandOSReducer<GraphNode3D>, undefined as unknown as GraphState3D, readStoredCommandState);
@@ -1796,15 +1806,16 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [statusMessage, setStatusMessage] = useState("ENTRAL Command System online. Awaiting directives.");
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [activeStatusFilter, setActiveStatusFilter] = useState<GraphStatus[] | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState(!isMemberSurface);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
-  const [isCommandConsoleOpen, setIsCommandConsoleOpen] = useState(true);
+  const [isCommandConsoleOpen, setIsCommandConsoleOpen] = useState(!isMemberSurface);
+  const [isNavigationOpen, setIsNavigationOpen] = useState(!isMemberSurface);
   const [commandConsoleSection, setCommandConsoleSection] = useState<CommandConsoleSection>("command");
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isWebGlReady, setIsWebGlReady] = useState(true);
   const [businessWizard, setBusinessWizard] = useState<BusinessWizardState>(defaultBusinessWizard);
   const [pendingAuthorization, setPendingAuthorization] = useState<PendingAuthorization | null>(null);
-  const [mobileTab, setMobileTab] = useState<MobileCommandTab>("command");
+  const [mobileTab, setMobileTab] = useState<MobileCommandTab>(isMemberSurface ? "graph" : "command");
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(() => readStoredGraphControls());
   const [merchStores, setMerchStores] = useState<ClientMerchStore[]>([]);
   const [productBatchForm, setProductBatchForm] = useState<ProductBatchFormState>(() => defaultProductBatchForm());
@@ -1820,6 +1831,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   const [aiAuditEntries, setAiAuditEntries] = useState<AiAuditEntry[]>([]);
   const [lockedNodeId, setLockedNodeId] = useState<string | null>(null);
   const [pendingRemovalId, setPendingRemovalId] = useState<string | null>(null);
+  const removalDialogRef = useDialogFocus<HTMLElement>(Boolean(pendingRemovalId), () => setPendingRemovalId(null));
   const [isCommandPersistenceReady, setIsCommandPersistenceReady] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const commandInputRef = useRef<HTMLInputElement | null>(null);
@@ -3798,7 +3810,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       setIsPanelOpen(false);
     }
 
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches) {
       setMobileTab("command");
       setIsPanelOpen(false);
       if (section === "command") {
@@ -4805,7 +4817,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }
 
   function isMobileCommandViewport() {
-    return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
   }
 
   function isCompactCommandViewport() {
@@ -4847,6 +4859,15 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     if (tab === "command") {
       focusMobileCommandInput();
     }
+  }
+
+  function toggleNavigation() {
+    if (isMobileCommandViewport()) {
+      openMobileTab("hierarchy");
+      return;
+    }
+
+    setIsNavigationOpen((current) => !current);
   }
 
   function openCommandAccessTab(tab: MobileCommandTab) {
@@ -5963,11 +5984,19 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         });
       }
     } else if ((normalized.includes("offline") || normalized.includes("pause")) && selected) {
-      mutateNode(selected.id, { logs: ["Marked offline from command directive.", ...selected.logs], status: "offline" });
-      respond(`${selected.name} marked offline. Execution halted in local mode.`, `${selected.name} paused.`, commandSpeakerFromNodeType(selected.commandType));
+      if (selected.type === "core") {
+        respond("ENTRAL is the fixed command authority and cannot be taken offline from the member interface.");
+      } else {
+        mutateNode(selected.id, { logs: ["Marked offline from command directive.", ...selected.logs], status: "offline" });
+        respond(`${selected.name} marked offline. Execution halted in local mode.`, `${selected.name} paused.`, commandSpeakerFromNodeType(selected.commandType));
+      }
     } else if ((normalized.includes("resume") || normalized.includes("run")) && selected) {
-      mutateNode(selected.id, { logs: ["Resumed from command directive.", ...selected.logs], status: "working" });
-      respond(`${selected.name} resumed. Execution status set to working in local mode.`, `${selected.name} resumed.`, commandSpeakerFromNodeType(selected.commandType));
+      if (selected.type === "core") {
+        respond("ENTRAL is already online as the fixed command authority.");
+      } else {
+        mutateNode(selected.id, { logs: ["Resumed from command directive.", ...selected.logs], status: "working" });
+        respond(`${selected.name} resumed. Execution status set to working in local mode.`, `${selected.name} resumed.`, commandSpeakerFromNodeType(selected.commandType));
+      }
     } else if (normalized.includes("show") || normalized.includes("pull up") || normalized.includes("highlight") || normalized.includes("zoom") || normalized.includes("focus") || normalized.includes("select") || normalized.includes("open") || normalized.includes("take me to")) {
       if (commandNode) {
         focusCommandNode(commandNode);
@@ -5980,6 +6009,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
       } else {
         fitGraph();
       }
+    } else if (isMemberSurface) {
+      respond({
+        analysis: "This member command surface currently supports graph navigation, hierarchy setup, local task commands, status changes, and reports.",
+        nextActions: ["Use Help to see supported commands.", "Name a hierarchy entity to focus it.", "Open Build for guided business setup."],
+        recommendation: "Use one of the supported local commands. Internal AI, connector, and administrative actions remain private.",
+        situation: "That directive is outside the member-safe command set. No network request was made."
+      });
     } else {
       void askDashboardAi(text);
     }
@@ -6334,6 +6370,31 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
     pendingAuthorization: Boolean(pendingAuthorization),
     selectedNode
   });
+  const visibleContextCommandSuggestions = isMemberSurface
+    ? contextCommandSuggestions.filter((suggestion) => {
+      const normalized = suggestion.toLowerCase();
+      return !normalized.includes("gravity")
+        && !normalized.includes("approval queue")
+        && !normalized.includes("product ideas")
+        && !normalized.includes("store launch workflow");
+    }).slice(0, 6)
+    : contextCommandSuggestions;
+  const visibleConsoleSections = (Object.keys(commandConsoleSectionLabels) as CommandConsoleSection[])
+    .filter((section) => !isMemberSurface || section !== "tools");
+  const mobileTabOptions = (isMemberSurface ? [
+    ["graph", "Graph", Crosshair],
+    ["command", "Command", Bot],
+    ["hierarchy", "Hierarchy", Network],
+    ["tasks", "Tasks", Activity],
+    ["more", "More", Menu]
+  ] : [
+    ["graph", "Graph", Crosshair],
+    ["command", "Command", Bot],
+    ["hierarchy", "Hierarchy", Network],
+    ["tasks", "Tasks", Activity],
+    ["reports", "Reports", ShieldCheck],
+    ["more", "More", Menu]
+  ]) as readonly (readonly [MobileCommandTab, string, typeof Crosshair])[];
   const pendingRemovalNode = pendingRemovalId ? nodeMap.get(pendingRemovalId) ?? null : null;
   const pendingRemovalChildren = pendingRemovalNode ? descendantIdsFor(pendingRemovalNode.id, graph.nodes) : [];
   const pendingRemovalParent = pendingRemovalNode?.parentId ? nodeMap.get(pendingRemovalNode.parentId) : null;
@@ -6465,7 +6526,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
   }
 
   return (
-    <main className={["command-center-page", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} data-mobile-tab={mobileTab} aria-label="ENTRAL Command Center">
+    <main className={["command-center-page", isMemberSurface ? "member-surface" : "", isNavigationOpen ? "" : "nav-closed", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} data-mobile-tab={mobileTab} aria-label="ENTRAL Command Center">
       <canvas
         aria-describedby="command-center-camera-help"
         aria-label="3D interactive ENTRAL neuron graph"
@@ -6510,27 +6571,34 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         <div>
           <p className="eyebrow">Command center</p>
           <h1>ENTRAL</h1>
-          <span>{user?.name ? `${user.name}'s central command layer` : "Supervised operations graph"}</span>
+          <span>{isMemberSurface ? "Member command workspace" : user?.name ? `${user.name}'s central command layer` : "Supervised operations graph"}</span>
         </div>
       </header>
-      <div className="command-center-mode-strip" data-academy="mode-status">
+      {!isMemberSurface ? <div className="command-center-mode-strip" data-academy="mode-status">
         <ModeStatusStrip ariaLabel="Command center mode status" compact items={commandCenterModeItems} />
-      </div>
+      </div> : null}
 
       <div className="command-center-top-actions">
-          <button className="command-icon-button" data-academy="command-palette" type="button" onClick={() => window.dispatchEvent(new Event("entral:open-command-palette"))} aria-label="Open command menu">
-            <Menu aria-hidden="true" size={18} />
-          </button>
+        <button
+          aria-expanded={isMemberSurface ? isNavigationOpen : undefined}
+          className="command-icon-button member-navigation-action"
+          data-academy={isMemberSurface ? "command-navigation" : "command-palette"}
+          type="button"
+          onClick={isMemberSurface ? toggleNavigation : () => window.dispatchEvent(new Event("entral:open-command-palette"))}
+          aria-label={isMemberSurface ? (isNavigationOpen ? "Hide hierarchy navigation" : "Show hierarchy navigation") : "Open command menu"}
+        >
+          <Menu aria-hidden="true" size={18} />
+        </button>
         <button className="command-icon-button" type="button" onClick={() => {
           setIsFocusMode(true);
           setStatusMessage("Focus Mode engaged. Press Escape or double-click the graph to restore controls.");
         }} aria-label="Enter Focus Mode">
           <Maximize2 aria-hidden="true" size={18} />
         </button>
-        <button className="command-icon-button" type="button" onClick={toggleInfoPanel} aria-label={isPanelOpen ? "Hide side information panel" : "Show side information panel"}>
+        <button className="command-icon-button member-inspector-action" type="button" onClick={toggleInfoPanel} aria-label={isPanelOpen ? "Hide side information panel" : "Show side information panel"}>
           {isPanelOpen ? <PanelRightClose aria-hidden="true" size={18} /> : <PanelRightOpen aria-hidden="true" size={18} />}
         </button>
-        <button className="command-icon-button" data-academy="settings" type="button" onClick={() => openSettings()} aria-label="Open command center settings">
+        <button className="command-icon-button member-settings-action" data-academy="settings" type="button" onClick={() => openSettings()} aria-label="Open command center settings">
           <Settings aria-hidden="true" size={18} />
         </button>
         <button className="command-icon-button" type="button" onClick={onLogout} aria-label="Sign out">
@@ -6546,7 +6614,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <p className="eyebrow">Hierarchy</p>
                 <h2>Command structure</h2>
               </div>
-              <button type="button" onClick={() => openMobileTab("command")}>Command</button>
+              {!isMemberSurface ? <button type="button" onClick={() => openMobileTab("command")}>Command</button> : null}
             </header>
             <div className="command-mobile-tree">
               {graph.nodes.find((node) => node.id === "entral") ? renderMobileHierarchyNode(graph.nodes.find((node) => node.id === "entral") as GraphNode3D) : null}
@@ -6561,7 +6629,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <p className="eyebrow">Tasks</p>
                 <h2>Active work</h2>
               </div>
-              <button type="button" onClick={() => executeCommand("Create task Review the command hierarchy")}>New task</button>
+              {visibleTasks.length > 0 ? <button type="button" onClick={() => executeCommand("Create task Review the command hierarchy")}>New task</button> : null}
             </header>
             {visibleTasks.length > 0 ? (
               <div className="command-mobile-card-list">
@@ -6579,7 +6647,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             ) : (
               <div className="command-mobile-empty">
                 <strong>No tasks assigned yet.</strong>
-                <p>Create a task directly, use guided business setup, or load a demo environment for safe exploration.</p>
+                <p>{isMemberSurface ? "Create a task directly or use guided business setup." : "Create a task directly, use guided business setup, or load a demo environment for safe exploration."}</p>
                 <button type="button" onClick={() => executeCommand("Create task Review the command hierarchy")}>Create first task</button>
                 <button type="button" onClick={() => openBusinessWizard()}>Guided setup</button>
               </div>
@@ -6594,7 +6662,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <p className="eyebrow">Reports</p>
                 <h2>Command feed</h2>
               </div>
-              <button type="button" onClick={() => executeCommand("ENTRAL report")}>Generate</button>
+              {recentReportMessages.length > 0 ? <button type="button" onClick={() => executeCommand("ENTRAL report")}>Generate</button> : null}
             </header>
             {recentReportMessages.length > 0 ? (
               <div className="command-mobile-report-list">
@@ -6622,38 +6690,32 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <p className="eyebrow">Actions</p>
                 <h2>Command menu</h2>
               </div>
-              <button type="button" onClick={() => openMobileTab("graph")}>Close</button>
+              {!isMemberSurface ? <button type="button" onClick={() => openMobileTab("graph")}>Close</button> : null}
             </header>
             <div className="command-mobile-action-grid">
-              <button type="button" onClick={() => executeCommand("Help")}>Help</button>
               <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
-              <button type="button" onClick={requestDemoEnvironmentAuthorization}>Load demo</button>
-              <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button>
+              {isMemberSurface ? <button type="button" onClick={() => openMobileTab("reports")}>Reports</button> : <button type="button" onClick={requestDemoEnvironmentAuthorization}>Load demo</button>}
+              {!isMemberSurface ? <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button> : null}
               <button type="button" onClick={openGraphControls}>Graph controls</button>
               <button type="button" onClick={() => openSettings()}>Settings</button>
               <button type="button" onClick={() => routeWorkspaceAction("Training channel selected. Opening ENTRAL Academy.", undefined, "entral:open-academy")}>Academy</button>
-              <button type="button" onClick={() => executeCommand("Show hierarchy")}>Full picture</button>
+              {!isMemberSurface ? <button type="button" onClick={() => executeCommand("Help")}>Help</button> : null}
+              {!isMemberSurface ? <button type="button" onClick={() => executeCommand("Show hierarchy")}>Full picture</button> : null}
             </div>
           </>
         ) : null}
       </section>
 
-      <nav className="command-mobile-tabs" data-academy="command-nav" aria-label="Mobile command tabs">
-        {([
-          ["graph", "Graph", Crosshair],
-          ["command", "Command", Bot],
-          ["hierarchy", "Hierarchy", Network],
-          ["tasks", "Tasks", Activity],
-          ["reports", "Reports", ShieldCheck],
-          ["more", "More", Menu]
-        ] as const).map(([tab, label, Icon]) => (
+      <nav className="command-mobile-tabs" data-academy="command-nav" aria-label="Mobile command tabs" role="tablist">
+        {mobileTabOptions.map(([tab, label, Icon]) => (
           <button
             aria-label={tab === "graph" ? "View command graph" : `Open ${label} tab`}
             className={mobileTab === tab ? "active" : ""}
             key={tab}
             type="button"
             onClick={() => openMobileTab(tab)}
-            aria-pressed={mobileTab === tab}
+            aria-selected={mobileTab === tab}
+            role="tab"
           >
             <Icon aria-hidden="true" size={16} />
             <span>{label}</span>
@@ -6661,7 +6723,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         ))}
       </nav>
 
-      <nav className="command-os-nav" data-academy="command-nav" aria-label="Command OS navigation">
+      <nav className="command-os-nav" data-academy="command-nav" aria-label="Command OS navigation" aria-hidden={!isNavigationOpen} inert={isNavigationOpen ? undefined : true}>
         <div className="command-os-nav-header">
           <p className="eyebrow">Command OS</p>
           <strong>Chain of command</strong>
@@ -6717,13 +6779,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </details>
       </nav>
 
-      <div className="command-center-orbit-help" role="status">
+      {!isCommandConsoleOpen ? <div className="command-center-orbit-help" role="status">
         <Sparkles aria-hidden="true" size={16} />
         <span>{statusMessage}</span>
         <kbd>Drag</kbd>
         <kbd>Wheel</kbd>
         <kbd>Shift + Drag</kbd>
-      </div>
+      </div> : null}
 
       {tooltip ? (
         <div
@@ -6773,12 +6835,15 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           </button>
         </header>
 
-        <nav className="command-console-tabs" aria-label="ENTRAL command console sections">
-          {(Object.keys(commandConsoleSectionLabels) as CommandConsoleSection[]).map((section) => (
+        <nav className="command-console-tabs" aria-label="ENTRAL command console sections" role="tablist">
+          {visibleConsoleSections.map((section) => (
             <button
+              aria-controls={`command-console-panel-${section}`}
               className={commandConsoleSection === section ? "active" : ""}
               key={section}
               aria-label={section === "controls" ? "Open graph controls section" : `Open ${commandConsoleSectionLabels[section]} section`}
+              aria-selected={commandConsoleSection === section}
+              role="tab"
               type="button"
               onClick={() => {
                 setCommandConsoleSection(section);
@@ -6793,7 +6858,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </nav>
 
         <div className="command-console-scroll">
-          <section className="command-console-section-intro" aria-label={`${commandConsoleSectionCopy[commandConsoleSection].title} overview`}>
+          <section id={`command-console-panel-${commandConsoleSection}`} className="command-console-section-intro" aria-label={`${commandConsoleSectionCopy[commandConsoleSection].title} overview`} role="tabpanel">
             <p className="eyebrow">{commandConsoleSectionCopy[commandConsoleSection].eyebrow}</p>
             <h3>{commandConsoleSectionCopy[commandConsoleSection].title}</h3>
             <p>{commandConsoleSectionCopy[commandConsoleSection].body}</p>
@@ -6832,10 +6897,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             <span>{statusMessage}</span>
           </div>
 
-          <div className={["voice-command-status", isListening ? "listening" : "", isSpeaking ? "speaking" : ""].filter(Boolean).join(" ")} data-academy="voice-controls" role="status" aria-live="polite">
+          <div className={["voice-command-status", isListening ? "listening" : "", isSpeaking ? "speaking" : ""].filter(Boolean).join(" ")} data-academy="voice-controls">
             {isListening ? <Mic aria-hidden="true" size={15} /> : isSpeaking ? <Volume2 aria-hidden="true" size={15} /> : <MicOff aria-hidden="true" size={15} />}
-            <span>{isListening ? "Microphone active. Speak directive." : isSpeaking ? "ENTRAL speaking." : voiceStatus}</span>
-            <button type="button" onClick={stopSpeaking} disabled={!isSpeaking}>Stop speech</button>
+            <span role="status" aria-live="polite">{isListening ? "Microphone active. Speak directive." : isSpeaking ? "ENTRAL speaking." : voiceStatus}</span>
+            {isSpeaking ? <button type="button" onClick={stopSpeaking}>Stop speech</button> : null}
           </div>
 
           {recoverySummary.hasRecoveryMarshal ? (
@@ -6900,14 +6965,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               </button>
             </header>
 
-            <div className="business-template-grid" role="list" aria-label="Business templates">
+            <div className="business-template-grid" aria-label="Business templates">
               {businessTemplates.map((template) => (
                 <button
                   className={template.id === businessWizard.templateId ? "active" : ""}
                   key={template.id}
                   type="button"
                   onClick={() => updateBusinessWizard({ templateId: template.id })}
-                  role="listitem"
                 >
                   <span style={{ "--template-color": template.color } as React.CSSProperties} />
                   <strong>{template.label}</strong>
@@ -7000,10 +7064,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 <Plus aria-hidden="true" size={16} />
                 Add Soldier
               </Button>
-              <Button type="button" variant="secondary" disabled={!selectedNode || selectedNode.type === "core"} onClick={() => requestRemoveNode(selectedNode?.id ?? selectedNodeId)}>
+              {!isMemberSurface ? <Button type="button" variant="secondary" disabled={!selectedNode || selectedNode.type === "core"} onClick={() => requestRemoveNode(selectedNode?.id ?? selectedNodeId)}>
                 <Trash2 aria-hidden="true" size={16} />
                 Remove Selected
-              </Button>
+              </Button> : null}
             </div>
           </section>
 
@@ -7033,13 +7097,13 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <Maximize2 aria-hidden="true" size={17} />
               Fit
             </Button>
-            <Button type="button" variant="secondary" onClick={() => {
+            {!isMemberSurface ? <Button type="button" variant="secondary" onClick={() => {
               setIsFocusMode(true);
               setStatusMessage("Focus Mode engaged. Press Escape or double-click the graph to restore controls.");
             }}>
               <Eye aria-hidden="true" size={17} />
               Focus
-            </Button>
+            </Button> : null}
           </div>
 
           <div className="command-control-menu" aria-label="Command graph controls">
@@ -7522,7 +7586,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             </div>
           </div>
 
-            <details className="command-tool-drawer" open={commandConsoleSection === "tools"}>
+            {!isMemberSurface ? <details className="command-tool-drawer" open={commandConsoleSection === "tools"}>
               <summary>
                 <Sparkles aria-hidden="true" size={16} />
                 Connection Center
@@ -7575,7 +7639,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 onRefreshStores={() => void loadMerchStores()}
                 stores={merchStores}
               />
-            </details>
+            </details> : null}
 
             <div className="command-legend compact" aria-label="Hierarchy colors">
             {graph.groups.map((group) => (
@@ -7623,7 +7687,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
           ) : null}
 
           <div className="command-chat-suggestions" aria-label="Example ENTRAL commands">
-          {contextCommandSuggestions.map((example) => (
+          {visibleContextCommandSuggestions.map((example) => (
             <button key={example} type="button" onClick={() => executeCommand(example)}>
               {example}
             </button>
@@ -7647,6 +7711,18 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
             onPointerUp={voiceSettings.pushToTalk ? stopVoiceRecognition : undefined}
             onPointerCancel={voiceSettings.pushToTalk ? stopVoiceRecognition : undefined}
             onPointerLeave={voiceSettings.pushToTalk && isListening ? stopVoiceRecognition : undefined}
+            onKeyDown={voiceSettings.pushToTalk ? (event) => {
+              if ((event.key === " " || event.key === "Enter") && !event.repeat) {
+                event.preventDefault();
+                startVoiceRecognition();
+              }
+            } : undefined}
+            onKeyUp={voiceSettings.pushToTalk ? (event) => {
+              if (event.key === " " || event.key === "Enter") {
+                event.preventDefault();
+                stopVoiceRecognition();
+              }
+            } : undefined}
           >
             {isListening ? <Mic aria-hidden="true" size={18} /> : <MicOff aria-hidden="true" size={18} />}
           </button>
@@ -7673,7 +7749,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
 
       {pendingRemovalNode ? (
         <div className="command-confirm-backdrop" role="presentation">
-          <section className="command-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="command-remove-title">
+          <section className="command-confirm-dialog" ref={removalDialogRef} role="dialog" aria-modal="true" aria-labelledby="command-remove-title" tabIndex={-1}>
             <div className="command-confirm-icon">
               <AlertTriangle aria-hidden="true" size={22} />
             </div>
@@ -7701,7 +7777,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               <Button type="button" variant="secondary" onClick={() => setPendingRemovalId(null)}>
                 Cancel
               </Button>
-              <Button type="button" onClick={confirmRemoveNode}>
+              <Button type="button" variant="danger" onClick={confirmRemoveNode}>
                 <Trash2 aria-hidden="true" size={17} />
                 Confirm Remove
               </Button>
@@ -7710,7 +7786,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
         </div>
       ) : null}
 
-      <aside className={isPanelOpen ? "command-side-panel open" : "command-side-panel"} data-academy="command-inspector" aria-label="Neuron side information panel" aria-hidden={!isPanelOpen}>
+      <aside className={isPanelOpen ? "command-side-panel open" : "command-side-panel"} data-academy="command-inspector" aria-label="Neuron side information panel" aria-hidden={!isPanelOpen} inert={isPanelOpen ? undefined : true}>
         {selectedNode ? (
           <>
             <header>
@@ -7739,40 +7815,64 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               </section>
             ) : null}
 
-            <section className="command-node-brief" aria-label="Selected command node">
-              <h3>Command position</h3>
-              <div>
-                <span><strong>{selectedNode.title}</strong> level</span>
-                <span><strong>{selectedNode.health}%</strong> health</span>
-                <span><strong>{selectedChildren.length}</strong> direct reports</span>
-                <span><strong>{new Date(selectedNode.createdAt).toLocaleDateString()}</strong> created</span>
-              </div>
-              <p>{selectedNode.description ?? selectedNode.role}</p>
-              {selectedParent ? <small>Reports to {selectedParent.name}</small> : <small>Root command authority</small>}
-            </section>
-
-            <section className="command-node-brief" aria-label="Selected command path">
-              <h3>Command path</h3>
-              <p>{selectedCommandPath || "ENTRAL"}</p>
-              {selectedNode.commandType === "marshal" ? <small>{selectedNode.marshalType ?? "Strategic theater"}</small> : null}
-              {selectedNode.commandType === "general" ? <small>{selectedNode.businessName ?? selectedNode.name} / {selectedNode.generalType ?? "Business General"}</small> : null}
-              {selectedNode.commandType === "commander" ? <small>{selectedNode.operationalArea ?? selectedNode.name} under {selectedNode.parentGeneralName ?? "General"}</small> : null}
-              {selectedNode.commandType === "soldier" ? <small>{selectedNode.executionRole ?? selectedNode.name} under {selectedNode.parentCommanderName ?? "Commander"}</small> : null}
-            </section>
-
-            {selectedInspectorStats ? (
-              <section className="command-node-brief" aria-label="Operational summary">
-                <h3>Operational summary</h3>
-                <div>
-                  <span><strong>{selectedInspectorStats.marshals}</strong> Marshals</span>
-                  <span><strong>{selectedInspectorStats.generals}</strong> Generals</span>
-                  <span><strong>{selectedInspectorStats.commanders}</strong> Commanders</span>
-                  <span><strong>{selectedInspectorStats.soldiers}</strong> Soldiers</span>
-                  <span><strong>{selectedInspectorStats.activeTasks}</strong> active tasks</span>
-                  <span><strong>{selectedInspectorStats.failedTasks}</strong> failed tasks</span>
-                </div>
+            {isMemberSurface ? (
+              <section className="command-node-brief member-node-overview" aria-label="Selected command overview">
+                <h3>Overview</h3>
+                <p>{selectedNode.description ?? selectedNode.role}</p>
+                <dl>
+                  <div><dt>Level</dt><dd>{selectedNode.title}</dd></div>
+                  <div><dt>Reports to</dt><dd>{selectedParent?.name ?? "Root authority"}</dd></div>
+                  <div><dt>Direct reports</dt><dd>{selectedChildren.length}</dd></div>
+                  <div><dt>Current work</dt><dd>{selectedTasks.length}</dd></div>
+                </dl>
+                <small>{selectedCommandPath || "ENTRAL"}</small>
+                {selectedNode.type === "core" && selectedInspectorStats ? (
+                  <div className="member-command-totals" aria-label="Hierarchy totals">
+                    <span><strong>{selectedInspectorStats.marshals}</strong> Marshals</span>
+                    <span><strong>{selectedInspectorStats.generals}</strong> Generals</span>
+                    <span><strong>{selectedInspectorStats.commanders}</strong> Commanders</span>
+                    <span><strong>{selectedInspectorStats.soldiers}</strong> Soldiers</span>
+                  </div>
+                ) : null}
               </section>
-            ) : null}
+            ) : (
+              <>
+                <section className="command-node-brief" aria-label="Selected command node">
+                  <h3>Command position</h3>
+                  <div>
+                    <span><strong>{selectedNode.title}</strong> level</span>
+                    <span><strong>{selectedNode.health}%</strong> health</span>
+                    <span><strong>{selectedChildren.length}</strong> direct reports</span>
+                    <span><strong>{new Date(selectedNode.createdAt).toLocaleDateString()}</strong> created</span>
+                  </div>
+                  <p>{selectedNode.description ?? selectedNode.role}</p>
+                  {selectedParent ? <small>Reports to {selectedParent.name}</small> : <small>Root command authority</small>}
+                </section>
+
+                <section className="command-node-brief" aria-label="Selected command path">
+                  <h3>Command path</h3>
+                  <p>{selectedCommandPath || "ENTRAL"}</p>
+                  {selectedNode.commandType === "marshal" ? <small>{selectedNode.marshalType ?? "Strategic theater"}</small> : null}
+                  {selectedNode.commandType === "general" ? <small>{selectedNode.businessName ?? selectedNode.name} / {selectedNode.generalType ?? "Business General"}</small> : null}
+                  {selectedNode.commandType === "commander" ? <small>{selectedNode.operationalArea ?? selectedNode.name} under {selectedNode.parentGeneralName ?? "General"}</small> : null}
+                  {selectedNode.commandType === "soldier" ? <small>{selectedNode.executionRole ?? selectedNode.name} under {selectedNode.parentCommanderName ?? "Commander"}</small> : null}
+                </section>
+
+                {selectedInspectorStats ? (
+                  <section className="command-node-brief" aria-label="Operational summary">
+                    <h3>Operational summary</h3>
+                    <div>
+                      <span><strong>{selectedInspectorStats.marshals}</strong> Marshals</span>
+                      <span><strong>{selectedInspectorStats.generals}</strong> Generals</span>
+                      <span><strong>{selectedInspectorStats.commanders}</strong> Commanders</span>
+                      <span><strong>{selectedInspectorStats.soldiers}</strong> Soldiers</span>
+                      <span><strong>{selectedInspectorStats.activeTasks}</strong> active tasks</span>
+                      <span><strong>{selectedInspectorStats.failedTasks}</strong> failed tasks</span>
+                    </div>
+                  </section>
+                ) : null}
+              </>
+            )}
 
             <section className="command-node-brief command-gravity-brief" aria-label="Graph gravity summary">
               <h3>Graph gravity</h3>
@@ -7801,6 +7901,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               </section>
             ) : null}
 
+            {!isMemberSurface ? <>
             <section className="command-capabilities" aria-label="Agent capability architecture">
               <div className="section-title-row compact">
                 {selectedNode.type === "core" ? <Network aria-hidden="true" size={17} /> : <Zap aria-hidden="true" size={17} />}
@@ -7837,6 +7938,7 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 {(selectedNode.tools ?? ["command_bus"]).map((tool) => <span key={tool}>{tool}</span>)}
               </div>
             </section>
+            </> : null}
 
             {selectedChildren.length > 0 ? (
               <section className="command-search-results">
@@ -7850,10 +7952,10 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               </section>
             ) : renderChildEmptyState(selectedNode)}
 
-            <section>
+            {!isMemberSurface ? <section>
               <h3>What is being displayed</h3>
               <p>{selectedNode.currentTask ?? "No active task. This entity is ready for delegation."}</p>
-            </section>
+            </section> : null}
             <section className="command-task-panel">
               <h3>Tasks</h3>
               {selectedTasks.length > 0 ? (
@@ -7872,14 +7974,15 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
               ) : (
                 <div className="command-empty-state compact">
                   <h3>No active tasks.</h3>
-                  <p>Create a task or generate a workflow after this entity has execution capacity.</p>
+                  <p>{isMemberSurface ? "Create a task when this entity is ready for work." : "Create a task or generate a workflow after this entity has execution capacity."}</p>
                   <div>
                     <Button type="button" variant="secondary" onClick={() => executeCommand("Create task Review the command hierarchy")}>Create Task</Button>
-                    <Button type="button" variant="secondary" onClick={() => requestWorkflowAuthorization("start merch store launch workflow")}>Generate Workflow</Button>
+                    {!isMemberSurface ? <Button type="button" variant="secondary" onClick={() => requestWorkflowAuthorization("start merch store launch workflow")}>Generate Workflow</Button> : null}
                   </div>
                 </div>
               )}
             </section>
+            {!isMemberSurface ? <>
             <section className="command-report-history">
               <h3>Report history</h3>
               {selectedReportHistory.length > 0 ? (
@@ -7942,16 +8045,17 @@ export function NeuronsCommandCenter({ user, onLogout }: { onLogout: () => void;
                 {activityEvents.map((event) => <p key={event.id}>{new Date(event.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} / {event.message}</p>)}
               </div>
             </section>
-            <div className="command-panel-actions">
+            </> : null}
+            {selectedNode.type !== "core" ? <div className="command-panel-actions">
               <Button type="button" variant="secondary" onClick={() => mutateNode(selectedNode.id, { status: selectedNode.status === "offline" ? "working" : "offline", logs: [`${selectedNode.status === "offline" ? "Resumed" : "Marked offline"} from side panel.`, ...selectedNode.logs] })}>
                 {selectedNode.status === "offline" ? <Play aria-hidden="true" size={17} /> : <Pause aria-hidden="true" size={17} />}
                 {selectedNode.status === "offline" ? "Resume" : "Offline"}
               </Button>
-              <Button type="button" variant="secondary" disabled={selectedNode.type === "core"} onClick={deleteSelectedNode}>
+              <Button type="button" variant="danger" onClick={deleteSelectedNode}>
                 <Trash2 aria-hidden="true" size={17} />
                 Delete
               </Button>
-            </div>
+            </div> : null}
           </>
         ) : null}
 
