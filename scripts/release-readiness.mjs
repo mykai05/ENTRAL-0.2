@@ -10,18 +10,28 @@ const strictLive = process.env.RELEASE_CHECK_STRICT_LIVE === "1";
 const requiredChecks = [
   {
     file: "frontend/app/page.tsx",
-    label: "Root URL enters the command center",
-    text: "redirect(\"/dashboard\")"
+    label: "Root URL enters the protected member dashboard",
+    text: "redirect(\"/member/dashboard\")"
   },
   {
     file: "frontend/middleware.ts",
-    label: "Retired account routes return to the command center",
-    text: "retiredEntryPaths"
+    label: "Retired account routes fail closed into member sign-in",
+    text: "url.pathname = \"/member/sign-in\""
   },
   {
     file: "frontend/components/DashboardClient.tsx",
-    label: "Unauthenticated visitors receive local command-center access",
-    text: "setUser(null)"
+    label: "Unauthorized dashboard sessions return to member sign-in",
+    text: "router.push(memberSignInPath"
+  },
+  {
+    file: "frontend/components/MemberCommandCenterClient.tsx",
+    label: "Member command center selects restricted member chrome",
+    text: "surface=\"member\""
+  },
+  {
+    file: "frontend/components/MemberDestinationNav.tsx",
+    label: "Member navigation keeps the canonical three destinations",
+    text: "OPEN UNIVERSE GRAPH"
   },
   {
     file: "frontend/components/NeuronsCommandCenter.tsx",
@@ -65,8 +75,8 @@ const requiredChecks = [
   },
   {
     file: "e2e/entral.e2e.mjs",
-    label: "E2E verifies direct command-center entry",
-    text: "root URL opens the command center without an account screen"
+    label: "E2E verifies protected member entry",
+    text: "root URL opens protected member sign-in"
   },
   {
     file: "package.json",
@@ -203,10 +213,15 @@ async function checkLiveDeployment() {
     });
     const html = await response.text();
     const text = stripHtml(html);
+    const finalUrl = new URL(response.url);
     const checks = [
       {
-        label: "direct command-center shell",
-        passed: text.includes("Booting ENTRAL command center")
+        label: "protected member sign-in route",
+        passed: finalUrl.pathname === "/member/sign-in"
+      },
+      {
+        label: "secure member access shell",
+        passed: text.includes("Sign in to Entral") && text.includes("Secure member access")
       },
       {
         label: "no account-creation prompt",
@@ -217,6 +232,7 @@ async function checkLiveDeployment() {
     return {
       checks,
       ok: response.ok && checks.every((check) => check.passed),
+      finalUrl: response.url,
       status: response.status,
       url: liveUrl
     };
@@ -267,6 +283,9 @@ if (live.error) {
   console.log(`WARN ${live.url} could not be checked: ${live.error}`);
 } else {
   console.log(`${live.ok ? "PASS" : "WARN"} ${live.url} responded with HTTP ${live.status}.`);
+  if (live.finalUrl && live.finalUrl !== live.url) {
+    console.log(`${live.ok ? "PASS" : "WARN"} Live request resolved to ${live.finalUrl}.`);
+  }
   for (const check of live.checks) {
     if (check.passed) {
       console.log(`PASS Live site includes ${check.label}.`);
