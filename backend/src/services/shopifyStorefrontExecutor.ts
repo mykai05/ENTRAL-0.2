@@ -1,8 +1,12 @@
+import { ContractError } from "@entral/contracts";
 import { env } from "../env.js";
 import type { MerchProductSnapshot, MerchStoreSnapshot } from "./merchReports.js";
+import { getProviderExecutionAuthorization } from "./integrationRegistry.js";
 
 export const shopifyStorefrontDraftConfirmation = "EXECUTE CONTROLLED SHOPIFY STOREFRONT DRAFT";
 export const shopifyStorefrontDraftUnlockPhrase = "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION";
+export const shopifyStorefrontAdapterVersion = "1.0.0";
+export const shopifyStorefrontOperationCode = "storefront.draft.write";
 
 export type ShopifyStorefrontDraftStatus =
   | "credential_blocked"
@@ -143,7 +147,7 @@ export type ShopifyConnectorState = {
   apiVersion: string;
   missingEnvVars: string[];
   readOnly: false;
-  status: "Connected" | "Missing Credentials";
+  status: "Connected" | "Disabled" | "Missing Credentials";
   writeActionsEnabled: boolean;
 };
 
@@ -373,12 +377,22 @@ export function getShopifyConnectorState(credentials?: ShopifyStorefrontDraftCre
     resolved.adminToken ? "" : "SHOPIFY_CONNECTOR_ADMIN_TOKEN"
   ].filter(Boolean);
 
+  let activationReady = false;
+  if (missingEnvVars.length === 0) {
+    try {
+      getProviderExecutionAuthorization("shopify", shopifyStorefrontOperationCode);
+      activationReady = true;
+    } catch {
+      activationReady = false;
+    }
+  }
+
   return {
     apiVersion: resolved.apiVersion,
     missingEnvVars,
     readOnly: false,
-    status: missingEnvVars.length > 0 ? "Missing Credentials" : "Connected",
-    writeActionsEnabled: missingEnvVars.length === 0
+    status: missingEnvVars.length > 0 ? "Missing Credentials" : activationReady ? "Connected" : "Disabled",
+    writeActionsEnabled: missingEnvVars.length === 0 && activationReady
   };
 }
 
@@ -1430,6 +1444,16 @@ export async function executeShopifyStorefrontDraft(input: {
   }
 
   const credentials = credentialsWithDefaults(input.credentials);
+  const integrationAuthorization = getProviderExecutionAuthorization("shopify", shopifyStorefrontOperationCode);
+  if (
+    integrationAuthorization.requirement.provider_api_version !== credentials.apiVersion ||
+    integrationAuthorization.requirement.adapter_version !== shopifyStorefrontAdapterVersion
+  ) {
+    throw new ContractError(
+      "INTEGRATION_VERSION_MISMATCH",
+      "Shopify execution requires the exact active provider API and storefront adapter versions"
+    );
+  }
   const fetcher = input.fetcher ?? fetch;
   const storefrontActions: ShopifyStorefrontDraftAction[] = [];
 

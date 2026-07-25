@@ -1,3 +1,7 @@
+import {
+  parseMemberOrganizationsResponse,
+  parseMemberOverviewResponse
+} from "@entral/contracts";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import { requireAuth, setPrivateNoStoreHeaders } from "../auth.js";
@@ -28,6 +32,13 @@ const unavailableMemberFeatures = {
 
 function unauthenticated(reply: FastifyReply) {
   return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+}
+
+function parseSerializedWireContract<T>(
+  value: unknown,
+  parser: (candidate: unknown) => T
+): T {
+  return parser(JSON.parse(JSON.stringify(value)) as unknown);
 }
 
 export async function memberRoutes(app: FastifyInstance) {
@@ -75,7 +86,7 @@ export async function memberRoutes(app: FastifyInstance) {
       return unauthenticated(reply);
     }
 
-    return reply.send({
+    const response = {
       organizations: memberships.map((membership) => ({
         id: membership.team.id,
         joinedAt: membership.joinedAt,
@@ -86,7 +97,8 @@ export async function memberRoutes(app: FastifyInstance) {
         slug: membership.team.slug
       })),
       user
-    });
+    };
+    return reply.send(parseSerializedWireContract(response, parseMemberOrganizationsResponse));
   });
 
   app.get("/member/organizations/:organizationId/overview", { preHandler: requireAuth }, async (request, reply) => {
@@ -178,7 +190,7 @@ export async function memberRoutes(app: FastifyInstance) {
         }
       : null;
 
-    return reply.send({
+    const response = {
       availability: unavailableMemberFeatures,
       organization: {
         id: membership.team.id,
@@ -203,6 +215,7 @@ export async function memberRoutes(app: FastifyInstance) {
         role: publicMemberRole(member.role)
       })),
       workspace
-    });
+    };
+    return reply.send(parseSerializedWireContract(response, parseMemberOverviewResponse));
   });
 }

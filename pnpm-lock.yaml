@@ -28,6 +28,9 @@ importers:
 
   backend:
     dependencies:
+      '@entral/contracts':
+        specifier: workspace:*
+        version: link:../packages/contracts
       '@fastify/cookie':
         specifier: ^11.1.2
         version: 11.1.2
@@ -88,13 +91,16 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^6.4.3
-        version: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)
+        version: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1)
       vitest:
         specifier: ^3.2.6
-        version: 3.2.7(@types/node@22.19.19)(jsdom@25.0.1)(tsx@4.23.1)
+        version: 3.2.7(@types/node@22.19.19)(jsdom@25.0.1)(tsx@4.23.1)(yaml@2.8.1)
 
   frontend:
     dependencies:
+      '@entral/contracts':
+        specifier: workspace:*
+        version: link:../packages/contracts
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.6)
@@ -137,10 +143,16 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^6.4.3
-        version: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)
+        version: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1)
       vitest:
         specifier: ^3.2.6
-        version: 3.2.7(@types/node@22.19.19)(jsdom@25.0.1)(tsx@4.23.1)
+        version: 3.2.7(@types/node@22.19.19)(jsdom@25.0.1)(tsx@4.23.1)(yaml@2.8.1)
+
+  packages/contracts:
+    devDependencies:
+      yaml:
+        specifier: 2.8.1
+        version: 2.8.1
 
 packages:
 
@@ -1933,6 +1945,11 @@ packages:
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
 
+  yaml@2.8.1:
+    resolution: {integrity: sha512-lcYcMxX2PO9XMGvAJkJ3OsNMw+/7FKes7/hgerGUYWIoWu5j/+YQqcZr5JnPZWzOsEBgMbSbiSTn/dv/69Mkpw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
@@ -2531,13 +2548,13 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.7(vite@6.4.3(@types/node@22.19.19)(tsx@4.23.1))':
+  '@vitest/mocker@3.2.7(vite@6.4.3(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1))':
     dependencies:
       '@vitest/spy': 3.2.7
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)
+      vite: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1)
 
   '@vitest/pretty-format@3.2.7':
     dependencies:
@@ -3391,13 +3408,13 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  vite-node@3.2.4(@types/node@22.19.19)(tsx@4.23.1):
+  vite-node@3.2.4(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1):
     dependencies:
       cac: 6.7.14
       debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)
+      vite: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -3412,7 +3429,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@6.4.3(@types/node@22.19.19)(tsx@4.23.1):
+  vite@6.4.3(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.5)
@@ -3424,12 +3441,13 @@ snapshots:
       '@types/node': 22.19.19
       fsevents: 2.3.3
       tsx: 4.23.1
+      yaml: 2.8.1
 
-  vitest@3.2.7(@types/node@22.19.19)(jsdom@25.0.1)(tsx@4.23.1):
+  vitest@3.2.7(@types/node@22.19.19)(jsdom@25.0.1)(tsx@4.23.1)(yaml@2.8.1):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.7
-      '@vitest/mocker': 3.2.7(vite@6.4.3(@types/node@22.19.19)(tsx@4.23.1))
+      '@vitest/mocker': 3.2.7(vite@6.4.3(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.7
       '@vitest/runner': 3.2.7
       '@vitest/snapshot': 3.2.7
@@ -3447,8 +3465,8 @@ snapshots:
       tinyglobby: 0.2.17
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
-      vite: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)
-      vite-node: 3.2.4(@types/node@22.19.19)(tsx@4.23.1)
+      vite: 6.4.3(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1)
+      vite-node: 3.2.4(@types/node@22.19.19)(tsx@4.23.1)(yaml@2.8.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.19.19
@@ -3503,5 +3521,7 @@ snapshots:
   xml-name-validator@5.0.0: {}
 
   xmlchars@2.2.0: {}
+
+  yaml@2.8.1: {}
 
   zod@3.25.76: {}

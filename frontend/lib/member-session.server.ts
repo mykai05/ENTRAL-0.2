@@ -1,23 +1,6 @@
+import { parseMemberOrganizationsResponse } from "@entral/contracts";
 import { apiProxyBase } from "./server-api-proxy";
-import { z } from "zod";
 import type { MemberOrganizationsResponse } from "./member";
-
-const memberSessionSchema = z.object({
-  organizations: z.array(z.object({
-    id: z.string().min(1),
-    joinedAt: z.string().datetime(),
-    memberCount: z.number().int().nonnegative(),
-    memberLimit: z.number().int().positive().max(5),
-    name: z.string().min(1).max(160),
-    role: z.enum(["MEMBER", "OWNER"]),
-    slug: z.string().min(1).max(160)
-  })),
-  user: z.object({
-    email: z.string().email(),
-    id: z.string().min(1),
-    name: z.string().min(1).max(160)
-  })
-});
 
 export type MemberSessionResult =
   | { kind: "authenticated"; session: MemberOrganizationsResponse }
@@ -65,9 +48,14 @@ export async function loadMemberSession(
       return { kind: "unauthenticated" };
     }
 
-    const safeSession = memberSessionSchema.safeParse(payload);
+    let safeSession: MemberOrganizationsResponse | null = null;
+    try {
+      safeSession = parseMemberOrganizationsResponse(payload);
+    } catch {
+      safeSession = null;
+    }
 
-    if (!response.ok || !safeSession.success) {
+    if (!response.ok || !safeSession) {
       const errorPayload = payload && typeof payload === "object" ? payload as { message?: unknown; requestId?: unknown } : null;
       return {
         kind: "unavailable",
@@ -76,7 +64,7 @@ export async function loadMemberSession(
       };
     }
 
-    return { kind: "authenticated", session: safeSession.data };
+    return { kind: "authenticated", session: safeSession };
   } catch (error) {
     return {
       kind: "unavailable",

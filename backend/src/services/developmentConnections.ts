@@ -1,5 +1,15 @@
 import { env } from "../env.js";
-import type { AuditEntry } from "./audit.js";
+import type { AuditLogInput } from "./audit.js";
+import {
+  getProviderExecutionAuthorization,
+  type ProviderExecutionAuthorization
+} from "./integrationRegistry.js";
+
+export const developmentConnectionAdapterVersion = "1.0.0";
+export const githubProviderApiVersion = "2022-11-28";
+export const githubReadOperationCode = "repository.status.read";
+export const vercelProviderApiVersion = "v9-projects+v6-deployments";
+export const vercelReadOperationCode = "deployment.status.read";
 
 export type DevelopmentToolId = "github" | "vercel";
 export type DevelopmentHealthStatus = "Green" | "Yellow" | "Red" | "Gray";
@@ -162,6 +172,18 @@ function safeUrl(hostOrUrl?: string | null) {
   return hostOrUrl.startsWith("http") ? hostOrUrl : `https://${hostOrUrl}`;
 }
 
+function assertDevelopmentAuthorization(
+  authorization: ProviderExecutionAuthorization,
+  providerApiVersion: string
+) {
+  if (
+    authorization.requirement.provider_api_version !== providerApiVersion ||
+    authorization.requirement.adapter_version !== developmentConnectionAdapterVersion
+  ) {
+    throw new ReadOnlyConnectionError("Development provider activation versions do not match this adapter.");
+  }
+}
+
 async function requestJson<T>(url: string, headers: Record<string, string>): Promise<T> {
   const response = await fetch(url, {
     headers,
@@ -282,6 +304,20 @@ export function getGitHubConnectionState(): ReadOnlyConnectionState {
     return status;
   }
 
+  try {
+    assertDevelopmentAuthorization(
+      getProviderExecutionAuthorization("github", githubReadOperationCode),
+      githubProviderApiVersion
+    );
+  } catch {
+    return {
+      ...status,
+      message: "GitHub credentials are present, but the exact integration registry record is not ACTIVE.",
+      missingEnvVars: [],
+      status: "Disabled"
+    };
+  }
+
   return {
     ...status,
     message: "GitHub read-only credentials are configured. Run a test to verify access.",
@@ -295,6 +331,20 @@ export function getVercelConnectionState(): ReadOnlyConnectionState {
 
   if (status.missingEnvVars.length > 0) {
     return status;
+  }
+
+  try {
+    assertDevelopmentAuthorization(
+      getProviderExecutionAuthorization("vercel", vercelReadOperationCode),
+      vercelProviderApiVersion
+    );
+  } catch {
+    return {
+      ...status,
+      message: "Vercel credentials are present, but the exact integration registry record is not ACTIVE.",
+      missingEnvVars: [],
+      status: "Disabled"
+    };
   }
 
   return {
@@ -323,6 +373,10 @@ export async function getGitHubReadOnlyStatus(): Promise<GitHubReadOnlyStatus> {
   };
 
   try {
+    assertDevelopmentAuthorization(
+      getProviderExecutionAuthorization("github", githubReadOperationCode),
+      githubProviderApiVersion
+    );
     const baseUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
     const repository = await requestJson<GithubRepoResponse>(baseUrl, headers);
     const commits = await requestJson<GithubCommitResponse[]>(`${baseUrl}/commits?per_page=5`, headers);
@@ -390,6 +444,10 @@ export async function getVercelReadOnlyStatus(): Promise<VercelReadOnlyStatus> {
   };
 
   try {
+    assertDevelopmentAuthorization(
+      getProviderExecutionAuthorization("vercel", vercelReadOperationCode),
+      vercelProviderApiVersion
+    );
     const project = await requestJson<VercelProjectResponse>(`https://api.vercel.com/v9/projects/${encodeURIComponent(projectId)}${teamQuery}`, headers);
     const deploymentsResponse = await requestJson<VercelDeploymentsResponse>(`https://api.vercel.com/v6/deployments?${deploymentsParams.toString()}`, headers);
     const deployments = (deploymentsResponse.deployments ?? []).map(summarizeDeployment);
@@ -547,7 +605,7 @@ export function buildDevelopmentStatusAuditEntry(input: {
   requestId?: string;
   result: GitHubReadOnlyStatus | VercelReadOnlyStatus;
   userRequest?: string;
-}): AuditEntry {
+}): AuditLogInput {
   const { result } = input;
   return {
     action: result.toolId === "github" ? "github.status.read" : "vercel.status.read",

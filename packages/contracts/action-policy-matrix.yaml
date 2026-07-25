@@ -1,0 +1,380 @@
+schema_version: 1.0.0
+principles:
+  operational_messages: Adjacent parent-child or Human-ENTRAL communication only.
+  governance_actions: Human authority or ENTRAL may govern any lower entity through the control plane.
+  model_write_access: Models may propose typed actions but may not write directly to PostgreSQL.
+  default_execution: Execute approved reversible work autonomously; escalate exceptions only.
+risk_defaults:
+  LOW:
+    requires_human: false
+    verification_required: true
+  MEDIUM:
+    requires_human: false
+    verification_required: true
+  HIGH:
+    requires_human: policy-dependent
+    verification_required: true
+  CRITICAL:
+    requires_human: true
+    verification_required: true
+actions:
+  CREATE:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - MISSION
+    - TASK
+    - TOOL_GRANT
+    - SCHEDULE
+    - POLICY
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: MEDIUM
+    required_permissions:
+    - create
+    idempotency: required
+    optimistic_version: not applicable to a new aggregate; required on the parent aggregate
+    rollback: retire or revoke the created aggregate
+    verification:
+    - stable ID and code are unique
+    - parent, business, scope, and ownership invariants pass
+    - new aggregate remains non-executable until readiness passes
+    - canonical event and audit entry exist
+  EDIT:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - MISSION
+    - TASK
+    - POLICY
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: MEDIUM
+    required_permissions:
+    - manage
+    idempotency: required
+    optimistic_version: required
+    rollback: restore prior version
+    verification:
+    - schema and hierarchy invariants pass
+    - read-after-write matches proposed changes
+    - version increments exactly once
+    - canonical event and audit entry exist
+  PAUSE:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - SCHEDULE
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: MEDIUM
+    required_permissions:
+    - manage
+    - pause
+    idempotency: required
+    optimistic_version: required
+    rollback: RESUME
+    verification:
+    - target canonical status is PAUSED
+    - new executable work is not leased
+    - in-flight work follows configured containment policy
+    - canonical event and audit entry exist
+  RESUME:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - SCHEDULE
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: MEDIUM
+    required_permissions:
+    - manage
+    - resume
+    idempotency: required
+    optimistic_version: required
+    rollback: PAUSE
+    verification:
+    - target canonical status is ACTIVE or OPERATING
+    - dependencies and credentials pass readiness checks
+    - scheduler can lease eligible work
+    - canonical event and audit entry exist
+  RECONFIGURE:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage
+    - reconfigure
+    idempotency: required
+    optimistic_version: required
+    rollback: restore the prior configuration version
+    verification:
+    - configuration validates against the active schema
+    - tools, credentials, model, memory, budgets, and policies remain compatible
+    - readiness and isolation tests pass before execution resumes
+  DUPLICATE:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: MEDIUM
+    required_permissions:
+    - manage
+    - create
+    idempotency: required
+    optimistic_version: recommended
+    rollback: retire duplicated aggregate
+    verification:
+    - new stable IDs and codes are unique
+    - secrets are referenced but never copied as values
+    - business isolation is preserved
+    - new aggregate passes readiness validation before activation
+  REASSIGN:
+    allowed_targets:
+    - ENTITY
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage
+    - reassign
+    idempotency: required
+    optimistic_version: required
+    rollback: restore prior parent and business binding
+    verification:
+    - parent role is canonical
+    - no hierarchy cycle exists
+    - Commander-business and Soldier-business ownership remain valid
+    - parent chain read model is refreshed
+  RETARGET:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - MISSION
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage
+    - retarget
+    idempotency: required
+    optimistic_version: required
+    rollback: restore the prior objective and success criteria
+    verification:
+    - new objective remains inside parent doctrine and authority
+    - dependent missions, tasks, schedules, and metrics are reconciled
+    - obsolete work is stopped or explicitly migrated
+  RETIRE:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - SCHEDULE
+    - POLICY
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage
+    - retire
+    idempotency: required
+    optimistic_version: required
+    rollback: RESTORE while retention window is open
+    verification:
+    - soft-retired state and retired_at are set
+    - new work cannot be assigned
+    - required records remain queryable for audit
+    - dependent active work is closed, moved, or explicitly contained
+  RESTORE:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - SCHEDULE
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage
+    - restore
+    idempotency: required
+    optimistic_version: required
+    rollback: RETIRE
+    verification:
+    - retention and policy allow restoration
+    - parent, business, tools, credentials, and dependencies are valid
+    - restored aggregate is not executable until readiness passes
+  ROLLBACK:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - GOVERNANCE_ACTION
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage
+    - rollback
+    idempotency: required
+    optimistic_version: required
+    rollback: new forward repair; never erase history
+    verification:
+    - selected rollback point exists and is authorized
+    - compensating action preserves append-only audit/event history
+    - post-rollback state passes current invariants
+  ISOLATE:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - TOOL_GRANT
+    - SCHEDULE
+    - SYSTEM
+    minimum_actor:
+    - ENTRAL
+    - HUMAN
+    default_risk: HIGH
+    required_permissions:
+    - manage
+    - isolate
+    idempotency: required
+    optimistic_version: required where canonical state changes
+    rollback: restore connectivity only after readiness verification
+    verification:
+    - new work, credentials, and outbound tools are contained as intended
+    - unaffected branches continue operating
+    - evidence identifies the affected scope and containment boundary
+  REPAIR:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - MISSION
+    - TASK
+    - SYSTEM
+    minimum_actor:
+    - ENTRAL
+    default_risk: MEDIUM
+    required_permissions:
+    - manage
+    - repair
+    idempotency: required
+    optimistic_version: required when canonical state changes
+    rollback: action-specific
+    verification:
+    - root cause and affected scope are recorded
+    - least-disruptive intervention was selected
+    - deterministic health/readiness checks pass
+    - remaining exception is explicit
+  BUDGET_CHANGE:
+    allowed_targets:
+    - ENTITY
+    - BUSINESS
+    - MISSION
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage_budget
+    idempotency: required
+    optimistic_version: required
+    rollback: restore previous envelope
+    human_threshold: configured reserved-capital or portfolio-risk threshold
+    verification:
+    - new envelope is nonnegative and internally consistent
+    - reserved capital is not exceeded
+    - affected schedules and missions re-evaluate eligibility
+  MODEL_CHANGE:
+    allowed_targets:
+    - ENTITY
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: MEDIUM
+    required_permissions:
+    - manage_ai
+    idempotency: required
+    optimistic_version: required
+    rollback: restore previous model profile
+    verification:
+    - model profile is active and permitted for the authority profile
+    - context, latency, and budget constraints pass
+    - target evaluation suite meets release threshold
+  TOOL_GRANT_CHANGE:
+    allowed_targets:
+    - ENTITY
+    - TOOL_GRANT
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage_tools
+    idempotency: required
+    optimistic_version: required where applicable
+    rollback: restore or revoke prior grant
+    verification:
+    - entity, business, credential, and data scopes agree
+    - actions and limits are explicit
+    - cross-business credential access is impossible
+    - test invocation or live credential-backed acceptance evidence passes
+  POLICY_CHANGE:
+    allowed_targets:
+    - POLICY
+    - SYSTEM
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: HIGH
+    required_permissions:
+    - manage_policy
+    idempotency: required
+    optimistic_version: required
+    rollback: activate the prior immutable policy version
+    human_threshold: system-wide intent, material portfolio risk, or reserved authority
+    verification:
+    - a new immutable policy version is created
+    - affected authority profiles and actions are re-evaluated
+    - regression and route/isolation suites pass
+  SCHEDULE_CHANGE:
+    allowed_targets:
+    - SCHEDULE
+    minimum_actor:
+    - HUMAN
+    - ENTRAL
+    default_risk: MEDIUM
+    required_permissions:
+    - manage
+    - manage_schedule
+    idempotency: required
+    optimistic_version: required
+    rollback: restore the prior schedule version
+    verification:
+    - cron or event trigger is valid and exactly one trigger mode is configured
+    - owner, business scope, concurrency, budget, and credentials are valid
+    - next-run calculation and duplicate-lease prevention pass
+provider_execution:
+  required_stage: ACTIVE
+  required_exact_matches:
+    - provider_code
+    - provider_api_version
+    - adapter_version
+    - credential_reference_id
+    - owning_business_id
+    - operation_code
+  required_evidence:
+    - live_tested_at
+    - active_at
+    - evidence_ids

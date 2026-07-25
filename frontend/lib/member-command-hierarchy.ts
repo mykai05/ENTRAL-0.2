@@ -1,4 +1,4 @@
-import type { MemberCommandHierarchy } from "./member";
+import type { MemberCommandHierarchy, MemberCommandNode } from "./member";
 
 const marshals = [
   ["portfolio-marshal", "Portfolio Marshal"],
@@ -8,11 +8,23 @@ const marshals = [
   ["governance-marshal", "Governance Marshal"]
 ] as const;
 
-const commanders = [
-  ["strategy-commander", "Strategy Commander", ["Market Research Soldier", "Business Analysis Soldier", "Planning Soldier", "Opportunity Soldier"]],
-  ["operations-commander", "Operations Commander", ["Workflow Soldier", "Delivery Soldier", "Quality Soldier", "Capacity Soldier"]],
-  ["growth-commander", "Growth Commander", ["Positioning Soldier", "Pipeline Soldier", "Client Success Soldier", "Retention Soldier"]],
-  ["governance-commander", "Governance Commander", ["Evidence Soldier", "Approval Soldier", "Risk Soldier", "Audit Soldier"]]
+const soldiers = [
+  "Market Research Soldier",
+  "Business Analysis Soldier",
+  "Planning Soldier",
+  "Opportunity Soldier",
+  "Workflow Soldier",
+  "Delivery Soldier",
+  "Quality Soldier",
+  "Capacity Soldier",
+  "Positioning Soldier",
+  "Pipeline Soldier",
+  "Client Success Soldier",
+  "Retention Soldier",
+  "Evidence Soldier",
+  "Approval Soldier",
+  "Risk Soldier",
+  "Audit Soldier"
 ] as const;
 
 function slug(value: string) {
@@ -22,30 +34,29 @@ function slug(value: string) {
 /** A member-safe topology containing no prompts, tools, logs, or internal routing state. */
 export function createMemberStarterHierarchy(organizationName: string): MemberCommandHierarchy {
   const generalId = "organization-general";
-  const nodes: MemberCommandHierarchy["nodes"] = [{
+  const nodes: MemberCommandNode[] = [{
     id: "entral",
     name: "ENTRAL",
     parentId: null,
-    rank: "emperor",
+    rank: "ENTRAL",
     status: "thinking"
   }];
 
   for (const [id, name] of marshals) {
-    nodes.push({ id, name, parentId: "entral", rank: "marshal", status: id === "portfolio-marshal" ? "working" : "idle" });
+    nodes.push({ id, name, parentId: "entral", rank: "MARSHAL", status: id === "portfolio-marshal" ? "working" : "idle" });
   }
 
-  nodes.push({ id: generalId, name: `${organizationName} General`, parentId: "portfolio-marshal", rank: "general", status: "working" });
-  for (const [commanderId, name, soldiers] of commanders) {
-    nodes.push({ id: commanderId, name, parentId: generalId, rank: "commander", status: "idle" });
-    for (const soldierName of soldiers) {
-      nodes.push({
-        id: `${commanderId}:${slug(soldierName)}`,
-        name: soldierName,
-        parentId: commanderId,
-        rank: "soldier",
-        status: "idle"
-      });
-    }
+  nodes.push({ id: generalId, name: `${organizationName} General`, parentId: "portfolio-marshal", rank: "GENERAL", status: "working" });
+  const commanderId = "organization-commander";
+  nodes.push({ id: commanderId, name: `${organizationName} Commander`, parentId: generalId, rank: "COMMANDER", status: "idle" });
+  for (const soldierName of soldiers) {
+    nodes.push({
+      id: `${commanderId}:${slug(soldierName)}`,
+      name: soldierName,
+      parentId: commanderId,
+      rank: "SOLDIER",
+      status: "idle"
+    });
   }
 
   return { nodes };

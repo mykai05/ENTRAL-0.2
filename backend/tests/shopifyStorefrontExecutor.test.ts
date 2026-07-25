@@ -12,6 +12,24 @@ function resetEnv() {
   delete process.env.SHOPIFY_STORE_DOMAIN;
   delete process.env.SHOPIFY_CONNECTOR_ADMIN_TOKEN;
   delete process.env.SHOPIFY_API_VERSION;
+  process.env.INTEGRATION_REGISTRY_JSON = JSON.stringify([{
+    integration_id: "123e4567-e89b-42d3-a456-426614174000",
+    provider_code: "shopify",
+    provider_name: "Shopify",
+    provider_api_version: "2026-04",
+    capability_codes: ["COMMERCE_PLATFORM"],
+    official_documentation_url: "https://shopify.dev/docs/api",
+    stage: "ACTIVE",
+    adapter_version: "1.0.0",
+    auth_methods: ["API_KEY"],
+    credential_reference_id: "223e4567-e89b-42d3-a456-426614174000",
+    owning_business_id: "323e4567-e89b-42d3-a456-426614174000",
+    granted_operation_codes: ["storefront.draft.write"],
+    live_tested_at: "2026-07-24T00:00:00Z",
+    active_at: "2026-07-24T01:00:00Z",
+    evidence_ids: ["423e4567-e89b-42d3-a456-426614174000"],
+    disabled_reason: null
+  }]);
 }
 
 function jsonResponse(body: unknown, status = 200) {
@@ -140,6 +158,45 @@ describe("Shopify Storefront Draft Executor", () => {
     expect(plan.status).toBe("ready_for_owner_unlock");
     expect(plan.externalExecution).toBe(false);
     expect(plan.providerContacted).toBe(false);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("rejects provider contact when Shopify is not ACTIVE", async () => {
+    process.env.INTEGRATION_REGISTRY_JSON = JSON.stringify([{
+      integration_id: "123e4567-e89b-42d3-a456-426614174000",
+      provider_code: "shopify",
+      provider_name: "Shopify",
+      provider_api_version: "2026-04",
+      capability_codes: ["COMMERCE_PLATFORM"],
+      official_documentation_url: "https://shopify.dev/docs/api",
+      stage: "LIVE_TESTED",
+      adapter_version: "1.0.0",
+      auth_methods: ["API_KEY"],
+      credential_reference_id: "223e4567-e89b-42d3-a456-426614174000",
+      owning_business_id: "323e4567-e89b-42d3-a456-426614174000",
+      granted_operation_codes: ["storefront.draft.write"],
+      live_tested_at: "2026-07-24T00:00:00Z",
+      active_at: null,
+      evidence_ids: ["423e4567-e89b-42d3-a456-426614174000"],
+      disabled_reason: "Awaiting activation"
+    }]);
+    const { executeShopifyStorefrontDraft } = await import("../src/services/shopifyStorefrontExecutor.js");
+    const fetcher = vi.fn();
+
+    await expect(executeShopifyStorefrontDraft({
+      connectorApproval: true,
+      credentials: {
+        adminToken: "shpat_test",
+        apiVersion: "2026-04",
+        shopDomain: "iron-house.myshopify.com"
+      },
+      dryRun: false,
+      fetcher,
+      liveUnlockPhrase: "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION",
+      products,
+      store,
+      storeId: "store_iron"
+    })).rejects.toMatchObject({ code: "INTEGRATION_NOT_ACTIVE" });
     expect(fetcher).not.toHaveBeenCalled();
   });
 

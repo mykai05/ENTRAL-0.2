@@ -1,3 +1,8 @@
+import {
+  ENTITY_ROLES,
+  assertValidParentRole,
+  type EntityRole
+} from "@entral/contracts";
 import { z } from "zod";
 import { env } from "../env.js";
 import {
@@ -10,7 +15,7 @@ import {
 const shortText = (maximum: number) => z.string().trim().min(1).max(maximum);
 const itemId = shortText(80);
 
-const memberCommandRankSchema = z.enum(["emperor", "marshal", "general", "commander", "soldier"]);
+const memberCommandRankSchema = z.enum(ENTITY_ROLES);
 const memberCommandStatusSchema = z.enum(["idle", "working", "thinking", "waiting", "error", "offline"]);
 
 const memberCommandNodeSchema = z.object({
@@ -20,14 +25,6 @@ const memberCommandNodeSchema = z.object({
   rank: memberCommandRankSchema,
   status: memberCommandStatusSchema
 }).strict();
-
-const requiredParentRank = {
-  commander: "general",
-  emperor: null,
-  general: "marshal",
-  marshal: "emperor",
-  soldier: "commander"
-} as const;
 
 export const memberCommandHierarchySchema = z.object({
   nodes: z.array(memberCommandNodeSchema).min(1).max(5_000)
@@ -41,23 +38,18 @@ export const memberCommandHierarchySchema = z.object({
   }
 
   const roots = nodes.filter((node) => node.parentId === null);
-  if (roots.length !== 1 || roots[0]?.rank !== "emperor") {
-    context.addIssue({ code: "custom", message: "The member hierarchy must contain exactly one emperor root.", path: ["nodes"] });
+  if (roots.length !== 1 || roots[0]?.rank !== "ENTRAL") {
+    context.addIssue({ code: "custom", message: "The member hierarchy must contain exactly one ENTRAL root.", path: ["nodes"] });
   }
 
   for (const node of nodes) {
-    const expected = requiredParentRank[node.rank];
-    if (expected === null) {
-      if (node.parentId !== null) {
-        context.addIssue({ code: "custom", message: "The emperor root cannot have a parent.", path: ["nodes"] });
-      }
-      continue;
-    }
     const parent = node.parentId ? byId.get(node.parentId) : undefined;
-    if (!parent || parent.rank !== expected) {
+    try {
+      assertValidParentRole(node.rank as EntityRole, parent?.rank as EntityRole | undefined ?? null);
+    } catch (error) {
       context.addIssue({
         code: "custom",
-        message: `${node.rank} nodes must have an existing ${expected} parent.`,
+        message: error instanceof Error ? error.message : "Invalid canonical hierarchy relationship.",
         path: ["nodes"]
       });
     }

@@ -4,6 +4,9 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  parseMemberOverviewResponse
+} from "@entral/contracts";
+import {
   AlertCircle,
   CalendarClock,
   CircleSlash2,
@@ -92,10 +95,11 @@ export function MemberDashboardClient({
     setOverview(null);
 
     try {
-      const response = await apiFetch<MemberOverviewResponse>(
+      const payload = await apiFetch<unknown>(
         `/member/organizations/${encodeURIComponent(requestedOrganizationId)}/overview`,
         { signal: controller.signal }
       );
+      const response = parseMemberOverviewResponse(payload);
 
       if (controller.signal.aborted || overviewRequestGeneration.current !== generation) return;
       if (response.organization.id !== requestedOrganizationId) {

@@ -122,11 +122,11 @@ function commandStatus(status: MemberCommandStatus): MemberGraphStatus {
 }
 
 function rankDepth(rank: MemberCommandRank) {
-  return { commander: 3, emperor: 0, general: 2, marshal: 1, soldier: 4 }[rank];
+  return { COMMANDER: 3, ENTRAL: 0, GENERAL: 2, MARSHAL: 1, SOLDIER: 4 }[rank];
 }
 
 function rankLabel(rank: MemberCommandRank) {
-  return rank === "emperor" ? "Central command" : `${rank[0].toUpperCase()}${rank.slice(1)}`;
+  return rank === "ENTRAL" ? "Central command" : `${rank[0]}${rank.slice(1).toLowerCase()}`;
 }
 
 function makeHub(input: Omit<MemberGraphNode, "x" | "y"> & { branch: keyof typeof hubPositions }): MemberGraphNode {
@@ -146,16 +146,16 @@ export function buildMemberGraphModel(overview: MemberOverviewResponse): MemberG
   const publishedHierarchy = overview.workspace?.commandHierarchy;
   const hierarchy = publishedHierarchy ?? createMemberStarterHierarchy(overview.organization.name);
   const hierarchySource = publishedHierarchy ? "published" as const : "starter" as const;
-  const root = hierarchy.nodes.find((node) => node.rank === "emperor" && node.parentId === null) ?? hierarchy.nodes[0];
+  const root = hierarchy.nodes.find((node) => node.rank === "ENTRAL" && node.parentId === null) ?? hierarchy.nodes[0];
   const graphId = (id: string) => id === root.id ? "core" : `command:${id}`;
   const nodes: MemberGraphNode[] = hierarchy.nodes.map((node) => ({
-    branch: node.rank === "emperor" ? "core" : node.rank,
+    branch: node.rank === "ENTRAL" ? "core" : node.rank.toLowerCase() as MemberGraphBranch,
     depth: rankDepth(node.rank),
-    detail: node.rank === "emperor"
+    detail: node.rank === "ENTRAL"
       ? `The strategic center of ${overview.organization.name}'s organization-scoped command universe.`
-      : `${node.name} is a member-visible ${node.rank} in this organization's chain of command.`,
+      : `${node.name} is a member-visible ${node.rank.toLowerCase()} in this organization's chain of command.`,
     id: graphId(node.id),
-    kind: node.rank === "emperor" ? "core" : node.rank,
+    kind: node.rank === "ENTRAL" ? "core" : node.rank.toLowerCase() as MemberGraphKind,
     label: node.name,
     metric: rankLabel(node.rank),
     parentId: node.parentId ? graphId(node.parentId) : null,
@@ -163,7 +163,7 @@ export function buildMemberGraphModel(overview: MemberOverviewResponse): MemberG
     supportingItems: [
       hierarchySource === "published" ? "Published organization hierarchy" : "Organization starter hierarchy",
       `${overview.organization.memberCount} of ${overview.organization.memberLimit} member seats`,
-      node.rank === "emperor" ? "ENTRAL routes work through Marshals, Generals, Commanders, and Soldiers" : `Operating status: ${node.status}`
+      node.rank === "ENTRAL" ? "ENTRAL routes work through Marshals, Generals, Commanders, and Soldiers" : `Operating status: ${node.status}`
     ],
     x: 50,
     y: 50

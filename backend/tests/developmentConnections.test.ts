@@ -21,6 +21,44 @@ beforeEach(() => {
   delete process.env.VERCEL_TOKEN;
   delete process.env.VERCEL_ORG_ID;
   delete process.env.VERCEL_PROJECT_ID;
+  process.env.INTEGRATION_REGISTRY_JSON = JSON.stringify([
+    {
+      integration_id: "123e4567-e89b-42d3-a456-426614174000",
+      provider_code: "github",
+      provider_name: "GitHub",
+      provider_api_version: "2022-11-28",
+      capability_codes: ["DEVELOPMENT_STATUS"],
+      official_documentation_url: "https://docs.github.com/en/rest",
+      stage: "ACTIVE",
+      adapter_version: "1.0.0",
+      auth_methods: ["API_KEY"],
+      credential_reference_id: "223e4567-e89b-42d3-a456-426614174000",
+      owning_business_id: "323e4567-e89b-42d3-a456-426614174000",
+      granted_operation_codes: ["repository.status.read"],
+      live_tested_at: "2026-07-24T00:00:00Z",
+      active_at: "2026-07-24T01:00:00Z",
+      evidence_ids: ["423e4567-e89b-42d3-a456-426614174000"],
+      disabled_reason: null
+    },
+    {
+      integration_id: "523e4567-e89b-42d3-a456-426614174000",
+      provider_code: "vercel",
+      provider_name: "Vercel",
+      provider_api_version: "v9-projects+v6-deployments",
+      capability_codes: ["DEPLOYMENT_STATUS"],
+      official_documentation_url: "https://vercel.com/docs/rest-api",
+      stage: "ACTIVE",
+      adapter_version: "1.0.0",
+      auth_methods: ["API_KEY"],
+      credential_reference_id: "623e4567-e89b-42d3-a456-426614174000",
+      owning_business_id: "723e4567-e89b-42d3-a456-426614174000",
+      granted_operation_codes: ["deployment.status.read"],
+      live_tested_at: "2026-07-24T00:00:00Z",
+      active_at: "2026-07-24T01:00:00Z",
+      evidence_ids: ["823e4567-e89b-42d3-a456-426614174000"],
+      disabled_reason: null
+    }
+  ]);
 });
 
 describe("development read-only connections", () => {
@@ -97,6 +135,25 @@ describe("development read-only connections", () => {
     expect(status.workflowStatus).toBe("success");
     expect(status.readOnly).toBe(true);
     expect(status.writeActionsEnabled).toBe(false);
+  });
+
+  it("rejects GitHub provider contact when its registry record is inactive", async () => {
+    process.env.GITHUB_TOKEN = "ghp_readonly";
+    process.env.GITHUB_OWNER = "mykai05";
+    process.env.GITHUB_REPO = "ENTRAL-0.2";
+    const records = JSON.parse(process.env.INTEGRATION_REGISTRY_JSON!) as Array<Record<string, unknown>>;
+    process.env.INTEGRATION_REGISTRY_JSON = JSON.stringify(records.map((record) => (
+      record.provider_code === "github"
+        ? { ...record, active_at: null, stage: "LIVE_TESTED" }
+        : record
+    )));
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const { getGitHubConnectionState, getGitHubReadOnlyStatus } = await import("../src/services/developmentConnections.js");
+
+    expect(getGitHubConnectionState().status).toBe("Disabled");
+    expect((await getGitHubReadOnlyStatus()).status).toBe("Error");
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("reads Vercel deployment status without write actions", async () => {

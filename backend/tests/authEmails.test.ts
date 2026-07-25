@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 beforeEach(() => {
   vi.resetModules();
+  vi.unstubAllGlobals();
   process.env.NODE_ENV = "test";
   process.env.DATABASE_URL = "file:./test.db";
   process.env.JWT_SECRET = "test-secret-that-is-long-enough-for-jwt";
@@ -65,5 +66,78 @@ describe("auth email content", () => {
 
     expect(content.html).toContain("AI command center for organizing, planning, monitoring, and safely preparing business operations");
     expect(content.html).toContain("human approval gates");
+  });
+
+  it("sends through Resend only with an exact ACTIVE registry record", async () => {
+    process.env.AUTH_EMAIL_PROVIDER = "resend";
+    process.env.AUTH_EMAIL_FROM = "ENTRAL <noreply@entral.test>";
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.INTEGRATION_REGISTRY_JSON = JSON.stringify([{
+      integration_id: "123e4567-e89b-42d3-a456-426614174000",
+      provider_code: "resend",
+      provider_name: "Resend",
+      provider_api_version: "v1",
+      capability_codes: ["TRANSACTIONAL_EMAIL"],
+      official_documentation_url: "https://resend.com/docs/api-reference/introduction",
+      stage: "ACTIVE",
+      adapter_version: "1.0.0",
+      auth_methods: ["API_KEY"],
+      credential_reference_id: "223e4567-e89b-42d3-a456-426614174000",
+      owning_business_id: "323e4567-e89b-42d3-a456-426614174000",
+      granted_operation_codes: ["email.send"],
+      live_tested_at: "2026-07-24T00:00:00Z",
+      active_at: "2026-07-24T01:00:00Z",
+      evidence_ids: ["423e4567-e89b-42d3-a456-426614174000"],
+      disabled_reason: null
+    }]);
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ id: "email-1" }), {
+      headers: { "content-type": "application/json" },
+      status: 200
+    }));
+    vi.stubGlobal("fetch", fetchSpy);
+    const { sendVerificationEmail } = await import("../src/services/authEmails.js");
+
+    await expect(sendVerificationEmail({
+      name: "Ada",
+      to: "ada@example.com",
+      token: "verify-token"
+    })).resolves.toMatchObject({ messageId: "email-1", provider: "resend", queued: true });
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
+
+  it("rejects Resend provider contact while its registry record is inactive", async () => {
+    process.env.AUTH_EMAIL_PROVIDER = "resend";
+    process.env.AUTH_EMAIL_FROM = "ENTRAL <noreply@entral.test>";
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.INTEGRATION_REGISTRY_JSON = JSON.stringify([{
+      integration_id: "123e4567-e89b-42d3-a456-426614174000",
+      provider_code: "resend",
+      provider_name: "Resend",
+      provider_api_version: "v1",
+      capability_codes: ["TRANSACTIONAL_EMAIL"],
+      official_documentation_url: "https://resend.com/docs/api-reference/introduction",
+      stage: "LIVE_TESTED",
+      adapter_version: "1.0.0",
+      auth_methods: ["API_KEY"],
+      credential_reference_id: "223e4567-e89b-42d3-a456-426614174000",
+      owning_business_id: "323e4567-e89b-42d3-a456-426614174000",
+      granted_operation_codes: ["email.send"],
+      live_tested_at: "2026-07-24T00:00:00Z",
+      active_at: null,
+      evidence_ids: ["423e4567-e89b-42d3-a456-426614174000"],
+      disabled_reason: "Awaiting activation"
+    }]);
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const { sendVerificationEmail } = await import("../src/services/authEmails.js");
+
+    await expect(sendVerificationEmail({
+      name: "Ada",
+      to: "ada@example.com",
+      token: "verify-token"
+    })).rejects.toMatchObject({ code: "INTEGRATION_NOT_ACTIVE" });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 });
