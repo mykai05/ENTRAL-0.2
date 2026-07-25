@@ -11,6 +11,24 @@ function resetEnv() {
   delete process.env.SHOPIFY_STORE_DOMAIN;
   delete process.env.SHOPIFY_CONNECTOR_ADMIN_TOKEN;
   delete process.env.SHOPIFY_API_VERSION;
+  process.env.INTEGRATION_REGISTRY_JSON = JSON.stringify([{
+    integration_id: "123e4567-e89b-42d3-a456-426614174000",
+    provider_code: "shopify",
+    provider_name: "Shopify",
+    provider_api_version: "2026-04",
+    capability_codes: ["COMMERCE_PLATFORM"],
+    official_documentation_url: "https://shopify.dev/docs/api",
+    stage: "ACTIVE",
+    adapter_version: "1.0.0",
+    auth_methods: ["API_KEY"],
+    credential_reference_id: "223e4567-e89b-42d3-a456-426614174000",
+    owning_business_id: "323e4567-e89b-42d3-a456-426614174000",
+    granted_operation_codes: ["storefront.draft.write"],
+    live_tested_at: "2026-07-24T00:00:00Z",
+    active_at: "2026-07-24T01:00:00Z",
+    evidence_ids: ["423e4567-e89b-42d3-a456-426614174000"],
+    disabled_reason: null
+  }]);
 }
 
 const store: MerchStoreSnapshot = {

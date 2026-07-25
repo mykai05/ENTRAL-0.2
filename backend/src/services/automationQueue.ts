@@ -12,6 +12,7 @@ import {
   type ShopifyStoreCreationBrowserTaskPayload,
   type ShopifyStoreCreationBrowserTaskReceipt
 } from "./shopifyStoreCreationBrowserTask.js";
+import { createQueueJobEnvelope, parseQueueTaskId } from "./contractRuntime.js";
 
 const queuedJobs = new Set<string>();
 let runningJobs = 0;
@@ -444,9 +445,11 @@ export function enqueueAutomationJob(jobId: string, delayMs = 0, logger?: Fastif
   }
 
   queuedJobs.add(jobId);
+  const envelope = createQueueJobEnvelope("automation-job", { taskId: jobId }, `automation-job:${jobId}`);
   setTimeout(() => {
-    void runAutomationJob(jobId, logger).catch((error) => {
-      logger?.error({ automationJobId: jobId, err: error }, "Automation job runner crashed");
+    const queuedJobId = parseQueueTaskId(envelope, "automation-job");
+    void runAutomationJob(queuedJobId, logger).catch((error) => {
+      logger?.error({ automationJobId: queuedJobId, err: error }, "Automation job runner crashed");
     });
   }, Math.max(delayMs, 0));
 }

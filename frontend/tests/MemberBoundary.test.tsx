@@ -19,7 +19,7 @@ import { MemberRecoveryClient } from "../components/MemberRecoveryClient";
 import { MemberSignInClient } from "../components/MemberSignInClient";
 import { memberSignInPath, safeMemberReturnPath } from "../lib/member";
 import { loadMemberSession } from "../lib/member-session.server";
-import type { MemberOrganizationsResponse, MemberOverviewResponse } from "../lib/member";
+import type { MemberCommandNode, MemberOrganizationsResponse, MemberOverviewResponse } from "../lib/member";
 import { POST as memberLoginPost } from "../app/api/member/login/route";
 import { GET as apiProxyGet } from "../app/api/v1/[...path]/route";
 import { withoutBearerToken } from "../lib/member-login";
@@ -318,8 +318,8 @@ describe("member workspace presentation", () => {
   it("builds a complete deterministic organization graph from every returned member record", () => {
     const model = buildMemberGraphModel(overview);
 
-    expect(model.nodes).toHaveLength(43);
-    expect(model.edges).toHaveLength(43);
+    expect(model.nodes).toHaveLength(40);
+    expect(model.edges).toHaveLength(40);
     expect(model.nodes.map((node) => node.kind)).toEqual(expect.arrayContaining([
       "health-assessment",
       "priority",
@@ -343,12 +343,12 @@ describe("member workspace presentation", () => {
       workspace: {
         ...overview.workspace!,
         commandHierarchy: { nodes: [
-          { id: "entral-published", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
-          { id: "portfolio", name: "Portfolio Marshal", parentId: "entral-published", rank: "marshal", status: "working" },
-          { id: "alpha", name: "Alpha Builders General", parentId: "portfolio", rank: "general", status: "working" },
-          { id: "beta", name: "Beta Services General", parentId: "portfolio", rank: "general", status: "idle" },
-          { id: "alpha-ops", name: "Alpha Operations Commander", parentId: "alpha", rank: "commander", status: "working" },
-          { id: "alpha-delivery", name: "Alpha Delivery Soldier", parentId: "alpha-ops", rank: "soldier", status: "idle" }
+          { id: "entral-published", name: "ENTRAL", parentId: null, rank: "ENTRAL", status: "thinking" },
+          { id: "portfolio", name: "Portfolio Marshal", parentId: "entral-published", rank: "MARSHAL", status: "working" },
+          { id: "alpha", name: "Alpha Builders General", parentId: "portfolio", rank: "GENERAL", status: "working" },
+          { id: "beta", name: "Beta Services General", parentId: "portfolio", rank: "GENERAL", status: "idle" },
+          { id: "alpha-ops", name: "Alpha Operations Commander", parentId: "alpha", rank: "COMMANDER", status: "working" },
+          { id: "alpha-delivery", name: "Alpha Delivery Soldier", parentId: "alpha-ops", rank: "SOLDIER", status: "idle" }
         ] }
       }
     };
@@ -412,9 +412,9 @@ describe("member workspace presentation", () => {
     };
     const model = buildMemberGraphModel(maxOverview);
 
-    expect(model.nodes).toHaveLength(117);
-    expect(model.edges).toHaveLength(124);
-    expect(new Set(model.nodes.map((node) => node.id)).size).toBe(117);
+    expect(model.nodes).toHaveLength(114);
+    expect(model.edges).toHaveLength(121);
+    expect(new Set(model.nodes.map((node) => node.id)).size).toBe(114);
     for (const node of model.nodes) {
       expect(node.x).toBeGreaterThanOrEqual(3);
       expect(node.x).toBeLessThanOrEqual(97);
@@ -423,7 +423,7 @@ describe("member workspace presentation", () => {
     }
 
     const scene = buildMemberNeuronScene3D(maxOverview);
-    expect(scene.nodes).toHaveLength(117);
+    expect(scene.nodes).toHaveLength(114);
     expect(scene.edges).toEqual(model.edges);
     expect(buildMemberNeuronScene3D(maxOverview)).toEqual(scene);
     expect(scene.nodes.find((node) => node.id === "core")).toMatchObject({ x3: 0, y3: 0, z3: 0 });
@@ -469,16 +469,16 @@ describe("member workspace presentation", () => {
   });
 
   it("bounds a 5,000-node member hierarchy while preserving the upper command chain", () => {
-    const hierarchy: NonNullable<NonNullable<MemberOverviewResponse["workspace"]>["commandHierarchy"]>["nodes"] = [
-      { id: "entral-large", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
-      { id: "portfolio-large", name: "Portfolio Marshal", parentId: "entral-large", rank: "marshal", status: "working" }
+    const hierarchy: MemberCommandNode[] = [
+      { id: "entral-large", name: "ENTRAL", parentId: null, rank: "ENTRAL", status: "thinking" },
+      { id: "portfolio-large", name: "Portfolio Marshal", parentId: "entral-large", rank: "MARSHAL", status: "working" }
     ];
     for (let generalIndex = 0; generalIndex < 100; generalIndex += 1) {
       const generalId = `general-${generalIndex}`;
-      hierarchy.push({ id: generalId, name: `Business ${generalIndex} General`, parentId: "portfolio-large", rank: "general", status: "idle" });
+      hierarchy.push({ id: generalId, name: `Business ${generalIndex} General`, parentId: "portfolio-large", rank: "GENERAL", status: "idle" });
       for (let commanderIndex = 0; commanderIndex < 10; commanderIndex += 1) {
         const commanderId = `${generalId}-commander-${commanderIndex}`;
-        hierarchy.push({ id: commanderId, name: `Commander ${generalIndex}-${commanderIndex}`, parentId: generalId, rank: "commander", status: "idle" });
+        hierarchy.push({ id: commanderId, name: `Commander ${generalIndex}-${commanderIndex}`, parentId: generalId, rank: "COMMANDER", status: "idle" });
       }
     }
     let soldierIndex = 0;
@@ -490,7 +490,7 @@ describe("member workspace presentation", () => {
         id: `soldier-${soldierIndex}`,
         name: `Soldier ${soldierIndex}`,
         parentId: `general-${generalIndex}-commander-${localCommanderIndex}`,
-        rank: "soldier",
+        rank: "SOLDIER",
         status: "idle"
       });
       soldierIndex += 1;

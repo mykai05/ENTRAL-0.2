@@ -1,8 +1,13 @@
+import { ContractError } from "@entral/contracts";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { env } from "../env.js";
+import { getProviderExecutionAuthorization } from "./integrationRegistry.js";
 
 export type AiProviderStatus = "Connected" | "Disabled" | "Error" | "Missing API Key" | "Mock Mode" | "Not Connected";
+export const openAiAdapterVersion = "1.0.0";
+export const openAiProviderApiVersion = "v1";
+export const openAiOperationCode = "chat.completions";
 
 export type AiProviderState = {
   availabilityStatus: AiProviderStatus;
@@ -85,6 +90,25 @@ export class OpenAiProvider {
       };
     }
 
+    try {
+      const authorization = getProviderExecutionAuthorization("openai", openAiOperationCode);
+      if (
+        authorization.requirement.provider_api_version !== openAiProviderApiVersion ||
+        authorization.requirement.adapter_version !== openAiAdapterVersion
+      ) {
+        throw new ContractError("INTEGRATION_VERSION_MISMATCH", "OpenAI activation versions do not match this adapter");
+      }
+    } catch {
+      return {
+        availabilityStatus: "Mock Mode",
+        connectionStatus: "Disabled",
+        missingEnvVars: [],
+        mockMode: true,
+        modelName: env.OPENAI_MODEL,
+        providerName: "OpenAI"
+      };
+    }
+
     return {
       availabilityStatus: "Connected",
       connectionStatus: "Connected",
@@ -109,6 +133,17 @@ export class OpenAiProvider {
 
     if (!env.OPENAI_API_KEY) {
       throw new AiProviderUnavailableError("AI provider is missing OPENAI_API_KEY.");
+    }
+
+    const integrationAuthorization = getProviderExecutionAuthorization("openai", openAiOperationCode);
+    if (
+      integrationAuthorization.requirement.provider_api_version !== openAiProviderApiVersion ||
+      integrationAuthorization.requirement.adapter_version !== openAiAdapterVersion
+    ) {
+      throw new ContractError(
+        "INTEGRATION_VERSION_MISMATCH",
+        "OpenAI execution requires the exact active provider API and adapter versions"
+      );
     }
 
     this.client ??= new OpenAI({ apiKey: env.OPENAI_API_KEY });
@@ -148,11 +183,17 @@ export class OpenAiProvider {
 
     if (state.connectionStatus === "Disabled") {
       return {
-        error: "AI_FEATURE_ENABLED is false.",
-        message: "AI provider is disabled.",
+        error: env.AI_FEATURE_ENABLED
+          ? "OpenAI does not have one exact ACTIVE integration registry record."
+          : "AI_FEATURE_ENABLED is false.",
+        message: env.AI_FEATURE_ENABLED
+          ? "AI provider execution is disabled until its canonical activation record is complete."
+          : "AI provider is disabled.",
         missingEnvVars: state.missingEnvVars,
         modelName: state.modelName,
-        nextSteps: ["Set AI_FEATURE_ENABLED=true when AI provider routing is ready."],
+        nextSteps: env.AI_FEATURE_ENABLED
+          ? ["Register one ACTIVE OpenAI record with exact owner, versions, credential reference, operation grant, and live evidence."]
+          : ["Set AI_FEATURE_ENABLED=true when AI provider routing is ready."],
         providerName: state.providerName,
         status: "Disabled",
         success: false,

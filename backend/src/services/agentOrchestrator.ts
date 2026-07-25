@@ -8,6 +8,7 @@ import { evaluateAgentPolicies } from "./policyEngine.js";
 import { openAiChatService } from "./openaiService.js";
 import { parseSecureJson, stringifySecureJson } from "./secureJson.js";
 import { assertSafeOutboundWebhookUrl } from "./urlSafety.js";
+import { createQueueJobEnvelope, parseQueueTaskId } from "./contractRuntime.js";
 
 type AgentTaskRecord = {
   userId: string;
@@ -134,16 +135,13 @@ async function initializeBullAgentQueue(logger?: FastifyBaseLogger) {
   try {
     const bullmq = await tryImportBullMq();
     const Queue = bullmq.Queue as new (name: string, options: unknown) => BullQueueLike;
-    const Worker = bullmq.Worker as new (name: string, processor: (job: { data?: { taskId?: string } }) => Promise<void>, options: unknown) => BullWorkerLike;
+    const Worker = bullmq.Worker as new (name: string, processor: (job: { data?: unknown }) => Promise<void>, options: unknown) => BullWorkerLike;
     const connection = { url: env.REDIS_URL };
 
     bullTaskQueue = new Queue("entral-agent-tasks", { connection });
     bullTaskWorker = new Worker("entral-agent-tasks", async (job) => {
-      const taskId = job.data?.taskId;
-
-      if (taskId) {
-        await runAgentTask(taskId, logger);
-      }
+      const taskId = parseQueueTaskId(job.data, "agent-task");
+      await runAgentTask(taskId, logger);
     }, {
       concurrency: env.AGENT_MAX_CONCURRENCY,
       connection
@@ -409,7 +407,8 @@ export function enqueueAgentTask(taskId: string, logger?: FastifyBaseLogger, del
   }
 
   if (bullTaskQueue) {
-    void bullTaskQueue.add("agent-task", { taskId }, {
+    const envelope = createQueueJobEnvelope("agent-task", { taskId }, `agent-task:${taskId}`);
+    void bullTaskQueue.add("agent-task", envelope, {
       attempts: 2,
       delay: Math.max(delayMs, 0),
       jobId: taskId,
@@ -431,9 +430,11 @@ function enqueueAgentTaskWithTimer(taskId: string, logger?: FastifyBaseLogger, d
   }
 
   queuedTasks.add(taskId);
+  const envelope = createQueueJobEnvelope("agent-task", { taskId }, `agent-task:${taskId}`);
   setTimeout(() => {
-    void runAgentTask(taskId, logger).catch((error) => {
-      logger?.error({ err: error, agentTaskId: taskId }, "Agent task runner crashed");
+    const queuedTaskId = parseQueueTaskId(envelope, "agent-task");
+    void runAgentTask(queuedTaskId, logger).catch((error) => {
+      logger?.error({ err: error, agentTaskId: queuedTaskId }, "Agent task runner crashed");
     });
   }, Math.max(delayMs, 0));
 }

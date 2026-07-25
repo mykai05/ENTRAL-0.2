@@ -3,8 +3,8 @@ import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import { config } from "dotenv";
-import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { getProviderExecutionAuthorization } from "./services/integrationRegistry.js";
 import { generateProductBatch, type ProductBatchInput } from "./services/productBatchGenerator.js";
 import { analyzeCompliance, formatComplianceNotes } from "./services/complianceGuardrails.js";
 import { buildDigitalProductPortfolioPlan, type DigitalProductOptions } from "./services/digitalProductPortfolio.js";
@@ -832,7 +832,6 @@ const state = {
 
 const openAiModel = process.env.OPENAI_MODEL?.trim() || "gpt-4o";
 const openAiApiKey = process.env.OPENAI_API_KEY?.trim();
-let openAiClient: OpenAI | null = null;
 const aiDailyCostLimitCents = Number(process.env.AI_DAILY_COST_LIMIT_CENTS ?? 250);
 const aiMonthlyCostLimitCents = Number(process.env.AI_MONTHLY_COST_LIMIT_CENTS ?? 2500);
 const aiDecisionEstimatedCostCents = Number(process.env.AI_DECISION_ESTIMATED_COST_CENTS ?? 1);
@@ -857,7 +856,11 @@ function aiUsageSummary(userId: string) {
   const monthlyUsedCents = state.aiUsageEvents
     .filter((event) => event.userId === userId && event.createdAt >= monthlySince)
     .reduce((sum, event) => sum + event.estimatedCostCents, 0);
-  const providerStatus = openAiApiKey ? "Connected" : "Missing API Key";
+  const providerStatus = memoryOpenAiIsActive()
+    ? "Connected"
+    : openAiApiKey
+      ? "Disabled"
+      : "Missing API Key";
 
   return {
     daily: {
@@ -880,7 +883,7 @@ function aiUsageSummary(userId: string) {
 }
 
 function estimateAiMemoryCostCents(kind: "chat" | "development_status" | "development_write_refusal" | "screen") {
-  if (!openAiApiKey) return aiLocalFallbackEstimatedCostCents;
+  if (!memoryOpenAiIsActive()) return aiLocalFallbackEstimatedCostCents;
   if (kind === "screen") return aiDecisionEstimatedCostCents + aiScreenEstimatedCostCents;
   if (kind === "chat") return aiDecisionEstimatedCostCents + aiChatEstimatedCostCents;
   return aiDecisionEstimatedCostCents;
@@ -927,13 +930,17 @@ const memorySystemPrompt = [
   "For restricted or sensitive actions, explain the safe governed next step."
 ].join(" ");
 
-function getOpenAiClient() {
-  if (!openAiApiKey) {
-    return null;
+function memoryOpenAiIsActive() {
+  if (!openAiApiKey) return false;
+  try {
+    const authorization = getProviderExecutionAuthorization("openai", "chat.completions");
+    return (
+      authorization.requirement.provider_api_version === "v1" &&
+      authorization.requirement.adapter_version === "1.0.0"
+    );
+  } catch {
+    return false;
   }
-
-  openAiClient ??= new OpenAI({ apiKey: openAiApiKey });
-  return openAiClient;
 }
 
 function recentOpenAiMessages(conversation: Conversation): OpenAiMessage[] {
@@ -944,16 +951,16 @@ function recentOpenAiMessages(conversation: Conversation): OpenAiMessage[] {
 }
 
 async function createAssistantContent(conversation: Conversation, prompt: string, screenshot?: string, preparedBrainPlan?: AiActionPlan) {
-  const client = getOpenAiClient();
+  const { openAiProvider } = await import("./services/aiProvider.js");
   const { buildAiBrainContextPrompt, createAiActionPlan } = await import("./services/aiBrain.js");
   const brainPlan = preparedBrainPlan ?? createAiActionPlan(prompt);
 
-  if (!client) {
+  if (!openAiProvider.canRequest()) {
     return [
       "[ENTRAL]",
       "Situation:\nAI Provider Not Connected. ENTRAL is operating in Mock Mode.",
       `Analysis:\nDirective received: \"${prompt.slice(0, 220)}\"\nIntent: ${brainPlan.intent}. Risk: ${brainPlan.riskLevel}. Tools: ${brainPlan.toolsRequired.length ? brainPlan.toolsRequired.join(", ") : "none"}.`,
-      "Recommendation:\nAdd OPENAI_API_KEY to the backend environment and restart ENTRAL to enable live GPT-4o strategic command responses.",
+      "Recommendation:\nAdd OPENAI_API_KEY and one exact ACTIVE OpenAI integration registry record to the backend environment, then restart ENTRAL to enable live strategic command responses.",
       `Next Actions:\n- Use local Command Center controls for graph control.\n- ${brainPlan.authorizationRequired ? "Review and authorize the prepared action plan before execution." : "Proceed with local command handling where available."}\n- Restore the OpenAI channel when strategic analysis is required.`
     ].join("\n\n");
   }
@@ -984,17 +991,12 @@ async function createAssistantContent(conversation: Conversation, prompt: string
   }
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await openAiProvider.request({
       messages,
-      model: openAiModel,
       temperature: screenshot ? 0.2 : 0.4
     });
 
-    return response.choices[0]?.message?.content?.trim() || [
-      "[ENTRAL]",
-      "Situation:\nNo command response was returned.",
-      "Recommendation:\nReissue the directive in a moment."
-    ].join("\n\n");
+    return response.content;
   } catch (error) {
     app.log.warn({ err: error }, "OpenAI request failed in memory backend");
     return [
@@ -13651,7 +13653,7 @@ async function chatReply(request: FastifyRequest, reply: FastifyReply) {
   conversation.messages.push(assistantMessage);
   conversation.updatedAt = assistantMessage.createdAt;
   const isDevelopmentOnlyUsage = requestKind === "development_status" || requestKind === "development_write_refusal";
-  const usedLocalFallback = !isDevelopmentOnlyUsage && !openAiApiKey;
+  const usedLocalFallback = !isDevelopmentOnlyUsage && !memoryOpenAiIsActive();
   const usageEvent: AiUsageEvent = {
     createdAt: now(),
     estimatedCostCents: usagePreflight.estimatedCostCents,
@@ -13668,7 +13670,7 @@ async function chatReply(request: FastifyRequest, reply: FastifyReply) {
     executionResult: body.screenshot
       ? "Screen analysis response generated. Screenshot was processed transiently and not stored."
       : brainPlan.authorizationRequired ? "Plan prepared. Authorization required before execution." : "Plan prepared. No external action executed.",
-    modelName: openAiApiKey ? openAiModel : "local-fallback",
+    modelName: memoryOpenAiIsActive() ? openAiModel : "local-fallback",
     plan: brainPlan,
     providerName: "OpenAI"
   });

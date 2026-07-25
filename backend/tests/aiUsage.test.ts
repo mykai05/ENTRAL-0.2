@@ -31,6 +31,24 @@ function setTestEnv() {
   process.env.AI_SCREEN_ESTIMATED_COST_CENTS = "8";
   process.env.AI_LOCAL_FALLBACK_ESTIMATED_COST_CENTS = "0";
   process.env.OPENAI_API_KEY = "sk-test";
+  process.env.INTEGRATION_REGISTRY_JSON = JSON.stringify([{
+    integration_id: "123e4567-e89b-42d3-a456-426614174000",
+    provider_code: "openai",
+    provider_name: "OpenAI",
+    provider_api_version: "v1",
+    capability_codes: ["AI_CHAT"],
+    official_documentation_url: "https://platform.openai.com/docs/api-reference",
+    stage: "ACTIVE",
+    adapter_version: "1.0.0",
+    auth_methods: ["API_KEY"],
+    credential_reference_id: "223e4567-e89b-42d3-a456-426614174000",
+    owning_business_id: "323e4567-e89b-42d3-a456-426614174000",
+    granted_operation_codes: ["chat.completions"],
+    live_tested_at: "2026-07-24T00:00:00Z",
+    active_at: "2026-07-24T01:00:00Z",
+    evidence_ids: ["423e4567-e89b-42d3-a456-426614174000"],
+    disabled_reason: null
+  }]);
   delete process.env.DATA_ENCRYPTION_KEY;
 }
 

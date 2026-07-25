@@ -1,5 +1,11 @@
+import { ContractError } from "@entral/contracts";
 import { env } from "../env.js";
 import { safeCanonicalMemberReturnPath } from "../schemas.js";
+import { getProviderExecutionAuthorization } from "./integrationRegistry.js";
+
+export const resendAdapterVersion = "1.0.0";
+export const resendProviderApiVersion = "v1";
+export const resendSendOperationCode = "email.send";
 
 type AuthEmailInput = {
   html: string;
@@ -54,6 +60,17 @@ async function deliverAuthEmail(input: AuthEmailInput) {
       provider: "console" as const,
       queued: false
     };
+  }
+
+  const authorization = getProviderExecutionAuthorization("resend", resendSendOperationCode);
+  if (
+    authorization.requirement.provider_api_version !== resendProviderApiVersion ||
+    authorization.requirement.adapter_version !== resendAdapterVersion
+  ) {
+    throw new ContractError(
+      "INTEGRATION_VERSION_MISMATCH",
+      "Resend execution requires the exact active provider API and adapter versions"
+    );
   }
 
   const response = await fetch("https://api.resend.com/emails", {

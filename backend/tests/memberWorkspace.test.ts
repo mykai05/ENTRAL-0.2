@@ -47,12 +47,12 @@ describe("member workspace DTO boundary", () => {
       ...safeSnapshot,
       commandHierarchy: {
         nodes: [
-          { id: "entral", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
-          { id: "operations", name: "Operations Marshal", parentId: "entral", rank: "marshal", status: "working" },
-          { id: "company-a", name: "Company A General", parentId: "operations", rank: "general", status: "working" },
-          { id: "company-b", name: "Company B General", parentId: "operations", rank: "general", status: "idle" },
-          { id: "delivery", name: "Delivery Commander", parentId: "company-a", rank: "commander", status: "idle" },
-          { id: "worker", name: "Delivery Soldier", parentId: "delivery", rank: "soldier", status: "idle" }
+          { id: "entral", name: "ENTRAL", parentId: null, rank: "ENTRAL", status: "thinking" },
+          { id: "operations", name: "Operations Marshal", parentId: "entral", rank: "MARSHAL", status: "working" },
+          { id: "company-a", name: "Company A General", parentId: "operations", rank: "GENERAL", status: "working" },
+          { id: "company-b", name: "Company B General", parentId: "operations", rank: "GENERAL", status: "idle" },
+          { id: "delivery", name: "Delivery Commander", parentId: "company-a", rank: "COMMANDER", status: "idle" },
+          { id: "worker", name: "Delivery Soldier", parentId: "delivery", rank: "SOLDIER", status: "idle" }
         ]
       }
     });
@@ -65,8 +65,8 @@ describe("member workspace DTO boundary", () => {
     const invalidParent = memberWorkspaceSnapshotSchema.safeParse({
       ...safeSnapshot,
       commandHierarchy: { nodes: [
-        { id: "entral", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
-        { id: "soldier", name: "Orphan Soldier", parentId: "entral", rank: "soldier", status: "idle" }
+        { id: "entral", name: "ENTRAL", parentId: null, rank: "ENTRAL", status: "thinking" },
+        { id: "soldier", name: "Orphan Soldier", parentId: "entral", rank: "SOLDIER", status: "idle" }
       ] }
     });
     const internalData = memberWorkspaceSnapshotSchema.safeParse({
@@ -77,7 +77,7 @@ describe("member workspace DTO boundary", () => {
         logs: ["must remain private"],
         name: "ENTRAL",
         parentId: null,
-        rank: "emperor",
+        rank: "ENTRAL",
         status: "thinking"
       }] }
     });

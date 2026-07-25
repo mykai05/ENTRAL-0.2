@@ -82,7 +82,8 @@ export type AiActionPlan = {
   userRequest: string;
 };
 
-export type AiAuditEntry = {
+/** Internal AI decision trace; not the canonical control-plane AuditEntry. */
+export type AiDecisionTrace = {
   actionPlanId: string;
   authorizationStatus: "approved" | "blocked" | "canceled" | "not_required" | "pending";
   entitiesChanged: string[];
@@ -389,7 +390,7 @@ export function sanitizeProviderActionPlan(raw: unknown, fallback: AiActionPlan)
 }
 
 export function createAiAuditEntry(input: {
-  authorizationStatus?: AiAuditEntry["authorizationStatus"];
+  authorizationStatus?: AiDecisionTrace["authorizationStatus"];
   entitiesChanged?: string[];
   errors?: string[];
   executionResult?: string;
@@ -398,7 +399,7 @@ export function createAiAuditEntry(input: {
   providerName?: string;
   timestamp?: string;
   toolsUsed?: string[];
-}): AiAuditEntry {
+}): AiDecisionTrace {
   const timestamp = input.timestamp ?? new Date().toISOString();
 
   return {

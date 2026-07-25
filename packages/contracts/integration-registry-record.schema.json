@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://entral.dev/contracts/v1/integration-registry-record.schema.json",
+  "title": "ENTRAL Integration Registry Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "integration_id",
+    "provider_code",
+    "provider_name",
+    "provider_api_version",
+    "capability_codes",
+    "official_documentation_url",
+    "stage",
+    "adapter_version",
+    "auth_methods",
+    "credential_reference_id",
+    "owning_business_id",
+    "granted_operation_codes",
+    "live_tested_at",
+    "active_at",
+    "evidence_ids",
+    "disabled_reason"
+  ],
+  "properties": {
+    "integration_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "provider_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "provider_name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 160
+    },
+    "provider_api_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "capability_codes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Z][A-Z0-9_]+$"
+      }
+    },
+    "official_documentation_url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "CATALOGUED",
+        "AUTHORIZED",
+        "BUILT",
+        "LIVE_TESTED",
+        "ACTIVE",
+        "RETIRED"
+      ]
+    },
+    "adapter_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "auth_methods": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "OAUTH2",
+          "API_KEY",
+          "HMAC",
+          "BASIC",
+          "JWT",
+          "SERVICE_ACCOUNT",
+          "CUSTOM"
+        ]
+      }
+    },
+    "credential_reference_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "owning_business_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "granted_operation_codes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "live_tested_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "active_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "evidence_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "disabled_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "stage": {
+            "const": "ACTIVE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "provider_api_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "adapter_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "auth_methods": {
+            "minItems": 1
+          },
+          "credential_reference_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "owning_business_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "granted_operation_codes": {
+            "minItems": 1
+          },
+          "live_tested_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidence_ids": {
+            "minItems": 1
+          },
+          "disabled_reason": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}

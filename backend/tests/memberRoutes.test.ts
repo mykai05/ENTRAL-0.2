@@ -151,9 +151,9 @@ describe("member organization routes", () => {
       snapshotJson: JSON.stringify({
         businessHealth: { score: 78, status: "stable", summary: "Delivery is steady." },
         commandHierarchy: { nodes: [
-          { id: "entral", name: "ENTRAL", parentId: null, rank: "emperor", status: "thinking" },
-          { id: "operations", name: "Operations Marshal", parentId: "entral", rank: "marshal", status: "working" },
-          { id: "company", name: "Analytical Works General", parentId: "operations", rank: "general", status: "working" }
+          { id: "entral", name: "ENTRAL", parentId: null, rank: "ENTRAL", status: "thinking" },
+          { id: "operations", name: "Operations Marshal", parentId: "entral", rank: "MARSHAL", status: "working" },
+          { id: "company", name: "Analytical Works General", parentId: "operations", rank: "GENERAL", status: "working" }
         ] },
         findingsAndRecommendations: [],
         monthlyOperatingSummary: null,
@@ -188,7 +188,7 @@ describe("member organization routes", () => {
       workspace: {
         businessHealth: { score: 78, status: "stable" },
         commandHierarchy: { nodes: expect.arrayContaining([
-          expect.objectContaining({ id: "company", rank: "general" })
+          expect.objectContaining({ id: "company", rank: "GENERAL" })
         ]) },
         objectivesAndPriorities: [{ id: "objective-1", title: "Improve scheduling" }],
         version: 2
