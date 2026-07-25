@@ -27,15 +27,15 @@ describe("AdminDashboard", () => {
     vi.mocked(apiFetch).mockReset();
   });
 
-  it("keeps administrative writes disabled after a non-admin response", async () => {
+  it("fails closed without exposing administrative writes after a non-admin response", async () => {
     vi.mocked(apiFetch).mockRejectedValue(new ApiError(403, "Admin access is required.", null));
 
     render(<AdminDashboard />);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Admin access is required.");
-    expect(screen.getByText(/Governance remains read-only for this account/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pause all agents" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Create policy" })).toBeDisabled();
-    expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
+    expect(await screen.findByRole("status")).toHaveTextContent("Admin access required");
+    expect(screen.getByRole("status")).toHaveTextContent("Admin access is required.");
+    expect(screen.queryByRole("button", { name: "Pause all agents" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create policy" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
   });
 });

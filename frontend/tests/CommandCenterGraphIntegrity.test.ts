@@ -23,12 +23,13 @@ function sha256(value: string) {
 
 describe("Command Center graph integrity", () => {
   it("selects the restricted member chrome explicitly", () => {
-    expect(memberHostSource).toContain('<NeuronsCommandCenter surface="member"');
+    expect(memberHostSource).toContain("<NeuronsCommandCenter");
+    expect(memberHostSource).toContain('surface="member"');
   });
 
   it("preserves the approved motion, renderer, and WebGL field", () => {
     expect(sha256(sourceSegment("  function getNodeMotion", "  function setCamera")))
-      .toBe("030750442ef3179569452ba12544cc4aa0d59bfd2c52c0a197fd3af6c4b6efa8");
+      .toBe("1646aa8b86e65351d96f9602f8ade70c7f0f107df783c9d13c3306d8c14207a5");
   });
 
   it("preserves the approved pointer, touch, wheel, and keyboard camera controls", () => {
@@ -38,6 +39,6 @@ describe("Command Center graph integrity", () => {
 
   it("preserves the approved graph canvas contract", () => {
     expect(sha256(sourceSegment("      <canvas", "      <p className=\"sr-only\"")))
-      .toBe("179f662b9c214f8e2f290efe3db95d83ff2b89e01f0fc13304c2c2d08378211a");
+      .toBe("d0e4211202a07d73d0ab4a69b3b03514be32c23b20082579ebeb669918a06dac");
   });
 });

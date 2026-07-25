@@ -59,11 +59,14 @@ describe("Entral UI cleanup", () => {
     expect(screen.queryByRole("link", { name: "Governance" })).not.toBeInTheDocument();
   });
 
-  it("shows governance navigation only for a confirmed admin session", async () => {
+  it("keeps the canonical three destinations for a confirmed admin session", async () => {
     window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({ role: "ADMIN" }));
-    render(<AppHeader title="Governance" subtitle="Review controls." />);
+    render(<AppHeader title="Infrastructure" subtitle="Review controls." />);
 
-    expect(await screen.findAllByRole("link", { name: "Governance" })).not.toHaveLength(0);
+    for (const label of ["Dashboard", "OPEN UNIVERSE GRAPH", "Infrastructure"]) {
+      expect(await screen.findAllByRole("link", { name: label })).toHaveLength(2);
+    }
+    expect(screen.queryByRole("link", { name: "Governance" })).not.toBeInTheDocument();
     expect(screen.getByText("Real account")).toBeInTheDocument();
   });
 

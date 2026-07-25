@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../lib/api";
 import { DashboardClient } from "../components/DashboardClient";
+import { memberSignInPath } from "../lib/member";
 
 const apiMocks = vi.hoisted(() => ({
   apiFetch: vi.fn()
@@ -32,16 +33,26 @@ vi.mock("../components/NeuronsCommandCenter", () => ({
   )
 }));
 
-describe("DashboardClient guest entry", () => {
+describe("DashboardClient protected entry", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it.each([401, 404, 408, 502, 503])("opens the local command center when the backend returns %s", async (status) => {
+  it("redirects an unauthorized session to the canonical member sign-in", async () => {
+    apiMocks.apiFetch.mockRejectedValue(new ApiError(401, "Unauthorized", null));
+    render(<DashboardClient />);
+
+    expect(await screen.findByText("Returning to verified account access...")).toBeInTheDocument();
+    expect(navigationMocks.push).toHaveBeenCalledWith(memberSignInPath("/member/dashboard"));
+    expect(navigationMocks.replace).not.toHaveBeenCalled();
+  });
+
+  it.each([404, 408, 502, 503])("shows an actionable error when the backend returns %s", async (status) => {
     apiMocks.apiFetch.mockRejectedValue(new ApiError(status, "Backend unavailable", null));
     render(<DashboardClient />);
 
-    expect(await screen.findByLabelText("ENTRAL Command Center")).toHaveTextContent("Local operator");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Backend unavailable");
+    expect(screen.queryByLabelText("ENTRAL Command Center")).not.toBeInTheDocument();
     expect(navigationMocks.push).not.toHaveBeenCalled();
     expect(navigationMocks.replace).not.toHaveBeenCalled();
   });
