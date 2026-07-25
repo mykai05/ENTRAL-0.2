@@ -71,6 +71,7 @@ describe("DashboardClient authentication boundary", () => {
     expect(screen.getByText("user-1:Operator:dashboard")).toBeInTheDocument();
     expect(JSON.parse(window.sessionStorage.getItem("entral-authenticated-user") ?? "{}")).toEqual({
       email: "operator@entral.local",
+      role: "ADMIN",
       userId: "user-1"
     });
   });
@@ -89,7 +90,7 @@ describe("DashboardClient authentication boundary", () => {
     render(<DashboardClient />);
 
     await waitFor(() => {
-      expect(mocks.push).toHaveBeenCalledWith("/onboarding?next=/dashboard");
+      expect(mocks.push).toHaveBeenCalledWith("/member/sign-in?returnTo=%2Fmember%2Fdashboard");
     });
 
     expect(screen.queryByRole("heading", { name: "Verified command graph" })).not.toBeInTheDocument();
@@ -129,7 +130,7 @@ describe("DashboardClient authentication boundary", () => {
 
     await waitFor(() => {
       expect(mocks.apiFetch).toHaveBeenLastCalledWith("/logout", { method: "POST" });
-      expect(mocks.push).toHaveBeenCalledWith("/login?next=%2Finfrastructure%3Fsection%3Dagents");
+      expect(mocks.push).toHaveBeenCalledWith("/member/sign-in?returnTo=%2Fmember%2Finfrastructure");
       expect(mocks.refresh).toHaveBeenCalled();
     });
     expect(window.sessionStorage.getItem("entral-authenticated-user")).toBeNull();

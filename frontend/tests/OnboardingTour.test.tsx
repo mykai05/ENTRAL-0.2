@@ -70,7 +70,7 @@ describe("OnboardingProvider", () => {
       window.dispatchEvent(new Event("entral:open-academy"));
     });
 
-    expect(navigationMocks.push).toHaveBeenCalledWith("/onboarding?next=/dashboard");
+    expect(navigationMocks.push).toHaveBeenCalledWith("/member/sign-in?returnTo=%2Fmember%2Fdashboard");
     expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
   });
 

@@ -36,8 +36,10 @@ describe("auth route member return paths", () => {
     }));
     vi.doMock("../src/auth.js", () => ({
       clearAuthCookie: vi.fn(),
+      requireAdmin: vi.fn(),
       requireAuth: vi.fn(),
       setAuthCookie: vi.fn(),
+      setPrivateNoStoreHeaders: vi.fn(),
       signAuthToken: vi.fn(() => "signed-token")
     }));
     vi.doMock("../src/services/users.js", () => ({
@@ -63,6 +65,7 @@ describe("auth route member return paths", () => {
 
     const handlers = new Map<string, RouteHandler>();
     const app = {
+      addHook: vi.fn(),
       get: vi.fn(),
       post: vi.fn((path: string, _options: unknown, handler: RouteHandler) => {
         handlers.set(path, handler);
@@ -80,7 +83,7 @@ describe("auth route member return paths", () => {
       body: {
         email: user.email,
         name: user.name,
-        next: "/graph?focus=agent_123",
+        next: "/member/graph?focus=agent_123",
         password: "a-secure-password"
       },
       id: "signup_request"
@@ -92,20 +95,23 @@ describe("auth route member return paths", () => {
       password: "a-secure-password"
     });
     expect(issueEmailVerification).toHaveBeenCalledWith(user, {
-      next: "/graph?focus=agent_123",
+      flow: "member",
+      next: "/member/graph?focus=agent_123",
       requestId: "signup_request"
     });
 
     await handlers.get("/email-verification/request")?.({
       body: {
         email: user.email,
-        next: "/infrastructure?section=agents"
+        flow: "member",
+        next: "/member/infrastructure?section=agents"
       },
       id: "resend_request"
     }, reply);
 
     expect(requestEmailVerification).toHaveBeenCalledWith(user.email, {
-      next: "/infrastructure?section=agents",
+      flow: "member",
+      next: "/member/infrastructure?section=agents",
       requestId: "resend_request"
     });
   });
@@ -115,6 +121,7 @@ describe("auth route member return paths", () => {
       email: "verified@example.com",
       emailVerifiedAt: new Date("2026-07-25T12:00:00.000Z"),
       id: "user_verified",
+      internalAccess: false,
       name: "Verified Member",
       passwordHash: "stored-password-hash",
       role: "USER"
@@ -136,6 +143,9 @@ describe("auth route member return paths", () => {
     }));
     vi.doMock("../src/db.js", () => ({
       prisma: {
+        teamMember: {
+          count: vi.fn(async () => 1)
+        },
         user: {
           findUnique: vi.fn(async () => user)
         }
@@ -143,8 +153,10 @@ describe("auth route member return paths", () => {
     }));
     vi.doMock("../src/auth.js", () => ({
       clearAuthCookie: vi.fn(),
+      requireAdmin: vi.fn(),
       requireAuth: vi.fn(),
       setAuthCookie,
+      setPrivateNoStoreHeaders: vi.fn(),
       signAuthToken
     }));
     vi.doMock("../src/services/users.js", () => ({
@@ -170,6 +182,7 @@ describe("auth route member return paths", () => {
 
     const handlers = new Map<string, RouteHandler>();
     const app = {
+      addHook: vi.fn(),
       get: vi.fn(),
       post: vi.fn((path: string, _options: unknown, handler: RouteHandler) => {
         handlers.set(path, handler);
@@ -185,6 +198,7 @@ describe("auth route member return paths", () => {
     await handlers.get("/login")?.({
       body: {
         email: user.email,
+        flow: "member",
         password: "a-secure-password"
       },
       id: "login_request"
@@ -193,6 +207,7 @@ describe("auth route member return paths", () => {
     expect(signAuthToken).toHaveBeenCalledWith({
       email: user.email,
       role: "USER",
+      session: "member",
       sub: user.id
     });
     expect(setAuthCookie).toHaveBeenCalledWith(reply, "signed-token");

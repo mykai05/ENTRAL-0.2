@@ -28,8 +28,9 @@ export const memberDestinations = [
 ] as const;
 
 export function memberDestinationForPath(pathname: string): MemberDestination {
-  if (pathname === "/graph" || pathname.startsWith("/graph/") || pathname === "/member/graph" || pathname.startsWith("/member/graph/")) return "graph";
-  if (pathname === "/infrastructure" || pathname.startsWith("/infrastructure/") || pathname === "/member/infrastructure" || pathname.startsWith("/member/infrastructure/")) return "infrastructure";
+  const normalizedPath = pathname.split(/[?#]/, 1)[0];
+  if (normalizedPath === "/graph" || normalizedPath.startsWith("/graph/") || normalizedPath === "/member/graph" || normalizedPath.startsWith("/member/graph/")) return "graph";
+  if (normalizedPath === "/infrastructure" || normalizedPath.startsWith("/infrastructure/") || normalizedPath === "/member/infrastructure" || normalizedPath.startsWith("/member/infrastructure/")) return "infrastructure";
   return "dashboard";
 }
 

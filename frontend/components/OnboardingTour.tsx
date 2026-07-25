@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, Bot, CheckCircle2, ChevronLeft, ChevronRight, Command, Compass, GraduationCap, Layers3, MonitorUp, Play, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { Button } from "./Button";
 import { useDialogFocus } from "../lib/dialog-focus";
+import { memberSignInPath } from "../lib/member";
 
 type AcademyMode = "beginner" | "advanced";
 
@@ -471,7 +472,19 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }
 
   function requireSignedInForAcademy() {
-    return true;
+    if (signedInUserKeyRef.current ?? signedInUserKey) {
+      return true;
+    }
+
+    const destination = pathname.startsWith("/member/")
+      ? pathname
+      : pathname.startsWith("/graph")
+        ? "/member/graph"
+        : pathname.startsWith("/infrastructure")
+          ? "/member/infrastructure"
+          : "/member/dashboard";
+    router.push(memberSignInPath(destination));
+    return false;
   }
 
   function openAt(stepId?: string, nextView: "tour" | "library" = "tour") {

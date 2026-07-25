@@ -44,6 +44,9 @@ export function MemberCommandCenterClient({ initialDestination = "dashboard", or
     }
 
     setIsScopeReady(true);
+    window.dispatchEvent(new CustomEvent("entral:user-authenticated", {
+      detail: { userId }
+    }));
   }, [organizationId, userId]);
 
   async function handleLogout() {

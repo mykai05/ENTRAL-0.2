@@ -46,13 +46,14 @@ describe("auth recovery workflows", () => {
 
     const { requestEmailVerification } = await import("../src/services/authRecovery.js");
     await requestEmailVerification(user.email, {
-      next: "/infrastructure?section=agents",
+      flow: "member",
+      next: "/member/infrastructure?section=agents",
       requestId: "request_123"
     });
 
     expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({
       name: user.name,
-      next: "/infrastructure?section=agents",
+      next: "/member/infrastructure?section=agents",
       to: user.email,
       token: expect.any(String)
     }));
