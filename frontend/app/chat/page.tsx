@@ -1,12 +1,5 @@
-import React from "react";
-import { AppHeader } from "../../components/AppHeader";
-import { ChatWindow } from "../../components/ChatWindow";
+import { redirect } from "next/navigation";
 
 export default function ChatPage() {
-  return (
-    <main className="dashboard-shell">
-      <AppHeader title="Communications" subtitle="Focused conversation history and screen-aware assistance." />
-      <ChatWindow />
-    </main>
-  );
+  redirect("/dashboard?section=entral");
 }

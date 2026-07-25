@@ -13,7 +13,7 @@ export type InspectorSuggestedAction = {
 };
 
 type CommandSuggestionContext = {
-  businessGeneralCount: number;
+  nicheGeneralCount: number;
   isBusinessWizardOpen: boolean;
   pendingAuthorization: boolean;
   selectedNode?: CommandSuggestionNode | null;
@@ -46,7 +46,7 @@ export function getInspectorSuggestedActions(node?: CommandSuggestionNode | null
 
   if (node.commandType === "marshal") {
     return [
-      { command: "Create my first business", label: "Create Business General" },
+      { command: "Create my first business", label: "Create Business Commander" },
       { command: `Report on ${node.name}`, label: "Marshal Report" },
       { command: `Set ${node.name} gravity to 300%`, label: "Tune Gravity" },
       { command: `Clear ${node.name} gravity`, label: "Clear Gravity" },
@@ -56,7 +56,7 @@ export function getInspectorSuggestedActions(node?: CommandSuggestionNode | null
 
   if (node.commandType === "general") {
     return [
-      { command: "Create Commander under this General", label: "Add Commander" },
+      { command: "Create Commander under this General", label: "Add Business" },
       { command: `Report on ${node.name}`, label: "General Report" },
       { command: `Set ${node.name} gravity to 300%`, label: "Tune Gravity" },
       { command: `Clear ${node.name} gravity`, label: "Clear Gravity" },
@@ -84,7 +84,7 @@ export function getInspectorSuggestedActions(node?: CommandSuggestionNode | null
 }
 
 export function getContextCommandSuggestions(context: CommandSuggestionContext): string[] {
-  const { businessGeneralCount, isBusinessWizardOpen, pendingAuthorization, selectedNode } = context;
+  const { isBusinessWizardOpen, nicheGeneralCount, pendingAuthorization, selectedNode } = context;
 
   if (pendingAuthorization) {
     return [
@@ -103,7 +103,7 @@ export function getContextCommandSuggestions(context: CommandSuggestionContext):
     ];
   }
 
-  if (businessGeneralCount === 0) {
+  if (nicheGeneralCount === 0) {
     return [
       "Create Merch Marshal",
       "Create POD business named Iron House Gym",
@@ -130,7 +130,7 @@ export function getContextCommandSuggestions(context: CommandSuggestionContext):
 
   if (selectedNode?.commandType === "general") {
     return [
-      `Report on ${selectedNode.businessName ?? selectedNode.name}`,
+      `Report on ${selectedNode.name}`,
       "Set selected gravity to 300%",
       "Nudge selected gravity up",
       "Loosen selected gravity",

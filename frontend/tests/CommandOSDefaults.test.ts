@@ -2,37 +2,35 @@ import { describe, expect, it } from "vitest";
 import { commandGenerals, commandMarshals, createDefaultCommandHierarchy } from "../lib/command-os";
 
 describe("Command OS default hierarchy", () => {
-  it("starts first-time users with the complete portfolio chain of command", () => {
+  it("starts first-time users with ENTRAL only and no legacy mock entities", () => {
     const nodes = createDefaultCommandHierarchy();
 
-    expect(commandMarshals).toHaveLength(5);
-    expect(commandMarshals).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "portfolio-marshal", name: "Portfolio Marshal" }),
-      expect.objectContaining({ id: "operations-marshal", name: "Operations Marshal" }),
-      expect.objectContaining({ id: "governance-marshal", name: "Governance Marshal" })
-    ]));
+    expect(commandMarshals).toEqual([
+      expect.objectContaining({
+        id: "merch-marshal",
+        name: "Merch Marshal"
+      })
+    ]);
     expect(commandGenerals).toEqual([
       expect.objectContaining({
-        id: "sovereign-protocol-general",
-        marshalId: "operations-marshal",
-        name: "Sovereign Protocol General"
+        id: "pod-general",
+        marshalId: "merch-marshal",
+        name: "POD General",
+        role: expect.stringContaining("niche")
       })
     ]);
     expect(nodes.some((node) => node.id.startsWith("mock-") || node.name.startsWith("Mock "))).toBe(false);
-    expect(JSON.stringify(nodes)).not.toMatch(/\b(POD|Merch)\b/i);
-    expect(nodes).toHaveLength(27);
+    expect(nodes).toHaveLength(1);
     expect(nodes[0]).toEqual(expect.objectContaining({
-      children: commandMarshals.map((marshal) => marshal.id),
+      children: [],
       id: "entral",
       name: "ENTRAL",
       type: "emperor"
     }));
-    expect(nodes.filter((node) => node.type === "marshal")).toHaveLength(5);
-    expect(nodes.filter((node) => node.type === "general")).toHaveLength(1);
-    expect(nodes.filter((node) => node.type === "commander")).toHaveLength(4);
-    expect(nodes.filter((node) => node.type === "soldier")).toHaveLength(16);
-    expect(nodes.find((node) => node.id === "sovereign-protocol-general")?.parentId).toBe("operations-marshal");
-    expect(nodes.filter((node) => node.type === "commander").every((node) => node.parentId === "sovereign-protocol-general")).toBe(true);
-    expect(nodes.filter((node) => node.type === "soldier").every((node) => Boolean(node.parentCommanderId))).toBe(true);
+    expect(nodes.find((node) => node.id === "entral")?.logs).toContain("No command structures detected.");
+    expect(nodes.some((node) => node.type === "marshal")).toBe(false);
+    expect(nodes.some((node) => node.type === "general")).toBe(false);
+    expect(nodes.some((node) => node.type === "commander")).toBe(false);
+    expect(nodes.some((node) => node.type === "soldier")).toBe(false);
   });
 });

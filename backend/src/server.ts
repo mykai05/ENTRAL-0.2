@@ -78,8 +78,17 @@ export async function buildServer(options: BuildServerOptions = {}) {
     }
 
     request.log.error({ err: error, requestId: request.id }, "Unhandled API error");
-    const statusCode = "statusCode" in error && typeof error.statusCode === "number" ? error.statusCode : 500;
-    const message = statusCode >= 500 ? "Something went wrong." : error.message;
+    const statusCode = typeof error === "object"
+      && error !== null
+      && "statusCode" in error
+      && typeof error.statusCode === "number"
+      ? error.statusCode
+      : 500;
+    const message = statusCode >= 500
+      ? "Something went wrong."
+      : error instanceof Error
+        ? error.message
+        : "Request failed.";
 
     if (statusCode >= 500) {
       void emitOperationalAlert({

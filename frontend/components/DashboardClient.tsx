@@ -4,10 +4,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
+import { memberSignInPath } from "../lib/member";
 import { Button } from "./Button";
 import { Logo } from "./Logo";
 import { NeuronsCommandCenter } from "./NeuronsCommandCenter";
 import { clearAuthenticatedUserSession, writeAuthenticatedUserSession } from "../lib/auth-session";
+import type { MemberDestination } from "./MemberDestinationNav";
 
 type User = {
   email: string;
@@ -21,14 +23,12 @@ type DashboardResponse = {
   user: User;
 };
 
-const localModeStatuses = new Set([401, 404, 408, 502, 503]);
-
 function displayName(name: string) {
   const trimmed = name.trim();
   return trimmed ? `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}` : "Operator";
 }
 
-export function DashboardClient() {
+export function DashboardClient({ initialDestination = "dashboard" }: { initialDestination?: MemberDestination }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,8 +47,8 @@ export function DashboardClient() {
       setUser(nextUser);
       writeAuthenticatedUserSession(authDetail);
     } catch (loadError) {
-      if (loadError instanceof ApiError && localModeStatuses.has(loadError.status)) {
-        setUser(null);
+      if (loadError instanceof ApiError && loadError.status === 401) {
+        router.push(memberSignInPath(`/member/${initialDestination}`));
         return;
       }
 
@@ -56,16 +56,23 @@ export function DashboardClient() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [initialDestination, router]);
 
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
 
   async function handleLogout() {
-    await apiFetch("/logout", { method: "POST" }).catch(() => null);
+    try {
+      await apiFetch("/logout", { method: "POST" });
+    } catch (logoutError) {
+      setError(logoutError instanceof Error ? `Sign out failed: ${logoutError.message}` : "Sign out failed. Your session is still active.");
+      return;
+    }
+
     clearAuthenticatedUserSession();
-    router.replace("/dashboard");
+    window.dispatchEvent(new Event("entral:user-signed-out"));
+    router.push(memberSignInPath(`/member/${initialDestination}`));
     router.refresh();
   }
 
@@ -96,5 +103,14 @@ export function DashboardClient() {
     );
   }
 
-  return <NeuronsCommandCenter user={user} onLogout={handleLogout} />;
+  if (!user) {
+    return (
+      <main className="command-center-page command-center-loading" role="status" aria-live="polite">
+        <Loader2 aria-hidden="true" size={28} className="spin" />
+        <p>Returning to verified account access...</p>
+      </main>
+    );
+  }
+
+  return <NeuronsCommandCenter initialDestination={initialDestination} user={user} onLogout={handleLogout} />;
 }

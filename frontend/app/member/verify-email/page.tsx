@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import React from "react";
 import { BrandMark } from "../../../components/BrandMark";
 import { MemberVerificationClient } from "../../../components/MemberVerificationClient";
+import { safeMemberReturnPath } from "../../../lib/member";
 
 export const metadata: Metadata = {
   title: "Verify Email",
@@ -11,16 +12,17 @@ export const metadata: Metadata = {
 export default async function MemberVerificationPage({
   searchParams
 }: {
-  searchParams: Promise<{ token?: string | string[] }>;
+  searchParams: Promise<{ next?: string | string[]; token?: string | string[] }>;
 }) {
   const params = await searchParams;
   const token = Array.isArray(params.token) ? params.token[0] : params.token;
+  const returnTo = safeMemberReturnPath(params.next);
 
   return (
     <main className="member-auth-shell" id="main-content">
       <section className="member-auth-card">
         <div className="member-auth-brand"><BrandMark href="/member/sign-in" label="Entral sign in" /><span>Member access</span></div>
-        <MemberVerificationClient token={token} />
+        <MemberVerificationClient returnTo={returnTo} token={token} />
       </section>
     </main>
   );

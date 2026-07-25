@@ -46,18 +46,18 @@ describe("command authorization summaries", () => {
   it("builds business template previews with optional context", () => {
     expect(buildBusinessTemplateAuthorizationSummary({
       businessName: "Iron House Gym",
-      commanderCount: 8,
       contextLines: ["Industry: Fitness", "Audience: Gym members"],
-      marshalName: "Merch Marshal",
-      soldierCount: 36,
+      generalName: "Fitness General",
+      marshalName: "Commerce Marshal",
+      soldierCount: 8,
       templateLabel: "POD / Merch Business"
-    })).toContain("Business General: Iron House Gym General");
+    })).toContain("Business Commander: Iron House Gym Commander");
     expect(buildBusinessTemplateAuthorizationSummary({
-      businessName: "Iron House Gym General",
-      commanderCount: 8,
+      businessName: "Iron House Gym Commander",
       contextLines: [],
-      marshalName: "Merch Marshal",
-      soldierCount: 36,
+      generalName: "Fitness General",
+      marshalName: "Commerce Marshal",
+      soldierCount: 8,
       templateLabel: "POD / Merch Business"
     })).toContain("Context: no optional business context entered.");
   });

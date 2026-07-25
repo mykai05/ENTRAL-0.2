@@ -53,10 +53,15 @@ export async function authRoutes(app: FastifyInstance) {
     }
   }, async (request, reply) => {
     const input = signupSchema.parse(request.body);
+    const { next, ...userInput } = input;
 
     try {
-      const { user, team } = await createUserWithTeam(input);
-      await issueEmailVerification(user, { flow: "member", requestId: request.id });
+      const { user, team } = await createUserWithTeam(userInput);
+      await issueEmailVerification(user, {
+        flow: "member",
+        next,
+        requestId: request.id
+      });
 
       return reply.code(201).send({
         id: user.id,
@@ -125,7 +130,7 @@ export async function authRoutes(app: FastifyInstance) {
     });
     setAuthCookie(reply, token);
 
-    return reply.send({ token, user: publicUser(user) });
+    return reply.send({ user: publicUser(user) });
   });
 
   app.post("/email-verification/request", {
@@ -137,7 +142,11 @@ export async function authRoutes(app: FastifyInstance) {
     }
   }, async (request, reply) => {
     const input = requestEmailVerificationSchema.parse(request.body);
-    await requestEmailVerification(input.email, { flow: input.flow, requestId: request.id });
+    await requestEmailVerification(input.email, {
+      flow: input.flow,
+      next: input.next,
+      requestId: request.id
+    });
 
     return reply.send({
       message: "If this email belongs to an unverified ENTRAL account, a verification link has been sent."

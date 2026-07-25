@@ -231,6 +231,22 @@ describe("Revenue Money Army Generate & Score Batch", () => {
     expect(autonomousLaunch.adCampaignDrafts.every((draft) => draft.spendState === "payment_required" && draft.budgetApprovalRequired)).toBe(true);
     expect(autonomousLaunch.paymentApprovalQueue.map((approval) => approval.approvalType)).toContain("ad_spend");
     expect(autonomousLaunch.autonomyMatrix.map((item) => item.lane)).toContain("ad_spend_activation");
+    expect(autonomousLaunch.autonomyMatrix.every((item) => item.commander === "Iron House Gym Commander")).toBe(true);
+    expect(autonomousLaunch.chainOfCommand.filter((item) => item.rank === "marshal")).toEqual([expect.objectContaining({
+      title: "Revenue Commerce Marshal"
+    })]);
+    expect(autonomousLaunch.chainOfCommand.filter((item) => item.rank === "general")).toEqual([expect.objectContaining({
+      title: "Fitness General"
+    })]);
+    expect(autonomousLaunch.chainOfCommand.filter((item) => item.rank === "commander")).toEqual([expect.objectContaining({
+      title: "Iron House Gym Commander"
+    })]);
+    expect(autonomousLaunch.chainOfCommand.filter((item) => item.rank === "soldier")).toHaveLength(9);
+    expect(new Set(
+      autonomousLaunch.chainOfCommand
+        .filter((item) => item.rank === "soldier")
+        .map((item) => item.lane)
+    ).size).toBe(9);
     expect(autonomousLaunch.finalOperatorGate.requiredApprovals.join(" ")).toContain("Ad/Growth");
     const liveExecutor = buildRevenueFirstBusinessLiveExecutorPlan({
       autonomousLaunch,

@@ -1,4 +1,5 @@
 import { env } from "../env.js";
+import { safeCanonicalMemberReturnPath } from "../schemas.js";
 
 type AuthEmailInput = {
   html: string;
@@ -12,6 +13,10 @@ type UserEmailInput = {
   name: string;
   to: string;
   token: string;
+};
+
+type VerificationEmailInput = UserEmailInput & {
+  next?: string;
 };
 
 function escapeHtml(value: string) {
@@ -79,16 +84,26 @@ async function deliverAuthEmail(input: AuthEmailInput) {
   };
 }
 
-export function buildVerificationUrl(token: string, flow: "internal" | "member" = "internal") {
-  return authUrl(flow === "member" ? "/member/verify-email" : "/verify-email", token);
+export function buildVerificationUrl(token: string, flow: "internal" | "member" = "internal", next?: string) {
+  const url = new URL(authUrl(flow === "member" ? "/member/verify-email" : "/verify-email", token));
+  const safeNext = safeCanonicalMemberReturnPath(next);
+  const matchesFlow = safeNext
+    ? flow === "member"
+      ? safeNext.startsWith("/member/")
+      : !safeNext.startsWith("/member/")
+    : false;
+  if (safeNext && matchesFlow) {
+    url.searchParams.set("next", safeNext);
+  }
+  return url.toString();
 }
 
 export function buildPasswordResetUrl(token: string, flow: "internal" | "member" = "internal") {
   return authUrl(flow === "member" ? "/member/password-reset" : "/reset-password", token);
 }
 
-export function verificationEmailContent(input: UserEmailInput) {
-  const url = buildVerificationUrl(input.token, input.flow);
+export function verificationEmailContent(input: VerificationEmailInput) {
+  const url = buildVerificationUrl(input.token, input.flow, input.next);
   const name = escapeHtml(input.name);
   const destination = input.flow === "member" ? "member workspace" : "private beta command center";
 
@@ -120,7 +135,7 @@ export function passwordResetEmailContent(input: UserEmailInput) {
   };
 }
 
-export async function sendVerificationEmail(input: UserEmailInput) {
+export async function sendVerificationEmail(input: VerificationEmailInput) {
   return deliverAuthEmail({
     to: input.to,
     ...verificationEmailContent(input)

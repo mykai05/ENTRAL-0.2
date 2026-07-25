@@ -201,6 +201,20 @@ async function enterWorkspace(page, email = uniqueEmail("operator")) {
     throw new Error(`E2E owner-session setup failed with HTTP ${response.status()}.`);
   }
 
+  const signup = await response.json();
+  const verificationUrl = new URL(signup.verificationUrl, frontendUrl);
+  const verificationToken = verificationUrl.searchParams.get("token");
+  if (!verificationToken) {
+    throw new Error("E2E owner-session setup did not return an email verification token.");
+  }
+
+  const verificationResponse = await page.context().request.post(`${frontendUrl}/api/v1/email-verification/confirm`, {
+    data: { token: verificationToken }
+  });
+  if (!verificationResponse.ok()) {
+    throw new Error(`E2E owner-session verification failed with HTTP ${verificationResponse.status()}.`);
+  }
+
   await page.goto(`${frontendUrl}/dashboard`);
   await expectUrl(page, /\/dashboard$/, "Authenticated dashboard");
   await expectVisible(page.getByLabel("ENTRAL Command Center"), "Command Center");
@@ -209,14 +223,14 @@ async function enterWorkspace(page, email = uniqueEmail("operator")) {
 
 const tests = [
   {
-    name: "root URL opens the command center without an account screen",
+    name: "root URL opens protected member sign-in",
     run: async () => {
       const { context, page } = await newPage();
       try {
         await page.goto(frontendUrl);
-        await expectUrl(page, /\/dashboard$/, "Direct command-center entry");
-        await expectVisible(page.getByLabel("ENTRAL Command Center"), "Command Center");
-        await expectVisible(page.getByLabel("Command center mode status"), "Command center mode status");
+        await expectUrl(page, /\/member\/sign-in(?:\?.*)?$/, "Protected member entry");
+        await expectVisible(page.getByRole("heading", { name: "Sign in to Entral" }), "Member sign-in");
+        await expectVisible(page.getByText("Secure member access"), "Secure member access label");
 
         if (await page.getByText(/create verified account|private beta brief/i).count()) {
           throw new Error("A retired public account or beta-brief control is still visible.");
@@ -227,16 +241,16 @@ const tests = [
     }
   },
   {
-    name: "legacy public account routes return to the command center",
+    name: "legacy public account routes return to member sign-in",
     run: async () => {
       const { context, page } = await newPage();
       try {
         for (const pathname of ["/onboarding", "/signup", "/verify-email", "/forgot-password", "/reset-password"]) {
           await page.goto(`${frontendUrl}${pathname}`);
-          await expectUrl(page, /\/dashboard$/, `${pathname} retirement redirect`);
+          await expectUrl(page, /\/member\/sign-in(?:\?.*)?$/, `${pathname} retirement redirect`);
         }
 
-        await expectVisible(page.getByLabel("ENTRAL Command Center"), "Command Center");
+        await expectVisible(page.getByRole("heading", { name: "Sign in to Entral" }), "Member sign-in");
       } finally {
         await context.close();
       }

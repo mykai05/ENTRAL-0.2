@@ -236,7 +236,7 @@ function strongestRisk(toolIds: string[]): ToolRiskLevel {
 function suggestedActionFor(category: AiRequestCategory) {
   const suggestions: Record<AiRequestCategory, string> = {
     browser_web_request: "Prepare a governed web/browser plan and use mock mode unless an approved browser tool is connected.",
-    business_setup: "Prepare a business structure plan under a selected Marshal and request authorization.",
+    business_setup: "Prepare a niche General, one-business Commander, and operational Soldier plan under a selected broad-domain Marshal, then request authorization.",
     calendar_request: "Prepare a calendar action draft and request authorization before creating any external event.",
     command: "Route to the Command OS local handler.",
     conversation: "Respond using ENTRAL command persona.",

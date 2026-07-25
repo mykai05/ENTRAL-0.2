@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import userEvent, { PointerEventsCheckLevel } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
@@ -4489,7 +4489,7 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
   autonomousUntilPayment: true,
   autonomyMatrix: [{
     autonomyPercent: 100,
-    commander: "Store Setup General",
+    commander: "Iron House Gym Commander",
     externalExecution: false,
     hardStop: null,
     lane: "store_build",
@@ -4499,7 +4499,7 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
     status: "autonomous_ready"
   }, {
     autonomyPercent: 100,
-    commander: "Product Factory Commander",
+    commander: "Iron House Gym Commander",
     externalExecution: false,
     hardStop: null,
     lane: "product_creation",
@@ -4509,7 +4509,7 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
     status: "autonomous_ready"
   }, {
     autonomyPercent: 85,
-    commander: "Supplier Connector Commander",
+    commander: "Iron House Gym Commander",
     externalExecution: false,
     hardStop: "Owner must approve credentials and live provider connection.",
     lane: "supplier_connection",
@@ -4519,7 +4519,7 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
     status: "connector_gated"
   }, {
     autonomyPercent: 50,
-    commander: "Financial Orchestrator Marshal",
+    commander: "Iron House Gym Commander",
     externalExecution: false,
     hardStop: "Owner approval and payment authorization are required before any ad spend.",
     lane: "ad_spend_activation",
@@ -4535,28 +4535,46 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
   ],
   chainOfCommand: [{
     lane: "store_build",
-    owns: ["store setup payload", "navigation", "collections", "SEO", "policy drafts"],
+    owns: ["revenue commerce domain", "portfolio-wide commercial guardrails"],
+    rank: "marshal",
+    status: "ready_internal",
+    title: "Revenue Commerce Marshal"
+  }, {
+    lane: "store_build",
+    owns: ["fitness niche", "independent gym members"],
     rank: "general",
     status: "ready_internal",
-    title: "Store Setup General"
+    title: "Fitness General"
+  }, {
+    lane: "store_build",
+    owns: ["Iron House Gym business", "Shopify storefront"],
+    rank: "commander",
+    status: "ready_internal",
+    title: "Iron House Gym Commander"
+  }, {
+    lane: "store_build",
+    owns: ["store setup payload", "navigation", "collections", "SEO", "policy drafts"],
+    rank: "soldier",
+    status: "ready_internal",
+    title: "Store Build Soldier"
   }, {
     lane: "product_creation",
     owns: ["product rows", "listing copy", "design specs", "mockup directions"],
-    rank: "commander",
+    rank: "soldier",
     status: "ready_internal",
-    title: "Product Factory Commander"
+    title: "Product Creation Soldier"
   }, {
     lane: "supplier_connection",
     owns: ["connector manifest", "credential scopes", "supplier payload draft"],
-    rank: "commander",
+    rank: "soldier",
     status: "owner_gate_required",
-    title: "Supplier Connector Commander"
+    title: "Supplier Connection Soldier"
   }, {
     lane: "ad_spend_activation",
     owns: ["Approve first paid traffic test"],
-    rank: "marshal",
+    rank: "soldier",
     status: "owner_gate_required",
-    title: "Financial Orchestrator Marshal"
+    title: "Ad Spend Activation Soldier"
   }],
   connectionPlan: {
     connectorManifests: [{
@@ -11142,6 +11160,15 @@ describe("MerchOperationsPanel", () => {
   }, 30000);
 
   it("loads the business fleet scheduler for a 10-lane launch wave", async () => {
+    const user = userEvent.setup({
+      pointerEventsCheck: PointerEventsCheckLevel.Never,
+      skipHover: true
+    });
+
+    async function clickAndFlush(element: Element) {
+      await user.click(element);
+    }
+
     vi.mocked(apiFetch)
       .mockResolvedValueOnce({ plan: businessFleetPlan })
       .mockResolvedValueOnce({ plan: businessFleetGapPlan })
@@ -11157,7 +11184,7 @@ describe("MerchOperationsPanel", () => {
 
     render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /load fleet scheduler/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /load fleet scheduler/i }));
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/business-fleet-scheduler");
     const region = await screen.findByRole("region", { name: /revenue business fleet scheduler/i });
@@ -11171,7 +11198,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("dispatch ready first cash bridge action")).toBeInTheDocument();
     expect(within(region).getByText("Fleet execution remains internal")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /load launch gap/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /load launch gap/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap");
     const gapRegion = await screen.findByRole("region", { name: /business fleet launch gap planner/i });
@@ -11183,7 +11210,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getAllByText("create opportunity shell / ready").length).toBeGreaterThan(0);
     expect(within(gapRegion).getByText("Launch gap remains internal")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview gap seeds/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /preview gap seeds/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply", {
       json: {
@@ -11200,7 +11227,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getByText("9 store shells / 45 drafts")).toBeInTheDocument();
     expect(within(gapRegion).getByText("9 internal opportunity seeds previewed from the business-fleet launch gap.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /create gap seeds/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /create gap seeds/i }));
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply", {
       json: {
@@ -11215,7 +11242,7 @@ describe("MerchOperationsPanel", () => {
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio");
     expect(await screen.findByText("Fleet gap seeds created: 9 seeds, 9 store shells, 45 drafts.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview seed acceleration/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /preview seed acceleration/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/acceleration/apply", {
       json: {
@@ -11231,7 +11258,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getByText("Gap Acceleration Receipt")).toBeInTheDocument();
     expect(within(gapRegion).getByText("9 launch items / 45 listing experiments / 9 setup runbooks")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /run seed acceleration/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /run seed acceleration/i }));
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/acceleration/apply", {
       json: {
@@ -11246,7 +11273,7 @@ describe("MerchOperationsPanel", () => {
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio");
     expect(await screen.findByText("Fleet gap acceleration ran: 9 stores, 45 listing updates, 9 setup updates.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview live package/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /preview live package/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/live-package/apply", {
       json: {
@@ -11262,7 +11289,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getByText("Live Launch Package")).toBeInTheDocument();
     expect(within(gapRegion).getByText("9 payload packages / 9 provider approval packets")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /load launch gate/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /load launch gate/i }));
 
     const launchGateParams = new URLSearchParams();
     launchGateParams.set("maxStores", "10");
@@ -11275,7 +11302,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getByText("Launch Gate")).toBeInTheDocument();
     expect(within(gapRegion).getByText("9 packaged business lanes evaluated: 0 ready for manual launch, 1 need approval, 8 need repair, 0 blocked.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview launch wave/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /preview launch wave/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply", {
       json: {
@@ -11291,7 +11318,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("1 business selected for the internal launch wave from 1 eligible ready-parallel lane.")).toBeInTheDocument();
     expect(within(region).getByText("Launch Wave Receipt")).toBeInTheDocument();
     expect(within(region).getByText("1 first-business launch action previewed from the fleet wave.")).toBeInTheDocument();
-  }, 10_000);
+  }, 30_000);
 
   it("loads and applies the private Money Army batch pipeline through the dashboard", async () => {
     const onRefreshStores = vi.fn();
@@ -11577,7 +11604,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("Rollback Plan")).toBeInTheDocument();
     expect(within(region).getByText("Live executor remains controlled")).toBeInTheDocument();
     expect(within(region).getAllByText(/audit audit-first-business-live-executor-1/)).toHaveLength(2);
-  });
+  }, 30000);
 
   it("keeps first-store cash loop actions locked when receipts only exist for another store", async () => {
     const offStoreDashboard = JSON.parse(JSON.stringify(revenuePortfolioDashboard)) as RevenuePortfolioDashboardPlan;

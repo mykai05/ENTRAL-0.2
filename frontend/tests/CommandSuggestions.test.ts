@@ -4,7 +4,7 @@ import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../l
 describe("Command OS suggestions", () => {
   it("guides first-time users toward creation commands without duplicating visible CTAs", () => {
     expect(getContextCommandSuggestions({
-      businessGeneralCount: 0,
+      nicheGeneralCount: 0,
       isBusinessWizardOpen: false,
       pendingAuthorization: false,
       selectedNode: { commandType: "emperor", name: "ENTRAL" }
@@ -19,7 +19,7 @@ describe("Command OS suggestions", () => {
 
   it("prioritizes approval actions while an authorization is pending", () => {
     expect(getContextCommandSuggestions({
-      businessGeneralCount: 1,
+      nicheGeneralCount: 1,
       isBusinessWizardOpen: false,
       pendingAuthorization: true,
       selectedNode: { commandType: "general", name: "Iron House Gym General" }
@@ -28,7 +28,7 @@ describe("Command OS suggestions", () => {
 
   it("returns hierarchy-aware inspector actions", () => {
     expect(getInspectorSuggestedActions({ commandType: "marshal", name: "Merch Marshal" })).toEqual(expect.arrayContaining([
-      { command: "Create my first business", label: "Create Business General" },
+      { command: "Create my first business", label: "Create Business Commander" },
       { command: "Report on Merch Marshal", label: "Marshal Report" },
       { command: "Set Merch Marshal gravity to 300%", label: "Tune Gravity" },
       { command: "Clear Merch Marshal gravity", label: "Clear Gravity" },
@@ -47,7 +47,7 @@ describe("Command OS suggestions", () => {
 
   it("surfaces graph gravity controls in context suggestions", () => {
     expect(getContextCommandSuggestions({
-      businessGeneralCount: 1,
+      nicheGeneralCount: 1,
       isBusinessWizardOpen: false,
       pendingAuthorization: false,
       selectedNode: { businessName: "Iron House Gym", commandType: "general", name: "Iron House Gym General" }
@@ -61,7 +61,7 @@ describe("Command OS suggestions", () => {
     ]));
 
     expect(getContextCommandSuggestions({
-      businessGeneralCount: 1,
+      nicheGeneralCount: 1,
       isBusinessWizardOpen: false,
       pendingAuthorization: false,
       selectedNode: { commandType: "emperor", name: "ENTRAL" }

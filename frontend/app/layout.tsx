@@ -3,6 +3,7 @@ import React from "react";
 import type { ReactNode } from "react";
 import { AppProviders } from "../components/AppProviders";
 import "./globals.css";
+import "./phase110.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),

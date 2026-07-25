@@ -41,4 +41,19 @@ describe("AppProviders storage resilience", () => {
 
     expect(screen.getByRole("heading", { name: "Entral command center" })).toBeInTheDocument();
   });
+
+  it("does not expose authenticated controls on an unknown route", () => {
+    navigationMocks.pathname = "/not-a-member-route";
+
+    render(
+      <AppProviders>
+        <main>
+          <h1>Page not found</h1>
+        </main>
+      </AppProviders>
+    );
+
+    expect(screen.getByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /settings/i })).not.toBeInTheDocument();
+  });
 });

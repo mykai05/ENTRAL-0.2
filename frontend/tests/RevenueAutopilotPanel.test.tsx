@@ -166,30 +166,30 @@ const plan: RevenueAutopilotPlan = {
     actionCount: 1,
     actions: ["Run first-business launch path"],
     blockedActions: 0,
-    commander: "First Launch Commander",
+    commander: "First Business Commander",
     externalExecution: false,
-    general: "First Business General",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
     phase: "first_business_launch",
     providerContacted: false,
     readyActions: 1,
-    soldier: "Launch Packet Soldier",
+    soldier: "Launch Operations Soldier",
     status: "ready",
-    summary: "First Launch Commander owns 1 internal autopilot command with 1 ready."
+    summary: "First Business Commander owns 1 internal autopilot command with 1 ready."
   }, {
     actionCount: 2,
     actions: ["Seed launch product drafts", "Queue launch approval packets"],
     blockedActions: 0,
-    commander: "Product Factory Commander",
+    commander: "First Business Commander",
     externalExecution: false,
-    general: "First Business General",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
     phase: "product_factory",
     providerContacted: false,
     readyActions: 2,
-    soldier: "Product Draft Soldier",
+    soldier: "Product Factory Soldier",
     status: "ready",
-    summary: "Product Factory Commander owns 2 internal autopilot commands with 2 ready."
+    summary: "First Business Commander owns 2 internal autopilot commands with 2 ready."
   }],
   externalExecution: false,
   generatedAt: "2026-06-02T12:00:00.000Z",
@@ -612,8 +612,8 @@ describe("RevenueAutopilotPanel", () => {
     expect(screen.getByText("90%")).toBeInTheDocument();
     expect(screen.getByText("Chain Of Command")).toBeInTheDocument();
     expect(screen.getByText("Owner Approval Queue")).toBeInTheDocument();
-    expect(screen.getByText("First Launch Commander")).toBeInTheDocument();
-    expect(screen.getByText("Money Army Marshal / First Business General / Launch Packet Soldier")).toBeInTheDocument();
+    expect(screen.getAllByText("First Business Commander").length).toBeGreaterThan(0);
+    expect(screen.getByText("Money Army Marshal / Revenue Products General / Launch Operations Soldier")).toBeInTheDocument();
     expect(screen.getByText("First business launch: browser or marketplace approval")).toBeInTheDocument();
     expect(screen.getByText("Run first-business launch path")).toBeInTheDocument();
     expect(screen.getByText("Run first-cash sprint")).toBeInTheDocument();

@@ -13,9 +13,10 @@ import { VoiceProvider } from "./VoiceProvider";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const usesFullCommandCenter = pathname === "/member/dashboard" || pathname.startsWith("/member/dashboard/");
+  const isRouteFamily = (prefix: string) => pathname === prefix || pathname?.startsWith(`${prefix}/`);
+  const usesFullMemberCommandCenter = ["/member/dashboard", "/member/graph", "/member/infrastructure"].some(isRouteFamily);
 
-  if (pathname.startsWith("/member") && !usesFullCommandCenter) {
+  if (pathname.startsWith("/member") && !usesFullMemberCommandCenter) {
     return (
       <ThemeProvider>
         <ClientErrorBoundary>{children}</ClientErrorBoundary>
@@ -23,7 +24,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     );
   }
 
-  if (usesFullCommandCenter) {
+  if (usesFullMemberCommandCenter) {
     return (
       <ThemeProvider>
         <ToastProvider>
@@ -40,12 +41,30 @@ export function AppProviders({ children }: { children: ReactNode }) {
     );
   }
 
-  const appChrome = (
+  const isPublicEntry = pathname === "/"
+    || isRouteFamily("/forgot-password")
+    || isRouteFamily("/login")
+    || isRouteFamily("/onboarding")
+    || isRouteFamily("/reset-password")
+    || isRouteFamily("/signup")
+    || isRouteFamily("/verify-email");
+  const isMemberEntry = [
+    "/admin",
+    "/agents",
+    "/automations",
+    "/chat",
+    "/dashboard",
+    "/graph",
+    "/infrastructure"
+  ].some(isRouteFamily);
+  const isUniverseGraph = isRouteFamily("/graph");
+
+  const appChrome = isPublicEntry || !isMemberEntry ? children : (
     <>
       <SystemStatusBanner />
       <OnboardingProvider>
         {children}
-        <CommandPalette />
+        {isUniverseGraph ? null : <CommandPalette />}
         <SettingsPanel />
       </OnboardingProvider>
     </>

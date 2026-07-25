@@ -14,7 +14,9 @@ const internalPresentationPaths = new Set([
   "/agents",
   "/automations",
   "/chat",
-  "/dashboard"
+  "/dashboard",
+  "/graph",
+  "/infrastructure"
 ]);
 
 function decodedMemberSession(token: string | undefined) {
@@ -45,12 +47,27 @@ function isInternalPresentationPath(pathname: string) {
   return [...internalPresentationPaths].some((path) => pathname === path || (path !== "/" && pathname.startsWith(`${path}/`)));
 }
 
+function memberDestinationForInternalPath(pathname: string) {
+  if (pathname.startsWith("/graph")) return "/member/graph";
+  if (pathname.startsWith("/infrastructure")) return "/member/infrastructure";
+  if (pathname.startsWith("/agents")) return "/member/infrastructure?section=agents";
+  if (pathname.startsWith("/automations")) return "/member/infrastructure?section=automations";
+  if (pathname.startsWith("/admin")) return "/member/infrastructure?section=governance";
+  if (pathname.startsWith("/chat")) return "/member/dashboard?section=entral";
+  return "/member/dashboard";
+}
+
 export function middleware(request: NextRequest) {
   const cookieName = process.env.COOKIE_NAME ?? "entral_token";
   if (decodedMemberSession(request.cookies.get(cookieName)?.value) && (isInternalPresentationPath(request.nextUrl.pathname) || retiredEntryPaths.has(request.nextUrl.pathname))) {
     const url = request.nextUrl.clone();
-    url.pathname = "/member";
+    const destination = memberDestinationForInternalPath(request.nextUrl.pathname);
+    const [pathname, search = ""] = destination.split("?");
+    url.pathname = pathname;
     url.search = "";
+    if (search) {
+      url.search = `?${search}`;
+    }
     return NextResponse.redirect(url);
   }
 
@@ -59,7 +76,7 @@ export function middleware(request: NextRequest) {
   }
 
   const url = request.nextUrl.clone();
-  url.pathname = "/dashboard";
+  url.pathname = "/member/sign-in";
   url.search = "";
   return NextResponse.redirect(url);
 }
@@ -72,6 +89,8 @@ export const config = {
     "/automations/:path*",
     "/chat/:path*",
     "/dashboard/:path*",
+    "/graph/:path*",
+    "/infrastructure/:path*",
     "/forgot-password",
     "/onboarding",
     "/reset-password",

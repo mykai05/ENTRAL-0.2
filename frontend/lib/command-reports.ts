@@ -84,7 +84,7 @@ function countByType(nodes: CommandReportNode[], type: NodeType) {
 }
 
 function formatCounts(nodes: CommandReportNode[]) {
-  return `${countByType(nodes, "marshal")} Marshals, ${countByType(nodes, "general")} business Generals, ${countByType(nodes, "commander")} Commanders, and ${countByType(nodes, "soldier")} Soldiers`;
+  return `${countByType(nodes, "marshal")} broad-domain Marshals, ${countByType(nodes, "general")} niche Generals, ${countByType(nodes, "commander")} business Commanders, and ${countByType(nodes, "soldier")} operational Soldiers`;
 }
 
 function riskSummary(nodes: CommandReportNode[], tasks: CommandTask[]) {
@@ -114,15 +114,15 @@ function nextActionsFor(target: CommandReportNode, scopedNodes: CommandReportNod
   }
 
   if (target.commandType === "marshal" && countByType(scopedNodes, "general") === 0) {
-    return ["Create a business General under this Marshal.", "Apply a business template.", "Assign the first objective."];
+    return ["Create a niche General under this Marshal.", "Apply a business template.", "Assign the first objective."];
   }
 
   if (target.commandType === "general" && countByType(scopedNodes, "commander") === 0) {
-    return ["Create operating Commanders.", "Apply the most relevant business template.", "Create initial tasks after departments exist."];
+    return ["Create a business Commander.", "Apply the most relevant business template.", "Create initial tasks after the business exists."];
   }
 
   if (target.commandType === "commander" && countByType(scopedNodes, "soldier") === 0) {
-    return ["Create Soldiers under this Commander.", "Assign the first operational task.", "Review Commander permissions."];
+    return ["Create operational Soldiers under this business Commander.", "Assign the first operational task.", "Review Commander permissions."];
   }
 
   if (activeTasks.length === 0) {

@@ -16,10 +16,10 @@ describe("direct command-center entry", () => {
     navigationMocks.redirect.mockReset();
   });
 
-  it("sends the root URL directly to the dashboard", () => {
+  it("sends the root URL directly to the protected member dashboard", () => {
     HomePage();
 
-    expect(navigationMocks.redirect).toHaveBeenCalledWith("/dashboard");
+    expect(navigationMocks.redirect).toHaveBeenCalledWith("/member/dashboard");
   });
 
   it.each([
@@ -32,17 +32,19 @@ describe("direct command-center entry", () => {
     const response = middleware(new NextRequest(`https://entral.test${pathname}?next=/dashboard`));
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("https://entral.test/dashboard");
+    expect(response.headers.get("location")).toBe("https://entral.test/member/sign-in");
   });
 
   it.each([
-    "/",
-    "/admin",
-    "/agents",
-    "/automations",
-    "/chat",
-    "/dashboard"
-  ])("redirects a member session away from the internal surface %s before rendering", (pathname) => {
+    ["/", "/member/dashboard"],
+    ["/admin", "/member/infrastructure?section=governance"],
+    ["/agents", "/member/infrastructure?section=agents"],
+    ["/automations", "/member/infrastructure?section=automations"],
+    ["/chat", "/member/dashboard?section=entral"],
+    ["/dashboard", "/member/dashboard"],
+    ["/graph", "/member/graph"],
+    ["/infrastructure", "/member/infrastructure"]
+  ])("maps a member session from internal surface %s to %s before rendering", (pathname, destination) => {
     const payload = Buffer.from(JSON.stringify({
       aud: "entral-member",
       exp: Math.floor(Date.now() / 1000) + 300,
@@ -53,7 +55,7 @@ describe("direct command-center entry", () => {
     }));
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("https://entral.test/member");
+    expect(response.headers.get("location")).toBe(`https://entral.test${destination}`);
   });
 
   it("does not treat an expired session hint as an active member session", () => {

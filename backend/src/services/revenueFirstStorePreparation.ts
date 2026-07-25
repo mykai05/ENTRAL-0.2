@@ -1715,44 +1715,79 @@ function buildAutonomousPaymentApprovalQueue(
   ];
 }
 
+function hierarchyTitle(value: string) {
+  return value
+    .trim()
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`)
+    .join(" ");
+}
+
 function buildAutonomousChainOfCommand(
+  executionPlan: RevenueFirstBusinessExecutionPlan,
   paymentApprovals: RevenueFirstBusinessAutonomousLaunchPlan["paymentApprovalQueue"]
 ): RevenueFirstBusinessAutonomousLaunchPlan["chainOfCommand"] {
+  const store = executionPlan.finalExecutionPacket.store;
+  const niche = hierarchyTitle(store.industry) || "Selected Niche";
+  const businessCommander = `${store.businessName} Commander`;
+
   return [
     {
       lane: "store_build",
-      owns: ["store setup payload", "navigation", "collections", "SEO", "policy drafts"],
+      owns: ["revenue commerce domain", "portfolio-wide commercial guardrails"],
+      rank: "marshal",
+      status: "ready_internal",
+      title: "Revenue Commerce Marshal"
+    },
+    {
+      lane: "store_build",
+      owns: [`${store.industry} niche`, store.audience],
       rank: "general",
       status: "ready_internal",
-      title: "Store Setup General"
+      title: `${niche} General`
+    },
+    {
+      lane: "store_build",
+      owns: [`${store.businessName} business`, `${store.storePlatform} storefront`],
+      rank: "commander",
+      status: "ready_internal",
+      title: businessCommander
+    },
+    {
+      lane: "store_build",
+      owns: ["store setup payload", "navigation", "collections", "SEO", "policy drafts"],
+      rank: "soldier",
+      status: "ready_internal",
+      title: "Store Build Soldier"
     },
     {
       lane: "product_creation",
       owns: ["product rows", "listing copy", "design specs", "mockup directions"],
-      rank: "commander",
+      rank: "soldier",
       status: "ready_internal",
-      title: "Product Factory Commander"
+      title: "Product Creation Soldier"
     },
     {
       lane: "supplier_selection",
       owns: ["supplier scoring", "primary supplier choice", "backup supplier lane"],
-      rank: "commander",
+      rank: "soldier",
       status: "ready_internal",
-      title: "Supplier Commander"
+      title: "Supplier Selection Soldier"
     },
     {
       lane: "supplier_connection",
       owns: ["connector manifest", "credential scopes", "supplier payload draft"],
-      rank: "commander",
+      rank: "soldier",
       status: "owner_gate_required",
-      title: "Supplier Connector Commander"
+      title: "Supplier Connection Soldier"
     },
     {
       lane: "content_launch",
       owns: ["faceless scripts", "caption drafts", "channel calendar"],
-      rank: "commander",
+      rank: "soldier",
       status: "owner_gate_required",
-      title: "Content Launch Commander"
+      title: "Content Launch Soldier"
     },
     {
       lane: "organic_traffic",
@@ -1764,23 +1799,23 @@ function buildAutonomousChainOfCommand(
     {
       lane: "ad_campaign_drafting",
       owns: ["ad drafts", "audience draft", "creative angles", "budget guardrails"],
-      rank: "commander",
+      rank: "soldier",
       status: "ready_internal",
-      title: "Growth Commander"
+      title: "Ad Campaign Drafting Soldier"
     },
     {
       lane: "ad_spend_activation",
       owns: paymentApprovals.filter((approval) => approval.approvalType === "ad_spend").map((approval) => approval.title),
-      rank: "marshal",
+      rank: "soldier",
       status: "owner_gate_required",
-      title: "Financial Orchestrator Marshal"
+      title: "Ad Spend Activation Soldier"
     },
     {
       lane: "tracking",
       owns: ["first-week evidence ledger", "read-only metrics scope", "rotation feedback"],
       rank: "soldier",
       status: "owner_gate_required",
-      title: "Evidence Soldier"
+      title: "Evidence Tracking Soldier"
     }
   ];
 }
@@ -1789,11 +1824,12 @@ function buildAutonomousMatrix(
   executionPlan: RevenueFirstBusinessExecutionPlan
 ): RevenueFirstBusinessAutonomousLaunchPlan["autonomyMatrix"] {
   const ready = executionPlan.status === "ready_to_launch_first_business";
+  const businessCommander = `${executionPlan.finalExecutionPacket.store.businessName} Commander`;
 
   return [
     {
       autonomyPercent: ready ? 100 : 0,
-      commander: "Store Setup General",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: null,
       lane: "store_build",
@@ -1804,7 +1840,7 @@ function buildAutonomousMatrix(
     },
     {
       autonomyPercent: ready ? 100 : 0,
-      commander: "Product Factory Commander",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: null,
       lane: "product_creation",
@@ -1815,7 +1851,7 @@ function buildAutonomousMatrix(
     },
     {
       autonomyPercent: ready ? 100 : 0,
-      commander: "Supplier Commander",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: null,
       lane: "supplier_selection",
@@ -1826,7 +1862,7 @@ function buildAutonomousMatrix(
     },
     {
       autonomyPercent: ready ? 85 : 0,
-      commander: "Supplier Connector Commander",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: "Owner must approve credentials and live provider connection.",
       lane: "supplier_connection",
@@ -1837,7 +1873,7 @@ function buildAutonomousMatrix(
     },
     {
       autonomyPercent: ready ? 90 : 0,
-      commander: "Content Launch Commander",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: "Owner must approve any live posting, upload, scheduling, or browser action.",
       lane: "content_launch",
@@ -1848,7 +1884,7 @@ function buildAutonomousMatrix(
     },
     {
       autonomyPercent: ready ? 100 : 0,
-      commander: "Organic Traffic Soldier",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: null,
       lane: "organic_traffic",
@@ -1859,7 +1895,7 @@ function buildAutonomousMatrix(
     },
     {
       autonomyPercent: ready ? 100 : 0,
-      commander: "Growth Commander",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: null,
       lane: "ad_campaign_drafting",
@@ -1870,7 +1906,7 @@ function buildAutonomousMatrix(
     },
     {
       autonomyPercent: ready ? 50 : 0,
-      commander: "Financial Orchestrator Marshal",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: "Owner approval and payment authorization are required before any ad spend.",
       lane: "ad_spend_activation",
@@ -1881,7 +1917,7 @@ function buildAutonomousMatrix(
     },
     {
       autonomyPercent: ready ? 85 : 0,
-      commander: "Evidence Soldier",
+      commander: businessCommander,
       externalExecution: false,
       hardStop: "Owner must approve any read-only analytics connector before automatic data import.",
       lane: "tracking",
@@ -1911,7 +1947,7 @@ export function buildRevenueFirstBusinessAutonomousLaunchPlan(input: {
   const connectionPlan = buildAutonomousConnectionPlan(input.executionPlan, supplierPlan.selectedSupplier.provider);
   const adCampaignDrafts = buildAutonomousAdCampaignDrafts(input.executionPlan);
   const paymentApprovalQueue = buildAutonomousPaymentApprovalQueue(input.executionPlan, supplierPlan, adCampaignDrafts);
-  const chainOfCommand = buildAutonomousChainOfCommand(paymentApprovalQueue);
+  const chainOfCommand = buildAutonomousChainOfCommand(input.executionPlan, paymentApprovalQueue);
   const autonomyMatrix = buildAutonomousMatrix(input.executionPlan);
   const blockedExternalActions = Array.from(new Set([
     ...input.executionPlan.blockedExternalActions,
@@ -1932,7 +1968,7 @@ export function buildRevenueFirstBusinessAutonomousLaunchPlan(input: {
     adCampaignDrafts,
     auditEvents: [
       "Autonomous First Business Launch Prep assembled store, product, supplier, connector, content, organic, ad, and tracking plans internally.",
-      "Chain of command ownership was assigned across store build, product factory, supplier, growth, finance, and evidence lanes.",
+      "Chain of command was assigned from one revenue-commerce Marshal through the selected niche General and one business Commander to operational Soldiers.",
       "No provider, marketplace, browser, upload, social, ad, bank, payout, payment, card, or external AI action was executed."
     ],
     autonomousLaunchId,

@@ -88,6 +88,7 @@ export function ChatWindow() {
   const [inputError, setInputError] = useState("");
   const [draftPrompt, setDraftPrompt] = useState("");
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] = useState(true);
+  const [isProviderReady, setIsProviderReady] = useState(false);
   const [usageRefreshIndex, setUsageRefreshIndex] = useState(0);
   const [accessState, setAccessState] = useState<"checking" | "authorized" | "denied" | "unavailable">("checking");
   const logRef = useRef<HTMLDivElement>(null);
@@ -157,6 +158,11 @@ export function ChatWindow() {
   async function submitChatMessage(text: string, screenshot?: string) {
     setInputError("");
     setError("");
+
+    if (!isProviderReady) {
+      setInputError("Directives are disabled until a real AI provider is connected and within its budget limits.");
+      return false;
+    }
 
     const parsed = chatFormSchema.safeParse({
       message: text
@@ -246,24 +252,6 @@ export function ChatWindow() {
     await submitChatMessage(prompt, screenshot);
   }
 
-  function handleForkConversation(index: number) {
-    setMessages((current) => current.slice(0, index + 1));
-    setActiveConversationId(null);
-    notify({ title: "Branch created", message: "Your next directive will start a fresh command thread from here.", type: "success" });
-  }
-
-  async function handleRegenerate(index: number) {
-    const previousUserMessage = messages.slice(0, index).reverse().find((message) => message.role === "user");
-
-    if (!previousUserMessage) {
-      notify({ title: "Regenerate unavailable", message: "No earlier user message was found.", type: "error" });
-      return;
-    }
-
-    setMessages((current) => current.slice(0, index));
-    await submitChatMessage(previousUserMessage.content);
-  }
-
   async function handleNewChat() {
     setActiveConversationId(null);
     setMessages([]);
@@ -337,9 +325,6 @@ export function ChatWindow() {
             <p className="eyebrow">History</p>
             <h2>Command threads</h2>
           </div>
-          <button className="sidebar-toggle-button" type="button" onClick={() => setIsConversationSidebarOpen(false)} aria-label="Close conversations sidebar">
-            <PanelLeftClose aria-hidden="true" size={18} />
-          </button>
         </div>
         <Button type="button" onClick={handleNewChat}>
           <MessageSquarePlus aria-hidden="true" size={20} />
@@ -402,12 +387,17 @@ export function ChatWindow() {
           <span>Conversation history is saved to your workspace. Screen analysis only uses frames you choose to share.</span>
         </p>
 
-        <AiUsageGuardrail refreshIndex={usageRefreshIndex} />
+        <AiUsageGuardrail onProviderReadyChange={setIsProviderReady} refreshIndex={usageRefreshIndex} />
+        {!isProviderReady ? (
+          <p className="phase110-read-only-notice" role="note">
+            Read-only conversation history. Sending directives and screen analysis stay disabled until a real AI provider is connected and within its budget limits.
+          </p>
+        ) : null}
 
         {error ? <p className="form-error" role="alert">{error}</p> : null}
 
         <ScreenShareControls
-          disabled={isSending || isLoading}
+          disabled={isSending || isLoading || !isProviderReady}
           onAnalyze={handleAnalyzeScreen}
           onError={(message) => {
             setError(message);
@@ -435,12 +425,10 @@ export function ChatWindow() {
               </div>
             </div>
           ) : (
-            messages.map((message, index) => (
+            messages.map((message) => (
               <MessageBubble
                 content={message.content}
                 key={message.id}
-                onFork={() => handleForkConversation(index)}
-                onRegenerate={message.role === "assistant" ? () => void handleRegenerate(index) : undefined}
                 role={message.role}
               />
             ))
@@ -456,7 +444,7 @@ export function ChatWindow() {
           ) : null}
         </div>
 
-        <ChatInput disabled={isSending || isLoading} error={inputError} initialText={draftPrompt} onSend={handleSendMessage} />
+        <ChatInput disabled={isSending || isLoading || !isProviderReady} error={inputError} initialText={draftPrompt} onSend={handleSendMessage} />
 
       </div>
     </section>

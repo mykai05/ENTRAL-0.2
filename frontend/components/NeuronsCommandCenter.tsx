@@ -2,8 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Activity, AlertTriangle, Bot, Crosshair, Eye, Info, LogOut, Maximize2, Menu, Mic, MicOff, Network, PanelRightClose, PanelRightOpen, Pause, Play, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Volume2, X, Zap, ZoomIn, ZoomOut } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "./Button";
+import { AdminDashboard } from "./AdminDashboard";
+import { AgentDashboard } from "./AgentDashboard";
+import { AutomationConsole } from "./AutomationConsole";
+import { ChatWindow } from "./ChatWindow";
 import { Logo } from "./Logo";
+import { MemberDestinationNav, type MemberDestination } from "./MemberDestinationNav";
 import { ModeStatusStrip, type ModeStatusItem } from "./ModeStatus";
 import { MerchOperationsPanel } from "./MerchOperationsPanel";
 import { ProductApprovalQueue, type ProductApprovalAction } from "./ProductApprovalQueue";
@@ -24,7 +31,6 @@ import {
   type CommandSpeaker
 } from "../lib/command-communications";
 import {
-  commandGenerals,
   commandMarshals,
   commandStatusColor,
   commandStatusLabel,
@@ -77,6 +83,7 @@ type GraphStatus = CommandStatus;
 type CommandCenterSurface = "internal" | "member";
 
 type NeuronsCommandCenterProps = {
+  initialDestination?: MemberDestination;
   onLogout: () => void;
   surface?: CommandCenterSurface;
   user?: DashboardUser | null;
@@ -378,7 +385,7 @@ const commandConsoleSectionCopy: Record<CommandConsoleSection, { body: string; e
     title: "Command stream"
   },
   setup: {
-    body: "Create Marshals, business Generals, Commanders, Soldiers, and first missions from one organized workspace.",
+    body: "Create broad-domain Marshals, niche Generals, one-business Commanders, operational Soldiers, and pending missions from one organized workspace.",
     eyebrow: "Structure builder",
     title: "Hierarchy setup"
   },
@@ -401,7 +408,7 @@ const defaultCamera: CameraState = {
   yaw: 0.82
 };
 
-const graphControlsKey = "entral-command-center-controls";
+const unscopedGraphControlsKey = "entral-command-center-controls";
 const gravityMin = 0;
 const gravityMax = 12;
 const gravityPercentMin = gravityMin * 100;
@@ -707,7 +714,7 @@ const businessTemplates: BusinessTemplate[] = [
     label: "Custom Blank Structure",
     marshalName: "Client Operations Marshal",
     marshalType: "Client Operations Theater",
-    starterCommands: ["define objective", "add operating departments", "add execution units", "create first task", "generate first status report"]
+    starterCommands: ["define objective", "add operational functions", "create first task", "generate first status report"]
   }
 ];
 
@@ -724,13 +731,33 @@ const defaultBusinessWizard: BusinessWizardState = {
   templateId: businessTemplates[0].id
 };
 
-function readStoredGraphControls(): GraphControlSettings {
-  if (typeof window === "undefined") {
+export function businessTemplateHierarchyPlan(template: BusinessTemplate, form: Pick<BusinessWizardState, "businessName" | "industry">) {
+  const businessName = form.businessName.trim();
+  const nicheLabel = form.industry.trim() || template.generalType.replace(/\s+(Business|Store)$/i, "").trim() || template.label;
+
+  return {
+    businessName,
+    commanderName: /\bCommander$/i.test(businessName) ? businessName : `${businessName} Commander`,
+    generalName: /\bGeneral$/i.test(nicheLabel) ? nicheLabel : `${nicheLabel} General`,
+    nicheLabel,
+    operationalSoldiers: template.commanders.map((lane) => ({
+      name: lane.name.replace(/\s+Commander$/i, " Soldier"),
+      supportingWork: lane.soldiers.map((name) => name.replace(/\s+Soldier$/i, ""))
+    }))
+  };
+}
+
+export function scopedBrowserKey(baseKey: string, userId: string) {
+  return `${baseKey}:user:${encodeURIComponent(userId)}`;
+}
+
+export function readStoredGraphControls(userId: string | null | undefined): GraphControlSettings {
+  if (typeof window === "undefined" || !userId) {
     return defaultGraphControls;
   }
 
   try {
-    const parsed = JSON.parse(readLocalStorageValue(graphControlsKey) ?? "{}") as Partial<GraphControlSettings>;
+    const parsed = JSON.parse(readLocalStorageValue(scopedBrowserKey(unscopedGraphControlsKey, userId)) ?? "{}") as Partial<GraphControlSettings>;
     const storedOrbitPattern = parsed.orbitPattern;
     const orbitPattern: OrbitPattern = storedOrbitPattern && orbitPatternOptions.some((option) => option.value === storedOrbitPattern)
       ? storedOrbitPattern
@@ -1117,21 +1144,25 @@ function createInitialState(): GraphState3D {
   return graphStateFromCommandNodes(createDefaultCommandHierarchy());
 }
 
-const legacyCommandStateKey = "entral-command-os-state-v1";
-const previousCommandStateKey = "entral-command-os-state-v2";
-const commandStateKey = "entral-command-os-state-v3";
-const commandStateUpdatedKey = "entral-command-os-state-updated-at";
+const legacyUnscopedCommandStateKey = "entral-command-os-state-v1";
+const previousUnscopedCommandStateKey = "entral-command-os-state-v2";
+const unscopedCommandStateKey = "entral-command-os-state-v3";
+const unscopedCommandStateUpdatedKey = "entral-command-os-state-updated-at";
 
-function hasStoredCommandState() {
-  if (typeof window === "undefined") {
+export function commandStateKeyFor(userId: string) {
+  return scopedBrowserKey(unscopedCommandStateKey, userId);
+}
+
+function commandStateUpdatedKeyFor(userId: string) {
+  return scopedBrowserKey(unscopedCommandStateUpdatedKey, userId);
+}
+
+function hasStoredCommandState(userId: string | null | undefined) {
+  if (typeof window === "undefined" || !userId) {
     return false;
   }
 
-  return Boolean(
-    readLocalStorageValue(commandStateKey)
-      ?? readLocalStorageValue(previousCommandStateKey)
-      ?? readLocalStorageValue(legacyCommandStateKey)
-  );
+  return Boolean(readLocalStorageValue(commandStateKeyFor(userId)));
 }
 
 function normalizeCommandStatus(status: unknown): GraphStatus {
@@ -1277,32 +1308,55 @@ function hasLegacyMockEntities(state: Partial<GraphState3D> | null | undefined) 
   });
 }
 
-function readStoredCommandState(): GraphState3D {
+export function readStoredCommandState(userId: string | null | undefined): GraphState3D {
   const fallback = createInitialState();
 
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || !userId) {
     return fallback;
   }
 
   try {
-    const storedValue = readLocalStorageValue(commandStateKey)
-      ?? readLocalStorageValue(previousCommandStateKey)
-      ?? readLocalStorageValue(legacyCommandStateKey);
+    const storedValue = readLocalStorageValue(commandStateKeyFor(userId));
     const parsed = JSON.parse(storedValue ?? "null") as Partial<GraphState3D> | null;
 
     if (hasLegacyMockEntities(parsed)) {
-      removeLocalStorageValue(commandStateKey);
+      removeLocalStorageValue(commandStateKeyFor(userId));
       return fallback;
     }
 
-    if (parsed && !readLocalStorageValue("entral-command-os-pre-marshal-backup")) {
-      writeLocalStorageValue("entral-command-os-pre-marshal-backup", JSON.stringify(parsed));
+    const scopedBackupKey = scopedBrowserKey("entral-command-os-pre-marshal-backup", userId);
+    if (parsed && !readLocalStorageValue(scopedBackupKey)) {
+      writeLocalStorageValue(scopedBackupKey, JSON.stringify(parsed));
     }
 
     const stored = normalizeGraphState(parsed);
     return validateCommandOSState(stored, { fallback, recoverInterruptedTasks: true });
   } catch {
     return fallback;
+  }
+}
+
+export function readUnscopedCommandStateForExplicitRecovery(): GraphState3D | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storedValue = readLocalStorageValue(unscopedCommandStateKey)
+      ?? readLocalStorageValue(previousUnscopedCommandStateKey)
+      ?? readLocalStorageValue(legacyUnscopedCommandStateKey);
+    const parsed = JSON.parse(storedValue ?? "null") as Partial<GraphState3D> | null;
+
+    if (!parsed || hasLegacyMockEntities(parsed)) {
+      return null;
+    }
+
+    return validateCommandOSState(normalizeGraphState(parsed), {
+      fallback: createInitialState(),
+      recoverInterruptedTasks: true
+    });
+  } catch {
+    return null;
   }
 }
 
@@ -1755,11 +1809,18 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
   return Math.hypot(first.x - second.x, first.y - second.y);
 }
 
-export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: NeuronsCommandCenterProps) {
+export function NeuronsCommandCenter({
+  initialDestination = "dashboard",
+  user,
+  onLogout,
+  surface = "internal"
+}: NeuronsCommandCenterProps) {
   const isMemberSurface = surface === "member";
+  const destinationHref = (path: string) => `${isMemberSurface ? "/member" : ""}${path}`;
+  const searchParams = useSearchParams();
   const { settings, updateSettings } = useTheme();
   const { isSpeaking, settings: voiceSettings, speak, stopSpeaking } = useVoice();
-  const [graph, dispatchGraph] = useReducer(commandOSReducer<GraphNode3D>, undefined as unknown as GraphState3D, readStoredCommandState);
+  const [graph, dispatchGraph] = useReducer(commandOSReducer<GraphNode3D>, user?.id ?? null, readStoredCommandState);
   const graphRef = useRef(graph);
   const setGraph = useCallback<React.Dispatch<React.SetStateAction<GraphState3D>>>((update) => {
     const current = graphRef.current;
@@ -1781,7 +1842,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   const [commandHistory, setCommandHistory] = useState<CommandConsoleMessage[]>([
     {
       content: formatCommandReport({
-        analysis: "No command structures are loaded by default. Marshals, business Generals, Commanders, and Soldiers will be created only when directed by the operator.",
+        analysis: "No command structures are loaded by default. Broad-domain Marshals, niche Generals, business Commanders, and operational Soldiers will be created only when directed by the operator.",
         nextActions: ["Type help.", "Create your first Marshal.", "Open guided business setup.", "Start tutorial."],
         recommendation: "Use ENTRAL as the strategic authority for navigation, delegation, reports, and graph control.",
         situation: "ENTRAL Command System online. No command structures detected. Awaiting directives."
@@ -1816,7 +1877,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   const [businessWizard, setBusinessWizard] = useState<BusinessWizardState>(defaultBusinessWizard);
   const [pendingAuthorization, setPendingAuthorization] = useState<PendingAuthorization | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileCommandTab>(isMemberSurface ? "graph" : "command");
-  const [graphControls, setGraphControls] = useState<GraphControlSettings>(() => readStoredGraphControls());
+  const [graphControls, setGraphControls] = useState<GraphControlSettings>(() => readStoredGraphControls(user?.id));
   const [merchStores, setMerchStores] = useState<ClientMerchStore[]>([]);
   const [productBatchForm, setProductBatchForm] = useState<ProductBatchFormState>(() => defaultProductBatchForm());
   const [productBatchResults, setProductBatchResults] = useState<PodProduct[]>([]);
@@ -1833,15 +1894,22 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   const [pendingRemovalId, setPendingRemovalId] = useState<string | null>(null);
   const removalDialogRef = useDialogFocus<HTMLElement>(Boolean(pendingRemovalId), () => setPendingRemovalId(null));
   const [isCommandPersistenceReady, setIsCommandPersistenceReady] = useState(false);
+  const [commandSourceStatus, setCommandSourceStatus] = useState<"loading" | "backend" | "local-fallback">("loading");
+  const [graphHistoryDepth, setGraphHistoryDepth] = useState(0);
+  const [dashboardSection, setDashboardSection] = useState<"portfolio" | "entral">("portfolio");
+  const [infrastructureSection, setInfrastructureSection] = useState<"records" | "agents" | "automations" | "governance" | "operations">("records");
+  const [infrastructureSearch, setInfrastructureSearch] = useState("");
+  const [isGraphSettingsOpen, setIsGraphSettingsOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const commandInputRef = useRef<HTMLInputElement | null>(null);
   const graphControlsRef = useRef(graphControls);
   const commandSyncTimerRef = useRef<number | null>(null);
-  const hadStoredCommandStateRef = useRef(hasStoredCommandState());
+  const hadStoredCommandStateRef = useRef(hasStoredCommandState(user?.id));
   const lastSyncedCommandStateRef = useRef<string | null>(null);
   const lockedNodeIdRef = useRef<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
   const selectedRef = useRef("entral");
+  const graphSelectionHistoryRef = useRef<string[]>([]);
   const searchRef = useRef("");
   const activeGroupRef = useRef<string | null>(null);
   const activeStatusFilterRef = useRef<GraphStatus[] | null>(null);
@@ -1869,7 +1937,6 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   ]);
   const spaceFogRef = useRef<SpacePoint[]>(createSpaceFogPoints());
   const timeRef = useRef(0);
-  const taskTimersRef = useRef<number[]>([]);
 
   const groupMap = useMemo(() => new Map(graph.groups.map((group) => [group.id, group])), [graph.groups]);
   const nodeMap = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
@@ -1882,6 +1949,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     async function restoreBackendCommandState() {
       if (!user?.id) {
         setIsCommandPersistenceReady(false);
+        setCommandSourceStatus("local-fallback");
         return;
       }
 
@@ -1890,10 +1958,10 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
         if (isCancelled) return;
 
-        if (response.snapshot?.state && !hadStoredCommandStateRef.current) {
+        if (response.snapshot?.state) {
           const restored = validateCommandOSState(normalizeGraphState(response.snapshot.state), {
             fallback: createInitialState(),
-            recoverInterruptedTasks: true
+            recoverInterruptedTasks: false
           });
 
           graphRef.current = restored;
@@ -1902,14 +1970,20 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
             state: restored,
             type: "replace"
           });
-          writeLocalStorageValue(commandStateKey, JSON.stringify(restored));
-          writeLocalStorageValue(commandStateUpdatedKey, response.snapshot.updatedAt);
-          setStatusMessage("Persistent Command OS memory restored from ENTRAL backend.");
-        } else if (response.snapshot?.state) {
-          setStatusMessage("Local Command OS memory preserved. Backend persistence is online.");
+          writeLocalStorageValue(commandStateKeyFor(user.id), JSON.stringify(restored));
+          writeLocalStorageValue(commandStateUpdatedKeyFor(user.id), response.snapshot.updatedAt);
+          lastSyncedCommandStateRef.current = JSON.stringify(restored);
+          setCommandSourceStatus("backend");
+          setStatusMessage("Authoritative Command OS memory restored from the ENTRAL backend.");
+        } else if (hadStoredCommandStateRef.current) {
+          setCommandSourceStatus("local-fallback");
+          setStatusMessage("No backend snapshot exists. This signed-in user's browser recovery state remains available.");
+        } else {
+          setCommandSourceStatus("backend");
         }
       } catch {
         if (!isCancelled) {
+          setCommandSourceStatus("local-fallback");
           setStatusMessage("Command OS memory is saved locally. Backend persistence will retry after changes.");
         }
       } finally {
@@ -1929,10 +2003,14 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   useEffect(() => {
     graphRef.current = graph;
     const serialized = JSON.stringify(graph);
-    const savedCommandState = writeLocalStorageValue(commandStateKey, serialized);
-    writeLocalStorageValue(commandStateUpdatedKey, new Date().toISOString());
+    const savedCommandState = user?.id
+      ? writeLocalStorageValue(commandStateKeyFor(user.id), serialized)
+      : false;
+    if (user?.id) {
+      writeLocalStorageValue(commandStateUpdatedKeyFor(user.id), new Date().toISOString());
+    }
 
-    if (!savedCommandState) {
+    if (user?.id && !savedCommandState) {
       setStatusMessage("Command OS is running, but this browser blocked local memory storage. Backend sync will still be attempted.");
     }
 
@@ -1967,8 +2045,10 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
   useEffect(() => {
     graphControlsRef.current = graphControls;
-    writeLocalStorageValue(graphControlsKey, JSON.stringify(graphControls));
-  }, [graphControls]);
+    if (user?.id) {
+      writeLocalStorageValue(scopedBrowserKey(unscopedGraphControlsKey, user.id), JSON.stringify(graphControls));
+    }
+  }, [graphControls, user?.id]);
 
   useEffect(() => {
     const nodeIds = new Set(graph.nodes.map((node) => node.id));
@@ -1999,10 +2079,6 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       previousBodyOverflowRef.current = null;
     }
 
-    for (const timer of taskTimersRef.current) {
-      window.clearTimeout(timer);
-    }
-
     if (commandSyncTimerRef.current) {
       window.clearTimeout(commandSyncTimerRef.current);
     }
@@ -2013,6 +2089,27 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   useEffect(() => {
     hoveredRef.current = hoveredNodeId;
   }, [hoveredNodeId]);
+
+  useEffect(() => {
+    if (initialDestination === "dashboard") {
+      setDashboardSection(searchParams.get("section") === "entral" ? "entral" : "portfolio");
+      return;
+    }
+
+    if (initialDestination !== "infrastructure") return;
+
+    const requestedSection = searchParams.get("section");
+    if (requestedSection === "agents" || requestedSection === "automations" || requestedSection === "governance" || requestedSection === "operations") {
+      setInfrastructureSection(requestedSection);
+    } else {
+      setInfrastructureSection("records");
+    }
+
+    const requestedEntity = searchParams.get("entity");
+    if (!requestedEntity || !graph.nodes.some((node) => node.id === requestedEntity)) return;
+
+    setSelectedNodeId(requestedEntity);
+  }, [graph.nodes, initialDestination, searchParams]);
 
   useEffect(() => {
     function prepareAcademyTarget(event: Event) {
@@ -2157,41 +2254,6 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     setStatusMessage(`${hovered.name}: ${statusLabel(hovered.status)}. ${hovered.currentTask ?? "No active task."}`);
   }, [hoveredNodeId, nodeMap]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setGraph((current) => {
-        const running = current.nodes.filter((node) => node.type === "agent" && node.status === "working");
-
-        if (running.length === 0) {
-          graphRef.current = current;
-          return current;
-        }
-
-        const index = Math.floor(Math.random() * running.length);
-        const target = running[index];
-
-        const next = {
-          ...current,
-          nodes: current.nodes.map((node) => {
-            if (node.id !== target.id) return node;
-
-            const log = `${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} live update: activity heartbeat received.`;
-
-            return {
-              ...node,
-              logs: [log, ...node.logs].slice(0, 8)
-            };
-          })
-        };
-
-        graphRef.current = next;
-        return next;
-      });
-    }, 8000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
   function updateGraphControl<K extends keyof GraphControlSettings>(key: K, value: GraphControlSettings[K]) {
     setGraphControls((current) => {
       const nextValue = key === "gravity" ? clampGravity(value) : value;
@@ -2201,7 +2263,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     });
   }
 
-  function patchGraphControls(changes: Partial<GraphControlSettings>, message: string) {
+  function patchGraphControls(changes: Partial<GraphControlSettings>, message = "Graph display settings updated.") {
     setGraphControls((current) => {
       const next = {
         ...current,
@@ -2362,6 +2424,29 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     graphControlsRef.current = next;
     setGraphControls(next);
     setStatusMessage("Graph dynamics reset to the tuned ENTRAL defaults.");
+  }
+
+  function recoverLegacyBrowserWorkspace() {
+    if (!user?.id) {
+      setStatusMessage("Sign in before recovering an unscoped legacy browser workspace.");
+      return;
+    }
+
+    const recovered = readUnscopedCommandStateForExplicitRecovery();
+    if (!recovered) {
+      setStatusMessage("No recoverable unscoped legacy browser workspace was found.");
+      return;
+    }
+
+    graphRef.current = recovered;
+    dispatchGraph({
+      fallback: createInitialState(),
+      state: recovered,
+      type: "replace"
+    });
+    writeLocalStorageValue(commandStateKeyFor(user.id), JSON.stringify(recovered));
+    writeLocalStorageValue(commandStateUpdatedKeyFor(user.id), new Date().toISOString());
+    setStatusMessage("Legacy browser workspace recovered into this signed-in user's scoped cache. Backend state remains authoritative when present.");
   }
 
   function renderGravityNudges(label: string, value: number, onApply: (gravity: number) => void, disabled = false, isMixed = false) {
@@ -2892,7 +2977,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       glContext.deleteProgram(pointProgram.program);
       glContext.deleteProgram(lineProgram.program);
     };
-  }, [settings.accentColor]);
+  }, [initialDestination, settings.accentColor]);
 
   function setCamera(nextCamera: Partial<CameraState>, immediate = false) {
     const next = clampCamera({
@@ -3170,9 +3255,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
   function applyProductBatchToCommandOS(products: PodProduct[], store: ClientMerchStore, warnings: string[]) {
     const nodes = graphRef.current.nodes;
-    const planner = nodes.find((node) => node.name === "Product Opportunity Soldier")
-      ?? nodes.find((node) => node.name === "Niche Research Commander")
-      ?? nodes.find((node) => node.id === "entral-general")
+    const businessCommander = nodes.find((node) => node.commandType === "commander" && node.businessName?.toLowerCase() === store.businessName.toLowerCase())
+      ?? nodes.find((node) => node.commandType === "commander");
+    const planner = nodes.find((node) => node.name === "Niche Research Soldier" && node.parentId === businessCommander?.id)
+      ?? nodes.find((node) => node.name === "Niche Research Soldier")
+      ?? businessCommander
       ?? nodes.find((node) => node.id === "merch-marshal")
       ?? nodes.find((node) => node.id === "entral");
 
@@ -3200,8 +3287,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       generalName: general?.name ?? null,
       history: [
         `[ENTRAL] Product batch objective received for ${store.businessName}.`,
-        `[MARSHAL] Merch Marshal routed product planning into ${path.find((node) => node.commandType === "general")?.name ?? "the active business General"}.`,
-        `[GENERAL] ${path.find((node) => node.commandType === "general")?.name ?? "Business General"} routed product planning through ${path.at(-2)?.name ?? "Merch command"}.`,
+        `[MARSHAL] Merch Marshal routed product planning into ${path.find((node) => node.commandType === "general")?.name ?? "the active niche General"}.`,
+        `[GENERAL] ${path.find((node) => node.commandType === "general")?.name ?? "Niche General"} routed product planning through ${path.at(-2)?.name ?? "the business Commander"}.`,
         `[SOLDIER] ${planner.name} generated ${products.length} product drafts.`,
         `[REPORT] ${planner.name} -> ${path.slice().reverse().map((node) => node.name).slice(1).join(" -> ")}.`
       ],
@@ -3216,7 +3303,14 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       updatedAt: now
     };
     const productNames = products.map((product) => product.productName);
-    const affectedNames = new Set(["entral", "Merch Marshal", "ENTRAL General", "Product Opportunity Soldier", "Design Concept Soldier", "Prompt Soldier", "Title Soldier", "Trademark Risk Soldier"]);
+    const affectedNames = new Set([
+      "entral",
+      ...path.map((node) => node.name),
+      "Niche Research Soldier",
+      "Design Soldier",
+      "Listing Soldier",
+      "Compliance Soldier"
+    ]);
 
     setGraph((current) => {
       const next = {
@@ -3313,7 +3407,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       setStatusMessage(`${response.products.length} POD product drafts generated for ${store.businessName}.`);
       respond({
         analysis: `${response.products.length} product drafts generated with ideas, design concepts, prompts, listing copy, tags, pricing estimates, and compliance warnings.`,
-        nextActions: ["Review generated products in the batch panel.", "Inspect Product Opportunity Soldier for the report.", "Route approved products into design and listing review."],
+        nextActions: ["Review generated products in the batch panel.", "Inspect Niche Research Soldier for the report.", "Route approved products into design and listing review."],
         recommendation: "Use this batch as the first client review set before production design begins.",
         situation: `${store.businessName} product batch complete.`
       }, `${store.businessName} product batch generated.`);
@@ -3327,97 +3421,6 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     } finally {
       setIsGeneratingProductBatch(false);
     }
-  }
-
-  function updateDelegationStep(taskId: string, entityId: string, status: CommandTaskStatus, entityStatus: GraphStatus, message: string, completed = false) {
-    const now = new Date().toISOString();
-
-    setGraph((current) => {
-      const task = current.tasks.find((item) => item.id === taskId);
-      const entity = current.nodes.find((node) => node.id === entityId);
-
-      if (!entity || entity.status === "offline") {
-        const messageSuffix = !entity
-          ? "entity was removed before this delegation step could run"
-          : `${entity.name} is offline and cannot receive delegation`;
-        const next = {
-          ...current,
-          tasks: current.tasks.map((item) => item.id === taskId
-            ? {
-              ...item,
-              completedAt: now,
-              history: [...item.history, `Delegation interrupted: ${messageSuffix}.`],
-              status: "failed" as CommandTaskStatus,
-              updatedAt: now
-            }
-            : item)
-        };
-
-        graphRef.current = next;
-        return next;
-      }
-
-      const next = {
-        ...current,
-        tasks: current.tasks.map((item) => item.id === taskId
-            ? {
-              ...item,
-              assignedEntityId: entityId,
-              assignedEntityType: entity.commandType,
-              completedAt: completed ? now : item.completedAt ?? null,
-            history: [...item.history, message],
-            status,
-            updatedAt: now
-          }
-          : item),
-        nodes: current.nodes.map((node) => {
-          if (node.id !== entityId) return node;
-
-          const taskName = task?.name ?? "Delegated task";
-          const taskResult = completed ? `${taskName} completed by ${node.name}.` : undefined;
-
-          return {
-            ...node,
-            currentTask: completed ? null : taskName,
-            logs: [message, ...node.logs].slice(0, 10),
-            memory: {
-              ...node.memory,
-              notes: [`${message}`, ...node.memory.notes].slice(0, 8),
-              recentTasks: [taskName, ...node.memory.recentTasks.filter((name) => name !== taskName)].slice(0, 8),
-              taskResults: taskResult ? [taskResult, ...node.memory.taskResults].slice(0, 8) : node.memory.taskResults
-            },
-            status: completed ? "waiting" : entityStatus,
-            taskHistory: [taskName, ...node.taskHistory.filter((name) => name !== taskName)].slice(0, 12)
-          };
-        })
-      };
-
-      graphRef.current = next;
-      return next;
-    });
-
-    recordActivity(message);
-  }
-
-  function settleDelegationPath(pathIds: string[], taskName: string) {
-    setGraph((current) => {
-      const next = {
-        ...current,
-        nodes: current.nodes.map((node) => {
-          if (!pathIds.includes(node.id)) return node;
-
-          return {
-            ...node,
-            currentTask: null,
-            logs: [`${taskName} delegation settled.`, ...node.logs].slice(0, 10),
-            status: node.commandType === "emperor" ? "thinking" as GraphStatus : "waiting" as GraphStatus
-          };
-        })
-      };
-
-      graphRef.current = next;
-      return next;
-    });
   }
 
   function parseTaskDetails(text: string) {
@@ -3455,8 +3458,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     const details = parseTaskDetails(text);
     const taskId = `task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
     const task: CommandTask = {
-      assignedEntityId: "entral",
-      assignedEntityType: "emperor",
+      assignedEntityId: soldier.id,
+      assignedEntityType: "soldier",
       completedAt: null,
       commanderId: commander?.id ?? null,
       commanderName: commander?.name ?? null,
@@ -3465,7 +3468,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       description: details.description,
       generalId: general?.id ?? null,
       generalName: general?.name ?? null,
-      history: [`${details.name} created by user and received by ENTRAL.`],
+      history: [`${details.name} created by user and assigned locally to ${soldier.name}; backend execution receipt pending.`],
       id: taskId,
       marshalId: marshal?.id ?? null,
       marshalName: marshal?.name ?? null,
@@ -3482,17 +3485,17 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
         ...current,
         tasks: [task, ...current.tasks],
         nodes: current.nodes.map((node) => {
-          if (node.id !== "entral") return node;
+          if (node.id !== soldier.id) return node;
 
           return {
             ...node,
-            currentTask: `Routing ${details.name}`,
-            logs: [`Received task ${details.name}.`, ...node.logs].slice(0, 10),
+            currentTask: `${details.name} — awaiting backend receipt`,
+            logs: [`${details.name} assigned locally; backend execution receipt pending.`, ...node.logs].slice(0, 10),
             memory: {
               ...node.memory,
               recentTasks: [details.name, ...node.memory.recentTasks].slice(0, 8)
             },
-            status: "thinking" as GraphStatus,
+            status: "waiting" as GraphStatus,
             taskHistory: [details.name, ...node.taskHistory].slice(0, 12)
           };
         })
@@ -3506,36 +3509,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     setIsPanelOpen(true);
     respond({
       analysis: `Delegation path: ${path.map((node) => node.name).join(" -> ")}.`,
-      nextActions: ["Watch delegation progress in the graph.", "Inspect the Soldier for task history.", "Review completion logs when the operation settles."],
-      recommendation: "Maintain the current focus until execution status changes.",
-      situation: `${details.name} created and received by ENTRAL.`
-    }, `${details.name} delegated through command chain.`);
-
-    path.forEach((node, index) => {
-      const timer = window.setTimeout(() => {
-        const isFinal = index === path.length - 1;
-        const stepStatus: CommandTaskStatus = isFinal ? "running" : "assigned";
-        const nodeStatus: GraphStatus = node.commandType === "emperor" ? "thinking" : isFinal ? "working" : "thinking";
-
-        updateDelegationStep(
-          taskId,
-          node.id,
-          stepStatus,
-          nodeStatus,
-          `${node.name} ${isFinal ? "is executing" : "accepted and delegated"} ${details.name}.`
-        );
-      }, 450 + index * 850);
-
-      taskTimersRef.current.push(timer);
-    });
-
-    const completionTimer = window.setTimeout(() => {
-      updateDelegationStep(taskId, soldier.id, "completed", "waiting", `${soldier.name} completed ${details.name}. Result stored in Command OS memory.`, true);
-      settleDelegationPath(path.map((node) => node.id), details.name);
-      setStatusMessage(`Objective completed successfully by ${soldier.name}.`);
-    }, 450 + path.length * 850 + 1200);
-
-    taskTimersRef.current.push(completionTimer);
+      nextActions: ["Wait for a backend execution receipt.", "Inspect the pending task record.", "Review provider approvals before execution."],
+      recommendation: "Treat this local task as pending; ENTRAL will not simulate progress or completion.",
+      situation: `${details.name} recorded locally and awaiting a backend execution receipt.`
+    }, `${details.name} recorded as pending.`);
+    setStatusMessage(`${details.name} is pending. No execution has been claimed without a backend receipt.`);
   }
 
   function workflowNameFromCommand(text: string) {
@@ -3561,8 +3539,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
     if (result.tasks.length === 0) {
       respond({
-        analysis: "The workflow requires at least one available Merch Commander and execution unit.",
-        nextActions: ["Restore the default Merch hierarchy if it was removed.", "Create Commanders and Soldiers for the missing workflow lanes.", "Reissue the merch launch workflow directive."],
+        analysis: "The workflow requires a business Commander with the expected operational Soldiers.",
+        nextActions: ["Create a merch business with guided setup.", "Restore missing operational Soldiers.", "Reissue the merch launch workflow directive."],
         recommendation: "Rebuild execution capacity before generating the workflow.",
         situation: "No Merch launch workflow tasks could be assigned."
       });
@@ -3571,11 +3549,9 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
     const workflowTaskNames = result.tasks.map((task) => task.name);
     const assignedIds = new Set(result.tasks.map((task) => task.assignedEntityId).filter((id): id is string => Boolean(id)));
-    const commanderIds = new Set(result.tasks.map((task) => task.delegationPath.at(-2)).filter((id): id is string => Boolean(id)));
-    const marshalId = graphRef.current.nodes.find((node) => node.id === "merch-marshal")?.id ?? "merch-marshal";
-    const generalId = graphRef.current.nodes.find((node) => node.id === "entral-general")?.id
-      ?? graphRef.current.nodes.find((node) => node.commandType === "general" && node.parentId === marshalId)?.id
-      ?? "entral-general";
+    const commanderIds = new Set(result.tasks.map((task) => task.commanderId).filter((id): id is string => Boolean(id)));
+    const marshalId = result.tasks[0]?.marshalId ?? null;
+    const generalId = result.tasks[0]?.generalId ?? null;
     let nextFocusNode: GraphNode3D | null = null;
 
     setGraph((current) => {
@@ -3586,14 +3562,12 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
           if (node.id === "entral") {
             return {
               ...node,
-              currentTask: `Supervising ${workflowName}`,
-              logs: [`Generated ${result.tasks.length}-step merch launch workflow.`, ...node.logs].slice(0, 10),
+              logs: [`Recorded ${result.tasks.length}-step merch launch workflow as pending; no execution receipt exists.`, ...node.logs].slice(0, 10),
               memory: {
                 ...node.memory,
-                notes: [`Workflow ${workflowName} established. Reports flow Soldier -> Commander -> General -> Marshal -> ENTRAL.`, ...node.memory.notes].slice(0, 8),
+                notes: [`Workflow ${workflowName} planned locally. Reports will flow Soldier -> Commander -> General -> Marshal -> ENTRAL after backend execution.`, ...node.memory.notes].slice(0, 8),
                 recentTasks: [workflowName, ...node.memory.recentTasks].slice(0, 8)
               },
-              status: "thinking" as GraphStatus,
               taskHistory: [workflowName, ...node.taskHistory].slice(0, 12)
             };
           }
@@ -3601,14 +3575,12 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
           if (node.id === marshalId) {
             return {
               ...node,
-              currentTask: `Routing ${workflowName} through Merch theater`,
-              logs: [`Accepted ${workflowName}; assigning business General and operating Commanders.`, ...node.logs].slice(0, 10),
+              logs: [`Recorded ${workflowName} under this broad domain; backend execution receipt pending.`, ...node.logs].slice(0, 10),
               memory: {
                 ...node.memory,
-                notes: [`Marshal report route active for ${workflowName}.`, ...node.memory.notes].slice(0, 8),
+                notes: [`Marshal report route planned for ${workflowName}; not yet active.`, ...node.memory.notes].slice(0, 8),
                 recentTasks: [workflowName, ...node.memory.recentTasks].slice(0, 8)
               },
-              status: "thinking" as GraphStatus,
               taskHistory: [workflowName, ...node.taskHistory].slice(0, 12)
             };
           }
@@ -3616,13 +3588,12 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
           if (node.id === generalId) {
             return {
               ...node,
-              logs: [`Accepted ${workflowName}; routing ${result.tasks.length} workflow steps through operating Commanders.`, ...node.logs].slice(0, 10),
+              logs: [`Recorded ${result.tasks.length} pending workflow steps for the niche.`, ...node.logs].slice(0, 10),
               memory: {
                 ...node.memory,
-                notes: [`Workflow reporting route active for ${workflowName}.`, ...node.memory.notes].slice(0, 8),
+                notes: [`Workflow reporting route planned for ${workflowName}; backend receipt pending.`, ...node.memory.notes].slice(0, 8),
                 recentTasks: [workflowName, ...node.memory.recentTasks].slice(0, 8)
               },
-              status: "thinking" as GraphStatus,
               taskHistory: [workflowName, ...node.taskHistory].slice(0, 12)
             };
           }
@@ -3632,10 +3603,10 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
             return {
               ...node,
-              logs: [`Received ${commanderTasks.length} workflow step${commanderTasks.length === 1 ? "" : "s"} for ${workflowName}.`, ...node.logs].slice(0, 10),
+              logs: [`Recorded ${commanderTasks.length} pending workflow step${commanderTasks.length === 1 ? "" : "s"} for ${workflowName}.`, ...node.logs].slice(0, 10),
               memory: {
                 ...node.memory,
-                notes: [`Report upward to ${graphRef.current.nodes.find((candidate) => candidate.id === generalId)?.name ?? "the business General"} for ${workflowName}.`, ...node.memory.notes].slice(0, 8),
+                notes: [`Report upward through ${graphRef.current.nodes.find((candidate) => candidate.id === generalId)?.name ?? "the niche General"} after backend execution for ${workflowName}.`, ...node.memory.notes].slice(0, 8),
                 recentTasks: [...commanderTasks, ...node.memory.recentTasks].slice(0, 8)
               },
               status: "waiting" as GraphStatus,
@@ -3648,11 +3619,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
             return {
               ...node,
-              currentTask: soldierTasks[0] ?? node.currentTask,
-              logs: [`Assigned ${soldierTasks.length} workflow step${soldierTasks.length === 1 ? "" : "s"} for ${workflowName}.`, ...node.logs].slice(0, 10),
+              currentTask: `${soldierTasks[0] ?? workflowName} — awaiting backend receipt`,
+              logs: [`Assigned ${soldierTasks.length} pending workflow step${soldierTasks.length === 1 ? "" : "s"} for ${workflowName}; backend receipt pending.`, ...node.logs].slice(0, 10),
               memory: {
                 ...node.memory,
-                notes: [`Report results upward through Commander -> General -> Marshal -> ENTRAL.`, ...node.memory.notes].slice(0, 8),
+                notes: [`Report results upward through Commander -> General -> Marshal -> ENTRAL only after backend execution.`, ...node.memory.notes].slice(0, 8),
                 recentTasks: [...soldierTasks, ...node.memory.recentTasks].slice(0, 8)
               },
               status: "waiting" as GraphStatus,
@@ -3684,14 +3655,14 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       setIsPanelOpen(true);
     }
 
-    recordActivity(`${workflowName} workflow generated with ${result.tasks.length} delegated tasks.`);
-    setStatusMessage(`${workflowName}: ${result.tasks.length} workflow tasks assigned through Merch Marshal.`);
+    recordActivity(`${workflowName} workflow recorded with ${result.tasks.length} pending tasks.`);
+    setStatusMessage(`${workflowName}: ${result.tasks.length} tasks are pending backend execution receipts.`);
     respond({
-      analysis: `${result.tasks.length} tasks generated from ${merchLaunchWorkflowSteps.length} workflow steps. Report flow is Soldier -> Commander -> General -> Marshal -> ENTRAL for every step.${result.missingSteps.length ? ` Missing lanes: ${result.missingSteps.map((step) => step.name).join(", ")}.` : ""}`,
-      nextActions: ["Open Merch Marshal to review theater load.", "Inspect the active business General.", "Inspect any Commander to see its workflow steps."],
-      recommendation: "Use the generated workflow as the operational launch checklist for the client merch store.",
-      situation: `${workflowName} workflow established.`
-    }, `${workflowName} workflow generated.`);
+      analysis: `${result.tasks.length} pending tasks generated from ${merchLaunchWorkflowSteps.length} workflow steps. After backend execution, report flow is Soldier -> Commander -> General -> Marshal -> ENTRAL for every step.${result.missingSteps.length ? ` Missing functions: ${result.missingSteps.map((step) => step.name).join(", ")}.` : ""}`,
+      nextActions: ["Open Merch Marshal to review domain load.", "Inspect the active niche General.", "Inspect the business Commander and its operational Soldiers."],
+      recommendation: "Use the generated workflow as a pending launch checklist; do not treat any step as running or complete without a backend receipt.",
+      situation: `${workflowName} workflow planned locally.`
+    }, `${workflowName} workflow recorded as pending.`);
   }
 
   function canMoveEntity(node: GraphNode3D, parent: GraphNode3D) {
@@ -3827,8 +3798,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     }));
     showCommandConsole("setup");
     respond({
-      analysis: "Guided creation is ready. Select a business template, enter the business name, and ENTRAL will build the Marshal, General, Commanders, Soldiers, and first intake task.",
-      nextActions: ["Choose a template.", "Enter the business name.", "Confirm Create business."],
+      analysis: "Guided creation is ready. Select a business template, enter the business name, and ENTRAL will build a broad-domain Marshal, a niche General, one business Commander, operational Soldiers, and a pending first intake task.",
+      nextActions: ["Choose a template.", "Enter the business name and niche.", "Preview and authorize creation."],
       recommendation: "Use POD merch store for your first merch client, or Local service business for a standard client operation.",
       situation: "Business creation wizard opened."
     });
@@ -3869,11 +3840,12 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   }
 
   function requestBusinessTemplateAuthorization(template: BusinessTemplate, form: BusinessWizardState) {
-    const businessName = form.businessName.trim();
+    const hierarchyPlan = businessTemplateHierarchyPlan(template, form);
+    const { businessName, generalName } = hierarchyPlan;
 
     if (!businessName) {
       respond({
-        analysis: "A business General needs a real business, client, brand, store, or operation name before ENTRAL can prepare an authorization preview.",
+        analysis: "A business Commander needs a real business, client, brand, store, or operation name before ENTRAL can prepare an authorization preview.",
         nextActions: ["Enter a business name.", "Choose a template.", "Request creation again."],
         recommendation: "Use a concrete name like Iron House Gym, Smith Landscaping, or Veteran Apparel.",
         situation: "Business creation paused."
@@ -3881,7 +3853,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       return;
     }
 
-    const soldierCount = template.commanders.reduce((total, commander) => total + commander.soldiers.length, 0);
+    const soldierCount = template.commanders.length;
     const marshalName = form.preferredMarshal.trim() || template.marshalName;
     const contextLines = [
       form.industry.trim() ? `Industry: ${form.industry.trim()}` : "",
@@ -3891,8 +3863,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     ].filter(Boolean);
     const summary = buildBusinessTemplateAuthorizationSummary({
       businessName,
-      commanderCount: template.commanders.length,
       contextLines,
+      generalName,
       marshalName,
       soldierCount,
       templateLabel: template.label
@@ -4170,11 +4142,12 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   }
 
   function createBusinessFromTemplate(template: BusinessTemplate, form: BusinessWizardState) {
-    const businessName = form.businessName.trim();
+    const hierarchyPlan = businessTemplateHierarchyPlan(template, form);
+    const { businessName, commanderName, generalName, nicheLabel } = hierarchyPlan;
 
     if (!businessName) {
       respond({
-        analysis: "A business General needs a real business, client, brand, store, or operation name.",
+        analysis: "A business Commander needs a real business, client, brand, store, or operation name.",
         nextActions: ["Enter a business name.", "Choose a template.", "Create the business again."],
         recommendation: "Use a concrete name like Iron House Gym, Smith Landscaping, or Veteran Apparel.",
         situation: "Business creation paused."
@@ -4196,12 +4169,10 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     ].filter(Boolean);
     const existingMarshal = graphRef.current.nodes.find((node) => node.commandType === "marshal" && node.name.toLowerCase() === marshalName.toLowerCase());
     const marshalId = existingMarshal?.id ?? uniqueNodeId(createCommandId(marshalName, "marshal"), existingIds);
-    const generalName = /\bGeneral$/i.test(businessName) ? businessName : `${businessName} General`;
     const generalId = uniqueNodeId(`${marshalId}-${createCommandId(generalName, "general")}`, existingIds);
-    const commanderIds: string[] = [];
+    const commanderId = uniqueNodeId(`${generalId}-${createCommandId(commanderName, "commander")}`, existingIds);
     const soldierIds: string[] = [];
     let firstSoldierId: string | null = null;
-    let firstCommanderId: string | null = null;
 
     const makeMemory = (role: string, instructions: string, notes: string[] = []): CommandMemory => ({
       instructions,
@@ -4229,31 +4200,31 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     });
 
     const newMarshal = existingMarshal ? null : makeNode({
-      activeCommanders: template.commanders.length,
+      activeCommanders: 1,
       activeGenerals: 1,
       activeProjects: [`${businessName} launch`],
-      activeSoldiers: template.commanders.reduce((total, commander) => total + commander.soldiers.length, 0),
+      activeSoldiers: template.commanders.length,
       activeStores: [],
       capabilities: ["governance", "tool-orchestration", "status_reporter"],
       children: [],
       commandType: "marshal",
       createdAt: now,
-      currentTask: `Standing up ${template.label} operations.`,
-      description: `${marshalName} oversees ${template.label.toLowerCase()} businesses and routes reports to ENTRAL.`,
+      currentTask: null,
+      description: `${marshalName} is the broad operating domain for ${template.label.toLowerCase()} niches and routes reports to ENTRAL.`,
       groupId: marshalId,
       health: 100,
       id: marshalId,
       logs: [`${marshalName} created by the business wizard.`],
       marshalType: template.marshalType,
-      memory: makeMemory(`${marshalName} strategic theater`, `Oversee ${template.label.toLowerCase()} businesses, enforce approvals, and report theater readiness to ENTRAL.`, [`Template: ${template.label}.`]),
+      memory: makeMemory(`${marshalName} broad operating domain`, `Oversee ${template.label.toLowerCase()} niches, enforce approvals, and report domain readiness to ENTRAL.`, [`Template: ${template.label}.`]),
       name: marshalName,
       parentId: "entral",
-      permissions: ["govern_hierarchy", "route_commands", "manage_business_generals"],
+      permissions: ["govern_hierarchy", "route_commands", "manage_niche_generals"],
       progress: 12,
-      reasoning: "Created as the strategic theater for guided business onboarding.",
-      role: `${marshalName} strategic theater`,
-      status: "thinking",
-      taskHistory: [`Create ${businessName} General`],
+      reasoning: "Created as the broad operating domain for guided business onboarding.",
+      role: `${marshalName} broad operating domain`,
+      status: "idle",
+      taskHistory: [`Create ${generalName} and ${commanderName}`],
       title: "Marshal",
       tools: ["command_bus", "status_reporter", "approval_gate"],
       x: 240,
@@ -4262,33 +4233,32 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     });
 
     const newGeneral = makeNode({
-      activeCommanders: template.commanders.length,
+      activeCommanders: 1,
       activeProjects: [`${businessName} setup`],
-      activeSoldiers: template.commanders.reduce((total, commander) => total + commander.soldiers.length, 0),
+      activeSoldiers: template.commanders.length,
       activeStores: template.id === "pod-merch-store" ? [`${businessName} merch store`] : [],
-      businessName,
       capabilities: ["governance", "tool-orchestration", "business-discovery"],
       children: [],
       commandType: "general",
       createdAt: now,
-      currentTask: "Complete business intake and confirm operating plan.",
-      description: `${generalName} represents ${businessName} as an operating business General inside ${marshalName}.`,
+      currentTask: null,
+      description: `${generalName} represents the ${nicheLabel} niche inside the broad-domain ${marshalName}.`,
       generalType: template.generalType,
       groupId: marshalId,
       health: 100,
       id: generalId,
-      logs: [`${generalName} created from ${template.label} template.`, "Awaiting initial intake confirmation."],
-      memory: makeMemory(`${businessName} business command`, `Coordinate Commanders for ${businessName}, maintain business memory, and report progress to ${marshalName}.`, [`Business template: ${template.label}.`]),
+      logs: [`${generalName} created from ${template.label} template.`, `${commanderName} registered as the first business in this niche.`],
+      memory: makeMemory(`${nicheLabel} niche command`, `Coordinate business Commanders in the ${nicheLabel} niche and report progress to ${marshalName}.`, [`Business template: ${template.label}.`]),
       name: generalName,
       parentId: marshalId,
       parentMarshalId: marshalId,
       parentMarshalName: marshalName,
-      permissions: ["manage_commanders", "request_approval", "report_business_status"],
+      permissions: ["manage_business_commanders", "request_approval", "report_niche_status"],
       progress: 18,
-      reasoning: "Created through guided onboarding so the user can begin operating a real business structure quickly.",
-      role: `${businessName} business General`,
-      status: "thinking",
-      taskHistory: ["Business structure created"],
+      reasoning: "Created as the niche layer required between a broad-domain Marshal and an individual business Commander.",
+      role: `${nicheLabel} niche General`,
+      status: "idle",
+      taskHistory: [`${commanderName} registered in niche`],
       title: "General",
       tools: ["command_bus", "business_memory", "status_reporter"],
       x: 340,
@@ -4296,101 +4266,103 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       z: 320
     });
 
-    const newNodes: GraphNode3D[] = [newGeneral];
+    const newCommander = makeNode({
+      activeSoldiers: template.commanders.length,
+      businessName,
+      capabilities: ["tool-orchestration", "report_status"],
+      children: [],
+      commandType: "commander",
+      createdAt: now,
+      currentTask: "Review pending business intake.",
+      description: `${commanderName} is the single business Commander for ${businessName} inside ${generalName}.`,
+      groupId: marshalId,
+      health: 100,
+      id: commanderId,
+      logs: [`${commanderName} initialized for ${businessName}.`],
+      memory: makeMemory(`${businessName} business command`, `Coordinate operational Soldiers for ${businessName} and report business status to ${generalName}.`),
+      name: commanderName,
+      operationalArea: businessName,
+      parentGeneralId: generalId,
+      parentGeneralName: generalName,
+      parentId: generalId,
+      parentMarshalId: marshalId,
+      parentMarshalName: marshalName,
+      permissions: ["assign_operational_soldiers", "report_business_status"],
+      progress: 8,
+      reasoning: "Created as the one-business Commander required by the locked hierarchy.",
+      role: `${businessName} business Commander`,
+      status: "waiting",
+      taskHistory: ["Business intake pending backend receipt"],
+      title: "Commander",
+      tools: ["command_bus", "business_memory", "status_reporter"],
+      x: 420,
+      y: 90,
+      z: 360
+    });
+    const newNodes: GraphNode3D[] = [newGeneral, newCommander];
 
-    for (const commander of template.commanders) {
-      const commanderId = uniqueNodeId(`${generalId}-${createCommandId(commander.name, "commander")}`, existingIds);
-      commanderIds.push(commanderId);
-      if (!firstCommanderId) firstCommanderId = commanderId;
+    for (const [index, lane] of template.commanders.entries()) {
+      const plannedSoldier = hierarchyPlan.operationalSoldiers[index];
+      const soldierName = plannedSoldier?.name ?? lane.name.replace(/\s+Commander$/i, " Soldier");
+      const soldierId = uniqueNodeId(`${commanderId}-${createCommandId(soldierName, "soldier")}`, existingIds);
+      soldierIds.push(soldierId);
+      if (!firstSoldierId) firstSoldierId = soldierId;
+      const blueprint = inferSoldierBlueprint(soldierName);
+      const supportingWork = plannedSoldier?.supportingWork ?? lane.soldiers.map((name) => name.replace(/\s+Soldier$/i, ""));
 
       newNodes.push(makeNode({
-        capabilities: ["tool-orchestration", "report_status"],
+        capabilities: blueprint?.tools ?? ["tool-orchestration", "report_status"],
         children: [],
-        commandType: "commander",
+        commandType: "soldier",
         createdAt: now,
-        currentTask: "Prepare department readiness.",
-        description: `${commander.name} manages ${businessName} ${commander.name.replace(/\s+Commander$/i, "").toLowerCase()} operations.`,
+        currentTask: soldierId === firstSoldierId ? "First business intake assigned locally; backend receipt pending." : null,
+        description: `${soldierName} owns the ${lane.name.replace(/\s+Commander$/i, "").toLowerCase()} operational function for ${businessName}.`,
+        executionRole: blueprint?.role ?? `${soldierName} operational function`,
         groupId: marshalId,
         health: 100,
-        id: commanderId,
-        logs: [`${commander.name} initialized for ${businessName}.`],
-        memory: makeMemory(`${commander.name} operations`, `Break ${businessName} objectives into Soldier-level tasks and report upward to ${generalName}.`),
-        name: commander.name,
-        operationalArea: commander.name.replace(/\s+Commander$/i, ""),
+        id: soldierId,
+        logs: [`${soldierName} initialized as an operational function for ${businessName}.`],
+        memory: makeMemory(
+          blueprint?.role ?? `${soldierName} operational function`,
+          `Execute assigned ${lane.name.replace(/\s+Commander$/i, "").toLowerCase()} work for ${businessName} and report concise results to ${commanderName}.`,
+          [`Supporting work labels (not hierarchy nodes): ${supportingWork.join(", ")}.`]
+        ),
+        name: soldierName,
+        parentCommanderId: commanderId,
+        parentCommanderName: commanderName,
         parentGeneralId: generalId,
         parentGeneralName: generalName,
-        parentId: generalId,
+        parentId: commanderId,
         parentMarshalId: marshalId,
         parentMarshalName: marshalName,
-        permissions: ["assign_soldiers", "report_department_status"],
-        progress: 8,
-        reasoning: "Created as a department lane for the selected business template.",
-        role: `${commander.name} operations`,
-        status: "idle",
-        taskHistory: [],
-        title: "Commander",
-        tools: ["command_bus", "status_reporter"],
-        x: 420,
-        y: 90,
-        z: 360
+        permissions: blueprint?.permissions ?? ["read_command_context", "report_status"],
+        progress: 0,
+        reasoning: "Created as one operational function; supporting work labels remain task context rather than a fifth hierarchy layer.",
+        role: blueprint?.role ?? `${soldierName} operational function`,
+        status: soldierId === firstSoldierId ? "waiting" : "idle",
+        taskHistory: soldierId === firstSoldierId ? ["Complete first business intake"] : [],
+        title: "Soldier",
+        tools: blueprint?.tools ?? ["command_bus", "status_reporter"],
+        x: 500,
+        y: 100,
+        z: 420
       }));
-
-      for (const soldierName of commander.soldiers) {
-        const soldierId = uniqueNodeId(`${commanderId}-${createCommandId(soldierName, "soldier")}`, existingIds);
-        soldierIds.push(soldierId);
-        if (!firstSoldierId) firstSoldierId = soldierId;
-        const blueprint = inferSoldierBlueprint(soldierName);
-
-        newNodes.push(makeNode({
-          capabilities: blueprint?.tools ?? ["tool-orchestration", "report_status"],
-          children: [],
-          commandType: "soldier",
-          createdAt: now,
-          currentTask: soldierId === firstSoldierId ? "Complete first business intake." : null,
-          description: `${soldierName} executes ${commander.name.toLowerCase()} work for ${businessName}.`,
-          executionRole: blueprint?.role ?? `${soldierName} execution`,
-          groupId: marshalId,
-          health: 100,
-          id: soldierId,
-          logs: [`${soldierName} initialized for ${businessName}.`],
-          memory: makeMemory(blueprint?.role ?? `${soldierName} execution`, `Execute assigned work for ${businessName} and report concise results to ${commander.name}.`),
-          name: soldierName,
-          parentCommanderId: commanderId,
-          parentCommanderName: commander.name,
-          parentGeneralId: generalId,
-          parentGeneralName: generalName,
-          parentId: commanderId,
-          parentMarshalId: marshalId,
-          parentMarshalName: marshalName,
-          permissions: blueprint?.permissions ?? ["read_command_context", "report_status"],
-          progress: soldierId === firstSoldierId ? 10 : 0,
-          reasoning: "Created as an execution unit during guided business setup.",
-          role: blueprint?.role ?? `${soldierName} execution`,
-          status: soldierId === firstSoldierId ? "working" : "idle",
-          taskHistory: soldierId === firstSoldierId ? ["Complete first business intake"] : [],
-          title: "Soldier",
-          tools: blueprint?.tools ?? ["command_bus", "status_reporter"],
-          x: 500,
-          y: 100,
-          z: 420
-        }));
-      }
     }
 
-    const firstTask: CommandTask | null = firstSoldierId && firstCommanderId ? {
+    const firstTask: CommandTask | null = firstSoldierId ? {
       assignedEntityId: firstSoldierId,
       assignedEntityType: "soldier",
-      commanderId: firstCommanderId,
-      commanderName: template.commanders[0]?.name ?? null,
+      commanderId,
+      commanderName,
       completedAt: null,
       createdAt: now,
-      delegationPath: ["entral", marshalId, generalId, firstCommanderId, firstSoldierId],
+      delegationPath: ["entral", marshalId, generalId, commanderId, firstSoldierId],
       description: `Capture business basics, audience, offer, and immediate launch objective for ${businessName}.`,
       generalId,
       generalName,
       history: [
-        `ENTRAL created ${generalName} from the ${template.label} template.`,
-        `${marshalName} routed first intake to ${template.commanders[0]?.name ?? "the first Commander"}.`
+        `ENTRAL created ${generalName} and ${commanderName} from the ${template.label} template.`,
+        `First intake assigned locally to ${newNodes.find((node) => node.id === firstSoldierId)?.name ?? "the first operational Soldier"}; backend execution receipt pending.`
       ],
       id: `task-${generalId}-first-intake`,
       marshalId,
@@ -4399,7 +4371,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       reportHistory: [],
       soldierId: firstSoldierId,
       soldierName: newNodes.find((node) => node.id === firstSoldierId)?.name ?? null,
-      status: "assigned",
+      status: "pending",
       updatedAt: now
     } : null;
 
@@ -4432,19 +4404,19 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     });
 
     setBusinessWizard({ ...defaultBusinessWizard, isOpen: false, templateId: template.id });
-    setSelectedNodeId(generalId);
-    selectedRef.current = generalId;
-    setLockedNodeId(generalId);
-    lockedNodeIdRef.current = generalId;
+    setSelectedNodeId(commanderId);
+    selectedRef.current = commanderId;
+    setLockedNodeId(commanderId);
+    lockedNodeIdRef.current = commanderId;
     setIsPanelOpen(true);
     setActiveGroupId(marshalId);
-    setStatusMessage(`${generalName} created with ${commanderIds.length} Commanders and ${soldierIds.length} Soldiers.`);
+    setStatusMessage(`${generalName} created with business ${commanderName} and ${soldierIds.length} operational Soldiers.`);
     respond({
-      analysis: `${generalName} is now under ${marshalName}. ENTRAL created ${commanderIds.length} Commanders, ${soldierIds.length} Soldiers, and the first intake task.`,
+      analysis: `${generalName} is now the niche under ${marshalName}. ENTRAL created exactly one business Commander, ${commanderName}, plus ${soldierIds.length} operational Soldiers and a pending intake task.`,
       nextActions: template.starterCommands,
-      recommendation: "Open the new General, complete the first intake task, then start the launch workflow or assign the next objective.",
+      recommendation: "Open the business Commander, review its operational Soldiers, and wait for a backend receipt before treating the first intake as executing.",
       situation: "First business command structure created."
-    }, `${generalName} created from ${template.label} template.`, "general");
+    }, `${commanderName} created from ${template.label} template.`, "commander");
   }
 
   function createHierarchyNode(type: Exclude<NodeType, "emperor">, requestedName?: string, forcedParentId?: string) {
@@ -4481,7 +4453,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       createdAt: new Date().toISOString(),
       currentTask: null,
       description: `${name} is a ${title}${parent ? ` under ${parent.name}` : ""}.`,
-      businessName: type === "general" ? name.replace(/\s+General$/i, "") : undefined,
+      businessName: type === "commander" ? name.replace(/\s+Commander$/i, "") : undefined,
       groupId,
       health: 100,
       id,
@@ -4490,7 +4462,13 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
         instructions: blueprint?.role ?? `Operate as ${name}, accept delegated tasks, and report status to ${parent?.name ?? "ENTRAL"}.`,
         notes: [`Created under ${parent?.name ?? "ENTRAL"} from the Command Center.`],
         recentTasks: [],
-        role: blueprint?.role ?? `${title} command layer`,
+        role: blueprint?.role ?? (type === "marshal"
+          ? "Broad operating domain"
+          : type === "general"
+            ? "Niche authority"
+            : type === "commander"
+              ? "Individual business authority"
+              : "Operational function"),
         taskResults: []
       },
       metrics: { cost: 0, roi: 0, successRate: 100 },
@@ -4499,7 +4477,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       name,
       parentCommanderId: type === "soldier" ? parent?.id ?? null : null,
       parentCommanderName: type === "soldier" ? parent?.name ?? null : null,
-      operationalArea: type === "commander" ? name.replace(/\s+Commander$/i, "") : undefined,
+      operationalArea: type === "soldier" ? name.replace(/\s+Soldier$/i, "") : type === "commander" ? name.replace(/\s+Commander$/i, "") : undefined,
       parentId,
       parentGeneralId: type === "commander" || type === "soldier" ? lineageForNode(parentId).find((node) => node.commandType === "general")?.id ?? null : null,
       parentGeneralName: type === "commander" || type === "soldier" ? lineageForNode(parentId).find((node) => node.commandType === "general")?.name ?? null : null,
@@ -4507,8 +4485,14 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       parentMarshalName: type !== "marshal" ? lineageForNode(parentId).find((node) => node.commandType === "marshal")?.name ?? null : null,
       permissions: blueprint?.permissions ?? ["read_command_context", "manage_children", "report_status"],
       progress: 0,
-      reasoning: `ENTRAL added ${name} to expand the ${title} layer. Real background execution remains policy-gated.`,
-      role: blueprint?.role ?? `${title} command layer`,
+      reasoning: `ENTRAL added ${name} to expand the locked ${title} layer. Real background execution remains policy-gated.`,
+      role: blueprint?.role ?? (type === "marshal"
+        ? "Broad operating domain"
+        : type === "general"
+          ? "Niche authority"
+          : type === "commander"
+            ? "Individual business authority"
+            : "Operational function"),
       status: "idle",
       taskHistory: [],
       title,
@@ -4645,6 +4629,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   }
 
   function focusNode(node: GraphNode3D) {
+    const previousNodeId = selectedRef.current;
+    if (previousNodeId !== node.id && graphRef.current.nodes.some((candidate) => candidate.id === previousNodeId)) {
+      graphSelectionHistoryRef.current = [...graphSelectionHistoryRef.current.slice(-19), previousNodeId];
+      setGraphHistoryDepth(graphSelectionHistoryRef.current.length);
+    }
     setSelectedNodeId(node.id);
     setIsPanelOpen(true);
     setActiveStatusFilter(null);
@@ -4659,6 +4648,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   }
 
   function fitGraph(message = "Fit graph to the full command field.") {
+    const previousNodeId = selectedRef.current;
+    if (previousNodeId !== "entral" && graphRef.current.nodes.some((candidate) => candidate.id === previousNodeId)) {
+      graphSelectionHistoryRef.current = [...graphSelectionHistoryRef.current.slice(-19), previousNodeId];
+      setGraphHistoryDepth(graphSelectionHistoryRef.current.length);
+    }
     setLockedNodeId(null);
     lockedNodeIdRef.current = null;
     setCamera({ ...defaultCamera, target: { ...defaultCamera.target } });
@@ -4668,6 +4662,37 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     setActiveStatusFilter(null);
     setSearch("");
     setStatusMessage(message);
+  }
+
+  function returnToPreviousGraphSelection() {
+    const history = [...graphSelectionHistoryRef.current];
+    let previousNode: GraphNode3D | undefined;
+
+    while (history.length > 0 && !previousNode) {
+      const previousId = history.pop();
+      previousNode = graphRef.current.nodes.find((node) => node.id === previousId);
+    }
+
+    graphSelectionHistoryRef.current = history;
+    setGraphHistoryDepth(history.length);
+
+    if (!previousNode) {
+      setStatusMessage("No earlier graph selection is available.");
+      return;
+    }
+
+    setSelectedNodeId(previousNode.id);
+    selectedRef.current = previousNode.id;
+    setIsPanelOpen(true);
+    setActiveStatusFilter(null);
+    setActiveGroupId(previousNode.groupId === "core" ? null : previousNode.groupId);
+    setLockedNodeId(previousNode.type === "core" ? null : previousNode.id);
+    lockedNodeIdRef.current = previousNode.type === "core" ? null : previousNode.id;
+    setCamera({
+      distance: previousNode.type === "core" ? 500 : 420,
+      target: { x: previousNode.x, y: previousNode.y, z: previousNode.z }
+    });
+    setStatusMessage(`Returned to ${previousNode.name}.`);
   }
 
   function returnToFullPicture() {
@@ -4992,10 +5017,10 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
       setActiveGroupId(node.id);
       respond({
-        analysis: `${marshalGeneralCount} business Generals, ${marshalCommanderCount} Commanders, and ${marshalSoldierCount} Soldiers are assigned to this theater. Current health: ${node.health}%.`,
-        nextActions: ["Inspect a business General.", "Create or move a General under this Marshal.", "Review theater reports and risk warnings."],
-        recommendation: "Use Marshal view for portfolio-level command before drilling into individual businesses.",
-        situation: `${node.name} theater operational. ENTRAL and unrelated upper context are hidden for focused inspection.`
+        analysis: `${marshalGeneralCount} niche Generals, ${marshalCommanderCount} business Commanders, and ${marshalSoldierCount} operational Soldiers are assigned to this broad domain. Current health: ${node.health}%.`,
+        nextActions: ["Inspect a niche General.", "Create or move a General under this Marshal.", "Review domain reports and risk warnings."],
+        recommendation: "Use Marshal view for broad-domain command before drilling into individual niches and businesses.",
+        situation: `${node.name} broad domain operational. ENTRAL and unrelated upper context are hidden for focused inspection.`
       }, `${node.name} Marshal focused.`, "marshal");
     } else if (node.commandType === "general") {
       const commanderCount = graphRef.current.nodes.filter((candidate) => candidate.parentId === node.id && candidate.commandType === "commander").length;
@@ -5004,16 +5029,16 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
       setActiveGroupId(node.groupId);
       respond({
-        analysis: `${commanderCount} Commanders and ${soldierCount} Soldiers are attached to this business General under ${parentMarshal?.name ?? "an assigned Marshal"}. Current health: ${node.health}%.`,
-        nextActions: ["Inspect operating Commanders.", "Create or remove subordinate entities.", "Assign an objective for delegation."],
-        recommendation: "Review business readiness before assigning execution work.",
-        situation: `${node.name} General operational. Upper ranks are hidden for focused inspection.`
+        analysis: `${commanderCount} business Commanders and ${soldierCount} operational Soldiers are attached to this niche General under ${parentMarshal?.name ?? "an assigned Marshal"}. Current health: ${node.health}%.`,
+        nextActions: ["Inspect business Commanders.", "Create or remove subordinate businesses.", "Assign an objective for delegation."],
+        recommendation: "Review niche readiness before assigning business execution work.",
+        situation: `${node.name} niche General operational. Upper ranks are hidden for focused inspection.`
       }, `${node.name} General focused.`, "general");
     } else if (node.commandType === "emperor") {
       fitGraph();
       respond({
-        analysis: `${marshalNodes.length} Marshals, ${generalNodes.length} business Generals, ${commanderNodes.length} Commanders, and ${soldierNodes.length} Soldiers are visible in the full hierarchy.`,
-        nextActions: ["Select a Marshal.", "Inspect a business General.", "Assign a new objective."],
+        analysis: `${marshalNodes.length} broad-domain Marshals, ${generalNodes.length} niche Generals, ${commanderNodes.length} business Commanders, and ${soldierNodes.length} operational Soldiers are visible in the full hierarchy.`,
+        nextActions: ["Select a broad-domain Marshal.", "Inspect a niche General or business Commander.", "Assign a new objective."],
         recommendation: "Maintain command from the ENTRAL overview when broad situational awareness is required.",
         situation: "Returned to ENTRAL overview. Full chain of command is visible."
       }, "Returned to ENTRAL overview.", "emperor");
@@ -5021,19 +5046,19 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       const soldierCount = graphRef.current.nodes.filter((candidate) => candidate.parentId === node.id && candidate.commandType === "soldier").length;
 
       respond({
-        analysis: `${soldierCount} Soldiers are attached under ${node.parentGeneralName ?? "the selected business General"}. Current status: ${statusLabel(node.status)}. Health: ${node.health}%.`,
-        nextActions: ["Inspect assigned Soldiers.", "Create a Soldier if execution capacity is needed.", "Assign a task to this operation lane."],
-        recommendation: "Use this Commander for task breakdown and Soldier routing.",
-        situation: `${node.name} operational lane selected. Upper ranks are hidden for execution focus.`
+        analysis: `${soldierCount} operational Soldiers are attached to this business Commander under ${node.parentGeneralName ?? "the selected niche General"}. Current status: ${statusLabel(node.status)}. Health: ${node.health}%.`,
+        nextActions: ["Inspect operational Soldiers.", "Create a Soldier if another business function is needed.", "Assign a task to an operational function."],
+        recommendation: "Use this Commander as the record and authority for one business.",
+        situation: `${node.name} business selected. Upper ranks are hidden for execution focus.`
       }, `${node.name} Commander focused.`, "commander");
     } else if (node.commandType === "soldier") {
       const parentCommander = node.parentId ? graphRef.current.nodes.find((candidate) => candidate.id === node.parentId) : null;
 
       respond({
-        analysis: `Parent Commander: ${parentCommander?.name ?? "Unknown"}. Business General: ${node.parentGeneralName ?? "Unknown"}. Marshal: ${node.parentMarshalName ?? "Unknown"}. Current task: ${node.currentTask ?? "No active task."}`,
+        analysis: `Business Commander: ${parentCommander?.name ?? "Unknown"}. Niche General: ${node.parentGeneralName ?? "Unknown"}. Broad-domain Marshal: ${node.parentMarshalName ?? "Unknown"}. Current task: ${node.currentTask ?? "No active task."}`,
         nextActions: ["Review task history.", "Assign execution work.", "Monitor result logs."],
-        recommendation: "Use this Soldier for final execution steps and concise completion reports.",
-        situation: `${node.name} execution unit selected. Showing this Soldier and its connected Commander.`
+        recommendation: "Use this Soldier for its one operational function and concise completion reports.",
+        situation: `${node.name} operational function selected. Showing this Soldier and its business Commander.`
       }, `${node.name} Soldier focused.`, "soldier");
     } else {
       respond({
@@ -5175,10 +5200,10 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       "ENTRAL Command Help",
       "",
       "What ENTRAL Is:",
-      "ENTRAL is a command operating system for building, organizing, and managing business operations through a structured hierarchy.",
+      "ENTRAL is a command operating system for building, organizing, and managing business operations through a locked four-level hierarchy.",
       "",
       "Chain of Command:",
-      "ENTRAL oversees Marshals. Marshals oversee Generals. Generals are businesses or operations. Commanders manage departments. Soldiers execute tasks.",
+      "ENTRAL oversees Marshals. Marshals represent broad operating domains. Generals represent niches. Each Commander represents one business. Soldiers represent that business's operational functions.",
       "",
       "Common Commands:",
       "- Create a Marshal",
@@ -5190,10 +5215,10 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       "- Open mobile guide",
       "",
       "Structure Creation:",
-      "- Create Merch Marshal",
-      "- Create General named Iron House Gym under Merch Marshal",
-      "- Create Design Commander under Iron House Gym",
-      "- Create Typography Soldier under Design Commander",
+      "- Create Commerce Marshal",
+      "- Create Fitness General under Commerce Marshal",
+      "- Create Iron House Gym Commander under Fitness General",
+      "- Create Design Soldier under Iron House Gym Commander",
       "",
       "Business Creation:",
       "- Create my first business",
@@ -5434,7 +5459,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       openCommandAccessTab("reports");
       respond({
         analysis: `${recentReportMessages.length} recent report${recentReportMessages.length === 1 ? "" : "s"} are available in the command feed.`,
-        nextActions: ["Generate a system report.", "Report on a Marshal or business General.", "Open related entities from report context."],
+        nextActions: ["Generate a system report.", "Report on a Marshal, niche General, or business Commander.", "Open related entities from report context."],
         recommendation: "Use reports to review Situation, Analysis, Recommendation, and Next Actions without searching chat history.",
         situation: "Report center opened."
       });
@@ -5443,11 +5468,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       setSearch("general");
       openCommandAccessTab("hierarchy");
       respond({
-        analysis: `${generalNodes.length} business General${generalNodes.length === 1 ? "" : "s"} currently exist. Generals represent businesses, clients, brands, stores, or operations.`,
-        nextActions: ["Open a business General.", "Create a business with the wizard.", "Generate a General report."],
-        recommendation: "Use Generals as the primary business records inside ENTRAL.",
-        situation: "Business Generals displayed."
-      }, "Business General list displayed.", "general");
+        analysis: `${generalNodes.length} niche General${generalNodes.length === 1 ? "" : "s"} currently exist. Generals represent niches inside broad-domain Marshals.`,
+        nextActions: ["Open a niche General.", "Create a business with the wizard.", "Generate a General report."],
+        recommendation: "Use Generals to organize one or more businesses in a well-defined niche.",
+        situation: "Niche Generals displayed."
+      }, "Niche General list displayed.", "general");
     } else if (intent.kind === "report_request") {
       const reportTarget = commandNode ?? selected ?? graphRef.current.nodes.find((node) => node.id === "entral") ?? null;
       const reportLabel = normalized.includes("morning")
@@ -5468,7 +5493,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       setSearch("");
       fitGraph();
       respond({
-        analysis: `${marshalNodes.length} Marshals, ${generalNodes.length} business Generals, ${commanderNodes.length} Commanders, and ${soldierNodes.length} Soldiers are currently registered.`,
+        analysis: `${marshalNodes.length} broad-domain Marshals, ${generalNodes.length} niche Generals, ${commanderNodes.length} business Commanders, and ${soldierNodes.length} operational Soldiers are currently registered.`,
         nextActions: ["Select a command tier.", "Filter active or failing nodes.", "Create additional structure if required."],
         recommendation: "Use this overview for broad command awareness.",
         situation: "Full chain of command displayed."
@@ -5479,9 +5504,9 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       setActiveStatusFilter(null);
       setSearch("marshal");
       respond({
-        analysis: `${marshalNodes.length} Marshals are registered. Generals must belong to a Marshal before Commanders or Soldiers can be created.`,
-        nextActions: ["Open a Marshal.", "Create a new Marshal.", "Create or move business Generals under a Marshal."],
-        recommendation: "Use Marshals as strategic theaters for groups of businesses, clients, brands, stores, or operations.",
+        analysis: `${marshalNodes.length} broad-domain Marshals are registered. Niche Generals must belong to a Marshal before business Commanders or operational Soldiers can be created.`,
+        nextActions: ["Open a Marshal.", "Create a new broad-domain Marshal.", "Create or move niche Generals under a Marshal."],
+        recommendation: "Use Marshals as broad operating domains that contain related niches.",
         situation: "Marshal layer displayed."
       }, "Marshal list displayed.", "marshal");
     } else if (actionPlan.kind === "show_active") {
@@ -5563,38 +5588,19 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
         return;
       }
 
-      if (!commandHasMarshalContext(text)) {
-        respond({
-          analysis: "A business General must belong to a Marshal before creation can proceed.",
-          nextActions: ["Open the business wizard.", "Select a template.", "Or say: Create General named Iron House Gym under Merch Marshal."],
-          recommendation: "Create or select a Marshal first so the business is placed inside the official command path.",
-          situation: "Additional operational detail is required."
-        });
-        openBusinessWizard();
-        if (businessName) updateBusinessWizard({ businessName });
-        return;
-      }
-
-      const nameMatch = /\b(?:business|client|brand|store|operation)\s+(?:named|called)?\s*([^,.;]+)/i.exec(text);
-      const rawName = nameMatch?.[1]?.trim() || hierarchyNameFromCommand(text, "general").replace(/\s+General$/i, "");
-      const marshalId = marshalIdFromCommand(text);
-      if (!marshalId) {
-        respond({
-          analysis: "A Marshal could not be identified for this business General.",
-          nextActions: ["Create a Marshal.", "Then create the business General under that Marshal."],
-          recommendation: "Use: Create Merch Marshal. Then: Create General named Iron House Gym under Merch Marshal.",
-          situation: "General creation is awaiting Marshal selection."
-        });
-        return;
-      }
-      setSelectedNodeId(marshalId);
-      selectedRef.current = marshalId;
-      requestNodeAuthorization("general", /\bGeneral$/i.test(rawName) ? rawName : `${rawName} General`);
+      respond({
+        analysis: "A business belongs on the Commander layer. Guided setup will collect its broad domain and niche before creating the business.",
+        nextActions: ["Confirm the business name.", "Choose or describe its niche.", "Preview the locked hierarchy before authorization."],
+        recommendation: "Use the business wizard so ENTRAL creates Marshal, General, Commander, and Soldier meanings correctly.",
+        situation: "Business setup opened."
+      });
+      openBusinessWizard();
+      if (businessName) updateBusinessWizard({ businessName });
     } else if (explicitHierarchyCreateType === "general") {
       if (!commandHasMarshalContext(text)) {
         respond({
-          analysis: "A General represents an actual business, client, brand, store, or operation and must belong to a Marshal.",
-          nextActions: ["Select a Marshal.", "Or say: Create General named Iron House Gym under Merch Marshal."],
+          analysis: "A General represents one niche and must belong to a broad-domain Marshal.",
+          nextActions: ["Select a Marshal.", "Or say: Create General named Fitness under Commerce Marshal."],
           recommendation: "Do not create Generals directly under ENTRAL.",
           situation: "Additional operational detail is required."
         });
@@ -5618,9 +5624,9 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       const generalId = generalIdFromCommand(text);
       if (!generalId) {
         respond({
-          analysis: "A Commander must belong to a business General, but no General was selected or named.",
-          nextActions: ["Create a Marshal.", "Create a business General under it.", "Then create the Commander."],
-          recommendation: "Use the business setup wizard if you want ENTRAL to build the structure for you.",
+          analysis: "A business Commander must belong to a niche General, but no General was selected or named.",
+          nextActions: ["Create a broad-domain Marshal.", "Create a niche General under it.", "Then create the business Commander."],
+          recommendation: "Use the business setup wizard if you want ENTRAL to build the locked structure for you.",
           situation: "Commander creation is awaiting General selection."
         });
         return;
@@ -5979,7 +5985,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
         respond({
           analysis: "The directive did not include a recognizable entity and destination group.",
           nextActions: ["Name the target entity.", "Name the destination group.", "Reissue the reassignment directive."],
-          recommendation: "Use a direct command such as 'Move SEO Soldier under Listing Commander.'",
+          recommendation: "Use a direct command such as 'Move SEO Soldier under Iron House Gym Commander.'",
           situation: "Reassignment target not found."
         });
       }
@@ -6360,13 +6366,13 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   } : null;
   const selectedSuggestedActions = getInspectorSuggestedActions(selectedNode);
   const visibleTasks = graph.tasks.slice(0, 8);
-  const userBusinessGenerals = generalNodes.filter((node) => node.id !== "entral-general");
+  const nicheGenerals = generalNodes;
   const selectedTemplate = businessTemplates.find((template) => template.id === businessWizard.templateId) ?? businessTemplates[0];
   const recoverySummary = getCommandRecoverySummary(graph);
   const recoveryMarshalNode = recoverySummary.marshalId ? nodeMap.get(recoverySummary.marshalId) ?? null : null;
   const contextCommandSuggestions = getContextCommandSuggestions({
-    businessGeneralCount: userBusinessGenerals.length,
     isBusinessWizardOpen: businessWizard.isOpen,
+    nicheGeneralCount: nicheGenerals.length,
     pendingAuthorization: Boolean(pendingAuthorization),
     selectedNode
   });
@@ -6435,6 +6441,27 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     .filter((message) => message.role === "system" && /^\s*Situation:\n/i.test(message.content))
     .slice(-5)
     .reverse();
+  const dashboardExceptions = graph.nodes.filter((node) => node.status === "error" || node.status === "waiting" || node.status === "offline");
+  const activeDashboardTasks = graph.tasks.filter((task) => task.status === "assigned" || task.status === "running");
+  const infrastructureNodes = graph.nodes.filter((node) => {
+    const query = infrastructureSearch.trim().toLowerCase();
+    if (!query) return true;
+    const parentName = node.parentId ? nodeMap.get(node.parentId)?.name ?? "" : "";
+    return [node.name, node.title, node.role, node.commandType, node.status, parentName]
+      .some((value) => value.toLowerCase().includes(query));
+  });
+  const selectedLatestResult = selectedNode?.memory.taskResults[0]
+    ?? selectedNode?.taskHistory[0]
+    ?? selectedNode?.reportHistory?.[0]?.recommendation
+    ?? null;
+  const visibleScope = selectedNode
+    ? selectedLineage.map((node) => node.name).join(" / ")
+    : "Portfolio / All businesses";
+  const sourceStatusLabel = commandSourceStatus === "backend"
+    ? "Authoritative backend snapshot"
+    : commandSourceStatus === "loading"
+      ? "Loading authoritative state"
+      : "Browser recovery state; backend unavailable or empty";
 
   function renderMobileHierarchyNode(node: GraphNode3D, depth = 0): React.ReactNode {
     const children = graph.nodes.filter((candidate) => candidate.parentId === node.id);
@@ -6486,8 +6513,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     if (node.commandType === "marshal") {
       return (
         <section className="command-empty-state compact">
-          <h3>No business Generals exist yet.</h3>
-          <p>Create a business General under this Marshal or apply a business template.</p>
+          <h3>No niche Generals exist yet.</h3>
+          <p>Create a niche General under this broad-domain Marshal or apply a business template.</p>
           <div>
             <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>Create Business</Button>
             <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("general")}>Add General</Button>
@@ -6499,8 +6526,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     if (node.commandType === "general") {
       return (
         <section className="command-empty-state compact">
-          <h3>No Commanders exist under this General yet.</h3>
-          <p>Add departments to operate this business or use a template to generate recommended lanes.</p>
+          <h3>No business Commanders exist under this niche yet.</h3>
+          <p>Add one Commander per business or use a template to generate a business and its operational functions.</p>
           <div>
             <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("commander")}>Add Commander</Button>
             <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>Apply Template</Button>
@@ -6512,8 +6539,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     if (node.commandType === "commander") {
       return (
         <section className="command-empty-state compact">
-          <h3>No Soldiers exist under this Commander yet.</h3>
-          <p>Add execution units before assigning tasks to this operating lane.</p>
+          <h3>No operational Soldiers exist under this business yet.</h3>
+          <p>Add one Soldier per operational function before assigning tasks.</p>
           <div>
             <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("soldier")}>Add Soldier</Button>
             <Button type="button" variant="secondary" onClick={() => executeCommand("Help")}>Open Help</Button>
@@ -6526,46 +6553,478 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   }
 
   return (
-    <main className={["command-center-page", isMemberSurface ? "member-surface" : "", isNavigationOpen ? "" : "nav-closed", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} data-mobile-tab={mobileTab} aria-label="ENTRAL Command Center">
-      <canvas
-        aria-describedby="command-center-camera-help"
-        aria-label="3D interactive ENTRAL neuron graph"
-        className="command-center-canvas"
-        data-academy="command-graph"
-        onContextMenu={(event) => event.preventDefault()}
-        onKeyDown={handleCanvasKeyDown}
-        onPointerEnter={lockGraphScroll}
-        onPointerCancel={handlePointerCancel}
-        onPointerDown={handlePointerDown}
-        onPointerLeave={() => {
-          if (touchGestureRef.current.pointers.size > 0) {
-            return;
-          }
+    <main
+      className={["command-center-page", "phase110-command-center", isMemberSurface ? "member-surface" : "", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")}
+      data-destination={initialDestination}
+      data-mobile-tab={mobileTab}
+      aria-label="ENTRAL Command Center"
+    >
+      {initialDestination === "graph" ? (
+        <>
+          <canvas
+            aria-describedby="command-center-camera-help"
+            aria-label="3D interactive ENTRAL neuron graph"
+            className="command-center-canvas"
+            data-academy="command-graph"
+            onContextMenu={(event) => event.preventDefault()}
+            onKeyDown={handleCanvasKeyDown}
+            onPointerEnter={lockGraphScroll}
+            onPointerCancel={handlePointerCancel}
+            onPointerDown={handlePointerDown}
+            onPointerLeave={() => {
+              if (touchGestureRef.current.pointers.size > 0) {
+                return;
+              }
 
-          dragRef.current = null;
-          releaseGraphScroll();
-          setHoveredNodeId(null);
-          setTooltip(null);
-        }}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onDoubleClick={() => {
-          if (isFocusMode) {
-            setIsFocusMode(false);
-            setStatusMessage("Focus Mode exited. Command center controls restored.");
-          }
-        }}
-        onWheel={handleWheel}
-        ref={canvasRef}
-        role="application"
-        tabIndex={0}
-      />
-      <p className="sr-only" id="command-center-camera-help">
-        On touch screens, drag one finger to pan up, down, left, and right. Drag two fingers to rotate around ENTRAL. Pinch two fingers to zoom. On desktop, drag to orbit, right click drag to pan, and use the mouse wheel or plus and minus keys to zoom.
-      </p>
+              dragRef.current = null;
+              releaseGraphScroll();
+              setHoveredNodeId(null);
+              setTooltip(null);
+            }}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onDoubleClick={() => {
+              if (isFocusMode) {
+                setIsFocusMode(false);
+                setStatusMessage("Focus Mode exited. Command center controls restored.");
+              }
+            }}
+            onWheel={handleWheel}
+            ref={canvasRef}
+            role="application"
+            tabIndex={0}
+          />
+          <p className="sr-only" id="command-center-camera-help">
+            On touch screens, drag one finger to pan up, down, left, and right. Drag two fingers to rotate around ENTRAL. Pinch two fingers to zoom. On desktop, drag to orbit, right click drag to pan, and use the mouse wheel or plus and minus keys to zoom.
+          </p>
+        </>
+      ) : null}
 
       <div className="command-center-vignette" aria-hidden="true" />
 
+      <section className="phase110-member-shell" data-phase110-surface={initialDestination}>
+        <header className="phase110-member-header" data-academy="member-header">
+          <Link className="phase110-member-brand" href={destinationHref("/dashboard")} aria-label="ENTRAL Dashboard" scroll={false}>
+            <Logo />
+            <span>
+              <strong>ENTRAL</strong>
+              <small>{initialDestination === "graph" ? "Universe Graph" : initialDestination === "infrastructure" ? "Infrastructure" : "Command Dashboard"}</small>
+            </span>
+          </Link>
+          <MemberDestinationNav current={initialDestination} surface={surface} />
+          {initialDestination !== "graph" ? (
+            <div className="phase110-account-actions">
+              <button type="button" onClick={() => window.dispatchEvent(new Event("entral:open-academy"))}>Academy</button>
+              <button data-academy="settings" type="button" onClick={() => openSettings("account")}>Settings</button>
+              <button type="button" onClick={onLogout}>
+                <LogOut aria-hidden="true" size={16} />
+                Sign out
+              </button>
+            </div>
+          ) : <span className="phase110-graph-account-spacer" aria-hidden="true" />}
+        </header>
+
+        <div className="phase110-scope-bar" role="status">
+          <span>Scope</span>
+          <strong>{initialDestination === "dashboard" ? "Portfolio / All businesses" : visibleScope}</strong>
+          <small>{sourceStatusLabel}</small>
+        </div>
+
+        {initialDestination === "dashboard" ? (
+          <div className="phase110-dashboard" data-academy="portfolio-dashboard" aria-label="Portfolio dashboard">
+            <nav className="phase110-section-tabs" aria-label="Dashboard sections">
+              <Link aria-current={dashboardSection === "portfolio" ? "page" : undefined} href={destinationHref("/dashboard")} scroll={false}>Portfolio</Link>
+              <Link aria-current={dashboardSection === "entral" ? "page" : undefined} href={destinationHref("/dashboard?section=entral")} scroll={false}>ENTRAL</Link>
+            </nav>
+            {dashboardSection === "portfolio" ? (
+              <>
+            <header className="phase110-page-heading">
+              <div>
+                <p className="eyebrow">Portfolio mode</p>
+                <h1>{user?.name ? `${user.name}'s Dashboard` : "Dashboard"}</h1>
+                <p>Current command state only. Unavailable business and financial fields are not estimated.</p>
+              </div>
+              <span className={`phase110-source-badge source-${commandSourceStatus}`}>{sourceStatusLabel}</span>
+            </header>
+
+            <section className="phase110-summary-grid" aria-label="Portfolio summary">
+              <article>
+                <span>Businesses</span>
+                <strong>{commanderNodes.length}</strong>
+                <small>Commander records</small>
+              </article>
+              <article>
+                <span>Active work</span>
+                <strong>{activeDashboardTasks.length}</strong>
+                <small>Assigned or running tasks</small>
+              </article>
+              <article>
+                <span>Exceptions</span>
+                <strong>{dashboardExceptions.length}</strong>
+                <small>Waiting, error, or offline entities</small>
+              </article>
+              <article className="unavailable">
+                <span>Financial period</span>
+                <strong>Unavailable</strong>
+                <small>No canonical financial payload is connected in this phase</small>
+              </article>
+            </section>
+
+            <div className="phase110-dashboard-columns">
+              <section className="phase110-panel">
+                <header>
+                  <div>
+                    <p className="eyebrow">Businesses</p>
+                    <h2>Current portfolio</h2>
+                  </div>
+                  <Link href={destinationHref("/infrastructure")} scroll={false}>View infrastructure</Link>
+                </header>
+                {commanderNodes.length > 0 ? (
+                  <div className="phase110-record-list">
+                    {commanderNodes.map((node) => (
+                      <article key={node.id}>
+                        <span className={`phase110-status-dot status-${node.status}`} />
+                        <div>
+                          <strong>{node.businessName ?? node.name}</strong>
+                          <small>{node.parentGeneralName ?? nodeMap.get(node.parentId ?? "")?.name ?? "No General assigned"} / {statusLabel(node.status)}</small>
+                        </div>
+                        <span>{node.health}% health</span>
+                        <Link href={destinationHref(`/infrastructure?entity=${encodeURIComponent(node.id)}`)} scroll={false}>Open record</Link>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="phase110-empty-state">
+                    <Network aria-hidden="true" size={24} />
+                    <strong>No business records exist.</strong>
+                    <p>The Dashboard will not create sample businesses or infer portfolio totals.</p>
+                  </div>
+                )}
+              </section>
+
+              <section className="phase110-panel">
+                <header>
+                  <div>
+                    <p className="eyebrow">Current work</p>
+                    <h2>Tasks and exceptions</h2>
+                  </div>
+                </header>
+                {activeDashboardTasks.length > 0 ? (
+                  <div className="phase110-task-list">
+                    {activeDashboardTasks.slice(0, 8).map((task) => (
+                      <article key={task.id}>
+                        <span className={`task-dot task-${task.status}`} />
+                        <div>
+                          <strong>{task.name}</strong>
+                          <small>{taskStatusLabel(task.status)}</small>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="phase110-empty-state compact">
+                    <Activity aria-hidden="true" size={22} />
+                    <strong>No active task records.</strong>
+                    <p>No execution activity is implied.</p>
+                  </div>
+                )}
+                {dashboardExceptions.length > 0 ? (
+                  <div className="phase110-exception-list">
+                    {dashboardExceptions.slice(0, 6).map((node) => (
+                      <Link href={destinationHref(`/infrastructure?entity=${encodeURIComponent(node.id)}`)} key={node.id} scroll={false}>
+                        <AlertTriangle aria-hidden="true" size={16} />
+                        <span>{node.name}</span>
+                        <strong>{statusLabel(node.status)}</strong>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="phase110-clear-state">No waiting, error, or offline entity records.</p>
+                )}
+              </section>
+            </div>
+              </>
+            ) : (
+              <section className="phase110-embedded-workspace" data-academy="entral-workspace" aria-label="ENTRAL conversation">
+                <ChatWindow />
+              </section>
+            )}
+          </div>
+        ) : null}
+
+        {initialDestination === "graph" ? (
+          <>
+            <div className="phase110-graph-toolbar" role="toolbar" aria-label="Universe Graph toolbar">
+              <label>
+                <Search aria-hidden="true" size={17} />
+                <span className="sr-only">Search graph</span>
+                <input
+                  aria-label="Search graph"
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") return;
+                    const match = filteredVisibleNodes.find((node) => node.id !== "entral") ?? filteredVisibleNodes[0];
+                    if (match) focusNode(match);
+                  }}
+                  placeholder="Search"
+                  value={search}
+                />
+              </label>
+              <button type="button" onClick={() => fitGraph()} aria-label="Fit view">
+                <Crosshair aria-hidden="true" size={18} />
+                <span>Fit view</span>
+              </button>
+              <button type="button" disabled={graphHistoryDepth === 0} onClick={returnToPreviousGraphSelection} aria-label="Back">
+                <RotateCcw aria-hidden="true" size={18} />
+                <span>Back</span>
+              </button>
+              <button aria-expanded={isGraphSettingsOpen} type="button" onClick={() => setIsGraphSettingsOpen((current) => !current)} aria-label="Graph settings">
+                <Settings aria-hidden="true" size={18} />
+                <span>Settings</span>
+              </button>
+            </div>
+
+            {isGraphSettingsOpen ? (
+              <aside className="phase110-graph-settings" role="dialog" aria-label="Universe Graph settings" aria-modal="false">
+                <header>
+                  <div>
+                    <p className="eyebrow">One control surface</p>
+                    <h2>Graph settings</h2>
+                  </div>
+                  <button type="button" onClick={() => setIsGraphSettingsOpen(false)} aria-label="Close graph settings">
+                    <X aria-hidden="true" size={18} />
+                  </button>
+                </header>
+                <label className="phase110-switch-row">
+                  <span><strong>Orbit guides</strong><small>Show structural orbit guides.</small></span>
+                  <input checked={graphControls.showRings} onChange={(event) => patchGraphControls({ showRings: event.target.checked })} type="checkbox" />
+                </label>
+                <label className="phase110-switch-row">
+                  <span><strong>Motion trails</strong><small>Show recent entity motion.</small></span>
+                  <input checked={graphControls.showTrails} onChange={(event) => patchGraphControls({ showTrails: event.target.checked })} type="checkbox" />
+                </label>
+                <label className="phase110-range-row">
+                  <span>Entity size</span>
+                  <input
+                    aria-label="Entity size"
+                    max="2"
+                    min="0.55"
+                    onChange={(event) => patchGraphControls({ particleSize: Number(event.target.value) })}
+                    step="0.05"
+                    type="range"
+                    value={graphControls.particleSize}
+                  />
+                  <strong>{graphControls.particleSize.toFixed(2)}x</strong>
+                </label>
+                <label className="phase110-range-row">
+                  <span>Orbit speed</span>
+                  <input
+                    aria-label="Orbit speed"
+                    max="2"
+                    min="0"
+                    onChange={(event) => patchGraphControls({ orbitSpeed: Number(event.target.value) })}
+                    step="0.05"
+                    type="range"
+                    value={graphControls.orbitSpeed}
+                  />
+                  <strong>{graphControls.orbitSpeed.toFixed(2)}x</strong>
+                </label>
+                <label className="phase110-range-row">
+                  <span>Camera response</span>
+                  <input
+                    aria-label="Camera response"
+                    max="2"
+                    min="0.35"
+                    onChange={(event) => patchGraphControls({ cameraSensitivity: Number(event.target.value) })}
+                    step="0.05"
+                    type="range"
+                    value={graphControls.cameraSensitivity}
+                  />
+                  <strong>{graphControls.cameraSensitivity.toFixed(2)}x</strong>
+                </label>
+                <button className="phase110-reset-button" type="button" onClick={resetGraphControls}>
+                  <RotateCcw aria-hidden="true" size={17} />
+                  Reset graph display
+                </button>
+              </aside>
+            ) : null}
+
+            {selectedNode ? (
+              <aside className="phase110-node-drawer" data-academy="graph-inspector" aria-label="Selected graph entity">
+                <header>
+                  <span className={`phase110-status-dot status-${selectedNode.status}`} />
+                  <div>
+                    <p className="eyebrow">{selectedNode.title}</p>
+                    <h2>{selectedNode.name}</h2>
+                  </div>
+                  <strong>{statusLabel(selectedNode.status)}</strong>
+                </header>
+                <p>{selectedNode.description ?? selectedNode.role}</p>
+                <dl>
+                  <div><dt>Health</dt><dd>{selectedNode.health}%</dd></div>
+                  <div><dt>Parent</dt><dd>{selectedParent?.name ?? "Human authority"}</dd></div>
+                  <div><dt>Children</dt><dd>{selectedChildren.length}</dd></div>
+                  <div><dt>Current objective</dt><dd>{selectedNode.currentTask ?? "None recorded"}</dd></div>
+                  <div><dt>Latest material result</dt><dd>{selectedLatestResult ?? "None recorded"}</dd></div>
+                </dl>
+                <Link href={destinationHref(`/infrastructure?entity=${encodeURIComponent(selectedNode.id)}`)} scroll={false}>Open full record</Link>
+              </aside>
+            ) : null}
+          </>
+        ) : null}
+
+        {initialDestination === "infrastructure" ? (
+          <div className="phase110-infrastructure" data-academy="infrastructure" aria-label="Infrastructure records">
+            <nav className="phase110-section-tabs" aria-label="Infrastructure sections">
+              {([
+                ["records", "Records"],
+                ["agents", "Agents"],
+                ["automations", "Automations"],
+                ["governance", "Governance"],
+                ["operations", "Business operations"]
+              ] as const).map(([section, label]) => (
+                <Link
+                  aria-current={infrastructureSection === section ? "page" : undefined}
+                  href={destinationHref(section === "records" ? "/infrastructure" : `/infrastructure?section=${section}`)}
+                  key={section}
+                  scroll={false}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+            {infrastructureSection === "records" ? (
+              <>
+            <header className="phase110-page-heading">
+              <div>
+                <p className="eyebrow">Authoritative structure</p>
+                <h1>Infrastructure</h1>
+                <p>Search and inspect the current hierarchy. Stateful actions remain hidden until their dedicated backend, audit, and verification paths exist.</p>
+              </div>
+              <label className="phase110-infrastructure-search">
+                <Search aria-hidden="true" size={17} />
+                <span className="sr-only">Search infrastructure</span>
+                <input value={infrastructureSearch} onChange={(event) => setInfrastructureSearch(event.target.value)} placeholder="Search records" />
+              </label>
+            </header>
+
+            <div className="phase110-infrastructure-grid">
+              <nav className="phase110-hierarchy-list" data-academy="infrastructure-hierarchy" aria-label="Infrastructure hierarchy">
+                <header>
+                  <strong>{infrastructureNodes.length} record{infrastructureNodes.length === 1 ? "" : "s"}</strong>
+                  <small>Human ↔ ENTRAL ↔ Marshal ↔ General ↔ Commander ↔ Soldier</small>
+                </header>
+                {infrastructureNodes.map((node) => {
+                  const depth = Math.max(0, lineageForNode(node.id, graph.nodes).length - 1);
+                  return (
+                    <button
+                      className={selectedNodeId === node.id ? "active" : ""}
+                      key={node.id}
+                      onClick={() => focusNode(node)}
+                      style={{ "--record-depth": depth } as React.CSSProperties}
+                      type="button"
+                    >
+                      <span className={`phase110-status-dot status-${node.status}`} />
+                      <span>
+                        <strong>{node.name}</strong>
+                        <small>{node.title} / {statusLabel(node.status)}</small>
+                      </span>
+                    </button>
+                  );
+                })}
+                {infrastructureNodes.length === 0 ? <p>No records match this search.</p> : null}
+              </nav>
+
+              {selectedNode ? (
+                <article className="phase110-record-inspector" data-academy="infrastructure-record">
+                  <header>
+                    <div>
+                      <p className="eyebrow">{selectedCommandPath}</p>
+                      <h2>{selectedNode.name}</h2>
+                      <span>{selectedNode.title} / {statusLabel(selectedNode.status)}</span>
+                    </div>
+                    <span className={`phase110-source-badge source-${commandSourceStatus}`}>{sourceStatusLabel}</span>
+                  </header>
+                  <dl className="phase110-record-fields">
+                    <div><dt>Record ID</dt><dd>{selectedNode.id}</dd></div>
+                    <div><dt>Role</dt><dd>{selectedNode.role}</dd></div>
+                    <div><dt>Parent</dt><dd>{selectedParent?.name ?? "Human authority"}</dd></div>
+                    <div><dt>Status</dt><dd>{statusLabel(selectedNode.status)}</dd></div>
+                    <div><dt>Health</dt><dd>{selectedNode.health}%</dd></div>
+                    <div><dt>Children</dt><dd>{selectedChildren.length}</dd></div>
+                    <div><dt>Current objective</dt><dd>{selectedNode.currentTask ?? "None recorded"}</dd></div>
+                    <div><dt>Created</dt><dd>{new Date(selectedNode.createdAt).toLocaleString()}</dd></div>
+                  </dl>
+                  <section>
+                    <h3>Operating instructions</h3>
+                    <p>{selectedNode.memory.instructions || "None recorded."}</p>
+                  </section>
+                  <section>
+                    <h3>Recent results</h3>
+                    {selectedNode.memory.taskResults.length > 0
+                      ? selectedNode.memory.taskResults.slice(0, 8).map((result, index) => <p key={`${result}-${index}`}>{result}</p>)
+                      : <p>None recorded.</p>}
+                  </section>
+                  <section>
+                    <h3>Evidence and logs</h3>
+                    {selectedNode.logs.length > 0
+                      ? selectedNode.logs.slice(0, 12).map((log, index) => <p key={`${log}-${index}`}>{log}</p>)
+                      : <p>None recorded.</p>}
+                  </section>
+                  <p className="phase110-read-only-notice">
+                    Read-only in Phase 110. No simulated create, edit, pause, reassign, retire, or execution action is exposed.
+                  </p>
+                </article>
+              ) : null}
+            </div>
+              </>
+            ) : null}
+            {infrastructureSection === "agents" ? (
+              <section className="phase110-embedded-workspace" aria-label="Agent infrastructure">
+                <AgentDashboard />
+              </section>
+            ) : null}
+            {infrastructureSection === "automations" ? (
+              <section className="phase110-embedded-workspace" aria-label="Automation infrastructure">
+                <AutomationConsole />
+              </section>
+            ) : null}
+            {infrastructureSection === "governance" ? (
+              <section className="phase110-embedded-workspace" aria-label="Governance infrastructure">
+                <AdminDashboard />
+              </section>
+            ) : null}
+            {infrastructureSection === "operations" ? (
+              <section className="phase110-embedded-workspace phase110-operations-workspace" data-academy="business-operations" aria-label="Business operations infrastructure">
+                <ProductBatchGenerator
+                  generatedProducts={productBatchResults}
+                  isGenerating={isGeneratingProductBatch}
+                  isLoadingStores={isLoadingMerchStores}
+                  onChange={handleProductBatchFormChange}
+                  onGenerate={() => void generateProductBatchFromForm()}
+                  onRefreshStores={() => void loadMerchStores()}
+                  stores={merchStores}
+                  value={productBatchForm}
+                  warnings={productBatchWarnings}
+                />
+                <ProductApprovalQueue
+                  isLoading={isLoadingApprovalQueue}
+                  onAction={(product, action) => void updateProductApproval(product, action)}
+                  onRefresh={() => void loadApprovalQueue()}
+                  products={approvalQueueProducts}
+                  updatingProductIds={updatingApprovalProductIds}
+                />
+                <p className="phase110-read-only-notice">
+                  Simulation-only growth and provider workbenches are not exposed in the member UI. They remain unavailable until each action has a real, governed backend and provider path.
+                </p>
+              </section>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      {Boolean(0) ? (
+        <>
       <header className="command-center-brand" data-academy="command-brand" aria-label="Command center status">
         <Logo />
         <div>
@@ -6732,7 +7191,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
         <div className="command-level-key" aria-label="Hierarchy visual key">
           <span className="level-core">ENTRAL nucleus</span>
           <span className="level-marshal">Marshal square</span>
-          <span className="level-general">Business General diamond</span>
+          <span className="level-general">Niche General diamond</span>
           <span className="level-commander">Commander triangle</span>
           <span className="level-soldier">Soldier point</span>
         </div>
@@ -6826,7 +7285,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
             <div>
               <p className="eyebrow">Persistent command console</p>
               <h2>ENTRAL Command</h2>
-              <span>Issue directives. ENTRAL routes objectives through Marshals, business Generals, Commanders, Soldiers, panels, and graph control.</span>
+              <span>Issue directives. ENTRAL routes objectives through broad-domain Marshals, niche Generals, business Commanders, operational Soldiers, panels, and graph control.</span>
             </div>
           </div>
           <button className="command-chat-close" type="button" onClick={closeCommandConsoleForGraph} aria-label="Close command console and view graph">
@@ -6921,11 +7380,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
             </section>
           ) : null}
 
-          {userBusinessGenerals.length === 0 && !businessWizard.isOpen ? (
+          {nicheGenerals.length === 0 && !businessWizard.isOpen ? (
             <section className="business-empty-guide" aria-label="First business guidance">
             <div>
               <p className="eyebrow">First mission</p>
-              <h3>Create your first business General</h3>
+              <h3>Create your first business Commander</h3>
               <p>Start from ENTRAL alone. Create a Marshal first, open the guided business setup, or use an opt-in demo to learn the command structure safely.</p>
             </div>
             <div className="business-empty-actions">
@@ -7016,10 +7475,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
             </div>
 
             <ol className="business-wizard-steps" aria-label="What ENTRAL will create">
-              <li>Marshal theater: {businessWizard.preferredMarshal.trim() || selectedTemplate.marshalName}</li>
-              <li>Business General: {businessWizard.businessName.trim() || "Your business"} General</li>
-              <li>{selectedTemplate.commanders.length} Commanders and {selectedTemplate.commanders.reduce((total, commander) => total + commander.soldiers.length, 0)} Soldiers</li>
-              <li>First intake task assigned for review</li>
+              <li>Broad-domain Marshal: {businessWizard.preferredMarshal.trim() || selectedTemplate.marshalName}</li>
+              <li>Niche General: {(businessWizard.industry.trim() || selectedTemplate.generalType.replace(/\s+(Business|Store)$/i, "").trim() || selectedTemplate.label)} General</li>
+              <li>Business Commander: {businessWizard.businessName.trim() || "Your business"} Commander</li>
+              <li>{selectedTemplate.commanders.length} operational Soldiers; prior sub-lane labels remain task context, not a fifth node layer</li>
+              <li>First intake task assigned locally and pending a backend execution receipt</li>
             </ol>
 
             <div className="business-wizard-actions">
@@ -7041,7 +7501,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
             <div>
               <p className="eyebrow">Hierarchy setup</p>
               <h3>Build or adjust the command chain</h3>
-              <p>Create Marshals, business Generals, Commanders, and Soldiers from one place. ENTRAL will still request authorization before structural changes execute.</p>
+              <p>Create broad-domain Marshals, niche Generals, one-business Commanders, and operational Soldiers from one place. ENTRAL will still request authorization before structural changes execute.</p>
             </div>
             <div className="command-structure-actions" aria-label="Chain of command controls">
               <Button type="button" variant="secondary" onClick={() => openBusinessWizard()}>
@@ -7077,6 +7537,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
             Unified controls
             <span>Graph, hierarchy, focus</span>
           </summary>
+          <p className="command-palette-hint">Display preferences — saved on this device for this signed-in user; no operational authority.</p>
 
           <label className="command-search">
             <Search aria-hidden="true" size={16} />
@@ -7583,6 +8044,10 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
                 <RotateCcw aria-hidden="true" size={16} />
                 Reset
               </button>
+              <button className="command-toggle" type="button" onClick={recoverLegacyBrowserWorkspace}>
+                <ShieldCheck aria-hidden="true" size={16} />
+                Recover legacy cache
+              </button>
             </div>
           </div>
 
@@ -7942,7 +8407,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
 
             {selectedChildren.length > 0 ? (
               <section className="command-search-results">
-                <h3>{selectedNode.commandType === "marshal" ? "Business Generals" : selectedNode.commandType === "general" ? "Commanders" : selectedNode.commandType === "commander" ? "Soldiers" : "Child nodes"}</h3>
+                <h3>{selectedNode.commandType === "marshal" ? "Niche Generals" : selectedNode.commandType === "general" ? "Business Commanders" : selectedNode.commandType === "commander" ? "Operational Soldiers" : "Child nodes"}</h3>
                 {selectedChildren.map((node) => (
                   <button key={node.id} type="button" onClick={() => focusCommandNode(node)}>
                     <span>{node.name}</span>
@@ -8074,6 +8539,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
           </section>
         ) : null}
       </aside>
+        </>
+      ) : null}
     </main>
   );
 }

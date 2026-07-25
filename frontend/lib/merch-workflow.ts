@@ -10,11 +10,11 @@ type WorkflowNode = {
 };
 
 export type MerchWorkflowStep = {
-  commanderName: string;
   description: string;
   id: string;
   name: string;
-  soldierName: string;
+  operationalSoldierName: string;
+  supportingWorkLabel: string;
 };
 
 export type MerchWorkflowBuildResult = {
@@ -25,102 +25,102 @@ export type MerchWorkflowBuildResult = {
 
 export const merchLaunchWorkflowSteps: MerchWorkflowStep[] = [
   {
-    commanderName: "Client Intake Commander",
     description: "Capture client business details, contacts, goals, offer notes, and launch constraints.",
     id: "client-intake",
     name: "Client Intake",
-    soldierName: "Business Profile Soldier"
+    operationalSoldierName: "Client Intake Soldier",
+    supportingWorkLabel: "Business Profile"
   },
   {
-    commanderName: "Brand Commander",
     description: "Analyze brand voice, visual direction, collection tone, and style guardrails.",
     id: "brand-analysis",
     name: "Brand Analysis",
-    soldierName: "Brand Voice Soldier"
+    operationalSoldierName: "Brand Soldier",
+    supportingWorkLabel: "Brand Voice"
   },
   {
-    commanderName: "Client Intake Commander",
     description: "Define the buyer profile, audience motivations, and customer language.",
     id: "audience-research",
     name: "Audience Research",
-    soldierName: "Audience Soldier"
+    operationalSoldierName: "Client Intake Soldier",
+    supportingWorkLabel: "Audience"
   },
   {
-    commanderName: "Niche Research Commander",
     description: "Scan the niche, competitors, buyer emotion, and product opportunity lanes.",
     id: "niche-research",
     name: "Niche Research",
-    soldierName: "Niche Scanner Soldier"
+    operationalSoldierName: "Niche Research Soldier",
+    supportingWorkLabel: "Niche Scanner"
   },
   {
-    commanderName: "Niche Research Commander",
     description: "Select product types, collection structure, design count, and pricing targets.",
     id: "product-planning",
     name: "Product Planning",
-    soldierName: "Product Opportunity Soldier"
+    operationalSoldierName: "Niche Research Soldier",
+    supportingWorkLabel: "Product Opportunity"
   },
   {
-    commanderName: "Design Commander",
     description: "Generate design directions, collection concepts, and variation strategy.",
     id: "design-concept-generation",
     name: "Design Concept Generation",
-    soldierName: "Design Concept Soldier"
+    operationalSoldierName: "Design Soldier",
+    supportingWorkLabel: "Design Concept"
   },
   {
-    commanderName: "Design Commander",
     description: "Convert approved concepts into usable generation prompts and creative instructions.",
     id: "design-prompt-generation",
     name: "Design Prompt Generation",
-    soldierName: "Prompt Soldier"
+    operationalSoldierName: "Design Soldier",
+    supportingWorkLabel: "Prompt"
   },
   {
-    commanderName: "Listing Commander",
     description: "Draft product titles, descriptions, tags, materials, and SEO listing structure.",
     id: "listing-draft-generation",
     name: "Listing Draft Generation",
-    soldierName: "Title Soldier"
+    operationalSoldierName: "Listing Soldier",
+    supportingWorkLabel: "Title"
   },
   {
-    commanderName: "Compliance Commander",
     description: "Review trademark risk, copyright risk, AI disclosure, production partner disclosure, and prohibited content.",
     id: "compliance-review",
     name: "Compliance Review",
-    soldierName: "Trademark Risk Soldier"
+    operationalSoldierName: "Compliance Soldier",
+    supportingWorkLabel: "Trademark Risk"
   },
   {
-    commanderName: "Client Intake Commander",
     description: "Prepare client approval packet and capture revision decisions before store build.",
     id: "client-approval",
     name: "Client Approval",
-    soldierName: "Notes Soldier"
+    operationalSoldierName: "Client Intake Soldier",
+    supportingWorkLabel: "Notes"
   },
   {
-    commanderName: "Store Launch Commander",
     description: "Prepare the selected Etsy, Shopify, or POD-backed storefront and list required production connections for approval.",
     id: "store-build",
     name: "Store Build",
-    soldierName: "Shopify Setup Soldier"
+    operationalSoldierName: "Store Launch Soldier",
+    supportingWorkLabel: "Shopify Setup"
   },
   {
-    commanderName: "Store Launch Commander",
     description: "Prepare product publishing steps, run launch QA, confirm checklist completion, and queue go-live status for approval.",
     id: "launch",
     name: "Launch",
-    soldierName: "Launch QA Soldier"
+    operationalSoldierName: "Store Launch Soldier",
+    supportingWorkLabel: "Launch QA"
   },
   {
-    commanderName: "Reporting Commander",
     description: "Generate launch report, product performance summary, and client-facing operating status.",
     id: "reporting",
     name: "Reporting",
-    soldierName: "Weekly Report Soldier"
+    operationalSoldierName: "Reporting Soldier",
+    supportingWorkLabel: "Weekly Report"
   },
   {
-    commanderName: "Reporting Commander",
     description: "Identify optimization opportunities, product improvements, and next-cycle recommendations.",
     id: "optimization",
     name: "Optimization",
-    soldierName: "Opportunity Report Soldier"
+    operationalSoldierName: "Reporting Soldier",
+    supportingWorkLabel: "Opportunity Report"
   }
 ];
 
@@ -149,10 +149,6 @@ function nodeByName(nodes: WorkflowNode[], name: string, type?: NodeType, parent
   )) ?? null;
 }
 
-function firstOnlineChild(nodes: WorkflowNode[], parentId: string, type: NodeType) {
-  return nodes.find((node) => node.parentId === parentId && commandTypeFor(node) === type && node.status !== "offline") ?? null;
-}
-
 function lineageFor(node: WorkflowNode, nodes: WorkflowNode[]) {
   const byId = new Map(nodes.map((item) => [item.id, item]));
   const lineage: WorkflowNode[] = [];
@@ -169,25 +165,19 @@ function lineageFor(node: WorkflowNode, nodes: WorkflowNode[]) {
 }
 
 function assignmentForStep(step: MerchWorkflowStep, nodes: WorkflowNode[]) {
-  const commander = nodeByName(nodes, step.commanderName, "commander");
-
-  if (!commander || commander.status === "offline") {
-    return null;
-  }
-
-  const soldier = commander
-    ? nodeByName(nodes, step.soldierName, "soldier", commander.id) ?? firstOnlineChild(nodes, commander.id, "soldier")
+  const soldier = nodeByName(nodes, step.operationalSoldierName, "soldier");
+  const commander = soldier?.parentId
+    ? nodes.find((node) => node.id === soldier.parentId && commandTypeFor(node) === "commander") ?? null
     : null;
-  const assignee = soldier && soldier.status !== "offline" ? soldier : commander;
 
-  if (!assignee) {
+  if (!soldier || soldier.status === "offline" || !commander || commander.status === "offline") {
     return null;
   }
 
   return {
-    assignee,
+    assignee: soldier,
     commander,
-    lineage: lineageFor(assignee, nodes)
+    lineage: lineageFor(soldier, nodes)
   };
 }
 
@@ -230,10 +220,10 @@ export function createMerchLaunchWorkflowTasks(
       generalName: general?.name ?? null,
       history: [
         `[ENTRAL] Workflow step ${stepNumber} created for ${workflowName}.`,
-        `[MARSHAL] Merch Marshal routed ${step.name} through the active business General.`,
-        `[GENERAL] ${assignment.lineage.find((node) => commandTypeFor(node) === "general")?.name ?? "Business General"} routed ${step.name} to ${assignment.commander.name}.`,
-        `[COMMANDER] ${assignment.commander.name} assigned execution to ${assignment.assignee.name}.`,
-        `[SOLDIER] ${assignment.assignee.name} received ${step.name}.`,
+        `[MARSHAL] Merch Marshal routed ${step.name} through the active niche General.`,
+        `[GENERAL] ${assignment.lineage.find((node) => commandTypeFor(node) === "general")?.name ?? "Niche General"} routed ${step.name} to business ${assignment.commander.name}.`,
+        `[COMMANDER] ${assignment.commander.name} assigned ${step.supportingWorkLabel} work to ${assignment.assignee.name}.`,
+        `[SOLDIER] ${assignment.assignee.name} received ${step.name} as an operational-function task.`,
         `[REPORT] Report path established: ${reportPath.join(" -> ")}.`
       ],
       id: `${workflowId}-${step.id}`,

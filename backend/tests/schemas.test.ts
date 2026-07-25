@@ -131,6 +131,7 @@ import {
   shopifyStoreCreationHandoffJobSchema,
   shopifyStoreProvisioningConfirmation,
   shopifyStoreProvisioningSchema,
+  requestEmailVerificationSchema,
   signupSchema,
   taskListQuerySchema
 } from "../src/schemas.js";
@@ -151,6 +152,44 @@ describe("validation schemas", () => {
       name: "Ada Lovelace",
       email: "ada@example.com",
       password: "short"
+    })).toThrow();
+  });
+
+  it.each([
+    "/dashboard",
+    "/graph?focus=agent_123",
+    "/infrastructure?section=agents"
+  ])("accepts canonical member return path %s for signup and verification resend", (next) => {
+    expect(signupSchema.parse({
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      password: "a-secure-password",
+      next
+    }).next).toBe(next);
+    expect(requestEmailVerificationSchema.parse({
+      email: "ada@example.com",
+      next
+    }).next).toBe(next);
+  });
+
+  it.each([
+    "https://evil.example/graph",
+    "//evil.example/graph",
+    "/",
+    "/login",
+    "/chat",
+    "/agents",
+    "/graph#outside"
+  ])("rejects non-canonical member return path %s", (next) => {
+    expect(() => signupSchema.parse({
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      password: "a-secure-password",
+      next
+    })).toThrow();
+    expect(() => requestEmailVerificationSchema.parse({
+      email: "ada@example.com",
+      next
     })).toThrow();
   });
 
