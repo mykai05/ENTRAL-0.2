@@ -123,7 +123,7 @@ describe("buildCommandOSReport", () => {
     });
 
     expect(report.recommendation).toContain("Insufficient operational data");
-    expect(report.nextActions).toContain("Create a business General under this Marshal.");
+    expect(report.nextActions).toContain("Create a niche General under this Marshal.");
   });
 
   it("creates report records with source, destination, and command path ids", () => {

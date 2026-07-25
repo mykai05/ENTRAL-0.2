@@ -43,7 +43,23 @@ describe("OnboardingProvider", () => {
     window.sessionStorage.clear();
   });
 
-  it("waits for a signed-in user before opening the first-sign-in Academy", () => {
+  it("never opens the Academy automatically after authentication", () => {
+    render(
+      <OnboardingProvider>
+        <button data-academy="command-brand" type="button">ENTRAL</button>
+      </OnboardingProvider>
+    );
+
+    authenticateUser();
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
+  });
+
+  it("redirects an unauthenticated manual Academy request without opening a modal", () => {
     render(
       <OnboardingProvider>
         <button data-academy="command-brand" type="button">ENTRAL</button>
@@ -51,19 +67,11 @@ describe("OnboardingProvider", () => {
     );
 
     act(() => {
-      vi.advanceTimersByTime(700);
+      window.dispatchEvent(new Event("entral:open-academy"));
     });
 
+    expect(navigationMocks.push).toHaveBeenCalledWith("/onboarding?next=/dashboard");
     expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-
-    authenticateUser();
-
-    act(() => {
-      vi.advanceTimersByTime(700);
-    });
-
-    expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Start from ENTRAL", level: 2 })).toBeInTheDocument();
   });
 
   it("opens the tutorial library from the global event", () => {
@@ -104,7 +112,7 @@ describe("OnboardingProvider", () => {
     expect(JSON.parse(window.localStorage.getItem(userAcademyKey) ?? "{}")).toMatchObject({ mode: "advanced" });
   });
 
-  it("lets a first-time user enter the Command Center without completing the tutorial", () => {
+  it("lets an operator close the manually opened Academy without completing the tutorial", () => {
     render(
       <OnboardingProvider>
         <button data-academy="command-brand" type="button">ENTRAL</button>
@@ -114,7 +122,7 @@ describe("OnboardingProvider", () => {
     authenticateUser();
 
     act(() => {
-      vi.advanceTimersByTime(700);
+      window.dispatchEvent(new Event("entral:open-tutorial"));
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Enter Command Center" }));
@@ -133,7 +141,7 @@ describe("OnboardingProvider", () => {
     authenticateUser();
 
     act(() => {
-      vi.advanceTimersByTime(700);
+      window.dispatchEvent(new Event("entral:open-tutorial"));
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Enter Command Center" }));
@@ -157,7 +165,7 @@ describe("OnboardingProvider", () => {
     authenticateUser();
 
     act(() => {
-      vi.advanceTimersByTime(700);
+      window.dispatchEvent(new Event("entral:open-tutorial"));
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Enter Command Center" }));
@@ -170,7 +178,7 @@ describe("OnboardingProvider", () => {
     expect(JSON.parse(window.localStorage.getItem(userAcademyKey) ?? "{}")).toMatchObject({ firstLaunchSeen: true });
   });
 
-  it("does not interrupt if the operator acts before the first-launch Academy opens", () => {
+  it("does not interrupt if the operator acts after internal auth", () => {
     render(
       <OnboardingProvider>
         <main className="command-center-page">
@@ -188,7 +196,6 @@ describe("OnboardingProvider", () => {
     });
 
     expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-    expect(JSON.parse(window.localStorage.getItem(userAcademyKey) ?? "{}")).toMatchObject({ firstLaunchSeen: true });
   });
 
   it("closes the Academy during a live walkthrough and returns to the same lesson", () => {
@@ -216,7 +223,7 @@ describe("OnboardingProvider", () => {
     expect(screen.getByRole("heading", { name: "Start from ENTRAL", level: 2 })).toBeInTheDocument();
   });
 
-  it("recovers first-sign-in Academy when the auth event happened before the provider mounted", () => {
+  it("restores a stored authenticated session but still waits for a manual Academy request", () => {
     window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({
       email: "operator@entral.local",
       userId
@@ -229,11 +236,17 @@ describe("OnboardingProvider", () => {
     );
 
     act(() => {
-      vi.advanceTimersByTime(700);
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new Event("entral:open-academy"));
     });
 
     expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Start from ENTRAL", level: 2 })).toBeInTheDocument();
+    expect(screen.getByText("Tutorial library")).toBeInTheDocument();
   });
 
   it("does not trap users when browser storage is blocked", () => {
@@ -256,7 +269,7 @@ describe("OnboardingProvider", () => {
     authenticateUser();
 
     act(() => {
-      vi.advanceTimersByTime(700);
+      window.dispatchEvent(new Event("entral:open-tutorial"));
     });
 
     expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();

@@ -247,8 +247,8 @@ describe("Revenue Autopilot", () => {
     });
     expect(plan.automationProfile.automatedWorkPercent).toBeGreaterThanOrEqual(85);
     expect(plan.automationProfile.ownerApprovalWorkItems).toBeGreaterThan(0);
-    expect(plan.chainOfCommand.map((lane) => lane.commander)).toContain("First Launch Commander");
-    expect(plan.chainOfCommand.map((lane) => lane.commander)).toContain("Financial Orchestrator Commander");
+    expect(plan.chainOfCommand.map((lane) => lane.commander)).toContain("First Business Commander");
+    expect(plan.chainOfCommand.map((lane) => lane.commander)).toContain("ENTRAL Revenue Operations Commander");
     expect(plan.ownerApprovalQueue.length).toBeGreaterThan(0);
     expect(plan.ownerApprovalQueue.every((item) => item.externalExecution === false && item.providerContacted === false)).toBe(true);
     expect(plan.ownerApprovalQueue.map((item) => item.approvalType)).toContain("finance_release");

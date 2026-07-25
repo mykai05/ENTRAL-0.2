@@ -38,22 +38,22 @@ export function buildCreateNodeEditDraft(input: {
 export function buildBusinessTemplateAuthorizationSummary(input: {
   businessName: string;
   contextLines: string[];
-  commanderCount: number;
+  generalName: string;
   marshalName: string;
   soldierCount: number;
   templateLabel: string;
 }) {
-  const generalName = /\bGeneral$/i.test(input.businessName) ? input.businessName : `${input.businessName} General`;
+  const commanderName = /\bCommander$/i.test(input.businessName) ? input.businessName : `${input.businessName} Commander`;
 
   return [
     "Objective interpreted: Create business command structure.",
     `Template: ${input.templateLabel}`,
-    `Marshal: ${input.marshalName}`,
-    `Business General: ${generalName}`,
-    `Commanders: ${input.commanderCount}`,
-    `Soldiers: ${input.soldierCount}`,
+    `Broad-domain Marshal: ${input.marshalName}`,
+    `Niche General: ${input.generalName}`,
+    `Business Commander: ${commanderName}`,
+    `Operational Soldiers: ${input.soldierCount}`,
     input.contextLines.length ? `Context: ${input.contextLines.join(" | ")}` : "Context: no optional business context entered.",
-    "Initial setup: first intake task assigned for review.",
+    "Initial setup: first intake task remains pending until a backend execution receipt is recorded.",
     "Authorize creation?"
   ].join("\n");
 }

@@ -459,17 +459,6 @@ export function validateCommandOSState<TNode extends CommandNodeLike>(
   const hasMarshal = nodes.some((node) => node.commandType === "marshal");
 
   if (!hasMarshal && (hasGeneralUnderCore || nodes.some((node) => node.commandType === "general" || node.commandType === "commander" || node.commandType === "soldier"))) {
-    if (typeof window !== "undefined") {
-      try {
-        const backupKey = "entral-command-os-state-v1-backup";
-        if (!window.localStorage.getItem(backupKey)) {
-          window.localStorage.setItem(backupKey, JSON.stringify(state));
-        }
-      } catch {
-        // Local storage backup is best-effort during migration.
-      }
-    }
-
     nodes.push(createRecoveryMarshal<TNode>(now));
   }
 

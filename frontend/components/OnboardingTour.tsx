@@ -75,7 +75,7 @@ const modules: AcademyModule[] = [
     title: "Hierarchy Guide"
   },
   {
-    description: "Create a business General from templates without memorizing structure.",
+    description: "Create a one-business Commander and its operational Soldiers from templates without memorizing structure.",
     id: "business-guide",
     title: "Business Creation"
   },
@@ -143,8 +143,8 @@ const academySteps: AcademyStep[] = [
     title: "Read the graph"
   },
   {
-    description: "Marshals are strategic theaters or portfolios. A Merch Marshal, Website Marshal, or Marketing Marshal can contain multiple business Generals.",
-    guidedTask: "Use the navigation to inspect Marshals. If no Marshals exist yet, create one before creating a business General.",
+    description: "Marshals are broad operating domains. A Merch Marshal, Website Marshal, or Marketing Marshal can contain multiple niche Generals.",
+    guidedTask: "Use the navigation to inspect Marshals. If no Marshals exist yet, create one before creating a niche General.",
     id: "navigation",
     mode: "both",
     moduleId: "hierarchy-guide",
@@ -153,7 +153,7 @@ const academySteps: AcademyStep[] = [
     title: "Understand Marshals"
   },
   {
-    description: "Generals represent actual businesses, clients, brands, stores, or operations. Commanders are departments inside a General. Soldiers execute under Commanders.",
+    description: "Generals represent niches inside a Marshal. Each Commander represents one business inside a niche, and Soldiers represent that business's operational functions.",
     guidedTask: "Open the inspector and review the command path, direct reports, memory, tasks, and suggested actions for the selected entity.",
     id: "inspector",
     mode: "both",
@@ -173,7 +173,7 @@ const academySteps: AcademyStep[] = [
     title: "Create the chain of command"
   },
   {
-    description: "The business wizard turns a business idea into a Marshal, business General, operating Commanders, Soldiers, and an initial task.",
+    description: "The business wizard turns a business idea into a broad-domain Marshal, niche General, one-business Commander, operational Soldiers, and a pending initial task.",
     guidedTask: "Open Business setup, choose a template, enter a business name, and preview the creation plan before approval.",
     id: "first-business",
     mode: "both",
@@ -433,7 +433,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const isOpenRef = useRef(isOpen);
   const signedInUserKeyRef = useRef<string | null>(null);
   const spotlightStepIdRef = useRef<string | null>(spotlightStepId);
-  const userInteractedBeforeAutoOpenRef = useRef(false);
   const visibleSteps = useMemo(() => visibleStepsFor(academyState.mode), [academyState.mode]);
   const safeStepIndex = Math.min(stepIndex, Math.max(visibleSteps.length - 1, 0));
   const currentStep = visibleSteps[safeStepIndex] ?? visibleSteps[0];
@@ -456,24 +455,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     spotlightStepIdRef.current = spotlightStepId;
   }, [spotlightStepId]);
-
-  useEffect(() => {
-    function markOperatorInteraction() {
-      if (!isOpenRef.current && !spotlightStepIdRef.current && document.querySelector(".command-center-page")) {
-        userInteractedBeforeAutoOpenRef.current = true;
-      }
-    }
-
-    window.addEventListener("keydown", markOperatorInteraction, true);
-    window.addEventListener("pointerdown", markOperatorInteraction, true);
-    window.addEventListener("input", markOperatorInteraction, true);
-
-    return () => {
-      window.removeEventListener("keydown", markOperatorInteraction, true);
-      window.removeEventListener("pointerdown", markOperatorInteraction, true);
-      window.removeEventListener("input", markOperatorInteraction, true);
-    };
-  }, []);
 
   function updateAcademyState(updater: (current: AcademyState) => AcademyState) {
     setAcademyState((current) => {
@@ -525,7 +506,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     function handleSignedOut() {
       dismissedInCurrentSessionRef.current = false;
-      userInteractedBeforeAutoOpenRef.current = false;
       signedInUserKeyRef.current = null;
       setSignedInUserKey(null);
       const signedOutState = readAcademyState(null);
@@ -570,35 +550,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     window.addEventListener("entral:open-tutorial", openFromShortcut);
     window.addEventListener("entral:open-academy", openLibrary);
 
-    if (signedInUserKey && !academyState.firstLaunchSeen) {
-      const timer = window.setTimeout(() => {
-        if (dismissedInCurrentSessionRef.current || academyStateRef.current.firstLaunchSeen) {
-          return;
-        }
-
-        if (userInteractedBeforeAutoOpenRef.current) {
-          dismissedInCurrentSessionRef.current = true;
-          updateAcademyState((current) => ({ ...current, firstLaunchSeen: true }));
-          return;
-        }
-
-        closeSettingsWindow();
-        setView("tour");
-        setIsOpen(true);
-      }, 650);
-
-      return () => {
-        window.clearTimeout(timer);
-        window.removeEventListener("entral:open-tutorial", openFromShortcut);
-        window.removeEventListener("entral:open-academy", openLibrary);
-      };
-    }
-
     return () => {
       window.removeEventListener("entral:open-tutorial", openFromShortcut);
       window.removeEventListener("entral:open-academy", openLibrary);
     };
-  }, [academyState.firstLaunchSeen, academyState.mode, signedInUserKey]);
+  }, [academyState.mode, signedInUserKey]);
 
   useEffect(() => {
     const target = spotlightStep?.target;

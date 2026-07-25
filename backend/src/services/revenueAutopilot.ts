@@ -547,64 +547,64 @@ const chainAssignment: Record<RevenueAutopilotPhaseName, {
   soldier: string;
 }> = {
   content_factory: {
-    commander: "Faceless Content Commander",
-    general: "First Business General",
+    commander: "First Business Commander",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
-    soldier: "Script and Caption Soldier"
+    soldier: "Faceless Content Soldier"
   },
   digital_factory: {
-    commander: "Digital Product Commander",
-    general: "First Business General",
+    commander: "First Business Commander",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
-    soldier: "Digital Draft Soldier"
+    soldier: "Digital Product Soldier"
   },
   finance_governance: {
-    commander: "Financial Orchestrator Commander",
-    general: "Operations General",
+    commander: "ENTRAL Revenue Operations Commander",
+    general: "Revenue Operations General",
     marshal: "Money Army Marshal",
-    soldier: "Ledger Control Soldier"
+    soldier: "Financial Governance Soldier"
   },
   first_business_launch: {
-    commander: "First Launch Commander",
-    general: "First Business General",
+    commander: "First Business Commander",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
-    soldier: "Launch Packet Soldier"
+    soldier: "Launch Operations Soldier"
   },
   first_cash_sprint: {
-    commander: "First Cash Commander",
-    general: "First Business General",
+    commander: "First Business Commander",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
-    soldier: "Fast Cash Action Soldier"
+    soldier: "First Cash Sprint Soldier"
   },
   listing_factory: {
-    commander: "Listing Optimization Commander",
-    general: "First Business General",
+    commander: "First Business Commander",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
-    soldier: "Listing Copy Soldier"
+    soldier: "Listing Optimization Soldier"
   },
   portfolio_command: {
-    commander: "Rotation Commander",
-    general: "Operations General",
+    commander: "ENTRAL Revenue Operations Commander",
+    general: "Revenue Operations General",
     marshal: "Money Army Marshal",
-    soldier: "Asset Control Soldier"
+    soldier: "Portfolio Rotation Soldier"
   },
   product_factory: {
-    commander: "Product Factory Commander",
-    general: "First Business General",
+    commander: "First Business Commander",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
-    soldier: "Product Draft Soldier"
+    soldier: "Product Factory Soldier"
   },
   signal_intake: {
-    commander: "Signal Intake Commander",
-    general: "Operations General",
+    commander: "ENTRAL Revenue Operations Commander",
+    general: "Revenue Operations General",
     marshal: "Money Army Marshal",
-    soldier: "Evidence Soldier"
+    soldier: "Evidence Intake Soldier"
   },
   store_setup: {
-    commander: "Store Setup Commander",
-    general: "First Business General",
+    commander: "First Business Commander",
+    general: "Revenue Products General",
     marshal: "Money Army Marshal",
-    soldier: "Store Runbook Soldier"
+    soldier: "Store Setup Soldier"
   }
 };
 

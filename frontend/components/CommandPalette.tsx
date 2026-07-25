@@ -58,7 +58,7 @@ export function CommandPalette() {
 
   const actions = useMemo<PaletteAction[]>(() => [
     { description: "Return to the live hierarchy and primary command console", href: "/dashboard", id: "command-center", keywords: "dashboard hierarchy graph command center", label: "Open Command Center" },
-    { description: "Launch the guided flow that creates a Marshal, business General, Commanders, Soldiers, and first intake task", href: "/dashboard#business-setup", id: "business-setup", keywords: "business setup first business wizard onboarding general marshal template create company client store", label: "Business setup", run: () => window.dispatchEvent(new Event("entral:open-business-wizard")) },
+    { description: "Launch the guided flow that creates a broad-domain Marshal, niche General, one business Commander, operational Soldiers, and a pending intake task", href: "/dashboard#business-setup", id: "business-setup", keywords: "business setup first business wizard onboarding general marshal commander template create company client store", label: "Business setup", run: () => window.dispatchEvent(new Event("entral:open-business-wizard")) },
     { description: "Start a focused conversation outside the graph view", href: "/chat", id: "new-chat", keywords: "ai command conversation directive communications", label: "Open Communications" },
     { description: "Open the automation task composer", href: "/automations", id: "new-task", keywords: "task job todo automation", label: "New task" },
     { description: "Create, configure, and assign work to specialized agents", href: "/agents", id: "run-agent", keywords: "agent run assign orchestration", label: "Open agents" },

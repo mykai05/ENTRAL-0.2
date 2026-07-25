@@ -51,8 +51,8 @@ export function hierarchyNameFromCommandText(text: string, type: Exclude<NodeTyp
 export function creationBlockedTransmission(type: Exclude<NodeType, "emperor">): CreationBlockedTransmission {
   if (type === "general") {
     return {
-      analysis: "Additional operational detail is required. A General represents a real business, client, brand, store, or operation and must belong to a Marshal.",
-      nextActions: ["Select or create a Marshal.", "Create the General under that Marshal.", "Or open guided business setup."],
+      analysis: "Additional operational detail is required. A General represents one niche inside a broad-domain Marshal.",
+      nextActions: ["Select or create a broad-domain Marshal.", "Create the niche General under that Marshal.", "Or open guided business setup."],
       recommendation: "Do not create Generals directly under ENTRAL.",
       situation: "General creation blocked by hierarchy requirements."
     };
@@ -60,18 +60,18 @@ export function creationBlockedTransmission(type: Exclude<NodeType, "emperor">):
 
   if (type === "commander") {
     return {
-      analysis: "A Commander is a department or operating function and must belong to a business General.",
-      nextActions: ["Select or create a Marshal.", "Select or create a business General.", "Create the Commander again."],
-      recommendation: "Use guided business setup if you want ENTRAL to build the operating departments for you.",
+      analysis: "A Commander represents one business and must belong to its niche General.",
+      nextActions: ["Select or create a broad-domain Marshal.", "Select or create a niche General.", "Create the business Commander again."],
+      recommendation: "Use guided business setup if you want ENTRAL to build the business and its operational functions.",
       situation: "Commander creation blocked by hierarchy requirements."
     };
   }
 
   if (type === "soldier") {
     return {
-      analysis: "A Soldier is an execution unit and must belong to a Commander.",
-      nextActions: ["Select or create a business General.", "Create a Commander under that General.", "Create the Soldier again."],
-      recommendation: "Build the command lane before adding execution units.",
+      analysis: "A Soldier represents one operational function and must belong to a business Commander.",
+      nextActions: ["Select or create a niche General.", "Create the business Commander under that General.", "Create the operational Soldier again."],
+      recommendation: "Build the business command lane before adding operational functions.",
       situation: "Soldier creation blocked by hierarchy requirements."
     };
   }
@@ -79,7 +79,7 @@ export function creationBlockedTransmission(type: Exclude<NodeType, "emperor">):
   return {
     analysis: "ENTRAL can create a Marshal directly under the central command system after authorization.",
     nextActions: ["Review the authorization preview.", "Approve creation if the Marshal name is correct."],
-    recommendation: "Use Marshals as strategic theaters for groups of businesses, clients, brands, stores, or operations.",
+    recommendation: "Use each Marshal as a broad operating domain that contains niche Generals.",
     situation: "Marshal creation ready for authorization."
   };
 }

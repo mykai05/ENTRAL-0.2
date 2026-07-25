@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import userEvent, { PointerEventsCheckLevel } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
 import { apiFetch } from "../lib/api";
@@ -4489,7 +4489,7 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
   autonomousUntilPayment: true,
   autonomyMatrix: [{
     autonomyPercent: 100,
-    commander: "Store Setup General",
+    commander: "Iron House Gym Commander",
     externalExecution: false,
     hardStop: null,
     lane: "store_build",
@@ -4499,7 +4499,7 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
     status: "autonomous_ready"
   }, {
     autonomyPercent: 100,
-    commander: "Product Factory Commander",
+    commander: "Iron House Gym Commander",
     externalExecution: false,
     hardStop: null,
     lane: "product_creation",
@@ -4509,7 +4509,7 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
     status: "autonomous_ready"
   }, {
     autonomyPercent: 85,
-    commander: "Supplier Connector Commander",
+    commander: "Iron House Gym Commander",
     externalExecution: false,
     hardStop: "Owner must approve credentials and live provider connection.",
     lane: "supplier_connection",
@@ -4519,7 +4519,7 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
     status: "connector_gated"
   }, {
     autonomyPercent: 50,
-    commander: "Financial Orchestrator Marshal",
+    commander: "Iron House Gym Commander",
     externalExecution: false,
     hardStop: "Owner approval and payment authorization are required before any ad spend.",
     lane: "ad_spend_activation",
@@ -4535,28 +4535,46 @@ const firstBusinessAutonomousLaunchPlan: RevenueFirstBusinessAutonomousLaunchPla
   ],
   chainOfCommand: [{
     lane: "store_build",
-    owns: ["store setup payload", "navigation", "collections", "SEO", "policy drafts"],
+    owns: ["revenue commerce domain", "portfolio-wide commercial guardrails"],
+    rank: "marshal",
+    status: "ready_internal",
+    title: "Revenue Commerce Marshal"
+  }, {
+    lane: "store_build",
+    owns: ["fitness niche", "independent gym members"],
     rank: "general",
     status: "ready_internal",
-    title: "Store Setup General"
+    title: "Fitness General"
+  }, {
+    lane: "store_build",
+    owns: ["Iron House Gym business", "Shopify storefront"],
+    rank: "commander",
+    status: "ready_internal",
+    title: "Iron House Gym Commander"
+  }, {
+    lane: "store_build",
+    owns: ["store setup payload", "navigation", "collections", "SEO", "policy drafts"],
+    rank: "soldier",
+    status: "ready_internal",
+    title: "Store Build Soldier"
   }, {
     lane: "product_creation",
     owns: ["product rows", "listing copy", "design specs", "mockup directions"],
-    rank: "commander",
+    rank: "soldier",
     status: "ready_internal",
-    title: "Product Factory Commander"
+    title: "Product Creation Soldier"
   }, {
     lane: "supplier_connection",
     owns: ["connector manifest", "credential scopes", "supplier payload draft"],
-    rank: "commander",
+    rank: "soldier",
     status: "owner_gate_required",
-    title: "Supplier Connector Commander"
+    title: "Supplier Connection Soldier"
   }, {
     lane: "ad_spend_activation",
     owns: ["Approve first paid traffic test"],
-    rank: "marshal",
+    rank: "soldier",
     status: "owner_gate_required",
-    title: "Financial Orchestrator Marshal"
+    title: "Ad Spend Activation Soldier"
   }],
   connectionPlan: {
     connectorManifests: [{
@@ -11142,6 +11160,15 @@ describe("MerchOperationsPanel", () => {
   }, 30000);
 
   it("loads the business fleet scheduler for a 10-lane launch wave", async () => {
+    const user = userEvent.setup({
+      pointerEventsCheck: PointerEventsCheckLevel.Never,
+      skipHover: true
+    });
+
+    async function clickAndFlush(element: Element) {
+      await user.click(element);
+    }
+
     vi.mocked(apiFetch)
       .mockResolvedValueOnce({ plan: businessFleetPlan })
       .mockResolvedValueOnce({ plan: businessFleetGapPlan })
@@ -11157,7 +11184,7 @@ describe("MerchOperationsPanel", () => {
 
     render(<MerchOperationsPanel isLoadingStores={false} onRefreshStores={vi.fn()} stores={[store]} />);
 
-    await userEvent.click(screen.getByRole("button", { name: /load fleet scheduler/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /load fleet scheduler/i }));
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/business-fleet-scheduler");
     const region = await screen.findByRole("region", { name: /revenue business fleet scheduler/i });
@@ -11171,7 +11198,121 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("dispatch ready first cash bridge action")).toBeInTheDocument();
     expect(within(region).getByText("Fleet execution remains internal")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /load launch gap/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /load income sprint/i }));
+
+    const incomeSprintParams = new URLSearchParams();
+    incomeSprintParams.set("launchWaveSize", "10");
+    incomeSprintParams.set("maxCommands", "10");
+    incomeSprintParams.set("maxLanes", "10");
+    incomeSprintParams.set("maxParallelLaunches", "10");
+    incomeSprintParams.set("maxParallelScaleActions", "25");
+    incomeSprintParams.set("maxStores", "10");
+    incomeSprintParams.set("qualityFloor", "75");
+    incomeSprintParams.set("shardCount", "10");
+    incomeSprintParams.set("targetBusinesses", "1000");
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/income-sprint?${incomeSprintParams.toString()}`);
+    expect(await screen.findByText("Income sprint loaded: 0 ready, 0 cash-ready, 0 approval-needed.")).toBeInTheDocument();
+    const sprintRegion = await screen.findByRole("region", { name: /revenue business fleet income sprint board/i });
+    expect(within(sprintRegion).getByText("Revenue Business Fleet Income Sprint Board")).toBeInTheDocument();
+    expect(within(sprintRegion).getByText("1 income sprint lane ranked for the next operating window. Top lane: Iron House Gym at 95/100 with next state dispatch_ready_first_cash_bridge_action.")).toBeInTheDocument();
+    expect(within(sprintRegion).getByRole("region", { name: /income sprint lane table/i })).toBeInTheDocument();
+    expect(within(sprintRegion).getByText("launch candidate")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview sprint commands/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/income-sprint/apply", {
+      json: {
+        confirm: "RECORD INTERNAL BUSINESS FLEET INCOME SPRINT COMMANDS",
+        dryRun: true,
+        laneIds: ["store-1"],
+        launchWaveSize: 10,
+        maxCommands: 10,
+        maxLanes: 10,
+        maxParallelLaunches: 10,
+        maxParallelScaleActions: 25,
+        maxStores: 10,
+        note: "Previewed from Business Fleet income sprint board.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: [],
+        targetBusinesses: 1000
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Income sprint command preview ready: 1 command selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /record sprint commands/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/income-sprint/apply", {
+      json: {
+        confirm: "RECORD INTERNAL BUSINESS FLEET INCOME SPRINT COMMANDS",
+        dryRun: false,
+        laneIds: ["store-1"],
+        launchWaveSize: 10,
+        maxCommands: 10,
+        maxLanes: 10,
+        maxParallelLaunches: 10,
+        maxParallelScaleActions: 25,
+        maxStores: 10,
+        note: "Recorded from Business Fleet income sprint board.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: [],
+        targetBusinesses: 1000
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Income sprint commands recorded: 1 command queued.")).toBeInTheDocument();
+    expect(within(sprintRegion).getByText("audit audit-business-fleet-income-sprint-1 / lanes 1 / external execution locked")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load sprint command queue/i }));
+
+    const incomeSprintCommandQueueParams = new URLSearchParams();
+    incomeSprintCommandQueueParams.set("maxCommands", "10");
+    incomeSprintCommandQueueParams.append("statuses", "queued");
+    incomeSprintCommandQueueParams.append("statuses", "blocked");
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/income-sprint/commands?${incomeSprintCommandQueueParams.toString()}`);
+    expect(await screen.findByText("Income sprint command queue loaded: 1 runnable, 0 blocked.")).toBeInTheDocument();
+    expect(within(sprintRegion).getByText("Income Sprint Command Queue")).toBeInTheDocument();
+    expect(within(sprintRegion).getByRole("region", { name: /income sprint command queue table/i })).toBeInTheDocument();
+    expect(within(sprintRegion).getAllByText("dispatch ready first cash bridge action").length).toBeGreaterThan(0);
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview sprint queue resolve/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/income-sprint/commands/apply", {
+      json: {
+        commandRecordIds: ["portfolio-command-income-sprint-1"],
+        confirm: "RESOLVE INTERNAL BUSINESS FLEET INCOME SPRINT COMMAND QUEUE",
+        dryRun: true,
+        maxCommands: 10,
+        note: "Previewed from Business Fleet income sprint command queue controls.",
+        resolution: "applied",
+        statuses: ["queued", "blocked"]
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Income sprint command queue preview ready: 1 command would resolve.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /resolve sprint queue/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/income-sprint/commands/apply", {
+      json: {
+        commandRecordIds: ["portfolio-command-income-sprint-1"],
+        confirm: "RESOLVE INTERNAL BUSINESS FLEET INCOME SPRINT COMMAND QUEUE",
+        dryRun: false,
+        maxCommands: 10,
+        note: "Resolved from Business Fleet income sprint command queue controls.",
+        resolution: "applied",
+        statuses: ["queued", "blocked"]
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Income sprint command queue resolved: 1 command marked applied.")).toBeInTheDocument();
+    expect(within(sprintRegion).getByText("audit audit-business-fleet-income-sprint-command-queue-1 / external execution locked")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch gap/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap");
     const gapRegion = await screen.findByRole("region", { name: /business fleet launch gap planner/i });
@@ -11183,7 +11324,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getAllByText("create opportunity shell / ready").length).toBeGreaterThan(0);
     expect(within(gapRegion).getByText("Launch gap remains internal")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview gap seeds/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /preview gap seeds/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply", {
       json: {
@@ -11200,7 +11341,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getByText("9 store shells / 45 drafts")).toBeInTheDocument();
     expect(within(gapRegion).getByText("9 internal opportunity seeds previewed from the business-fleet launch gap.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /create gap seeds/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /create gap seeds/i }));
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/seeds/apply", {
       json: {
@@ -11215,7 +11356,7 @@ describe("MerchOperationsPanel", () => {
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio");
     expect(await screen.findByText("Fleet gap seeds created: 9 seeds, 9 store shells, 45 drafts.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview seed acceleration/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /preview seed acceleration/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/acceleration/apply", {
       json: {
@@ -11231,7 +11372,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getByText("Gap Acceleration Receipt")).toBeInTheDocument();
     expect(within(gapRegion).getByText("9 launch items / 45 listing experiments / 9 setup runbooks")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /run seed acceleration/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /run seed acceleration/i }));
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/acceleration/apply", {
       json: {
@@ -11246,7 +11387,7 @@ describe("MerchOperationsPanel", () => {
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio");
     expect(await screen.findByText("Fleet gap acceleration ran: 9 stores, 45 listing updates, 9 setup updates.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview live package/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /preview live package/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/live-package/apply", {
       json: {
@@ -11262,7 +11403,22 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getByText("Live Launch Package")).toBeInTheDocument();
     expect(within(gapRegion).getByText("9 payload packages / 9 provider approval packets")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /load launch gate/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /record live package/i }));
+
+    expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/live-package/apply", {
+      json: {
+        confirm: "RECORD INTERNAL BUSINESS FLEET LIVE LAUNCH PACKAGE",
+        dryRun: false,
+        maxStores: 10,
+        note: "Recorded from Business Fleet live launch package dashboard controls.",
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio");
+    expect(await screen.findByText("Fleet live package recorded: 9 stores, 9 provider approval packets, 9 operations packs.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch gate/i }));
 
     const launchGateParams = new URLSearchParams();
     launchGateParams.set("maxStores", "10");
@@ -11275,7 +11431,697 @@ describe("MerchOperationsPanel", () => {
     expect(within(gapRegion).getByText("Launch Gate")).toBeInTheDocument();
     expect(within(gapRegion).getByText("9 packaged business lanes evaluated: 0 ready for manual launch, 1 need approval, 8 need repair, 0 blocked.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview launch wave/i }));
+    await clickAndFlush(screen.getByRole("button", { name: /load provider approvals/i }));
+
+    const providerApprovalParams = new URLSearchParams();
+    providerApprovalParams.set("maxPackets", "25");
+    providerApprovalParams.set("maxStores", "10");
+    providerApprovalParams.set("status", "pending");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      providerApprovalParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/provider-approval-review?${providerApprovalParams.toString()}`);
+    expect(await screen.findByText("Provider approval review loaded: 1 approvable, 1 pending.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Provider Approval Review")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("ready for batch approval")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview approval batch/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/provider-approval-review/apply", {
+      json: {
+        action: "approve",
+        confirm: "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS",
+        dryRun: true,
+        maxPackets: 25,
+        maxStores: 10,
+        note: "Previewed from Business Fleet provider approval review dashboard controls.",
+        packetIds: ["growth_packet_provider_1"],
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Provider approval preview ready: 1 packet selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /approve provider batch/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/provider-approval-review/apply", {
+      json: {
+        action: "approve",
+        confirm: "REVIEW INTERNAL BUSINESS FLEET PROVIDER APPROVALS",
+        dryRun: false,
+        maxPackets: 25,
+        maxStores: 10,
+        note: "Approved from Business Fleet provider approval review dashboard controls.",
+        packetIds: ["growth_packet_provider_1"],
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Provider approvals recorded: 1 packet approved internally.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("1 provider approval packet approved internally. External execution remains locked.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Manual Launch Ready Queue")).toBeInTheDocument();
+    expect(within(gapRegion).getByText(/ready for operator manual launch/i)).toBeInTheDocument();
+    expect(within(gapRegion).getByText("ENTRAL Private Revenue Lane 1 has a manual-only launch operations pack with 5 locked request manifests.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch execution queue/i }));
+
+    const launchExecutionQueueParams = new URLSearchParams();
+    launchExecutionQueueParams.set("maxLeases", "10");
+    launchExecutionQueueParams.set("maxLeasesPerShard", "1");
+    launchExecutionQueueParams.set("maxStores", "10");
+    launchExecutionQueueParams.set("qualityFloor", "75");
+    launchExecutionQueueParams.set("shardCount", "10");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      launchExecutionQueueParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-execution-queue?${launchExecutionQueueParams.toString()}`);
+    expect(await screen.findByText("Launch execution queue loaded: 1 ready to claim, 0 quality-held, 0 blocked.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Launch Execution Lease Queue")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("operator launch claim ready")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview launch leases/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-execution-queue/apply", {
+      json: {
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH EXECUTION QUEUE",
+        dryRun: true,
+        leaseIds: ["business_fleet_launch_lease_launch-execution-lease-1"],
+        maxLeases: 10,
+        maxLeasesPerShard: 1,
+        maxStores: 10,
+        note: "Previewed from Business Fleet launch execution queue dashboard controls.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch execution queue preview ready: 1 lease selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /record launch leases/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-execution-queue/apply", {
+      json: {
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH EXECUTION QUEUE",
+        dryRun: false,
+        leaseIds: ["business_fleet_launch_lease_launch-execution-lease-1"],
+        maxLeases: 10,
+        maxLeasesPerShard: 1,
+        maxStores: 10,
+        note: "Recorded from Business Fleet launch execution queue dashboard controls.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch execution queue recorded: 1 lease recorded.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("1 launch execution lease recorded for internal operator claiming. External execution remains locked.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch workers/i }));
+
+    const launchWorkerParams = new URLSearchParams();
+    launchWorkerParams.set("maxAssignments", "10");
+    launchWorkerParams.set("maxAssignmentsPerWorker", "1");
+    launchWorkerParams.set("maxLeases", "10");
+    launchWorkerParams.set("maxLeasesPerShard", "1");
+    launchWorkerParams.set("maxStores", "10");
+    launchWorkerParams.set("maxWorkers", "10");
+    launchWorkerParams.set("qualityFloor", "75");
+    launchWorkerParams.set("shardCount", "10");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      launchWorkerParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-worker-assignments?${launchWorkerParams.toString()}`);
+    expect(await screen.findByText("Launch worker assignments loaded: 1 ready, 0 waiting, 0 blocked.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Launch Worker Assignment Plan")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("operator claim ready")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview launch workers/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-worker-assignments/apply", {
+      json: {
+        assignmentIds: ["business_fleet_launch_assignment_launch-worker-1"],
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH WORKER ASSIGNMENTS",
+        dryRun: true,
+        maxAssignments: 10,
+        maxAssignmentsPerWorker: 1,
+        maxLeases: 10,
+        maxLeasesPerShard: 1,
+        maxStores: 10,
+        maxWorkers: 10,
+        note: "Previewed from Business Fleet launch worker assignment dashboard controls.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch worker assignment preview ready: 1 assignment selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /record launch workers/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-worker-assignments/apply", {
+      json: {
+        assignmentIds: ["business_fleet_launch_assignment_launch-worker-1"],
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH WORKER ASSIGNMENTS",
+        dryRun: false,
+        maxAssignments: 10,
+        maxAssignmentsPerWorker: 1,
+        maxLeases: 10,
+        maxLeasesPerShard: 1,
+        maxStores: 10,
+        maxWorkers: 10,
+        note: "Recorded from Business Fleet launch worker assignment dashboard controls.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch worker assignments recorded: 1 assignment recorded.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("1 launch worker assignment recorded for internal operator claiming. External execution remains locked.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch evidence/i }));
+
+    const manualLaunchEvidenceParams = new URLSearchParams();
+    manualLaunchEvidenceParams.set("maxAssignments", "10");
+    manualLaunchEvidenceParams.set("maxAssignmentsPerWorker", "1");
+    manualLaunchEvidenceParams.set("maxLeases", "10");
+    manualLaunchEvidenceParams.set("maxLeasesPerShard", "1");
+    manualLaunchEvidenceParams.set("maxStores", "10");
+    manualLaunchEvidenceParams.set("maxWorkers", "10");
+    manualLaunchEvidenceParams.set("qualityFloor", "75");
+    manualLaunchEvidenceParams.set("shardCount", "10");
+    manualLaunchEvidenceParams.append("assignmentIds", "business_fleet_launch_assignment_launch-worker-1");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      manualLaunchEvidenceParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence?${manualLaunchEvidenceParams.toString()}`);
+    expect(await screen.findByText("Manual launch evidence loaded: 1 ready, 0 blocked.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Business Fleet Manual Launch Evidence")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("manual launch evidence ready to record")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview launch evidence/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence/apply", {
+      json: {
+        approvalPhrase: "CONFIRM OPERATOR COMPLETED BUSINESS FLEET MANUAL LAUNCH STEP",
+        assignmentIds: ["business_fleet_launch_assignment_launch-worker-1"],
+        confirm: "RECORD INTERNAL BUSINESS FLEET MANUAL LAUNCH EVIDENCE",
+        dryRun: true,
+        evidenceCategory: "operator_notes",
+        evidenceNote: "Previewed from Business Fleet manual launch evidence dashboard controls.",
+        maxAssignments: 10,
+        maxAssignmentsPerWorker: 1,
+        maxLeases: 10,
+        maxLeasesPerShard: 1,
+        maxStores: 10,
+        maxWorkers: 10,
+        operatorCompletedManualStep: true,
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Manual launch evidence preview ready: 1 packet selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /record launch evidence/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/manual-launch-evidence/apply", {
+      json: {
+        approvalPhrase: "CONFIRM OPERATOR COMPLETED BUSINESS FLEET MANUAL LAUNCH STEP",
+        assignmentIds: ["business_fleet_launch_assignment_launch-worker-1"],
+        confirm: "RECORD INTERNAL BUSINESS FLEET MANUAL LAUNCH EVIDENCE",
+        dryRun: false,
+        evidenceCategory: "operator_notes",
+        evidenceNote: "Recorded from Business Fleet manual launch evidence dashboard controls.",
+        maxAssignments: 10,
+        maxAssignmentsPerWorker: 1,
+        maxLeases: 10,
+        maxLeasesPerShard: 1,
+        maxStores: 10,
+        maxWorkers: 10,
+        operatorCompletedManualStep: true,
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Manual launch evidence recorded: 1 packet recorded.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("1 business-fleet manual launch evidence packet recorded. External execution remains locked.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch control/i }));
+
+    const launchControlParams = new URLSearchParams();
+    launchControlParams.set("launchWaveSize", "10");
+    launchControlParams.set("maxAssignments", "10");
+    launchControlParams.set("maxAssignmentsPerWorker", "1");
+    launchControlParams.set("maxLeases", "10");
+    launchControlParams.set("maxLeasesPerShard", "1");
+    launchControlParams.set("maxParallelLaunches", "10");
+    launchControlParams.set("maxParallelScaleActions", "25");
+    launchControlParams.set("maxStores", "10");
+    launchControlParams.set("maxWorkers", "10");
+    launchControlParams.set("qualityFloor", "75");
+    launchControlParams.set("shardCount", "10");
+    launchControlParams.set("targetBusinesses", "1000");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      launchControlParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-control?${launchControlParams.toString()}`);
+    expect(await screen.findByText("Launch control loaded: 1/10 clean lanes. Next: Record manual launch evidence after operator completion.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Business Fleet Launch Control Tower")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("1/10 launch lanes are clean across gate, queue, worker, and evidence stages. Next: Record manual launch evidence after operator completion.")).toBeInTheDocument();
+    expect(within(gapRegion).getByRole("region", { name: /business fleet launch control stages/i })).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load swarm readiness/i }));
+
+    const swarmReadinessParams = new URLSearchParams();
+    swarmReadinessParams.set("launchWaveSize", "10");
+    swarmReadinessParams.set("maxAssignments", "10");
+    swarmReadinessParams.set("maxAssignmentsPerWorker", "1");
+    swarmReadinessParams.set("maxLeases", "10");
+    swarmReadinessParams.set("maxLeasesPerShard", "1");
+    swarmReadinessParams.set("maxParallelLaunches", "10");
+    swarmReadinessParams.set("maxParallelScaleActions", "25");
+    swarmReadinessParams.set("maxStores", "10");
+    swarmReadinessParams.set("maxWorkers", "10");
+    swarmReadinessParams.set("qualityFloor", "75");
+    swarmReadinessParams.set("scaleTargets", "10,100,1000");
+    swarmReadinessParams.set("shardCount", "10");
+    swarmReadinessParams.set("starterBusinesses", "10");
+    swarmReadinessParams.set("targetBusinesses", "1000");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      swarmReadinessParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/swarm-readiness?${swarmReadinessParams.toString()}`);
+    expect(await screen.findByText("Swarm readiness loaded: 1/10 starter lanes clean, 9 gap.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Business Fleet Swarm Readiness")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Starter swarm is not ready: 1/10 clean lanes available. Next: Record manual launch evidence after operator completion.")).toBeInTheDocument();
+    expect(within(gapRegion).getByRole("region", { name: /business fleet swarm scale presets/i })).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Thousand Lane")).toBeInTheDocument();
+    expect(within(gapRegion).getAllByText("50/cycle").length).toBeGreaterThan(0);
+    expect(within(gapRegion).getByRole("region", { name: /business fleet swarm readiness targets/i })).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch night/i }));
+
+    const launchNightParams = new URLSearchParams();
+    launchNightParams.set("launchNightSize", "10");
+    launchNightParams.set("launchWaveSize", "10");
+    launchNightParams.set("maxCommands", "10");
+    launchNightParams.set("maxLanes", "10");
+    launchNightParams.set("maxParallelLaunches", "10");
+    launchNightParams.set("maxParallelScaleActions", "25");
+    launchNightParams.set("maxStores", "10");
+    launchNightParams.set("maxWorkers", "10");
+    launchNightParams.set("qualityFloor", "75");
+    launchNightParams.set("shardCount", "10");
+    launchNightParams.set("targetBusinesses", "1000");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      launchNightParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-night?${launchNightParams.toString()}`);
+    expect(await screen.findByText("Launch night loaded: 1/10 ready now, 0 command-ready, 0 blocked.")).toBeInTheDocument();
+    const launchNightRegion = await screen.findByRole("region", { name: /revenue business fleet launch night board/i });
+    expect(within(launchNightRegion).getByText("Revenue Business Fleet Launch Night Board")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByText("1 launch-night lane ranked; 1 ready now, 0 waiting on command resolution, 0 approval, 0 repair, 0 blocked.")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByRole("region", { name: /launch night lane table/i })).toBeInTheDocument();
+    expect(within(launchNightRegion).getAllByText("ready for operator launch").length).toBeGreaterThan(0);
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview launch night/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-night/apply", {
+      json: {
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMANDS",
+        dryRun: true,
+        laneIds: ["store-1"],
+        launchNightSize: 10,
+        launchWaveSize: 10,
+        maxCommands: 10,
+        maxLanes: 10,
+        maxParallelLaunches: 10,
+        maxParallelScaleActions: 25,
+        maxStores: 10,
+        maxWorkers: 10,
+        note: "Previewed from Business Fleet launch night board.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey),
+        targetBusinesses: 1000
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch-night command preview ready: 1 command selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /record launch night/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-night/apply", {
+      json: {
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMANDS",
+        dryRun: false,
+        laneIds: ["store-1"],
+        launchNightSize: 10,
+        launchWaveSize: 10,
+        maxCommands: 10,
+        maxLanes: 10,
+        maxParallelLaunches: 10,
+        maxParallelScaleActions: 25,
+        maxStores: 10,
+        maxWorkers: 10,
+        note: "Recorded from Business Fleet launch night board.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey),
+        targetBusinesses: 1000
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch-night commands recorded: 1 command queued.")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByText("audit audit-business-fleet-launch-night-1 / lanes 1 / external execution locked")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch-night queue/i }));
+
+    const launchNightCommandQueueParams = new URLSearchParams();
+    launchNightCommandQueueParams.set("maxCommands", "10");
+    launchNightCommandQueueParams.append("statuses", "queued");
+    launchNightCommandQueueParams.append("statuses", "blocked");
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-night/commands?${launchNightCommandQueueParams.toString()}`);
+    expect(await screen.findByText("Launch-night command queue loaded: 1 runnable, 0 blocked.")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByText("Launch Night Command Queue")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByRole("region", { name: /launch night command queue table/i })).toBeInTheDocument();
+    expect(within(launchNightRegion).getAllByText("ready for operator launch").length).toBeGreaterThan(0);
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview launch-night queue/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-night/commands/apply", {
+      json: {
+        commandRecordIds: ["portfolio-command-launch-night-1"],
+        confirm: "RESOLVE INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMAND QUEUE",
+        dryRun: true,
+        maxCommands: 10,
+        note: "Previewed from Business Fleet launch-night command queue controls.",
+        resolution: "applied",
+        statuses: ["queued", "blocked"]
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch-night command queue preview ready: 1 command would resolve.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /resolve launch-night queue/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-night/commands/apply", {
+      json: {
+        commandRecordIds: ["portfolio-command-launch-night-1"],
+        confirm: "RESOLVE INTERNAL BUSINESS FLEET LAUNCH NIGHT COMMAND QUEUE",
+        dryRun: false,
+        maxCommands: 10,
+        note: "Resolved from Business Fleet launch-night command queue controls.",
+        resolution: "applied",
+        statuses: ["queued", "blocked"]
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch-night command queue resolved: 1 command marked applied.")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByText("audit audit-business-fleet-launch-night-command-queue-1 / external execution locked")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load tonight checklist/i }));
+
+    const launchNightChecklistParams = new URLSearchParams();
+    launchNightChecklistParams.set("launchNightSize", "10");
+    launchNightChecklistParams.set("launchWaveSize", "10");
+    launchNightChecklistParams.set("maxChecklistItems", "10");
+    launchNightChecklistParams.set("maxCommands", "10");
+    launchNightChecklistParams.set("maxLanes", "10");
+    launchNightChecklistParams.set("maxParallelLaunches", "10");
+    launchNightChecklistParams.set("maxParallelScaleActions", "25");
+    launchNightChecklistParams.set("maxStores", "10");
+    launchNightChecklistParams.set("maxWorkers", "10");
+    launchNightChecklistParams.set("qualityFloor", "75");
+    launchNightChecklistParams.set("shardCount", "10");
+    launchNightChecklistParams.set("targetBusinesses", "1000");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      launchNightChecklistParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-night/execution-checklist?${launchNightChecklistParams.toString()}`);
+    expect(await screen.findByText("Launch-night checklist loaded: 0 ready, 0 waiting on command records, 0 blocked.")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByText("Tonight Execution Checklist")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByRole("region", { name: /launch night execution checklist table/i })).toBeInTheDocument();
+    expect(within(launchNightRegion).getByText("already resolved")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load launch console/i }));
+
+    const launchNightConsoleParams = new URLSearchParams();
+    launchNightConsoleParams.set("launchNightSize", "10");
+    launchNightConsoleParams.set("launchWaveSize", "10");
+    launchNightConsoleParams.set("maxAssignments", "10");
+    launchNightConsoleParams.set("maxAssignmentsPerWorker", "1");
+    launchNightConsoleParams.set("maxChecklistItems", "10");
+    launchNightConsoleParams.set("maxCommands", "10");
+    launchNightConsoleParams.set("maxConsoleItems", "10");
+    launchNightConsoleParams.set("maxLanes", "10");
+    launchNightConsoleParams.set("maxLeases", "10");
+    launchNightConsoleParams.set("maxLeasesPerShard", "1");
+    launchNightConsoleParams.set("maxParallelLaunches", "10");
+    launchNightConsoleParams.set("maxParallelScaleActions", "25");
+    launchNightConsoleParams.set("maxSignals", "10");
+    launchNightConsoleParams.set("maxStores", "10");
+    launchNightConsoleParams.set("maxWorkers", "10");
+    launchNightConsoleParams.set("qualityFloor", "75");
+    launchNightConsoleParams.set("shardCount", "10");
+    launchNightConsoleParams.set("targetBusinesses", "1000");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      launchNightConsoleParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-night/operator-console?${launchNightConsoleParams.toString()}`);
+    expect(await screen.findByText("Launch console loaded: 0 evidence-ready, 1 signal-ready, 0 blocked.")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByText("Launch Night Operator Console")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByRole("region", { name: /launch night operator console table/i })).toBeInTheDocument();
+    expect(within(launchNightRegion).getByText("record outcome signal")).toBeInTheDocument();
+    expect(within(launchNightRegion).getByRole("checkbox", { name: /select launch console row iron house gym/i })).toBeChecked();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview console signals/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply", {
+      json: expect.objectContaining({
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH OUTCOME SIGNALS",
+        dryRun: true,
+        grossRevenue: 180,
+        netProfit: 92,
+        signalIds: ["business_fleet_launch_signal_store-1"],
+        source: "manual",
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey),
+        unitsSold: 6,
+        visits: 210
+      }),
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch console outcome signal preview ready: 1 signal selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /record console signals/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply", {
+      json: expect.objectContaining({
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH OUTCOME SIGNALS",
+        dryRun: false,
+        grossRevenue: 180,
+        netProfit: 92,
+        signalIds: ["business_fleet_launch_signal_store-1"],
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      }),
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch console outcome signals recorded: 1 signal recorded.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load outcome signals/i }));
+
+    const launchOutcomeParams = new URLSearchParams();
+    launchOutcomeParams.set("launchWaveSize", "10");
+    launchOutcomeParams.set("maxAssignments", "10");
+    launchOutcomeParams.set("maxAssignmentsPerWorker", "1");
+    launchOutcomeParams.set("maxLeases", "10");
+    launchOutcomeParams.set("maxLeasesPerShard", "1");
+    launchOutcomeParams.set("maxParallelLaunches", "10");
+    launchOutcomeParams.set("maxParallelScaleActions", "25");
+    launchOutcomeParams.set("maxSignals", "10");
+    launchOutcomeParams.set("maxStores", "10");
+    launchOutcomeParams.set("maxWorkers", "10");
+    launchOutcomeParams.set("qualityFloor", "75");
+    launchOutcomeParams.set("shardCount", "10");
+    launchOutcomeParams.set("targetBusinesses", "1000");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      launchOutcomeParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals?${launchOutcomeParams.toString()}`);
+    expect(await screen.findByText("Launch outcome signals loaded: 1 ready, 0 recorded, 0 waiting.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Business Fleet Launch Outcome Signals")).toBeInTheDocument();
+    expect(within(gapRegion).getByRole("region", { name: /business fleet launch outcome signal table/i })).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview launch outcome signals/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply", {
+      json: expect.objectContaining({
+        adSpend: 12,
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH OUTCOME SIGNALS",
+        dryRun: true,
+        grossRevenue: 180,
+        maxSignals: 10,
+        netProfit: 92,
+        signalIds: ["business_fleet_launch_signal_store-1"],
+        source: "manual",
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey),
+        unitsSold: 6,
+        visits: 210
+      }),
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch outcome signal preview ready: 1 signal selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /record launch outcome signals/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-outcome-signals/apply", {
+      json: expect.objectContaining({
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH OUTCOME SIGNALS",
+        dryRun: false,
+        grossRevenue: 180,
+        netProfit: 92,
+        signalIds: ["business_fleet_launch_signal_store-1"],
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey)
+      }),
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch outcome signals recorded: 1 signal recorded.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load cash cycle/i }));
+
+    const launchCashCycleParams = new URLSearchParams();
+    launchCashCycleParams.set("launchWaveSize", "10");
+    launchCashCycleParams.set("maxAssignments", "10");
+    launchCashCycleParams.set("maxAssignmentsPerWorker", "1");
+    launchCashCycleParams.set("maxLeases", "10");
+    launchCashCycleParams.set("maxLeasesPerShard", "1");
+    launchCashCycleParams.set("maxParallelLaunches", "10");
+    launchCashCycleParams.set("maxParallelScaleActions", "25");
+    launchCashCycleParams.set("maxSignals", "10");
+    launchCashCycleParams.set("maxSteps", "8");
+    launchCashCycleParams.set("maxStores", "10");
+    launchCashCycleParams.set("maxWorkers", "10");
+    launchCashCycleParams.set("qualityFloor", "75");
+    launchCashCycleParams.set("shardCount", "10");
+    launchCashCycleParams.set("targetBusinesses", "1000");
+    for (const seed of businessFleetGapPlan.opportunitySeeds) {
+      launchCashCycleParams.append("sourceKeys", seed.sourceKey);
+    }
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle?${launchCashCycleParams.toString()}`);
+    expect(await screen.findByText("Launch cash cycle loaded: 1 ready step, 1 approval review. Next: Verify internal safety envelope.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Business Fleet Launch Cash Cycle")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("1 cash-cycle step ready, 1 approval review, and 1/10 clean launch lanes. Next: Verify internal safety envelope.")).toBeInTheDocument();
+    expect(within(gapRegion).getByRole("region", { name: /business fleet launch cash cycle table/i })).toBeInTheDocument();
+    expect(within(gapRegion).getByText("review scale budget packets")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview cash command/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/apply", {
+      json: {
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND",
+        dryRun: true,
+        launchWaveSize: 10,
+        maxAssignments: 10,
+        maxAssignmentsPerWorker: 1,
+        maxLeases: 10,
+        maxLeasesPerShard: 1,
+        maxParallelLaunches: 10,
+        maxParallelScaleActions: 25,
+        maxSignals: 10,
+        maxSteps: 8,
+        maxStores: 10,
+        maxWorkers: 10,
+        note: "Previewed from Business Fleet launch cash-cycle dashboard controls.",
+        qualityFloor: 75,
+        shardCount: 10,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey),
+        targetBusinesses: 1000
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch cash-cycle command preview ready: 1 command selected.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /record cash command/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/apply", {
+      json: expect.objectContaining({
+        confirm: "RECORD INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND",
+        dryRun: false,
+        maxSteps: 8,
+        sourceKeys: businessFleetGapPlan.opportunitySeeds.map((seed) => seed.sourceKey),
+        targetBusinesses: 1000
+      }),
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch cash-cycle command recorded: 1 command queued.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("audit audit-business-fleet-launch-cash-cycle-1 / command portfolio-command-cash-cycle-1 / external execution locked")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /load cash command queue/i }));
+
+    const launchCashCommandQueueParams = new URLSearchParams();
+    launchCashCommandQueueParams.set("maxCommands", "10");
+    launchCashCommandQueueParams.append("statuses", "queued");
+    launchCashCommandQueueParams.append("statuses", "blocked");
+
+    expect(apiFetch).toHaveBeenLastCalledWith(`/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/commands?${launchCashCommandQueueParams.toString()}`);
+    expect(await screen.findByText("Launch cash command queue loaded: 1 runnable, 0 blocked.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("Business Fleet Launch Cash Command Queue")).toBeInTheDocument();
+    expect(within(gapRegion).getByRole("region", { name: /business fleet launch cash command queue table/i })).toBeInTheDocument();
+    expect(within(gapRegion).getAllByText("internal advisory cycle ready").length).toBeGreaterThan(0);
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview cash queue resolve/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/commands/apply", {
+      json: {
+        commandRecordIds: ["portfolio-command-cash-cycle-1"],
+        confirm: "RESOLVE INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND QUEUE",
+        dryRun: true,
+        maxCommands: 10,
+        note: "Previewed from Business Fleet launch cash command queue controls.",
+        resolution: "applied",
+        statuses: ["queued", "blocked"]
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch cash command queue preview ready: 1 command would resolve.")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /resolve cash queue/i }));
+
+    expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-gap/launch-cash-cycle/commands/apply", {
+      json: {
+        commandRecordIds: ["portfolio-command-cash-cycle-1"],
+        confirm: "RESOLVE INTERNAL BUSINESS FLEET LAUNCH CASH CYCLE COMMAND QUEUE",
+        dryRun: false,
+        maxCommands: 10,
+        note: "Resolved from Business Fleet launch cash command queue controls.",
+        resolution: "applied",
+        statuses: ["queued", "blocked"]
+      },
+      method: "POST"
+    });
+    expect(await screen.findByText("Launch cash command queue resolved: 1 command marked applied.")).toBeInTheDocument();
+    expect(within(gapRegion).getByText("audit audit-business-fleet-launch-cash-command-queue-1 / external execution locked")).toBeInTheDocument();
+
+    await clickAndFlush(screen.getByRole("button", { name: /preview launch wave/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/business-fleet-scheduler/launch-wave/apply", {
       json: {
@@ -11291,7 +12137,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("1 business selected for the internal launch wave from 1 eligible ready-parallel lane.")).toBeInTheDocument();
     expect(within(region).getByText("Launch Wave Receipt")).toBeInTheDocument();
     expect(within(region).getByText("1 first-business launch action previewed from the fleet wave.")).toBeInTheDocument();
-  }, 10_000);
+  }, 90_000);
 
   it("loads and applies the private Money Army batch pipeline through the dashboard", async () => {
     const onRefreshStores = vi.fn();

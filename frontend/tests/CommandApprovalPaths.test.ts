@@ -85,31 +85,27 @@ function baseState(): CommandOSState<TestNode> {
 }
 
 function merchWorkflowNodes() {
-  const commanderSpecs = [
-    ["Client Intake Commander", ["Business Profile Soldier", "Audience Soldier", "Notes Soldier"]],
-    ["Brand Commander", ["Brand Voice Soldier"]],
-    ["Niche Research Commander", ["Niche Scanner Soldier", "Product Opportunity Soldier"]],
-    ["Design Commander", ["Design Concept Soldier", "Prompt Soldier"]],
-    ["Listing Commander", ["Title Soldier"]],
-    ["Compliance Commander", ["Trademark Risk Soldier"]],
-    ["Store Launch Commander", ["Shopify Setup Soldier", "Launch QA Soldier"]],
-    ["Reporting Commander", ["Weekly Report Soldier", "Opportunity Report Soldier"]]
+  const operationalSoldiers = [
+    "Client Intake Soldier",
+    "Brand Soldier",
+    "Niche Research Soldier",
+    "Design Soldier",
+    "Listing Soldier",
+    "Compliance Soldier",
+    "Store Launch Soldier",
+    "Reporting Soldier"
   ] as const;
 
   const nodes: Array<{ id: string; name: string; parentId: string | null; status: CommandStatus; type: NodeType }> = [
     { id: "entral", name: "ENTRAL", parentId: null, status: "thinking" as const, type: "emperor" as const },
     { id: "merch-marshal", name: "Merch Marshal", parentId: "entral", status: "idle" as const, type: "marshal" as const },
-    { id: "iron-house-gym", name: "Iron House Gym General", parentId: "merch-marshal", status: "idle" as const, type: "general" as const }
+    { id: "pod-general", name: "POD General", parentId: "merch-marshal", status: "idle" as const, type: "general" as const },
+    { id: "iron-house-gym", name: "Iron House Gym Commander", parentId: "pod-general", status: "idle" as const, type: "commander" as const }
   ];
 
-  for (const [commanderName, soldiers] of commanderSpecs) {
-    const commanderId = commanderName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    nodes.push({ id: commanderId, name: commanderName, parentId: "iron-house-gym", status: "idle" as const, type: "commander" as const });
-
-    for (const soldierName of soldiers) {
-      const soldierId = soldierName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      nodes.push({ id: `${commanderId}-${soldierId}`, name: soldierName, parentId: commanderId, status: "idle" as const, type: "soldier" as const });
-    }
+  for (const soldierName of operationalSoldiers) {
+    const soldierId = soldierName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    nodes.push({ id: `iron-house-gym-${soldierId}`, name: soldierName, parentId: "iron-house-gym", status: "idle" as const, type: "soldier" as const });
   }
 
   return nodes;
@@ -206,7 +202,7 @@ describe("Command approval paths", () => {
     expect(preview.tasks).toHaveLength(merchLaunchWorkflowSteps.length);
     expect(preview.tasks.every((item) => item.delegationPath[0] === "entral")).toBe(true);
     expect(preview.tasks.every((item) => item.marshalId === "merch-marshal")).toBe(true);
-    expect(preview.tasks.every((item) => item.generalId === "iron-house-gym")).toBe(true);
+    expect(preview.tasks.every((item) => item.generalId === "pod-general")).toBe(true);
     expect(preview.tasks.every((item) => item.commanderId && item.soldierId)).toBe(true);
   });
 });

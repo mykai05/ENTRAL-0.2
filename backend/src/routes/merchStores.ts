@@ -986,7 +986,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
       if (continuationAuditLogId) redirectUrl.searchParams.set("continuationAuditLogId", continuationAuditLogId);
       redirectUrl.searchParams.set("shopifyVerification", "failed");
 
-      return reply.redirect(302, redirectUrl.toString());
+      return reply.redirect(redirectUrl.toString(), 302);
     }
 
     const connection = await upsertShopifyConnection({
@@ -1123,7 +1123,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     if (continuationAuditLogId) redirectUrl.searchParams.set("continuationAuditLogId", continuationAuditLogId);
     if (continuationRunStatus) redirectUrl.searchParams.set("shopifyAutonomyStatus", continuationRunStatus);
 
-    return reply.redirect(302, redirectUrl.toString());
+    return reply.redirect(redirectUrl.toString(), 302);
   });
 
   app.post("/merch/stores/:storeId/shopify-connection", { preHandler: requireAuth }, async (request, reply) => {

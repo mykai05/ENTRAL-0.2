@@ -35,7 +35,7 @@ function isReportCenterCommand(normalized: string) {
 }
 
 function isBusinessListCommand(normalized: string) {
-  return /\b(show|open|view|list|display)\s+(my\s+|all\s+)?(businesses|business generals|clients|stores|brands)\b/i.test(normalized);
+  return /\b(show|open|view|list|display)\s+(my\s+|all\s+)?(businesses|business commanders|clients|stores|brands)\b/i.test(normalized);
 }
 
 function isGravityGuideCommand(normalized: string) {

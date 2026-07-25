@@ -96,5 +96,14 @@ export function DashboardClient() {
     );
   }
 
+  if (!user) {
+    return (
+      <main className="command-center-page command-center-loading" role="status" aria-live="polite">
+        <Loader2 aria-hidden="true" size={28} className="spin" />
+        <p>Returning to verified account access...</p>
+      </main>
+    );
+  }
+
   return <NeuronsCommandCenter user={user} onLogout={handleLogout} />;
 }

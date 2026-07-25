@@ -29,6 +29,9 @@ describe("command creation helpers", () => {
       recommendation: "Do not create Generals directly under ENTRAL.",
       situation: "General creation blocked by hierarchy requirements."
     });
-    expect(creationBlockedTransmission("soldier").analysis).toContain("must belong to a Commander");
+    expect(creationBlockedTransmission("general").analysis).toContain("one niche");
+    expect(creationBlockedTransmission("commander").analysis).toContain("one business");
+    expect(creationBlockedTransmission("soldier").analysis).toContain("must belong to a business Commander");
+    expect(creationBlockedTransmission("soldier").analysis).toContain("operational function");
   });
 });
