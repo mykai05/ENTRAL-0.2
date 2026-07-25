@@ -208,7 +208,10 @@ async function checkLiveDeployment() {
 
   try {
     const response = await fetch(liveUrl, {
-      headers: { "user-agent": "entral-release-readiness/1.0" },
+      headers: {
+        connection: "close",
+        "user-agent": "entral-release-readiness/1.0"
+      },
       signal: controller.signal
     });
     const html = await response.text();
