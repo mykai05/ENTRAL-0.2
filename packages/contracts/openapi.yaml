@@ -1,10 +1,11 @@
 openapi: 3.1.0
 info:
-  title: ENTRAL implemented member API
-  version: 1.0.0
+  title: ENTRAL implemented API
+  version: 1.1.0
   description: >
-    Gate 130 contract surface. Only paths with complete backend behavior are
-    included; future canonical control-plane paths are intentionally absent.
+    Gate 140 contract surface. Only paths with complete backend behavior are
+    included. Canonical control-plane paths require internal Admin
+    authentication and database-enforced Human authority where applicable.
 paths:
   /api/v1/member/organizations:
     get:
@@ -41,6 +42,96 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/control-plane/hierarchy:
+    get:
+      operationId: listCanonicalHierarchy
+      summary: List canonical ENTRAL hierarchy entities from PostgreSQL.
+      responses:
+        "200":
+          description: Canonical hierarchy.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [entities]
+                properties:
+                  entities:
+                    type: array
+                    items: { $ref: "#/components/schemas/CanonicalEntitySummary" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/control-plane/businesses:
+    get:
+      operationId: listCanonicalBusinesses
+      summary: List canonical ENTRAL businesses from PostgreSQL.
+      responses:
+        "200":
+          description: Canonical businesses.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [businesses]
+                properties:
+                  businesses:
+                    type: array
+                    items: { $ref: "#/components/schemas/CanonicalBusinessSummary" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/control-plane/businesses/{businessId}:
+    get:
+      operationId: getCanonicalBusiness
+      summary: Get one canonical ENTRAL business from PostgreSQL.
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Canonical business.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [business]
+                properties:
+                  business: { $ref: "#/components/schemas/CanonicalBusinessSummary" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/control-plane/governance-actions:
+    post:
+      operationId: createCanonicalGovernanceAction
+      summary: Create an idempotent Human-authorized governance proposal.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GovernanceActionRequest" }
+      responses:
+        "201":
+          description: Governance proposal recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [action]
+                properties:
+                  action: { $ref: "#/components/schemas/GovernanceActionRecord" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
 components:
   responses:
     Unauthorized:
@@ -50,12 +141,204 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorEnvelope"
     NotFound:
-      description: The organization is absent or outside the caller's scope.
+      description: The requested record is absent or outside the caller's scope.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    BadRequest:
+      description: The request does not satisfy the canonical contract.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Forbidden:
+      description: The caller lacks the required internal or Human authority.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Conflict:
+      description: Idempotency, scope, or expected-version conflict.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorEnvelope"
   schemas:
+    EntityRole:
+      type: string
+      enum: [ENTRAL, MARSHAL, GENERAL, COMMANDER, SOLDIER]
+    EntityStatus:
+      type: string
+      enum: [BUILDING, ACTIVE, PAUSED, DEGRADED, RETIRED]
+    HealthState:
+      type: string
+      enum: [HEALTHY, WATCH, DEGRADED, CRITICAL, UNKNOWN]
+    CanonicalEntitySummary:
+      type: object
+      additionalProperties: false
+      required:
+        - entity_id
+        - stable_code
+        - entity_type
+        - name
+        - status
+        - health
+        - parent_id
+        - child_count
+        - assigned_business_id
+        - model_class
+        - compute_tier
+        - current_mission
+        - active_task_count
+        - latest_material_result
+        - active_alert
+        - updated_at
+        - version
+      properties:
+        entity_id: { type: string, format: uuid }
+        stable_code: { type: string, minLength: 1 }
+        entity_type: { $ref: "#/components/schemas/EntityRole" }
+        name: { type: string, minLength: 1 }
+        status: { $ref: "#/components/schemas/EntityStatus" }
+        health: { $ref: "#/components/schemas/HealthState" }
+        parent_id: { type: [string, "null"], format: uuid }
+        child_count: { type: integer, minimum: 0 }
+        assigned_business_id: { type: [string, "null"], format: uuid }
+        model_class: { type: [string, "null"] }
+        compute_tier: { type: [string, "null"] }
+        current_mission: { type: [string, "null"] }
+        active_task_count: { type: integer, minimum: 0 }
+        latest_material_result: {}
+        active_alert: { type: [string, "null"] }
+        updated_at: { type: string, format: date-time }
+        version: { type: integer, minimum: 1 }
+    CanonicalBusinessSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - business_id
+        - stable_code
+        - business_name
+        - commander_id
+        - general_id
+        - general_name
+        - marshal_id
+        - marshal_name
+        - status
+        - health_state
+        - health_score
+        - health_drivers
+        - revenue_period_start
+        - revenue_period_end
+        - gross_revenue
+        - net_contribution
+        - currency
+        - capital_available
+        - agent_count
+        - tool_count
+        - automation_count
+        - integration_count
+        - active_mission_count
+        - active_task_count
+        - primary_objective
+        - top_exception
+        - top_recommendation
+        - updated_at
+        - source_freshness
+        - version
+      properties:
+        business_id: { type: string, format: uuid }
+        stable_code: { type: string, minLength: 1 }
+        business_name: { type: string, minLength: 1 }
+        commander_id: { type: string, format: uuid }
+        general_id: { type: string, format: uuid }
+        general_name: { type: string, minLength: 1 }
+        marshal_id: { type: string, format: uuid }
+        marshal_name: { type: string, minLength: 1 }
+        status: { type: string, enum: [BUILDING, OPERATING, PAUSED, DEGRADED, RETIRED] }
+        health_state: { $ref: "#/components/schemas/HealthState" }
+        health_score: { type: [number, "null"], minimum: 0, maximum: 100 }
+        health_drivers: { type: array, items: { type: object } }
+        revenue_period_start: { type: [string, "null"], format: date-time }
+        revenue_period_end: { type: [string, "null"], format: date-time }
+        gross_revenue: { type: [number, "null"] }
+        net_contribution: { type: [number, "null"] }
+        currency: { type: [string, "null"] }
+        capital_available: { type: [number, "null"] }
+        agent_count: { type: integer, minimum: 0 }
+        tool_count: { type: integer, minimum: 0 }
+        automation_count: { type: integer, minimum: 0 }
+        integration_count: { type: integer, minimum: 0 }
+        active_mission_count: { type: integer, minimum: 0 }
+        active_task_count: { type: integer, minimum: 0 }
+        primary_objective: { type: [string, "null"] }
+        top_exception: { type: [string, "null"] }
+        top_recommendation: { type: [string, "null"] }
+        updated_at: { type: string, format: date-time }
+        source_freshness: { type: object, additionalProperties: { type: [string, "null"] } }
+        version: { type: integer, minimum: 1 }
+    GovernanceActionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - action_id
+        - action_type
+        - actor_type
+        - actor_id
+        - scope
+        - target_type
+        - target_id
+        - business_id
+        - requested_outcome
+        - reason
+        - authority_basis
+        - risk_class
+        - proposed_changes
+        - rollback_plan
+        - verification_plan
+        - expected_version
+        - idempotency_key
+        - requested_at
+      properties:
+        action_id: { type: string, format: uuid }
+        action_type:
+          type: string
+          enum: [CREATE, EDIT, PAUSE, RESUME, RECONFIGURE, DUPLICATE, REASSIGN, RETARGET, RETIRE, RESTORE, ROLLBACK, ISOLATE, REPAIR, BUDGET_CHANGE, MODEL_CHANGE, TOOL_GRANT_CHANGE, POLICY_CHANGE, SCHEDULE_CHANGE]
+        actor_type: { type: string, enum: [HUMAN, ENTRAL] }
+        actor_id: { type: string, format: uuid }
+        scope: { type: object }
+        target_type:
+          type: string
+          enum: [ENTITY, BUSINESS, MISSION, TASK, TOOL_GRANT, SCHEDULE, POLICY, GOVERNANCE_ACTION, SYSTEM]
+        target_id: { type: [string, "null"], format: uuid }
+        business_id: { type: [string, "null"], format: uuid }
+        requested_outcome: { type: string, minLength: 1, maxLength: 2000 }
+        reason: { type: string, minLength: 3, maxLength: 2000 }
+        authority_basis: {}
+        risk_class: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        proposed_changes: {}
+        rollback_plan: {}
+        verification_plan: {}
+        expected_version: { type: integer, minimum: 0 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        requested_at: { type: string, format: date-time }
+    GovernanceActionRecord:
+      type: object
+      additionalProperties: false
+      required: [action_id, action_type, business_id, expected_version, idempotency_key, requested_at, status, target_id, target_type, version]
+      properties:
+        action_id: { type: string, format: uuid }
+        action_type: { type: string }
+        business_id: { type: [string, "null"], format: uuid }
+        expected_version: { type: integer, minimum: 0 }
+        idempotency_key: { type: string }
+        requested_at: { type: string, format: date-time }
+        status: { type: string, enum: [PROPOSED] }
+        target_id: { type: [string, "null"], format: uuid }
+        target_type: { type: string }
+        version: { type: integer, minimum: 1 }
     MemberOrganizationRole:
       type: string
       enum: [MEMBER, OWNER]
@@ -276,5 +559,7 @@ components:
       additionalProperties: false
       required: [error, message]
       properties:
+        code: { type: string }
         error: { type: string }
         message: { type: string }
+        requestId: { type: string }
