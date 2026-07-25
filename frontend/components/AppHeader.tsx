@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import React, { type ReactNode, useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "./BrandMark";
+import { MemberDestinationNav, memberDestinationForPath } from "./MemberDestinationNav";
 import { ModeStatusStrip, authenticatedModeItems, localModeItems } from "./ModeStatus";
 import { readAuthenticatedUserSession } from "../lib/auth-session";
 
@@ -14,35 +14,13 @@ type AppHeaderProps = {
   title: string;
 };
 
-const navItems = [
-  { href: "/dashboard", label: "Command Center" },
-  { href: "/chat", label: "Communications" },
-  { href: "/automations", label: "Automations" },
-  { href: "/agents", label: "Agents" }
-];
-
 function readSessionRole() {
   return readAuthenticatedUserSession()?.role ?? null;
 }
 
-function NavLinks({ isAdmin }: { isAdmin: boolean }) {
+function NavLinks() {
   const pathname = usePathname();
-  const items = isAdmin ? [...navItems, { href: "/admin", label: "Governance" }] : navItems;
-
-  return (
-    <>
-      {items.map((item) => (
-        <Link
-          aria-current={pathname.startsWith(item.href) ? "page" : undefined}
-          className={pathname.startsWith(item.href) ? "app-nav-link active" : "app-nav-link"}
-          href={item.href}
-          key={item.href}
-        >
-          {item.label}
-        </Link>
-      ))}
-    </>
-  );
+  return <MemberDestinationNav current={memberDestinationForPath(pathname)} />;
 }
 
 export function AppHeader({ actions, subtitle, title }: AppHeaderProps) {
@@ -69,7 +47,6 @@ export function AppHeader({ actions, subtitle, title }: AppHeaderProps) {
   }, []);
 
   const isAuthenticated = sessionRole === "USER" || sessionRole === "ADMIN";
-  const isAdmin = sessionRole === "ADMIN";
 
   return (
     <header className="app-header">
@@ -80,17 +57,17 @@ export function AppHeader({ actions, subtitle, title }: AppHeaderProps) {
           <p>{subtitle}</p>
         </div>
       </div>
-      <nav className="app-nav" aria-label="Primary navigation">
-        <NavLinks isAdmin={isAdmin} />
-      </nav>
+      <div className="app-nav">
+        <NavLinks />
+      </div>
       <details className="mobile-nav">
         <summary aria-label="Open navigation menu">
           <Menu aria-hidden="true" size={18} />
           Menu
         </summary>
-        <nav aria-label="Mobile navigation">
-          <NavLinks isAdmin={isAdmin} />
-        </nav>
+        <div>
+          <NavLinks />
+        </div>
       </details>
       {actions ? <div className="nav-actions">{actions}</div> : null}
       <ModeStatusStrip

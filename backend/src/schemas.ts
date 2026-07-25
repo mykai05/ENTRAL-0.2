@@ -3,10 +3,58 @@ import { z } from "zod";
 export const emailSchema = z.string().trim().email().transform((value) => value.toLowerCase());
 const authFlowSchema = z.enum(["internal", "member"]).default("internal");
 
+const canonicalMemberPathnames = new Set([
+  "/dashboard",
+  "/graph",
+  "/infrastructure",
+  "/member/dashboard",
+  "/member/graph",
+  "/member/infrastructure"
+]);
+const memberReturnPathBaseUrl = "https://member.entral.invalid";
+
+export function safeCanonicalMemberReturnPath(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const candidate = value.trim();
+  if (!candidate || candidate.length > 2048 || candidate.includes("#") || candidate.includes("\\")) {
+    return undefined;
+  }
+
+  const queryIndex = candidate.indexOf("?");
+  const pathname = queryIndex === -1 ? candidate : candidate.slice(0, queryIndex);
+  if (!canonicalMemberPathnames.has(pathname)) {
+    return undefined;
+  }
+
+  try {
+    const parsed = new URL(candidate, memberReturnPathBaseUrl);
+    if (parsed.origin !== memberReturnPathBaseUrl || parsed.pathname !== pathname) {
+      return undefined;
+    }
+
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return undefined;
+  }
+}
+
+export const memberReturnPathSchema = z.string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .refine((value) => safeCanonicalMemberReturnPath(value) !== undefined, {
+    message: "Return path must target a canonical ENTRAL member destination."
+  })
+  .transform((value) => safeCanonicalMemberReturnPath(value) as string);
+
 export const signupSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: emailSchema,
-  password: z.string().min(8).max(128)
+  password: z.string().min(8).max(128),
+  next: memberReturnPathSchema.optional()
 });
 
 export const loginSchema = z.object({
@@ -29,7 +77,8 @@ export const confirmPasswordResetSchema = z.object({
 
 export const requestEmailVerificationSchema = z.object({
   email: emailSchema,
-  flow: authFlowSchema
+  flow: authFlowSchema,
+  next: memberReturnPathSchema.optional()
 });
 
 export const confirmEmailVerificationSchema = z.object({

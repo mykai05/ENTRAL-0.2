@@ -88,6 +88,7 @@ export function ChatWindow() {
   const [inputError, setInputError] = useState("");
   const [draftPrompt, setDraftPrompt] = useState("");
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] = useState(true);
+  const [isProviderReady, setIsProviderReady] = useState(false);
   const [usageRefreshIndex, setUsageRefreshIndex] = useState(0);
   const [accessState, setAccessState] = useState<"checking" | "authorized" | "denied" | "unavailable">("checking");
   const logRef = useRef<HTMLDivElement>(null);
@@ -157,6 +158,11 @@ export function ChatWindow() {
   async function submitChatMessage(text: string, screenshot?: string) {
     setInputError("");
     setError("");
+
+    if (!isProviderReady) {
+      setInputError("Directives are disabled until a real AI provider is connected and within its budget limits.");
+      return false;
+    }
 
     const parsed = chatFormSchema.safeParse({
       message: text
@@ -402,12 +408,17 @@ export function ChatWindow() {
           <span>Conversation history is saved to your workspace. Screen analysis only uses frames you choose to share.</span>
         </p>
 
-        <AiUsageGuardrail refreshIndex={usageRefreshIndex} />
+        <AiUsageGuardrail onProviderReadyChange={setIsProviderReady} refreshIndex={usageRefreshIndex} />
+        {!isProviderReady ? (
+          <p className="phase110-read-only-notice" role="note">
+            Read-only conversation history. Sending directives and screen analysis stay disabled until a real AI provider is connected and within its budget limits.
+          </p>
+        ) : null}
 
         {error ? <p className="form-error" role="alert">{error}</p> : null}
 
         <ScreenShareControls
-          disabled={isSending || isLoading}
+          disabled={isSending || isLoading || !isProviderReady}
           onAnalyze={handleAnalyzeScreen}
           onError={(message) => {
             setError(message);
@@ -456,7 +467,7 @@ export function ChatWindow() {
           ) : null}
         </div>
 
-        <ChatInput disabled={isSending || isLoading} error={inputError} initialText={draftPrompt} onSend={handleSendMessage} />
+        <ChatInput disabled={isSending || isLoading || !isProviderReady} error={inputError} initialText={draftPrompt} onSend={handleSendMessage} />
 
       </div>
     </section>

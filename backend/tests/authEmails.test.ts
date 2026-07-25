@@ -16,13 +16,18 @@ describe("auth email content", () => {
     const { buildPasswordResetUrl, buildVerificationUrl } = await import("../src/services/authEmails.js");
 
     expect(buildVerificationUrl("verify-token")).toBe("https://app.entral.test/verify-email?token=verify-token");
+    expect(buildVerificationUrl("verify-token", "internal", "/graph?focus=agent_123")).toBe(
+      "https://app.entral.test/verify-email?token=verify-token&next=%2Fgraph%3Ffocus%3Dagent_123"
+    );
     expect(buildPasswordResetUrl("reset-token")).toBe("https://app.entral.test/reset-password?token=reset-token");
   });
 
   it("keeps member recovery and verification links inside the member experience", async () => {
     const { buildPasswordResetUrl, buildVerificationUrl, verificationEmailContent } = await import("../src/services/authEmails.js");
 
-    expect(buildVerificationUrl("verify-token", "member")).toBe("https://app.entral.test/member/verify-email?token=verify-token");
+    expect(buildVerificationUrl("verify-token", "member", "/member/graph?focus=agent_123")).toBe(
+      "https://app.entral.test/member/verify-email?token=verify-token&next=%2Fmember%2Fgraph%3Ffocus%3Dagent_123"
+    );
     expect(buildPasswordResetUrl("reset-token", "member")).toBe("https://app.entral.test/member/password-reset?token=reset-token");
     expect(verificationEmailContent({
       flow: "member",
@@ -30,6 +35,24 @@ describe("auth email content", () => {
       to: "ada@example.com",
       token: "verify-token"
     }).text).toContain("member workspace");
+  });
+
+  it.each([
+    ["internal", "https://evil.example/graph"],
+    ["internal", "//evil.example/graph"],
+    ["internal", "/"],
+    ["internal", "/login"],
+    ["internal", "/chat"],
+    ["internal", "/graph#outside"],
+    ["member", "/graph"],
+    ["internal", "/member/graph"]
+  ] as const)("omits unsafe or cross-surface verification return path %s %s", async (flow, next) => {
+    const { buildVerificationUrl } = await import("../src/services/authEmails.js");
+    const path = flow === "member" ? "/member/verify-email" : "/verify-email";
+
+    expect(buildVerificationUrl("verify-token", flow, next)).toBe(
+      `https://app.entral.test${path}?token=verify-token`
+    );
   });
 
   it("keeps the safety positioning in auth emails", async () => {

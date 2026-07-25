@@ -6,7 +6,7 @@ import { AppHeader } from "../components/AppHeader";
 import { ModeBadge, ModeStatusStrip, authenticatedModeItems } from "../components/ModeStatus";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/agents"
+  usePathname: () => "/infrastructure"
 }));
 
 describe("ModeStatus", () => {
@@ -26,9 +26,9 @@ describe("ModeStatus", () => {
 
   it("adds the real mode strip only to confirmed authenticated app headers", async () => {
     window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({ role: "USER" }));
-    render(<AppHeader title="Agent Management" subtitle="Create and review agents." />);
+    render(<AppHeader title="Infrastructure" subtitle="Inspect records." />);
 
     expect(await screen.findByRole("group", { name: "Authenticated workspace mode status" })).toHaveTextContent("Real account");
-    expect(screen.getAllByRole("link", { name: "Agents" }).some((link) => link.getAttribute("aria-current") === "page")).toBe(true);
+    expect(screen.getAllByRole("link", { name: "Infrastructure" }).some((link) => link.getAttribute("aria-current") === "page")).toBe(true);
   });
 });

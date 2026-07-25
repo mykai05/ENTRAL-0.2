@@ -258,12 +258,14 @@ import {
   selectRevenueSignalImportJobsForHandoff
 } from "./services/revenueSignalImportHandoff.js";
 import type { AiActionPlan } from "./services/aiBrain.js";
+import { safeCanonicalMemberReturnPath } from "./schemas.js";
 
 config({ path: resolve(process.cwd(), ".env") });
 config({ path: resolve(process.cwd(), "../.env") });
 
 type User = {
   email: string;
+  emailVerifiedAt: string | null;
   id: string;
   name: string;
   password: string;
@@ -824,7 +826,8 @@ const state = {
   sessions: new Map<string, string>(),
   tasks: [] as Task[],
   teams: new Map<string, Team>(),
-  users: new Map<string, User>()
+  users: new Map<string, User>(),
+  verificationTokens: new Map<string, string>()
 };
 
 const openAiModel = process.env.OPENAI_MODEL?.trim() || "gpt-4o";
@@ -1030,7 +1033,7 @@ function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "team";
 }
 
-function createUser(input: { email: string; name?: string; password?: string }) {
+function createUser(input: { email: string; name?: string; password?: string; verified?: boolean }) {
   const existing = [...state.users.values()].find((user) => user.email.toLowerCase() === input.email.toLowerCase());
 
   if (existing) {
@@ -1040,6 +1043,7 @@ function createUser(input: { email: string; name?: string; password?: string }) 
   const name = titleCaseName(input.name ?? input.email.split("@")[0] ?? "Demo User");
   const user: User = {
     email: input.email.toLowerCase(),
+    emailVerifiedAt: input.verified === false ? null : now(),
     id: id("user"),
     name,
     password: input.password ?? "password123",
@@ -1183,6 +1187,11 @@ function deleteMemoryAccount(userId: string) {
       state.sessions.delete(token);
     }
   }
+  for (const [token, verificationUserId] of state.verificationTokens.entries()) {
+    if (verificationUserId === userId) {
+      state.verificationTokens.delete(token);
+    }
+  }
   state.users.delete(userId);
 }
 
@@ -1199,6 +1208,16 @@ function setSession(reply: FastifyReply, user: User) {
 
 function clearSession(reply: FastifyReply) {
   reply.clearCookie("entral_token", { path: "/" });
+}
+
+function memoryVerificationUrl(token: string, next?: string) {
+  const url = new URL("/verify-email", process.env.APP_PUBLIC_URL ?? "http://localhost:3000");
+  url.searchParams.set("token", token);
+  const safeNext = safeCanonicalMemberReturnPath(next);
+  if (safeNext) {
+    url.searchParams.set("next", safeNext);
+  }
+  return url.toString();
 }
 
 function getCurrentUser(request: FastifyRequest) {
@@ -8236,35 +8255,83 @@ app.get("/api/v1/health", async () => ({
 }));
 
 app.post("/api/v1/signup", async (request, reply) => {
-  const body = request.body as { email?: string; name?: string; password?: string };
+  const body = request.body as { email?: string; name?: string; next?: string; password?: string };
   const user = createUser({
     email: body.email ?? "demo@entral.local",
     name: body.name,
-    password: body.password
+    password: body.password,
+    verified: false
   });
   const team = teamsForUser(user.id)[0];
-  setSession(reply, user);
+  const verificationToken = id("dev_verification");
+  state.verificationTokens.set(verificationToken, user.id);
 
   return reply.code(201).send({
     email: user.email,
     id: user.id,
     team,
-    user: publicUser(user)
+    user: publicUser(user),
+    verificationRequired: true,
+    verificationUrl: memoryVerificationUrl(verificationToken, body.next)
   });
 });
 
 app.post("/api/v1/login", async (request, reply) => {
   const body = request.body as { email?: string; password?: string };
   const email = body.email ?? "demo@entral.local";
-  const user = [...state.users.values()].find((item) => item.email === email.toLowerCase())
-    ?? createUser({ email, name: email.split("@")[0], password: body.password });
+  const user = [...state.users.values()].find((item) => item.email === email.toLowerCase());
 
-  if (body.password && user.password !== body.password) {
-    user.password = body.password;
+  if (!user || !body.password || user.password !== body.password) {
+    return reply.code(401).send({ error: "Unauthorized", message: "Email or password is incorrect." });
   }
 
-  const token = setSession(reply, user);
-  return reply.send({ token, user: publicUser(user) });
+  if (!user.emailVerifiedAt) {
+    return reply.code(403).send({
+      error: "Forbidden",
+      message: "Verify your email before signing in. Check your inbox or request a new verification email."
+    });
+  }
+
+  setSession(reply, user);
+  return reply.send({ user: publicUser(user) });
+});
+
+app.post("/api/v1/email-verification/request", async (request, reply) => {
+  const body = request.body as { email?: string; next?: string };
+  const user = [...state.users.values()].find((item) => item.email === body.email?.toLowerCase());
+  let verificationUrl: string | undefined;
+
+  if (user && !user.emailVerifiedAt) {
+    const verificationToken = id("dev_verification");
+    state.verificationTokens.set(verificationToken, user.id);
+    verificationUrl = memoryVerificationUrl(verificationToken, body.next);
+  }
+
+  return reply.send({
+    message: "If this email belongs to an unverified ENTRAL account, a verification link has been sent.",
+    verificationUrl
+  });
+});
+
+app.post("/api/v1/email-verification/confirm", async (request, reply) => {
+  const body = request.body as { token?: string };
+  const userId = body.token ? state.verificationTokens.get(body.token) : undefined;
+  const user = userId ? state.users.get(userId) : undefined;
+
+  if (!body.token || !user) {
+    return reply.code(400).send({
+      error: "Bad Request",
+      message: "This verification link is invalid or expired. Request a new verification email."
+    });
+  }
+
+  state.verificationTokens.delete(body.token);
+  user.emailVerifiedAt = now();
+  setSession(reply, user);
+  return reply.send({
+    message: "Email verified. You can now enter the ENTRAL command center.",
+    user: publicUser(user)
+  });
 });
 
 app.post("/api/v1/logout", async (_request, reply) => {

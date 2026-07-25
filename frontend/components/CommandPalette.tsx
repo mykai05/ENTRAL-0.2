@@ -19,7 +19,6 @@ const shortcuts = [
   { keys: "Cmd/Ctrl + ,", label: "Open theme settings" },
   { keys: "Cmd/Ctrl + /", label: "Open keyboard help" },
   { keys: "?", label: "Open keyboard help" },
-  { keys: "Cmd/Ctrl + Shift + T", label: "New automation task" },
   { keys: "Esc", label: "Close overlays or cancel current action" }
 ];
 
@@ -57,14 +56,14 @@ export function CommandPalette() {
   const helpRef = useDialogFocus<HTMLElement>(showHelp, () => setShowHelp(false));
 
   const actions = useMemo<PaletteAction[]>(() => [
-    { description: "Return to the live hierarchy and primary command console", href: "/dashboard", id: "command-center", keywords: "dashboard hierarchy graph command center", label: "Open Command Center" },
-    { description: "Launch the guided flow that creates a broad-domain Marshal, niche General, one business Commander, operational Soldiers, and a pending intake task", href: "/dashboard#business-setup", id: "business-setup", keywords: "business setup first business wizard onboarding general marshal commander template create company client store", label: "Business setup", run: () => window.dispatchEvent(new Event("entral:open-business-wizard")) },
-    { description: "Start a focused conversation outside the graph view", href: "/chat", id: "new-chat", keywords: "ai command conversation directive communications", label: "Open Communications" },
-    { description: "Open the automation task composer", href: "/automations", id: "new-task", keywords: "task job todo automation", label: "New task" },
-    { description: "Create, configure, and assign work to specialized agents", href: "/agents", id: "run-agent", keywords: "agent run assign orchestration", label: "Open agents" },
-    { description: "Open the agent preset gallery", href: "/agents#templates", id: "templates", keywords: "agent presets templates scraper research linkedin", label: "Agent templates" },
-    { description: "Review policies and audit logs", href: "/admin", id: "governance", keywords: "policy audit admin governance", label: "Governance & Audit" },
-    { description: "Run browser automation jobs", href: "/automations", id: "automation", keywords: "scrape browser job", label: "Automation console" },
+    { description: "Open the portfolio summary and current work view", href: "/dashboard", id: "dashboard", keywords: "dashboard portfolio businesses work exceptions", label: "Dashboard" },
+    { description: "Open the interactive hierarchy graph", href: "/graph", id: "graph", keywords: "open universe graph hierarchy visual", label: "OPEN UNIVERSE GRAPH" },
+    { description: "Search hierarchy records and backend-connected operating modules", href: "/infrastructure", id: "infrastructure", keywords: "infrastructure records agents automations governance operations", label: "Infrastructure" },
+    { description: "Open the real ENTRAL conversation inside Dashboard", href: "/dashboard?section=entral", id: "entral", keywords: "entral conversation chat assistant", label: "ENTRAL conversation" },
+    { description: "Open backend-connected agent records inside Infrastructure", href: "/infrastructure?section=agents", id: "agents", keywords: "agents run assign schedules tasks", label: "Agent infrastructure" },
+    { description: "Open backend-connected automation records inside Infrastructure", href: "/infrastructure?section=automations", id: "automations", keywords: "automation jobs browser tasks", label: "Automation infrastructure" },
+    { description: "Open policies and audit records inside Infrastructure", href: "/infrastructure?section=governance", id: "governance", keywords: "governance policy audit admin", label: "Governance records" },
+    { description: "Open backend-connected business operations inside Infrastructure", href: "/infrastructure?section=operations", id: "operations", keywords: "business merch products approvals stores operations", label: "Business operations" },
     { description: "Tune neon color, brightness, and onboarding", id: "settings", keywords: "theme customizer accent color settings tutorial academy", label: "Open settings", run: () => window.dispatchEvent(new Event("entral:open-settings")) },
     { description: "Open lessons, guided tasks, and progress tracking", id: "academy", keywords: "help onboarding guide tutorial beginner advanced academy training", label: "ENTRAL Academy", run: () => window.dispatchEvent(new Event("entral:open-academy")) },
     { description: "Replay the guided first-run walkthrough", id: "tutorial", keywords: "help onboarding guide tutorial beginner academy", label: "Replay walkthrough", run: () => window.dispatchEvent(new Event("entral:open-tutorial")) },
@@ -110,11 +109,6 @@ export function CommandPalette() {
       if ((event.metaKey || event.ctrlKey) && event.key === "/") {
         event.preventDefault();
         openShortcuts();
-      }
-
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && key === "t") {
-        event.preventDefault();
-        router.push("/automations");
       }
 
       if (event.key === "?" && !event.metaKey && !event.ctrlKey && !event.altKey) {
@@ -175,7 +169,7 @@ export function CommandPalette() {
             <div className="command-input">
               <Command aria-hidden="true" size={20} />
               <label className="sr-only" htmlFor="command-palette-search">Search commands and pages</label>
-              <input id="command-palette-search" data-dialog-initial-focus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleQueryKeyDown} placeholder="Search setup, pages, agents, exports..." />
+              <input id="command-palette-search" data-dialog-initial-focus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleQueryKeyDown} placeholder="Search destinations, records, or settings..." />
             </div>
             <p className="command-palette-hint">Type what you want ENTRAL to do, then press Enter or click an action.</p>
             <div className="command-results">
@@ -188,7 +182,7 @@ export function CommandPalette() {
                   {index === 0 ? <kbd>Enter</kbd> : <ExternalLink aria-hidden="true" size={16} />}
                 </button>
               )) : (
-                <p className="command-empty">No match yet. Try "business", "agent", "export", "settings", "tutorial", or "task".</p>
+                <p className="command-empty">No match yet. Try "dashboard", "graph", "infrastructure", "settings", or "academy".</p>
               )}
             </div>
           </section>

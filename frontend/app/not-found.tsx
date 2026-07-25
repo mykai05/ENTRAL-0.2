@@ -11,7 +11,7 @@ export default function NotFound() {
         <h1>Page not found</h1>
         <p>This route is not part of the active ENTRAL workspace.</p>
         <Link href="/dashboard" className="button button-primary">
-          Return to Command Center
+          Return to Dashboard
           <ArrowRight aria-hidden="true" size={18} />
         </Link>
       </section>

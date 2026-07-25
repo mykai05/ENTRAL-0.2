@@ -147,6 +147,7 @@ export function AdminDashboard() {
   const [overview, setOverview] = useState<AdminOverview>(emptyOverview);
   const [error, setError] = useState("");
   const [mfaCode, setMfaCode] = useState("");
+  const [accessDenied, setAccessDenied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [permissionState, setPermissionState] = useState<"checking" | "authorized" | "denied" | "error">("checking");
@@ -165,7 +166,9 @@ export function AdminDashboard() {
       });
       setOverview(response);
       setPermissionState("authorized");
+      setAccessDenied(false);
     } catch (loadError) {
+      setAccessDenied(loadError instanceof ApiError && (loadError.status === 401 || loadError.status === 403));
       setError(loadError instanceof ApiError ? loadError.message : "Unable to load admin dashboard.");
       setPermissionState(loadError instanceof ApiError && (loadError.status === 401 || loadError.status === 403) ? "denied" : "error");
     } finally {
@@ -177,8 +180,11 @@ export function AdminDashboard() {
     void loadOverview();
   }, [loadOverview]);
 
+  const hasAdminAccess = !isLoading && !accessDenied && !error;
+
   async function handleCreatePolicy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!hasAdminAccess) return;
     setError("");
 
     const form = event.currentTarget;
@@ -222,6 +228,7 @@ export function AdminDashboard() {
   }
 
   async function updatePolicy(policy: Policy, enabled: boolean) {
+    if (!hasAdminAccess) return;
     try {
       await apiFetch(`/admin/policies/${policy.id}`, {
         headers: adminHeaders,
@@ -235,6 +242,7 @@ export function AdminDashboard() {
   }
 
   async function deletePolicy(policy: Policy) {
+    if (!hasAdminAccess) return;
     if (!window.confirm(`Delete the policy “${policy.name}”? This cannot be undone.`)) return;
     try {
       await apiFetch(`/admin/policies/${policy.id}`, {
@@ -248,6 +256,7 @@ export function AdminDashboard() {
   }
 
   async function pauseAllAgents() {
+    if (!hasAdminAccess) return;
     if (!window.confirm("Pause every background agent and active schedule?")) return;
     try {
       await apiFetch("/admin/agents/pause-all", {
@@ -261,6 +270,7 @@ export function AdminDashboard() {
   }
 
   async function revokeTask(taskId: string) {
+    if (!hasAdminAccess) return;
     if (!window.confirm("Revoke this active agent task?")) return;
     try {
       await apiFetch(`/admin/agent-tasks/${taskId}/revoke`, {
@@ -311,6 +321,11 @@ export function AdminDashboard() {
       {verificationForm}
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {accessDenied ? (
+        <p className="form-notice">
+          Governance remains read-only for this account. Administrative controls are disabled until an authorized admin session is verified.
+        </p>
+      ) : null}
       {isLoading ? <SkeletonList count={4} label="Loading governance controls" /> : null}
       <ModeStatusStrip ariaLabel="Governance mode status" className="admin-mode-strip" compact items={adminModeItems} />
 
@@ -339,7 +354,7 @@ export function AdminDashboard() {
             <h2>Background Agent Controls</h2>
             <p>{overview.health.activeSchedules} active schedules, {overview.health.enabledPolicies} enabled policies.</p>
           </div>
-          <Button type="button" variant="danger" onClick={() => void pauseAllAgents()}>
+          <Button disabled={!hasAdminAccess} type="button" variant="danger" onClick={() => void pauseAllAgents()}>
             <PauseCircle aria-hidden="true" size={20} />
             Pause all agents
           </Button>
@@ -350,7 +365,7 @@ export function AdminDashboard() {
               <strong>{task.title}</strong>
               <span>{task.agentName} - {task.action} - {task.status}</span>
             </div>
-            <Button type="button" variant="danger" onClick={() => void revokeTask(task.id)}>
+            <Button disabled={!hasAdminAccess} type="button" variant="danger" onClick={() => void revokeTask(task.id)}>
               <Ban aria-hidden="true" size={18} />
               Revoke
             </Button>
@@ -369,11 +384,11 @@ export function AdminDashboard() {
         <form className="policy-form" onSubmit={handleCreatePolicy} noValidate>
           <div>
             <label htmlFor="policy-name">Name</label>
-            <input defaultValue="Block sensitive data requests" id="policy-name" name="name" required />
+            <input defaultValue="Block sensitive data requests" disabled={!hasAdminAccess} id="policy-name" name="name" required />
           </div>
           <div>
             <label htmlFor="policy-kind">Rule type</label>
-            <select defaultValue="blocked_keywords" id="policy-kind" name="kind">
+            <select defaultValue="blocked_keywords" disabled={!hasAdminAccess} id="policy-kind" name="kind">
               <option value="blocked_keywords">Blocked keywords</option>
               <option value="blocked_domains">Blocked domains</option>
               <option value="agent_quota">Agent quota</option>
@@ -382,11 +397,11 @@ export function AdminDashboard() {
           </div>
           <div>
             <label htmlFor="policy-values">Values</label>
-            <input defaultValue="password, api key, private key" id="policy-values" name="values" placeholder="Comma-separated values" required />
+            <input defaultValue="password, api key, private key" disabled={!hasAdminAccess} id="policy-values" name="values" placeholder="Comma-separated values" required />
           </div>
           <div>
             <label htmlFor="policy-severity">Severity</label>
-            <select defaultValue="high" id="policy-severity" name="severity">
+            <select defaultValue="high" disabled={!hasAdminAccess} id="policy-severity" name="severity">
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -394,10 +409,10 @@ export function AdminDashboard() {
             </select>
           </div>
           <label className="check-row" htmlFor="policy-enabled">
-            <input defaultChecked id="policy-enabled" name="enabled" type="checkbox" />
+            <input defaultChecked disabled={!hasAdminAccess} id="policy-enabled" name="enabled" type="checkbox" />
             Enabled
           </label>
-          <Button type="submit" disabled={isSaving}>
+          <Button type="submit" disabled={isSaving || !hasAdminAccess}>
             <Plus aria-hidden="true" size={20} />
             {isSaving ? "Creating..." : "Create policy"}
           </Button>
@@ -410,10 +425,10 @@ export function AdminDashboard() {
                 <span>{policy.enabled ? "Enabled" : "Disabled"} - {policy.severity} - {describeRule(policy)}</span>
               </div>
               <div className="row-actions">
-                <Button type="button" variant="secondary" onClick={() => void updatePolicy(policy, !policy.enabled)}>
+                <Button disabled={!hasAdminAccess} type="button" variant="secondary" onClick={() => void updatePolicy(policy, !policy.enabled)}>
                   {policy.enabled ? "Disable" : "Enable"}
                 </Button>
-                <Button type="button" variant="danger" onClick={() => void deletePolicy(policy)}>
+                <Button disabled={!hasAdminAccess} type="button" variant="danger" onClick={() => void deletePolicy(policy)}>
                   Delete
                 </Button>
               </div>

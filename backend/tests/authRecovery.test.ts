@@ -13,6 +13,51 @@ beforeEach(() => {
 });
 
 describe("auth recovery workflows", () => {
+  it("preserves a canonical member return path when a verification email is reissued", async () => {
+    const user = {
+      email: "ada@example.com",
+      emailVerifiedAt: null,
+      id: "user_123",
+      name: "Ada Lovelace"
+    };
+    const sendVerificationEmail = vi.fn(async () => ({
+      provider: "console" as const,
+      queued: false
+    }));
+
+    vi.doMock("../src/db.js", () => ({
+      prisma: {
+        emailVerificationToken: {
+          create: vi.fn(async () => ({ id: "verification_123" })),
+          updateMany: vi.fn(async () => ({ count: 1 }))
+        },
+        user: {
+          findUnique: vi.fn(async () => user)
+        }
+      }
+    }));
+    vi.doMock("../src/services/audit.js", () => ({
+      recordAuditLog: vi.fn(async () => undefined)
+    }));
+    vi.doMock("../src/services/authEmails.js", () => ({
+      sendPasswordResetEmail: vi.fn(),
+      sendVerificationEmail
+    }));
+
+    const { requestEmailVerification } = await import("../src/services/authRecovery.js");
+    await requestEmailVerification(user.email, {
+      next: "/infrastructure?section=agents",
+      requestId: "request_123"
+    });
+
+    expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({
+      name: user.name,
+      next: "/infrastructure?section=agents",
+      to: user.email,
+      token: expect.any(String)
+    }));
+  });
+
   it("confirms password reset with a hashed single-use token", async () => {
     const rawToken = "reset-token-that-is-long-enough-for-validation-123";
     const user = {

@@ -27,6 +27,7 @@ type AiUsageResponse = {
 };
 
 type AiUsageGuardrailProps = {
+  onProviderReadyChange?: (isReady: boolean) => void;
   refreshIndex?: number;
 };
 
@@ -71,7 +72,7 @@ function UsageMeter({ label, window }: { label: string; window: AiUsageWindow })
   );
 }
 
-export function AiUsageGuardrail({ refreshIndex = 0 }: AiUsageGuardrailProps) {
+export function AiUsageGuardrail({ onProviderReadyChange, refreshIndex = 0 }: AiUsageGuardrailProps) {
   const [summary, setSummary] = useState<AiUsageSummary | null>(null);
   const [error, setError] = useState("");
   const [isHidden, setIsHidden] = useState(false);
@@ -80,6 +81,8 @@ export function AiUsageGuardrail({ refreshIndex = 0 }: AiUsageGuardrailProps) {
     let isMounted = true;
 
     async function loadUsage() {
+      onProviderReadyChange?.(false);
+
       try {
         const response = await apiFetch<AiUsageResponse>("/ai/usage");
 
@@ -87,16 +90,23 @@ export function AiUsageGuardrail({ refreshIndex = 0 }: AiUsageGuardrailProps) {
           setSummary(response.summary);
           setError("");
           setIsHidden(false);
+          onProviderReadyChange?.(
+            response.summary.mode === "real"
+              && response.summary.daily.remainingCents > 0
+              && response.summary.monthly.remainingCents > 0
+          );
         }
       } catch (loadError) {
         if (!isMounted) return;
 
         if (loadError instanceof ApiError && loadError.status === 401) {
           setIsHidden(true);
+          onProviderReadyChange?.(false);
           return;
         }
 
         setError(loadError instanceof Error ? loadError.message : "AI usage status is unavailable.");
+        onProviderReadyChange?.(false);
       }
     }
 
@@ -105,7 +115,7 @@ export function AiUsageGuardrail({ refreshIndex = 0 }: AiUsageGuardrailProps) {
     return () => {
       isMounted = false;
     };
-  }, [refreshIndex]);
+  }, [onProviderReadyChange, refreshIndex]);
 
   if (isHidden) {
     return null;

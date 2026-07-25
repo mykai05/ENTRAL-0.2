@@ -2,8 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Activity, AlertTriangle, Bot, Crosshair, Eye, Info, LogOut, Maximize2, Menu, Mic, MicOff, Network, PanelRightClose, PanelRightOpen, Pause, Play, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Volume2, X, Zap, ZoomIn, ZoomOut } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "./Button";
+import { AdminDashboard } from "./AdminDashboard";
+import { AgentDashboard } from "./AgentDashboard";
+import { AutomationConsole } from "./AutomationConsole";
+import { ChatWindow } from "./ChatWindow";
 import { Logo } from "./Logo";
+import { MemberDestinationNav, type MemberDestination } from "./MemberDestinationNav";
 import { ModeStatusStrip, type ModeStatusItem } from "./ModeStatus";
 import { MerchOperationsPanel } from "./MerchOperationsPanel";
 import { ProductApprovalQueue, type ProductApprovalAction } from "./ProductApprovalQueue";
@@ -76,6 +83,7 @@ type GraphStatus = CommandStatus;
 type CommandCenterSurface = "internal" | "member";
 
 type NeuronsCommandCenterProps = {
+  initialDestination?: MemberDestination;
   onLogout: () => void;
   surface?: CommandCenterSurface;
   user?: DashboardUser | null;
@@ -1801,8 +1809,15 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
   return Math.hypot(first.x - second.x, first.y - second.y);
 }
 
-export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: NeuronsCommandCenterProps) {
+export function NeuronsCommandCenter({
+  initialDestination = "dashboard",
+  user,
+  onLogout,
+  surface = "internal"
+}: NeuronsCommandCenterProps) {
   const isMemberSurface = surface === "member";
+  const destinationHref = (path: string) => `${isMemberSurface ? "/member" : ""}${path}`;
+  const searchParams = useSearchParams();
   const { settings, updateSettings } = useTheme();
   const { isSpeaking, settings: voiceSettings, speak, stopSpeaking } = useVoice();
   const [graph, dispatchGraph] = useReducer(commandOSReducer<GraphNode3D>, user?.id ?? null, readStoredCommandState);
@@ -1879,6 +1894,12 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   const [pendingRemovalId, setPendingRemovalId] = useState<string | null>(null);
   const removalDialogRef = useDialogFocus<HTMLElement>(Boolean(pendingRemovalId), () => setPendingRemovalId(null));
   const [isCommandPersistenceReady, setIsCommandPersistenceReady] = useState(false);
+  const [commandSourceStatus, setCommandSourceStatus] = useState<"loading" | "backend" | "local-fallback">("loading");
+  const [graphHistoryDepth, setGraphHistoryDepth] = useState(0);
+  const [dashboardSection, setDashboardSection] = useState<"portfolio" | "entral">("portfolio");
+  const [infrastructureSection, setInfrastructureSection] = useState<"records" | "agents" | "automations" | "governance" | "operations">("records");
+  const [infrastructureSearch, setInfrastructureSearch] = useState("");
+  const [isGraphSettingsOpen, setIsGraphSettingsOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const commandInputRef = useRef<HTMLInputElement | null>(null);
   const graphControlsRef = useRef(graphControls);
@@ -1888,6 +1909,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   const lockedNodeIdRef = useRef<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
   const selectedRef = useRef("entral");
+  const graphSelectionHistoryRef = useRef<string[]>([]);
   const searchRef = useRef("");
   const activeGroupRef = useRef<string | null>(null);
   const activeStatusFilterRef = useRef<GraphStatus[] | null>(null);
@@ -1927,6 +1949,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     async function restoreBackendCommandState() {
       if (!user?.id) {
         setIsCommandPersistenceReady(false);
+        setCommandSourceStatus("local-fallback");
         return;
       }
 
@@ -1950,12 +1973,17 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
           writeLocalStorageValue(commandStateKeyFor(user.id), JSON.stringify(restored));
           writeLocalStorageValue(commandStateUpdatedKeyFor(user.id), response.snapshot.updatedAt);
           lastSyncedCommandStateRef.current = JSON.stringify(restored);
+          setCommandSourceStatus("backend");
           setStatusMessage("Authoritative Command OS memory restored from the ENTRAL backend.");
         } else if (hadStoredCommandStateRef.current) {
+          setCommandSourceStatus("local-fallback");
           setStatusMessage("No backend snapshot exists. This signed-in user's browser recovery state remains available.");
+        } else {
+          setCommandSourceStatus("backend");
         }
       } catch {
         if (!isCancelled) {
+          setCommandSourceStatus("local-fallback");
           setStatusMessage("Command OS memory is saved locally. Backend persistence will retry after changes.");
         }
       } finally {
@@ -2061,6 +2089,27 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   useEffect(() => {
     hoveredRef.current = hoveredNodeId;
   }, [hoveredNodeId]);
+
+  useEffect(() => {
+    if (initialDestination === "dashboard") {
+      setDashboardSection(searchParams.get("section") === "entral" ? "entral" : "portfolio");
+      return;
+    }
+
+    if (initialDestination !== "infrastructure") return;
+
+    const requestedSection = searchParams.get("section");
+    if (requestedSection === "agents" || requestedSection === "automations" || requestedSection === "governance" || requestedSection === "operations") {
+      setInfrastructureSection(requestedSection);
+    } else {
+      setInfrastructureSection("records");
+    }
+
+    const requestedEntity = searchParams.get("entity");
+    if (!requestedEntity || !graph.nodes.some((node) => node.id === requestedEntity)) return;
+
+    setSelectedNodeId(requestedEntity);
+  }, [graph.nodes, initialDestination, searchParams]);
 
   useEffect(() => {
     function prepareAcademyTarget(event: Event) {
@@ -2214,7 +2263,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     });
   }
 
-  function patchGraphControls(changes: Partial<GraphControlSettings>, message: string) {
+  function patchGraphControls(changes: Partial<GraphControlSettings>, message = "Graph display settings updated.") {
     setGraphControls((current) => {
       const next = {
         ...current,
@@ -2928,7 +2977,7 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
       glContext.deleteProgram(pointProgram.program);
       glContext.deleteProgram(lineProgram.program);
     };
-  }, [settings.accentColor]);
+  }, [initialDestination, settings.accentColor]);
 
   function setCamera(nextCamera: Partial<CameraState>, immediate = false) {
     const next = clampCamera({
@@ -4580,6 +4629,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   }
 
   function focusNode(node: GraphNode3D) {
+    const previousNodeId = selectedRef.current;
+    if (previousNodeId !== node.id && graphRef.current.nodes.some((candidate) => candidate.id === previousNodeId)) {
+      graphSelectionHistoryRef.current = [...graphSelectionHistoryRef.current.slice(-19), previousNodeId];
+      setGraphHistoryDepth(graphSelectionHistoryRef.current.length);
+    }
     setSelectedNodeId(node.id);
     setIsPanelOpen(true);
     setActiveStatusFilter(null);
@@ -4594,6 +4648,11 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   }
 
   function fitGraph(message = "Fit graph to the full command field.") {
+    const previousNodeId = selectedRef.current;
+    if (previousNodeId !== "entral" && graphRef.current.nodes.some((candidate) => candidate.id === previousNodeId)) {
+      graphSelectionHistoryRef.current = [...graphSelectionHistoryRef.current.slice(-19), previousNodeId];
+      setGraphHistoryDepth(graphSelectionHistoryRef.current.length);
+    }
     setLockedNodeId(null);
     lockedNodeIdRef.current = null;
     setCamera({ ...defaultCamera, target: { ...defaultCamera.target } });
@@ -4603,6 +4662,37 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     setActiveStatusFilter(null);
     setSearch("");
     setStatusMessage(message);
+  }
+
+  function returnToPreviousGraphSelection() {
+    const history = [...graphSelectionHistoryRef.current];
+    let previousNode: GraphNode3D | undefined;
+
+    while (history.length > 0 && !previousNode) {
+      const previousId = history.pop();
+      previousNode = graphRef.current.nodes.find((node) => node.id === previousId);
+    }
+
+    graphSelectionHistoryRef.current = history;
+    setGraphHistoryDepth(history.length);
+
+    if (!previousNode) {
+      setStatusMessage("No earlier graph selection is available.");
+      return;
+    }
+
+    setSelectedNodeId(previousNode.id);
+    selectedRef.current = previousNode.id;
+    setIsPanelOpen(true);
+    setActiveStatusFilter(null);
+    setActiveGroupId(previousNode.groupId === "core" ? null : previousNode.groupId);
+    setLockedNodeId(previousNode.type === "core" ? null : previousNode.id);
+    lockedNodeIdRef.current = previousNode.type === "core" ? null : previousNode.id;
+    setCamera({
+      distance: previousNode.type === "core" ? 500 : 420,
+      target: { x: previousNode.x, y: previousNode.y, z: previousNode.z }
+    });
+    setStatusMessage(`Returned to ${previousNode.name}.`);
   }
 
   function returnToFullPicture() {
@@ -6351,6 +6441,27 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
     .filter((message) => message.role === "system" && /^\s*Situation:\n/i.test(message.content))
     .slice(-5)
     .reverse();
+  const dashboardExceptions = graph.nodes.filter((node) => node.status === "error" || node.status === "waiting" || node.status === "offline");
+  const activeDashboardTasks = graph.tasks.filter((task) => task.status === "assigned" || task.status === "running");
+  const infrastructureNodes = graph.nodes.filter((node) => {
+    const query = infrastructureSearch.trim().toLowerCase();
+    if (!query) return true;
+    const parentName = node.parentId ? nodeMap.get(node.parentId)?.name ?? "" : "";
+    return [node.name, node.title, node.role, node.commandType, node.status, parentName]
+      .some((value) => value.toLowerCase().includes(query));
+  });
+  const selectedLatestResult = selectedNode?.memory.taskResults[0]
+    ?? selectedNode?.taskHistory[0]
+    ?? selectedNode?.reportHistory?.[0]?.recommendation
+    ?? null;
+  const visibleScope = selectedNode
+    ? selectedLineage.map((node) => node.name).join(" / ")
+    : "Portfolio / All businesses";
+  const sourceStatusLabel = commandSourceStatus === "backend"
+    ? "Authoritative backend snapshot"
+    : commandSourceStatus === "loading"
+      ? "Loading authoritative state"
+      : "Browser recovery state; backend unavailable or empty";
 
   function renderMobileHierarchyNode(node: GraphNode3D, depth = 0): React.ReactNode {
     const children = graph.nodes.filter((candidate) => candidate.parentId === node.id);
@@ -6442,46 +6553,478 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
   }
 
   return (
-    <main className={["command-center-page", isMemberSurface ? "member-surface" : "", isNavigationOpen ? "" : "nav-closed", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")} data-mobile-tab={mobileTab} aria-label="ENTRAL Command Center">
-      <canvas
-        aria-describedby="command-center-camera-help"
-        aria-label="3D interactive ENTRAL neuron graph"
-        className="command-center-canvas"
-        data-academy="command-graph"
-        onContextMenu={(event) => event.preventDefault()}
-        onKeyDown={handleCanvasKeyDown}
-        onPointerEnter={lockGraphScroll}
-        onPointerCancel={handlePointerCancel}
-        onPointerDown={handlePointerDown}
-        onPointerLeave={() => {
-          if (touchGestureRef.current.pointers.size > 0) {
-            return;
-          }
+    <main
+      className={["command-center-page", "phase110-command-center", isMemberSurface ? "member-surface" : "", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")}
+      data-destination={initialDestination}
+      data-mobile-tab={mobileTab}
+      aria-label="ENTRAL Command Center"
+    >
+      {initialDestination === "graph" ? (
+        <>
+          <canvas
+            aria-describedby="command-center-camera-help"
+            aria-label="3D interactive ENTRAL neuron graph"
+            className="command-center-canvas"
+            data-academy="command-graph"
+            onContextMenu={(event) => event.preventDefault()}
+            onKeyDown={handleCanvasKeyDown}
+            onPointerEnter={lockGraphScroll}
+            onPointerCancel={handlePointerCancel}
+            onPointerDown={handlePointerDown}
+            onPointerLeave={() => {
+              if (touchGestureRef.current.pointers.size > 0) {
+                return;
+              }
 
-          dragRef.current = null;
-          releaseGraphScroll();
-          setHoveredNodeId(null);
-          setTooltip(null);
-        }}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onDoubleClick={() => {
-          if (isFocusMode) {
-            setIsFocusMode(false);
-            setStatusMessage("Focus Mode exited. Command center controls restored.");
-          }
-        }}
-        onWheel={handleWheel}
-        ref={canvasRef}
-        role="application"
-        tabIndex={0}
-      />
-      <p className="sr-only" id="command-center-camera-help">
-        On touch screens, drag one finger to pan up, down, left, and right. Drag two fingers to rotate around ENTRAL. Pinch two fingers to zoom. On desktop, drag to orbit, right click drag to pan, and use the mouse wheel or plus and minus keys to zoom.
-      </p>
+              dragRef.current = null;
+              releaseGraphScroll();
+              setHoveredNodeId(null);
+              setTooltip(null);
+            }}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onDoubleClick={() => {
+              if (isFocusMode) {
+                setIsFocusMode(false);
+                setStatusMessage("Focus Mode exited. Command center controls restored.");
+              }
+            }}
+            onWheel={handleWheel}
+            ref={canvasRef}
+            role="application"
+            tabIndex={0}
+          />
+          <p className="sr-only" id="command-center-camera-help">
+            On touch screens, drag one finger to pan up, down, left, and right. Drag two fingers to rotate around ENTRAL. Pinch two fingers to zoom. On desktop, drag to orbit, right click drag to pan, and use the mouse wheel or plus and minus keys to zoom.
+          </p>
+        </>
+      ) : null}
 
       <div className="command-center-vignette" aria-hidden="true" />
 
+      <section className="phase110-member-shell" data-phase110-surface={initialDestination}>
+        <header className="phase110-member-header" data-academy="member-header">
+          <Link className="phase110-member-brand" href={destinationHref("/dashboard")} aria-label="ENTRAL Dashboard" scroll={false}>
+            <Logo />
+            <span>
+              <strong>ENTRAL</strong>
+              <small>{initialDestination === "graph" ? "Universe Graph" : initialDestination === "infrastructure" ? "Infrastructure" : "Command Dashboard"}</small>
+            </span>
+          </Link>
+          <MemberDestinationNav current={initialDestination} surface={surface} />
+          {initialDestination !== "graph" ? (
+            <div className="phase110-account-actions">
+              <button type="button" onClick={() => window.dispatchEvent(new Event("entral:open-academy"))}>Academy</button>
+              <button data-academy="settings" type="button" onClick={() => openSettings("account")}>Settings</button>
+              <button type="button" onClick={onLogout}>
+                <LogOut aria-hidden="true" size={16} />
+                Sign out
+              </button>
+            </div>
+          ) : <span className="phase110-graph-account-spacer" aria-hidden="true" />}
+        </header>
+
+        <div className="phase110-scope-bar" role="status">
+          <span>Scope</span>
+          <strong>{initialDestination === "dashboard" ? "Portfolio / All businesses" : visibleScope}</strong>
+          <small>{sourceStatusLabel}</small>
+        </div>
+
+        {initialDestination === "dashboard" ? (
+          <div className="phase110-dashboard" data-academy="portfolio-dashboard" aria-label="Portfolio dashboard">
+            <nav className="phase110-section-tabs" aria-label="Dashboard sections">
+              <Link aria-current={dashboardSection === "portfolio" ? "page" : undefined} href={destinationHref("/dashboard")} scroll={false}>Portfolio</Link>
+              <Link aria-current={dashboardSection === "entral" ? "page" : undefined} href={destinationHref("/dashboard?section=entral")} scroll={false}>ENTRAL</Link>
+            </nav>
+            {dashboardSection === "portfolio" ? (
+              <>
+            <header className="phase110-page-heading">
+              <div>
+                <p className="eyebrow">Portfolio mode</p>
+                <h1>{user?.name ? `${user.name}'s Dashboard` : "Dashboard"}</h1>
+                <p>Current command state only. Unavailable business and financial fields are not estimated.</p>
+              </div>
+              <span className={`phase110-source-badge source-${commandSourceStatus}`}>{sourceStatusLabel}</span>
+            </header>
+
+            <section className="phase110-summary-grid" aria-label="Portfolio summary">
+              <article>
+                <span>Businesses</span>
+                <strong>{commanderNodes.length}</strong>
+                <small>Commander records</small>
+              </article>
+              <article>
+                <span>Active work</span>
+                <strong>{activeDashboardTasks.length}</strong>
+                <small>Assigned or running tasks</small>
+              </article>
+              <article>
+                <span>Exceptions</span>
+                <strong>{dashboardExceptions.length}</strong>
+                <small>Waiting, error, or offline entities</small>
+              </article>
+              <article className="unavailable">
+                <span>Financial period</span>
+                <strong>Unavailable</strong>
+                <small>No canonical financial payload is connected in this phase</small>
+              </article>
+            </section>
+
+            <div className="phase110-dashboard-columns">
+              <section className="phase110-panel">
+                <header>
+                  <div>
+                    <p className="eyebrow">Businesses</p>
+                    <h2>Current portfolio</h2>
+                  </div>
+                  <Link href={destinationHref("/infrastructure")} scroll={false}>View infrastructure</Link>
+                </header>
+                {commanderNodes.length > 0 ? (
+                  <div className="phase110-record-list">
+                    {commanderNodes.map((node) => (
+                      <article key={node.id}>
+                        <span className={`phase110-status-dot status-${node.status}`} />
+                        <div>
+                          <strong>{node.businessName ?? node.name}</strong>
+                          <small>{node.parentGeneralName ?? nodeMap.get(node.parentId ?? "")?.name ?? "No General assigned"} / {statusLabel(node.status)}</small>
+                        </div>
+                        <span>{node.health}% health</span>
+                        <Link href={destinationHref(`/infrastructure?entity=${encodeURIComponent(node.id)}`)} scroll={false}>Open record</Link>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="phase110-empty-state">
+                    <Network aria-hidden="true" size={24} />
+                    <strong>No business records exist.</strong>
+                    <p>The Dashboard will not create sample businesses or infer portfolio totals.</p>
+                  </div>
+                )}
+              </section>
+
+              <section className="phase110-panel">
+                <header>
+                  <div>
+                    <p className="eyebrow">Current work</p>
+                    <h2>Tasks and exceptions</h2>
+                  </div>
+                </header>
+                {activeDashboardTasks.length > 0 ? (
+                  <div className="phase110-task-list">
+                    {activeDashboardTasks.slice(0, 8).map((task) => (
+                      <article key={task.id}>
+                        <span className={`task-dot task-${task.status}`} />
+                        <div>
+                          <strong>{task.name}</strong>
+                          <small>{taskStatusLabel(task.status)}</small>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="phase110-empty-state compact">
+                    <Activity aria-hidden="true" size={22} />
+                    <strong>No active task records.</strong>
+                    <p>No execution activity is implied.</p>
+                  </div>
+                )}
+                {dashboardExceptions.length > 0 ? (
+                  <div className="phase110-exception-list">
+                    {dashboardExceptions.slice(0, 6).map((node) => (
+                      <Link href={destinationHref(`/infrastructure?entity=${encodeURIComponent(node.id)}`)} key={node.id} scroll={false}>
+                        <AlertTriangle aria-hidden="true" size={16} />
+                        <span>{node.name}</span>
+                        <strong>{statusLabel(node.status)}</strong>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="phase110-clear-state">No waiting, error, or offline entity records.</p>
+                )}
+              </section>
+            </div>
+              </>
+            ) : (
+              <section className="phase110-embedded-workspace" data-academy="entral-workspace" aria-label="ENTRAL conversation">
+                <ChatWindow />
+              </section>
+            )}
+          </div>
+        ) : null}
+
+        {initialDestination === "graph" ? (
+          <>
+            <div className="phase110-graph-toolbar" role="toolbar" aria-label="Universe Graph toolbar">
+              <label>
+                <Search aria-hidden="true" size={17} />
+                <span className="sr-only">Search graph</span>
+                <input
+                  aria-label="Search graph"
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") return;
+                    const match = filteredVisibleNodes.find((node) => node.id !== "entral") ?? filteredVisibleNodes[0];
+                    if (match) focusNode(match);
+                  }}
+                  placeholder="Search"
+                  value={search}
+                />
+              </label>
+              <button type="button" onClick={() => fitGraph()} aria-label="Fit view">
+                <Crosshair aria-hidden="true" size={18} />
+                <span>Fit view</span>
+              </button>
+              <button type="button" disabled={graphHistoryDepth === 0} onClick={returnToPreviousGraphSelection} aria-label="Back">
+                <RotateCcw aria-hidden="true" size={18} />
+                <span>Back</span>
+              </button>
+              <button aria-expanded={isGraphSettingsOpen} type="button" onClick={() => setIsGraphSettingsOpen((current) => !current)} aria-label="Graph settings">
+                <Settings aria-hidden="true" size={18} />
+                <span>Settings</span>
+              </button>
+            </div>
+
+            {isGraphSettingsOpen ? (
+              <aside className="phase110-graph-settings" role="dialog" aria-label="Universe Graph settings" aria-modal="false">
+                <header>
+                  <div>
+                    <p className="eyebrow">One control surface</p>
+                    <h2>Graph settings</h2>
+                  </div>
+                  <button type="button" onClick={() => setIsGraphSettingsOpen(false)} aria-label="Close graph settings">
+                    <X aria-hidden="true" size={18} />
+                  </button>
+                </header>
+                <label className="phase110-switch-row">
+                  <span><strong>Orbit guides</strong><small>Show structural orbit guides.</small></span>
+                  <input checked={graphControls.showRings} onChange={(event) => patchGraphControls({ showRings: event.target.checked })} type="checkbox" />
+                </label>
+                <label className="phase110-switch-row">
+                  <span><strong>Motion trails</strong><small>Show recent entity motion.</small></span>
+                  <input checked={graphControls.showTrails} onChange={(event) => patchGraphControls({ showTrails: event.target.checked })} type="checkbox" />
+                </label>
+                <label className="phase110-range-row">
+                  <span>Entity size</span>
+                  <input
+                    aria-label="Entity size"
+                    max="2"
+                    min="0.55"
+                    onChange={(event) => patchGraphControls({ particleSize: Number(event.target.value) })}
+                    step="0.05"
+                    type="range"
+                    value={graphControls.particleSize}
+                  />
+                  <strong>{graphControls.particleSize.toFixed(2)}x</strong>
+                </label>
+                <label className="phase110-range-row">
+                  <span>Orbit speed</span>
+                  <input
+                    aria-label="Orbit speed"
+                    max="2"
+                    min="0"
+                    onChange={(event) => patchGraphControls({ orbitSpeed: Number(event.target.value) })}
+                    step="0.05"
+                    type="range"
+                    value={graphControls.orbitSpeed}
+                  />
+                  <strong>{graphControls.orbitSpeed.toFixed(2)}x</strong>
+                </label>
+                <label className="phase110-range-row">
+                  <span>Camera response</span>
+                  <input
+                    aria-label="Camera response"
+                    max="2"
+                    min="0.35"
+                    onChange={(event) => patchGraphControls({ cameraSensitivity: Number(event.target.value) })}
+                    step="0.05"
+                    type="range"
+                    value={graphControls.cameraSensitivity}
+                  />
+                  <strong>{graphControls.cameraSensitivity.toFixed(2)}x</strong>
+                </label>
+                <button className="phase110-reset-button" type="button" onClick={resetGraphControls}>
+                  <RotateCcw aria-hidden="true" size={17} />
+                  Reset graph display
+                </button>
+              </aside>
+            ) : null}
+
+            {selectedNode ? (
+              <aside className="phase110-node-drawer" data-academy="graph-inspector" aria-label="Selected graph entity">
+                <header>
+                  <span className={`phase110-status-dot status-${selectedNode.status}`} />
+                  <div>
+                    <p className="eyebrow">{selectedNode.title}</p>
+                    <h2>{selectedNode.name}</h2>
+                  </div>
+                  <strong>{statusLabel(selectedNode.status)}</strong>
+                </header>
+                <p>{selectedNode.description ?? selectedNode.role}</p>
+                <dl>
+                  <div><dt>Health</dt><dd>{selectedNode.health}%</dd></div>
+                  <div><dt>Parent</dt><dd>{selectedParent?.name ?? "Human authority"}</dd></div>
+                  <div><dt>Children</dt><dd>{selectedChildren.length}</dd></div>
+                  <div><dt>Current objective</dt><dd>{selectedNode.currentTask ?? "None recorded"}</dd></div>
+                  <div><dt>Latest material result</dt><dd>{selectedLatestResult ?? "None recorded"}</dd></div>
+                </dl>
+                <Link href={destinationHref(`/infrastructure?entity=${encodeURIComponent(selectedNode.id)}`)} scroll={false}>Open full record</Link>
+              </aside>
+            ) : null}
+          </>
+        ) : null}
+
+        {initialDestination === "infrastructure" ? (
+          <div className="phase110-infrastructure" data-academy="infrastructure" aria-label="Infrastructure records">
+            <nav className="phase110-section-tabs" aria-label="Infrastructure sections">
+              {([
+                ["records", "Records"],
+                ["agents", "Agents"],
+                ["automations", "Automations"],
+                ["governance", "Governance"],
+                ["operations", "Business operations"]
+              ] as const).map(([section, label]) => (
+                <Link
+                  aria-current={infrastructureSection === section ? "page" : undefined}
+                  href={destinationHref(section === "records" ? "/infrastructure" : `/infrastructure?section=${section}`)}
+                  key={section}
+                  scroll={false}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+            {infrastructureSection === "records" ? (
+              <>
+            <header className="phase110-page-heading">
+              <div>
+                <p className="eyebrow">Authoritative structure</p>
+                <h1>Infrastructure</h1>
+                <p>Search and inspect the current hierarchy. Stateful actions remain hidden until their dedicated backend, audit, and verification paths exist.</p>
+              </div>
+              <label className="phase110-infrastructure-search">
+                <Search aria-hidden="true" size={17} />
+                <span className="sr-only">Search infrastructure</span>
+                <input value={infrastructureSearch} onChange={(event) => setInfrastructureSearch(event.target.value)} placeholder="Search records" />
+              </label>
+            </header>
+
+            <div className="phase110-infrastructure-grid">
+              <nav className="phase110-hierarchy-list" data-academy="infrastructure-hierarchy" aria-label="Infrastructure hierarchy">
+                <header>
+                  <strong>{infrastructureNodes.length} record{infrastructureNodes.length === 1 ? "" : "s"}</strong>
+                  <small>Human ↔ ENTRAL ↔ Marshal ↔ General ↔ Commander ↔ Soldier</small>
+                </header>
+                {infrastructureNodes.map((node) => {
+                  const depth = Math.max(0, lineageForNode(node.id, graph.nodes).length - 1);
+                  return (
+                    <button
+                      className={selectedNodeId === node.id ? "active" : ""}
+                      key={node.id}
+                      onClick={() => focusNode(node)}
+                      style={{ "--record-depth": depth } as React.CSSProperties}
+                      type="button"
+                    >
+                      <span className={`phase110-status-dot status-${node.status}`} />
+                      <span>
+                        <strong>{node.name}</strong>
+                        <small>{node.title} / {statusLabel(node.status)}</small>
+                      </span>
+                    </button>
+                  );
+                })}
+                {infrastructureNodes.length === 0 ? <p>No records match this search.</p> : null}
+              </nav>
+
+              {selectedNode ? (
+                <article className="phase110-record-inspector" data-academy="infrastructure-record">
+                  <header>
+                    <div>
+                      <p className="eyebrow">{selectedCommandPath}</p>
+                      <h2>{selectedNode.name}</h2>
+                      <span>{selectedNode.title} / {statusLabel(selectedNode.status)}</span>
+                    </div>
+                    <span className={`phase110-source-badge source-${commandSourceStatus}`}>{sourceStatusLabel}</span>
+                  </header>
+                  <dl className="phase110-record-fields">
+                    <div><dt>Record ID</dt><dd>{selectedNode.id}</dd></div>
+                    <div><dt>Role</dt><dd>{selectedNode.role}</dd></div>
+                    <div><dt>Parent</dt><dd>{selectedParent?.name ?? "Human authority"}</dd></div>
+                    <div><dt>Status</dt><dd>{statusLabel(selectedNode.status)}</dd></div>
+                    <div><dt>Health</dt><dd>{selectedNode.health}%</dd></div>
+                    <div><dt>Children</dt><dd>{selectedChildren.length}</dd></div>
+                    <div><dt>Current objective</dt><dd>{selectedNode.currentTask ?? "None recorded"}</dd></div>
+                    <div><dt>Created</dt><dd>{new Date(selectedNode.createdAt).toLocaleString()}</dd></div>
+                  </dl>
+                  <section>
+                    <h3>Operating instructions</h3>
+                    <p>{selectedNode.memory.instructions || "None recorded."}</p>
+                  </section>
+                  <section>
+                    <h3>Recent results</h3>
+                    {selectedNode.memory.taskResults.length > 0
+                      ? selectedNode.memory.taskResults.slice(0, 8).map((result, index) => <p key={`${result}-${index}`}>{result}</p>)
+                      : <p>None recorded.</p>}
+                  </section>
+                  <section>
+                    <h3>Evidence and logs</h3>
+                    {selectedNode.logs.length > 0
+                      ? selectedNode.logs.slice(0, 12).map((log, index) => <p key={`${log}-${index}`}>{log}</p>)
+                      : <p>None recorded.</p>}
+                  </section>
+                  <p className="phase110-read-only-notice">
+                    Read-only in Phase 110. No simulated create, edit, pause, reassign, retire, or execution action is exposed.
+                  </p>
+                </article>
+              ) : null}
+            </div>
+              </>
+            ) : null}
+            {infrastructureSection === "agents" ? (
+              <section className="phase110-embedded-workspace" aria-label="Agent infrastructure">
+                <AgentDashboard />
+              </section>
+            ) : null}
+            {infrastructureSection === "automations" ? (
+              <section className="phase110-embedded-workspace" aria-label="Automation infrastructure">
+                <AutomationConsole />
+              </section>
+            ) : null}
+            {infrastructureSection === "governance" ? (
+              <section className="phase110-embedded-workspace" aria-label="Governance infrastructure">
+                <AdminDashboard />
+              </section>
+            ) : null}
+            {infrastructureSection === "operations" ? (
+              <section className="phase110-embedded-workspace phase110-operations-workspace" data-academy="business-operations" aria-label="Business operations infrastructure">
+                <ProductBatchGenerator
+                  generatedProducts={productBatchResults}
+                  isGenerating={isGeneratingProductBatch}
+                  isLoadingStores={isLoadingMerchStores}
+                  onChange={handleProductBatchFormChange}
+                  onGenerate={() => void generateProductBatchFromForm()}
+                  onRefreshStores={() => void loadMerchStores()}
+                  stores={merchStores}
+                  value={productBatchForm}
+                  warnings={productBatchWarnings}
+                />
+                <ProductApprovalQueue
+                  isLoading={isLoadingApprovalQueue}
+                  onAction={(product, action) => void updateProductApproval(product, action)}
+                  onRefresh={() => void loadApprovalQueue()}
+                  products={approvalQueueProducts}
+                  updatingProductIds={updatingApprovalProductIds}
+                />
+                <p className="phase110-read-only-notice">
+                  Simulation-only growth and provider workbenches are not exposed in the member UI. They remain unavailable until each action has a real, governed backend and provider path.
+                </p>
+              </section>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      {Boolean(0) ? (
+        <>
       <header className="command-center-brand" data-academy="command-brand" aria-label="Command center status">
         <Logo />
         <div>
@@ -7996,6 +8539,8 @@ export function NeuronsCommandCenter({ user, onLogout, surface = "internal" }: N
           </section>
         ) : null}
       </aside>
+        </>
+      ) : null}
     </main>
   );
 }

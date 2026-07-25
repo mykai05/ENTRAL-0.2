@@ -12,6 +12,10 @@ type AuthRouteContext = {
   requestId?: string;
 };
 
+type EmailVerificationRouteContext = AuthRouteContext & {
+  next?: string;
+};
+
 type AuthUserRecord = {
   email: string;
   emailVerifiedAt?: Date | null;
@@ -30,7 +34,7 @@ function emailAuditMetadata(email: string) {
   };
 }
 
-export async function issueEmailVerification(user: AuthUserRecord, context: AuthRouteContext = {}) {
+export async function issueEmailVerification(user: AuthUserRecord, context: EmailVerificationRouteContext = {}) {
   if (user.emailVerifiedAt) {
     return { alreadyVerified: true };
   }
@@ -59,6 +63,7 @@ export async function issueEmailVerification(user: AuthUserRecord, context: Auth
     const delivery = await sendVerificationEmail({
       flow: context.flow,
       name: user.name,
+      next: context.next,
       to: user.email,
       token
     });
@@ -96,7 +101,7 @@ export async function issueEmailVerification(user: AuthUserRecord, context: Auth
   }
 }
 
-export async function requestEmailVerification(email: string, context: AuthRouteContext = {}) {
+export async function requestEmailVerification(email: string, context: EmailVerificationRouteContext = {}) {
   const user = await prisma.user.findUnique({
     where: { email }
   });

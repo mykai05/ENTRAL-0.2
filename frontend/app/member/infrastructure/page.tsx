@@ -10,16 +10,16 @@ import { loadMemberSession } from "../../../lib/member-session.server";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Universe Graph",
-  description: "Authenticated Entral organization graph."
+  title: "Infrastructure",
+  description: "Authenticated Entral hierarchy and infrastructure records."
 };
 
-export default async function MemberGraphPage() {
+export default async function MemberInfrastructurePage() {
   const requestHeaders = await headers();
   const session = await loadMemberSession(requestHeaders.get("cookie") ?? "");
 
   if (session.kind === "unauthenticated") {
-    redirect(memberSignInPath("/member/graph"));
+    redirect(memberSignInPath("/member/infrastructure"));
   }
 
   if (session.kind === "unavailable") {
@@ -33,7 +33,7 @@ export default async function MemberGraphPage() {
 
   return (
     <MemberCommandCenterClient
-      initialDestination="graph"
+      initialDestination="infrastructure"
       organizationId={organization.id}
       userId={session.session.user.id}
     />

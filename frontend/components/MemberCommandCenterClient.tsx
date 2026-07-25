@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "../lib/api";
 import { clearAuthenticatedUserSession } from "../lib/auth-session";
 import { Logo } from "./Logo";
+import type { MemberDestination } from "./MemberDestinationNav";
 import { NeuronsCommandCenter } from "./NeuronsCommandCenter";
 
 const memberScopeKey = "entral-member-command-center-scope";
@@ -18,11 +19,12 @@ const organizationLocalKeys = [
 ] as const;
 
 type MemberCommandCenterClientProps = {
+  initialDestination?: MemberDestination;
   organizationId: string;
   userId: string;
 };
 
-export function MemberCommandCenterClient({ organizationId, userId }: MemberCommandCenterClientProps) {
+export function MemberCommandCenterClient({ initialDestination = "dashboard", organizationId, userId }: MemberCommandCenterClientProps) {
   const router = useRouter();
   const [isScopeReady, setIsScopeReady] = useState(false);
 
@@ -68,5 +70,5 @@ export function MemberCommandCenterClient({ organizationId, userId }: MemberComm
   // Passing a null internal operator prevents Command OS persistence and all
   // internal-only API access; the backend independently rejects member tokens
   // on those routes while local visual controls continue to work.
-  return <NeuronsCommandCenter surface="member" user={null} onLogout={handleLogout} />;
+  return <NeuronsCommandCenter initialDestination={initialDestination} surface="member" user={null} onLogout={handleLogout} />;
 }

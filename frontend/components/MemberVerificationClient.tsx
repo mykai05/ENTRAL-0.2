@@ -8,7 +8,7 @@ import { ApiError, apiFetch } from "../lib/api";
 import { Button } from "./Button";
 import { TextField } from "./TextField";
 
-export function MemberVerificationClient({ token }: { token?: string }) {
+export function MemberVerificationClient({ returnTo = "/member/dashboard", token }: { returnTo?: string; token?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -26,13 +26,13 @@ export function MemberVerificationClient({ token }: { token?: string }) {
     try {
       if (token) {
         await apiFetch("/email-verification/confirm", { json: { token }, method: "POST" });
-        router.replace("/member");
+        router.replace(returnTo);
         router.refresh();
         return;
       }
 
       const response = await apiFetch<{ message: string }>("/email-verification/request", {
-        json: { email, flow: "member" },
+        json: { email, flow: "member", next: returnTo },
         method: "POST"
       });
       setMessage(response.message);

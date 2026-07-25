@@ -103,34 +103,34 @@ const modules: AcademyModule[] = [
 
 const academySteps: AcademyStep[] = [
   {
-    description: "ENTRAL begins as a central command system with no fake hierarchy. Your first job is to create the operating structure it will command.",
-    guidedTask: "Notice the ENTRAL status at the top of the dashboard. A new user should see ENTRAL online and awaiting directives.",
+    description: "Dashboard is the default post-login surface. It summarizes only current records and never invents businesses, financial totals, or activity.",
+    guidedTask: "Review the portfolio totals, source status, current work, and honest empty states.",
     id: "welcome",
     mode: "both",
     moduleId: "quick-start",
     route: "/dashboard",
-    target: "command-brand",
-    title: "Start from ENTRAL"
+    target: "portfolio-dashboard",
+    title: "Start from Dashboard"
   },
   {
-    description: "The command console is the primary control path. You can ask questions, request reports, create structure, or route work from one place.",
-    guidedTask: "Look at the command console. Try commands like Help, Create a Marshal, Create my first business, or ENTRAL report.",
+    description: "ENTRAL conversation lives inside Dashboard, separate from the Universe Graph.",
+    guidedTask: "Open the ENTRAL Dashboard section and review its real conversation and screen-sharing controls.",
     id: "command-console",
     mode: "both",
     moduleId: "command-guide",
-    route: "/dashboard",
-    target: "command-console",
-    title: "Command through ENTRAL"
+    route: "/dashboard?section=entral",
+    target: "entral-workspace",
+    title: "Work with ENTRAL"
   },
   {
-    description: "The visible command menu is the replacement for hidden shortcut discovery. Keyboard shortcuts still work, but no essential action should depend on them.",
-    guidedTask: "Open the Command button and look for actions such as Academy, tasks, settings, business setup, and reports.",
+    description: "The member shell has exactly three top-level destinations: Dashboard, OPEN UNIVERSE GRAPH, and Infrastructure.",
+    guidedTask: "Use each destination once and confirm the current scope remains visible.",
     id: "command-menu",
     mode: "both",
     moduleId: "command-guide",
     route: "/dashboard",
-    target: "command-palette",
-    title: "Find actions without guessing"
+    target: "member-destinations",
+    title: "Use the three destinations"
   },
   {
     description: "The 3D graph is the live command view. ENTRAL sits at the center. Marshals, Generals, Commanders, and Soldiers appear only when you create them.",
@@ -138,122 +138,122 @@ const academySteps: AcademyStep[] = [
     id: "graph",
     mode: "both",
     moduleId: "hierarchy-guide",
-    route: "/dashboard",
+    route: "/graph",
     target: "command-graph",
     title: "Read the graph"
   },
   {
-    description: "Marshals are broad operating domains. A Merch Marshal, Website Marshal, or Marketing Marshal can contain multiple niche Generals.",
-    guidedTask: "Use the navigation to inspect Marshals. If no Marshals exist yet, create one before creating a niche General.",
+    description: "Marshals are broad operating domains. Infrastructure shows their exact position and descendants without creating sample records.",
+    guidedTask: "Open Infrastructure and select a Marshal record if one exists.",
     id: "navigation",
     mode: "both",
     moduleId: "hierarchy-guide",
-    route: "/dashboard",
-    target: "command-nav",
+    route: "/infrastructure",
+    target: "infrastructure-hierarchy",
     title: "Understand Marshals"
   },
   {
-    description: "Generals represent niches inside a Marshal. Each Commander represents one business inside a niche, and Soldiers represent that business's operational functions.",
-    guidedTask: "Open the inspector and review the command path, direct reports, memory, tasks, and suggested actions for the selected entity.",
+    description: "The Graph drawer is intentionally minimal: identity, state, health, parent, children, current objective, and latest material result.",
+    guidedTask: "Select a graph entity, review the minimal drawer, then open its full Infrastructure record.",
     id: "inspector",
     mode: "both",
     moduleId: "hierarchy-guide",
-    route: "/dashboard",
-    target: "command-inspector",
+    route: "/graph",
+    target: "graph-inspector",
     title: "Inspect the hierarchy"
   },
   {
-    description: "Use the structure controls when you want to build manually. ENTRAL enforces the official order: Marshals under ENTRAL, Generals under Marshals, Commanders under Generals, Soldiers under Commanders.",
-    guidedTask: "Open Unified controls and locate Add Marshal, Add General, Add Commander, Add Soldier, and Remove Selected.",
+    description: "Infrastructure preserves the official order: Marshals under ENTRAL, Generals under Marshals, Commanders under Generals, and Soldiers under Commanders.",
+    guidedTask: "Review a full record. Phase 110 keeps unsupported stateful actions hidden instead of simulating them.",
     id: "create-entities",
     mode: "both",
     moduleId: "hierarchy-guide",
-    route: "/dashboard",
-    target: "command-structure-actions",
-    title: "Create the chain of command"
+    route: "/infrastructure",
+    target: "infrastructure-record",
+    title: "Review the chain of command"
   },
   {
-    description: "The business wizard turns a business idea into a broad-domain Marshal, niche General, one-business Commander, operational Soldiers, and a pending initial task.",
-    guidedTask: "Open Business setup, choose a template, enter a business name, and preview the creation plan before approval.",
+    description: "Dashboard business rows represent existing Commander records only. No setup wizard can create shadow business state in the Graph.",
+    guidedTask: "Review the current portfolio or its honest empty state.",
     id: "first-business",
     mode: "both",
     moduleId: "business-guide",
     route: "/dashboard",
-    target: "business-wizard",
-    title: "Add a portfolio business"
+    target: "portfolio-dashboard",
+    title: "Understand business records"
   },
   {
-    description: "Templates reduce setup time. ENTRAL supports Professional Services, Website Agency, Content Agency, E-commerce Brand, SaaS Startup, Local Service Business, and Custom Blank Structure.",
-    guidedTask: "Review the template buttons and choose the one closest to your business model.",
+    description: "Backend-connected business tools are grouped under Infrastructure rather than mixed into the Graph.",
+    guidedTask: "Open Business operations and review only the controls backed by current API paths.",
     id: "templates",
     mode: "both",
     moduleId: "business-guide",
-    route: "/dashboard",
-    target: "business-wizard",
-    title: "Use business templates"
+    route: "/infrastructure?section=operations",
+    target: "business-operations",
+    title: "Find business operations"
   },
   {
-    description: "Tasks are delegated through the hierarchy and reports preserve what happened. Reports use Situation, Analysis, Recommendation, and Next Actions.",
-    guidedTask: "Generate an ENTRAL report or assign a task. Then review the command feed and selected entity report history.",
+    description: "Dashboard summarizes current task records and exceptions without claiming execution that did not occur.",
+    guidedTask: "Review Active work and open any exception through its Infrastructure record.",
     id: "tasks-reports",
     mode: "both",
     moduleId: "command-guide",
     route: "/dashboard",
-    target: "command-task-list",
-    title: "Use tasks and reports"
+    target: "portfolio-dashboard",
+    title: "Review work and exceptions"
   },
   {
-    description: "On mobile, use bottom tabs instead of desktop sidebars. Command, Hierarchy, Tasks, Reports, and More are the main surfaces.",
-    guidedTask: "Open the bottom tabs on a narrow screen. Use Hierarchy for structure, Tasks for work, Reports for briefings, and Command for directives.",
+    description: "On mobile, the same three member destinations remain persistent at the bottom of the screen.",
+    guidedTask: "Use Dashboard, OPEN UNIVERSE GRAPH, and Infrastructure at phone width and verify there is no horizontal overflow.",
     id: "mobile",
     mode: "both",
     moduleId: "mobile-guide",
     route: "/dashboard",
-    target: "command-nav",
+    target: "member-destinations",
     title: "Operate from mobile"
   },
   {
-    description: "Voice mode lets ENTRAL hear push-to-talk directives and speak reports based on your settings.",
-    guidedTask: "Find the microphone status and try a safe text version first: ENTRAL, report. Then enable voice if desired.",
+    description: "Voice and screen input belong to the ENTRAL conversation, not the Universe Graph.",
+    guidedTask: "Open ENTRAL in Dashboard and review consent and voice controls before enabling either.",
     id: "voice",
     mode: "both",
     moduleId: "voice-guide",
-    route: "/dashboard",
-    target: "voice-controls",
+    route: "/dashboard?section=entral",
+    target: "entral-workspace",
     title: "Use voice commands"
   },
   {
-    description: "A portfolio may contain many independent business Generals. Each General owns its Commanders, Soldiers, tasks, and reports without flattening the wider command universe.",
-    guidedTask: "Open Business setup, preview two different business templates, and review how each becomes a separate General before approving anything.",
-    id: "portfolio-scale",
+    description: "Merch and product operations are subordinate Infrastructure modules with backend-connected request paths.",
+    guidedTask: "Open Business operations and verify provider-dependent actions disclose their actual availability.",
+    id: "merch-pod",
     mode: "both",
     moduleId: "merch-guide",
-    route: "/dashboard",
-    target: "business-wizard",
-    title: "Operate a multi-business portfolio"
+    route: "/infrastructure?section=operations",
+    target: "business-operations",
+    title: "Review Merch/POD operations"
   },
   {
-    description: "ENTRAL repairs local state on refresh: broken edges are rebuilt and interrupted active tasks are marked failed for review.",
-    guidedTask: "Review task history after a refresh. Interrupted local tasks should never silently pretend they completed.",
+    description: "The shell identifies whether hierarchy data came from the authoritative backend snapshot or browser recovery state.",
+    guidedTask: "Review the source badge and record logs after reconnecting or refreshing.",
     id: "recovery",
     mode: "advanced",
     moduleId: "advanced-tools",
-    route: "/dashboard",
-    target: "command-task-list",
-    title: "Understand recovery"
+    route: "/infrastructure",
+    target: "infrastructure-record",
+    title: "Understand source and recovery"
   },
   {
     description: "Share Screen is optional and consent-based. ENTRAL should only see your screen when you explicitly allow it.",
-    guidedTask: "Open Chat, find Share Screen, read the privacy notice, then stop before granting permission unless you need it.",
+    guidedTask: "Open ENTRAL in Dashboard, find Share Screen, read the privacy notice, then stop before granting permission unless you need it.",
     id: "screen-sharing",
     mode: "both",
     moduleId: "advanced-tools",
-    route: "/chat",
-    target: "screen-share",
+    route: "/dashboard?section=entral",
+    target: "entral-workspace",
     title: "Use screen view safely"
   },
   {
-    description: "Settings contain appearance, account, Command AI behavior, voice, and Academy controls including replay and mode selection.",
+    description: "Settings contain appearance, real account privacy controls, voice, and Academy controls including replay and mode selection.",
     guidedTask: "Open Settings, switch to Academy, and replay the tutorial library whenever you need a refresher.",
     id: "settings",
     mode: "both",
@@ -273,13 +273,13 @@ const academySteps: AcademyStep[] = [
     title: "Choose your training depth"
   },
   {
-    description: "Advanced operators should use the visible command menu, keyboard help, governance, and task recovery together.",
-    guidedTask: "Open keyboard help, then use the command menu to jump to governance or automations.",
+    description: "Advanced operators can reach governance, automation, agent, and business-operation modules inside Infrastructure.",
+    guidedTask: "Open Infrastructure and switch between its subordinate sections without leaving the three-destination shell.",
     id: "advanced-flow",
     mode: "advanced",
     moduleId: "advanced-tools",
-    route: "/dashboard",
-    target: "command-palette",
+    route: "/infrastructure",
+    target: "member-destinations",
     title: "Operate like a power user"
   }
 ];
@@ -711,8 +711,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setAcademyPlacement("center");
     updateAcademyState((current) => ({ ...current, firstLaunchSeen: true }));
 
-    if (pathname !== step.route) {
-      router.push(step.route);
+    const targetRoute = pathname.startsWith("/member/")
+      ? `/member${step.route}`
+      : step.route;
+    const targetPathname = targetRoute.split("?")[0];
+    if (pathname !== targetPathname || targetRoute.includes("?")) {
+      router.push(targetRoute);
     }
   }
 

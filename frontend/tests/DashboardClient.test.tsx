@@ -25,15 +25,17 @@ vi.mock("../lib/api", async (importOriginal) => {
 
 vi.mock("../components/NeuronsCommandCenter", () => ({
   NeuronsCommandCenter: ({
+    initialDestination,
     onLogout,
     user
   }: {
+    initialDestination: string;
     onLogout: () => Promise<void>;
     user: { id: string; name: string };
   }) => (
     <main>
       <h1>Verified command graph</h1>
-      <p>{user.id}:{user.name}</p>
+      <p>{user.id}:{user.name}:{initialDestination}</p>
       <button type="button" onClick={() => void onLogout()}>Log out</button>
     </main>
   )
@@ -66,11 +68,19 @@ describe("DashboardClient authentication boundary", () => {
     expect(screen.queryByRole("heading", { name: "Verified command graph" })).not.toBeInTheDocument();
 
     expect(await screen.findByRole("heading", { name: "Verified command graph" })).toBeInTheDocument();
-    expect(screen.getByText("user-1:Operator")).toBeInTheDocument();
+    expect(screen.getByText("user-1:Operator:dashboard")).toBeInTheDocument();
     expect(JSON.parse(window.sessionStorage.getItem("entral-authenticated-user") ?? "{}")).toEqual({
       email: "operator@entral.local",
       userId: "user-1"
     });
+  });
+
+  it("preserves the requested member destination through authentication", async () => {
+    mocks.apiFetch.mockResolvedValueOnce(dashboardResponse);
+
+    render(<DashboardClient initialDestination="infrastructure" />);
+
+    expect(await screen.findByText("user-1:Operator:infrastructure")).toBeInTheDocument();
   });
 
   it("fails closed and redirects when the session is unauthorized", async () => {
@@ -108,19 +118,35 @@ describe("DashboardClient authentication boundary", () => {
     expect(mocks.apiFetch).toHaveBeenCalledTimes(2);
   });
 
-  it("clears the local handoff and returns to onboarding on logout", async () => {
+  it("clears the local handoff and returns to sign-in on logout", async () => {
     mocks.apiFetch
       .mockResolvedValueOnce(dashboardResponse)
       .mockResolvedValueOnce({ ok: true });
+    window.history.replaceState(null, "", "/infrastructure?section=agents");
 
-    render(<DashboardClient />);
+    render(<DashboardClient initialDestination="infrastructure" />);
     fireEvent.click(await screen.findByRole("button", { name: "Log out" }));
 
     await waitFor(() => {
       expect(mocks.apiFetch).toHaveBeenLastCalledWith("/logout", { method: "POST" });
-      expect(mocks.push).toHaveBeenCalledWith("/onboarding");
+      expect(mocks.push).toHaveBeenCalledWith("/login?next=%2Finfrastructure%3Fsection%3Dagents");
       expect(mocks.refresh).toHaveBeenCalled();
     });
     expect(window.sessionStorage.getItem("entral-authenticated-user")).toBeNull();
+  });
+
+  it("keeps the local session intact when backend logout fails", async () => {
+    mocks.apiFetch
+      .mockResolvedValueOnce(dashboardResponse)
+      .mockRejectedValueOnce(new ApiError(503, "Backend unavailable", null));
+    window.history.replaceState(null, "", "/dashboard");
+
+    render(<DashboardClient />);
+    await screen.findByRole("heading", { name: "Verified command graph" });
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Sign out failed: Backend unavailable");
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem("entral-authenticated-user")).not.toBeNull();
   });
 });

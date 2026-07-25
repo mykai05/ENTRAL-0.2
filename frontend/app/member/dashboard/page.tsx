@@ -33,6 +33,7 @@ export default async function MemberCommandCenterPage() {
 
   return (
     <MemberCommandCenterClient
+      initialDestination="dashboard"
       organizationId={organization.id}
       userId={session.session.user.id}
     />

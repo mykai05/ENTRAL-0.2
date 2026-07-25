@@ -215,12 +215,12 @@ describe("OnboardingProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show me" }));
 
     expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: "Start from ENTRAL walkthrough" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Start from Dashboard walkthrough" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Return to Academy" }));
 
     expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Start from ENTRAL", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Start from Dashboard", level: 2 })).toBeInTheDocument();
   });
 
   it("restores a stored authenticated session but still waits for a manual Academy request", () => {
