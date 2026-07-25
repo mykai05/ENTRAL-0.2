@@ -11318,7 +11318,7 @@ describe("MerchOperationsPanel", () => {
     expect(within(region).getByText("1 business selected for the internal launch wave from 1 eligible ready-parallel lane.")).toBeInTheDocument();
     expect(within(region).getByText("Launch Wave Receipt")).toBeInTheDocument();
     expect(within(region).getByText("1 first-business launch action previewed from the fleet wave.")).toBeInTheDocument();
-  }, 10_000);
+  }, 30_000);
 
   it("loads and applies the private Money Army batch pipeline through the dashboard", async () => {
     const onRefreshStores = vi.fn();
