@@ -17,6 +17,7 @@ import {
   assertQueueJobEnvelope,
   assertValidParentRole,
   assertExpectedVersion,
+  assertGovernanceActionRequest,
   parseMemberOrganizationsResponse
 } from "../dist/index.js";
 
@@ -191,6 +192,49 @@ test("stale expected version is rejected", () => {
     assert.equal(error.code, "STALE_EXPECTED_VERSION");
     return true;
   });
+});
+
+test("governance action requests enforce actor, target, scope, and policy compatibility", () => {
+  const request = {
+    action_id: id,
+    action_type: "PAUSE",
+    actor_type: "HUMAN",
+    actor_id: secondId,
+    scope: {
+      scope_type: "ENTITY",
+      scope_id: thirdId,
+      entity_id: thirdId,
+      display_label: "Target entity"
+    },
+    target_type: "ENTITY",
+    target_id: thirdId,
+    business_id: null,
+    requested_outcome: "Pause the target without changing its hierarchy.",
+    reason: "A verified dependency is unavailable.",
+    authority_basis: { permission: "pause" },
+    risk_class: "MEDIUM",
+    confidence: 1,
+    proposed_changes: { status: "PAUSED" },
+    rollback_plan: { action: "RESUME" },
+    verification_plan: { checks: ["read-after-write"] },
+    expected_version: 3,
+    idempotency_key: "pause-entity-123456",
+    requested_at: "2026-07-24T00:00:00Z"
+  };
+
+  assert.doesNotThrow(() => assertGovernanceActionRequest(request));
+  assert.throws(
+    () => assertGovernanceActionRequest({ ...request, actor_type: "SYSTEM" }),
+    (error) => error.code === "INVALID_GOVERNANCE_ACTOR"
+  );
+  assert.throws(
+    () => assertGovernanceActionRequest({ ...request, action_type: "SCHEDULE_CHANGE" }),
+    (error) => error.code === "ACTION_TARGET_MISMATCH"
+  );
+  assert.throws(
+    () => assertGovernanceActionRequest({ ...request, action_type: "REPAIR" }),
+    (error) => error.code === "INVALID_GOVERNANCE_ACTOR"
+  );
 });
 
 test("duplicate idempotency key is rejected", () => {
@@ -399,14 +443,21 @@ test("event and audit consumers reject malformed canonical records", () => {
   assert.throws(() => assertAuditEntry({ ...audit, result: "PENDING" }), ContractError);
 });
 
-test("OpenAPI exposes only implemented member paths", async () => {
+test("OpenAPI exposes only implemented member and Phase 140 control-plane paths", async () => {
   const openapi = await readFile(new URL("../openapi.yaml", import.meta.url), "utf8");
   const document = parseYaml(openapi);
   assert.equal(document.openapi, "3.1.0");
   assert.deepEqual(Object.keys(document.paths).sort(), [
+    "/api/v1/control-plane/businesses",
+    "/api/v1/control-plane/businesses/{businessId}",
+    "/api/v1/control-plane/governance-actions",
+    "/api/v1/control-plane/hierarchy",
     "/api/v1/member/organizations",
     "/api/v1/member/organizations/{organizationId}/overview"
   ]);
+  assert.equal(document.components.schemas.CanonicalEntitySummary.additionalProperties, false);
+  assert.equal(document.components.schemas.CanonicalBusinessSummary.additionalProperties, false);
+  assert.equal(document.components.schemas.GovernanceActionRequest.additionalProperties, false);
   assert.equal(document.components.schemas.MemberOverviewResponse.additionalProperties, false);
   assert.equal(document.components.schemas.MemberWorkspace.additionalProperties, false);
   for (const unimplemented of ["/portfolio", "/businesses", "/entities", "/actions", "/audit", "/events"]) {

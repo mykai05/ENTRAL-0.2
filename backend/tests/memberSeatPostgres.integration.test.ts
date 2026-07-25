@@ -13,16 +13,18 @@ describe.skipIf(!integrationEnabled)("Entral Base PostgreSQL seat enforcement", 
       throw new Error("TEST_DATABASE_URL must use PostgreSQL.");
     }
 
-    const schemaName = `entral_member_seat_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const databaseName = `entral_member_seat_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     const adminUrl = new URL(databaseUrl);
+    adminUrl.pathname = "/postgres";
     adminUrl.searchParams.delete("schema");
-    const schemaUrl = new URL(databaseUrl);
-    schemaUrl.searchParams.set("schema", schemaName);
+    const isolatedUrl = new URL(databaseUrl);
+    isolatedUrl.pathname = `/${databaseName}`;
+    isolatedUrl.searchParams.delete("schema");
     const admin = new PrismaClient({ datasources: { db: { url: adminUrl.toString() } } });
     let client: PrismaClient | null = null;
 
     try {
-      await admin.$executeRawUnsafe(`CREATE SCHEMA "${schemaName}"`);
+      await admin.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
       const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
       const prismaCli = fileURLToPath(new URL("../../node_modules/prisma/build/index.js", import.meta.url));
       const migration = spawnSync(process.execPath, [
@@ -34,23 +36,23 @@ describe.skipIf(!integrationEnabled)("Entral Base PostgreSQL seat enforcement", 
       ], {
         cwd: repositoryRoot,
         encoding: "utf8",
-        env: { ...process.env, DATABASE_URL: schemaUrl.toString() }
+        env: { ...process.env, DATABASE_URL: isolatedUrl.toString() }
       });
       if (migration.status !== 0) {
         throw new Error(`Disposable PostgreSQL migration failed: ${migration.stderr || migration.stdout}`);
       }
 
-      client = new PrismaClient({ datasources: { db: { url: schemaUrl.toString() } } });
+      client = new PrismaClient({ datasources: { db: { url: isolatedUrl.toString() } } });
       const users = await Promise.all(Array.from({ length: 12 }, (_, index) => client!.user.create({
         data: {
-          email: `seat-${schemaName}-${index}@example.test`,
+          email: `seat-${databaseName}-${index}@example.test`,
           name: `Seat User ${index}`,
           passwordHash: "not-a-real-password-hash"
         }
       })));
 
       const directTeam = await client.team.create({
-        data: { memberAccessEnabled: true, memberSeatLimit: 5, name: "Direct Seat Test", slug: `direct-${schemaName}` }
+        data: { memberAccessEnabled: true, memberSeatLimit: 5, name: "Direct Seat Test", slug: `direct-${databaseName}` }
       });
       for (const user of users.slice(0, 5)) {
         await client.teamMember.create({ data: { teamId: directTeam.id, userId: user.id } });
@@ -61,7 +63,7 @@ describe.skipIf(!integrationEnabled)("Entral Base PostgreSQL seat enforcement", 
       await expect(client.teamMember.count({ where: { teamId: directTeam.id } })).resolves.toBe(5);
 
       const disabledOverLimitTeam = await client.team.create({
-        data: { memberAccessEnabled: false, memberSeatLimit: 5, name: "Disabled Over-limit Test", slug: `disabled-${schemaName}` }
+        data: { memberAccessEnabled: false, memberSeatLimit: 5, name: "Disabled Over-limit Test", slug: `disabled-${databaseName}` }
       });
       for (const user of users.slice(0, 6)) {
         await client.teamMember.create({ data: { teamId: disabledOverLimitTeam.id, userId: user.id } });
@@ -76,7 +78,7 @@ describe.skipIf(!integrationEnabled)("Entral Base PostgreSQL seat enforcement", 
       })).resolves.toEqual({ memberAccessEnabled: false });
 
       const concurrentTeam = await client.team.create({
-        data: { memberAccessEnabled: true, memberSeatLimit: 5, name: "Concurrent Seat Test", slug: `concurrent-${schemaName}` }
+        data: { memberAccessEnabled: true, memberSeatLimit: 5, name: "Concurrent Seat Test", slug: `concurrent-${databaseName}` }
       });
       for (const user of users.slice(6, 10)) {
         await client.teamMember.create({ data: { teamId: concurrentTeam.id, userId: user.id } });
@@ -91,7 +93,10 @@ describe.skipIf(!integrationEnabled)("Entral Base PostgreSQL seat enforcement", 
       await expect(client.teamMember.count({ where: { teamId: concurrentTeam.id } })).resolves.toBe(5);
     } finally {
       await client?.$disconnect();
-      await admin.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
+      await admin.$executeRawUnsafe(
+        `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${databaseName}' AND pid <> pg_backend_pid()`
+      );
+      await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${databaseName}"`);
       await admin.$disconnect();
     }
   }, 60_000);

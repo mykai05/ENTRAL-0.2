@@ -1,10 +1,14 @@
 import {
   ENTITY_ROLES,
+  GOVERNANCE_ACTION_TARGETS,
+  GOVERNANCE_ACTION_TYPES,
+  GOVERNANCE_TARGET_TYPES,
   type ActionRequest,
   type AuditEntry,
   type CanonicalEvent,
   type ContextScope,
   type EntityRole,
+  type GovernanceActionRequest,
   type JsonValue
 } from "./domain.js";
 
@@ -164,6 +168,69 @@ export function assertActionRequest(request: ActionRequest): void {
     throw new ContractError("REASON", "reason must be at least 3 characters");
   }
   assertJsonValue(request.parameters, "parameters");
+  assertSafeNonNegativeInteger(request.expected_version, "expected_version");
+  assertNonEmptyString(request.idempotency_key, "idempotency_key", 255);
+  if (request.idempotency_key.trim().length < 12) {
+    throw new ContractError("IDEMPOTENCY_KEY", "idempotency_key must be at least 12 characters");
+  }
+  assertIsoDate(request.requested_at, "requested_at");
+}
+
+export function assertGovernanceActionRequest(request: GovernanceActionRequest): void {
+  assertRecord(request, "governance_action_request");
+  assertUuid(request.action_id, "action_id");
+  if (!(GOVERNANCE_ACTION_TYPES as readonly unknown[]).includes(request.action_type)) {
+    throw new ContractError("INVALID_GOVERNANCE_ACTION", `${String(request.action_type)} is not a governance action type`);
+  }
+  if (request.actor_type !== "HUMAN" && request.actor_type !== "ENTRAL") {
+    throw new ContractError("INVALID_GOVERNANCE_ACTOR", "Governance actions require Human authority or ENTRAL");
+  }
+  if (request.action_type === "REPAIR" && request.actor_type !== "ENTRAL") {
+    throw new ContractError("INVALID_GOVERNANCE_ACTOR", "REPAIR governance actions require ENTRAL");
+  }
+  assertUuid(request.actor_id, "actor_id");
+  assertContextScope(request.scope);
+  if (!(GOVERNANCE_TARGET_TYPES as readonly unknown[]).includes(request.target_type)) {
+    throw new ContractError("INVALID_GOVERNANCE_TARGET", `${String(request.target_type)} is not a governance target type`);
+  }
+  if (!GOVERNANCE_ACTION_TARGETS[request.action_type].includes(request.target_type)) {
+    throw new ContractError(
+      "ACTION_TARGET_MISMATCH",
+      `${request.action_type} cannot target ${request.target_type}`
+    );
+  }
+  if (request.target_type === "SYSTEM") {
+    if (request.target_id !== null) {
+      throw new ContractError("SYSTEM_TARGET_ID", "SYSTEM governance actions cannot carry a target_id");
+    }
+  } else {
+    assertUuid(request.target_id, "target_id");
+  }
+  if (request.target_type === "GOVERNANCE_ACTION" && request.target_id === request.action_id) {
+    throw new ContractError("SELF_TARGET", "A governance action cannot target itself");
+  }
+  if (request.business_id !== null) assertUuid(request.business_id, "business_id");
+  if ((request.target_type === "SYSTEM" || request.target_type === "POLICY") && request.business_id !== null) {
+    throw new ContractError("GLOBAL_TARGET_SCOPE", `${request.target_type} governance actions cannot be business-scoped`);
+  }
+  assertNonEmptyString(request.requested_outcome, "requested_outcome", 2_000);
+  assertNonEmptyString(request.reason, "reason", 2_000);
+  assertJsonValue(request.authority_basis, "authority_basis");
+  if (!["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(request.risk_class)) {
+    throw new ContractError("INVALID_RISK_CLASS", `${String(request.risk_class)} is not a risk class`);
+  }
+  if (
+    request.confidence !== undefined
+    && (typeof request.confidence !== "number"
+      || !Number.isFinite(request.confidence)
+      || request.confidence < 0
+      || request.confidence > 1)
+  ) {
+    throw new ContractError("INVALID_CONFIDENCE", "confidence must be between 0 and 1");
+  }
+  assertJsonValue(request.proposed_changes, "proposed_changes");
+  assertJsonValue(request.rollback_plan, "rollback_plan");
+  assertJsonValue(request.verification_plan, "verification_plan");
   assertSafeNonNegativeInteger(request.expected_version, "expected_version");
   assertNonEmptyString(request.idempotency_key, "idempotency_key", 255);
   if (request.idempotency_key.trim().length < 12) {

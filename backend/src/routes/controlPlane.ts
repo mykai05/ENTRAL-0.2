@@ -1,0 +1,88 @@
+import {
+  assertGovernanceActionRequest,
+  ContractError,
+  type GovernanceActionRequest
+} from "@entral/contracts";
+import type { FastifyInstance, FastifyReply } from "fastify";
+import { z } from "zod";
+import { requireAdmin, setPrivateNoStoreHeaders } from "../auth.js";
+import {
+  canonicalControlPlaneRepository,
+  CanonicalControlPlaneError
+} from "../services/canonicalControlPlane.js";
+
+const businessParamsSchema = z.object({
+  businessId: z.string().uuid()
+});
+
+function unauthenticated(reply: FastifyReply) {
+  return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+}
+
+export async function controlPlaneRoutes(app: FastifyInstance) {
+  app.addHook("onRequest", (_request, reply, done) => {
+    setPrivateNoStoreHeaders(reply);
+    done();
+  });
+
+  app.get("/control-plane/hierarchy", { preHandler: requireAdmin }, async (_request, reply) => {
+    return reply.send({ entities: await canonicalControlPlaneRepository.listHierarchy() });
+  });
+
+  app.get("/control-plane/businesses", { preHandler: requireAdmin }, async (_request, reply) => {
+    return reply.send({ businesses: await canonicalControlPlaneRepository.listBusinesses() });
+  });
+
+  app.get("/control-plane/businesses/:businessId", { preHandler: requireAdmin }, async (request, reply) => {
+    const { businessId } = businessParamsSchema.parse(request.params);
+    const business = await canonicalControlPlaneRepository.getBusiness(businessId);
+    if (!business) {
+      return reply.code(404).send({ error: "Not Found", message: "Business not found." });
+    }
+    return reply.send({ business });
+  });
+
+  app.post("/control-plane/governance-actions", { preHandler: requireAdmin }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+
+    const candidate = request.body as GovernanceActionRequest;
+    try {
+      assertGovernanceActionRequest(candidate);
+    } catch (error) {
+      if (error instanceof ContractError) {
+        return reply.code(400).send({
+          error: "Bad Request",
+          code: error.code,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+
+    // Public HTTP callers represent authenticated Human authority. ENTRAL-originated
+    // actions are created by the internal action service, never by trusting a body field.
+    if (candidate.actor_type !== "HUMAN") {
+      return reply.code(403).send({
+        error: "Forbidden",
+        message: "HTTP governance requests must use authenticated Human authority."
+      });
+    }
+
+    try {
+      const action = await canonicalControlPlaneRepository.createGovernanceAction(candidate, {
+        authenticatedHumanEmail: currentUser.email
+      });
+      return reply.code(201).send({ action });
+    } catch (error) {
+      if (error instanceof CanonicalControlPlaneError) {
+        return reply.code(error.statusCode).send({
+          error: error.statusCode >= 500 ? "Internal Server Error" : "Request Error",
+          code: error.code,
+          message: error.statusCode >= 500 ? "Something went wrong." : error.message
+        });
+      }
+      throw error;
+    }
+  });
+}

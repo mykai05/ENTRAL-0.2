@@ -11,6 +11,62 @@ export type RiskClass = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 export type ActionStatus = "REQUESTED" | "VALIDATED" | "EXECUTING" | "SUCCEEDED" | "FAILED" | "ROLLED_BACK";
 export type ActorType = "HUMAN" | EntityRole | "SYSTEM";
 
+export const GOVERNANCE_ACTION_TYPES = [
+  "CREATE",
+  "EDIT",
+  "PAUSE",
+  "RESUME",
+  "RECONFIGURE",
+  "DUPLICATE",
+  "REASSIGN",
+  "RETARGET",
+  "RETIRE",
+  "RESTORE",
+  "ROLLBACK",
+  "ISOLATE",
+  "REPAIR",
+  "BUDGET_CHANGE",
+  "MODEL_CHANGE",
+  "TOOL_GRANT_CHANGE",
+  "POLICY_CHANGE",
+  "SCHEDULE_CHANGE"
+] as const;
+export type GovernanceActionType = (typeof GOVERNANCE_ACTION_TYPES)[number];
+
+export const GOVERNANCE_TARGET_TYPES = [
+  "ENTITY",
+  "BUSINESS",
+  "MISSION",
+  "TASK",
+  "TOOL_GRANT",
+  "SCHEDULE",
+  "POLICY",
+  "GOVERNANCE_ACTION",
+  "SYSTEM"
+] as const;
+export type GovernanceTargetType = (typeof GOVERNANCE_TARGET_TYPES)[number];
+
+export const GOVERNANCE_ACTION_TARGETS: Readonly<Record<GovernanceActionType, readonly GovernanceTargetType[]>> = {
+  CREATE: ["ENTITY", "BUSINESS", "MISSION", "TASK", "TOOL_GRANT", "SCHEDULE", "POLICY"],
+  EDIT: ["ENTITY", "BUSINESS", "MISSION", "TASK", "POLICY"],
+  PAUSE: ["ENTITY", "BUSINESS", "SCHEDULE"],
+  RESUME: ["ENTITY", "BUSINESS", "SCHEDULE"],
+  RECONFIGURE: ["ENTITY", "BUSINESS"],
+  DUPLICATE: ["ENTITY", "BUSINESS"],
+  REASSIGN: ["ENTITY"],
+  RETARGET: ["ENTITY", "BUSINESS", "MISSION"],
+  RETIRE: ["ENTITY", "BUSINESS", "SCHEDULE", "POLICY"],
+  RESTORE: ["ENTITY", "BUSINESS", "SCHEDULE"],
+  ROLLBACK: ["ENTITY", "BUSINESS", "GOVERNANCE_ACTION"],
+  ISOLATE: ["ENTITY", "BUSINESS", "TOOL_GRANT", "SCHEDULE", "SYSTEM"],
+  REPAIR: ["ENTITY", "BUSINESS", "MISSION", "TASK", "SYSTEM"],
+  BUDGET_CHANGE: ["ENTITY", "BUSINESS", "MISSION"],
+  MODEL_CHANGE: ["ENTITY"],
+  TOOL_GRANT_CHANGE: ["ENTITY", "TOOL_GRANT"],
+  POLICY_CHANGE: ["POLICY", "SYSTEM"],
+  SCHEDULE_CHANGE: ["SCHEDULE"]
+};
+
 export interface ContextScope {
   readonly scope_type: ScopeType;
   readonly scope_id: string;
@@ -111,6 +167,28 @@ export interface ActionRequest {
   readonly target_business_id?: string;
   readonly reason: string;
   readonly parameters: JsonValue;
+  readonly expected_version: number;
+  readonly idempotency_key: string;
+  readonly requested_at: string;
+}
+
+export interface GovernanceActionRequest {
+  readonly action_id: string;
+  readonly action_type: GovernanceActionType;
+  readonly actor_type: "HUMAN" | "ENTRAL";
+  readonly actor_id: string;
+  readonly scope: ContextScope;
+  readonly target_type: GovernanceTargetType;
+  readonly target_id: string | null;
+  readonly business_id: string | null;
+  readonly requested_outcome: string;
+  readonly reason: string;
+  readonly authority_basis: JsonValue;
+  readonly risk_class: RiskClass;
+  readonly confidence?: number;
+  readonly proposed_changes: JsonValue;
+  readonly rollback_plan: JsonValue;
+  readonly verification_plan: JsonValue;
   readonly expected_version: number;
   readonly idempotency_key: string;
   readonly requested_at: string;

@@ -20,6 +20,7 @@ import { revenueEngineRoutes } from "./routes/revenueEngine.js";
 import { adminRoutes } from "./routes/admin.js";
 import { memberRoutes } from "./routes/member.js";
 import { memberTaskVisibilityRoutes } from "./routes/memberTaskVisibility.js";
+import { controlPlaneRoutes } from "./routes/controlPlane.js";
 import { env } from "./env.js";
 import { enforceSessionBoundary, requireTrustedOrigin } from "./auth.js";
 import type { AiService } from "./services/openaiService.js";
@@ -116,6 +117,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(authRoutes, { prefix: "/api/v1" });
   await app.register(memberRoutes, { prefix: "/api/v1" });
   await app.register(memberTaskVisibilityRoutes, { prefix: "/api/v1" });
+  await app.register(controlPlaneRoutes, { prefix: "/api/v1" });
   await app.register(accountRoutes, { prefix: "/api/v1" });
   await app.register(dashboardRoutes, { prefix: "/api/v1" });
   await app.register(taskRoutes, { prefix: "/api/v1" });
