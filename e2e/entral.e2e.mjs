@@ -751,10 +751,8 @@ const tests = [
 
           const graph3DStart = performance.now();
           const graph3DButton = page.getByRole("button", { name: "3D Graph" });
-          await graph3DButton.evaluate((element) => {
-            element.closest('[aria-label="Graph view"]')?.scrollIntoView({ block: "center", inline: "nearest" });
-          });
-          await graph3DButton.click();
+          await graph3DButton.focus();
+          await page.keyboard.press("Enter");
           const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
           await expectVisible(original3DCanvas, `${profile.name} 10,000-entity original 3D Graph`, 30_000);
           const graph3DReadyMs = performance.now() - graph3DStart;
