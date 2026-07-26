@@ -704,8 +704,10 @@ test("OpenAPI exposes only implemented member and Phase 180 control-plane paths"
     "/api/v1/member/organizations",
     "/api/v1/member/organizations/{organizationId}/businesses/{businessId}/full",
     "/api/v1/member/organizations/{organizationId}/entities/{entityId}/full",
+    "/api/v1/member/organizations/{organizationId}/entral/assistant/messages",
     "/api/v1/member/organizations/{organizationId}/entral/conversation",
     "/api/v1/member/organizations/{organizationId}/events",
+    "/api/v1/member/organizations/{organizationId}/governance-actions",
     "/api/v1/member/organizations/{organizationId}/hierarchy",
     "/api/v1/member/organizations/{organizationId}/overview",
     "/api/v1/member/organizations/{organizationId}/portfolio/summary"
@@ -718,9 +720,21 @@ test("OpenAPI exposes only implemented member and Phase 180 control-plane paths"
   assert.equal(document.components.schemas.CanonicalBusinessFullRecord.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalPortfolioEvents.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalEntralConversation.additionalProperties, false);
+  assert.equal(document.components.schemas.MemberEntralAssistantMessageRequest.additionalProperties, false);
+  assert.equal(document.components.schemas.MemberEntralAssistantMessageResponse.additionalProperties, false);
   assert.equal(document.components.schemas.GovernanceActionRequest.additionalProperties, false);
   assert.equal(document.components.schemas.MemberOverviewResponse.additionalProperties, false);
   assert.equal(document.components.schemas.MemberWorkspace.additionalProperties, false);
+  assert.equal(
+    document.paths["/api/v1/member/organizations/{organizationId}/entral/assistant/messages"]
+      .post.requestBody.content["application/json"].schema.$ref,
+    "#/components/schemas/MemberEntralAssistantMessageRequest"
+  );
+  assert.equal(
+    document.paths["/api/v1/member/organizations/{organizationId}/governance-actions"]
+      .post.requestBody.content["application/json"].schema.$ref,
+    "#/components/schemas/GovernanceActionRequest"
+  );
   for (const unimplemented of ["/portfolio", "/businesses", "/entities", "/actions", "/audit", "/events"]) {
     assert.equal(openapi.includes(`  ${unimplemented}`), false, `${unimplemented} must not be exposed`);
   }

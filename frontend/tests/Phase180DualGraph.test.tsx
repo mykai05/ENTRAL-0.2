@@ -13,12 +13,16 @@ vi.mock("../components/CanonicalUniverse3DGraph", () => ({
   CanonicalUniverse3DGraph: ({
     entities,
     eventSequence,
+    fullscreenActive,
     movementPaused,
+    onFullscreenToggle,
     selectedEntityId
   }: {
     entities: readonly EntitySummary[];
     eventSequence: number;
+    fullscreenActive: boolean;
     movementPaused: boolean;
+    onFullscreenToggle: (trigger: HTMLButtonElement) => void;
     selectedEntityId: string | null;
   }) => (
     <section
@@ -29,6 +33,13 @@ vi.mock("../components/CanonicalUniverse3DGraph", () => ({
       data-testid="canonical-3d-graph"
     >
       <h2>3D Graph</h2>
+      <button
+        aria-label={fullscreenActive ? "Exit 3D Graph full screen" : "Enter 3D Graph full screen"}
+        onClick={(event) => onFullscreenToggle(event.currentTarget)}
+        type="button"
+      >
+        {fullscreenActive ? "Exit full screen" : "Full screen"}
+      </button>
     </section>
   )
 }));
@@ -122,6 +133,52 @@ describe("Phase 180 dual canonical Graph views", () => {
     expect(threeDimensional).toHaveAttribute("data-selected-entity-id", "soldier");
   });
 
+  it("does not truncate the locked 132-entity Marshal and General topology", () => {
+    const establishedHierarchy: EntitySummary[] = [
+      entity("entral-root", "ENTRAL", null, {
+        child_count: 8,
+        name: "ENTRAL",
+        stable_code: "ENTRAL.CORE"
+      })
+    ];
+    for (let index = 0; index < 8; index += 1) {
+      establishedHierarchy.push(
+        entity(`marshal-${index}`, "MARSHAL", "entral-root", {
+          child_count: index < 3 ? 16 : 15
+        })
+      );
+    }
+    while (establishedHierarchy.length < 132) {
+      const index = establishedHierarchy.length - 9;
+      establishedHierarchy.push(
+        entity(`general-${index}`, "GENERAL", `marshal-${index % 8}`)
+      );
+    }
+
+    render(
+      <CanonicalGraphWorkspace
+        entities={establishedHierarchy}
+        eventSequence={173}
+        onOpenFullRecord={vi.fn()}
+        onPreferredDimensionChange={vi.fn()}
+        onSelectedEntityChange={vi.fn()}
+        preferredDimension={null}
+        selectedEntityId={null}
+      />
+    );
+
+    expect(screen.getByRole("region", { name: "2D Graph" }))
+      .toHaveAttribute("data-canonical-entity-count", "132");
+    expect(screen.getByTestId("canonical-3d-graph"))
+      .toHaveAttribute("data-canonical-entity-count", "132");
+    const adapted = graphStateFromCanonicalEntities(establishedHierarchy, 173);
+    expect(adapted.nodes).toHaveLength(132);
+    expect(adapted.edges).toHaveLength(131);
+    expect(adapted.nodes.filter((node) => node.commandType === "marshal")).toHaveLength(8);
+    expect(adapted.nodes.filter((node) => node.commandType === "general")).toHaveLength(123);
+    expect(adapted.nodes.find((node) => node.id === "entral")?.children).toHaveLength(8);
+  });
+
   it("pauses only visual movement while keeping agent activity and live updates explicit", () => {
     const { container, rerender } = render(
       <CanonicalGraphWorkspace
@@ -201,6 +258,10 @@ describe("Phase 180 dual canonical Graph views", () => {
       /Agent activity and live canonical updates continue/i
     );
     expect(screen.getByTestId("canonical-3d-graph")).toHaveAttribute("data-graph-motion", "paused");
+
+    fireEvent.click(screen.getByRole("button", { name: "Enter 2D Graph full screen" }));
+    expect(screen.getAllByRole("button", { name: "Movement paused" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Movement paused" }).at(-1)).toBeDisabled();
   });
 
   it("offers a clean side-by-side or stacked layout without unmounting either graph", () => {
@@ -223,6 +284,35 @@ describe("Phase 180 dual canonical Graph views", () => {
     expect(workspace).toHaveAttribute("data-graph-layout", "stacked");
     expect(screen.getByRole("heading", { name: "2D Graph" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "3D Graph" })).toBeVisible();
+  });
+
+  it("opens either graph full screen while preserving shared selection and movement state", () => {
+    const { container } = render(
+      <CanonicalGraphWorkspace
+        entities={hierarchy}
+        eventSequence={173}
+        onOpenFullRecord={vi.fn()}
+        onPreferredDimensionChange={vi.fn()}
+        onSelectedEntityChange={vi.fn()}
+        preferredDimension={null}
+        selectedEntityId="soldier"
+      />
+    );
+    const workspace = container.querySelector(".phase180-graph-workspace");
+
+    fireEvent.click(screen.getByRole("button", { name: "Enter 2D Graph full screen" }));
+    expect(workspace).toHaveAttribute("data-fullscreen-dimension", "2d");
+    expect(workspace).toHaveAttribute("data-fullscreen-fallback", "true");
+    fireEvent.click(screen.getAllByRole("button", { name: "Stop movement" }).at(-1)!);
+    expect(workspace).toHaveAttribute("data-graph-motion", "paused");
+    expect(screen.getByTestId("canonical-3d-graph")).toHaveAttribute("data-selected-entity-id", "soldier");
+
+    fireEvent.click(screen.getByRole("button", { name: "Exit 2D Graph full screen" }));
+    expect(workspace).not.toHaveAttribute("data-fullscreen-dimension");
+    fireEvent.click(screen.getByRole("button", { name: "Enter 3D Graph full screen" }));
+    expect(workspace).toHaveAttribute("data-fullscreen-dimension", "3d");
+    expect(screen.getByRole("button", { name: "Exit 3D Graph full screen" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "2D Graph" })).toBeInTheDocument();
   });
 
   it("adapts every canonical record into the original 3D graph without changing canonical identity or evidence", () => {

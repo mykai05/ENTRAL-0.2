@@ -506,20 +506,18 @@ const tests = [
           throw new Error("Phase 180 member shell does not expose exactly three destinations.");
         }
         await expectVisible(page.getByLabel("Inherited canonical scope"), "Inherited canonical scope");
-        const entralEmblem = page.getByRole("button", { name: "Open ENTRAL conversation" });
+        const entralEmblem = page.getByRole("button", { name: "Open ENTRAL assistant" });
         await expectVisible(entralEmblem, "Persistent ENTRAL emblem");
         await entralEmblem.click();
-        const entralContext = page.getByRole("region", { name: "Canonical ENTRAL context" });
-        await expectVisible(entralContext, "Member-safe ENTRAL context");
-        await expectVisible(entralContext.getByText("Event 9", { exact: true }), "ENTRAL canonical event version");
+        const entralAssistant = page.getByRole("region", { name: "ENTRAL assistant" });
+        await expectVisible(entralAssistant, "Context-aware ENTRAL assistant");
+        await expectVisible(entralAssistant.getByText("Event 9", { exact: true }), "ENTRAL canonical event version");
         await expectVisible(
-          entralContext.getByText(/No versioned Human and ENTRAL conversation message is recorded/i),
-          "Truthful empty canonical conversation history"
+          entralAssistant.getByText(/Same RLS scope, selection, and canonical event as this screen/i),
+          "Truthful shared canonical context"
         );
-        await expectVisible(entralContext.getByText(/No action-status event is present/i), "Truthful ENTRAL action status");
-        await page.getByRole("button", { name: "Expand ENTRAL" }).click();
-        await expectVisible(page.getByRole("button", { name: "Compact ENTRAL" }), "Expanded ENTRAL workspace");
-        await page.getByRole("button", { name: "Close ENTRAL", exact: true }).click();
+        await expectVisible(entralAssistant.getByLabel("Message ENTRAL"), "ENTRAL assistant message input");
+        await entralAssistant.getByRole("button", { name: "Close ENTRAL assistant" }).click();
 
         await destinationNav.getByRole("link", { name: /universe graph/i }).click();
         await expectUrl(page, /\/member\/graph$/, "Phase 180 Universe Graph");
@@ -536,9 +534,72 @@ const tests = [
         if (twoDimensionalSnapshot.entities !== "5" || twoDimensionalSnapshot.event !== "9") {
           throw new Error(`2D Graph did not expose the accepted canonical snapshot: ${JSON.stringify(twoDimensionalSnapshot)}`);
         }
-        if (await page.getByRole("button", { name: "Open ENTRAL conversation" }).count()) {
-          throw new Error("ENTRAL conversation was exposed over the Graph alert-only surface.");
+        const graphEntralEmblem = page.getByRole("button", { name: "Open ENTRAL assistant" });
+        await expectVisible(graphEntralEmblem, "Persistent ENTRAL emblem on Graph");
+        await graphEntralEmblem.click();
+        const graphEntralAssistant = page.getByRole("region", { name: "ENTRAL assistant" });
+        await expectVisible(graphEntralAssistant, "Graph-aware ENTRAL assistant");
+        await expectVisible(graphEntralAssistant.getByLabel("Message ENTRAL"), "Graph-aware ENTRAL message input");
+        await graphEntralAssistant.getByRole("button", { name: "Close ENTRAL assistant" }).click();
+
+        const graphWorkspace = page.locator(".phase180-graph-workspace");
+        const enter2DFullscreen = page.getByRole("button", { name: "Enter 2D Graph full screen" });
+        const enter3DFullscreen = page.getByRole("button", { name: "Enter 3D Graph full screen" });
+        await expectVisible(enter2DFullscreen, "2D Graph full-screen control");
+        await expectVisible(enter3DFullscreen, "3D Graph full-screen control");
+
+        await enter2DFullscreen.click();
+        await page.waitForFunction(() => (
+          document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension") === "2d"
+        ));
+        const twoDimensionalFullscreenState = await graphWorkspace.evaluate((element) => ({
+          fallback: element.getAttribute("data-fullscreen-fallback") === "true",
+          native: document.fullscreenElement !== null,
+          otherPanelHidden: getComputedStyle(element.querySelector('[data-panel="3d"]')).display === "none"
+        }));
+        if (
+          (!twoDimensionalFullscreenState.native && !twoDimensionalFullscreenState.fallback)
+          || !twoDimensionalFullscreenState.otherPanelHidden
+        ) {
+          throw new Error(`2D Graph did not enter an isolated full-screen surface: ${JSON.stringify(twoDimensionalFullscreenState)}`);
         }
+        await expectVisible(
+          page.getByRole("button", { name: "Open ENTRAL assistant" }),
+          "Persistent ENTRAL emblem in 2D full screen"
+        );
+        await page.getByRole("button", { name: "Open ENTRAL assistant" }).click();
+        await expectVisible(page.getByRole("region", { name: "ENTRAL assistant" }), "ENTRAL assistant in 2D full screen");
+        await page.getByRole("button", { name: "Close ENTRAL assistant" }).click();
+        await page.getByRole("button", { name: "Exit 2D Graph full screen" }).click();
+        await page.waitForFunction(() => (
+          !document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension")
+        ));
+
+        await page.getByRole("button", { name: "Enter 3D Graph full screen" }).click();
+        await page.waitForFunction(() => (
+          document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension") === "3d"
+        ));
+        const threeDimensionalFullscreenState = await graphWorkspace.evaluate((element) => ({
+          fallback: element.getAttribute("data-fullscreen-fallback") === "true",
+          native: document.fullscreenElement !== null,
+          otherPanelHidden: getComputedStyle(element.querySelector('[data-panel="2d"]')).display === "none"
+        }));
+        if (
+          (!threeDimensionalFullscreenState.native && !threeDimensionalFullscreenState.fallback)
+          || !threeDimensionalFullscreenState.otherPanelHidden
+        ) {
+          throw new Error(`3D Graph did not enter an isolated full-screen surface: ${JSON.stringify(threeDimensionalFullscreenState)}`);
+        }
+        await expectVisible(
+          page.getByRole("button", { name: "Open ENTRAL assistant" }),
+          "Persistent ENTRAL emblem in 3D full screen"
+        );
+        await expectVisible(page.getByRole("button", { name: "Stop movement" }), "Full-screen 3D movement control");
+        await page.getByRole("button", { name: "Exit 3D Graph full screen" }).click();
+        await page.waitForFunction(() => (
+          !document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension")
+        ));
+
         await canvas.focus();
         await page.keyboard.press("Enter");
         await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Dismissible Graph detail drawer");
@@ -564,7 +625,23 @@ const tests = [
           );
         }
         await expectVisible(page.getByRole("toolbar", { name: "Universe Graph toolbar" }), "Original 3D Graph toolbar");
-        await expectVisible(page.getByLabel("Selected graph entity"), "Original 3D Graph selected-entity drawer");
+        const threeDimensionalInspector = page.getByLabel("Selected graph entity");
+        await expectVisible(threeDimensionalInspector, "Original 3D Graph selected-entity drawer");
+        if (await threeDimensionalInspector.getAttribute("data-collapsed") !== "true") {
+          throw new Error("Original 3D Graph selected-entity drawer did not default to its compact state.");
+        }
+        if (await threeDimensionalInspector.locator("dl").count()) {
+          throw new Error("Compact 3D Graph inspector exposed expanded entity details.");
+        }
+        await threeDimensionalInspector.getByRole("button", { name: /Expand details for/i }).click();
+        if (await threeDimensionalInspector.getAttribute("data-collapsed") !== "false") {
+          throw new Error("Original 3D Graph selected-entity drawer did not expand.");
+        }
+        await expectVisible(threeDimensionalInspector.locator("dl"), "Expanded 3D Graph entity details");
+        await threeDimensionalInspector.getByRole("button", { name: /Collapse details for/i }).click();
+        if (await threeDimensionalInspector.getAttribute("data-collapsed") !== "true") {
+          throw new Error("Original 3D Graph selected-entity drawer did not return to its compact state.");
+        }
 
         const stopMovement = page.getByRole("button", { name: "Stop movement" });
         await expectVisible(stopMovement, "Visible graph-only movement control");
@@ -621,6 +698,17 @@ const tests = [
         if (!noHorizontalOverflow) {
           throw new Error("Phase 180 mobile shell has horizontal overflow.");
         }
+
+        await page.goto(`${frontendUrl}/member/dashboard?section=entral`);
+        await expectUrl(page, /\/member\/dashboard\?section=entral$/, "Member full ENTRAL room");
+        await expectVisible(page.getByRole("region", { name: "Main ENTRAL chat room" }), "Member full ENTRAL room");
+        if (
+          await page.getByRole("button", { name: "Open ENTRAL assistant" }).count()
+          || await page.getByRole("button", { name: "Close ENTRAL assistant" }).count()
+        ) {
+          throw new Error("The persistent ENTRAL assistant launcher was duplicated inside the main ENTRAL room.");
+        }
+
         if (runtimeErrors.length) {
           throw new Error(`Unexpected Phase 180 browser errors:\n${runtimeErrors.join("\n")}`);
         }

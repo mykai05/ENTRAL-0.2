@@ -62,4 +62,14 @@ describe("Command Center graph integrity", () => {
     expect(sha256(sourceSegment("      <canvas", "      <p className=\"sr-only\"")))
       .toBe("d0e4211202a07d73d0ab4a69b3b03514be32c23b20082579ebeb669918a06dac");
   });
+
+  it("renders the embedded 3D inspector as an accessible name-only compact card", () => {
+    expect(source).toContain("canonicalInspectorCollapsed");
+    expect(source).toContain("data-collapsed={isNodeDrawerCollapsed}");
+    expect(source).toContain("isNodeDrawerCollapsed ? (");
+    expect(source).toContain("phase110-node-drawer-compact");
+    expect(source).toContain("Expand details for");
+    expect(source).toContain("Collapse details for");
+    expect(source).toContain('detail?.target === "graph-inspector"');
+  });
 });
