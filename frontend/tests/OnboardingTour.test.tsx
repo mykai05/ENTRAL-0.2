@@ -249,6 +249,24 @@ describe("OnboardingProvider", () => {
     expect(screen.getByText("Tutorial library")).toBeInTheDocument();
   });
 
+  it("restores a minimal server-validated member identity for a manual Academy request", () => {
+    window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({ userId }));
+
+    render(
+      <OnboardingProvider>
+        <button data-academy="command-brand" type="button">ENTRAL</button>
+      </OnboardingProvider>
+    );
+
+    act(() => {
+      window.dispatchEvent(new Event("entral:open-academy"));
+    });
+
+    expect(navigationMocks.push).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
+    expect(screen.getByText("Tutorial library")).toBeInTheDocument();
+  });
+
   it("does not trap users when browser storage is blocked", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("storage unavailable");
