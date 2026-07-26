@@ -250,8 +250,10 @@ export function CanonicalGraphWorkspace({
         <details className="phase180-graph-control-guide">
           <summary><ChevronDown aria-hidden="true" className="phase180-guide-chevron" size={17} /> Control guide</summary>
           <div>
-            <p><strong>2D:</strong> drag or use one finger to pan, scroll or pinch to zoom, and use Arrow keys to move through the hierarchy.</p>
-            <p><strong>3D:</strong> Desktop: left-drag to orbit, right-drag to pan, and scroll to zoom. Touch: one finger pans; two fingers orbit and pinch-zoom.</p>
+            <p><strong>Page scroll:</strong> The mouse wheel always scrolls the page while either graph is embedded. Hold Ctrl or Command while scrolling to zoom a graph, or use its zoom buttons. In full screen, scrolling zooms directly.</p>
+            <p><strong>Touch:</strong> Swipe over either embedded graph to keep scrolling the page. Tap its Interact button before using graph gestures; full screen enables them automatically.</p>
+            <p><strong>2D:</strong> Drag or use one finger to pan, pinch to zoom, and use Arrow keys to move through the hierarchy.</p>
+            <p><strong>3D:</strong> Desktop: left-drag to orbit and right-drag to pan. With touch interaction active, one finger pans; two fingers orbit and pinch-zoom.</p>
             <p><strong>Stop movement:</strong> freezes visual animation only. Agent work, status updates, and canonical synchronization continue.</p>
           </div>
         </details>

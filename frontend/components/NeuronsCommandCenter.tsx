@@ -87,9 +87,11 @@ type CommandCenterSurface = "internal" | "member";
 type NeuronsCommandCenterProps = {
   canonicalEntities?: readonly EntitySummary[];
   canonicalEventSequence?: number;
+  canonicalFullscreenActive?: boolean;
   canonicalInspectorCollapsed?: boolean;
   canonicalMotionPaused?: boolean;
   canonicalSelectedEntityId?: string | null;
+  canonicalTouchInteractionActive?: boolean;
   embeddedGraphOnly?: boolean;
   initialDestination?: MemberDestination;
   onCanonicalInspectorCollapsedChange?: (collapsed: boolean) => void;
@@ -2059,9 +2061,11 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
 export function NeuronsCommandCenter({
   canonicalEntities,
   canonicalEventSequence = 0,
+  canonicalFullscreenActive = false,
   canonicalInspectorCollapsed = true,
   canonicalMotionPaused = false,
   canonicalSelectedEntityId = null,
+  canonicalTouchInteractionActive = false,
   embeddedGraphOnly = false,
   initialDestination = "dashboard",
   onCanonicalInspectorCollapsedChange,
@@ -2208,7 +2212,6 @@ export function NeuronsCommandCenter({
   });
   const lastFrameTimeRef = useRef<number | null>(null);
   const motionRef = useRef<Map<string, NodeMotion>>(new Map());
-  const previousBodyOverflowRef = useRef<string | null>(null);
   const reducedMotionRef = useRef(false);
   const graphMotionPausedRef = useRef(canonicalMotionPaused);
   const motionPausedAtRef = useRef<number | null>(null);
@@ -2428,12 +2431,33 @@ export function NeuronsCommandCenter({
     lockedNodeIdRef.current = lockedNodeId;
   }, [lockedNodeId]);
 
-  useEffect(() => () => {
-    if (previousBodyOverflowRef.current !== null) {
-      document.body.style.overflow = previousBodyOverflowRef.current;
-      previousBodyOverflowRef.current = null;
-    }
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const handleWheel = (event: WheelEvent) => {
+      if (embeddedGraphOnly && !canonicalFullscreenActive && !event.ctrlKey && !event.metaKey) {
+        return;
+      }
+      const deltaY = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? event.deltaY * 16
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? event.deltaY * canvas.clientHeight
+          : event.deltaY;
+      if (deltaY === 0) return;
+      event.preventDefault();
+      setLockedNodeId(null);
+      lockedNodeIdRef.current = null;
+      const zoomFactor = Math.exp(deltaY * 0.0012 * graphControlsRef.current.cameraSensitivity);
+      setCamera({
+        distance: desiredCameraRef.current.distance * zoomFactor
+      });
+    };
 
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", handleWheel);
+  }, [canonicalFullscreenActive, embeddedGraphOnly]);
+
+  useEffect(() => () => {
     if (commandSyncTimerRef.current) {
       window.clearTimeout(commandSyncTimerRef.current);
     }
@@ -2845,20 +2869,6 @@ export function NeuronsCommandCenter({
 
     motionRef.current.set(node.id, motion);
     return motion;
-  }
-
-  function lockGraphScroll() {
-    if (previousBodyOverflowRef.current === null) {
-      previousBodyOverflowRef.current = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-    }
-  }
-
-  function releaseGraphScroll() {
-    if (previousBodyOverflowRef.current !== null) {
-      document.body.style.overflow = previousBodyOverflowRef.current;
-      previousBodyOverflowRef.current = null;
-    }
   }
 
   const pickNode = useCallback((clientX: number, clientY: number): PickResult | null => {
@@ -6523,7 +6533,6 @@ export function NeuronsCommandCenter({
 
   function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
     event.preventDefault();
-    lockGraphScroll();
     event.currentTarget.focus();
     event.currentTarget.setPointerCapture(event.pointerId);
 
@@ -6738,14 +6747,6 @@ export function NeuronsCommandCenter({
     } else if (key === "home") {
       fitGraph();
     }
-  }
-
-  function handleWheel(event: React.WheelEvent<HTMLCanvasElement>) {
-    event.preventDefault();
-    setLockedNodeId(null);
-    lockedNodeIdRef.current = null;
-    const zoomAmount = 0.08 * graphControlsRef.current.cameraSensitivity;
-    setCamera({ distance: desiredCameraRef.current.distance * (event.deltaY > 0 ? 1 + zoomAmount : 1 - zoomAmount) });
   }
 
   function deleteSelectedNode() {
@@ -7058,9 +7059,9 @@ export function NeuronsCommandCenter({
             aria-label="3D interactive ENTRAL neuron graph"
             className="command-center-canvas"
             data-academy="command-graph"
+            data-touch-interaction={!embeddedGraphOnly || canonicalTouchInteractionActive ? "graph" : "page"}
             onContextMenu={(event) => event.preventDefault()}
             onKeyDown={handleCanvasKeyDown}
-            onPointerEnter={lockGraphScroll}
             onPointerCancel={handlePointerCancel}
             onPointerDown={handlePointerDown}
             onPointerLeave={() => {
@@ -7069,7 +7070,6 @@ export function NeuronsCommandCenter({
               }
 
               dragRef.current = null;
-              releaseGraphScroll();
               setHoveredNodeId(null);
               setTooltip(null);
             }}
@@ -7081,13 +7081,16 @@ export function NeuronsCommandCenter({
                 setStatusMessage("Focus Mode exited. Command center controls restored.");
               }
             }}
-            onWheel={handleWheel}
             ref={canvasRef}
             role="application"
             tabIndex={0}
           />
           <p className="sr-only" id="command-center-camera-help">
-            On touch screens, drag one finger to pan up, down, left, and right. Drag two fingers to rotate around ENTRAL. Pinch two fingers to zoom. On desktop, drag to orbit, right click drag to pan, and use the mouse wheel or plus and minus keys to zoom.
+            On touch screens, drag one finger to pan up, down, left, and right. Drag two fingers to rotate around ENTRAL.
+            Pinch two fingers to zoom after activating graph touch controls; full screen activates them automatically.
+            On desktop, drag to orbit and right click drag to pan. When this graph is embedded, the mouse wheel scrolls
+            the page; hold Control or Command while scrolling to zoom, or use the zoom buttons. In full screen, the mouse
+            wheel zooms directly. Plus and minus keys also zoom.
           </p>
         </>
       ) : null}
@@ -7161,6 +7164,22 @@ export function NeuronsCommandCenter({
               <button type="button" onClick={() => fitGraph()} aria-label="Fit view">
                 <Crosshair aria-hidden="true" size={18} />
                 <span>Fit view</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCamera({ distance: desiredCameraRef.current.distance * 0.86 }, true)}
+                aria-label="Zoom in 3D Graph"
+              >
+                <ZoomIn aria-hidden="true" size={18} />
+                <span>Zoom in</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCamera({ distance: desiredCameraRef.current.distance * 1.16 }, true)}
+                aria-label="Zoom out 3D Graph"
+              >
+                <ZoomOut aria-hidden="true" size={18} />
+                <span>Zoom out</span>
               </button>
               <button type="button" disabled={graphHistoryDepth === 0} onClick={returnToPreviousGraphSelection} aria-label="Back">
                 <RotateCcw aria-hidden="true" size={18} />

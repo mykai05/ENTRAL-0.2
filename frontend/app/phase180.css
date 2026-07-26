@@ -487,7 +487,7 @@ body:has(.phase180-shell) {
   font-size: 0.72rem;
   font-weight: 850;
   gap: 0.38rem;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0.45rem 0.65rem;
 }
 
@@ -620,8 +620,24 @@ body:has(.phase180-shell) {
 }
 
 .phase180-embedded-3d .phase110-graph-toolbar {
+  grid-template-columns: minmax(0, 1fr) repeat(5, 2.75rem);
   max-width: min(46rem, calc(100% - 2rem));
   top: 1rem;
+  width: calc(100% - 2rem);
+}
+
+.phase180-embedded-3d .phase110-graph-toolbar label,
+.phase180-embedded-3d .phase110-graph-toolbar input {
+  min-width: 0;
+}
+
+.phase180-embedded-3d .phase110-graph-toolbar button {
+  min-width: 2.75rem;
+  padding: 0;
+}
+
+.phase180-embedded-3d .phase110-graph-toolbar button span {
+  display: none;
 }
 
 .phase180-embedded-3d .phase110-graph-settings {
@@ -701,7 +717,7 @@ body:has(.phase180-embedded-3d) {
 .phase180-graph-workspace[data-fullscreen-fallback="true"] {
   background: #050912;
   inset: 0;
-  overflow: auto;
+  overflow: hidden;
   padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
   position: fixed;
   z-index: 80;
@@ -760,6 +776,7 @@ body:has(.phase180-embedded-3d) {
   border-radius: 0;
   height: 100%;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: clamp(0.7rem, 1.35vw, 1rem);
 }
 
@@ -784,8 +801,21 @@ body:has(.phase180-embedded-3d) {
   display: block;
   height: 100%;
   outline: none;
-  touch-action: none;
+  touch-action: pan-y;
   width: 100%;
+}
+
+.phase180-graph-stage canvas[data-touch-interaction="graph"],
+.phase180-embedded-3d .command-center-canvas[data-touch-interaction="graph"] {
+  touch-action: none;
+}
+
+.phase180-embedded-3d .command-center-canvas[data-touch-interaction="page"] {
+  touch-action: pan-y;
+}
+
+.phase180-touch-interaction-toggle {
+  display: none;
 }
 
 .phase180-graph-stage canvas:focus-visible {
@@ -1809,6 +1839,12 @@ body:has(.phase180-embedded-3d) {
 
   .phase180-infrastructure-grid {
     grid-template-columns: minmax(19rem, 0.8fr) minmax(0, 1.2fr);
+  }
+}
+
+@media (pointer: coarse), (max-width: 760px) {
+  .phase180-touch-interaction-toggle {
+    display: inline-flex;
   }
 }
 

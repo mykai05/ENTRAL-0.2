@@ -38,7 +38,9 @@ describe("Command Center graph integrity", () => {
     expect(canonical3DSource).toContain("<OriginalUniverseRenderer");
     expect(canonical3DSource).toContain("canonicalEntities={entities}");
     expect(canonical3DSource).toContain("canonicalEventSequence={eventSequence}");
+    expect(canonical3DSource).toContain("canonicalFullscreenActive={fullscreenActive}");
     expect(canonical3DSource).toContain("canonicalMotionPaused={movementPaused}");
+    expect(canonical3DSource).toContain("canonicalTouchInteractionActive={fullscreenActive || touchInteractionActive}");
   });
 
   it("preserves the approved WebGL field while freezing only its visual clock and node motion", () => {
@@ -50,17 +52,23 @@ describe("Command Center graph integrity", () => {
     expect(graphWorkspaceSource).not.toContain("executeCommand");
     expect(graphWorkspaceSource).not.toContain("apiFetch");
     expect(sha256(sourceSegment("  function getNodeMotion", "  function setCamera")))
-      .toBe("0cb2230d087c8aca7201939392fc417692882f2609968def6cfc88c4a8dc3774");
+      .toBe("5d9b3b741da8ced18900496f02d490437271be012fff4ea327c57de2fa0bc9cd");
   });
 
   it("preserves the approved pointer, touch, wheel, and keyboard camera controls", () => {
+    expect(source).toContain('canvas.addEventListener("wheel", handleWheel, { passive: false })');
+    expect(source).toContain("embeddedGraphOnly && !canonicalFullscreenActive && !event.ctrlKey && !event.metaKey");
+    expect(source).not.toContain("function lockGraphScroll");
+    expect(source).not.toContain("function releaseGraphScroll");
+    expect(source).not.toContain("document.body.style.overflow");
+    expect(source).not.toContain("onPointerEnter={lockGraphScroll}");
     expect(sha256(sourceSegment("  function handlePointerDown", "  function deleteSelectedNode")))
-      .toBe("9110397450e671e60b80a15f9f4dcb665ad2adf18aa61613867924ab702af808");
+      .toBe("a1edc68d34f2c87bf51046b038ed19025576ac02ada0c76231bf37b770f12418");
   });
 
   it("preserves the approved graph canvas contract", () => {
     expect(sha256(sourceSegment("      <canvas", "      <p className=\"sr-only\"")))
-      .toBe("d0e4211202a07d73d0ab4a69b3b03514be32c23b20082579ebeb669918a06dac");
+      .toBe("9fc9d63540a88ef66ab6fee4ff7af84d23bea62cbb41466e3b86f7e6460570c3");
   });
 
   it("renders the embedded 3D inspector as an accessible name-only compact card", () => {
