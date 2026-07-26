@@ -63,6 +63,7 @@ function GraphHarness({ onOpenFullRecord = vi.fn() }: { onOpenFullRecord?: (enti
     <CanonicalUniverseGraph
       entities={hierarchy}
       eventSequence={9}
+      movementPaused={false}
       onOpenFullRecord={onOpenFullRecord}
       onSelectedEntityChange={setSelectedEntityId}
       selectedEntityId={selectedEntityId}

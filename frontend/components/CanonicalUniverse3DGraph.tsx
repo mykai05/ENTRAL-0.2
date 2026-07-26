@@ -19,12 +19,14 @@ const OriginalUniverseRenderer = dynamic(
 export function CanonicalUniverse3DGraph({
   entities,
   eventSequence,
+  movementPaused,
   onOpenFullRecord,
   onSelectedEntityChange,
   selectedEntityId
 }: {
   entities: readonly EntitySummary[];
   eventSequence: number;
+  movementPaused: boolean;
   onOpenFullRecord: (entityId: string) => void;
   onSelectedEntityChange: (entityId: string | null) => void;
   selectedEntityId: string | null;
@@ -36,18 +38,23 @@ export function CanonicalUniverse3DGraph({
       data-canonical-entity-count={entities.length}
       data-canonical-event-sequence={eventSequence}
       data-graph-dimension="3d"
+      data-graph-motion={movementPaused ? "paused" : "running"}
     >
       <header className="phase180-surface-heading">
         <div>
           <p className="eyebrow">Canonical topology · event {eventSequence}</p>
-          <h1 id="universe-3d-heading">3D Graph</h1>
+          <h2 id="universe-3d-heading">3D Graph</h2>
           <p>{entities.length.toLocaleString()} RLS-visible entities in the original full 3D Universe Graph.</p>
         </div>
+        <span className="phase180-panel-state" data-state={movementPaused ? "paused" : "running"}>
+          {movementPaused ? "Movement paused" : "Visual motion active"}
+        </span>
       </header>
       <div className="phase180-graph-3d-stage">
         <OriginalUniverseRenderer
           canonicalEntities={entities}
           canonicalEventSequence={eventSequence}
+          canonicalMotionPaused={movementPaused}
           canonicalSelectedEntityId={selectedEntityId}
           embeddedGraphOnly
           initialDestination="graph"

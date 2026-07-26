@@ -64,11 +64,12 @@ export function CanonicalMemberShell({
   const searchParams = useSearchParams();
   const routeBusinessId = searchParams.get("business");
   const routeEntityId = searchParams.get("entity");
-  const routeGraphDimension = searchParams.get("graph") === "3d" ? "3d" : "2d";
+  const preferredGraphDimension = searchParams.get("graph") === "2d" || searchParams.get("graph") === "3d"
+    ? searchParams.get("graph") as CanonicalGraphDimension
+    : null;
   const [organizationId, setOrganizationId] = useState(initialSession.organizations[0]?.id ?? "");
   const [businessScopeId, setBusinessScopeId] = useState<string | null>(routeBusinessId);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(routeEntityId);
-  const [graphDimension, setGraphDimension] = useState<CanonicalGraphDimension>(routeGraphDimension);
   const [portfolio, setPortfolio] = useState<PortfolioSummaryResponse | null>(null);
   const [hierarchy, setHierarchy] = useState<CanonicalHierarchyResponse | null>(null);
   const [workspaceError, setWorkspaceError] = useState("");
@@ -224,10 +225,6 @@ export function CanonicalMemberShell({
   }, [initialDestination, routeEntityId]);
 
   useEffect(() => {
-    if (initialDestination === "graph") setGraphDimension(routeGraphDimension);
-  }, [initialDestination, routeGraphDimension]);
-
-  useEffect(() => {
     const controller = new AbortController();
     setConversationMessages([]);
     void refreshWorkspace(controller.signal);
@@ -329,8 +326,7 @@ export function CanonicalMemberShell({
     router.push("/member/infrastructure", { scroll: false });
   }
 
-  function changeGraphDimension(nextDimension: CanonicalGraphDimension) {
-    setGraphDimension(nextDimension);
+  function changePreferredGraphDimension(nextDimension: CanonicalGraphDimension) {
     const nextSearch = new URLSearchParams(searchParams.toString());
     nextSearch.set("graph", nextDimension);
     router.replace(`/member/graph?${nextSearch.toString()}`, { scroll: false });
@@ -441,12 +437,12 @@ export function CanonicalMemberShell({
             />
           ) : initialDestination === "graph" ? (
             <CanonicalGraphWorkspace
-              dimension={graphDimension}
               entities={scopedEntities}
               eventSequence={hierarchy.event_sequence}
-              onDimensionChange={changeGraphDimension}
               onOpenFullRecord={openFullRecord}
+              onPreferredDimensionChange={changePreferredGraphDimension}
               onSelectedEntityChange={setSelectedEntityId}
+              preferredDimension={preferredGraphDimension}
               selectedEntityId={selectedEntityId}
             />
           ) : (
