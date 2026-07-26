@@ -359,11 +359,20 @@ describe.skipIf(!integrationEnabled)("Phase 170 canonical portfolio PostgreSQL g
       )).resolves.toBeNull();
 
       const cursor = memberPortfolio.event_sequence;
-      await owner.$executeRaw`
-        UPDATE entral.businesses
-        SET primary_objective = 'Operate the updated canonical store model.'
-        WHERE id = ${seeded[0]!.businessId}::uuid
-      `;
+      await owner.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          UPDATE entral.businesses
+          SET primary_objective = 'Operate the updated canonical store model.'
+          WHERE id = ${seeded[0]!.businessId}::uuid
+        `;
+        await tx.$executeRaw`
+          UPDATE entral.business_states
+          SET
+            primary_objective = 'Operate the updated canonical store model.',
+            last_material_change_at = clock_timestamp()
+          WHERE business_id = ${seeded[0]!.businessId}::uuid
+        `;
+      });
       const events = await repository.listPortfolioEvents(
         cursor,
         session(memberSubject, "Verify Phase 170 canonical event refresh.")
