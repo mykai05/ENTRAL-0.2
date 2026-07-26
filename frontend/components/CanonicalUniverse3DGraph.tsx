@@ -1,9 +1,9 @@
 "use client";
 
 import type { EntitySummary } from "@entral/contracts";
-import { Maximize2, Minimize2, PauseCircle, PlayCircle } from "lucide-react";
+import { Hand, Maximize2, Minimize2, PauseCircle, PlayCircle } from "lucide-react";
 import dynamic from "next/dynamic";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 const OriginalUniverseRenderer = dynamic(
   () => import("./NeuronsCommandCenter").then((module) => module.NeuronsCommandCenter),
@@ -44,6 +44,12 @@ export function CanonicalUniverse3DGraph({
   onSelectedEntityChange: (entityId: string | null) => void;
   selectedEntityId: string | null;
 }) {
+  const [touchInteractionActive, setTouchInteractionActive] = useState(false);
+
+  useEffect(() => {
+    if (!fullscreenActive) setTouchInteractionActive(false);
+  }, [fullscreenActive]);
+
   return (
     <section
       aria-labelledby="universe-3d-heading"
@@ -75,6 +81,17 @@ export function CanonicalUniverse3DGraph({
               {motionLocked ? "Movement paused" : movementPaused ? "Resume movement" : "Stop movement"}
             </button>
           ) : null}
+          {!fullscreenActive ? (
+            <button
+              aria-pressed={touchInteractionActive}
+              className="phase180-surface-action phase180-touch-interaction-toggle"
+              onClick={() => setTouchInteractionActive((active) => !active)}
+              type="button"
+            >
+              <Hand aria-hidden="true" size={17} />
+              {touchInteractionActive ? "Release 3D Graph touch controls" : "Interact with 3D Graph"}
+            </button>
+          ) : null}
           {onFullscreenToggle ? (
             <button
               aria-label={fullscreenActive ? "Exit 3D Graph full screen" : "Enter 3D Graph full screen"}
@@ -92,9 +109,11 @@ export function CanonicalUniverse3DGraph({
         <OriginalUniverseRenderer
           canonicalEntities={entities}
           canonicalEventSequence={eventSequence}
+          canonicalFullscreenActive={fullscreenActive}
           canonicalInspectorCollapsed={inspectorCollapsed}
           canonicalMotionPaused={movementPaused}
           canonicalSelectedEntityId={selectedEntityId}
+          canonicalTouchInteractionActive={fullscreenActive || touchInteractionActive}
           embeddedGraphOnly
           initialDestination="graph"
           onCanonicalInspectorCollapsedChange={onInspectorCollapsedChange}

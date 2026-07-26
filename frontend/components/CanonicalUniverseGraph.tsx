@@ -4,6 +4,7 @@ import type { EntitySummary } from "@entral/contracts";
 import {
   ArrowLeft,
   Focus,
+  Hand,
   LocateFixed,
   Maximize2,
   Minimize2,
@@ -84,6 +85,7 @@ export function CanonicalUniverseGraph({
   const [showLabels, setShowLabels] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [dimUnrelated, setDimUnrelated] = useState(true);
+  const [touchInteractionActive, setTouchInteractionActive] = useState(false);
   const points = useMemo(() => layoutCanonicalUniverse(entities), [entities]);
   const byId = useMemo(() => new Map(entities.map((entity) => [entity.entity_id, entity])), [entities]);
   const pointById = useMemo(() => new Map(points.map((point) => [point.entity.entity_id, point])), [points]);
@@ -103,6 +105,33 @@ export function CanonicalUniverseGraph({
     const fitted = fitUniverseCamera(points, canvas.clientWidth, canvas.clientHeight);
     if (fitted) setCamera(fitted);
   }, [points]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const handleWheel = (event: WheelEvent) => {
+      if (!fullscreenActive && !event.ctrlKey && !event.metaKey) return;
+      const deltaY = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? event.deltaY * 16
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? event.deltaY * canvas.clientHeight
+          : event.deltaY;
+      if (deltaY === 0) return;
+      event.preventDefault();
+      const factor = Math.exp(-deltaY * 0.0012);
+      setCamera((current) => ({
+        ...current,
+        zoom: Math.max(MIN_ZOOM, Math.min(4, current.zoom * factor))
+      }));
+    };
+
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", handleWheel);
+  }, [fullscreenActive]);
+
+  useEffect(() => {
+    if (!fullscreenActive) setTouchInteractionActive(false);
+  }, [fullscreenActive]);
 
   const focusEntity = useCallback((entityId: string) => {
     const point = pointById.get(entityId);
@@ -304,6 +333,12 @@ export function CanonicalUniverseGraph({
     onSelectedEntityChange(nearest?.id ?? null);
   }
 
+  function handlePointerCancel(event: React.PointerEvent<HTMLCanvasElement>) {
+    pointersRef.current.delete(event.pointerId);
+    gestureRef.current = null;
+    dragStartRef.current = null;
+  }
+
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return [];
@@ -496,6 +531,17 @@ export function CanonicalUniverseGraph({
         >
           <ZoomOut aria-hidden="true" size={17} /> Zoom out
         </button>
+        {!fullscreenActive ? (
+          <button
+            aria-pressed={touchInteractionActive}
+            className="phase180-touch-interaction-toggle"
+            onClick={() => setTouchInteractionActive((active) => !active)}
+            type="button"
+          >
+            <Hand aria-hidden="true" size={17} />
+            {touchInteractionActive ? "Release 2D Graph touch controls" : "Interact with 2D Graph"}
+          </button>
+        ) : null}
         <button onClick={fit} type="button"><LocateFixed aria-hidden="true" size={17} /> Fit</button>
         <button
           aria-expanded={settingsOpen}
@@ -539,8 +585,10 @@ export function CanonicalUniverseGraph({
         </aside>
       ) : null}
       <p className="phase180-graph-instructions" id={GRAPH_INSTRUCTIONS_ID}>
-        <strong>Keyboard:</strong> Arrow keys move between related nodes; Shift + Arrow pans; + / - zooms;
-        Enter opens the selected record; Escape clears the selection.
+        <strong>Controls:</strong> Page scrolling stays available over the embedded graph. Hold Ctrl or Command while
+        scrolling to zoom, or use the zoom buttons. On touch screens, use Interact with 2D Graph before panning or
+        pinching. In full screen, graph touch controls and scroll-to-zoom are active directly. Arrow keys move between
+        related nodes; Shift + Arrow pans; Enter opens the selected record; Escape clears the selection.
       </p>
       <p className="sr-only" aria-live="polite">
         {selected
@@ -551,16 +599,12 @@ export function CanonicalUniverseGraph({
         <canvas
           aria-describedby={GRAPH_INSTRUCTIONS_ID}
           aria-label={`Canonical Universe Graph with ${entities.length} entities`}
-          onPointerCancel={handlePointerUp}
+          data-touch-interaction={fullscreenActive || touchInteractionActive ? "graph" : "page"}
+          onPointerCancel={handlePointerCancel}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onKeyDown={handleCanvasKeyDown}
-          onWheel={(event) => {
-            event.preventDefault();
-            const factor = Math.exp(-event.deltaY * 0.0012);
-            setCamera((current) => ({ ...current, zoom: Math.max(MIN_ZOOM, Math.min(4, current.zoom * factor)) }));
-          }}
           ref={canvasRef}
           role="application"
           tabIndex={0}

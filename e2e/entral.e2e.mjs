@@ -481,6 +481,50 @@ const tests = [
     }
   },
   {
+    name: "embedded Universe Graphs preserve document wheel scrolling",
+    run: async () => {
+      const { context, page } = await newPage({
+        viewport: { width: 1440, height: 900 }
+      });
+      try {
+        await enterWorkspace(page, uniqueEmail("phase180-wheel-scroll"));
+        await page.goto(`${frontendUrl}/member/graph`);
+        await closeAcademyIfOpen(page);
+        const canvases = [
+          page.getByLabel(/Canonical Universe Graph with 5 entities/i),
+          page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" })
+        ];
+
+        for (const [index, canvas] of canvases.entries()) {
+          await expectVisible(canvas, `${index === 0 ? "2D" : "3D"} embedded graph canvas`, 30_000);
+          await canvas.scrollIntoViewIfNeeded();
+          const box = await canvas.boundingBox();
+          if (!box) throw new Error(`${index === 0 ? "2D" : "3D"} graph did not expose hover geometry.`);
+          await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+          const before = await page.evaluate(() => ({
+            bodyOverflow: document.body.style.overflow,
+            max: Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
+            y: window.scrollY
+          }));
+          if (before.bodyOverflow === "hidden") {
+            throw new Error(`${index === 0 ? "2D" : "3D"} graph locked document scrolling on hover.`);
+          }
+          const delta = before.y < before.max - 120 ? 360 : -360;
+          await page.mouse.wheel(0, delta);
+          await page.waitForTimeout(150);
+          const after = await page.evaluate(() => window.scrollY);
+          if ((delta > 0 && after <= before.y) || (delta < 0 && after >= before.y)) {
+            throw new Error(
+              `${index === 0 ? "2D" : "3D"} graph intercepted ordinary page scrolling: ${JSON.stringify({ after, before, delta })}`
+            );
+          }
+        }
+      } finally {
+        await context.close();
+      }
+    }
+  },
+  {
     name: "member Phase 180 shell synchronizes Dashboard, Graph, Infrastructure, mobile rotation, and reconnect",
     run: async () => {
       const { context, page } = await newPage({
@@ -527,6 +571,47 @@ const tests = [
         await expectVisible(canvas, "Canonical 2D Graph canvas");
         const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
         await expectVisible(original3DCanvas, "Original full 3D Universe Graph canvas", 30_000);
+        const touchScroll = await context.newCDPSession(page);
+        try {
+          for (const [label, graphCanvas] of [["2D", canvas], ["3D", original3DCanvas]]) {
+            await graphCanvas.scrollIntoViewIfNeeded();
+            if (await graphCanvas.getAttribute("data-touch-interaction") !== "page") {
+              throw new Error(`${label} embedded graph did not default to page-touch scrolling.`);
+            }
+            const bounds = await graphCanvas.boundingBox();
+            if (!bounds) throw new Error(`${label} graph did not expose touch-scroll geometry.`);
+            const before = await page.evaluate(() => ({
+              max: Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
+              y: window.scrollY
+            }));
+            const scrollDown = before.y < before.max - 120;
+            const centerX = bounds.x + bounds.width / 2;
+            const startY = bounds.y + bounds.height / 2;
+            const endY = startY + (scrollDown ? -150 : 150);
+            await touchScroll.send("Input.dispatchTouchEvent", {
+              type: "touchStart",
+              touchPoints: [{ x: centerX, y: startY }]
+            });
+            for (const progress of [0.25, 0.5, 0.75, 1]) {
+              await touchScroll.send("Input.dispatchTouchEvent", {
+                type: "touchMove",
+                touchPoints: [{ x: centerX, y: startY + (endY - startY) * progress }]
+              });
+              await page.waitForTimeout(20);
+            }
+            await touchScroll.send("Input.dispatchTouchEvent", {
+              type: "touchEnd",
+              touchPoints: []
+            });
+            await page.waitForTimeout(200);
+            const after = await page.evaluate(() => window.scrollY);
+            if ((scrollDown && after <= before.y) || (!scrollDown && after >= before.y)) {
+              throw new Error(`${label} embedded graph trapped vertical page touch scrolling.`);
+            }
+          }
+        } finally {
+          await touchScroll.detach();
+        }
         const twoDimensionalSnapshot = await page.locator('[data-graph-dimension="2d"]').evaluate((element) => ({
           entities: element.getAttribute("data-canonical-entity-count"),
           event: element.getAttribute("data-canonical-event-sequence")
@@ -626,6 +711,28 @@ const tests = [
           );
         }
         await expectVisible(page.getByRole("toolbar", { name: "Universe Graph toolbar" }), "Original 3D Graph toolbar");
+        await expectVisible(page.getByRole("button", { name: "Zoom in 3D Graph" }), "3D Graph zoom-in control");
+        await expectVisible(page.getByRole("button", { name: "Zoom out 3D Graph" }), "3D Graph zoom-out control");
+        const toolbarGeometry = await page.getByRole("toolbar", { name: "Universe Graph toolbar" }).evaluate((toolbar) => {
+          const toolbarRect = toolbar.getBoundingClientRect();
+          const stageRect = toolbar.closest(".phase180-graph-3d-stage")?.getBoundingClientRect();
+          const buttons = [...toolbar.querySelectorAll("button")].map((button) => button.getBoundingClientRect());
+          return {
+            buttonsInside: buttons.every((button) => (
+              button.left >= toolbarRect.left - 1
+              && button.right <= toolbarRect.right + 1
+              && button.top >= toolbarRect.top - 1
+              && button.bottom <= toolbarRect.bottom + 1
+            )),
+            insideStage: Boolean(stageRect)
+              && toolbarRect.left >= stageRect.left - 1
+              && toolbarRect.right <= stageRect.right + 1,
+            noHorizontalOverflow: toolbar.scrollWidth <= toolbar.clientWidth + 1
+          };
+        });
+        if (!toolbarGeometry.buttonsInside || !toolbarGeometry.insideStage || !toolbarGeometry.noHorizontalOverflow) {
+          throw new Error(`3D Graph toolbar controls overflowed their embedded panel: ${JSON.stringify(toolbarGeometry)}`);
+        }
         const threeDimensionalInspector = page.getByLabel("Selected graph entity");
         await expectVisible(threeDimensionalInspector, "Original 3D Graph selected-entity drawer");
         if (await threeDimensionalInspector.getAttribute("data-collapsed") !== "true") {
@@ -816,6 +923,10 @@ const tests = [
           }
           await page.getByRole("button", { name: "Fit", exact: true }).click();
           if (profile.isMobile) {
+            await page.getByRole("button", { name: "Interact with 2D Graph" }).click();
+            if (await canvas.getAttribute("data-touch-interaction") !== "graph") {
+              throw new Error("Phone Graph did not activate explicit touch interaction.");
+            }
             await page.waitForTimeout(100);
             const touch = await context.newCDPSession(page);
             try {
@@ -877,6 +988,10 @@ const tests = [
               }
             } finally {
               await touch.detach();
+            }
+            await page.getByRole("button", { name: "Release 2D Graph touch controls" }).click();
+            if (await canvas.getAttribute("data-touch-interaction") !== "page") {
+              throw new Error("Phone Graph did not restore page-touch scrolling.");
             }
           }
           await canvas.focus();

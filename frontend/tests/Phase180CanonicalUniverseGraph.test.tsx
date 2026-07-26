@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import type { EntityRole, EntitySummary } from "@entral/contracts";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { createEvent, fireEvent, render, screen } from "@testing-library/react";
 import React, { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CanonicalUniverseGraph } from "../components/CanonicalUniverseGraph";
@@ -50,6 +50,12 @@ beforeEach(() => {
   vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  if (!HTMLCanvasElement.prototype.setPointerCapture) {
+    Object.defineProperty(HTMLCanvasElement.prototype, "setPointerCapture", {
+      configurable: true,
+      value: vi.fn()
+    });
+  }
 });
 
 afterEach(() => {
@@ -57,12 +63,19 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function GraphHarness({ onOpenFullRecord = vi.fn() }: { onOpenFullRecord?: (entityId: string) => void }) {
+function GraphHarness({
+  fullscreenActive = false,
+  onOpenFullRecord = vi.fn()
+}: {
+  fullscreenActive?: boolean;
+  onOpenFullRecord?: (entityId: string) => void;
+}) {
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   return (
     <CanonicalUniverseGraph
       entities={hierarchy}
       eventSequence={9}
+      fullscreenActive={fullscreenActive}
       movementPaused={false}
       onOpenFullRecord={onOpenFullRecord}
       onSelectedEntityChange={setSelectedEntityId}
@@ -105,5 +118,48 @@ describe("Phase 180 Canonical Universe Graph interaction semantics", () => {
     fireEvent.focus(search);
     const selectedOption = screen.getByRole("option", { name: /commander-b/i });
     expect(selectedOption).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("keeps ordinary page wheel scrolling available while retaining deliberate graph zoom", () => {
+    const { rerender } = render(<GraphHarness />);
+    const graph = screen.getByRole("application", { name: /canonical universe graph with 5 entities/i });
+    const ordinaryWheel = createEvent.wheel(graph, { bubbles: true, cancelable: true, deltaY: 120 });
+
+    fireEvent(graph, ordinaryWheel);
+    expect(ordinaryWheel.defaultPrevented).toBe(false);
+
+    const modifiedWheel = createEvent.wheel(graph, {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      deltaY: 120
+    });
+    fireEvent(graph, modifiedWheel);
+    expect(modifiedWheel.defaultPrevented).toBe(true);
+
+    rerender(<GraphHarness fullscreenActive />);
+    const fullscreenWheel = createEvent.wheel(graph, { bubbles: true, cancelable: true, deltaY: 120 });
+    fireEvent(graph, fullscreenWheel);
+    expect(fullscreenWheel.defaultPrevented).toBe(true);
+  });
+
+  it("defaults touch input to page scrolling and only captures it after explicit activation", () => {
+    render(<GraphHarness />);
+    const graph = screen.getByRole("application", { name: /canonical universe graph with 5 entities/i });
+
+    expect(graph).toHaveAttribute("data-touch-interaction", "page");
+    fireEvent.click(screen.getByRole("button", { name: "Interact with 2D Graph" }));
+    expect(graph).toHaveAttribute("data-touch-interaction", "graph");
+    fireEvent.click(screen.getByRole("button", { name: "Release 2D Graph touch controls" }));
+    expect(graph).toHaveAttribute("data-touch-interaction", "page");
+  });
+
+  it("clears a canceled pointer gesture without selecting an entity", () => {
+    render(<GraphHarness />);
+    const graph = screen.getByRole("application", { name: /canonical universe graph with 5 entities/i });
+
+    fireEvent.pointerDown(graph, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerCancel(graph, { clientX: 0, clientY: 0, pointerId: 1 });
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
   });
 });
