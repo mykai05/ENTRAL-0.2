@@ -189,13 +189,17 @@
 .phase180-graph-view-switch {
   align-items: center;
   background: rgba(8, 16, 29, 0.84);
+  backdrop-filter: blur(18px);
   border: 1px solid var(--phase180-border);
   border-radius: 12px;
   display: flex;
   gap: 0.35rem;
   margin-bottom: 0.9rem;
   padding: 0.32rem;
+  position: sticky;
   scroll-margin-top: 9rem;
+  top: calc(72px + 54px + 0.5rem);
+  z-index: 35;
 }
 
 .phase180-graph-view-switch button {
@@ -1177,6 +1181,7 @@ body:has(.phase180-embedded-3d) {
   .phase180-graph-view-switch {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    top: calc(62px + 0.5rem);
   }
 
   .phase180-graph-view-switch button {
