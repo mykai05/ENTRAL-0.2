@@ -1,14 +1,18 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import process from "node:process";
 
-const pnpm = ".corepack/v1/pnpm/9.12.3/bin/pnpm.cjs";
+const npmExecPath = process.env.npm_execpath;
+const packageManager = npmExecPath && existsSync(npmExecPath)
+  ? { command: process.execPath, prefixArgs: [npmExecPath] }
+  : { command: process.platform === "win32" ? "pnpm.cmd" : "pnpm", prefixArgs: [] };
 const commands = [
   {
-    args: [pnpm, "--filter", "@entral/backend", "dev:memory"],
+    args: ["--filter", "@entral/backend", "dev:memory"],
     name: "backend"
   },
   {
-    args: [pnpm, "--filter", "@entral/frontend", "dev"],
+    args: ["--filter", "@entral/frontend", "dev"],
     name: "frontend"
   }
 ];
@@ -49,12 +53,16 @@ console.log("Backend:  http://localhost:4000");
 console.log("Mode:     memory backend for local development");
 
 for (const command of commands) {
-  const child = spawn(process.execPath, command.args, {
+  const child = spawn(packageManager.command, [...packageManager.prefixArgs, ...command.args], {
     cwd: process.cwd(),
     env: {
       ...process.env,
       API_HOST: process.env.API_HOST ?? "0.0.0.0",
-      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
+      API_PORT: process.env.API_PORT ?? "4000",
+      API_PROXY_URL: process.env.API_PROXY_URL ?? "http://127.0.0.1:4000",
+      DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://entral:entral@127.0.0.1:5432/entral_local_memory",
+      JWT_SECRET: process.env.JWT_SECRET ?? "entral-local-memory-only-secret-32-characters",
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? ""
     },
     shell: false,
     stdio: ["ignore", "pipe", "pipe"],

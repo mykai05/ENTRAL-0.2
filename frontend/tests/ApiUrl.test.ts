@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveApiBaseUrl, resolveApiPath } from "../lib/api";
+import { ApiError, apiFetch, resolveApiBaseUrl, resolveApiPath } from "../lib/api";
 import { apiProxyBase } from "../lib/server-api-proxy";
 
 describe("resolveApiBaseUrl", () => {
@@ -58,5 +58,38 @@ describe("apiProxyBase", () => {
 
   it("normalizes a configured proxy target", () => {
     expect(apiProxyBase("production", "https://entral-0-2-production.up.railway.app/")).toBe("https://entral-0-2-production.up.railway.app");
+  });
+});
+
+describe("apiFetch cancellation and timeout", () => {
+  it("preserves caller cancellation while an internal timeout is also active", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = ((_url: string | URL | Request, options?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      options?.signal?.addEventListener("abort", () => reject(
+        Object.assign(new Error("caller aborted"), { name: "AbortError" })
+      ), { once: true });
+    })) as typeof fetch;
+    const controller = new AbortController();
+    const request = apiFetch("/health", { signal: controller.signal, timeoutMs: 1_000 });
+    controller.abort();
+
+    await expect(request).rejects.toMatchObject({ name: "AbortError", message: "caller aborted" });
+    globalThis.fetch = originalFetch;
+  });
+
+  it("still enforces the internal timeout when a caller signal is supplied", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = ((_url: string | URL | Request, options?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      options?.signal?.addEventListener("abort", () => reject(
+        Object.assign(new Error("request aborted"), { name: "AbortError" })
+      ), { once: true });
+    })) as typeof fetch;
+    const controller = new AbortController();
+
+    await expect(apiFetch("/health", { signal: controller.signal, timeoutMs: 1 })).rejects.toMatchObject({
+      name: "ApiError",
+      status: 408
+    } satisfies Partial<ApiError>);
+    globalThis.fetch = originalFetch;
   });
 });

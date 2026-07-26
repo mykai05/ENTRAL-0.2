@@ -1,9 +1,13 @@
 import { createHash } from "node:crypto";
 import {
   assertGovernanceActionRequest,
-  type BusinessFullRecord,
+  type BusinessFullRecordResponse,
   type BusinessSummary,
+  type CanonicalEvidenceReference,
+  type CanonicalEntralConversationResponse,
+  type CanonicalHierarchyResponse,
   type CanonicalPortfolioEventsResponse,
+  type EntityFullRecord,
   type EntityStatus,
   type EntitySummary,
   type GovernanceActionRequest,
@@ -118,6 +122,28 @@ type BusinessVersionRow = {
   version: bigint | number;
 };
 
+type EntityVersionRow = {
+  changedAt: Date;
+  reason: string | null;
+  version: bigint | number;
+};
+
+type EntralConversationRow = {
+  acknowledgedAt: Date | null;
+  businessId: string | null;
+  content: string;
+  createdAt: Date;
+  deliveredAt: Date | null;
+  direction: "HUMAN_TO_ENTRAL" | "ENTRAL_TO_HUMAN";
+  entralEntityId: string;
+  eventId: string | null;
+  eventSequence: bigint | number | null;
+  evidenceRefs: JsonValue;
+  messageId: string;
+  messageType: string;
+  status: string;
+};
+
 export type GovernanceActionRecord = {
   action_id: string;
   action_type: GovernanceActionRequest["action_type"];
@@ -149,6 +175,28 @@ export class CanonicalControlPlaneError extends Error {
 
 function numeric(value: Prisma.Decimal | number | null) {
   return value === null ? null : Number(value);
+}
+
+function evidenceReferenceArray(value: JsonValue): CanonicalEvidenceReference[] {
+  if (!Array.isArray(value)) {
+    return [{ id: canonicalJson(value).slice(0, 2_000) || "null", type: "INVALID_REFERENCE" }];
+  }
+  return value.map((item) => {
+    if (typeof item === "string" && item.length > 0) {
+      return { id: item, type: "LEGACY_REFERENCE" };
+    }
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      const record = item as Record<string, JsonValue>;
+      if (typeof record.type === "string" && record.type.length > 0
+        && typeof record.id === "string" && record.id.length > 0) {
+        return { id: record.id.slice(0, 2_000), type: record.type.slice(0, 120) };
+      }
+    }
+    return {
+      id: canonicalJson(item).slice(0, 2_000) || "null",
+      type: "INVALID_REFERENCE"
+    };
+  });
 }
 
 function canonicalJson(value: unknown): string {
@@ -353,40 +401,93 @@ async function findGovernanceAction(
 export class CanonicalControlPlaneRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
+  private async hierarchyRows(
+    transaction: Prisma.TransactionClient,
+    entityId?: string
+  ): Promise<RawEntitySummary[]> {
+    const where = entityId
+      ? Prisma.sql`WHERE entity_id = ${entityId}::uuid`
+      : Prisma.empty;
+    return transaction.$queryRaw<RawEntitySummary[]>(Prisma.sql`
+      SELECT
+        entity_id AS "entityId",
+        stable_code AS "stableCode",
+        entity_type::text AS "entityType",
+        name,
+        status::text AS status,
+        health,
+        parent_id AS "parentId",
+        child_count::integer AS "childCount",
+        assigned_business_id AS "assignedBusinessId",
+        model_class AS "modelClass",
+        compute_tier AS "computeTier",
+        current_mission AS "currentMission",
+        active_task_count::integer AS "activeTaskCount",
+        COALESCE(latest_material_result, 'null'::jsonb) AS "latestMaterialResult",
+        active_alert AS "activeAlert",
+        updated_at AS "updatedAt",
+        version::integer AS version
+      FROM entral.v_entity_summary
+      ${where}
+      ORDER BY
+        CASE entity_type
+          WHEN 'ENTRAL' THEN 0
+          WHEN 'MARSHAL' THEN 1
+          WHEN 'GENERAL' THEN 2
+          WHEN 'COMMANDER' THEN 3
+          WHEN 'SOLDIER' THEN 4
+        END,
+        stable_code
+    `);
+  }
+
+  private async visibleScope(
+    transaction: Prisma.TransactionClient,
+    appUserId: string
+  ): Promise<PortfolioSummaryResponse["scope"]> {
+    const [authorityRows, businessRows] = await Promise.all([
+      transaction.$queryRaw<{ isHumanAuthority: boolean }[]>`
+        SELECT entral.session_is_human_authority() AS "isHumanAuthority"
+      `,
+      transaction.$queryRaw<{ businessId: string }[]>`
+        SELECT business_id AS "businessId"
+        FROM entral.v_business_summary
+        ORDER BY stable_code
+      `
+    ]);
+    const humanPortfolio = authorityRows[0]?.isHumanAuthority === true;
+    return {
+      label: humanPortfolio ? "Human portfolio / all canonical businesses" : "Assigned canonical businesses",
+      mode: humanPortfolio ? "HUMAN_PORTFOLIO" : "ASSIGNED_BUSINESSES",
+      user_id: appUserId,
+      visible_business_ids: businessRows.map((row) => row.businessId)
+    };
+  }
+
   async listHierarchy(session: CanonicalSessionContext): Promise<EntitySummary[]> {
     return withCanonicalSession(this.db, session, async (transaction) => {
-      const rows = await transaction.$queryRaw<RawEntitySummary[]>`
-        SELECT
-          entity_id AS "entityId",
-          stable_code AS "stableCode",
-          entity_type::text AS "entityType",
-          name,
-          status::text AS status,
-          health,
-          parent_id AS "parentId",
-          child_count::integer AS "childCount",
-          assigned_business_id AS "assignedBusinessId",
-          model_class AS "modelClass",
-          compute_tier AS "computeTier",
-          current_mission AS "currentMission",
-          active_task_count::integer AS "activeTaskCount",
-          COALESCE(latest_material_result, 'null'::jsonb) AS "latestMaterialResult",
-          active_alert AS "activeAlert",
-          updated_at AS "updatedAt",
-          version::integer AS version
-        FROM entral.v_entity_summary
-        ORDER BY
-          CASE entity_type
-            WHEN 'ENTRAL' THEN 0
-            WHEN 'MARSHAL' THEN 1
-            WHEN 'GENERAL' THEN 2
-            WHEN 'COMMANDER' THEN 3
-            WHEN 'SOLDIER' THEN 4
-          END,
-          stable_code
-      `;
+      const rows = await this.hierarchyRows(transaction);
       return rows.map(mapEntity);
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  async getHierarchySnapshot(session: CanonicalSessionContext): Promise<CanonicalHierarchyResponse> {
+    return withCanonicalSession(this.db, session, async (transaction, appUserId) => {
+      const [rows, scope, eventRows] = await Promise.all([
+        this.hierarchyRows(transaction),
+        this.visibleScope(transaction, appUserId),
+        transaction.$queryRaw<{ sequence: bigint | number }[]>`
+          SELECT COALESCE(max(sequence_number), 0)::bigint AS sequence
+          FROM entral.canonical_events
+        `
+      ]);
+      return {
+        entities: rows.map(mapEntity),
+        event_sequence: Number(eventRows[0]?.sequence ?? 0),
+        generated_at: new Date().toISOString(),
+        scope
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
   }
 
   async listBusinesses(session: CanonicalSessionContext): Promise<BusinessSummary[]> {
@@ -532,13 +633,13 @@ export class CanonicalControlPlaneRepository {
           unresolved_exceptions: businesses.filter((business) => Boolean(business.top_exception)).length
         }
       };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
   }
 
   async getBusinessFull(
     businessId: string,
     session: CanonicalSessionContext
-  ): Promise<BusinessFullRecord | null> {
+  ): Promise<BusinessFullRecordResponse | null> {
     return withCanonicalSession(this.db, session, async (transaction) => {
       const summaryRows = await this.businessRows(transaction, businessId);
       if (!summaryRows[0]) return null;
@@ -562,7 +663,8 @@ export class CanonicalControlPlaneRepository {
         recommendationRows,
         sourceRows,
         versionRows,
-        evidenceRows
+        evidenceRows,
+        eventRows
       ] = await Promise.all([
         transaction.$queryRaw<JsonRow[]>`
           SELECT jsonb_build_object(
@@ -600,7 +702,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.financial_snapshots
             WHERE business_id = ${businessId}::uuid
             ORDER BY period_end DESC, observed_at DESC
-            LIMIT 24
           ) snapshot
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -611,7 +712,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.missions
             WHERE business_id = ${businessId}::uuid
             ORDER BY priority DESC, updated_at DESC
-            LIMIT 100
           ) mission
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -622,7 +722,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.tasks
             WHERE business_id = ${businessId}::uuid
             ORDER BY priority DESC, updated_at DESC
-            LIMIT 200
           ) task
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -633,7 +732,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.schedules
             WHERE business_id = ${businessId}::uuid
             ORDER BY updated_at DESC
-            LIMIT 100
           ) schedule
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -660,7 +758,6 @@ export class CanonicalControlPlaneRepository {
             JOIN entral.tool_definitions tool ON tool.id = grant_row.tool_id
             WHERE grant_row.business_id = ${businessId}::uuid
             ORDER BY grant_row.updated_at DESC
-            LIMIT 200
           ) grant_record
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -671,7 +768,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.health_assessments
             WHERE business_id = ${businessId}::uuid
             ORDER BY computed_at DESC
-            LIMIT 50
           ) assessment
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -685,7 +781,6 @@ export class CanonicalControlPlaneRepository {
             JOIN entral.metric_definitions definition ON definition.id = observation.metric_definition_id
             WHERE observation.business_id = ${businessId}::uuid
             ORDER BY observation.observed_at DESC
-            LIMIT 200
           ) metric
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -696,7 +791,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.outcomes
             WHERE business_id = ${businessId}::uuid
             ORDER BY observed_at DESC
-            LIMIT 100
           ) outcome
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -707,7 +801,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.experiments
             WHERE business_id = ${businessId}::uuid
             ORDER BY created_at DESC
-            LIMIT 100
           ) experiment
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -719,7 +812,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.decisions
             WHERE business_id = ${businessId}::uuid
             ORDER BY effective_at DESC
-            LIMIT 100
           ) decision_record
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -731,7 +823,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.governance_actions
             WHERE business_id = ${businessId}::uuid
             ORDER BY requested_at DESC
-            LIMIT 100
           ) action_record
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -742,7 +833,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.audit_entries
             WHERE business_id = ${businessId}::uuid
             ORDER BY sequence_number DESC
-            LIMIT 100
           ) audit_record
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -754,7 +844,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.recommendations
             WHERE business_id = ${businessId}::uuid
             ORDER BY created_at DESC
-            LIMIT 100
           ) recommendation
         `,
         transaction.$queryRaw<JsonRow[]>`
@@ -765,7 +854,6 @@ export class CanonicalControlPlaneRepository {
             FROM entral.source_records
             WHERE business_id = ${businessId}::uuid
             ORDER BY ingested_at DESC
-            LIMIT 200
           ) source_record
         `,
         transaction.$queryRaw<BusinessVersionRow[]>`
@@ -776,7 +864,6 @@ export class CanonicalControlPlaneRepository {
           FROM entral.business_versions
           WHERE business_id = ${businessId}::uuid
           ORDER BY version DESC
-          LIMIT 100
         `,
         transaction.$queryRaw<{ evidenceIds: string[] }[]>`
           SELECT COALESCE(
@@ -789,51 +876,424 @@ export class CanonicalControlPlaneRepository {
           LEFT JOIN entral.source_records source ON source.id = link.source_record_id
           WHERE artifact.business_id = ${businessId}::uuid
              OR source.business_id = ${businessId}::uuid
+        `,
+        transaction.$queryRaw<{ sequence: bigint | number }[]>`
+          SELECT COALESCE(max(sequence_number), 0)::bigint AS sequence
+          FROM entral.canonical_events
         `
       ]);
 
+      const eventSequence = Number(eventRows[0]?.sequence ?? 0);
       return {
-        agents_and_tools: {
-          entities: entityRows[0]?.value ?? [],
-          tool_grants: toolRows[0]?.value ?? []
+        business: {
+          agents_and_tools: {
+            entities: entityRows[0]?.value ?? [],
+            tool_grants: toolRows[0]?.value ?? []
+          },
+          aggregate_version: summary.version,
+          decisions_and_changes: {
+            audit: auditRows[0]?.value ?? [],
+            decisions: decisionRows[0]?.value ?? [],
+            governance_actions: governanceRows[0]?.value ?? []
+          },
+          evidence_ids: evidenceRows[0]?.evidenceIds ?? [],
+          external_activity: {
+            sources: sourceRows[0]?.value ?? []
+          },
+          financials: {
+            snapshots: financialRows[0]?.value ?? []
+          },
+          issues_and_recommendations: {
+            recommendations: recommendationRows[0]?.value ?? []
+          },
+          loaded_at: new Date().toISOString(),
+          operations: {
+            missions: missionRows[0]?.value ?? [],
+            schedules: scheduleRows[0]?.value ?? [],
+            tasks: taskRows[0]?.value ?? []
+          },
+          overview: overviewRows[0]?.value ?? {},
+          performance: {
+            experiments: experimentRows[0]?.value ?? [],
+            health_assessments: healthRows[0]?.value ?? [],
+            metrics: metricRows[0]?.value ?? [],
+            outcomes: outcomeRows[0]?.value ?? []
+          },
+          summary,
+          version_history: versionRows.map((version) => ({
+            changed_at: version.changedAt.toISOString(),
+            reason: version.reason,
+            version: Number(version.version)
+          }))
         },
-        aggregate_version: summary.version,
-        decisions_and_changes: {
+        event_sequence: eventSequence
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  async getEntityFull(
+    entityId: string,
+    session: CanonicalSessionContext
+  ): Promise<{ entity: EntityFullRecord; event_sequence: number } | null> {
+    return withCanonicalSession(this.db, session, async (transaction) => {
+      const summaryRows = await this.hierarchyRows(transaction, entityId);
+      if (!summaryRows[0]) return null;
+      const summary = mapEntity(summaryRows[0]);
+
+      const [
+        configurationRows,
+        runtimeRows,
+        authorityRows,
+        operationsRows,
+        economicsRows,
+        reliabilityRows,
+        auditRows,
+        evidenceRows,
+        connectionsRows,
+        versionRows,
+        eventRows
+      ] = await Promise.all([
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT jsonb_build_object(
+            'definition', entity.definition,
+            'configuration', entity.configuration,
+            'source_version', entity.source_version,
+            'taxonomy_version_id', entity.taxonomy_version_id,
+            'created_at', entity.created_at,
+            'updated_at', entity.updated_at,
+            'retired_at', entity.retired_at
+          ) AS value
+          FROM entral.entities entity
+          WHERE entity.id = ${entityId}::uuid
+        `,
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT jsonb_build_object(
+            'missions', COALESCE((
+              SELECT jsonb_agg(to_jsonb(mission) ORDER BY mission.priority DESC, mission.updated_at DESC)
+              FROM (
+                SELECT id, stable_code, objective, status, priority, deadline, version, updated_at
+                FROM entral.missions
+                WHERE owner_entity_id = ${entityId}::uuid
+                ORDER BY priority DESC, updated_at DESC
+              ) mission
+            ), '[]'::jsonb),
+            'tasks', COALESCE((
+              SELECT jsonb_agg(to_jsonb(task) ORDER BY task.priority DESC, task.updated_at DESC)
+              FROM (
+                SELECT id, stable_code, mission_id, objective, status, priority, retry_count,
+                  max_retries, deadline, result, version, updated_at
+                FROM entral.tasks
+                WHERE owner_entity_id = ${entityId}::uuid
+                ORDER BY priority DESC, updated_at DESC
+              ) task
+            ), '[]'::jsonb),
+            'schedules', COALESCE((
+              SELECT jsonb_agg(to_jsonb(schedule) ORDER BY schedule.updated_at DESC)
+              FROM (
+                SELECT id, stable_code, cron_expression, event_trigger, timezone, status,
+                  concurrency_limit, retry_policy, next_run_at, last_run_at, version, updated_at
+                FROM entral.schedules
+                WHERE owner_entity_id = ${entityId}::uuid
+                ORDER BY updated_at DESC
+              ) schedule
+            ), '[]'::jsonb)
+          ) AS value
+        `,
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT jsonb_build_object(
+            'model_profile', CASE WHEN model.id IS NULL THEN NULL ELSE jsonb_build_object(
+              'id', model.id,
+              'stable_code', model.stable_code,
+              'provider', model.provider,
+              'model_name', model.model_name,
+              'model_version', model.model_version,
+              'compute_tier', model.compute_tier,
+              'context_limit_tokens', model.context_limit_tokens,
+              'configuration', model.configuration,
+              'is_active', model.is_active
+            ) END,
+            'authority_profile', CASE WHEN authority.id IS NULL THEN NULL ELSE jsonb_build_object(
+              'id', authority.id,
+              'stable_code', authority.stable_code,
+              'name', authority.name,
+              'allowed_action_types', authority.allowed_action_types,
+              'allowed_tool_risk', authority.allowed_tool_risk,
+              'max_single_action_cost', authority.max_single_action_cost,
+              'max_daily_cost', authority.max_daily_cost,
+              'confidence_floor', authority.confidence_floor,
+              'requires_human_for', authority.requires_human_for,
+              'constraints', authority.constraints,
+              'is_active', authority.is_active
+            ) END,
+            'tool_grants', COALESCE((
+              SELECT jsonb_agg(to_jsonb(grant_record) ORDER BY grant_record.updated_at DESC)
+              FROM (
+                SELECT grant_row.id, tool.stable_code, tool.name, tool.provider, tool.risk_class,
+                  grant_row.allowed_actions, grant_row.data_scope, grant_row.spend_limit,
+                  grant_row.call_limit, grant_row.valid_from, grant_row.expires_at,
+                  grant_row.version, grant_row.updated_at
+                FROM entral.tool_grants grant_row
+                JOIN entral.tool_definitions tool ON tool.id = grant_row.tool_id
+                WHERE grant_row.entity_id = ${entityId}::uuid
+                ORDER BY grant_row.updated_at DESC
+              ) grant_record
+            ), '[]'::jsonb)
+          ) AS value
+          FROM entral.entities entity
+          LEFT JOIN entral.model_profiles model ON model.id = entity.model_profile_id
+          LEFT JOIN entral.authority_profiles authority ON authority.id = entity.authority_profile_id
+          WHERE entity.id = ${entityId}::uuid
+        `,
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT jsonb_build_object(
+            'messages', COALESCE(jsonb_agg(to_jsonb(message_record) ORDER BY message_record.created_at DESC)
+              FILTER (WHERE message_record.id IS NOT NULL), '[]'::jsonb)
+          ) AS value
+          FROM (
+            SELECT id, message_type, status, sender_entity_id, recipient_entity_id, mission_id,
+              payload, route_valid, route_error, created_at, delivered_at, acknowledged_at
+            FROM entral.operational_messages
+            WHERE sender_entity_id = ${entityId}::uuid OR recipient_entity_id = ${entityId}::uuid
+            ORDER BY created_at DESC
+          ) message_record
+        `,
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT jsonb_build_object(
+            'costs', COALESCE((
+              SELECT jsonb_agg(to_jsonb(cost_record) ORDER BY cost_record.incurred_at DESC)
+              FROM (
+                SELECT id, cost_type, amount, currency, quantity, unit, provider, incurred_at, metadata
+                FROM entral.cost_records
+                WHERE entity_id = ${entityId}::uuid
+                ORDER BY incurred_at DESC
+              ) cost_record
+            ), '[]'::jsonb),
+            'resource_usage', COALESCE((
+              SELECT jsonb_agg(to_jsonb(usage_record) ORDER BY usage_record.period_end DESC)
+              FROM (
+                SELECT id, resource_type, quantity, unit, period_start, period_end, metadata
+                FROM entral.resource_usage
+                WHERE entity_id = ${entityId}::uuid
+                ORDER BY period_end DESC
+              ) usage_record
+            ), '[]'::jsonb)
+          ) AS value
+        `,
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT jsonb_build_object(
+            'health_assessments', COALESCE(jsonb_agg(to_jsonb(assessment) ORDER BY assessment.computed_at DESC)
+              FILTER (WHERE assessment.id IS NOT NULL), '[]'::jsonb)
+          ) AS value
+          FROM (
+            SELECT id, health_state, health_score, driver_records, evidence_refs,
+              source_freshness, confidence, calculation_version, computed_at, expires_at
+            FROM entral.health_assessments
+            WHERE scope_type = 'ENTITY' AND scope_id = ${entityId}::uuid
+            ORDER BY computed_at DESC
+          ) assessment
+        `,
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT COALESCE(jsonb_agg(to_jsonb(audit_record) ORDER BY audit_record.sequence_number DESC), '[]'::jsonb) AS value
+          FROM (
+            SELECT id, sequence_number, occurred_at, actor_kind, actor_id, action, reason,
+              target_type, target_id, result, evidence_refs, correlation_id
+            FROM entral.audit_entries
+            WHERE entity_id = ${entityId}::uuid OR target_id = ${entityId}::uuid
+            ORDER BY sequence_number DESC
+          ) audit_record
+        `,
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT jsonb_build_object(
+            'audit_evidence_refs', COALESCE((
+              SELECT jsonb_agg(DISTINCT evidence_ref)
+              FROM entral.audit_entries entry,
+                LATERAL jsonb_array_elements(entry.evidence_refs) evidence_ref
+              WHERE entry.entity_id = ${entityId}::uuid OR entry.target_id = ${entityId}::uuid
+            ), '[]'::jsonb),
+            'health_evidence_refs', COALESCE((
+              SELECT jsonb_agg(DISTINCT evidence_ref)
+              FROM entral.health_assessments assessment,
+                LATERAL jsonb_array_elements(assessment.evidence_refs) evidence_ref
+              WHERE assessment.scope_type = 'ENTITY' AND assessment.scope_id = ${entityId}::uuid
+            ), '[]'::jsonb)
+          ) AS value
+        `,
+        transaction.$queryRaw<JsonRow[]>`
+          SELECT jsonb_build_object(
+            'parent', CASE WHEN parent.id IS NULL THEN NULL ELSE jsonb_build_object(
+              'entity_id', parent.id, 'stable_code', parent.stable_code, 'name', parent.name,
+              'entity_type', parent.role, 'version', parent.version
+            ) END,
+            'children', COALESCE((
+              SELECT jsonb_agg(jsonb_build_object(
+                'entity_id', child.id, 'stable_code', child.stable_code, 'name', child.name,
+                'entity_type', child.role, 'status', child.status, 'version', child.version
+              ) ORDER BY child.stable_code)
+              FROM entral.entities child
+              WHERE child.parent_id = entity.id AND child.status <> 'RETIRED'
+            ), '[]'::jsonb),
+            'business', CASE WHEN business.id IS NULL THEN NULL ELSE jsonb_build_object(
+              'business_id', business.id, 'stable_code', business.stable_code,
+              'name', business.name, 'status', business.status, 'version', business.version
+            ) END
+          ) AS value
+          FROM entral.entities entity
+          LEFT JOIN entral.entities parent ON parent.id = entity.parent_id
+          LEFT JOIN entral.businesses business ON business.id = entity.business_id
+          WHERE entity.id = ${entityId}::uuid
+        `,
+        transaction.$queryRaw<EntityVersionRow[]>`
+          SELECT version, recorded_at AS "changedAt", reason
+          FROM entral.entity_versions
+          WHERE entity_id = ${entityId}::uuid
+          ORDER BY version DESC
+        `,
+        transaction.$queryRaw<{ sequence: bigint | number }[]>`
+          SELECT COALESCE(max(sequence_number), 0)::bigint AS sequence
+          FROM entral.canonical_events
+        `
+      ]);
+
+      const eventSequence = Number(eventRows[0]?.sequence ?? 0);
+      return {
+        entity: {
+          aggregate_version: summary.version,
           audit: auditRows[0]?.value ?? [],
-          decisions: decisionRows[0]?.value ?? [],
-          governance_actions: governanceRows[0]?.value ?? []
+          authority: authorityRows[0]?.value ?? {},
+          configuration: configurationRows[0]?.value ?? {},
+          connections: connectionsRows[0]?.value ?? {},
+          economics: economicsRows[0]?.value ?? {},
+          evidence: evidenceRows[0]?.value ?? {},
+          loaded_at: new Date().toISOString(),
+          operations: operationsRows[0]?.value ?? {},
+          reliability: reliabilityRows[0]?.value ?? {},
+          runtime: runtimeRows[0]?.value ?? {},
+          summary,
+          version_history: versionRows.map((version) => ({
+            changed_at: version.changedAt.toISOString(),
+            reason: version.reason,
+            version: Number(version.version)
+          }))
         },
-        evidence_ids: evidenceRows[0]?.evidenceIds ?? [],
-        external_activity: {
-          sources: sourceRows[0]?.value ?? []
-        },
-        financials: {
-          snapshots: financialRows[0]?.value ?? []
-        },
-        issues_and_recommendations: {
-          recommendations: recommendationRows[0]?.value ?? []
-        },
-        loaded_at: new Date().toISOString(),
-        operations: {
-          missions: missionRows[0]?.value ?? [],
-          schedules: scheduleRows[0]?.value ?? [],
-          tasks: taskRows[0]?.value ?? []
-        },
-        overview: overviewRows[0]?.value ?? {},
-        performance: {
-          experiments: experimentRows[0]?.value ?? [],
-          health_assessments: healthRows[0]?.value ?? [],
-          metrics: metricRows[0]?.value ?? [],
-          outcomes: outcomeRows[0]?.value ?? []
-        },
-        summary,
-        version_history: versionRows.map((version) => ({
-          changed_at: version.changedAt.toISOString(),
-          reason: version.reason,
-          version: Number(version.version)
+        event_sequence: eventSequence
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  async getEntralConversation(
+    businessId: string | null,
+    session: CanonicalSessionContext
+  ): Promise<CanonicalEntralConversationResponse> {
+    return withCanonicalSession(this.db, session, async (transaction, appUserId) => {
+      const [messageRows, eventRows] = await Promise.all([
+        transaction.$queryRaw<EntralConversationRow[]>`
+          WITH scoped_messages AS (
+            SELECT
+              message.id,
+              message.message_type,
+              message.status,
+              message.payload,
+              message.evidence_refs,
+              message.created_at,
+              message.delivered_at,
+              message.acknowledged_at,
+              CASE
+                WHEN message.sender_user_id = ${appUserId}::uuid THEN 'HUMAN_TO_ENTRAL'
+                ELSE 'ENTRAL_TO_HUMAN'
+              END AS direction,
+              COALESCE(
+                sender.business_id,
+                recipient.business_id,
+                task.business_id,
+                mission.business_id
+              ) AS business_id,
+              COALESCE(
+                CASE WHEN sender.role = 'ENTRAL' THEN sender.id END,
+                CASE WHEN recipient.role = 'ENTRAL' THEN recipient.id END
+              ) AS entral_entity_id
+            FROM entral.operational_messages message
+            LEFT JOIN entral.entities sender ON sender.id = message.sender_entity_id
+            LEFT JOIN entral.entities recipient ON recipient.id = message.recipient_entity_id
+            LEFT JOIN entral.tasks task ON task.id = message.task_id
+            LEFT JOIN entral.missions mission ON mission.id = message.mission_id
+            WHERE (
+              (
+                message.sender_user_id = ${appUserId}::uuid
+                AND recipient.role = 'ENTRAL'
+              )
+              OR (
+                message.recipient_user_id = ${appUserId}::uuid
+                AND sender.role = 'ENTRAL'
+              )
+            )
+              AND (
+                message.mission_id IS NULL
+                OR entral.can_access_mission(message.mission_id, 'read')
+              )
+              AND (
+                message.task_id IS NULL
+                OR entral.can_access_task(message.task_id, 'read')
+              )
+          )
+          SELECT
+            message.id AS "messageId",
+            event.id AS "eventId",
+            event.sequence_number AS "eventSequence",
+            message.message_type::text AS "messageType",
+            message.status::text AS status,
+            message.direction AS direction,
+            COALESCE(
+              NULLIF(message.payload->>'content', ''),
+              NULLIF(message.payload->>'message', ''),
+              message.payload::text
+            ) AS content,
+            message.evidence_refs AS "evidenceRefs",
+            message.business_id AS "businessId",
+            message.entral_entity_id AS "entralEntityId",
+            message.created_at AS "createdAt",
+            message.delivered_at AS "deliveredAt",
+            message.acknowledged_at AS "acknowledgedAt"
+          FROM scoped_messages message
+          LEFT JOIN LATERAL (
+            SELECT canonical.id, canonical.sequence_number
+            FROM entral.canonical_events canonical
+            WHERE canonical.aggregate_type = 'OPERATIONAL_MESSAGES'
+              AND canonical.aggregate_id = message.id
+            ORDER BY canonical.sequence_number DESC
+            LIMIT 1
+          ) event ON true
+          WHERE (${businessId}::uuid IS NULL OR message.business_id = ${businessId}::uuid)
+            AND (
+              message.business_id IS NULL
+              OR entral.can_access_business(message.business_id, 'read')
+            )
+          ORDER BY message.created_at, message.id
+        `,
+        transaction.$queryRaw<{ sequence: bigint | number }[]>`
+          SELECT COALESCE(max(sequence_number), 0)::bigint AS sequence
+          FROM entral.canonical_events
+        `
+      ]);
+      return {
+        event_sequence: Number(eventRows[0]?.sequence ?? 0),
+        generated_at: new Date().toISOString(),
+        messages: messageRows.map((message) => ({
+          acknowledged_at: message.acknowledgedAt?.toISOString() ?? null,
+          business_id: message.businessId,
+          content: message.content,
+          created_at: message.createdAt.toISOString(),
+          delivered_at: message.deliveredAt?.toISOString() ?? null,
+          direction: message.direction,
+          entral_entity_id: message.entralEntityId,
+          event_id: message.eventId,
+          event_sequence: message.eventSequence === null ? null : Number(message.eventSequence),
+          evidence_refs: evidenceReferenceArray(message.evidenceRefs),
+          message_id: message.messageId,
+          message_type: message.messageType,
+          status: message.status
         }))
       };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
   }
 
   async listPortfolioEvents(

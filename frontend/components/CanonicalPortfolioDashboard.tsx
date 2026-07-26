@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "../lib/api";
 import {
   canonicalPortfolioCache,
@@ -274,12 +274,16 @@ function BusinessDetail({
   error,
   isLoading,
   onRetry,
+  requestedEvidenceId,
+  snapshotEventSequence,
   source
 }: {
   business: BusinessFullRecord | null;
   error: string;
   isLoading: boolean;
   onRetry: () => void;
+  requestedEvidenceId: string | null;
+  snapshotEventSequence: number;
   source: CanonicalPortfolioSource;
 }) {
   if (isLoading) {
@@ -312,7 +316,8 @@ function BusinessDetail({
         <dl>
           <div><dt>State</dt><dd>{humanLabel(summary.status)}</dd></div>
           <div><dt>Health</dt><dd>{humanLabel(summary.health_state)}{summary.health_score === null ? "" : ` / ${number(summary.health_score)}`}</dd></div>
-          <div><dt>Aggregate</dt><dd>Version {business.aggregate_version}</dd></div>
+          <div><dt>Aggregate version</dt><dd>v{business.aggregate_version}</dd></div>
+          <div><dt>Canonical snapshot</dt><dd>Event {snapshotEventSequence}</dd></div>
           <div><dt>Freshness</dt><dd>{sourceFreshness.label}</dd></div>
         </dl>
       </header>
@@ -329,6 +334,36 @@ function BusinessDetail({
         ))}
       </div>
 
+      {business.evidence_ids.length ? (
+        <section aria-label="Canonical business evidence references" className="phase170-evidence-list">
+          <h2>Evidence references</h2>
+          <ul>
+            {business.evidence_ids.map((evidenceId) => (
+              <li
+                className={requestedEvidenceId === evidenceId ? "requested" : undefined}
+                id={`canonical-evidence-${evidenceId}`}
+                key={evidenceId}
+              >
+                <code>{evidenceId}</code>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {requestedEvidenceId && !business.evidence_ids.includes(requestedEvidenceId) ? (
+        <section
+          className="phase170-evidence-list unresolved"
+          id={`canonical-evidence-${requestedEvidenceId}`}
+          role="status"
+        >
+          <h2>Evidence reference unavailable</h2>
+          <p>
+            Reference <code>{requestedEvidenceId}</code> is recorded in the conversation but is not linked to this
+            canonical business record. No substitute evidence is being inferred.
+          </p>
+        </section>
+      ) : null}
+
       <footer>
         <span>Loaded {dateTime(business.loaded_at)}</span>
         <span>{business.evidence_ids.length} evidence reference{business.evidence_ids.length === 1 ? "" : "s"}</span>
@@ -340,23 +375,29 @@ function BusinessDetail({
 
 export function CanonicalPortfolioDashboard({
   organizationId,
-  userName
+  scopeBusinessId,
+  userName,
+  workspacePortfolio,
+  workspaceStatus
 }: {
   organizationId?: string;
+  scopeBusinessId?: string | null;
   userName?: string;
+  workspacePortfolio?: PortfolioSummaryResponse;
+  workspaceStatus?: string;
 }) {
   const searchParams = useSearchParams();
-  const selectedBusinessId = searchParams.get("business");
+  const selectedBusinessId = scopeBusinessId ?? searchParams.get("business");
   const source = useMemo<CanonicalPortfolioSource>(() => ({ organizationId }), [organizationId]);
   const [portfolio, setPortfolio] = useState<PortfolioSummaryResponse | null>(
-    () => canonicalPortfolioCache.get(canonicalQueryKeys.portfolio(source)) ?? null
+    () => workspacePortfolio ?? canonicalPortfolioCache.get(canonicalQueryKeys.portfolio(source)) ?? null
   );
   const [portfolioError, setPortfolioError] = useState("");
   const [isPortfolioLoading, setIsPortfolioLoading] = useState(!portfolio);
   const [business, setBusiness] = useState<BusinessFullRecord | null>(null);
   const [businessError, setBusinessError] = useState("");
   const [isBusinessLoading, setIsBusinessLoading] = useState(Boolean(selectedBusinessId));
-  const [eventStatus, setEventStatus] = useState("Listening for canonical events");
+  const [eventStatus, setEventStatus] = useState(workspaceStatus ?? "Listening for canonical events");
   const [search, setSearch] = useState("");
   const [marshal, setMarshal] = useState("ALL");
   const [general, setGeneral] = useState("ALL");
@@ -366,6 +407,7 @@ export function CanonicalPortfolioDashboard({
   const [change, setChange] = useState<ChangeFilter>("ALL");
   const [priority, setPriority] = useState<PriorityFilter>("ALL");
   const [sort, setSort] = useState<SortMode>("ENTRAL_PRIORITY");
+  const businessRefreshGenerationRef = useRef(0);
 
   const refreshPortfolio = useCallback(async (signal?: AbortSignal) => {
     setPortfolioError("");
@@ -380,44 +422,80 @@ export function CanonicalPortfolioDashboard({
     }
   }, [source]);
 
-  const refreshBusiness = useCallback(async (businessId: string, signal?: AbortSignal) => {
+  const refreshBusiness = useCallback(async (
+    businessId: string,
+    expectedEventSequence: number,
+    signal?: AbortSignal
+  ) => {
+    const refreshGeneration = ++businessRefreshGenerationRef.current;
+    const isCurrentRefresh = () => !signal?.aborted && refreshGeneration === businessRefreshGenerationRef.current;
     setBusinessError("");
     setIsBusinessLoading(true);
     try {
-      const response = await loadCanonicalBusiness(source, businessId, { signal });
-      setBusiness(response.business);
+      let accepted: Awaited<ReturnType<typeof loadCanonicalBusiness>> | null = null;
+      for (let attempt = 0; attempt < 3 && !signal?.aborted; attempt += 1) {
+        const response = await loadCanonicalBusiness(source, businessId, { signal });
+        if (response.event_sequence === expectedEventSequence) {
+          accepted = response;
+          break;
+        }
+        canonicalPortfolioCache.invalidate(canonicalQueryKeys.business(source, businessId));
+      }
+      if (!accepted) {
+        throw new Error("The canonical business record changed during snapshot assembly. Entral will retry before displaying mixed versions.");
+      }
+      if (!isCurrentRefresh()) return;
+      setBusiness(accepted.business);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return;
+      if (!isCurrentRefresh()) return;
       setBusiness(null);
       setBusinessError(errorMessage(error));
     } finally {
-      if (!signal?.aborted) setIsBusinessLoading(false);
+      if (isCurrentRefresh()) setIsBusinessLoading(false);
     }
   }, [source]);
 
   useEffect(() => {
+    if (workspacePortfolio) {
+      setPortfolio(workspacePortfolio);
+      setPortfolioError("");
+      setIsPortfolioLoading(false);
+      return;
+    }
     const controller = new AbortController();
     void refreshPortfolio(controller.signal);
     return () => controller.abort();
-  }, [refreshPortfolio]);
+  }, [refreshPortfolio, workspacePortfolio]);
+
+  useEffect(() => {
+    if (workspaceStatus) setEventStatus(workspaceStatus);
+  }, [workspaceStatus]);
 
   useEffect(() => {
     if (!selectedBusinessId) {
+      businessRefreshGenerationRef.current += 1;
       setBusiness(null);
       setBusinessError("");
       setIsBusinessLoading(false);
       return;
     }
-    const cached = canonicalPortfolioCache.get<{ business: BusinessFullRecord }>(
+    const expectedEventSequence = workspacePortfolio?.event_sequence ?? portfolio?.event_sequence;
+    if (expectedEventSequence === undefined) return;
+    const cached = canonicalPortfolioCache.get<Awaited<ReturnType<typeof loadCanonicalBusiness>>>(
       canonicalQueryKeys.business(source, selectedBusinessId)
     );
-    if (cached) setBusiness(cached.business);
+    if (cached?.event_sequence === expectedEventSequence) setBusiness(cached.business);
     const controller = new AbortController();
-    void refreshBusiness(selectedBusinessId, controller.signal);
-    return () => controller.abort();
-  }, [refreshBusiness, selectedBusinessId, source]);
+    void refreshBusiness(selectedBusinessId, expectedEventSequence, controller.signal);
+    return () => {
+      controller.abort();
+      businessRefreshGenerationRef.current += 1;
+    };
+  }, [portfolio?.event_sequence, refreshBusiness, selectedBusinessId, source, workspacePortfolio?.event_sequence]);
 
   useEffect(() => {
+    if (workspacePortfolio) return;
     if (!portfolio) return;
     return subscribeCanonicalPortfolioEvents(source, {
       afterSequence: portfolio.event_sequence,
@@ -426,11 +504,11 @@ export function CanonicalPortfolioDashboard({
         setEventStatus(`Updated through event ${response.next_sequence}`);
         void refreshPortfolio();
         if (selectedBusinessId && changedBusinessIds.has(selectedBusinessId)) {
-          void refreshBusiness(selectedBusinessId);
+          void refreshBusiness(selectedBusinessId, response.next_sequence);
         }
       }
     });
-  }, [portfolio?.event_sequence, refreshBusiness, refreshPortfolio, selectedBusinessId, source]);
+  }, [portfolio?.event_sequence, refreshBusiness, refreshPortfolio, selectedBusinessId, source, workspacePortfolio]);
 
   const businesses = useMemo(() => {
     if (!portfolio) return [];
@@ -485,7 +563,12 @@ export function CanonicalPortfolioDashboard({
         business={business}
         error={businessError}
         isLoading={isBusinessLoading}
-        onRetry={() => void refreshBusiness(selectedBusinessId)}
+        onRetry={() => void refreshBusiness(
+          selectedBusinessId,
+          workspacePortfolio?.event_sequence ?? portfolio?.event_sequence ?? 0
+        )}
+        requestedEvidenceId={searchParams.get("evidence")}
+        snapshotEventSequence={workspacePortfolio?.event_sequence ?? portfolio?.event_sequence ?? 0}
         source={source}
       />
     );

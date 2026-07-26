@@ -27,7 +27,10 @@ export type CanonicalSessionContext =
 export async function withCanonicalSession<T>(
   database: PrismaClient,
   context: CanonicalSessionContext,
-  operation: (transaction: Prisma.TransactionClient, appUserId: string) => Promise<T>
+  operation: (transaction: Prisma.TransactionClient, appUserId: string) => Promise<T>,
+  options: {
+    isolationLevel?: Prisma.TransactionIsolationLevel;
+  } = {}
 ): Promise<T> {
   return database.$transaction(async (transaction) => {
     const correlationId = context.correlationId ?? randomUUID();
@@ -51,5 +54,5 @@ export async function withCanonicalSession<T>(
     }
 
     return operation(transaction, appUserId);
-  });
+  }, options);
 }

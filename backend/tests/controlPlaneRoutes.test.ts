@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   createGovernanceAction: vi.fn(),
   getBusiness: vi.fn(),
   getBusinessFull: vi.fn(),
+  getEntityFull: vi.fn(),
+  getHierarchySnapshot: vi.fn(),
   getPortfolio: vi.fn(),
   listPortfolioEvents: vi.fn(),
   listBusinesses: vi.fn(),
@@ -29,6 +31,8 @@ vi.mock("../src/services/canonicalControlPlane.js", async (importOriginal) => {
       createGovernanceAction: mocks.createGovernanceAction,
       getBusiness: mocks.getBusiness,
       getBusinessFull: mocks.getBusinessFull,
+      getEntityFull: mocks.getEntityFull,
+      getHierarchySnapshot: mocks.getHierarchySnapshot,
       getPortfolio: mocks.getPortfolio,
       listPortfolioEvents: mocks.listPortfolioEvents,
       listBusinesses: mocks.listBusinesses,
@@ -107,14 +111,17 @@ describe("canonical control-plane routes", () => {
     });
 
     expect(response.statusCode).toBe(401);
-    expect(mocks.listHierarchy).not.toHaveBeenCalled();
+    expect(mocks.getHierarchySnapshot).not.toHaveBeenCalled();
     await app.close();
   });
 
   it("returns database-backed hierarchy records with private cache headers", async () => {
-    mocks.listHierarchy.mockResolvedValueOnce([
-      { entity_id: targetId, entity_type: "ENTRAL", name: "ENTRAL" }
-    ]);
+    mocks.getHierarchySnapshot.mockResolvedValueOnce({
+      entities: [{ entity_id: targetId, entity_type: "ENTRAL", name: "ENTRAL" }],
+      event_sequence: 7,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      scope: { label: "Human portfolio", mode: "HUMAN_PORTFOLIO", user_id: actorId, visible_business_ids: [] }
+    });
     const { app, authorization } = await buildControlPlaneTestServer();
     const response = await app.inject({
       headers: { authorization },
@@ -124,10 +131,9 @@ describe("canonical control-plane routes", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.headers["cache-control"]).toBe("private, no-store");
-    expect(response.json()).toEqual({
-      entities: [{ entity_id: targetId, entity_type: "ENTRAL", name: "ENTRAL" }]
-    });
-    expect(mocks.listHierarchy).toHaveBeenCalledWith({
+    expect(response.json().event_sequence).toBe(7);
+    expect(response.json().entities).toEqual([{ entity_id: targetId, entity_type: "ENTRAL", name: "ENTRAL" }]);
+    expect(mocks.getHierarchySnapshot).toHaveBeenCalledWith({
       actionReason: "Read the canonical entity hierarchy.",
       authSubject: "internal-user",
       correlationId: expect.any(String)
@@ -156,8 +162,11 @@ describe("canonical control-plane routes", () => {
       }
     });
     mocks.getBusinessFull.mockResolvedValueOnce({
-      aggregate_version: 3,
-      summary: { business_id: targetId, version: 3 }
+      business: {
+        aggregate_version: 3,
+        summary: { business_id: targetId, version: 3 }
+      },
+      event_sequence: 7
     });
     mocks.listPortfolioEvents.mockResolvedValueOnce({
       events: [{ aggregate_id: targetId, business_id: targetId, sequence_number: 8 }],
@@ -186,6 +195,7 @@ describe("canonical control-plane routes", () => {
     expect(portfolio.json().scope.mode).toBe("HUMAN_PORTFOLIO");
     expect(detail.statusCode).toBe(200);
     expect(detail.json().business.aggregate_version).toBe(3);
+    expect(detail.json().event_sequence).toBe(7);
     expect(events.statusCode).toBe(200);
     expect(events.json().next_sequence).toBe(8);
     expect(mocks.getBusinessFull).toHaveBeenCalledWith(
@@ -195,6 +205,27 @@ describe("canonical control-plane routes", () => {
     expect(mocks.listPortfolioEvents).toHaveBeenCalledWith(
       7,
       expect.objectContaining({ actionReason: "Read canonical portfolio synchronization events." })
+    );
+    await app.close();
+  });
+
+  it("serves a versioned canonical entity full record", async () => {
+    mocks.getEntityFull.mockResolvedValueOnce({
+      entity: { aggregate_version: 4, summary: { entity_id: targetId, version: 4 } },
+      event_sequence: 12
+    });
+    const { app, authorization } = await buildControlPlaneTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/control-plane/entities/${targetId}/full`
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().event_sequence).toBe(12);
+    expect(mocks.getEntityFull).toHaveBeenCalledWith(
+      targetId,
+      expect.objectContaining({ authSubject: "internal-user" })
     );
     await app.close();
   });

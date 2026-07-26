@@ -19,7 +19,10 @@ import {
   assertExpectedVersion,
   assertGovernanceActionRequest,
   parseBusinessFullRecordResponse,
+  parseCanonicalEntralConversationResponse,
+  parseCanonicalHierarchyResponse,
   parseCanonicalPortfolioEventsResponse,
+  parseEntityFullRecordResponse,
   parseMemberOrganizationsResponse,
   parsePortfolioSummaryResponse
 } from "../dist/index.js";
@@ -69,6 +72,81 @@ function canonicalBusinessSummary(overrides = {}) {
   };
 }
 
+function canonicalEntitySummary(overrides = {}) {
+  return {
+    active_alert: null,
+    active_task_count: 0,
+    assigned_business_id: null,
+    child_count: 0,
+    compute_tier: "standard",
+    current_mission: null,
+    entity_id: id,
+    entity_type: "ENTRAL",
+    health: "HEALTHY",
+    latest_material_result: null,
+    model_class: "canonical",
+    name: "ENTRAL",
+    parent_id: null,
+    stable_code: "ENTRAL.CORE",
+    status: "ACTIVE",
+    updated_at: "2026-07-25T01:00:00.000Z",
+    version: 3,
+    ...overrides
+  };
+}
+
+test("Phase 180 hierarchy and entity full-record parsers enforce snapshot integrity", () => {
+  const scope = {
+    label: "Human portfolio / all canonical businesses",
+    mode: "HUMAN_PORTFOLIO",
+    user_id: secondId,
+    visible_business_ids: []
+  };
+  const hierarchy = parseCanonicalHierarchyResponse({
+    entities: [canonicalEntitySummary()],
+    event_sequence: 19,
+    generated_at: "2026-07-25T02:00:00.000Z",
+    scope
+  });
+  assert.equal(hierarchy.entities.length, 1);
+  assert.equal(hierarchy.event_sequence, 19);
+  assert.throws(() => parseCanonicalHierarchyResponse({
+    entities: [canonicalEntitySummary({ parent_id: thirdId })],
+    event_sequence: 19,
+    generated_at: "2026-07-25T02:00:00.000Z",
+    scope
+  }), (error) => error.code === "MISSING_HIERARCHY_PARENT");
+
+  const full = parseEntityFullRecordResponse({
+    entity: {
+      aggregate_version: 3,
+      audit: [],
+      authority: {},
+      configuration: {},
+      connections: {},
+      economics: {},
+      evidence: {},
+      loaded_at: "2026-07-25T02:00:00.000Z",
+      operations: {},
+      reliability: {},
+      runtime: {},
+      summary: canonicalEntitySummary(),
+      version_history: [{
+        changed_at: "2026-07-25T01:00:00.000Z",
+        reason: "Canonical seed",
+        version: 3
+      }]
+    },
+    event_sequence: 19
+  });
+  assert.equal(full.entity.aggregate_version, 3);
+  assert.equal(full.entity.summary.version, 3);
+  assert.throws(() => parseEntityFullRecordResponse({
+    ...full,
+    entity: { ...full.entity, aggregate_version: 2 }
+  }), (error) => error.code === "ENTITY_VERSION_MISMATCH");
+});
+
 test("Phase 170 portfolio parser accepts canonical summaries and resolved scope", () => {
   const parsed = parsePortfolioSummaryResponse({
     businesses: [canonicalBusinessSummary()],
@@ -102,7 +180,7 @@ test("Phase 170 portfolio parser accepts canonical summaries and resolved scope"
   assert.equal(parsed.totals.financials[0].net_contribution, 4400);
 });
 
-test("Phase 170 full-record parser enforces summary and aggregate version equality", () => {
+test("Phase 180 business full-record parser preserves aggregate version beside the snapshot event cursor", () => {
   const payload = {
     business: {
       agents_and_tools: { agents: [] },
@@ -118,12 +196,17 @@ test("Phase 170 full-record parser enforces summary and aggregate version equali
       performance: { metrics: [] },
       summary: canonicalBusinessSummary(),
       version_history: [{ changed_at: "2026-07-25T01:00:00.000Z", reason: "Verified update", version: 3 }]
-    }
+    },
+    event_sequence: 19
   };
 
-  assert.equal(parseBusinessFullRecordResponse(payload).business.aggregate_version, 3);
+  const parsed = parseBusinessFullRecordResponse(payload);
+  assert.equal(parsed.business.aggregate_version, 3);
+  assert.equal(parsed.event_sequence, 19);
+  assert.equal(parsed.business.summary.version, 3);
   assert.throws(
     () => parseBusinessFullRecordResponse({
+      ...payload,
       business: { ...payload.business, aggregate_version: 2 }
     }),
     (error) => {
@@ -151,6 +234,38 @@ test("Phase 170 event parser accepts minimal invalidation metadata and rejects b
   assert.equal(parsed.events[0].business_id, id);
   assert.throws(
     () => parseCanonicalPortfolioEventsResponse({ events: [], next_sequence: -1 }),
+    ContractError
+  );
+});
+
+test("Phase 180 ENTRAL conversation parser preserves scoped messages, event identity, and evidence", () => {
+  const parsed = parseCanonicalEntralConversationResponse({
+    event_sequence: 13,
+    generated_at: "2026-07-25T03:00:00.000Z",
+    messages: [{
+      acknowledged_at: null,
+      business_id: id,
+      content: "The requested result is verified.",
+      created_at: "2026-07-25T02:59:00.000Z",
+      delivered_at: "2026-07-25T03:00:00.000Z",
+      direction: "ENTRAL_TO_HUMAN",
+      entral_entity_id: secondId,
+      event_id: thirdId,
+      event_sequence: 12,
+      evidence_refs: [{ id, type: "SOURCE_RECORD" }],
+      message_id: secondId,
+      message_type: "RESULT",
+      status: "DELIVERED"
+    }]
+  });
+
+  assert.equal(parsed.messages[0].event_id, thirdId);
+  assert.deepEqual(parsed.messages[0].evidence_refs[0], { id, type: "SOURCE_RECORD" });
+  assert.throws(
+    () => parseCanonicalEntralConversationResponse({
+      ...parsed,
+      messages: [{ ...parsed.messages[0], direction: "SOLDIER_TO_HUMAN" }]
+    }),
     ContractError
   );
 });
@@ -573,7 +688,7 @@ test("event and audit consumers reject malformed canonical records", () => {
   assert.throws(() => assertAuditEntry({ ...audit, result: "PENDING" }), ContractError);
 });
 
-test("OpenAPI exposes only implemented member and Phase 170 control-plane paths", async () => {
+test("OpenAPI exposes only implemented member and Phase 180 control-plane paths", async () => {
   const openapi = await readFile(new URL("../openapi.yaml", import.meta.url), "utf8");
   const document = parseYaml(openapi);
   assert.equal(document.openapi, "3.1.0");
@@ -581,21 +696,28 @@ test("OpenAPI exposes only implemented member and Phase 170 control-plane paths"
     "/api/v1/control-plane/businesses",
     "/api/v1/control-plane/businesses/{businessId}",
     "/api/v1/control-plane/businesses/{businessId}/full",
+    "/api/v1/control-plane/entities/{entityId}/full",
     "/api/v1/control-plane/events",
     "/api/v1/control-plane/governance-actions",
     "/api/v1/control-plane/hierarchy",
     "/api/v1/control-plane/portfolio/summary",
     "/api/v1/member/organizations",
     "/api/v1/member/organizations/{organizationId}/businesses/{businessId}/full",
+    "/api/v1/member/organizations/{organizationId}/entities/{entityId}/full",
+    "/api/v1/member/organizations/{organizationId}/entral/conversation",
     "/api/v1/member/organizations/{organizationId}/events",
+    "/api/v1/member/organizations/{organizationId}/hierarchy",
     "/api/v1/member/organizations/{organizationId}/overview",
     "/api/v1/member/organizations/{organizationId}/portfolio/summary"
   ]);
   assert.equal(document.components.schemas.CanonicalEntitySummary.additionalProperties, false);
+  assert.equal(document.components.schemas.CanonicalHierarchyResponse.additionalProperties, false);
+  assert.equal(document.components.schemas.CanonicalEntityFullRecord.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalBusinessSummary.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalPortfolioSummary.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalBusinessFullRecord.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalPortfolioEvents.additionalProperties, false);
+  assert.equal(document.components.schemas.CanonicalEntralConversation.additionalProperties, false);
   assert.equal(document.components.schemas.GovernanceActionRequest.additionalProperties, false);
   assert.equal(document.components.schemas.MemberOverviewResponse.additionalProperties, false);
   assert.equal(document.components.schemas.MemberWorkspace.additionalProperties, false);

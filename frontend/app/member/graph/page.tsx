@@ -34,8 +34,7 @@ export default async function MemberGraphPage() {
   return (
     <MemberCommandCenterClient
       initialDestination="graph"
-      organizationId={organization.id}
-      userId={session.session.user.id}
+      initialSession={session.session}
     />
   );
 }

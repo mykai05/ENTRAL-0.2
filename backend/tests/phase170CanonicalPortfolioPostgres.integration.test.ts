@@ -311,11 +311,233 @@ describe.skipIf(!integrationEnabled)("Phase 170 canonical portfolio PostgreSQL g
           ${humanUserId}::uuid
         )
       `;
+      const completenessMissionId = randomUUID();
+      await owner.$executeRaw`
+        INSERT INTO entral.missions (
+          id, stable_code, objective, issuer_entity_id, owner_entity_id, business_id
+        )
+        VALUES (
+          ${completenessMissionId}::uuid,
+          ${`MISSION-PHASE180-COMPLETE-${suffix}`},
+          'Prove that full-record task sections are not silently truncated.',
+          ${seeded[0]!.commanderId}::uuid,
+          ${seeded[0]!.commanderId}::uuid,
+          ${seeded[0]!.businessId}::uuid
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.tasks (
+          id, stable_code, mission_id, owner_entity_id, business_id, objective
+        )
+        SELECT
+          gen_random_uuid(),
+          ${`TASK-PHASE180-COMPLETE-${suffix}-`} || lpad(task_number::text, 3, '0'),
+          ${completenessMissionId}::uuid,
+          ${seeded[0]!.commanderId}::uuid,
+          ${seeded[0]!.businessId}::uuid,
+          'Completeness task ' || task_number::text
+        FROM generate_series(1, 205) AS task_number
+      `;
+      const outOfScopeMissionId = randomUUID();
+      await owner.$executeRaw`
+        INSERT INTO entral.missions (
+          id, stable_code, objective, issuer_entity_id, owner_entity_id, business_id
+        )
+        VALUES (
+          ${outOfScopeMissionId}::uuid,
+          ${`MISSION-PHASE180-OUT-OF-SCOPE-${suffix}`},
+          'Prove that assigned members cannot read conversations outside their inherited scope.',
+          ${seeded[1]!.commanderId}::uuid,
+          ${seeded[1]!.commanderId}::uuid,
+          ${seeded[1]!.businessId}::uuid
+        )
+      `;
+      const conversationMessageId = randomUUID();
+      const memberConversationMessageId = randomUUID();
+      const memberInboundMessageId = randomUUID();
+      const memberOutOfScopeMessageId = randomUUID();
+      const conversationEvidenceSourceId = randomUUID();
+      await owner.$executeRaw`
+        INSERT INTO entral.source_records (
+          id, source_type, provider, external_id, business_id, trust_level
+        )
+        VALUES (
+          ${conversationEvidenceSourceId}::uuid,
+          'PHASE180_ACCEPTANCE',
+          'ENTRAL',
+          ${`phase180-conversation-${suffix}`},
+          ${seeded[0]!.businessId}::uuid,
+          'AUTHORITATIVE'
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.operational_messages (
+          id,
+          mission_id,
+          sender_user_id,
+          recipient_entity_id,
+          message_type,
+          payload,
+          evidence_refs
+        )
+        VALUES (
+          ${conversationMessageId}::uuid,
+          ${completenessMissionId}::uuid,
+          ${humanUserId}::uuid,
+          ${entralId}::uuid,
+          'Clarification',
+          jsonb_build_object('content', 'Verify the canonical Phase 180 conversation surface.'),
+          jsonb_build_array(jsonb_build_object(
+            'type', 'SOURCE_RECORD',
+            'id', ${conversationEvidenceSourceId}::text
+          ))
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.operational_messages (
+          id,
+          mission_id,
+          sender_user_id,
+          sender_entity_id,
+          recipient_user_id,
+          recipient_entity_id,
+          message_type,
+          payload,
+          evidence_refs
+        )
+        VALUES
+          (
+            ${memberConversationMessageId}::uuid,
+            ${completenessMissionId}::uuid,
+            ${memberUserId}::uuid,
+            NULL,
+            NULL,
+            ${entralId}::uuid,
+            'Clarification',
+            jsonb_build_object('content', 'Assigned member scoped request.'),
+            jsonb_build_array(jsonb_build_object(
+              'type', 'SOURCE_RECORD',
+              'id', ${conversationEvidenceSourceId}::text
+            ))
+          ),
+          (
+            ${memberInboundMessageId}::uuid,
+            ${completenessMissionId}::uuid,
+            NULL,
+            ${entralId}::uuid,
+            ${memberUserId}::uuid,
+            NULL,
+            'ExecutionReport',
+            jsonb_build_object('content', 'ENTRAL assigned member scoped result.'),
+            jsonb_build_array(jsonb_build_object(
+              'type', 'SOURCE_RECORD',
+              'id', ${conversationEvidenceSourceId}::text
+            ))
+          ),
+          (
+            ${memberOutOfScopeMessageId}::uuid,
+            ${outOfScopeMissionId}::uuid,
+            ${memberUserId}::uuid,
+            NULL,
+            NULL,
+            ${entralId}::uuid,
+            'Clarification',
+            jsonb_build_object('content', 'Assigned member out-of-scope request.'),
+            jsonb_build_array(jsonb_build_object(
+              'type', 'BUSINESS',
+              'id', ${seeded[1]!.businessId}::text
+            ))
+          )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.evidence_links (
+          from_type, from_id, source_record_id, evidence_role, claim
+        )
+        VALUES
+          (
+            'MESSAGE',
+            ${conversationMessageId}::uuid,
+            ${conversationEvidenceSourceId}::uuid,
+            'SUPPORTS',
+            'Supports the canonical Human and ENTRAL conversation test.'
+          ),
+          (
+            'MESSAGE',
+            ${memberConversationMessageId}::uuid,
+            ${conversationEvidenceSourceId}::uuid,
+            'SUPPORTS',
+            'Supports the assigned-member outbound conversation test.'
+          ),
+          (
+            'MESSAGE',
+            ${memberInboundMessageId}::uuid,
+            ${conversationEvidenceSourceId}::uuid,
+            'SUPPORTS',
+            'Supports the assigned-member inbound conversation test.'
+          )
+      `;
 
       api = new PrismaClient({
         datasources: { db: { url: loginUrl(databaseUrl, roleName, rolePassword) } }
       });
       const repository = new CanonicalControlPlaneRepository(api);
+      const conversation = await repository.getEntralConversation(
+        seeded[0]!.businessId,
+        session(humanSubject, "Verify Phase 180 canonical ENTRAL conversation history.")
+      );
+      expect(conversation.messages).toEqual([
+        expect.objectContaining({
+          business_id: seeded[0]!.businessId,
+          content: "Verify the canonical Phase 180 conversation surface.",
+          direction: "HUMAN_TO_ENTRAL",
+          event_id: expect.any(String),
+          event_sequence: expect.any(Number),
+          evidence_refs: [{
+            id: conversationEvidenceSourceId,
+            type: "SOURCE_RECORD"
+          }],
+          message_id: conversationMessageId
+        })
+      ]);
+      expect(conversation.event_sequence).toBeGreaterThanOrEqual(conversation.messages[0]!.event_sequence!);
+      const memberConversation = await repository.getEntralConversation(
+        null,
+        session(memberSubject, "Verify assigned-member Phase 180 ENTRAL conversation isolation.")
+      );
+      expect(memberConversation.messages).toHaveLength(2);
+      expect(memberConversation.messages).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          business_id: seeded[0]!.businessId,
+          direction: "HUMAN_TO_ENTRAL",
+          event_id: expect.any(String),
+          event_sequence: expect.any(Number),
+          message_id: memberConversationMessageId
+        }),
+        expect.objectContaining({
+          business_id: seeded[0]!.businessId,
+          direction: "ENTRAL_TO_HUMAN",
+          event_id: expect.any(String),
+          event_sequence: expect.any(Number),
+          message_id: memberInboundMessageId
+        })
+      ]));
+      expect(memberConversation.messages.map((message) => message.message_id)).not.toContain(
+        conversationMessageId
+      );
+      expect(memberConversation.messages.map((message) => message.message_id)).not.toContain(
+        memberOutOfScopeMessageId
+      );
+      const memberScopedConversation = await repository.getEntralConversation(
+        seeded[0]!.businessId,
+        session(memberSubject, "Verify assigned-member Phase 180 business conversation scope.")
+      );
+      expect(memberScopedConversation.messages.map((message) => message.message_id).sort())
+        .toEqual([memberConversationMessageId, memberInboundMessageId].sort());
+      const memberDeniedConversation = await repository.getEntralConversation(
+        seeded[1]!.businessId,
+        session(memberSubject, "Verify assigned-member Phase 180 inaccessible conversation scope.")
+      );
+      expect(memberDeniedConversation.messages).toEqual([]);
       const humanPortfolio = await repository.getPortfolio(
         session(humanSubject, "Verify Phase 170 Human portfolio scope.")
       );
@@ -342,13 +564,64 @@ describe.skipIf(!integrationEnabled)("Phase 170 canonical portfolio PostgreSQL g
       expect(memberPortfolio.businesses.map((business) => business.business_id))
         .toEqual([seeded[0]!.businessId]);
 
+      const humanHierarchy = await repository.getHierarchySnapshot(
+        session(humanSubject, "Verify Phase 180 Human hierarchy snapshot.")
+      );
+      const memberHierarchy = await repository.getHierarchySnapshot(
+        session(memberSubject, "Verify Phase 180 assigned hierarchy snapshot.")
+      );
+      expect(humanHierarchy.event_sequence).toBe(humanPortfolio.event_sequence);
+      expect(humanHierarchy.entities).toHaveLength(17);
+      expect(memberHierarchy.scope.mode).toBe("ASSIGNED_BUSINESSES");
+      expect(memberHierarchy.entities.map((entity) => entity.entity_id)).toEqual(expect.arrayContaining([
+        entralId,
+        marshalId,
+        seeded[0]!.generalId,
+        seeded[0]!.commanderId,
+        seeded[0]!.soldierId
+      ]));
+
+      const fullEntity = await repository.getEntityFull(
+        seeded[0]!.commanderId,
+        session(memberSubject, "Verify Phase 180 on-demand entity detail.")
+      );
+      expect(fullEntity).not.toBeNull();
+      expect(fullEntity!.event_sequence).toBe(memberHierarchy.event_sequence);
+      expect(fullEntity!.entity.aggregate_version).toBe(fullEntity!.entity.summary.version);
+      expect(fullEntity!.entity.summary.version).toBeGreaterThanOrEqual(1);
+      expect((fullEntity!.entity.runtime as { tasks: unknown[] }).tasks).toHaveLength(205);
+      expect(fullEntity!.entity).toEqual(expect.objectContaining({
+        audit: expect.anything(),
+        authority: expect.anything(),
+        configuration: expect.anything(),
+        connections: expect.anything(),
+        economics: expect.anything(),
+        evidence: expect.anything(),
+        operations: expect.anything(),
+        reliability: expect.anything(),
+        runtime: expect.anything(),
+        version_history: expect.any(Array)
+      }));
+      await expect(repository.getEntityFull(
+        seeded[1]!.commanderId,
+        session(memberSubject, "Verify Phase 180 out-of-scope entity denial.")
+      )).resolves.toBeNull();
+
       const fullBusiness = await repository.getBusinessFull(
         seeded[1]!.businessId,
         session(humanSubject, "Verify Phase 170 on-demand business detail.")
       );
       expect(fullBusiness).not.toBeNull();
-      expect(fullBusiness!.aggregate_version).toBe(fullBusiness!.summary.version);
-      expect(fullBusiness!.overview).toMatchObject({
+      expect(fullBusiness!.business.aggregate_version).toBe(fullBusiness!.business.summary.version);
+      expect(fullBusiness!.business.summary.version).toBeGreaterThanOrEqual(1);
+      const memberFullBusiness = await repository.getBusinessFull(
+        seeded[0]!.businessId,
+        session(memberSubject, "Verify Phase 180 complete business task section.")
+      );
+      expect(memberFullBusiness).not.toBeNull();
+      expect((memberFullBusiness!.business.operations as { tasks: unknown[] }).tasks).toHaveLength(205);
+      expect(memberFullBusiness!.business.evidence_ids).toContain(conversationEvidenceSourceId);
+      expect(fullBusiness!.business.overview).toMatchObject({
         profile: expect.objectContaining({
           offer: expect.objectContaining({ business_model: "Software" })
         })

@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getBusinessFull: vi.fn(),
+  getEntralConversation: vi.fn(),
+  getEntityFull: vi.fn(),
+  getHierarchySnapshot: vi.fn(),
   getPortfolio: vi.fn(),
   listPortfolioEvents: vi.fn(),
   memberWorkspaceFindUnique: vi.fn(),
@@ -17,6 +20,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../src/services/canonicalControlPlane.js", () => ({
   canonicalControlPlaneRepository: {
     getBusinessFull: mocks.getBusinessFull,
+    getEntralConversation: mocks.getEntralConversation,
+    getEntityFull: mocks.getEntityFull,
+    getHierarchySnapshot: mocks.getHierarchySnapshot,
     getPortfolio: mocks.getPortfolio,
     listPortfolioEvents: mocks.listPortfolioEvents
   }
@@ -297,12 +303,60 @@ describe("member organization routes", () => {
     expect(portfolio.json().scope.mode).toBe("ASSIGNED_BUSINESSES");
     expect(events.statusCode).toBe(200);
     expect(mocks.getPortfolio).toHaveBeenCalledWith(expect.objectContaining({
-      actionReason: `Read the canonical portfolio for organization ${organizationId}.`,
+      actionReason: `Read the user-inherited canonical portfolio through member access ${organizationId}.`,
       authSubject: "user-1"
     }));
     expect(mocks.listPortfolioEvents).toHaveBeenCalledWith(
       19,
       expect.objectContaining({ authSubject: "user-1" })
+    );
+    await app.close();
+  });
+
+  it("serves only canonical Human and ENTRAL conversation history in the requested business scope", async () => {
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getEntralConversation.mockResolvedValueOnce({
+      event_sequence: 21,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      messages: [{
+        acknowledged_at: null,
+        business_id: businessId,
+        content: "Verified scope-bound transmission.",
+        created_at: "2026-07-25T00:00:00.000Z",
+        delivered_at: "2026-07-25T00:00:01.000Z",
+        direction: "ENTRAL_TO_HUMAN",
+        entral_entity_id: "223e4567-e89b-42d3-a456-426614174000",
+        event_id: "323e4567-e89b-42d3-a456-426614174000",
+        event_sequence: 20,
+        evidence_refs: [{
+          id: "423e4567-e89b-42d3-a456-426614174000",
+          type: "SOURCE_RECORD"
+        }],
+        message_id: "523e4567-e89b-42d3-a456-426614174000",
+        message_type: "RESULT",
+        status: "DELIVERED"
+      }]
+    });
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/member/organizations/${organizationId}/entral/conversation?businessId=${businessId}`
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().messages[0]).toMatchObject({
+      business_id: businessId,
+      content: "Verified scope-bound transmission.",
+      direction: "ENTRAL_TO_HUMAN",
+      event_sequence: 20
+    });
+    expect(mocks.getEntralConversation).toHaveBeenCalledWith(
+      businessId,
+      expect.objectContaining({
+        actionReason: `Read user-visible Human and ENTRAL conversation history through member access ${organizationId}.`,
+        authSubject: "user-1"
+      })
     );
     await app.close();
   });
@@ -320,6 +374,49 @@ describe("member organization routes", () => {
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ error: "Not Found", message: "Business not found." });
     expect(mocks.getBusinessFull).toHaveBeenCalledWith(
+      businessId,
+      expect.objectContaining({ authSubject: "user-1" })
+    );
+    await app.close();
+  });
+
+  it("serves version-aligned hierarchy and entity records to a provisioned member", async () => {
+    mocks.teamMemberFindUnique
+      .mockResolvedValueOnce({ team: { memberAccessEnabled: true } })
+      .mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getHierarchySnapshot.mockResolvedValueOnce({
+      entities: [{ entity_id: businessId, entity_type: "ENTRAL", name: "ENTRAL", version: 1 }],
+      event_sequence: 23,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      scope: {
+        label: "Assigned canonical businesses",
+        mode: "ASSIGNED_BUSINESSES",
+        user_id: businessId,
+        visible_business_ids: []
+      }
+    });
+    mocks.getEntityFull.mockResolvedValueOnce({
+      entity: { aggregate_version: 1, summary: { entity_id: businessId, version: 1 } },
+      event_sequence: 23
+    });
+    const { app, authorization } = await buildMemberTestServer();
+    const hierarchyResponse = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/member/organizations/${organizationId}/hierarchy`
+    });
+    const entityResponse = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/member/organizations/${organizationId}/entities/${businessId}/full`
+    });
+
+    expect(hierarchyResponse.statusCode).toBe(200);
+    expect(hierarchyResponse.json().event_sequence).toBe(23);
+    expect(entityResponse.statusCode).toBe(200);
+    expect(entityResponse.json().event_sequence).toBe(23);
+    expect(mocks.getHierarchySnapshot).toHaveBeenCalledWith(expect.objectContaining({ authSubject: "user-1" }));
+    expect(mocks.getEntityFull).toHaveBeenCalledWith(
       businessId,
       expect.objectContaining({ authSubject: "user-1" })
     );

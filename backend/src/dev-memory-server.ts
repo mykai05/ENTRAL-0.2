@@ -8226,6 +8226,118 @@ function seedDemo() {
   }
 }
 
+const phase180MemoryIds = {
+  business: "11111111-1111-4111-8111-111111111116",
+  commander: "11111111-1111-4111-8111-111111111114",
+  entral: "11111111-1111-4111-8111-111111111111",
+  general: "11111111-1111-4111-8111-111111111113",
+  marshal: "11111111-1111-4111-8111-111111111112",
+  scopeUser: "11111111-1111-4111-8111-111111111117",
+  soldier: "11111111-1111-4111-8111-111111111115"
+} as const;
+
+function phase180MemoryEntity(
+  entityId: string,
+  stableCode: string,
+  entityType: "ENTRAL" | "MARSHAL" | "GENERAL" | "COMMANDER" | "SOLDIER",
+  name: string,
+  parentId: string | null,
+  businessId: string | null,
+  childCount: number
+) {
+  return {
+    active_alert: null,
+    active_task_count: entityType === "SOLDIER" ? 1 : 0,
+    assigned_business_id: businessId,
+    child_count: childCount,
+    compute_tier: entityType === "ENTRAL" ? "orchestration" : "standard",
+    current_mission: entityType === "SOLDIER" ? "Verify Phase 180 browser operation." : null,
+    entity_id: entityId,
+    entity_type: entityType,
+    health: "HEALTHY",
+    latest_material_result: entityType === "SOLDIER" ? { status: "verified" } : null,
+    model_class: "development-memory",
+    name,
+    parent_id: parentId,
+    stable_code: stableCode,
+    status: "ACTIVE",
+    updated_at: "2026-07-25T00:00:00.000Z",
+    version: 1
+  };
+}
+
+function phase180MemorySnapshot() {
+  const entities = [
+    phase180MemoryEntity(phase180MemoryIds.entral, "ENTRAL.DEV", "ENTRAL", "ENTRAL", null, null, 1),
+    phase180MemoryEntity(phase180MemoryIds.marshal, "MARSHAL.DEV", "MARSHAL", "Digital Businesses", phase180MemoryIds.entral, null, 1),
+    phase180MemoryEntity(phase180MemoryIds.general, "GENERAL.DEV", "GENERAL", "Software", phase180MemoryIds.marshal, null, 1),
+    phase180MemoryEntity(phase180MemoryIds.commander, "COMMANDER.DEV", "COMMANDER", "Atlas Commander", phase180MemoryIds.general, phase180MemoryIds.business, 1),
+    phase180MemoryEntity(phase180MemoryIds.soldier, "SOLDIER.DEV", "SOLDIER", "Atlas Operations", phase180MemoryIds.commander, phase180MemoryIds.business, 0)
+  ];
+  const scope = {
+    label: "Human portfolio / all canonical businesses",
+    mode: "HUMAN_PORTFOLIO",
+    user_id: phase180MemoryIds.scopeUser,
+    visible_business_ids: [phase180MemoryIds.business]
+  };
+  const business = {
+    active_mission_count: 1,
+    active_task_count: 1,
+    agent_count: 2,
+    automation_count: 0,
+    business_id: phase180MemoryIds.business,
+    business_name: "Atlas Software",
+    capital_available: null,
+    commander_id: phase180MemoryIds.commander,
+    currency: "USD",
+    general_id: phase180MemoryIds.general,
+    general_name: "Software",
+    gross_revenue: null,
+    health_drivers: [],
+    health_score: 96,
+    health_state: "HEALTHY",
+    integration_count: 0,
+    marshal_id: phase180MemoryIds.marshal,
+    marshal_name: "Digital Businesses",
+    net_contribution: null,
+    primary_objective: "Verify the Phase 180 member shell.",
+    revenue_period_end: null,
+    revenue_period_start: null,
+    source_freshness: {},
+    stable_code: "BUSINESS.DEV.ATLAS",
+    status: "OPERATING",
+    tool_count: 0,
+    top_exception: null,
+    top_recommendation: null,
+    updated_at: "2026-07-25T00:00:00.000Z",
+    version: 1
+  };
+  return {
+    business,
+    entities,
+    hierarchy: {
+      entities,
+      event_sequence: 9,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      scope
+    },
+    portfolio: {
+      businesses: [business],
+      event_sequence: 9,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      scope,
+      totals: {
+        active_commanders: 1,
+        active_soldiers: 1,
+        businesses: 1,
+        financials: [],
+        health_distribution: { CRITICAL: 0, DEGRADED: 0, HEALTHY: 1, UNKNOWN: 0, WATCH: 0 },
+        unresolved_exceptions: 0
+      }
+    }
+  };
+}
+
 await app.register(cookie);
 await app.register(cors, {
   credentials: true,
@@ -8255,6 +8367,96 @@ app.get("/api/v1/health", async () => ({
   timestamp: new Date().toISOString(),
   uptimeSeconds: Math.round(process.uptime())
 }));
+
+app.get("/api/v1/member/organizations", { preHandler: requireAuth }, async (request) => {
+  const user = currentUserOrThrow(request);
+  const organization = teamsForUser(user.id)[0];
+  return {
+    organizations: organization ? [{
+      id: organization.id,
+      joinedAt: "2026-07-25T00:00:00.000Z",
+      memberCount: 1,
+      memberLimit: 5,
+      name: organization.name,
+      role: organization.role,
+      slug: organization.slug
+    }] : [],
+    user: publicUser(user)
+  };
+});
+
+app.get("/api/v1/member/organizations/:organizationId/portfolio/summary", { preHandler: requireAuth }, async () =>
+  phase180MemorySnapshot().portfolio
+);
+
+app.get("/api/v1/member/organizations/:organizationId/hierarchy", { preHandler: requireAuth }, async () =>
+  phase180MemorySnapshot().hierarchy
+);
+
+app.get("/api/v1/member/organizations/:organizationId/events", { preHandler: requireAuth }, async (request) => {
+  const afterSequence = Number((request.query as { afterSequence?: string }).afterSequence ?? 0);
+  return { events: [], next_sequence: Math.max(9, afterSequence) };
+});
+
+app.get("/api/v1/member/organizations/:organizationId/entral/conversation", { preHandler: requireAuth }, async () => ({
+  event_sequence: 9,
+  generated_at: "2026-07-25T00:00:00.000Z",
+  // Legacy development-memory chat threads are intentionally not promoted
+  // into canonical organization scope without persisted scope provenance.
+  messages: []
+}));
+
+app.get("/api/v1/member/organizations/:organizationId/businesses/:businessId/full", { preHandler: requireAuth }, async (request, reply) => {
+  const snapshot = phase180MemorySnapshot();
+  if ((request.params as { businessId: string }).businessId !== snapshot.business.business_id) {
+    return reply.code(404).send({ error: "Not Found", message: "Business not found." });
+  }
+  return {
+    business: {
+      agents_and_tools: { entities: snapshot.entities.filter((entity) => entity.assigned_business_id === snapshot.business.business_id), tool_grants: [] },
+      aggregate_version: snapshot.business.version,
+      decisions_and_changes: { audit: [], decisions: [], governance_actions: [] },
+      evidence_ids: [],
+      external_activity: { sources: [] },
+      financials: { snapshots: [] },
+      issues_and_recommendations: { recommendations: [] },
+      loaded_at: "2026-07-25T00:00:00.000Z",
+      operations: { missions: [], schedules: [], tasks: [] },
+      overview: { development_memory: true },
+      performance: { experiments: [], health_assessments: [], metrics: [], outcomes: [] },
+      summary: snapshot.business,
+      version_history: [{ changed_at: "2026-07-25T00:00:00.000Z", reason: "Development memory fixture", version: 1 }]
+    },
+    event_sequence: snapshot.portfolio.event_sequence
+  };
+});
+
+app.get("/api/v1/member/organizations/:organizationId/entities/:entityId/full", { preHandler: requireAuth }, async (request, reply) => {
+  const snapshot = phase180MemorySnapshot();
+  const summary = snapshot.entities.find((entity) => entity.entity_id === (request.params as { entityId: string }).entityId);
+  if (!summary) return reply.code(404).send({ error: "Not Found", message: "Entity not found." });
+  return {
+    entity: {
+      aggregate_version: summary.version,
+      audit: [],
+      authority: { mode: "development-memory", allowed_actions: [] },
+      configuration: { source: "isolated development memory fixture" },
+      connections: {
+        children: snapshot.entities.filter((entity) => entity.parent_id === summary.entity_id),
+        parent: snapshot.entities.find((entity) => entity.entity_id === summary.parent_id) ?? null
+      },
+      economics: { costs: [], resource_usage: [] },
+      evidence: { audit_evidence_refs: [], health_evidence_refs: [] },
+      loaded_at: "2026-07-25T00:00:00.000Z",
+      operations: { messages: [] },
+      reliability: { health_assessments: [] },
+      runtime: { missions: [], schedules: [], tasks: [] },
+      summary,
+      version_history: [{ changed_at: "2026-07-25T00:00:00.000Z", reason: "Development memory fixture", version: 1 }]
+    },
+    event_sequence: 9
+  };
+});
 
 app.post("/api/v1/signup", async (request, reply) => {
   const body = request.body as { email?: string; name?: string; next?: string; password?: string };

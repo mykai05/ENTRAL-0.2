@@ -141,7 +141,8 @@ function fullRecord(summary = businesses[1]): BusinessFullRecordResponse {
       performance: { health: [], metrics: [], outcomes: [] },
       summary,
       version_history: [{ changed_at: "2026-07-25T01:00:00.000Z", reason: "Verified update", version: summary.version }]
-    }
+    },
+    event_sequence: portfolio.event_sequence
   };
 }
 
@@ -223,7 +224,7 @@ describe("Phase 170 canonical Dashboard", () => {
     render(<CanonicalPortfolioDashboard organizationId="organization-1" />);
 
     expect(await screen.findByRole("heading", { name: "Atlas Software" })).toBeInTheDocument();
-    expect(screen.getByText("Version 3")).toBeInTheDocument();
+    expect(screen.getByText("Event 9")).toBeInTheDocument();
     expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Financials")).toBeInTheDocument();
     expect(screen.getByText("Agents and tools")).toBeInTheDocument();
@@ -234,6 +235,22 @@ describe("Phase 170 canonical Dashboard", () => {
         { signal: expect.any(AbortSignal) }
       );
     });
+  });
+
+  it("resolves an ENTRAL evidence deep link or states that the exact reference is unavailable", async () => {
+    const missingEvidenceId = "e23e4567-e89b-42d3-a456-426614174000";
+    mocks.search = `business=${businesses[1].business_id}&evidence=${missingEvidenceId}`;
+    mocks.apiFetch.mockImplementation(async (path: string) => {
+      if (path.endsWith("/portfolio/summary")) return portfolio;
+      if (path.includes(`/businesses/${businesses[1].business_id}/full`)) return fullRecord();
+      throw new Error(`Unexpected path ${path}`);
+    });
+
+    render(<CanonicalPortfolioDashboard organizationId="organization-1" />);
+
+    expect(await screen.findByRole("heading", { name: "Evidence reference unavailable" })).toBeInTheDocument();
+    expect(screen.getByText(/No substitute evidence is being inferred/i)).toBeInTheDocument();
+    expect(document.getElementById(`canonical-evidence-${missingEvidenceId}`)).toBeInTheDocument();
   });
 
   it("shows an honest empty state without inventing sample records", async () => {
