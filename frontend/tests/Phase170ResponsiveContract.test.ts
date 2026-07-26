@@ -36,4 +36,13 @@ describe("Phase 170 responsive and route contract", () => {
       /@media \(max-width:\s*760px\)[\s\S]*\.phase180-graph-view-switch\s*\{[\s\S]*top:\s*calc\(62px \+ 0\.5rem\);/
     );
   });
+
+  it("contains every destination label inside its own navigation grid cell", () => {
+    expect(phase180Css).toMatch(
+      /\.phase180-shell-header \.member-destination-nav a\s*\{[\s\S]*min-width:\s*0;[\s\S]*text-align:\s*center;/
+    );
+    expect(phase180Css).toMatch(
+      /\.phase180-shell-header \.member-destination-nav a span\s*\{[\s\S]*min-width:\s*0;[\s\S]*white-space:\s*normal;/
+    );
+  });
 });

@@ -54,8 +54,16 @@
   justify-content: center;
   letter-spacing: 0.02em;
   min-height: 40px;
+  min-width: 0;
   padding: 0.45rem 0.6rem;
+  text-align: center;
   text-decoration: none;
+}
+
+.phase180-shell-header .member-destination-nav a span {
+  line-height: 1.12;
+  min-width: 0;
+  white-space: normal;
 }
 
 .phase180-shell-header .member-destination-nav a.active {
