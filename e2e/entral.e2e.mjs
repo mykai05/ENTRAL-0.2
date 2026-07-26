@@ -907,6 +907,18 @@ const tests = [
         await expectVisible(page.getByRole("toolbar", { name: "Universe Graph toolbar" }), "Original 3D Graph toolbar");
         await expectVisible(page.getByRole("button", { name: "Zoom in 3D Graph" }), "3D Graph zoom-in control");
         await expectVisible(page.getByRole("button", { name: "Zoom out 3D Graph" }), "3D Graph zoom-out control");
+        await page.getByRole("button", { name: "Graph settings" }).click();
+        const formationGravity = page.getByRole("slider", { name: "3D formation gravity" });
+        await expectVisible(formationGravity, "3D view-only formation gravity control");
+        await expectVisible(
+          page.getByText(/Visual formation only\. Agent activity, tasks, and canonical updates continue unchanged\./i),
+          "3D gravity activity boundary"
+        );
+        await formationGravity.fill("1.5");
+        if (await formationGravity.inputValue() !== "1.5") {
+          throw new Error("3D formation gravity did not accept a precise adjustment.");
+        }
+        await page.getByRole("button", { name: "Close graph settings" }).click();
         const toolbarGeometry = await page.getByRole("toolbar", { name: "Universe Graph toolbar" }).evaluate((toolbar) => {
           const toolbarRect = toolbar.getBoundingClientRect();
           const stageRect = toolbar.closest(".phase180-graph-3d-stage")?.getBoundingClientRect();
@@ -1187,7 +1199,7 @@ const tests = [
           }
           await canvas.focus();
           const graphInteractionStart = performance.now();
-          await page.keyboard.press("ArrowRight");
+          await page.keyboard.press("ArrowDown");
           await page.keyboard.press("+");
           const graphDetails = page.getByRole("complementary", { name: /ENTRAL graph details/i });
           await expectVisible(graphDetails, `${profile.name} graph keyboard selection`);

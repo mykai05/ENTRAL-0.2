@@ -5,6 +5,8 @@ import {
   entitiesForBusinessScope,
   fitUniverseCamera,
   layoutCanonicalUniverse,
+  MAX_UNIVERSE_ZOOM,
+  MIN_UNIVERSE_ZOOM,
   nextUniverseEntityId,
   semanticUniverseIds
 } from "../lib/canonical-universe";
@@ -100,16 +102,44 @@ describe("Phase 180 canonical Universe invariants", () => {
       expect(Math.max(...screenXs)).toBeLessThanOrEqual(width - 79.99);
       expect(Math.min(...screenYs)).toBeGreaterThanOrEqual(79.99);
       expect(Math.max(...screenYs)).toBeLessThanOrEqual(height - 79.99);
+      expect(Math.min(...screenYs)).toBeCloseTo(80, 5);
     }
+  });
+
+  it("builds a deterministic top-down pyramid with contiguous branches", () => {
+    const points = layoutCanonicalUniverse(hierarchy);
+    const byId = new Map(points.map((point) => [point.entity.entity_id, point]));
+    const entral = byId.get("entral")!;
+    const marshal = byId.get("marshal")!;
+    const general = byId.get("general")!;
+    const commanderA = byId.get("commander-a")!;
+    const commanderB = byId.get("commander-b")!;
+
+    expect(entral.y).toBeLessThan(marshal.y);
+    expect(marshal.y).toBeLessThan(general.y);
+    expect(general.y).toBeLessThan(commanderA.y);
+    expect(commanderA.y).toBe(commanderB.y);
+    expect(commanderB.x - commanderA.x).toBeGreaterThanOrEqual(150);
+    expect(general.x).toBeCloseTo((commanderA.x + commanderB.x) / 2, 8);
+
+    const shuffled = layoutCanonicalUniverse([...hierarchy].reverse());
+    expect(shuffled.map(({ entity: candidate, x, y }) => [candidate.entity_id, x, y]))
+      .toEqual(points.map(({ entity: candidate, x, y }) => [candidate.entity_id, x, y]));
+    expect(points.every(({ x, y }) => Number.isFinite(x) && Number.isFinite(y))).toBe(true);
+  });
+
+  it("keeps every zoom path inside one high-range numeric envelope", () => {
+    expect(MIN_UNIVERSE_ZOOM).toBe(0.000001);
+    expect(MAX_UNIVERSE_ZOOM).toBe(64);
   });
 
   it("traverses canonical relationships and siblings in spatial order", () => {
     const points = layoutCanonicalUniverse(hierarchy);
-    expect(nextUniverseEntityId(points, null, "right")).toBe("entral");
-    expect(nextUniverseEntityId(points, "entral", "right")).toBe("marshal");
-    expect(nextUniverseEntityId(points, "marshal", "right")).toBe("general");
-    expect(nextUniverseEntityId(points, "commander-a", "left")).toBe("general");
-    expect(nextUniverseEntityId(points, "commander-a", "down")).toBe("commander-b");
-    expect(nextUniverseEntityId(points, "commander-b", "up")).toBe("commander-a");
+    expect(nextUniverseEntityId(points, null, "down")).toBe("entral");
+    expect(nextUniverseEntityId(points, "entral", "down")).toBe("marshal");
+    expect(nextUniverseEntityId(points, "marshal", "down")).toBe("general");
+    expect(nextUniverseEntityId(points, "commander-a", "up")).toBe("general");
+    expect(nextUniverseEntityId(points, "commander-a", "right")).toBe("commander-b");
+    expect(nextUniverseEntityId(points, "commander-b", "left")).toBe("commander-a");
   });
 });

@@ -425,6 +425,24 @@ const defaultCamera: CameraState = {
   yaw: 0.82
 };
 
+export const GRAPH_CAMERA_DISTANCE = {
+  max: 1_000_000,
+  min: 48
+} as const;
+
+export function clampGraphCameraDistance(distance: number) {
+  if (!Number.isFinite(distance)) return defaultCamera.distance;
+  return Math.max(GRAPH_CAMERA_DISTANCE.min, Math.min(GRAPH_CAMERA_DISTANCE.max, distance));
+}
+
+export function graphCameraClipPlanes(distance: number) {
+  const safeDistance = clampGraphCameraDistance(distance);
+  return {
+    far: Math.max(5_000, safeDistance * 4),
+    near: Math.max(0.1, safeDistance / 100_000)
+  };
+}
+
 const unscopedGraphControlsKey = "entral-command-center-controls";
 const gravityMin = 0;
 const gravityMax = 12;
@@ -1765,7 +1783,13 @@ function getCameraMatrix(camera: CameraState, width: number, height: number) {
     y: camera.target.y + Math.sin(clampedPitch) * camera.distance,
     z: camera.target.z + Math.cos(camera.yaw) * Math.cos(clampedPitch) * camera.distance
   };
-  const projection = perspective(Math.PI / 3.2, Math.max(width / Math.max(height, 1), 0.2), 1, 5000);
+  const clip = graphCameraClipPlanes(camera.distance);
+  const projection = perspective(
+    Math.PI / 3.2,
+    Math.max(width / Math.max(height, 1), 0.2),
+    clip.near,
+    clip.far
+  );
   const view = lookAt(eye, camera.target);
 
   return multiplyMatrix(projection, view);
@@ -2039,9 +2063,55 @@ function smoothCamera(current: CameraState, desired: CameraState, amount: number
 function clampCamera(camera: CameraState): CameraState {
   return {
     ...camera,
-    distance: Math.max(260, Math.min(1600, camera.distance)),
+    distance: clampGraphCameraDistance(camera.distance),
     pitch: Math.max(-1.2, Math.min(1.2, camera.pitch))
   };
+}
+
+function fitCameraToGraph(nodes: readonly Vec3[], viewportWidth: number, viewportHeight: number): CameraState {
+  if (!nodes.length || viewportWidth <= 0 || viewportHeight <= 0) {
+    return { ...defaultCamera, target: { ...defaultCamera.target } };
+  }
+
+  let minX = nodes[0]!.x;
+  let maxX = minX;
+  let minY = nodes[0]!.y;
+  let maxY = minY;
+  let minZ = nodes[0]!.z;
+  let maxZ = minZ;
+  for (let index = 1; index < nodes.length; index += 1) {
+    const node = nodes[index]!;
+    minX = Math.min(minX, node.x);
+    maxX = Math.max(maxX, node.x);
+    minY = Math.min(minY, node.y);
+    maxY = Math.max(maxY, node.y);
+    minZ = Math.min(minZ, node.z);
+    maxZ = Math.max(maxZ, node.z);
+  }
+
+  const target = {
+    x: (minX + maxX) / 2,
+    y: (minY + maxY) / 2,
+    z: (minZ + maxZ) / 2
+  };
+  let radius = 0;
+  for (const node of nodes) {
+    radius = Math.max(radius, Math.hypot(node.x - target.x, node.y - target.y, node.z - target.z));
+  }
+
+  const verticalFov = Math.PI / 3.2;
+  const aspect = Math.max(viewportWidth / Math.max(viewportHeight, 1), 0.2);
+  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect);
+  const limitingFov = Math.min(verticalFov, horizontalFov);
+  const distance = radius > 0
+    ? radius / Math.max(Math.sin(limitingFov / 2), 0.01) * 1.16
+    : defaultCamera.distance;
+
+  return clampCamera({
+    ...defaultCamera,
+    distance,
+    target
+  });
 }
 
 function midpoint(points: GesturePoint[]) {
@@ -5153,7 +5223,15 @@ export function NeuronsCommandCenter({
     }
     setLockedNodeId(null);
     lockedNodeIdRef.current = null;
-    setCamera({ ...defaultCamera, target: { ...defaultCamera.target } });
+    const canvas = canvasRef.current;
+    setCamera(
+      fitCameraToGraph(
+        graphRef.current.nodes,
+        canvas?.clientWidth ?? 1,
+        canvas?.clientHeight ?? 1
+      ),
+      true
+    );
     setSelectedNodeId("entral");
     selectedRef.current = "entral";
     setActiveGroupId(null);
@@ -7236,6 +7314,40 @@ export function NeuronsCommandCenter({
                   />
                   <strong>{graphControls.orbitSpeed.toFixed(2)}x</strong>
                 </label>
+                <section className="phase110-formation-gravity" aria-label="3D formation gravity">
+                  <label className="phase110-range-row">
+                    <span>Formation gravity</span>
+                    <input
+                      aria-label="3D formation gravity"
+                      max={gravityMax}
+                      min={gravityMin}
+                      onChange={(event) => patchGraphControls(
+                        { gravity: Number(event.target.value) },
+                        `3D formation gravity set to ${formatGravity(Number(event.target.value))}. Agent activity is unchanged.`
+                      )}
+                      step="0.01"
+                      type="range"
+                      value={graphControls.gravity}
+                    />
+                    <strong>{formatGravity(graphControls.gravity)}</strong>
+                  </label>
+                  <p>Visual formation only. Agent activity, tasks, and canonical updates continue unchanged.</p>
+                  <div className="phase110-gravity-presets" role="group" aria-label="Formation gravity presets">
+                    {gravityPresetOptions.slice(0, 5).map((preset) => (
+                      <button
+                        aria-pressed={Math.abs(graphControls.gravity - preset.value) < 0.01}
+                        key={preset.label}
+                        onClick={() => patchGraphControls(
+                          { gravity: preset.value },
+                          `3D formation gravity set to ${preset.label} (${formatGravity(preset.value)}). Agent activity is unchanged.`
+                        )}
+                        type="button"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
                 <label className="phase110-range-row">
                   <span>Camera response</span>
                   <input

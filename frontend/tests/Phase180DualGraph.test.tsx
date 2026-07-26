@@ -5,6 +5,9 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CanonicalGraphWorkspace } from "../components/CanonicalGraphWorkspace";
 import {
+  clampGraphCameraDistance,
+  GRAPH_CAMERA_DISTANCE,
+  graphCameraClipPlanes,
   graphStateFromCanonicalEntities,
   reconcileCanonicalGraphPositions
 } from "../components/NeuronsCommandCenter";
@@ -109,6 +112,16 @@ afterEach(() => {
 });
 
 describe("Phase 180 dual canonical Graph views", () => {
+  it("supports deep 3D navigation without clipping the expanded camera range", () => {
+    expect(clampGraphCameraDistance(1)).toBe(GRAPH_CAMERA_DISTANCE.min);
+    expect(clampGraphCameraDistance(2_500)).toBe(2_500);
+    expect(clampGraphCameraDistance(Number.POSITIVE_INFINITY)).toBe(900);
+    expect(clampGraphCameraDistance(2_000_000)).toBe(GRAPH_CAMERA_DISTANCE.max);
+    const clip = graphCameraClipPlanes(GRAPH_CAMERA_DISTANCE.max);
+    expect(clip.near).toBeGreaterThan(0);
+    expect(clip.far).toBeGreaterThan(GRAPH_CAMERA_DISTANCE.max);
+  });
+
   it("keeps both renderers visible with one entity array, event sequence, and selection", () => {
     render(
       <CanonicalGraphWorkspace

@@ -90,12 +90,12 @@ describe("Phase 180 Canonical Universe Graph interaction semantics", () => {
     render(<GraphHarness onOpenFullRecord={openFullRecord} />);
 
     const graph = screen.getByRole("application", { name: /canonical universe graph with 5 entities/i });
-    expect(graph).toHaveAccessibleDescription(/arrow keys move between related nodes/i);
+    expect(graph).toHaveAccessibleDescription(/arrow up moves to the parent/i);
     expect(screen.getByText(/shift \+ arrow pans/i)).toBeVisible();
 
-    fireEvent.keyDown(graph, { key: "ArrowRight" });
+    fireEvent.keyDown(graph, { key: "ArrowDown" });
     expect(screen.getByRole("complementary", { name: /entral graph details/i })).toBeVisible();
-    fireEvent.keyDown(graph, { key: "ArrowRight" });
+    fireEvent.keyDown(graph, { key: "ArrowDown" });
     expect(screen.getByRole("complementary", { name: /marshal graph details/i })).toBeVisible();
     fireEvent.keyDown(graph, { key: "Enter" });
     expect(openFullRecord).toHaveBeenCalledWith("marshal");
@@ -161,5 +161,18 @@ describe("Phase 180 Canonical Universe Graph interaction semantics", () => {
     fireEvent.pointerDown(graph, { clientX: 0, clientY: 0, pointerId: 1 });
     fireEvent.pointerCancel(graph, { clientX: 0, clientY: 0, pointerId: 1 });
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  });
+
+  it("uses the complete high-range zoom envelope from the visible controls", () => {
+    render(<GraphHarness />);
+    const zoomIn = screen.getByRole("button", { name: "Zoom in 2D Graph" });
+    const zoomOut = screen.getByRole("button", { name: "Zoom out 2D Graph" });
+
+    for (let index = 0; index < 30; index += 1) fireEvent.click(zoomIn);
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
+    expect(screen.getByText("6,400%")).toBeVisible();
+
+    for (let index = 0; index < 100; index += 1) fireEvent.click(zoomOut);
+    expect(screen.getByText("1.00e-6")).toBeVisible();
   });
 });

@@ -2,7 +2,7 @@
 
 import type { EntitySummary } from "@entral/contracts";
 import {
-  ArrowLeft,
+  ArrowUp,
   Focus,
   Hand,
   LocateFixed,
@@ -21,6 +21,8 @@ import {
   canonicalLineageAndSubtree,
   fitUniverseCamera,
   layoutCanonicalUniverse,
+  MAX_UNIVERSE_ZOOM,
+  MIN_UNIVERSE_ZOOM,
   nextUniverseEntityId,
   semanticUniverseIds
 } from "../lib/canonical-universe";
@@ -31,7 +33,30 @@ type PointerRecord = { x: number; y: number };
 const SEARCH_INPUT_ID = "phase180-graph-search";
 const SEARCH_RESULTS_ID = "phase180-graph-search-results";
 const GRAPH_INSTRUCTIONS_ID = "phase180-graph-instructions";
-const MIN_ZOOM = 0.001;
+
+function clampZoom(zoom: number) {
+  return Math.max(MIN_UNIVERSE_ZOOM, Math.min(MAX_UNIVERSE_ZOOM, zoom));
+}
+
+function zoomCameraAt(
+  camera: Camera,
+  zoom: number,
+  anchor: PointerRecord,
+  viewportWidth: number,
+  viewportHeight: number
+): Camera {
+  const nextZoom = clampZoom(zoom);
+  if (nextZoom === camera.zoom) return camera;
+  const centerX = viewportWidth / 2 + camera.x;
+  const centerY = viewportHeight / 2 + camera.y;
+  const worldX = (anchor.x - centerX) / camera.zoom;
+  const worldY = (anchor.y - centerY) / camera.zoom;
+  return {
+    x: anchor.x - viewportWidth / 2 - worldX * nextZoom,
+    y: anchor.y - viewportHeight / 2 - worldY * nextZoom,
+    zoom: nextZoom
+  };
+}
 
 const roleColors = {
   ENTRAL: "#f4f7ff",
@@ -74,6 +99,7 @@ export function CanonicalUniverseGraph({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number | null>(null);
+  const initialFitRef = useRef(false);
   const pointersRef = useRef(new Map<number, PointerRecord>());
   const gestureRef = useRef<{ camera: Camera; distance: number; midpoint: PointerRecord } | null>(null);
   const dragStartRef = useRef<PointerRecord | null>(null);
@@ -107,6 +133,19 @@ export function CanonicalUniverseGraph({
   }, [points]);
 
   useEffect(() => {
+    if (initialFitRef.current || !points.length) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      const canvas = canvasRef.current;
+      if (!canvas || initialFitRef.current) return;
+      const fitted = fitUniverseCamera(points, canvas.clientWidth, canvas.clientHeight);
+      if (!fitted) return;
+      initialFitRef.current = true;
+      setCamera(fitted);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [points]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const handleWheel = (event: WheelEvent) => {
@@ -119,10 +158,18 @@ export function CanonicalUniverseGraph({
       if (deltaY === 0) return;
       event.preventDefault();
       const factor = Math.exp(-deltaY * 0.0012);
-      setCamera((current) => ({
-        ...current,
-        zoom: Math.max(MIN_ZOOM, Math.min(4, current.zoom * factor))
-      }));
+      const bounds = canvas.getBoundingClientRect();
+      const anchor = {
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top
+      };
+      setCamera((current) => zoomCameraAt(
+        current,
+        current.zoom * factor,
+        anchor,
+        canvas.clientWidth,
+        canvas.clientHeight
+      ));
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
@@ -139,7 +186,7 @@ export function CanonicalUniverseGraph({
     setCamera((current) => ({
       x: -point.x * Math.max(current.zoom, 0.75),
       y: -point.y * Math.max(current.zoom, 0.75),
-      zoom: Math.max(current.zoom, 0.75)
+      zoom: clampZoom(Math.max(current.zoom, 0.75))
     }));
     onSelectedEntityChange(entityId);
   }, [onSelectedEntityChange, pointById]);
@@ -226,6 +273,13 @@ export function CanonicalUniverseGraph({
           context.stroke();
         }
 
+        const labelCandidates: Array<{
+          alpha: number;
+          entity: EntitySummary;
+          isSelected: boolean;
+          position: PointerRecord;
+          radius: number;
+        }> = [];
         for (const point of points) {
           if (!visibleIds.has(point.entity.entity_id)) continue;
           const position = screen(point);
@@ -248,13 +302,56 @@ export function CanonicalUniverseGraph({
             context.arc(position.x, position.y, radius + 5, 0, Math.PI * 2);
             context.stroke();
           }
-          if (showLabels && (camera.zoom >= 0.48 || isSelected) && point.entity.entity_type !== "SOLDIER") {
-            context.fillStyle = "#f0f5ff";
-            context.font = "600 11px Inter, system-ui, sans-serif";
-            context.fillText(point.entity.name, position.x + radius + 5, position.y + 4);
+          const structuralLabel = point.entity.entity_type === "ENTRAL"
+            || (point.entity.entity_type === "MARSHAL" && camera.zoom >= 0.02);
+          if (
+            showLabels
+            && point.entity.entity_type !== "SOLDIER"
+            && (camera.zoom >= 0.48 || isSelected || structuralLabel)
+          ) {
+            labelCandidates.push({
+              alpha: dimUnrelated && unrelated ? 0.22 : 1,
+              entity: point.entity,
+              isSelected,
+              position,
+              radius
+            });
           }
           context.globalAlpha = 1;
         }
+
+        context.font = "600 11px Inter, system-ui, sans-serif";
+        const occupiedLabels: Array<{ bottom: number; left: number; right: number; top: number }> = [];
+        labelCandidates
+          .sort((left, right) => {
+            const priority = (candidate: typeof left) => candidate.isSelected
+              ? 0
+              : candidate.entity.entity_type === "ENTRAL"
+                ? 1
+                : candidate.entity.entity_type === "MARSHAL"
+                  ? 2
+                  : 3;
+            return priority(left) - priority(right)
+              || left.entity.stable_code.localeCompare(right.entity.stable_code);
+          })
+          .forEach((candidate) => {
+            const left = candidate.position.x + candidate.radius + 5;
+            const top = candidate.position.y - 8;
+            const right = left + context.measureText(candidate.entity.name).width;
+            const bottom = top + 14;
+            const overlaps = occupiedLabels.some((bounds) =>
+              left < bounds.right + 6
+              && right + 6 > bounds.left
+              && top < bounds.bottom + 3
+              && bottom + 3 > bounds.top
+            );
+            if (overlaps && !candidate.isSelected) return;
+            occupiedLabels.push({ bottom, left, right, top });
+            context.globalAlpha = candidate.alpha;
+            context.fillStyle = "#f0f5ff";
+            context.fillText(candidate.entity.name, left, candidate.position.y + 4);
+            context.globalAlpha = 1;
+          });
       });
     }
   }, [
@@ -304,10 +401,17 @@ export function CanonicalUniverseGraph({
     if (!gesture || !first || !second) return;
     const distance = Math.max(10, Math.hypot(second.x - first.x, second.y - first.y));
     const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+    const zoomed = zoomCameraAt(
+      gesture.camera,
+      gesture.camera.zoom * distance / Math.max(10, gesture.distance),
+      gesture.midpoint,
+      event.currentTarget.clientWidth,
+      event.currentTarget.clientHeight
+    );
     setCamera({
-      x: gesture.camera.x + midpoint.x - gesture.midpoint.x,
-      y: gesture.camera.y + midpoint.y - gesture.midpoint.y,
-      zoom: Math.max(MIN_ZOOM, Math.min(4, gesture.camera.zoom * distance / Math.max(10, gesture.distance)))
+      ...zoomed,
+      x: zoomed.x + midpoint.x - gesture.midpoint.x,
+      y: zoomed.y + midpoint.y - gesture.midpoint.y
     });
   }
 
@@ -407,12 +511,12 @@ export function CanonicalUniverseGraph({
     }
     if (event.key === "+" || event.key === "=") {
       event.preventDefault();
-      setCamera((current) => ({ ...current, zoom: Math.min(4, current.zoom * 1.15) }));
+      setCamera((current) => ({ ...current, zoom: clampZoom(current.zoom * 1.2) }));
       return;
     }
     if (event.key === "-") {
       event.preventDefault();
-      setCamera((current) => ({ ...current, zoom: Math.max(MIN_ZOOM, current.zoom / 1.15) }));
+      setCamera((current) => ({ ...current, zoom: clampZoom(current.zoom / 1.2) }));
       return;
     }
     const direction = {
@@ -515,18 +619,18 @@ export function CanonicalUniverseGraph({
           onClick={() => selected?.parent_id && focusEntity(selected.parent_id)}
           type="button"
         >
-          <ArrowLeft aria-hidden="true" size={17} /> Back
+          <ArrowUp aria-hidden="true" size={17} /> Parent
         </button>
         <button
           aria-label="Zoom in 2D Graph"
-          onClick={() => setCamera((current) => ({ ...current, zoom: Math.min(4, current.zoom * 1.2) }))}
+          onClick={() => setCamera((current) => ({ ...current, zoom: clampZoom(current.zoom * 1.25) }))}
           type="button"
         >
           <ZoomIn aria-hidden="true" size={17} /> Zoom in
         </button>
         <button
           aria-label="Zoom out 2D Graph"
-          onClick={() => setCamera((current) => ({ ...current, zoom: Math.max(MIN_ZOOM, current.zoom / 1.2) }))}
+          onClick={() => setCamera((current) => ({ ...current, zoom: clampZoom(current.zoom / 1.25) }))}
           type="button"
         >
           <ZoomOut aria-hidden="true" size={17} /> Zoom out
@@ -582,13 +686,19 @@ export function CanonicalUniverseGraph({
           <label><input checked={showLabels} onChange={(event) => setShowLabels(event.target.checked)} type="checkbox" /> Semantic labels</label>
           <label><input checked={showGrid} onChange={(event) => setShowGrid(event.target.checked)} type="checkbox" /> Coordinate grid</label>
           <label><input checked={dimUnrelated} onChange={(event) => setDimUnrelated(event.target.checked)} type="checkbox" /> Dim unrelated branches</label>
+          <div className="phase180-graph-setting-summary">
+            <span>Viewport zoom</span>
+            <strong>{camera.zoom < 0.01 ? camera.zoom.toExponential(2) : `${Math.round(camera.zoom * 100).toLocaleString("en-US")}%`}</strong>
+            <small>High-range navigation from 0.0001% to 6,400%. Fit always restores the complete hierarchy.</small>
+          </div>
         </aside>
       ) : null}
       <p className="phase180-graph-instructions" id={GRAPH_INSTRUCTIONS_ID}>
         <strong>Controls:</strong> Page scrolling stays available over the embedded graph. Hold Ctrl or Command while
         scrolling to zoom, or use the zoom buttons. On touch screens, use Interact with 2D Graph before panning or
-        pinching. In full screen, graph touch controls and scroll-to-zoom are active directly. Arrow keys move between
-        related nodes; Shift + Arrow pans; Enter opens the selected record; Escape clears the selection.
+        pinching. In full screen, graph touch controls and scroll-to-zoom are active directly. Arrow Up moves to the
+        parent, Arrow Down enters the closest child, and Arrow Left or Right moves between siblings. Shift + Arrow pans;
+        Enter opens the selected record; Escape clears the selection.
       </p>
       <p className="sr-only" aria-live="polite">
         {selected
