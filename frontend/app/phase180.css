@@ -944,6 +944,30 @@ body:has(.phase180-embedded-3d) {
   gap: 0.5rem;
 }
 
+.phase180-graph-setting-summary {
+  background: rgba(88, 225, 226, 0.055);
+  border: 1px solid rgba(88, 225, 226, 0.14);
+  border-radius: 10px;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.62rem 0.68rem;
+}
+
+.phase180-graph-setting-summary span,
+.phase180-graph-setting-summary strong {
+  font-size: 0.76rem;
+}
+
+.phase180-graph-setting-summary strong {
+  color: var(--ink);
+}
+
+.phase180-graph-setting-summary small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
 .phase180-graph-drawer {
   top: auto;
   bottom: 1rem;

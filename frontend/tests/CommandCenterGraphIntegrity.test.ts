@@ -80,4 +80,13 @@ describe("Command Center graph integrity", () => {
     expect(source).toContain("Collapse details for");
     expect(source).toContain('detail?.target === "graph-inspector"');
   });
+
+  it("exposes one clean view-only gravity control with an expanded safe camera range", () => {
+    expect(source).toContain('aria-label="3D formation gravity"');
+    expect(source).toContain("Visual formation only. Agent activity, tasks, and canonical updates continue unchanged.");
+    expect(source).toContain("max: 1_000_000");
+    expect(source).toContain("min: 48");
+    expect(source).toContain("graphCameraClipPlanes(camera.distance)");
+    expect(source).toContain("fitCameraToGraph(");
+  });
 });
