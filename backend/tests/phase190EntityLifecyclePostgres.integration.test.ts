@@ -8,7 +8,6 @@ import type {
 } from "@entral/contracts";
 import { PrismaClient } from "@prisma/client";
 import { describe, expect, it } from "vitest";
-import { dispatchCanonicalOutboxBatch } from "../src/services/canonicalOutboxWorker.js";
 import {
   CanonicalEntityLifecycleService
 } from "../src/services/canonicalEntityLifecycle.js";
@@ -141,6 +140,8 @@ describe.skipIf(!integrationEnabled)("Phase 190 entity pause/resume PostgreSQL g
     const databaseUrl = new URL(baseUrl);
     databaseUrl.pathname = `/${databaseName}`;
     databaseUrl.searchParams.delete("schema");
+    const previousDatabaseUrl = process.env.DATABASE_URL;
+    const previousJwtSecret = process.env.JWT_SECRET;
     const admin = new PrismaClient({ datasources: { db: { url: adminUrl.toString() } } });
     let owner: PrismaClient | null = null;
     let api: PrismaClient | null = null;
@@ -686,6 +687,11 @@ describe.skipIf(!integrationEnabled)("Phase 190 entity pause/resume PostgreSQL g
       const versionBeforeDispatch = await owner.$queryRaw<{ version: bigint }[]>`
         SELECT version FROM entral.entities WHERE id = ${soldierId}::uuid
       `;
+      process.env.DATABASE_URL = databaseUrl.toString();
+      process.env.JWT_SECRET = "phase190-postgres-integration-only-secret";
+      const { dispatchCanonicalOutboxBatch } = await import(
+        "../src/services/canonicalOutboxWorker.js"
+      );
       let firstFailedOutboxId: string | null = null;
       const publicationAttempts: string[] = [];
       const firstDispatch = await dispatchCanonicalOutboxBatch({
@@ -766,6 +772,10 @@ describe.skipIf(!integrationEnabled)("Phase 190 entity pause/resume PostgreSQL g
       await admin.$executeRawUnsafe(`DROP ROLE IF EXISTS "${apiRole}"`);
       await admin.$executeRawUnsafe(`DROP ROLE IF EXISTS "${workerRole}"`);
       await admin.$disconnect();
+      if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = previousDatabaseUrl;
+      if (previousJwtSecret === undefined) delete process.env.JWT_SECRET;
+      else process.env.JWT_SECRET = previousJwtSecret;
     }
   }, 180_000);
 });
