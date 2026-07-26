@@ -39,10 +39,10 @@ describe("Phase 170 responsive and route contract", () => {
 
   it("contains every destination label inside its own navigation grid cell", () => {
     expect(phase180Css).toMatch(
-      /\.phase180-shell-header \.member-destination-nav a\s*\{[\s\S]*min-width:\s*0;[\s\S]*text-align:\s*center;/
+      /\.phase180-shell-header \.member-destination-nav a\s*\{[\s\S]*max-width:\s*100%;[\s\S]*min-width:\s*0;[\s\S]*overflow:\s*hidden;[\s\S]*width:\s*100%;/
     );
     expect(phase180Css).toMatch(
-      /\.phase180-shell-header \.member-destination-nav a span\s*\{[\s\S]*min-width:\s*0;[\s\S]*white-space:\s*normal;/
+      /\.phase180-shell-header \.member-destination-nav a span\s*\{[\s\S]*max-width:\s*100%;[\s\S]*overflow-wrap:\s*anywhere;[\s\S]*white-space:\s*normal;/
     );
   });
 });

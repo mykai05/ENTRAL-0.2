@@ -46,6 +46,7 @@
 .phase180-shell-header .member-destination-nav a {
   align-items: center;
   border-radius: 9px;
+  box-sizing: border-box;
   color: var(--muted);
   display: flex;
   font-size: 0.76rem;
@@ -53,16 +54,21 @@
   gap: 0.42rem;
   justify-content: center;
   letter-spacing: 0.02em;
+  max-width: 100%;
   min-height: 40px;
   min-width: 0;
+  overflow: hidden;
   padding: 0.45rem 0.6rem;
   text-align: center;
   text-decoration: none;
+  width: 100%;
 }
 
 .phase180-shell-header .member-destination-nav a span {
   line-height: 1.12;
+  max-width: 100%;
   min-width: 0;
+  overflow-wrap: anywhere;
   white-space: normal;
 }
 
