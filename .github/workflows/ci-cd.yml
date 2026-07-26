@@ -38,6 +38,8 @@ jobs:
         continue-on-error: true
       - run: pnpm test:release-positioning
       - run: pnpm prisma:generate
+      - name: Build shared contracts for runtime imports
+        run: pnpm --filter @entral/contracts build
       - name: Verify Phase 150 PostgreSQL identities, isolation, and transactions
         env:
           RUN_POSTGRES_INTEGRATION: "1"
