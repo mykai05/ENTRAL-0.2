@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../lib/api";
-import { clearAuthenticatedUserSession } from "../lib/auth-session";
+import { clearAuthenticatedUserSession, writeAuthenticatedUserIdentity } from "../lib/auth-session";
 import { Logo } from "./Logo";
 import type { MemberDestination } from "./MemberDestinationNav";
 import { NeuronsCommandCenter } from "./NeuronsCommandCenter";
@@ -44,9 +44,13 @@ export function MemberCommandCenterClient({ initialDestination = "dashboard", or
     }
 
     setIsScopeReady(true);
-    window.dispatchEvent(new CustomEvent("entral:user-authenticated", {
-      detail: { userId }
-    }));
+    const academyAuthTimer = window.setTimeout(() => {
+      writeAuthenticatedUserIdentity({ userId });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(academyAuthTimer);
+    };
   }, [organizationId, userId]);
 
   async function handleLogout() {

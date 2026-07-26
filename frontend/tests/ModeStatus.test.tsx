@@ -25,7 +25,11 @@ describe("ModeStatus", () => {
   });
 
   it("adds the real mode strip only to confirmed authenticated app headers", async () => {
-    window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({ role: "USER" }));
+    window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({
+      email: "member@entral.local",
+      role: "USER",
+      userId: "user-1"
+    }));
     render(<AppHeader title="Infrastructure" subtitle="Inspect records." />);
 
     expect(await screen.findByRole("group", { name: "Authenticated workspace mode status" })).toHaveTextContent("Real account");

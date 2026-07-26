@@ -67,7 +67,11 @@ describe("Entral UI cleanup", () => {
   });
 
   it("keeps the canonical three destinations for a confirmed admin session", async () => {
-    window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({ role: "ADMIN" }));
+    window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({
+      email: "admin@entral.local",
+      role: "ADMIN",
+      userId: "admin-1"
+    }));
     render(<AppHeader title="Infrastructure" subtitle="Review controls." />);
 
     for (const label of ["Dashboard", "OPEN UNIVERSE GRAPH", "Infrastructure"]) {
