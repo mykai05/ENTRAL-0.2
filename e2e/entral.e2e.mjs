@@ -522,9 +522,16 @@ const tests = [
 
         await destinationNav.getByRole("link", { name: /universe graph/i }).click();
         await expectUrl(page, /\/member\/graph$/, "Phase 180 Universe Graph");
-        await expectVisible(page.getByRole("heading", { name: "Universe Graph" }), "Universe Graph heading");
+        await expectVisible(page.getByRole("heading", { name: "2D Graph" }), "2D Graph heading");
         const canvas = page.getByLabel(/Canonical Universe Graph with 5 entities/i);
-        await expectVisible(canvas, "Canonical Graph canvas");
+        await expectVisible(canvas, "Canonical 2D Graph canvas");
+        const twoDimensionalSnapshot = await page.locator('[data-graph-dimension="2d"]').evaluate((element) => ({
+          entities: element.getAttribute("data-canonical-entity-count"),
+          event: element.getAttribute("data-canonical-event-sequence")
+        }));
+        if (twoDimensionalSnapshot.entities !== "5" || twoDimensionalSnapshot.event !== "9") {
+          throw new Error(`2D Graph did not expose the accepted canonical snapshot: ${JSON.stringify(twoDimensionalSnapshot)}`);
+        }
         if (await page.getByRole("button", { name: "Open ENTRAL conversation" }).count()) {
           throw new Error("ENTRAL conversation was exposed over the Graph alert-only surface.");
         }
@@ -536,6 +543,30 @@ const tests = [
         await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Graph selection after landscape rotation");
         await page.setViewportSize({ width: 390, height: 844 });
         await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Graph selection after portrait recovery");
+
+        await page.getByRole("button", { name: "3D Graph" }).click();
+        await expectUrl(page, /\/member\/graph\?graph=3d$/, "Original 3D Universe Graph");
+        await expectVisible(page.getByRole("heading", { name: "3D Graph" }), "3D Graph heading");
+        const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
+        await expectVisible(original3DCanvas, "Original full 3D Universe Graph canvas", 30_000);
+        const threeDimensionalSnapshot = await page.locator(".phase180-graph-3d").evaluate((element) => ({
+          entities: element.getAttribute("data-canonical-entity-count"),
+          event: element.getAttribute("data-canonical-event-sequence")
+        }));
+        if (
+          threeDimensionalSnapshot.entities !== twoDimensionalSnapshot.entities
+          || threeDimensionalSnapshot.event !== twoDimensionalSnapshot.event
+        ) {
+          throw new Error(
+            `2D and 3D Graphs did not share one canonical snapshot: ${JSON.stringify({ threeDimensionalSnapshot, twoDimensionalSnapshot })}`
+          );
+        }
+        await expectVisible(page.getByRole("toolbar", { name: "Universe Graph toolbar" }), "Original 3D Graph toolbar");
+        await expectVisible(page.getByLabel("Selected graph entity"), "Original 3D Graph selected-entity drawer");
+
+        await page.getByRole("button", { name: "2D Graph" }).click();
+        await expectUrl(page, /\/member\/graph\?graph=2d$/, "Retained 2D Graph");
+        await expectVisible(page.getByRole("heading", { name: "2D Graph" }), "2D Graph after view switch");
 
         await context.setOffline(true);
         await page.waitForTimeout(5_500);
@@ -707,15 +738,62 @@ const tests = [
           const graphInteractionStart = performance.now();
           await page.keyboard.press("ArrowRight");
           await page.keyboard.press("+");
-          await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), `${profile.name} graph keyboard selection`);
+          const graphDetails = page.getByRole("complementary", { name: /ENTRAL graph details/i });
+          await expectVisible(graphDetails, `${profile.name} graph keyboard selection`);
           const graphInteractionMs = performance.now() - graphInteractionStart;
           if (graphInteractionMs > 2_000) {
             throw new Error(`${profile.name} Graph keyboard interaction exceeded 2s: ${graphInteractionMs.toFixed(1)}ms.`);
           }
           await page.keyboard.press("Escape");
+          await graphDetails.waitFor({ state: "hidden", timeout: 2_000 }).catch(() => {
+            throw new Error(`${profile.name} Escape did not clear the graph selection before switching views.`);
+          });
+
+          const graph3DStart = performance.now();
+          const graph3DButton = page.getByRole("button", { name: "3D Graph" });
+          await graph3DButton.focus();
+          await page.keyboard.press("Enter");
+          const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
+          await expectVisible(original3DCanvas, `${profile.name} 10,000-entity original 3D Graph`, 30_000);
+          const graph3DReadyMs = performance.now() - graph3DStart;
+          const graph3DSnapshot = await page.locator(".phase180-graph-3d").evaluate((element) => ({
+            entities: element.getAttribute("data-canonical-entity-count"),
+            event: element.getAttribute("data-canonical-event-sequence")
+          }));
+          if (graph3DSnapshot.entities !== "10000" || graph3DSnapshot.event !== "9") {
+            throw new Error(`${profile.name} 3D Graph did not retain the 10,000-entity canonical event: ${JSON.stringify(graph3DSnapshot)}`);
+          }
+          await page.getByRole("button", { name: "Fit view" }).click();
+          await page.getByRole("button", { name: "2D Graph" }).click();
+          await expectVisible(canvas, `${profile.name} 2D Graph after 3D parity verification`, 30_000);
 
           const infrastructureStart = performance.now();
-          await page.getByRole("link", { name: "Infrastructure" }).click();
+          const infrastructureLink = page.getByRole("link", { name: "Infrastructure" });
+          if (profile.isMobile) {
+            const hitTarget = await infrastructureLink.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              const x = rect.left + rect.width / 2;
+              const y = rect.top + rect.height / 2;
+              const hit = document.elementFromPoint(x, y);
+              return {
+                contains_hit: hit ? element.contains(hit) : false,
+                height: rect.height,
+                hit_element: hit
+                  ? `${hit.tagName.toLowerCase()}${hit.getAttribute("href") ? `[href="${hit.getAttribute("href")}"]` : ""}`
+                  : null,
+                width: rect.width,
+                x,
+                y
+              };
+            });
+            if (!hitTarget.contains_hit) {
+              throw new Error(`Phone Infrastructure destination is not the center hit target: ${JSON.stringify(hitTarget)}`);
+            }
+            await page.mouse.click(hitTarget.x, hitTarget.y);
+          } else {
+            await infrastructureLink.click();
+          }
+          await expectUrl(page, /\/member\/infrastructure$/, `${profile.name} Infrastructure navigation`);
           await expectVisible(page.getByRole("heading", { name: "Infrastructure", exact: true }), `${profile.name} Infrastructure`);
           const tree = page.getByRole("tree", { name: "Canonical hierarchy" });
           await expectVisible(tree, `${profile.name} virtualized hierarchy`);
@@ -747,10 +825,12 @@ const tests = [
           }
           process.stdout.write(
             `[e2e:phase180-scale] ${profile.name} graph_ready_ms=${graphReadyMs.toFixed(1)} `
-            + `graph_interaction_ms=${graphInteractionMs.toFixed(1)} infrastructure_search_ms=${infrastructureReadyMs.toFixed(1)} `
+            + `graph_interaction_ms=${graphInteractionMs.toFixed(1)} graph_3d_ready_ms=${graph3DReadyMs.toFixed(1)} `
+            + `infrastructure_search_ms=${infrastructureReadyMs.toFixed(1)} `
             + `rendered_tree_rows=${renderedRows}\n`
           );
           phase180ScaleMeasurements.push({
+            graph_3d_ready_ms: Number(graph3DReadyMs.toFixed(1)),
             graph_interaction_ms: Number(graphInteractionMs.toFixed(1)),
             graph_ready_ms: Number(graphReadyMs.toFixed(1)),
             infrastructure_search_ms: Number(infrastructureReadyMs.toFixed(1)),
@@ -814,7 +894,9 @@ const tests = [
           const settingsDialog = page.getByRole("dialog", { name: "ENTRAL settings" });
           await expectVisible(settingsDialog, "Settings dialog");
           await page.keyboard.press("Escape");
-          if (await settingsDialog.isVisible()) throw new Error("Escape did not close Settings.");
+          await settingsDialog.waitFor({ state: "hidden", timeout: 2_000 }).catch(() => {
+            throw new Error("Escape did not close Settings.");
+          });
           const focusReturned = await settingsTrigger.evaluate((element) => document.activeElement === element);
           if (!focusReturned) throw new Error("Settings did not restore focus to its trigger.");
 

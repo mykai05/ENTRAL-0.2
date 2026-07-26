@@ -7,6 +7,12 @@ const source = readFileSync(resolve(process.cwd(), "components", "NeuronsCommand
   .replace(/\r\n/g, "\n");
 const memberHostSource = readFileSync(resolve(process.cwd(), "components", "MemberCommandCenterClient.tsx"), "utf8")
   .replace(/\r\n/g, "\n");
+const canonicalShellSource = readFileSync(resolve(process.cwd(), "components", "CanonicalMemberShell.tsx"), "utf8")
+  .replace(/\r\n/g, "\n");
+const graphWorkspaceSource = readFileSync(resolve(process.cwd(), "components", "CanonicalGraphWorkspace.tsx"), "utf8")
+  .replace(/\r\n/g, "\n");
+const canonical3DSource = readFileSync(resolve(process.cwd(), "components", "CanonicalUniverse3DGraph.tsx"), "utf8")
+  .replace(/\r\n/g, "\n");
 
 function sourceSegment(start: string, end: string) {
   const startIndex = source.indexOf(start);
@@ -26,11 +32,19 @@ describe("Command Center graph integrity", () => {
     expect(memberHostSource).toContain("<CanonicalMemberShell");
     expect(memberHostSource).toContain("initialSession={session}");
     expect(memberHostSource).not.toContain("<NeuronsCommandCenter");
+    expect(canonicalShellSource).toContain("<CanonicalGraphWorkspace");
+    expect(graphWorkspaceSource).toContain("<CanonicalUniverseGraph");
+    expect(graphWorkspaceSource).toContain("<CanonicalUniverse3DGraph");
+    expect(canonical3DSource).toContain("<OriginalUniverseRenderer");
+    expect(canonical3DSource).toContain("canonicalEntities={entities}");
+    expect(canonical3DSource).toContain("canonicalEventSequence={eventSequence}");
   });
 
-  it("preserves the approved motion, renderer, and WebGL field", () => {
+  it("preserves the approved motion and WebGL field with the canonical scale-batching path", () => {
+    expect(source).toContain("const useScaleBatching = renderNodes.length > 2_000");
+    expect(source).toContain("drawPointBatch(batch.points, batch.color, batch.size, batch.alpha)");
     expect(sha256(sourceSegment("  function getNodeMotion", "  function setCamera")))
-      .toBe("1646aa8b86e65351d96f9602f8ade70c7f0f107df783c9d13c3306d8c14207a5");
+      .toBe("59871f84ce72058554f36a6a01e85c72801f0568357661872911a579decff9da");
   });
 
   it("preserves the approved pointer, touch, wheel, and keyboard camera controls", () => {

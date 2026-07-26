@@ -34,9 +34,9 @@ import {
 import { entitiesForBusinessScope } from "../lib/canonical-universe";
 import { BrandMark } from "./BrandMark";
 import { CanonicalEntralPanel } from "./CanonicalEntralPanel";
+import { CanonicalGraphWorkspace, type CanonicalGraphDimension } from "./CanonicalGraphWorkspace";
 import { CanonicalInfrastructure } from "./CanonicalInfrastructure";
 import { CanonicalPortfolioDashboard } from "./CanonicalPortfolioDashboard";
-import { CanonicalUniverseGraph } from "./CanonicalUniverseGraph";
 import { type MemberDestination, MemberDestinationNav } from "./MemberDestinationNav";
 
 const organizationStorageKey = "entral-phase180-organization";
@@ -64,9 +64,11 @@ export function CanonicalMemberShell({
   const searchParams = useSearchParams();
   const routeBusinessId = searchParams.get("business");
   const routeEntityId = searchParams.get("entity");
+  const routeGraphDimension = searchParams.get("graph") === "3d" ? "3d" : "2d";
   const [organizationId, setOrganizationId] = useState(initialSession.organizations[0]?.id ?? "");
   const [businessScopeId, setBusinessScopeId] = useState<string | null>(routeBusinessId);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(routeEntityId);
+  const [graphDimension, setGraphDimension] = useState<CanonicalGraphDimension>(routeGraphDimension);
   const [portfolio, setPortfolio] = useState<PortfolioSummaryResponse | null>(null);
   const [hierarchy, setHierarchy] = useState<CanonicalHierarchyResponse | null>(null);
   const [workspaceError, setWorkspaceError] = useState("");
@@ -222,6 +224,10 @@ export function CanonicalMemberShell({
   }, [initialDestination, routeEntityId]);
 
   useEffect(() => {
+    if (initialDestination === "graph") setGraphDimension(routeGraphDimension);
+  }, [initialDestination, routeGraphDimension]);
+
+  useEffect(() => {
     const controller = new AbortController();
     setConversationMessages([]);
     void refreshWorkspace(controller.signal);
@@ -321,6 +327,13 @@ export function CanonicalMemberShell({
       // The Infrastructure route still opens when storage is unavailable.
     }
     router.push("/member/infrastructure", { scroll: false });
+  }
+
+  function changeGraphDimension(nextDimension: CanonicalGraphDimension) {
+    setGraphDimension(nextDimension);
+    const nextSearch = new URLSearchParams(searchParams.toString());
+    nextSearch.set("graph", nextDimension);
+    router.replace(`/member/graph?${nextSearch.toString()}`, { scroll: false });
   }
 
   function setConversationOpen(open: boolean) {
@@ -427,9 +440,11 @@ export function CanonicalMemberShell({
               workspaceStatus={syncStatus}
             />
           ) : initialDestination === "graph" ? (
-            <CanonicalUniverseGraph
+            <CanonicalGraphWorkspace
+              dimension={graphDimension}
               entities={scopedEntities}
               eventSequence={hierarchy.event_sequence}
+              onDimensionChange={changeGraphDimension}
               onOpenFullRecord={openFullRecord}
               onSelectedEntityChange={setSelectedEntityId}
               selectedEntityId={selectedEntityId}

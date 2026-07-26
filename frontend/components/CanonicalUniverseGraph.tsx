@@ -385,11 +385,17 @@ export function CanonicalUniverseGraph({
   }
 
   return (
-    <section className="phase180-graph" aria-labelledby="universe-heading">
+    <section
+      className="phase180-graph"
+      aria-labelledby="universe-heading"
+      data-canonical-entity-count={entities.length}
+      data-canonical-event-sequence={eventSequence}
+      data-graph-dimension="2d"
+    >
       <header className="phase180-surface-heading">
         <div>
           <p className="eyebrow">Canonical topology · event {eventSequence}</p>
-          <h1 id="universe-heading">Universe Graph</h1>
+          <h1 id="universe-heading">2D Graph</h1>
           <p>{entities.length.toLocaleString()} RLS-visible entities. Selection preserves its complete lineage and subtree.</p>
         </div>
       </header>
