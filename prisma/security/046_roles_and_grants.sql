@@ -5,28 +5,36 @@
 
 BEGIN;
 
--- PostgreSQL roles are cluster-wide, while this grant script can be deployed
--- concurrently against separate databases. Serialize the existence check and
--- CREATE ROLE block so parallel migrations cannot race on pg_authid. The lock
--- is released automatically with this transaction.
-SELECT pg_advisory_xact_lock(
-    hashtextextended('entral:roles-and-grants:v1', 0)
-);
+-- PostgreSQL roles and pg_authid are cluster-wide, while advisory locks are
+-- database-scoped. Serialize the complete role mutation sequence through the
+-- shared catalog so deployments against different databases cannot race.
+-- This script already requires a cluster role administrator to create roles.
+LOCK TABLE pg_authid IN SHARE ROW EXCLUSIVE MODE;
 
 DO $$
+DECLARE
+    target_role text;
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'entral_api') THEN
-        CREATE ROLE entral_api NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'entral_worker') THEN
-        CREATE ROLE entral_worker NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'entral_audit_reader') THEN
-        CREATE ROLE entral_audit_reader NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'entral_verifier') THEN
-        CREATE ROLE entral_verifier NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-    END IF;
+    FOREACH target_role IN ARRAY ARRAY[
+        'entral_api',
+        'entral_worker',
+        'entral_audit_reader',
+        'entral_verifier'
+    ]
+    LOOP
+        BEGIN
+            EXECUTE format(
+                'CREATE ROLE %I NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT',
+                target_role
+            );
+        EXCEPTION
+            -- CREATE ROLE has no IF NOT EXISTS. These are the two errors
+            -- PostgreSQL can expose when another database creates the same
+            -- cluster role between lookup and insertion.
+            WHEN duplicate_object OR unique_violation THEN
+                NULL;
+        END;
+    END LOOP;
 END $$;
 
 ALTER ROLE entral_api NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION;
