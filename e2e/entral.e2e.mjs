@@ -493,6 +493,14 @@ const tests = [
         });
 
         try {
+          await installPhase170Routes(page);
+          await enterWorkspace(page, uniqueEmail(`secondary-${viewport.width}`));
+          const academyClose = page.getByRole("button", { name: "Close ENTRAL Academy" });
+          await academyClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => undefined);
+          if (await academyClose.count() && await academyClose.isVisible()) {
+            await academyClose.click();
+          }
+
           for (const pathname of ["/agents", "/automations", "/chat", "/admin", "/route-not-found"]) {
             await page.goto(`${frontendUrl}${pathname}`);
             await page.waitForLoadState("domcontentloaded");
@@ -514,7 +522,7 @@ const tests = [
           }
 
           await page.goto(`${frontendUrl}/agents`);
-          const settingsTrigger = page.getByRole("button", { name: "Open settings" });
+          const settingsTrigger = page.getByRole("button", { name: "Settings" });
           await expectVisible(settingsTrigger, "Settings trigger");
           await settingsTrigger.focus();
           await settingsTrigger.click();
