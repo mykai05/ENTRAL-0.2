@@ -738,12 +738,16 @@ const tests = [
           const graphInteractionStart = performance.now();
           await page.keyboard.press("ArrowRight");
           await page.keyboard.press("+");
-          await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), `${profile.name} graph keyboard selection`);
+          const graphDetails = page.getByRole("complementary", { name: /ENTRAL graph details/i });
+          await expectVisible(graphDetails, `${profile.name} graph keyboard selection`);
           const graphInteractionMs = performance.now() - graphInteractionStart;
           if (graphInteractionMs > 2_000) {
             throw new Error(`${profile.name} Graph keyboard interaction exceeded 2s: ${graphInteractionMs.toFixed(1)}ms.`);
           }
           await page.keyboard.press("Escape");
+          await graphDetails.waitFor({ state: "hidden", timeout: 2_000 }).catch(() => {
+            throw new Error(`${profile.name} Escape did not clear the graph selection before switching views.`);
+          });
 
           const graph3DStart = performance.now();
           await page.getByRole("button", { name: "3D Graph" }).click();
