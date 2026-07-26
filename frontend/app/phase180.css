@@ -2100,7 +2100,7 @@ body:has(.phase180-embedded-3d) {
     height: calc(100dvh - 62px - 54px - 72px - env(safe-area-inset-bottom));
   }
 
-  .phase180-assistant-event {
+  .phase180-assistant-identity small {
     display: none;
   }
 

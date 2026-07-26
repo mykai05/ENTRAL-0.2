@@ -568,8 +568,9 @@ const tests = [
           "Persistent ENTRAL emblem in 2D full screen"
         );
         await page.getByRole("button", { name: "Open ENTRAL assistant" }).click();
-        await expectVisible(page.getByRole("region", { name: "ENTRAL assistant" }), "ENTRAL assistant in 2D full screen");
-        await page.getByRole("button", { name: "Close ENTRAL assistant" }).click();
+        const twoDimensionalEntralAssistant = page.getByRole("region", { name: "ENTRAL assistant" });
+        await expectVisible(twoDimensionalEntralAssistant, "ENTRAL assistant in 2D full screen");
+        await twoDimensionalEntralAssistant.getByRole("button", { name: "Close ENTRAL assistant" }).click();
         await page.getByRole("button", { name: "Exit 2D Graph full screen" }).click();
         await page.waitForFunction(() => (
           !document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension")
