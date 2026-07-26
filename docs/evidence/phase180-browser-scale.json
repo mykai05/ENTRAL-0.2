@@ -1,0 +1,35 @@
+{
+  "dataset": {
+    "businesses": 500,
+    "commanders": 500,
+    "entities": 10000,
+    "soldiers": 9368
+  },
+  "generated_at": "2026-07-26T08:58:29.780Z",
+  "measurements": [
+    {
+      "graph_interaction_ms": 78.5,
+      "graph_ready_ms": 2899.7,
+      "infrastructure_search_ms": 434.4,
+      "profile": "desktop",
+      "rendered_tree_rows": 18,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "graph_interaction_ms": 77.7,
+      "graph_ready_ms": 2881.4,
+      "infrastructure_search_ms": 422.4,
+      "profile": "phone",
+      "rendered_tree_rows": 15,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    }
+  ],
+  "phase": 180,
+  "status": "passed"
+}

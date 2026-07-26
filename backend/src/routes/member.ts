@@ -18,8 +18,16 @@ const organizationBusinessParamsSchema = organizationParamsSchema.extend({
   businessId: z.string().uuid()
 });
 
+const organizationEntityParamsSchema = organizationParamsSchema.extend({
+  entityId: z.string().uuid()
+});
+
 const canonicalEventQuerySchema = z.object({
   afterSequence: z.coerce.number().int().min(0).default(0)
+});
+
+const entralConversationQuerySchema = z.object({
+  businessId: z.string().uuid().optional()
 });
 
 const unavailableSubscription = {
@@ -274,8 +282,23 @@ export async function memberRoutes(app: FastifyInstance) {
     if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
       return organizationNotFound(reply);
     }
+    // organizationId gates the legacy member-access tenant only. Canonical
+    // business scope is intentionally derived from the authenticated
+    // entral.app_users identity and its database scope_grants.
     return reply.send(await canonicalControlPlaneRepository.getPortfolio(
-      canonicalDatabaseSession(request, `Read the canonical portfolio for organization ${organizationId}.`)
+      canonicalDatabaseSession(request, `Read the user-inherited canonical portfolio through member access ${organizationId}.`)
+    ));
+  });
+
+  app.get("/member/organizations/:organizationId/hierarchy", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+    const { organizationId } = organizationParamsSchema.parse(request.params);
+    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+      return organizationNotFound(reply);
+    }
+    return reply.send(await canonicalControlPlaneRepository.getHierarchySnapshot(
+      canonicalDatabaseSession(request, `Read the user-inherited canonical hierarchy through member access ${organizationId}.`)
     ));
   });
 
@@ -288,14 +311,31 @@ export async function memberRoutes(app: FastifyInstance) {
     }
     const business = await canonicalControlPlaneRepository.getBusinessFull(
       businessId,
-      canonicalDatabaseSession(request, `Read canonical business ${businessId} for organization ${organizationId}.`)
+      canonicalDatabaseSession(request, `Read user-visible canonical business ${businessId} through member access ${organizationId}.`)
     );
     // RLS deliberately makes an inaccessible business indistinguishable from
     // a missing one, preventing cross-business identifier discovery.
     if (!business) {
       return reply.code(404).send({ error: "Not Found", message: "Business not found." });
     }
-    return reply.send({ business });
+    return reply.send(business);
+  });
+
+  app.get("/member/organizations/:organizationId/entities/:entityId/full", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+    const { entityId, organizationId } = organizationEntityParamsSchema.parse(request.params);
+    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+      return organizationNotFound(reply);
+    }
+    const entity = await canonicalControlPlaneRepository.getEntityFull(
+      entityId,
+      canonicalDatabaseSession(request, `Read user-visible canonical entity ${entityId} through member access ${organizationId}.`)
+    );
+    if (!entity) {
+      return reply.code(404).send({ error: "Not Found", message: "Entity not found." });
+    }
+    return reply.send(entity);
   });
 
   app.get("/member/organizations/:organizationId/events", { preHandler: requireAuth }, async (request, reply) => {
@@ -308,7 +348,24 @@ export async function memberRoutes(app: FastifyInstance) {
     }
     return reply.send(await canonicalControlPlaneRepository.listPortfolioEvents(
       afterSequence,
-      canonicalDatabaseSession(request, `Read canonical portfolio events for organization ${organizationId}.`)
+      canonicalDatabaseSession(request, `Read user-visible canonical events through member access ${organizationId}.`)
+    ));
+  });
+
+  app.get("/member/organizations/:organizationId/entral/conversation", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+    const { organizationId } = organizationParamsSchema.parse(request.params);
+    const { businessId } = entralConversationQuerySchema.parse(request.query);
+    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+      return organizationNotFound(reply);
+    }
+    return reply.send(await canonicalControlPlaneRepository.getEntralConversation(
+      businessId ?? null,
+      canonicalDatabaseSession(
+        request,
+        `Read user-visible Human and ENTRAL conversation history through member access ${organizationId}.`
+      )
     ));
   });
 }

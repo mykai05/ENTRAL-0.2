@@ -38,10 +38,12 @@ jobs:
         continue-on-error: true
       - run: pnpm test:release-positioning
       - run: pnpm test:phase160
+      - name: Verify Phase 180 isolated 500-business and 10000-entity scale gate
+        run: pnpm test:phase180
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
-      - name: Verify Phase 150, 160, and 170 PostgreSQL gates
+      - name: Verify Phase 150 through 180 PostgreSQL gates
         env:
           RUN_POSTGRES_INTEGRATION: "1"
           TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
@@ -58,6 +60,14 @@ jobs:
         env:
           E2E_BROWSER_EXECUTABLE: /usr/bin/google-chrome
         run: pnpm test:e2e
+      - name: Retain Phase 180 browser-scale evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-180-browser-scale
+          path: test-results/e2e/phase180-scale.json
+          if-no-files-found: warn
+          retention-days: 30
       - run: pnpm build
       - run: pnpm release:check
 

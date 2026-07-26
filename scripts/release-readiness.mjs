@@ -25,8 +25,8 @@ const requiredChecks = [
   },
   {
     file: "frontend/components/MemberCommandCenterClient.tsx",
-    label: "Member command center selects restricted member chrome",
-    text: "surface=\"member\""
+    label: "Member command center selects the canonical member shell",
+    text: "<CanonicalMemberShell"
   },
   {
     file: "frontend/components/MemberDestinationNav.tsx",

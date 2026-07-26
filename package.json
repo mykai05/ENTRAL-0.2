@@ -23,6 +23,8 @@
     "test": "node scripts/run-pnpm.mjs --recursive test",
     "test:e2e": "node e2e/entral.e2e.mjs",
     "test:phase160": "node --test scripts/canonical-taxonomy.test.mjs",
+    "test:phase180": "node --test scripts/phase180-benchmark.test.mjs",
+    "benchmark:phase180": "node scripts/phase180-benchmark.mjs",
     "test:release-positioning": "node --test scripts/release-positioning.test.mjs",
     "release:check": "node scripts/release-readiness.mjs",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",

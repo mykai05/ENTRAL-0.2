@@ -16,6 +16,10 @@ const businessParamsSchema = z.object({
   businessId: z.string().uuid()
 });
 
+const entityParamsSchema = z.object({
+  entityId: z.string().uuid()
+});
+
 const eventQuerySchema = z.object({
   afterSequence: z.coerce.number().int().min(0).default(0)
 });
@@ -47,11 +51,9 @@ export async function controlPlaneRoutes(app: FastifyInstance) {
   });
 
   app.get("/control-plane/hierarchy", { preHandler: requireAdmin }, async (request, reply) => {
-    return reply.send({
-      entities: await canonicalControlPlaneRepository.listHierarchy(
-        databaseSession(request, "Read the canonical entity hierarchy.")
-      )
-    });
+    return reply.send(await canonicalControlPlaneRepository.getHierarchySnapshot(
+      databaseSession(request, "Read the canonical entity hierarchy.")
+    ));
   });
 
   app.get("/control-plane/businesses", { preHandler: requireAdmin }, async (request, reply) => {
@@ -89,7 +91,19 @@ export async function controlPlaneRoutes(app: FastifyInstance) {
     if (!business) {
       return reply.code(404).send({ error: "Not Found", message: "Business not found." });
     }
-    return reply.send({ business });
+    return reply.send(business);
+  });
+
+  app.get("/control-plane/entities/:entityId/full", { preHandler: requireAdmin }, async (request, reply) => {
+    const { entityId } = entityParamsSchema.parse(request.params);
+    const entity = await canonicalControlPlaneRepository.getEntityFull(
+      entityId,
+      databaseSession(request, `Read the full canonical entity ${entityId}.`)
+    );
+    if (!entity) {
+      return reply.code(404).send({ error: "Not Found", message: "Entity not found." });
+    }
+    return reply.send(entity);
   });
 
   app.get("/control-plane/events", { preHandler: requireAdmin }, async (request, reply) => {

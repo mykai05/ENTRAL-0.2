@@ -102,8 +102,18 @@ export class ApiError extends Error {
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { json, timeoutMs = 15000, ...requestOptions } = options;
   const headers = new Headers(options.headers);
-  const timeoutController = options.signal ? undefined : new AbortController();
-  const timeout = timeoutController ? setTimeout(() => timeoutController.abort(), timeoutMs) : undefined;
+  const requestController = new AbortController();
+  let timedOut = false;
+  const forwardCallerAbort = () => requestController.abort(options.signal?.reason);
+  if (options.signal?.aborted) {
+    forwardCallerAbort();
+  } else {
+    options.signal?.addEventListener("abort", forwardCallerAbort, { once: true });
+  }
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    requestController.abort();
+  }, timeoutMs);
 
   if (json !== undefined) {
     headers.set("content-type", "application/json");
@@ -117,20 +127,25 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
       headers,
       credentials: "include",
       body: json === undefined ? options.body : JSON.stringify(json),
-      signal: options.signal ?? timeoutController?.signal
+      signal: requestController.signal
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new ApiError(408, "Request timed out.", null);
+      if (options.signal?.aborted) {
+        throw error;
+      }
+      if (timedOut) {
+        throw new ApiError(408, "Request timed out.", null);
+      }
+      throw error;
     }
 
     throw new ApiError(503, "ENTRAL API is not reachable. Check that the backend is running and the frontend API URL or proxy is configured correctly.", {
       cause: error instanceof Error ? error.message : String(error)
     });
   } finally {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
+    clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", forwardCallerAbort);
   }
 
   const payload = await response.json().catch(() => null);

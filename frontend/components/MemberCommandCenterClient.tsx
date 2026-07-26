@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { apiFetch } from "../lib/api";
-import { clearAuthenticatedUserSession, writeAuthenticatedUserIdentity } from "../lib/auth-session";
+import type { MemberOrganizationsResponse } from "@entral/contracts";
+import { writeAuthenticatedUserIdentity } from "../lib/auth-session";
 import { Logo } from "./Logo";
+import { CanonicalMemberShell } from "./CanonicalMemberShell";
 import type { MemberDestination } from "./MemberDestinationNav";
-import { NeuronsCommandCenter } from "./NeuronsCommandCenter";
 
 const memberScopeKey = "entral-member-command-center-scope";
 const organizationLocalKeys = [
@@ -20,16 +19,39 @@ const organizationLocalKeys = [
 
 type MemberCommandCenterClientProps = {
   initialDestination?: MemberDestination;
-  organizationId: string;
-  userId: string;
+  initialSession?: MemberOrganizationsResponse;
+  organizationId?: string;
+  userId?: string;
 };
 
-export function MemberCommandCenterClient({ initialDestination = "dashboard", organizationId, userId }: MemberCommandCenterClientProps) {
-  const router = useRouter();
+export function MemberCommandCenterClient({
+  initialDestination = "dashboard",
+  initialSession,
+  organizationId,
+  userId
+}: MemberCommandCenterClientProps) {
   const [isScopeReady, setIsScopeReady] = useState(false);
+  const session = initialSession ?? {
+    organizations: organizationId ? [{
+      id: organizationId,
+      joinedAt: "1970-01-01T00:00:00.000Z",
+      memberCount: 1,
+      memberLimit: 5,
+      name: "Entral organization",
+      role: "MEMBER" as const,
+      slug: "entral-organization"
+    }] : [],
+    user: {
+      email: "member@entral.local",
+      id: userId ?? "member",
+      name: "Member"
+    }
+  };
+  const activeOrganizationId = session.organizations[0]?.id ?? "";
+  const activeUserId = session.user.id;
 
   useEffect(() => {
-    const nextScope = `${userId}:${organizationId}`;
+    const nextScope = `${activeUserId}:${activeOrganizationId}`;
 
     try {
       const previousScope = window.localStorage.getItem(memberScopeKey);
@@ -45,24 +67,13 @@ export function MemberCommandCenterClient({ initialDestination = "dashboard", or
 
     setIsScopeReady(true);
     const academyAuthTimer = window.setTimeout(() => {
-      writeAuthenticatedUserIdentity({ userId });
+      writeAuthenticatedUserIdentity({ userId: activeUserId });
     }, 0);
 
     return () => {
       window.clearTimeout(academyAuthTimer);
     };
-  }, [organizationId, userId]);
-
-  async function handleLogout() {
-    try {
-      await apiFetch("/logout", { method: "POST" });
-      clearAuthenticatedUserSession();
-      router.replace("/member/sign-in");
-      router.refresh();
-    } catch {
-      window.alert("Sign out could not be completed. Please try again.");
-    }
-  }
+  }, [activeOrganizationId, activeUserId]);
 
   if (!isScopeReady) {
     return (
@@ -73,17 +84,5 @@ export function MemberCommandCenterClient({ initialDestination = "dashboard", or
     );
   }
 
-  // A member session opens the exact approved Command Center presentation.
-  // Passing a null internal operator prevents Command OS persistence and all
-  // internal-only API access; the backend independently rejects member tokens
-  // on those routes while local visual controls continue to work.
-  return (
-    <NeuronsCommandCenter
-      initialDestination={initialDestination}
-      organizationId={organizationId}
-      surface="member"
-      user={null}
-      onLogout={handleLogout}
-    />
-  );
+  return <CanonicalMemberShell initialDestination={initialDestination} initialSession={session} />;
 }

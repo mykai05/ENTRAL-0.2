@@ -1,9 +1,10 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { generatePhase180BenchmarkFixture } from "../scripts/phase180-benchmark.mjs";
 
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const frontendUrl = process.env.E2E_FRONTEND_URL ?? "http://127.0.0.1:3000";
@@ -16,6 +17,7 @@ const pnpm = process.env.E2E_PNPM_PATH
 const backendRequire = createRequire(new URL("../backend/package.json", import.meta.url));
 const { chromium } = backendRequire("playwright-core");
 const spawned = [];
+const phase180ScaleMeasurements = [];
 let browser;
 
 function windowsPath(value) {
@@ -271,6 +273,7 @@ function phase170Portfolio(version = 3) {
 }
 
 function phase170FullBusiness(version = 3) {
+  const eventSequence = version === 3 ? 9 : 10;
   return {
     business: {
       agents_and_tools: { agents: [{ name: "Support Soldier", status: "ACTIVE" }], tool_grants: [] },
@@ -290,8 +293,50 @@ function phase170FullBusiness(version = 3) {
         reason: "Canonical event refresh",
         version
       }]
+    },
+    event_sequence: eventSequence
+  };
+}
+
+function phase180ScaleResponses() {
+  const fixture = generatePhase180BenchmarkFixture();
+  const scope = {
+    label: "Isolated Phase 180 acceptance portfolio",
+    mode: "HUMAN_PORTFOLIO",
+    user_id: phase170Ids.user,
+    visible_business_ids: fixture.businesses.map((business) => business.business_id)
+  };
+  return {
+    hierarchy: {
+      entities: fixture.entities,
+      event_sequence: 9,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      scope
+    },
+    portfolio: {
+      businesses: fixture.businesses,
+      event_sequence: 9,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      scope,
+      totals: {
+        active_commanders: 500,
+        active_soldiers: 9_368,
+        businesses: 500,
+        financials: [],
+        health_distribution: { CRITICAL: 0, DEGRADED: 0, HEALTHY: 500, UNKNOWN: 0, WATCH: 0 },
+        unresolved_exceptions: 0
+      }
     }
   };
+}
+
+async function installPhase180ScaleRoutes(page, responses) {
+  await page.route("**/member/api/v1/member/organizations/*/portfolio/summary", async (route) => {
+    await route.fulfill({ contentType: "application/json", json: responses.portfolio, status: 200 });
+  });
+  await page.route("**/member/api/v1/member/organizations/*/hierarchy", async (route) => {
+    await route.fulfill({ contentType: "application/json", json: responses.hierarchy, status: 200 });
+  });
 }
 
 async function installPhase170Routes(page, { emitEvent = false } = {}) {
@@ -368,6 +413,14 @@ async function enterWorkspace(page, email = uniqueEmail("operator")) {
   return email;
 }
 
+async function closeAcademyIfOpen(page) {
+  const academyClose = page.getByRole("button", { name: "Close ENTRAL Academy" });
+  await academyClose.waitFor({ state: "visible", timeout: 2500 }).catch(() => undefined);
+  if (await academyClose.count() && await academyClose.isVisible()) {
+    await academyClose.click();
+  }
+}
+
 const tests = [
   {
     name: "root URL opens protected member sign-in",
@@ -420,8 +473,99 @@ const tests = [
         await expectVisible(page.getByRole("heading", { name: "Atlas Software" }), "Business detail heading");
         await expectVisible(page.getByText("Agents and tools"), "Agents and tools section");
         await expectVisible(page.getByText("External activity"), "External activity section");
-        await expectVisible(page.getByText("Version 4"), "Version-consistent full record");
+        await expectVisible(page.getByText("Event 10"), "Version-consistent full record");
       } finally {
+        await context.close();
+      }
+    }
+  },
+  {
+    name: "member Phase 180 shell synchronizes Dashboard, Graph, Infrastructure, mobile rotation, and reconnect",
+    run: async () => {
+      const { context, page } = await newPage({
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        deviceScaleFactor: 2
+      });
+      const runtimeErrors = [];
+      try {
+        await enterWorkspace(page, uniqueEmail("phase180-member"));
+        await page.goto(`${frontendUrl}/member/dashboard`);
+        await expectUrl(page, /\/member\/dashboard$/, "Phase 180 member Dashboard");
+        await closeAcademyIfOpen(page);
+        page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
+        page.on("console", (message) => {
+          const text = message.text();
+          const expectedOfflineFailure = /net::ERR_INTERNET_DISCONNECTED/i.test(text);
+          if (message.type() === "error" && !expectedOfflineFailure) runtimeErrors.push(`console: ${text}`);
+        });
+        await expectVisible(page.getByRole("heading", { name: "E2E Operator's Dashboard" }), "Phase 180 canonical Dashboard");
+        const destinationNav = page.getByRole("navigation", { name: "Member destinations" });
+        if (await destinationNav.getByRole("link").count() !== 3) {
+          throw new Error("Phase 180 member shell does not expose exactly three destinations.");
+        }
+        await expectVisible(page.getByLabel("Inherited canonical scope"), "Inherited canonical scope");
+        const entralEmblem = page.getByRole("button", { name: "Open ENTRAL conversation" });
+        await expectVisible(entralEmblem, "Persistent ENTRAL emblem");
+        await entralEmblem.click();
+        const entralContext = page.getByRole("region", { name: "Canonical ENTRAL context" });
+        await expectVisible(entralContext, "Member-safe ENTRAL context");
+        await expectVisible(entralContext.getByText("Event 9", { exact: true }), "ENTRAL canonical event version");
+        await expectVisible(
+          entralContext.getByText(/No versioned Human and ENTRAL conversation message is recorded/i),
+          "Truthful empty canonical conversation history"
+        );
+        await expectVisible(entralContext.getByText(/No action-status event is present/i), "Truthful ENTRAL action status");
+        await page.getByRole("button", { name: "Expand ENTRAL" }).click();
+        await expectVisible(page.getByRole("button", { name: "Compact ENTRAL" }), "Expanded ENTRAL workspace");
+        await page.getByRole("button", { name: "Close ENTRAL", exact: true }).click();
+
+        await destinationNav.getByRole("link", { name: /universe graph/i }).click();
+        await expectUrl(page, /\/member\/graph$/, "Phase 180 Universe Graph");
+        await expectVisible(page.getByRole("heading", { name: "Universe Graph" }), "Universe Graph heading");
+        const canvas = page.getByLabel(/Canonical Universe Graph with 5 entities/i);
+        await expectVisible(canvas, "Canonical Graph canvas");
+        if (await page.getByRole("button", { name: "Open ENTRAL conversation" }).count()) {
+          throw new Error("ENTRAL conversation was exposed over the Graph alert-only surface.");
+        }
+        await canvas.focus();
+        await page.keyboard.press("Enter");
+        await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Dismissible Graph detail drawer");
+
+        await page.setViewportSize({ width: 844, height: 390 });
+        await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Graph selection after landscape rotation");
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Graph selection after portrait recovery");
+
+        await context.setOffline(true);
+        await page.waitForTimeout(5_500);
+        await expectVisible(page.getByText(/Disconnected · retrying canonical events/i), "Canonical disconnect state");
+        await context.setOffline(false);
+        await expectVisible(page.getByText(/Connected · canonical event 9/i), "Canonical reconnect recovery", 10_000);
+
+        await page.getByRole("button", { name: "Open full record" }).click();
+        await expectUrl(page, /\/member\/infrastructure$/, "Phase 180 Infrastructure");
+        await expectVisible(page.getByRole("heading", { name: "Infrastructure", exact: true }), "Infrastructure heading");
+        await expectVisible(page.getByRole("heading", { name: "ENTRAL" }), "Canonical full entity record");
+        await expectVisible(page.getByText("Snapshot event 9"), "Version-aligned entity snapshot");
+        const recordLayout = await page.locator(".phase180-record").evaluate((element) => {
+          const style = getComputedStyle(element);
+          return { bottom: style.bottom, position: style.position, top: style.top };
+        });
+        if (recordLayout.position !== "fixed" || recordLayout.top !== "0px") {
+          throw new Error(`Phone Infrastructure did not open a full-screen record: ${JSON.stringify(recordLayout)}`);
+        }
+        await page.getByRole("button", { name: "Back" }).click();
+        await expectVisible(page.getByRole("tree", { name: "Canonical hierarchy" }), "Infrastructure hierarchy after Back");
+        const noHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2);
+        if (!noHorizontalOverflow) {
+          throw new Error("Phase 180 mobile shell has horizontal overflow.");
+        }
+        if (runtimeErrors.length) {
+          throw new Error(`Unexpected Phase 180 browser errors:\n${runtimeErrors.join("\n")}`);
+        }
+      } finally {
+        await context.setOffline(false).catch(() => undefined);
         await context.close();
       }
     }
@@ -459,11 +603,7 @@ const tests = [
       try {
         await installPhase170Routes(page);
         await enterWorkspace(page, uniqueEmail("mobile"));
-        const academyClose = page.getByRole("button", { name: "Close ENTRAL Academy" });
-        await academyClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => undefined);
-        if (await academyClose.count() && await academyClose.isVisible()) {
-          await academyClose.click();
-        }
+        await closeAcademyIfOpen(page);
 
         await expectVisible(page.getByRole("heading", { name: "E2E Operator's Dashboard" }), "Mobile canonical Dashboard");
         await expectVisible(page.locator(".phase170-business-card").filter({ hasText: "Atlas Software" }), "Mobile business card");
@@ -476,6 +616,151 @@ const tests = [
         }
       } finally {
         await context.close();
+      }
+    }
+  },
+  {
+    name: "Phase 180 production Graph and Infrastructure remain usable with 500 businesses and 10000 entities",
+    run: async () => {
+      const responses = phase180ScaleResponses();
+      for (const profile of [
+        { name: "desktop", viewport: { width: 1440, height: 900 }, isMobile: false, deviceScaleFactor: 1 },
+        { name: "phone", viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 }
+      ]) {
+        const { context, page } = await newPage(profile);
+        const runtimeErrors = [];
+        try {
+          await enterWorkspace(page, uniqueEmail(`phase180-scale-${profile.name}`));
+          await closeAcademyIfOpen(page);
+          await installPhase180ScaleRoutes(page, responses);
+          page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
+          page.on("console", (message) => {
+            if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
+          });
+          const graphStart = performance.now();
+          await page.goto(`${frontendUrl}/member/graph`);
+          await closeAcademyIfOpen(page);
+          const canvas = page.getByRole("application", { name: /Canonical Universe Graph with 10000 entities/i });
+          await expectVisible(canvas, `${profile.name} 10,000-entity production Graph`, 30_000);
+          const graphReadyMs = performance.now() - graphStart;
+          if (graphReadyMs > 30_000) {
+            throw new Error(`${profile.name} Graph readiness exceeded 30s: ${graphReadyMs.toFixed(1)}ms.`);
+          }
+          await page.getByRole("button", { name: "Fit" }).click();
+          if (profile.isMobile) {
+            await page.waitForTimeout(100);
+            const bounds = await canvas.boundingBox();
+            if (!bounds) throw new Error("Phone Graph canvas did not expose interaction bounds.");
+            const center = {
+              x: bounds.x + bounds.width / 2,
+              y: bounds.y + bounds.height / 2
+            };
+            const touch = await context.newCDPSession(page);
+            try {
+              const fittedFrame = await canvas.screenshot();
+              await touch.send("Input.dispatchTouchEvent", {
+                type: "touchStart",
+                touchPoints: [{ x: center.x - 35, y: center.y - 20 }]
+              });
+              await touch.send("Input.dispatchTouchEvent", {
+                type: "touchMove",
+                touchPoints: [{ x: center.x + 35, y: center.y + 30 }]
+              });
+              await touch.send("Input.dispatchTouchEvent", {
+                type: "touchEnd",
+                touchPoints: []
+              });
+              await page.waitForTimeout(100);
+              const pannedFrame = await canvas.screenshot();
+              if (fittedFrame.equals(pannedFrame)) {
+                throw new Error("Phone Graph one-finger touch pan did not change the production canvas.");
+              }
+
+              await touch.send("Input.dispatchTouchEvent", {
+                type: "touchStart",
+                touchPoints: [
+                  { x: center.x - 35, y: center.y },
+                  { x: center.x + 35, y: center.y }
+                ]
+              });
+              await touch.send("Input.dispatchTouchEvent", {
+                type: "touchMove",
+                touchPoints: [
+                  { x: center.x - 90, y: center.y },
+                  { x: center.x + 90, y: center.y }
+                ]
+              });
+              await touch.send("Input.dispatchTouchEvent", {
+                type: "touchEnd",
+                touchPoints: []
+              });
+              await page.waitForTimeout(100);
+              const pinchedFrame = await canvas.screenshot();
+              if (pannedFrame.equals(pinchedFrame)) {
+                throw new Error("Phone Graph two-finger pinch did not change the production canvas zoom.");
+              }
+            } finally {
+              await touch.detach();
+            }
+          }
+          await canvas.focus();
+          const graphInteractionStart = performance.now();
+          await page.keyboard.press("ArrowRight");
+          await page.keyboard.press("+");
+          await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), `${profile.name} graph keyboard selection`);
+          const graphInteractionMs = performance.now() - graphInteractionStart;
+          if (graphInteractionMs > 2_000) {
+            throw new Error(`${profile.name} Graph keyboard interaction exceeded 2s: ${graphInteractionMs.toFixed(1)}ms.`);
+          }
+          await page.keyboard.press("Escape");
+
+          const infrastructureStart = performance.now();
+          await page.getByRole("link", { name: "Infrastructure" }).click();
+          await expectVisible(page.getByRole("heading", { name: "Infrastructure", exact: true }), `${profile.name} Infrastructure`);
+          const tree = page.getByRole("tree", { name: "Canonical hierarchy" });
+          await expectVisible(tree, `${profile.name} virtualized hierarchy`);
+          const renderedRows = await tree.getByRole("treeitem").count();
+          if (renderedRows < 1 || renderedRows > 100) {
+            throw new Error(`${profile.name} Infrastructure rendered ${renderedRows} tree rows instead of a virtualized window.`);
+          }
+          const search = page.getByPlaceholder("Search records");
+          await search.fill("Soldier 9368");
+          await expectVisible(page.getByText("1 matching records"), `${profile.name} exact 10k hierarchy search`);
+          await expectVisible(page.getByRole("treeitem", { name: /Soldier 9368/i }), `${profile.name} searched entity with lineage`);
+          const infrastructureReadyMs = performance.now() - infrastructureStart;
+          if (infrastructureReadyMs > 10_000) {
+            throw new Error(`${profile.name} Infrastructure search exceeded 10s: ${infrastructureReadyMs.toFixed(1)}ms.`);
+          }
+          const firstTreeItem = tree.getByRole("treeitem").first();
+          await firstTreeItem.focus();
+          await page.keyboard.press("End");
+          const activeTreeItem = await page.evaluate(() => document.activeElement?.getAttribute("role"));
+          if (activeTreeItem !== "treeitem") {
+            throw new Error(`${profile.name} virtualized hierarchy did not preserve keyboard focus.`);
+          }
+          const noHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2);
+          if (!noHorizontalOverflow) {
+            throw new Error(`${profile.name} scale surface has horizontal overflow.`);
+          }
+          if (runtimeErrors.length) {
+            throw new Error(`Unexpected ${profile.name} scale browser errors:\n${runtimeErrors.join("\n")}`);
+          }
+          process.stdout.write(
+            `[e2e:phase180-scale] ${profile.name} graph_ready_ms=${graphReadyMs.toFixed(1)} `
+            + `graph_interaction_ms=${graphInteractionMs.toFixed(1)} infrastructure_search_ms=${infrastructureReadyMs.toFixed(1)} `
+            + `rendered_tree_rows=${renderedRows}\n`
+          );
+          phase180ScaleMeasurements.push({
+            graph_interaction_ms: Number(graphInteractionMs.toFixed(1)),
+            graph_ready_ms: Number(graphReadyMs.toFixed(1)),
+            infrastructure_search_ms: Number(infrastructureReadyMs.toFixed(1)),
+            profile: profile.name,
+            rendered_tree_rows: renderedRows,
+            viewport: profile.viewport
+          });
+        } finally {
+          await context.close();
+        }
       }
     }
   },
@@ -495,11 +780,7 @@ const tests = [
         try {
           await installPhase170Routes(page);
           await enterWorkspace(page, uniqueEmail(`secondary-${viewport.width}`));
-          const academyClose = page.getByRole("button", { name: "Close ENTRAL Academy" });
-          await academyClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => undefined);
-          if (await academyClose.count() && await academyClose.isVisible()) {
-            await academyClose.click();
-          }
+          await closeAcademyIfOpen(page);
 
           for (const pathname of ["/agents", "/automations", "/chat", "/admin", "/route-not-found"]) {
             await page.goto(`${frontendUrl}${pathname}`);
@@ -565,7 +846,15 @@ async function run() {
   const resultsDir = join(repoRoot, "test-results", "e2e");
   await mkdir(resultsDir, { recursive: true });
 
-  for (const test of tests) {
+  const requestedFilter = process.env.E2E_TEST_FILTER?.trim().toLowerCase();
+  const selectedTests = requestedFilter
+    ? tests.filter((test) => test.name.toLowerCase().includes(requestedFilter))
+    : tests;
+  if (!selectedTests.length) {
+    throw new Error(`No E2E tests matched E2E_TEST_FILTER=${process.env.E2E_TEST_FILTER}.`);
+  }
+
+  for (const test of selectedTests) {
     process.stdout.write(`\n[e2e] ${test.name}\n`);
     try {
       await test.run();
@@ -576,6 +865,28 @@ async function run() {
       process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
       process.stderr.write(`[e2e] Artifacts directory: ${join(resultsDir, safeName)}\n`);
       throw error;
+    }
+  }
+
+  if (phase180ScaleMeasurements.length) {
+    const scaleEvidence = {
+      dataset: {
+        businesses: 500,
+        commanders: 500,
+        entities: 10_000,
+        soldiers: 9_368
+      },
+      generated_at: new Date().toISOString(),
+      measurements: phase180ScaleMeasurements,
+      phase: 180,
+      status: "passed"
+    };
+    const serializedEvidence = `${JSON.stringify(scaleEvidence, null, 2)}\n`;
+    await writeFile(join(resultsDir, "phase180-scale.json"), serializedEvidence, "utf8");
+    if (process.env.E2E_WRITE_PHASE180_EVIDENCE === "1") {
+      const evidenceDir = join(repoRoot, "docs", "evidence");
+      await mkdir(evidenceDir, { recursive: true });
+      await writeFile(join(evidenceDir, "phase180-browser-scale.json"), serializedEvidence, "utf8");
     }
   }
 }

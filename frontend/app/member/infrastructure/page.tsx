@@ -34,8 +34,7 @@ export default async function MemberInfrastructurePage() {
   return (
     <MemberCommandCenterClient
       initialDestination="infrastructure"
-      organizationId={organization.id}
-      userId={session.session.user.id}
+      initialSession={session.session}
     />
   );
 }

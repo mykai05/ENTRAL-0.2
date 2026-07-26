@@ -23,8 +23,9 @@ function sha256(value: string) {
 
 describe("Command Center graph integrity", () => {
   it("selects the restricted member chrome explicitly", () => {
-    expect(memberHostSource).toContain("<NeuronsCommandCenter");
-    expect(memberHostSource).toContain('surface="member"');
+    expect(memberHostSource).toContain("<CanonicalMemberShell");
+    expect(memberHostSource).toContain("initialSession={session}");
+    expect(memberHostSource).not.toContain("<NeuronsCommandCenter");
   });
 
   it("preserves the approved motion, renderer, and WebGL field", () => {
