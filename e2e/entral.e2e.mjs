@@ -422,6 +422,108 @@ async function closeAcademyIfOpen(page) {
   }
 }
 
+async function installPhase190LifecycleRoute(page) {
+  const requests = [];
+  let pauseActionId = null;
+  const receiptIds = {
+    audit: {
+      PAUSE: "21111111-1111-4111-8111-111111111111",
+      RESUME: "21111111-1111-4111-8111-111111111112"
+    },
+    event: {
+      PAUSE: "31111111-1111-4111-8111-111111111111",
+      RESUME: "31111111-1111-4111-8111-111111111112"
+    },
+    message: {
+      PAUSE: "41111111-1111-4111-8111-111111111111",
+      RESUME: "41111111-1111-4111-8111-111111111112"
+    },
+    verification: {
+      PAUSE: "51111111-1111-4111-8111-111111111111",
+      RESUME: "51111111-1111-4111-8111-111111111112"
+    }
+  };
+
+  await page.route(
+    "**/member/api/v1/member/organizations/*/entities/*/actions/*",
+    async (route) => {
+      const request = route.request();
+      const body = request.postDataJSON();
+      const actionType = new URL(request.url()).pathname.split("/").at(-1)?.toUpperCase();
+      if (actionType !== "PAUSE" && actionType !== "RESUME") {
+        await route.fulfill({ contentType: "application/json", json: { message: "Unknown lifecycle action." }, status: 404 });
+        return;
+      }
+      requests.push(body);
+      if (actionType === "PAUSE") pauseActionId = body.action_id;
+      const beforeVersion = Number(body.expected_version);
+      const afterVersion = beforeVersion + 1;
+      const afterStatus = actionType === "PAUSE" ? "PAUSED" : "ACTIVE";
+      const completedAt = new Date(Date.parse(body.requested_at) + 1_000).toISOString();
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          action: {
+            action_id: body.action_id,
+            action_type: actionType,
+            after: { status: afterStatus, version: afterVersion },
+            audit_entry_ids: [receiptIds.audit[actionType]],
+            before: {
+              status: actionType === "PAUSE" ? "ACTIVE" : "PAUSED",
+              version: beforeVersion
+            },
+            canonical_event: {
+              aggregate_version: afterVersion,
+              event_id: receiptIds.event[actionType],
+              sequence_number: 90 + afterVersion
+            },
+            completed_at: completedAt,
+            containment: {
+              descendants_affected: 0,
+              new_work_leasing: actionType === "PAUSE" ? "BLOCKED" : "ELIGIBLE",
+              policy: "FINISH_IN_FLIGHT"
+            },
+            conversation_message_id: receiptIds.message[actionType],
+            idempotency_key: body.idempotency_key,
+            idempotent_replay: false,
+            requested_at: body.requested_at,
+            restoration_of_action_id: actionType === "RESUME" ? body.restores_action_id : null,
+            rollback: {
+              action_type: actionType === "PAUSE" ? "RESUME" : "PAUSE",
+              available: true,
+              expected_version: afterVersion,
+              restores_action_id: body.action_id
+            },
+            status: "SUCCEEDED",
+            target: {
+              business_id: body.business_id,
+              entity_id: body.target_id,
+              entity_role: "SOLDIER",
+              status: afterStatus,
+              version: afterVersion
+            },
+            verification: {
+              checked_at: completedAt,
+              expected_status: afterStatus,
+              expected_version: afterVersion,
+              observed_status: afterStatus,
+              observed_version: afterVersion,
+              passed: true,
+              verification_id: receiptIds.verification[actionType]
+            }
+          }
+        },
+        status: 200
+      });
+    }
+  );
+
+  return {
+    getPauseActionId: () => pauseActionId,
+    requests
+  };
+}
+
 const tests = [
   {
     name: "root URL opens protected member sign-in",
@@ -518,6 +620,78 @@ const tests = [
               `${index === 0 ? "2D" : "3D"} graph intercepted ordinary page scrolling: ${JSON.stringify({ after, before, delta })}`
             );
           }
+        }
+      } finally {
+        await context.close();
+      }
+    }
+  },
+  {
+    name: "Phase 190 member Infrastructure pauses and restores one canonical entity through verified receipts",
+    run: async () => {
+      const { context, page } = await newPage({ viewport: { width: 1440, height: 1000 } });
+      const runtimeErrors = [];
+      try {
+        await enterWorkspace(page, uniqueEmail("phase190-lifecycle"));
+        await page.waitForLoadState("networkidle");
+        const lifecycle = await installPhase190LifecycleRoute(page);
+        page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
+        page.on("console", (message) => {
+          if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
+        });
+        await page.goto(`${frontendUrl}/member/infrastructure`);
+        await closeAcademyIfOpen(page);
+        await expectVisible(page.getByRole("heading", { name: "Infrastructure", exact: true }), "Phase 190 Infrastructure");
+        await page.getByRole("treeitem", { name: /Atlas Operations, SOLDIER/ }).click();
+        const lifecyclePanel = page.getByRole("region", { name: "Governed pause and resume" });
+        await expectVisible(lifecyclePanel, "Governed lifecycle panel");
+        await lifecyclePanel.getByLabel("Operational reason").fill("Pause new work while the verified dependency is repaired.");
+        await lifecyclePanel.getByRole("button", { name: "Pause entity" }).click();
+        await expectVisible(lifecyclePanel.getByText("Paused and verified"), "Verified pause receipt");
+        await expectVisible(lifecyclePanel.getByText(/Version 1 .* 2 .* event 92/), "Version and canonical-event convergence");
+        await page.screenshot({
+          fullPage: true,
+          path: join(repoRoot, "test-results", "e2e", "phase190-pause-and-restore.png")
+        });
+
+        if (lifecycle.requests.length !== 1) {
+          throw new Error(`Pause produced ${lifecycle.requests.length} lifecycle requests instead of exactly one.`);
+        }
+        const pauseRequest = lifecycle.requests[0];
+        if (
+          pauseRequest.action_type !== "PAUSE"
+          || pauseRequest.expected_version !== 1
+          || pauseRequest.proposed_changes?.containment_policy !== "FINISH_IN_FLIGHT"
+          || pauseRequest.authority_basis?.explicit_confirmation_required !== true
+        ) {
+          throw new Error(`Pause request lost its authority, version, or containment contract: ${JSON.stringify(pauseRequest)}`);
+        }
+
+        await lifecyclePanel.getByRole("button", { name: "Undo" }).click();
+        await expectVisible(lifecyclePanel.getByText("Resumed and verified"), "Verified restoration receipt");
+        await expectVisible(lifecyclePanel.getByText(/Version 2 .* 3 .* event 93/), "Restoration version and event convergence");
+        if (lifecycle.requests.length !== 2) {
+          throw new Error(`Undo produced ${lifecycle.requests.length} total lifecycle requests instead of two.`);
+        }
+        const restorationRequest = lifecycle.requests[1];
+        if (
+          restorationRequest.action_type !== "RESUME"
+          || restorationRequest.expected_version !== 2
+          || restorationRequest.restores_action_id !== lifecycle.getPauseActionId()
+          || restorationRequest.rollback_plan?.action !== "PAUSE"
+        ) {
+          throw new Error(`Restoration did not preserve the action lineage and next version: ${JSON.stringify(restorationRequest)}`);
+        }
+
+        const overlay = await page.locator(
+          "[data-nextjs-dialog], .vite-error-overlay, #webpack-dev-server-client-overlay"
+        ).count();
+        if (overlay) throw new Error("Phase 190 rendered with a framework error overlay.");
+        if (!await page.evaluate(() => document.body.innerText.trim().length > 0)) {
+          throw new Error("Phase 190 Infrastructure rendered a blank document.");
+        }
+        if (runtimeErrors.length) {
+          throw new Error(`Unexpected Phase 190 browser errors:\n${runtimeErrors.join("\n")}`);
         }
       } finally {
         await context.close();

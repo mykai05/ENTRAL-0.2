@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import {
+  assertEntityLifecycleActionRequest,
   assertGovernanceActionRequest,
   ContractError,
+  type EntityLifecycleActionRequest,
   type GovernanceActionRequest
 } from "@entral/contracts";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -11,6 +13,7 @@ import {
   canonicalControlPlaneRepository,
   CanonicalControlPlaneError
 } from "../services/canonicalControlPlane.js";
+import { canonicalEntityLifecycleService } from "../services/canonicalEntityLifecycle.js";
 
 const businessParamsSchema = z.object({
   businessId: z.string().uuid()
@@ -18,6 +21,10 @@ const businessParamsSchema = z.object({
 
 const entityParamsSchema = z.object({
   entityId: z.string().uuid()
+});
+
+const entityLifecycleParamsSchema = entityParamsSchema.extend({
+  operation: z.enum(["pause", "resume"])
 });
 
 const eventQuerySchema = z.object({
@@ -112,6 +119,52 @@ export async function controlPlaneRoutes(app: FastifyInstance) {
       afterSequence,
       databaseSession(request, "Read canonical portfolio synchronization events.")
     ));
+  });
+
+  app.post("/control-plane/entities/:entityId/actions/:operation", { preHandler: requireAdmin }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+    const { entityId, operation } = entityLifecycleParamsSchema.parse(request.params);
+    const candidate = request.body as EntityLifecycleActionRequest;
+    try {
+      assertEntityLifecycleActionRequest(candidate);
+    } catch (error) {
+      if (error instanceof ContractError) {
+        return reply.code(400).send({
+          error: "Bad Request",
+          code: error.code,
+          message: error.message
+        });
+      }
+      throw error;
+    }
+    if (
+      candidate.actor_type !== "HUMAN"
+      || candidate.target_id !== entityId
+      || candidate.action_type.toLocaleLowerCase() !== operation
+    ) {
+      return reply.code(403).send({
+        error: "Forbidden",
+        message: "The authenticated Human lifecycle request must match the route target and operation."
+      });
+    }
+
+    try {
+      const action = await canonicalEntityLifecycleService.execute(candidate, {
+        authenticatedHumanEmail: currentUser.email,
+        databaseSession: databaseSession(request, candidate.reason)
+      });
+      return reply.send({ action });
+    } catch (error) {
+      if (error instanceof CanonicalControlPlaneError) {
+        return reply.code(error.statusCode).send({
+          error: error.statusCode >= 500 ? "Internal Server Error" : "Request Error",
+          code: error.code,
+          message: error.statusCode >= 500 ? "Something went wrong." : error.message
+        });
+      }
+      throw error;
+    }
   });
 
   app.post("/control-plane/governance-actions", { preHandler: requireAdmin }, async (request, reply) => {

@@ -1204,6 +1204,113 @@ body:has(.phase180-embedded-3d) {
   padding: 0.4rem 0.55rem;
 }
 
+.phase190-lifecycle {
+  background: linear-gradient(135deg, rgba(16, 34, 57, 0.96), rgba(8, 17, 31, 0.98));
+  border-bottom: 1px solid var(--phase180-border);
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem;
+}
+
+.phase190-lifecycle-heading,
+.phase190-lifecycle-actions,
+.phase190-lifecycle-receipt {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+}
+
+.phase190-lifecycle-heading div,
+.phase190-lifecycle label,
+.phase190-lifecycle-receipt span {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.phase190-lifecycle-heading span,
+.phase190-lifecycle label > span,
+.phase190-lifecycle-heading small {
+  color: var(--muted);
+  font-size: 0.67rem;
+}
+
+.phase190-lifecycle-heading strong,
+.phase190-lifecycle-receipt strong {
+  font-size: 0.78rem;
+}
+
+.phase190-lifecycle textarea {
+  background: rgba(2, 8, 18, 0.72);
+  border: 1px solid rgba(148, 177, 220, 0.2);
+  border-radius: 9px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  min-height: 58px;
+  padding: 0.58rem 0.65rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.phase190-lifecycle textarea:focus-visible {
+  border-color: rgba(72, 214, 225, 0.8);
+  outline: 2px solid rgba(72, 214, 225, 0.18);
+  outline-offset: 1px;
+}
+
+.phase190-lifecycle button {
+  align-items: center;
+  background: rgba(44, 197, 216, 0.12);
+  border: 1px solid rgba(72, 214, 225, 0.28);
+  border-radius: 9px;
+  color: #d9fbff;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  gap: 0.4rem;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0.48rem 0.72rem;
+}
+
+.phase190-lifecycle button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.phase190-lifecycle-actions > p,
+.phase190-lifecycle-error {
+  color: var(--muted);
+  font-size: 0.71rem;
+  margin: 0;
+}
+
+.phase190-lifecycle-receipt {
+  background: rgba(59, 204, 151, 0.08);
+  border: 1px solid rgba(82, 220, 169, 0.2);
+  border-radius: 10px;
+  color: #a7f1d2;
+  padding: 0.6rem;
+}
+
+.phase190-lifecycle-receipt span {
+  flex: 1;
+  font-size: 0.68rem;
+}
+
+.phase190-lifecycle-receipt button {
+  background: rgba(7, 18, 29, 0.68);
+  min-height: 34px;
+}
+
+.phase190-lifecycle-error {
+  color: #ff9aab;
+}
+
 .phase180-record-state,
 .phase180-record-empty {
   align-items: center;
@@ -2105,6 +2212,21 @@ body:has(.phase180-embedded-3d) {
 
   .phase180-record-heading > span {
     grid-column: 2;
+  }
+
+  .phase190-lifecycle-heading,
+  .phase190-lifecycle-receipt {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .phase190-lifecycle-heading small {
+    width: 100%;
+  }
+
+  .phase190-lifecycle-actions button,
+  .phase190-lifecycle-receipt button {
+    min-height: 44px;
   }
 
   .phase180-entral-emblem {

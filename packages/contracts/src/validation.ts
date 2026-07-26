@@ -7,6 +7,8 @@ import {
   type AuditEntry,
   type CanonicalEvent,
   type ContextScope,
+  type EntityLifecycleActionRequest,
+  type EntityLifecycleActionResult,
   type EntityRole,
   type GovernanceActionRequest,
   type JsonValue
@@ -237,6 +239,184 @@ export function assertGovernanceActionRequest(request: GovernanceActionRequest):
     throw new ContractError("IDEMPOTENCY_KEY", "idempotency_key must be at least 12 characters");
   }
   assertIsoDate(request.requested_at, "requested_at");
+  if (request.restores_action_id !== undefined) {
+    assertUuid(request.restores_action_id, "restores_action_id");
+    if (request.restores_action_id === request.action_id) {
+      throw new ContractError("SELF_RESTORATION", "An action cannot restore itself");
+    }
+  }
+}
+
+export function assertEntityLifecycleActionRequest(
+  request: EntityLifecycleActionRequest
+): void {
+  assertGovernanceActionRequest(request);
+  if (request.action_type !== "PAUSE" && request.action_type !== "RESUME") {
+    throw new ContractError("INVALID_LIFECYCLE_ACTION", "Entity lifecycle actions must be PAUSE or RESUME");
+  }
+  if (request.target_type !== "ENTITY" || request.target_id === null) {
+    throw new ContractError("INVALID_LIFECYCLE_TARGET", "Entity lifecycle actions require an entity target");
+  }
+  assertRecord(request.proposed_changes, "proposed_changes");
+  const expectedStatus = request.action_type === "PAUSE" ? "PAUSED" : "ACTIVE";
+  if (request.proposed_changes.status !== expectedStatus) {
+    throw new ContractError(
+      "LIFECYCLE_STATUS_MISMATCH",
+      `${request.action_type} requires proposed status ${expectedStatus}`
+    );
+  }
+  if (request.proposed_changes.containment_policy !== "FINISH_IN_FLIGHT") {
+    throw new ContractError(
+      "INVALID_CONTAINMENT_POLICY",
+      "The production pause slice supports FINISH_IN_FLIGHT containment"
+    );
+  }
+  assertRecord(request.rollback_plan, "rollback_plan");
+  const inverseAction = request.action_type === "PAUSE" ? "RESUME" : "PAUSE";
+  if (request.rollback_plan.action !== inverseAction) {
+    throw new ContractError(
+      "ROLLBACK_ACTION_MISMATCH",
+      `${request.action_type} requires ${inverseAction} as its restoration action`
+    );
+  }
+  if (!["BUILDING", "ACTIVE", "PAUSED", "DEGRADED", "RETIRED"].includes(request.rollback_plan.previous_status)) {
+    throw new ContractError("INVALID_ROLLBACK_STATUS", "rollback_plan.previous_status is not an entity status");
+  }
+}
+
+export function assertEntityLifecycleActionResult(
+  result: unknown
+): asserts result is EntityLifecycleActionResult {
+  assertRecord(result, "entity_lifecycle_action_result");
+  const candidate = result as unknown as EntityLifecycleActionResult;
+  assertUuid(candidate.action_id, "action_id");
+  if (candidate.action_type !== "PAUSE" && candidate.action_type !== "RESUME") {
+    throw new ContractError("INVALID_LIFECYCLE_ACTION", "action_type must be PAUSE or RESUME");
+  }
+  if (candidate.status !== "SUCCEEDED" || typeof candidate.idempotent_replay !== "boolean") {
+    throw new ContractError(
+      "INVALID_LIFECYCLE_COMPLETION",
+      "A lifecycle receipt must be succeeded and declare whether it is an idempotent replay"
+    );
+  }
+  assertRecord(candidate.target, "target");
+  assertUuid(candidate.target?.entity_id, "target.entity_id");
+  if (
+    !(["MARSHAL", "GENERAL", "COMMANDER", "SOLDIER"] as readonly unknown[])
+      .includes(candidate.target.entity_role)
+  ) {
+    throw new ContractError(
+      "INVALID_LIFECYCLE_TARGET_ROLE",
+      "target.entity_role must be MARSHAL, GENERAL, COMMANDER, or SOLDIER"
+    );
+  }
+  if (candidate.target.business_id !== null) {
+    assertUuid(candidate.target.business_id, "target.business_id");
+  }
+  assertRecord(candidate.before, "before");
+  assertRecord(candidate.after, "after");
+  assertSafeNonNegativeInteger(candidate.before?.version, "before.version");
+  assertSafeNonNegativeInteger(candidate.after?.version, "after.version");
+  assertSafeNonNegativeInteger(candidate.target.version, "target.version");
+  const entityStatuses = ["BUILDING", "ACTIVE", "PAUSED", "DEGRADED", "RETIRED"] as const;
+  if (!(entityStatuses as readonly unknown[]).includes(candidate.before.status)) {
+    throw new ContractError("INVALID_LIFECYCLE_STATUS", "before.status is not an entity status");
+  }
+  const validBeforeStatus = candidate.action_type === "PAUSE"
+    ? candidate.before.status === "ACTIVE" || candidate.before.status === "DEGRADED"
+    : candidate.before.status === "PAUSED";
+  if (!validBeforeStatus) {
+    throw new ContractError(
+      "INVALID_LIFECYCLE_PRECONDITION",
+      `${candidate.action_type} cannot start from ${candidate.before.status}`
+    );
+  }
+  const expectedAfterStatus = candidate.action_type === "PAUSE" ? "PAUSED" : "ACTIVE";
+  if (
+    candidate.after.status !== expectedAfterStatus
+    || candidate.target.status !== expectedAfterStatus
+  ) {
+    throw new ContractError(
+      "LIFECYCLE_STATUS_MISMATCH",
+      `${candidate.action_type} receipts must converge on ${expectedAfterStatus}`
+    );
+  }
+  if (candidate.after.version !== candidate.before.version + 1) {
+    throw new ContractError("INVALID_LIFECYCLE_VERSION", "A lifecycle action must advance the entity by exactly one version");
+  }
+  if (candidate.verification?.passed !== true) {
+    throw new ContractError("UNVERIFIED_LIFECYCLE_RESULT", "A lifecycle success requires passed readback verification");
+  }
+  if (
+    candidate.target.version !== candidate.after.version
+    || candidate.target.status !== candidate.after.status
+    || candidate.verification.expected_version !== candidate.after.version
+    || candidate.verification.expected_status !== candidate.after.status
+    || candidate.verification.observed_version !== candidate.after.version
+    || candidate.verification.observed_status !== candidate.after.status
+  ) {
+    throw new ContractError("LIFECYCLE_READBACK_MISMATCH", "Lifecycle result fields do not share one verified aggregate version");
+  }
+  assertRecord(candidate.containment, "containment");
+  assertSafeNonNegativeInteger(candidate.containment.descendants_affected, "containment.descendants_affected");
+  const expectedLeasing = candidate.action_type === "PAUSE" ? "BLOCKED" : "ELIGIBLE";
+  if (
+    candidate.containment.policy !== "FINISH_IN_FLIGHT"
+    || candidate.containment.new_work_leasing !== expectedLeasing
+  ) {
+    throw new ContractError(
+      "LIFECYCLE_CONTAINMENT_MISMATCH",
+      `${candidate.action_type} requires FINISH_IN_FLIGHT containment with ${expectedLeasing} new-work leasing`
+    );
+  }
+  assertUuid(candidate.verification.verification_id, "verification.verification_id");
+  assertIsoDate(candidate.verification.checked_at, "verification.checked_at");
+  assertUuid(candidate.canonical_event?.event_id, "canonical_event.event_id");
+  assertSafeNonNegativeInteger(
+    candidate.canonical_event?.aggregate_version,
+    "canonical_event.aggregate_version"
+  );
+  assertSafeNonNegativeInteger(candidate.canonical_event?.sequence_number, "canonical_event.sequence_number");
+  if (candidate.canonical_event.aggregate_version !== candidate.after.version) {
+    throw new ContractError(
+      "LIFECYCLE_EVENT_VERSION_MISMATCH",
+      "The canonical event aggregate version must equal the verified entity version"
+    );
+  }
+  if (candidate.canonical_event.sequence_number < 1) {
+    throw new ContractError("INVALID_SEQUENCE", "canonical_event.sequence_number must be at least 1");
+  }
+  if (!Array.isArray(candidate.audit_entry_ids) || candidate.audit_entry_ids.length === 0) {
+    throw new ContractError("MISSING_AUDIT", "Lifecycle result requires at least one audit entry");
+  }
+  candidate.audit_entry_ids.forEach((id, index) => assertUuid(id, `audit_entry_ids[${index}]`));
+  assertUuid(candidate.conversation_message_id, "conversation_message_id");
+  assertNonEmptyString(candidate.idempotency_key, "idempotency_key", 255);
+  assertIsoDate(candidate.requested_at, "requested_at");
+  assertIsoDate(candidate.completed_at, "completed_at");
+  if (Date.parse(candidate.completed_at) < Date.parse(candidate.requested_at)) {
+    throw new ContractError("INVALID_LIFECYCLE_TIMELINE", "completed_at cannot precede requested_at");
+  }
+  assertRecord(candidate.rollback, "rollback");
+  assertUuid(candidate.rollback?.restores_action_id, "rollback.restores_action_id");
+  const inverseAction = candidate.action_type === "PAUSE" ? "RESUME" : "PAUSE";
+  if (
+    candidate.rollback.action_type !== inverseAction
+    || candidate.rollback.available !== true
+    || candidate.rollback.expected_version !== candidate.after.version
+    || candidate.rollback.restores_action_id !== candidate.action_id
+  ) {
+    throw new ContractError(
+      "INVALID_LIFECYCLE_ROLLBACK",
+      "rollback must be the available opposite action for the verified aggregate version"
+    );
+  }
+  if (candidate.restoration_of_action_id !== null) {
+    assertUuid(candidate.restoration_of_action_id, "restoration_of_action_id");
+    if (candidate.restoration_of_action_id === candidate.action_id) {
+      throw new ContractError("SELF_RESTORATION", "An action cannot restore itself");
+    }
+  }
 }
 
 export function assertExpectedVersion(expectedVersion: number, actualVersion: number): void {

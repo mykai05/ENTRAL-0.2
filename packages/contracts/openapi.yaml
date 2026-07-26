@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: ENTRAL implemented API
-  version: 1.4.0
+  version: 1.5.0
   description: >
-    Gate 180 contract surface. Only paths with complete backend behavior are
+    Gate 190 contract surface. Only paths with complete backend behavior are
     included. Canonical control-plane paths require internal Admin
     authentication. Member portfolio paths require organization membership;
     PostgreSQL row-level security resolves Human portfolio or assigned scope.
@@ -109,6 +109,38 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/member/organizations/{organizationId}/entities/{entityId}/actions/{operation}:
+    post:
+      operationId: executeMemberEntityLifecycleAction
+      summary: Atomically pause or resume a member-visible lower entity and return its verified canonical receipt.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+        - $ref: "#/components/parameters/EntityId"
+        - name: operation
+          in: path
+          required: true
+          schema: { type: string, enum: [pause, resume] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EntityLifecycleActionRequest" }
+      responses:
+        "200":
+          description: Lifecycle mutation committed and deterministic readback verification passed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EntityLifecycleActionEnvelope" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /api/v1/member/organizations/{organizationId}/events:
     get:
       operationId: listMemberCanonicalPortfolioEvents
@@ -320,6 +352,37 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/control-plane/entities/{entityId}/actions/{operation}:
+    post:
+      operationId: executeCanonicalEntityLifecycleAction
+      summary: Atomically pause or resume a lower entity through the internal Human control plane.
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: operation
+          in: path
+          required: true
+          schema: { type: string, enum: [pause, resume] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EntityLifecycleActionRequest" }
+      responses:
+        "200":
+          description: Lifecycle mutation committed and deterministic readback verification passed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EntityLifecycleActionEnvelope" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /api/v1/control-plane/governance-actions:
     post:
       operationId: createCanonicalGovernanceAction
@@ -959,6 +1022,7 @@ components:
         expected_version: { type: integer, minimum: 0 }
         idempotency_key: { type: string, minLength: 12, maxLength: 255 }
         requested_at: { type: string, format: date-time }
+        restores_action_id: { type: string, format: uuid }
     GovernanceActionRecord:
       type: object
       additionalProperties: false
@@ -974,6 +1038,130 @@ components:
         target_id: { type: [string, "null"], format: uuid }
         target_type: { type: string }
         version: { type: integer, minimum: 1 }
+    EntityLifecycleActionRequest:
+      allOf:
+        - $ref: "#/components/schemas/GovernanceActionRequest"
+        - type: object
+          properties:
+            action_type: { type: string, enum: [PAUSE, RESUME] }
+            target_type: { type: string, const: ENTITY }
+            target_id: { type: string, format: uuid }
+            proposed_changes:
+              type: object
+              additionalProperties: false
+              required: [containment_policy, status]
+              properties:
+                containment_policy: { type: string, const: FINISH_IN_FLIGHT }
+                status: { type: string, enum: [ACTIVE, PAUSED] }
+            rollback_plan:
+              type: object
+              additionalProperties: false
+              required: [action, previous_status]
+              properties:
+                action: { type: string, enum: [PAUSE, RESUME] }
+                previous_status: { $ref: "#/components/schemas/EntityStatus" }
+    EntityLifecycleActionEnvelope:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action: { $ref: "#/components/schemas/EntityLifecycleActionResult" }
+    EntityLifecycleActionResult:
+      type: object
+      additionalProperties: false
+      required:
+        - action_id
+        - action_type
+        - status
+        - target
+        - before
+        - after
+        - containment
+        - verification
+        - canonical_event
+        - audit_entry_ids
+        - conversation_message_id
+        - idempotency_key
+        - idempotent_replay
+        - requested_at
+        - completed_at
+        - rollback
+        - restoration_of_action_id
+      properties:
+        action_id: { type: string, format: uuid }
+        action_type: { type: string, enum: [PAUSE, RESUME] }
+        status: { type: string, const: SUCCEEDED }
+        target:
+          type: object
+          additionalProperties: false
+          required: [business_id, entity_id, entity_role, status, version]
+          properties:
+            business_id: { type: [string, "null"], format: uuid }
+            entity_id: { type: string, format: uuid }
+            entity_role: { type: string, enum: [MARSHAL, GENERAL, COMMANDER, SOLDIER] }
+            status: { type: string, enum: [ACTIVE, PAUSED] }
+            version: { type: integer, minimum: 1 }
+        before:
+          type: object
+          additionalProperties: false
+          required: [status, version]
+          properties:
+            status: { $ref: "#/components/schemas/EntityStatus" }
+            version: { type: integer, minimum: 1 }
+        after:
+          type: object
+          additionalProperties: false
+          required: [status, version]
+          properties:
+            status: { type: string, enum: [ACTIVE, PAUSED] }
+            version: { type: integer, minimum: 2 }
+        containment:
+          type: object
+          additionalProperties: false
+          required: [descendants_affected, new_work_leasing, policy]
+          properties:
+            descendants_affected: { type: integer, minimum: 0 }
+            new_work_leasing: { type: string, enum: [BLOCKED, ELIGIBLE] }
+            policy: { type: string, const: FINISH_IN_FLIGHT }
+        verification:
+          type: object
+          additionalProperties: false
+          required: [checked_at, expected_status, expected_version, observed_status, observed_version, passed, verification_id]
+          properties:
+            checked_at: { type: string, format: date-time }
+            expected_status: { type: string, enum: [ACTIVE, PAUSED] }
+            expected_version: { type: integer, minimum: 1 }
+            observed_status: { type: string, enum: [ACTIVE, PAUSED] }
+            observed_version: { type: integer, minimum: 1 }
+            passed: { type: boolean, const: true }
+            verification_id: { type: string, format: uuid }
+        canonical_event:
+          type: object
+          additionalProperties: false
+          required: [aggregate_version, event_id, sequence_number]
+          properties:
+            aggregate_version: { type: integer, minimum: 1 }
+            event_id: { type: string, format: uuid }
+            sequence_number: { type: integer, minimum: 1 }
+        audit_entry_ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        conversation_message_id: { type: string, format: uuid }
+        idempotency_key: { type: string, minLength: 12 }
+        idempotent_replay: { type: boolean }
+        requested_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time }
+        rollback:
+          type: object
+          additionalProperties: false
+          required: [action_type, available, expected_version, restores_action_id]
+          properties:
+            action_type: { type: string, enum: [PAUSE, RESUME] }
+            available: { type: boolean, const: true }
+            expected_version: { type: integer, minimum: 1 }
+            restores_action_id: { type: string, format: uuid }
+        restoration_of_action_id: { type: [string, "null"], format: uuid }
     MemberOrganizationRole:
       type: string
       enum: [MEMBER, OWNER]

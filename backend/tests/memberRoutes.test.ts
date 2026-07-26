@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   conversationUpdate: vi.fn(),
   createAiAuditEntry: vi.fn(),
   createGovernanceAction: vi.fn(),
+  executeEntityLifecycle: vi.fn(),
   createProviderBackedAiDecision: vi.fn(),
   getBusinessFull: vi.fn(),
   getEntralConversation: vi.fn(),
@@ -29,6 +30,12 @@ const mocks = vi.hoisted(() => ({
   teamMemberFindMany: vi.fn(),
   teamMemberFindUnique: vi.fn(),
   userFindUnique: vi.fn()
+}));
+
+vi.mock("../src/services/canonicalEntityLifecycle.js", () => ({
+  canonicalEntityLifecycleService: {
+    execute: mocks.executeEntityLifecycle
+  }
 }));
 
 vi.mock("../src/services/canonicalControlPlane.js", () => ({
@@ -619,6 +626,95 @@ describe("member organization routes", () => {
     });
     expect(mocks.getEntityFull).toHaveBeenCalledTimes(1);
     expect(mocks.createGovernanceAction).toHaveBeenCalledTimes(1);
+    await app.close();
+  });
+
+  it("executes a member-visible pause only after current-version confirmation", async () => {
+    const actionId = "423e4567-e89b-42d3-a456-426614174000";
+    const request = {
+      action_id: actionId,
+      action_type: "PAUSE",
+      actor_id: humanId,
+      actor_type: "HUMAN",
+      authority_basis: {
+        channel: "MEMBER_INFRASTRUCTURE",
+        explicit_confirmation_required: true,
+        target_version: 7
+      },
+      business_id: businessId,
+      confidence: 1,
+      expected_version: 7,
+      idempotency_key: `member-infrastructure:${actionId}`,
+      proposed_changes: {
+        containment_policy: "FINISH_IN_FLIGHT",
+        status: "PAUSED"
+      },
+      reason: "Pause while the verified dependency is repaired.",
+      requested_at: "2026-07-26T08:00:00.000Z",
+      requested_outcome: "Pause the selected entity without interrupting in-flight work.",
+      risk_class: "MEDIUM",
+      rollback_plan: {
+        action: "RESUME",
+        previous_status: "ACTIVE"
+      },
+      scope: {
+        business_id: businessId,
+        display_label: "Interface Operations",
+        entity_id: entityId,
+        scope_id: businessId,
+        scope_type: "BUSINESS"
+      },
+      target_id: entityId,
+      target_type: "ENTITY",
+      verification_plan: { checks: ["Canonical readback"] }
+    } as const;
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getEntityFull.mockResolvedValueOnce({ entity: { summary: { entity_id: entityId } } });
+    mocks.executeEntityLifecycle.mockResolvedValueOnce({
+      action_id: actionId,
+      action_type: "PAUSE",
+      status: "SUCCEEDED"
+    });
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: request,
+      url: `/api/v1/member/organizations/${organizationId}/entities/${entityId}/actions/pause`
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      action: { action_id: actionId, action_type: "PAUSE", status: "SUCCEEDED" }
+    });
+    expect(mocks.executeEntityLifecycle).toHaveBeenCalledWith(
+      request,
+      {
+        authenticatedHumanEmail: "ada@example.com",
+        databaseSession: {
+          actionReason: request.reason,
+          authSubject: "user-1",
+          correlationId: expect.any(String)
+        }
+      }
+    );
+
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    const unconfirmed = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: {
+        ...request,
+        authority_basis: {
+          ...request.authority_basis,
+          explicit_confirmation_required: false
+        }
+      },
+      url: `/api/v1/member/organizations/${organizationId}/entities/${entityId}/actions/pause`
+    });
+    expect(unconfirmed.statusCode).toBe(400);
+    expect(mocks.getEntityFull).toHaveBeenCalledTimes(1);
+    expect(mocks.executeEntityLifecycle).toHaveBeenCalledTimes(1);
     await app.close();
   });
 

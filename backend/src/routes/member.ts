@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import {
+  assertEntityLifecycleActionRequest,
   assertGovernanceActionRequest,
   ContractError,
   parseMemberOrganizationsResponse,
   parseMemberOverviewResponse,
+  type EntityLifecycleActionRequest,
   type GovernanceActionRequest
 } from "@entral/contracts";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -11,6 +13,9 @@ import { z } from "zod";
 import { requireAuth, setPrivateNoStoreHeaders } from "../auth.js";
 import { prisma } from "../db.js";
 import { canonicalControlPlaneRepository } from "../services/canonicalControlPlane.js";
+import {
+  canonicalEntityLifecycleService
+} from "../services/canonicalEntityLifecycle.js";
 import { createAiAuditEntry } from "../services/aiBrain.js";
 import {
   AiUsageLimitError,
@@ -32,6 +37,10 @@ const organizationBusinessParamsSchema = organizationParamsSchema.extend({
 
 const organizationEntityParamsSchema = organizationParamsSchema.extend({
   entityId: z.string().uuid()
+});
+
+const organizationEntityLifecycleParamsSchema = organizationEntityParamsSchema.extend({
+  operation: z.enum(["pause", "resume"])
 });
 
 const canonicalEventQuerySchema = z.object({
@@ -577,6 +586,93 @@ export async function memberRoutes(app: FastifyInstance) {
         message_id: userMessage.id
       }
     });
+  });
+
+  app.post("/member/organizations/:organizationId/entities/:entityId/actions/:operation", {
+    preHandler: requireAuth,
+    config: {
+      rateLimit: {
+        max: 12,
+        timeWindow: "1 minute"
+      }
+    }
+  }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+    const { entityId, operation, organizationId } = organizationEntityLifecycleParamsSchema.parse(request.params);
+    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+      return organizationNotFound(reply);
+    }
+
+    const candidate = request.body as EntityLifecycleActionRequest;
+    try {
+      assertEntityLifecycleActionRequest(candidate);
+    } catch (error) {
+      if (error instanceof ContractError) {
+        return reply.code(400).send({
+          code: error.code,
+          error: "Bad Request",
+          message: error.message
+        });
+      }
+      throw error;
+    }
+    const authorityBasis = candidate.authority_basis;
+    const validMemberChannel = (
+      authorityBasis
+      && typeof authorityBasis === "object"
+      && !Array.isArray(authorityBasis)
+      && (
+        authorityBasis.channel === "MEMBER_INFRASTRUCTURE"
+        || authorityBasis.channel === "MEMBER_ENTRAL_ASSISTANT"
+      )
+      && authorityBasis.explicit_confirmation_required === true
+      && authorityBasis.target_version === candidate.expected_version
+    );
+    if (!validMemberChannel) {
+      return reply.code(400).send({
+        error: "Bad Request",
+        message: "Member lifecycle requests require an explicit current-version confirmation from Infrastructure or ENTRAL."
+      });
+    }
+    if (
+      candidate.actor_type !== "HUMAN"
+      || candidate.target_id !== entityId
+      || candidate.action_type.toLocaleLowerCase() !== operation
+    ) {
+      return reply.code(403).send({
+        error: "Forbidden",
+        message: "The authenticated Human lifecycle request must match the route target and operation."
+      });
+    }
+    const visibleTarget = await canonicalControlPlaneRepository.getEntityFull(
+      entityId,
+      canonicalDatabaseSession(
+        request,
+        `Resolve the member-visible lifecycle target through access ${organizationId}.`
+      )
+    );
+    if (!visibleTarget) {
+      return reply.code(404).send({ error: "Not Found", message: "Entity not found." });
+    }
+
+    try {
+      const action = await canonicalEntityLifecycleService.execute(candidate, {
+        authenticatedHumanEmail: currentUser.email,
+        databaseSession: canonicalDatabaseSession(request, candidate.reason)
+      });
+      return reply.send({ action });
+    } catch (error) {
+      const candidateError = error as { code?: string; message?: string; statusCode?: number };
+      if (typeof candidateError.statusCode === "number") {
+        return reply.code(candidateError.statusCode).send({
+          code: candidateError.code,
+          error: candidateError.statusCode >= 500 ? "Internal Server Error" : "Request Error",
+          message: candidateError.statusCode >= 500 ? "Something went wrong." : candidateError.message
+        });
+      }
+      throw error;
+    }
   });
 
   app.post("/member/organizations/:organizationId/governance-actions", {

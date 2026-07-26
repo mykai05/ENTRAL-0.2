@@ -8,6 +8,8 @@ import {
   assertActionRequest,
   assertAuditEntry,
   assertCanonicalEvent,
+  assertEntityLifecycleActionRequest,
+  assertEntityLifecycleActionResult,
   assertExecutableIntegration,
   assertIntegrationRegistryRecord,
   assertMemberCommandHierarchy,
@@ -482,6 +484,135 @@ test("governance action requests enforce actor, target, scope, and policy compat
   );
 });
 
+test("entity pause and resume contracts bind status, containment, version, and verified receipts", () => {
+  const request = {
+    action_id: id,
+    action_type: "PAUSE",
+    actor_type: "HUMAN",
+    actor_id: secondId,
+    scope: {
+      scope_type: "ENTITY",
+      scope_id: thirdId,
+      entity_id: thirdId,
+      display_label: "Target entity"
+    },
+    target_type: "ENTITY",
+    target_id: thirdId,
+    business_id: null,
+    requested_outcome: "Pause the target without changing its hierarchy.",
+    reason: "A verified dependency is unavailable.",
+    authority_basis: { channel: "MEMBER_INFRASTRUCTURE" },
+    risk_class: "MEDIUM",
+    confidence: 1,
+    proposed_changes: {
+      containment_policy: "FINISH_IN_FLIGHT",
+      status: "PAUSED"
+    },
+    rollback_plan: {
+      action: "RESUME",
+      previous_status: "ACTIVE"
+    },
+    verification_plan: { checks: ["database-readback"] },
+    expected_version: 3,
+    idempotency_key: "pause-entity-123456",
+    requested_at: "2026-07-24T00:00:00Z"
+  };
+  assert.doesNotThrow(() => assertEntityLifecycleActionRequest(request));
+  assert.throws(
+    () => assertEntityLifecycleActionRequest({
+      ...request,
+      proposed_changes: { ...request.proposed_changes, status: "ACTIVE" }
+    }),
+    (error) => error.code === "LIFECYCLE_STATUS_MISMATCH"
+  );
+  assert.throws(
+    () => assertEntityLifecycleActionRequest({
+      ...request,
+      rollback_plan: { ...request.rollback_plan, action: "PAUSE" }
+    }),
+    (error) => error.code === "ROLLBACK_ACTION_MISMATCH"
+  );
+
+  const result = {
+    action_id: id,
+    action_type: "PAUSE",
+    status: "SUCCEEDED",
+    target: {
+      business_id: null,
+      entity_id: thirdId,
+      entity_role: "MARSHAL",
+      status: "PAUSED",
+      version: 4
+    },
+    before: { status: "ACTIVE", version: 3 },
+    after: { status: "PAUSED", version: 4 },
+    containment: {
+      descendants_affected: 12,
+      new_work_leasing: "BLOCKED",
+      policy: "FINISH_IN_FLIGHT"
+    },
+    verification: {
+      checked_at: "2026-07-24T00:00:01Z",
+      expected_status: "PAUSED",
+      expected_version: 4,
+      observed_status: "PAUSED",
+      observed_version: 4,
+      passed: true,
+      verification_id: secondId
+    },
+    canonical_event: { aggregate_version: 4, event_id: thirdId, sequence_number: 42 },
+    audit_entry_ids: [secondId],
+    conversation_message_id: thirdId,
+    idempotency_key: "pause-entity-123456",
+    idempotent_replay: false,
+    requested_at: "2026-07-24T00:00:00Z",
+    completed_at: "2026-07-24T00:00:01Z",
+    rollback: {
+      action_type: "RESUME",
+      available: true,
+      expected_version: 4,
+      restores_action_id: id
+    },
+    restoration_of_action_id: null
+  };
+  assert.doesNotThrow(() => assertEntityLifecycleActionResult(result));
+  assert.throws(
+    () => assertEntityLifecycleActionResult({
+      ...result,
+      verification: { ...result.verification, observed_version: 3 }
+    }),
+    (error) => error.code === "LIFECYCLE_READBACK_MISMATCH"
+  );
+  assert.throws(
+    () => assertEntityLifecycleActionResult({
+      ...result,
+      containment: { ...result.containment, new_work_leasing: "ELIGIBLE" }
+    }),
+    (error) => error.code === "LIFECYCLE_CONTAINMENT_MISMATCH"
+  );
+  assert.throws(
+    () => assertEntityLifecycleActionResult({
+      ...result,
+      target: { ...result.target, entity_role: "ENTRAL" }
+    }),
+    (error) => error.code === "INVALID_LIFECYCLE_TARGET_ROLE"
+  );
+  assert.throws(
+    () => assertEntityLifecycleActionResult({
+      ...result,
+      rollback: { ...result.rollback, action_type: "PAUSE" }
+    }),
+    (error) => error.code === "INVALID_LIFECYCLE_ROLLBACK"
+  );
+  assert.throws(
+    () => assertEntityLifecycleActionResult({
+      ...result,
+      canonical_event: { ...result.canonical_event, aggregate_version: 3 }
+    }),
+    (error) => error.code === "LIFECYCLE_EVENT_VERSION_MISMATCH"
+  );
+});
+
 test("duplicate idempotency key is rejected", () => {
   const registry = new IdempotencyKeyRegistry();
   registry.claim("entity-edit-123456");
@@ -688,7 +819,7 @@ test("event and audit consumers reject malformed canonical records", () => {
   assert.throws(() => assertAuditEntry({ ...audit, result: "PENDING" }), ContractError);
 });
 
-test("OpenAPI exposes only implemented member and Phase 180 control-plane paths", async () => {
+test("OpenAPI exposes only implemented member and Phase 190 control-plane paths", async () => {
   const openapi = await readFile(new URL("../openapi.yaml", import.meta.url), "utf8");
   const document = parseYaml(openapi);
   assert.equal(document.openapi, "3.1.0");
@@ -696,6 +827,7 @@ test("OpenAPI exposes only implemented member and Phase 180 control-plane paths"
     "/api/v1/control-plane/businesses",
     "/api/v1/control-plane/businesses/{businessId}",
     "/api/v1/control-plane/businesses/{businessId}/full",
+    "/api/v1/control-plane/entities/{entityId}/actions/{operation}",
     "/api/v1/control-plane/entities/{entityId}/full",
     "/api/v1/control-plane/events",
     "/api/v1/control-plane/governance-actions",
@@ -703,6 +835,7 @@ test("OpenAPI exposes only implemented member and Phase 180 control-plane paths"
     "/api/v1/control-plane/portfolio/summary",
     "/api/v1/member/organizations",
     "/api/v1/member/organizations/{organizationId}/businesses/{businessId}/full",
+    "/api/v1/member/organizations/{organizationId}/entities/{entityId}/actions/{operation}",
     "/api/v1/member/organizations/{organizationId}/entities/{entityId}/full",
     "/api/v1/member/organizations/{organizationId}/entral/assistant/messages",
     "/api/v1/member/organizations/{organizationId}/entral/conversation",
@@ -723,6 +856,8 @@ test("OpenAPI exposes only implemented member and Phase 180 control-plane paths"
   assert.equal(document.components.schemas.MemberEntralAssistantMessageRequest.additionalProperties, false);
   assert.equal(document.components.schemas.MemberEntralAssistantMessageResponse.additionalProperties, false);
   assert.equal(document.components.schemas.GovernanceActionRequest.additionalProperties, false);
+  assert.equal(document.components.schemas.EntityLifecycleActionResult.additionalProperties, false);
+  assert.equal(document.components.schemas.EntityLifecycleActionEnvelope.additionalProperties, false);
   assert.equal(document.components.schemas.MemberOverviewResponse.additionalProperties, false);
   assert.equal(document.components.schemas.MemberWorkspace.additionalProperties, false);
   assert.equal(
@@ -734,6 +869,11 @@ test("OpenAPI exposes only implemented member and Phase 180 control-plane paths"
     document.paths["/api/v1/member/organizations/{organizationId}/governance-actions"]
       .post.requestBody.content["application/json"].schema.$ref,
     "#/components/schemas/GovernanceActionRequest"
+  );
+  assert.equal(
+    document.paths["/api/v1/member/organizations/{organizationId}/entities/{entityId}/actions/{operation}"]
+      .post.responses["200"].content["application/json"].schema.$ref,
+    "#/components/schemas/EntityLifecycleActionEnvelope"
   );
   for (const unimplemented of ["/portfolio", "/businesses", "/entities", "/actions", "/audit", "/events"]) {
     assert.equal(openapi.includes(`  ${unimplemented}`), false, `${unimplemented} must not be exposed`);
