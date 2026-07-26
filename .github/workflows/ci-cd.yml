@@ -7,6 +7,20 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: entral_phase150_ci
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -24,6 +38,17 @@ jobs:
         continue-on-error: true
       - run: pnpm test:release-positioning
       - run: pnpm prisma:generate
+      - name: Build shared contracts for runtime imports
+        run: pnpm --filter @entral/contracts build
+      - name: Verify Phase 150 PostgreSQL identities, isolation, and transactions
+        env:
+          RUN_POSTGRES_INTEGRATION: "1"
+          TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
+        run: >-
+          pnpm --filter @entral/backend exec vitest run
+          tests/canonicalControlPlanePostgres.integration.test.ts
+          tests/memberSeatPostgres.integration.test.ts
+          tests/phase150DatabaseAccess.integration.test.ts
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build

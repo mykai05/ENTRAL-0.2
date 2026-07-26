@@ -27,15 +27,27 @@ import type { AiService } from "./services/openaiService.js";
 import { startAutomationWorker } from "./services/automationQueue.js";
 import { startAgentOrchestrator } from "./services/agentOrchestrator.js";
 import { startAutonomyScheduler } from "./services/autonomyScheduler.js";
+import { startCanonicalOutboxWorker } from "./services/canonicalOutboxWorker.js";
 import { buildHealthPayload } from "./services/health.js";
 import { emitOperationalAlert } from "./services/operationalMonitoring.js";
 import { ensureDefaultPolicies } from "./services/policyEngine.js";
+import {
+  assertApiEntrypointRole,
+  resolveProcessRole,
+  shouldStartEmbeddedWorkers
+} from "./processRole.js";
 
 type BuildServerOptions = {
   aiService?: AiService;
 };
 
 export async function buildServer(options: BuildServerOptions = {}) {
+  const processRole = resolveProcessRole({
+    nodeEnv: env.NODE_ENV,
+    processRole: process.env.PROCESS_ROLE
+  });
+  assertApiEntrypointRole(processRole);
+
   const app = Fastify({
     bodyLimit: 4 * 1024 * 1024,
     logger: {
@@ -131,14 +143,20 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(podProductRoutes, { prefix: "/api/v1" });
   await app.register(adminRoutes, { prefix: "/api/v1" });
 
-  const stopAutomationWorker = startAutomationWorker(app.log);
-  const stopAgentOrchestrator = startAgentOrchestrator(app.log);
-  const stopAutonomyScheduler = startAutonomyScheduler(app.log);
-  app.addHook("onClose", async () => {
-    stopAutomationWorker();
-    stopAgentOrchestrator();
-    stopAutonomyScheduler();
-  });
+  if (shouldStartEmbeddedWorkers(processRole)) {
+    const stopCanonicalOutboxWorker = await startCanonicalOutboxWorker({
+      logger: app.log
+    });
+    const stopAutomationWorker = startAutomationWorker(app.log);
+    const stopAgentOrchestrator = startAgentOrchestrator(app.log);
+    const stopAutonomyScheduler = startAutonomyScheduler(app.log);
+    app.addHook("onClose", async () => {
+      stopAutomationWorker();
+      stopAgentOrchestrator();
+      stopAutonomyScheduler();
+      await stopCanonicalOutboxWorker();
+    });
+  }
 
   return app;
 }

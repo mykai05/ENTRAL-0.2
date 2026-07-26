@@ -33,6 +33,8 @@ const optionalTrimmedString = z.preprocess((value) => {
   return value;
 }, z.string().trim().optional());
 
+const isWorkerProcess = process.env.PROCESS_ROLE?.trim().toLowerCase() === "worker";
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_HOST: z.string().min(1).default("localhost"),
@@ -44,8 +46,24 @@ const envSchema = z.object({
   APP_PUBLIC_URL: z.string().url().default("http://localhost:3000"),
   API_PUBLIC_URL: z.string().url().default("http://localhost:4000"),
   REDIS_URL: optionalTrimmedString,
+  CANONICAL_OUTBOX_DISPATCHER_ENABLED: booleanFromEnv.default(false),
+  CANONICAL_OUTBOX_SERVICE_APP_USER_ID: z.preprocess((value) => {
+    if (typeof value === "string" && value.trim() === "") {
+      return undefined;
+    }
+
+    return value;
+  }, z.string().uuid().optional()),
+  CANONICAL_OUTBOX_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(25),
+  CANONICAL_OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().min(250).max(300000).default(1000),
+  CANONICAL_OUTBOX_LOCK_DURATION_MS: z.coerce.number().int().min(5000).max(900000).default(60000),
+  CANONICAL_OUTBOX_RETRY_BASE_DELAY_MS: z.coerce.number().int().min(250).max(3600000).default(1000),
+  CANONICAL_OUTBOX_RETRY_MAX_DELAY_MS: z.coerce.number().int().min(1000).max(86400000).default(300000),
+  CANONICAL_OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(1000).default(12),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
-  AUTH_EMAIL_PROVIDER: z.enum(["resend", "console"]).default(process.env.NODE_ENV === "production" ? "resend" : "console"),
+  AUTH_EMAIL_PROVIDER: z.enum(["resend", "console"]).default(
+    process.env.NODE_ENV === "production" && !isWorkerProcess ? "resend" : "console"
+  ),
   AUTH_EMAIL_FROM: optionalTrimmedString,
   RESEND_API_KEY: optionalTrimmedString,
   OPENAI_API_KEY: z.string().trim().optional(),
@@ -87,7 +105,11 @@ const envSchema = z.object({
   ADMIN_MFA_CODE: optionalTrimmedString,
   ALERT_WEBHOOK_URL: optionalTrimmedString
 }).superRefine((value, context) => {
-  if (value.NODE_ENV === "production" && value.AUTH_EMAIL_PROVIDER === "console") {
+  if (
+    value.NODE_ENV === "production"
+    && !isWorkerProcess
+    && value.AUTH_EMAIL_PROVIDER === "console"
+  ) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["AUTH_EMAIL_PROVIDER"],
@@ -95,7 +117,7 @@ const envSchema = z.object({
     });
   }
 
-  if (value.AUTH_EMAIL_PROVIDER === "resend") {
+  if (!isWorkerProcess && value.AUTH_EMAIL_PROVIDER === "resend") {
     if (!value.RESEND_API_KEY) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -125,6 +147,14 @@ export const env = envSchema.parse({
   APP_PUBLIC_URL: process.env.APP_PUBLIC_URL,
   API_PUBLIC_URL: process.env.API_PUBLIC_URL,
   REDIS_URL: process.env.REDIS_URL,
+  CANONICAL_OUTBOX_DISPATCHER_ENABLED: process.env.CANONICAL_OUTBOX_DISPATCHER_ENABLED,
+  CANONICAL_OUTBOX_SERVICE_APP_USER_ID: process.env.CANONICAL_OUTBOX_SERVICE_APP_USER_ID,
+  CANONICAL_OUTBOX_BATCH_SIZE: process.env.CANONICAL_OUTBOX_BATCH_SIZE,
+  CANONICAL_OUTBOX_POLL_INTERVAL_MS: process.env.CANONICAL_OUTBOX_POLL_INTERVAL_MS,
+  CANONICAL_OUTBOX_LOCK_DURATION_MS: process.env.CANONICAL_OUTBOX_LOCK_DURATION_MS,
+  CANONICAL_OUTBOX_RETRY_BASE_DELAY_MS: process.env.CANONICAL_OUTBOX_RETRY_BASE_DELAY_MS,
+  CANONICAL_OUTBOX_RETRY_MAX_DELAY_MS: process.env.CANONICAL_OUTBOX_RETRY_MAX_DELAY_MS,
+  CANONICAL_OUTBOX_MAX_ATTEMPTS: process.env.CANONICAL_OUTBOX_MAX_ATTEMPTS,
   LOG_LEVEL: process.env.LOG_LEVEL,
   AUTH_EMAIL_PROVIDER: process.env.AUTH_EMAIL_PROVIDER,
   AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,

@@ -121,6 +121,11 @@ describe("canonical control-plane routes", () => {
     expect(response.json()).toEqual({
       entities: [{ entity_id: targetId, entity_type: "ENTRAL", name: "ENTRAL" }]
     });
+    expect(mocks.listHierarchy).toHaveBeenCalledWith({
+      actionReason: "Read the canonical entity hierarchy.",
+      authSubject: "internal-user",
+      correlationId: expect.any(String)
+    });
     await app.close();
   });
 
@@ -148,7 +153,14 @@ describe("canonical control-plane routes", () => {
     expect(response.statusCode).toBe(201);
     expect(mocks.createGovernanceAction).toHaveBeenCalledWith(
       expect.objectContaining({ actor_type: "HUMAN", target_id: targetId }),
-      { authenticatedHumanEmail: "authority@example.test" }
+      {
+        authenticatedHumanEmail: "authority@example.test",
+        databaseSession: {
+          actionReason: "A verified dependency is unavailable.",
+          authSubject: "internal-user",
+          correlationId: expect.any(String)
+        }
+      }
     );
 
     const entralActorResponse = await app.inject({

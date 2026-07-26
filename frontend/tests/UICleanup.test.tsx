@@ -14,7 +14,14 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => <a href={String(href)} {...props}>{children}</a>
+  default: ({
+    children,
+    href,
+    scroll: _scroll,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: unknown; scroll?: boolean }) => (
+    <a href={String(href)} {...props}>{children}</a>
+  )
 }));
 
 vi.mock("../components/ThemeProvider", () => ({
