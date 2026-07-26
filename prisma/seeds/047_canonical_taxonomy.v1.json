@@ -1,0 +1,1348 @@
+{
+  "schema_version": "1.0.0",
+  "taxonomy_id": "d10d945f-fdde-5cb2-aee5-7be737fa52f1",
+  "name": "ENTRAL Canonical Commerce Taxonomy",
+  "source_edition": "Canonical edition 1.0 | 21 July 2026",
+  "generated_at": "2026-07-24T17:55:13.865888+00:00",
+  "source_sha256": {
+    "ENTRAL-Commerce-Agent-Command-Architecture.docx": "acf38f33d2eee763131e35a14a2c55e9819d3bd7aea827002796000254680b2f",
+    "ENTRAL-Fable5-GPT56Sol-Ultra-Build-Directive.docx": "082d372062d70a60418e5121989a41b021486c372c74e367e223f5116a5fbda0",
+    "ENTRAL-UI-Simplification-and-Autonomous-Control-Directive.docx": "f4024499a3e5ec0223e4af3bfe165f24ca8c3dc56077b9d938e2e2845a461b48"
+  },
+  "counts": {
+    "entral": 1,
+    "marshals": 8,
+    "generals": 123
+  },
+  "entral": {
+    "id": "45638366-d6f0-5b27-91bf-d2362df27922",
+    "stable_code": "ENTRAL",
+    "name": "ENTRAL",
+    "role": "ENTRAL",
+    "parent_id": null,
+    "definition": "Single governing intelligence and central command layer.",
+    "taxonomy_version": "1.0.0"
+  },
+  "marshals": [
+    {
+      "id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "stable_code": "M01",
+      "name": "Product and Fulfillment Marshal",
+      "role": "MARSHAL",
+      "parent_id": "45638366-d6f0-5b27-91bf-d2362df27922",
+      "parent_code": "ENTRAL",
+      "definition": "Controls how products are sourced, produced, customized, stocked, fulfilled, recovered, and delivered.",
+      "general_count": 22,
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "stable_code": "M02",
+      "name": "Digital and Software Marshal",
+      "role": "MARSHAL",
+      "parent_id": "45638366-d6f0-5b27-91bf-d2362df27922",
+      "parent_code": "ENTRAL",
+      "definition": "Controls software, data, digital content, access products, licensing, and technology-enabled delivery.",
+      "general_count": 17,
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "stable_code": "M03",
+      "name": "Marketplace Marshal",
+      "role": "MARSHAL",
+      "parent_id": "45638366-d6f0-5b27-91bf-d2362df27922",
+      "parent_code": "ENTRAL",
+      "definition": "Controls businesses that connect multiple participant groups and govern discovery, matching, trust, transactions, and marketplace liquidity.",
+      "general_count": 15,
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "stable_code": "M04",
+      "name": "Customer-Relationship Marshal",
+      "role": "MARSHAL",
+      "parent_id": "45638366-d6f0-5b27-91bf-d2362df27922",
+      "parent_code": "ENTRAL",
+      "definition": "Controls buyer and seller identity, contract structure, buying process, account ownership, and relationship economics.",
+      "general_count": 10,
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "stable_code": "M05",
+      "name": "Revenue Marshal",
+      "role": "MARSHAL",
+      "parent_id": "45638366-d6f0-5b27-91bf-d2362df27922",
+      "parent_code": "ENTRAL",
+      "definition": "Controls how value is priced, charged, collected, shared, renewed, and measured across businesses.",
+      "general_count": 16,
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "stable_code": "M06",
+      "name": "Service-Based E-Commerce Marshal",
+      "role": "MARSHAL",
+      "parent_id": "45638366-d6f0-5b27-91bf-d2362df27922",
+      "parent_code": "ENTRAL",
+      "definition": "Controls the sale, scheduling, delivery, quality, and fulfillment of services through digital commerce systems.",
+      "general_count": 13,
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "stable_code": "M07",
+      "name": "Sales-Channel Marshal",
+      "role": "MARSHAL",
+      "parent_id": "45638366-d6f0-5b27-91bf-d2362df27922",
+      "parent_code": "ENTRAL",
+      "definition": "Controls where and how customers discover, evaluate, buy, and receive offers across channels and interfaces.",
+      "general_count": 14,
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "stable_code": "M08",
+      "name": "Specialized Commerce Marshal",
+      "role": "MARSHAL",
+      "parent_id": "45638366-d6f0-5b27-91bf-d2362df27922",
+      "parent_code": "ENTRAL",
+      "definition": "Controls specialized commercial formats whose operating mechanics, customer expectations, or mission require distinct governance.",
+      "general_count": 16,
+      "taxonomy_version": "1.0.0"
+    }
+  ],
+  "generals": [
+    {
+      "id": "39ed11de-7346-5cb0-b06c-751d7f306bad",
+      "stable_code": "G-M01-01",
+      "name": "Dropshipping General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Supplier-held inventory is sold by the business and shipped directly to the customer.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "d11cf902-1ca3-532d-9651-1503b369afd7",
+      "stable_code": "G-M01-02",
+      "name": "Print-on-Demand General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Products are produced and fulfilled after purchase using customer-selected or brand-created designs.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "593cc117-5a6b-532d-8064-cbff3be3f2bd",
+      "stable_code": "G-M01-03",
+      "name": "Private Label General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Contract-manufactured products are sold under a proprietary brand with controlled positioning and specifications.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "1beae897-cbda-57ee-8efc-ab1f1f2f6056",
+      "stable_code": "G-M01-04",
+      "name": "White Label General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Existing products are rebranded for resale with limited changes to the underlying product.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "ff00a1a4-9392-594e-8cdf-4061afb8ef8f",
+      "stable_code": "G-M01-05",
+      "name": "Wholesale General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Goods are bought or sold in bulk, typically with account-based pricing and distribution operations.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4f81e756-ec81-51a7-89e9-3fa57e3bf413",
+      "stable_code": "G-M01-06",
+      "name": "Direct-to-Consumer General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "A brand sells directly to end customers without relying on traditional retail intermediaries.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "e99bfc34-34a3-53e1-aeb3-c023658d84bc",
+      "stable_code": "G-M01-07",
+      "name": "Manufacturing General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "The business controls in-house or contracted production, quality, capacity, and supply planning.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "a9b0fb7d-1c91-5b28-b908-32adfda43fc4",
+      "stable_code": "G-M01-08",
+      "name": "Handmade General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Artisan or craft products are produced manually in small batches or as individual pieces.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "be810cca-d054-5ab0-ba11-ea2ba880b917",
+      "stable_code": "G-M01-09",
+      "name": "Made-to-Order General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Production starts only after an order is confirmed, reducing finished-goods inventory.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4d1ed6f6-063e-52f8-95a5-84436a5b43a2",
+      "stable_code": "G-M01-10",
+      "name": "Retail Arbitrage General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Discounted products are sourced from physical retail locations and resold at a margin.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "35e12b7f-9a8d-584e-82b5-19fe48de469c",
+      "stable_code": "G-M01-11",
+      "name": "Online Arbitrage General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Discounted products are sourced online and resold through another channel or marketplace.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "3dfd17bb-21c3-5a99-bbcf-3466740524d9",
+      "stable_code": "G-M01-12",
+      "name": "Liquidation Resale General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Overstock, returns, closeouts, and distressed inventory are acquired and resold.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "2dbba35d-4088-5b4d-bbca-b2417a861dad",
+      "stable_code": "G-M01-13",
+      "name": "Refurbished Goods General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Used or defective goods are restored, tested, graded, warranted, and resold.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c95808fe-23a6-506a-b71f-b4f918d0adbf",
+      "stable_code": "G-M01-14",
+      "name": "Recommerce General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Previously owned products are acquired, listed, authenticated where needed, and resold.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "2b27f1c7-01d1-5d95-bdf0-05f085ae1de5",
+      "stable_code": "G-M01-15",
+      "name": "Consignment General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Products are sold on behalf of owners, with proceeds divided under an agreed revenue share.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "b097d11b-0756-5da6-a290-bc35bd55b9ca",
+      "stable_code": "G-M01-16",
+      "name": "Subscription Boxes General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Curated physical products are assembled and delivered on a recurring schedule.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "ea24a900-948e-5ee7-a88e-da69fd72b3a4",
+      "stable_code": "G-M01-17",
+      "name": "Rental Commerce General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Customers pay for temporary access to physical products while the business retains ownership.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "0c105905-0f1a-5656-856c-0d0e2185161e",
+      "stable_code": "G-M01-18",
+      "name": "Preorder Commerce General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Orders and often payment are accepted before inventory or production is ready.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "49811bf7-7cbc-54f0-9077-5c1a2b1b7f5d",
+      "stable_code": "G-M01-19",
+      "name": "Crowdfunding Commerce General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Demand and funding are secured through campaign-backed commitments before full-scale delivery.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "a2d262af-5215-5796-9bfb-081a4e028138",
+      "stable_code": "G-M01-20",
+      "name": "Digital Downloads General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Files are sold and delivered electronically with no physical fulfillment requirement.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "46399e06-4429-57f7-acfc-d6429ed3b2cb",
+      "stable_code": "G-M01-21",
+      "name": "Personalized Products General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Standard products are tailored with customer-specific names, images, dates, or selections.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "dc6b463f-b70f-5ec4-b981-d79c2903fe2a",
+      "stable_code": "G-M01-22",
+      "name": "Custom Products General",
+      "role": "GENERAL",
+      "parent_id": "39ba1ebb-f916-5115-937a-225419f42175",
+      "parent_code": "M01",
+      "definition": "Products are designed or manufactured to unique customer specifications beyond standard personalization.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4692c0b3-0cb0-5d04-a39e-a6a504fa4c8b",
+      "stable_code": "G-M02-01",
+      "name": "SaaS General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Subscription or contract access to centrally hosted software delivered over the internet.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "e375be99-e71c-580e-9006-8d7a22e77484",
+      "stable_code": "G-M02-02",
+      "name": "Micro-SaaS General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "A narrowly scoped software product serving a specific workflow, audience, or integration need.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "6d76cd00-b5f1-57f9-a4cd-c9d199976ce3",
+      "stable_code": "G-M02-03",
+      "name": "Platform-as-a-Service General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Hosted infrastructure and development capabilities are provided for building and deploying applications.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c31b6bd1-dd31-575a-a19e-6ec7e6eb11a8",
+      "stable_code": "G-M02-04",
+      "name": "API-as-a-Service General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Programmatic capabilities are packaged and monetized through documented application interfaces.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "36f66c3f-bdda-50f7-9a97-c207c535bef6",
+      "stable_code": "G-M02-05",
+      "name": "Data-as-a-Service General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Curated, processed, or continuously updated data is delivered through files, dashboards, or APIs.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "8980afd2-d2a4-5ef7-9b84-1bf709b8ca7b",
+      "stable_code": "G-M02-06",
+      "name": "Mobile App Commerce General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Products, services, or paid functionality are sold primarily through a mobile application.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "9ce85809-e772-5a8f-be8d-34e01a9448a8",
+      "stable_code": "G-M02-07",
+      "name": "Digital Products General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Non-physical assets such as guides, systems, media, datasets, or files are sold electronically.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "40b25aec-3865-548e-8477-27ebb06f83b3",
+      "stable_code": "G-M02-08",
+      "name": "Online Courses General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Structured educational content, exercises, assessments, and support are sold online.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "91205125-b03a-5154-beb9-ba41a0d1aa7c",
+      "stable_code": "G-M02-09",
+      "name": "Digital Memberships General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Recurring paid access is granted to digital resources, benefits, tools, or content libraries.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "5888a6e9-1112-5ce6-a73b-a95e6f2531db",
+      "stable_code": "G-M02-10",
+      "name": "Paid Communities General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Members pay for access to a moderated network, peer interaction, events, and shared resources.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "7c88c285-f683-5a20-a709-97283b829824",
+      "stable_code": "G-M02-11",
+      "name": "Paid Newsletters General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Subscribers pay for recurring written analysis, reporting, curation, or specialized insight.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "b4f888db-a9cc-5b9c-a88b-9df3a41cb967",
+      "stable_code": "G-M02-12",
+      "name": "Software Licensing General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Software usage rights are sold under defined terms, seats, devices, territories, or time periods.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "76c43e34-1229-5b68-8803-7a780f60c76b",
+      "stable_code": "G-M02-13",
+      "name": "Template Stores General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Reusable documents, designs, workflows, prompts, or system templates are sold digitally.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "cd8df3d2-3bd0-587c-b6b2-22b2547d6c1b",
+      "stable_code": "G-M02-14",
+      "name": "Stock-Asset Stores General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Licensed photos, video, audio, graphics, fonts, or similar creative assets are sold from a catalog.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "100f2949-1510-5d8e-8969-065e7bfef55c",
+      "stable_code": "G-M02-15",
+      "name": "Game-Asset Stores General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Game-ready models, textures, code, audio, maps, or systems are sold to developers.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "b1d18f0f-dcfc-51ad-a2a1-edb448d15513",
+      "stable_code": "G-M02-16",
+      "name": "Plugin Stores General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "Extensions, add-ons, integrations, themes, or modules are sold for host platforms.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4ab1fa18-9445-5edb-a4b2-c3d88a516e4a",
+      "stable_code": "G-M02-17",
+      "name": "AI-as-a-Service General",
+      "role": "GENERAL",
+      "parent_id": "a50b1493-ffe1-5373-ad1b-96bb393a0c6f",
+      "parent_code": "M02",
+      "definition": "AI capabilities are delivered as hosted applications, agents, workflows, models, or APIs.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c6b5f301-cb53-531d-b829-51aaecf0213e",
+      "stable_code": "G-M03-01",
+      "name": "Online Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "A digital venue connects buyers and sellers and supports discovery and transactions.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "85e45783-5ad8-5d83-8215-a68179e15a17",
+      "stable_code": "G-M03-02",
+      "name": "Multi-Vendor Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Multiple independent vendors operate storefronts or catalogs within one platform.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "0d87ce31-37c4-5398-a23f-7fab30f8f004",
+      "stable_code": "G-M03-03",
+      "name": "Managed Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "The platform actively controls quality, fulfillment, pricing, matching, or service standards.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "d0657e39-f754-5365-b1f9-60e72de36191",
+      "stable_code": "G-M03-04",
+      "name": "Peer-to-Peer Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Individuals transact directly with other individuals through platform-provided trust and payment systems.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "8ec7c57d-a0aa-5129-81a7-3ef5f628525d",
+      "stable_code": "G-M03-05",
+      "name": "Service Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Customers discover, compare, book, and pay independent service providers.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "da5de0dd-b427-5ab4-8fb2-ca11204498dc",
+      "stable_code": "G-M03-06",
+      "name": "Freelancer Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Businesses or individuals source and contract independent professional talent.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "46c69a46-df3b-5bf0-9cb4-ff81e5b97563",
+      "stable_code": "G-M03-07",
+      "name": "Rental Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Owners list assets for temporary use by renters while the platform manages matching and trust.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4b087c67-c016-51d4-bc90-d9d8ed6015e1",
+      "stable_code": "G-M03-08",
+      "name": "Auction Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Sellers accept competing bids and the highest qualifying bid wins under defined rules.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "bd7a159f-f6da-564e-ad38-cb8d27073796",
+      "stable_code": "G-M03-09",
+      "name": "Reverse-Auction Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Buyers post demand and suppliers compete by offering lower prices or stronger terms.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "e85c793b-60f4-576b-b47c-21490795e66a",
+      "stable_code": "G-M03-10",
+      "name": "Classified Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Users publish listings and negotiate transactions, often with limited platform involvement.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "d5f34805-2b3e-50d1-83a0-0d7d6b1a62e0",
+      "stable_code": "G-M03-11",
+      "name": "Wholesale Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Business buyers and suppliers transact in bulk with trade pricing, terms, and account controls.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "1db9d930-672a-516e-905e-1f3d63421e0c",
+      "stable_code": "G-M03-12",
+      "name": "Digital-Product Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Multiple creators or vendors sell downloadable or access-based digital products.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "2e2cb6d4-4c1a-5a8b-9d95-06c7dc70a51a",
+      "stable_code": "G-M03-13",
+      "name": "Aggregator General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Offers from multiple providers are collected and presented through a unified discovery or purchasing layer.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "e3dce996-3d70-5b18-9d36-d33fbaa15e3b",
+      "stable_code": "G-M03-14",
+      "name": "Comparison Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "Alternatives are normalized and compared by price, features, availability, or suitability.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "a1776dd6-627d-5fdf-a220-e4236290c2f0",
+      "stable_code": "G-M03-15",
+      "name": "Two-Sided Marketplace General",
+      "role": "GENERAL",
+      "parent_id": "9a3057ec-2521-51bf-9733-1d3f405d5644",
+      "parent_code": "M03",
+      "definition": "The business creates value by attracting, matching, and retaining two interdependent participant groups.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "55b61c3b-46ea-5ca0-ba03-f6e11fd1da06",
+      "stable_code": "G-M04-01",
+      "name": "B2C General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Businesses sell products or services directly to individual consumers.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "2cc6f532-bee3-543a-83c9-20d232d62612",
+      "stable_code": "G-M04-02",
+      "name": "B2B General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Businesses sell to other businesses through accounts, contracts, procurement, or repeat commercial relationships.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c26b5827-dbff-56dd-a26b-f0cec4670326",
+      "stable_code": "G-M04-03",
+      "name": "C2C General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Consumers sell or exchange value with other consumers, usually through a facilitating platform.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "f3227cf9-662c-5fac-bf14-80889b3374e0",
+      "stable_code": "G-M04-04",
+      "name": "C2B General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Individuals provide products, services, data, influence, or value to businesses.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "b048ed87-33e4-52aa-ac7c-16a9b4429c92",
+      "stable_code": "G-M04-05",
+      "name": "D2C General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Brands own the direct relationship, transaction, and customer data for end-consumer sales.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "b636144f-886b-507a-88d2-62a6c372388f",
+      "stable_code": "G-M04-06",
+      "name": "B2G General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Businesses sell to government entities under public procurement, compliance, and contracting requirements.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "70c5cb57-45e6-58a7-94b4-0a5e1d459902",
+      "stable_code": "G-M04-07",
+      "name": "G2B General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Government entities deliver paid or transactional services, licenses, data, or resources to businesses.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "eb3e670e-dfbd-516e-aa5d-c9d32817dc10",
+      "stable_code": "G-M04-08",
+      "name": "B2B2C General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "One business reaches end consumers through another business while responsibilities and economics are shared.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "981d8f91-1d08-577c-9d8b-da27ed2d7d59",
+      "stable_code": "G-M04-09",
+      "name": "Peer-to-Peer General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Participants of comparable standing exchange value directly under a trust or coordination system.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "988e87cc-9f93-5746-ba31-f131daae6068",
+      "stable_code": "G-M04-10",
+      "name": "Enterprise E-Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4989cabf-3ffc-5ace-9292-a68abd67c686",
+      "parent_code": "M04",
+      "definition": "Complex organizations buy through negotiated contracts, approvals, integrations, security, and account controls.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "6583583b-9b3e-5a48-bdc7-21cda91f97f7",
+      "stable_code": "G-M05-01",
+      "name": "One-Time Purchase General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "The customer pays once for a product, service, entitlement, or completed transaction.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "6585496a-dbbb-53f6-b36b-f5ceeb75b3d3",
+      "stable_code": "G-M05-02",
+      "name": "Subscription Commerce General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Customers pay on a recurring schedule for continued products, access, or service.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c8cbb18b-e8a4-5de5-9da9-ee6c24dab1c2",
+      "stable_code": "G-M05-03",
+      "name": "Membership Commerce General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Recurring payment grants status, privileges, benefits, community access, or preferred economics.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c73a654b-55ba-5d2c-9790-885dc4b38582",
+      "stable_code": "G-M05-04",
+      "name": "Freemium General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "A free core offer drives adoption while premium capabilities or limits generate revenue.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "0d655616-8137-5ff4-a859-993753a8d2f9",
+      "stable_code": "G-M05-05",
+      "name": "Usage-Based Pricing General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Charges vary according to metered consumption such as volume, time, calls, storage, or output.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c9a88776-9248-5ebc-8a24-06f8dd478810",
+      "stable_code": "G-M05-06",
+      "name": "Transaction-Fee Model General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "A fee is charged for each processed transaction or payment event.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "7d260532-be23-536f-94e3-4f36f8c2750b",
+      "stable_code": "G-M05-07",
+      "name": "Commission Model General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Revenue is earned as a percentage or share of another party's sale.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "f53f18aa-f67a-5a23-a6d7-17d00ea26f96",
+      "stable_code": "G-M05-08",
+      "name": "Licensing Model General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Customers pay for defined rights to use intellectual property, software, content, or technology.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "52132df5-e6c1-5c42-9c16-754bb567bad6",
+      "stable_code": "G-M05-09",
+      "name": "Affiliate Commerce General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Revenue is earned for attributable referrals that result in qualified actions or purchases.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "dbc1cb12-92ef-5c5f-96a9-31ffdec77efc",
+      "stable_code": "G-M05-10",
+      "name": "Advertising-Supported Commerce General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "User attention or inventory is monetized through paid advertising placements.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "cb1b3dea-878e-5912-9416-2f6e91054e64",
+      "stable_code": "G-M05-11",
+      "name": "Sponsorship Commerce General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "A sponsor pays to associate with content, audiences, events, products, or outcomes.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "9f58f684-55db-5552-ba5a-cd05bcc4fed5",
+      "stable_code": "G-M05-12",
+      "name": "Lead-Generation Commerce General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Qualified prospect information or introductions are sold to businesses.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4ac72f89-b00e-5822-baa1-f2129c1d7924",
+      "stable_code": "G-M05-13",
+      "name": "Pay-per-Download General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "A separate charge is collected for each downloaded file or licensed asset.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "0ee26480-d160-5f76-8dbd-bf6e489f0f5b",
+      "stable_code": "G-M05-14",
+      "name": "Pay-per-Use General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "The customer pays each time a service, unit, feature, or asset is used.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "b29a0b28-f2ef-5521-b8b4-45c2b4fc57ce",
+      "stable_code": "G-M05-15",
+      "name": "Recurring Replenishment General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Consumable products are automatically reordered and delivered at a recurring interval.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "23cbfdfd-5821-5549-90f3-0247a2faf3d0",
+      "stable_code": "G-M05-16",
+      "name": "Bundled Commerce General",
+      "role": "GENERAL",
+      "parent_id": "2bd9ea7f-41ec-5bb1-8bfd-a24c2c4ff416",
+      "parent_code": "M05",
+      "definition": "Multiple products, services, or entitlements are packaged and priced as one offer.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "68cbb10a-1f48-5b95-819a-28a91ca53eed",
+      "stable_code": "G-M06-01",
+      "name": "Service Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Services are packaged, sold, paid for, and managed through an online transaction flow.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "7991d440-ff5a-5fad-aebc-8c9422529f52",
+      "stable_code": "G-M06-02",
+      "name": "Booking Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Customers reserve time, capacity, inventory, or experiences through a booking system.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "60552746-f641-5fd4-ad77-9ef25b133d73",
+      "stable_code": "G-M06-03",
+      "name": "Appointment Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Customers schedule time with a specific provider, professional, or location.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "03d36404-a0f2-5711-b6cd-3bb8e1dfea3f",
+      "stable_code": "G-M06-04",
+      "name": "On-Demand Services General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Services are requested and dispatched with minimal delay based on real-time availability.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "12aebb5b-bdee-5298-9e86-b0d60efa2c67",
+      "stable_code": "G-M06-05",
+      "name": "Productized Services General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "A service is standardized into a defined scope, price, process, and deliverable.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "d8776ef7-5a42-54c2-bfb8-f3394c4dee9a",
+      "stable_code": "G-M06-06",
+      "name": "Consulting Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Expert diagnosis, strategy, or implementation guidance is sold through engagements or packages.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "24bce88b-0c60-5a27-b17f-842a4adfde00",
+      "stable_code": "G-M06-07",
+      "name": "Coaching Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Goal-oriented guidance, accountability, and development are delivered through sessions or programs.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c26fc7de-13db-5d13-99a9-ad690ef9bccb",
+      "stable_code": "G-M06-08",
+      "name": "Tutoring Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Instruction and learning support are sold by subject, session, package, or outcome.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "1c119a48-c993-5a8f-9a76-81d63bf36f1f",
+      "stable_code": "G-M06-09",
+      "name": "Telehealth Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Health-related consultations or services are delivered remotely under applicable clinical and legal controls.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "8d19bf32-d922-5795-9ceb-f0c0037649cf",
+      "stable_code": "G-M06-10",
+      "name": "Ticketing Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Access rights to events, venues, transport, or experiences are sold and validated digitally.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c29cae8d-6fc4-58ba-9042-adc38b5e424d",
+      "stable_code": "G-M06-11",
+      "name": "Travel Booking General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Travel inventory and related services are searched, reserved, packaged, and paid for online.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "cf72ab76-9464-515d-9c9a-13cbb874e1bf",
+      "stable_code": "G-M06-12",
+      "name": "Food Delivery General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Prepared food orders are routed from merchants to customers through pickup and delivery operations.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c0cf535b-79ee-57fe-841d-77d146361b43",
+      "stable_code": "G-M06-13",
+      "name": "Local-Service Commerce General",
+      "role": "GENERAL",
+      "parent_id": "e578ba43-f528-5a41-a7f6-6d736bb638a9",
+      "parent_code": "M06",
+      "definition": "Customers discover, purchase, and schedule geographically constrained services.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "e66f9237-3860-5e2d-8d69-05f5f37ab507",
+      "stable_code": "G-M07-01",
+      "name": "Social Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Products are discovered and purchased within or directly through social platforms.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "cf198f83-86b2-5689-bf49-965f11c7bd28",
+      "stable_code": "G-M07-02",
+      "name": "Mobile Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "The buying journey is designed primarily for smartphones, mobile web, or mobile apps.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "2c027c24-e9af-5944-9710-6d30ce435d65",
+      "stable_code": "G-M07-03",
+      "name": "Live Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Products are demonstrated and sold during interactive live video broadcasts.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "7564fe41-e74d-5cce-8fe6-097ca96dfc93",
+      "stable_code": "G-M07-04",
+      "name": "Conversational Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Sales and service occur through chat, messaging, or AI-assisted conversations.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "b6bc0b62-622e-538b-9ecb-c0aea42fb9a1",
+      "stable_code": "G-M07-05",
+      "name": "Influencer Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Creators with established audiences drive demand, conversion, or co-branded sales.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "e90c519d-d455-547a-927a-4c20ea5c30a5",
+      "stable_code": "G-M07-06",
+      "name": "Creator Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Creators monetize owned audiences through products, services, memberships, or digital offers.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "f447d3f2-41a5-5aa3-9135-49930fd25117",
+      "stable_code": "G-M07-07",
+      "name": "Affiliate Storefronts General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Curated storefronts present third-party products and earn attributable referral revenue.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "7b7010de-b81c-58e2-b880-4874677952f5",
+      "stable_code": "G-M07-08",
+      "name": "Marketplace Selling General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "A business sells through a third-party marketplace while managing listings, rank, fees, and platform rules.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "0bc36161-c78a-52ea-b450-275df4e24453",
+      "stable_code": "G-M07-09",
+      "name": "Omnichannel Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Channels share customer, inventory, order, and service context in one coordinated experience.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "60e12560-02fb-548e-9839-70d7ba88ab89",
+      "stable_code": "G-M07-10",
+      "name": "Multichannel Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "A business sells through multiple channels that may operate with separate processes or data.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "72ffacc0-d6c9-5bcb-babb-d3b2f53a88e5",
+      "stable_code": "G-M07-11",
+      "name": "Cross-Border Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Products or services are sold internationally with localization, tax, customs, currency, and logistics controls.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "420ad01c-e5a2-5521-9cd1-538d14f87efd",
+      "stable_code": "G-M07-12",
+      "name": "Local Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Demand, inventory, fulfillment, and customer experience are optimized for a defined geographic market.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "5df30aeb-83ca-5f61-88cc-756cf0996f40",
+      "stable_code": "G-M07-13",
+      "name": "Voice Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Customers search, select, order, or manage purchases through voice interfaces.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "670b574f-8dcf-5f1d-a340-06af0986a4e1",
+      "stable_code": "G-M07-14",
+      "name": "Embedded Commerce General",
+      "role": "GENERAL",
+      "parent_id": "4e396ffd-a01b-5719-860b-6232d96b0d36",
+      "parent_code": "M07",
+      "definition": "Purchasing capability is integrated inside another product, workflow, platform, or user experience.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "c858489a-6ab0-5496-b3b5-9f2afd6c5934",
+      "stable_code": "G-M08-01",
+      "name": "Subscription Boxes General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Recurring curated product assortments are managed as a specialized merchandising and retention format.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "24d5cf6e-4934-5121-95cc-3c2531532096",
+      "stable_code": "G-M08-02",
+      "name": "Mystery Boxes General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Customers purchase an unknown or partially disclosed assortment with controlled value and disclosure rules.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "775f4e0b-4500-542c-8f98-10b2311ebeee",
+      "stable_code": "G-M08-03",
+      "name": "Group Buying General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Demand is aggregated so participants receive better pricing or access when thresholds are reached.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "22a7e894-76f3-5644-b323-4af0a4707461",
+      "stable_code": "G-M08-04",
+      "name": "Flash-Sale Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Inventory is offered for a short, predetermined window to create urgency and concentrated demand.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "57850dda-80f3-596d-999a-31bc913f2fbc",
+      "stable_code": "G-M08-05",
+      "name": "Daily-Deal Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "A rotating offer or limited set of offers is promoted for a defined day or period.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4942a280-b673-5e11-9862-805915d673ca",
+      "stable_code": "G-M08-06",
+      "name": "Curated Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Assortments are selected and presented through expert judgment, taste, or audience fit.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "f2438129-914a-507b-a5e6-f4f3e46898d6",
+      "stable_code": "G-M08-07",
+      "name": "Niche Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "A tightly defined audience or need is served with specialized products, language, and positioning.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "d178685d-243a-5ba4-b095-5a2c91032467",
+      "stable_code": "G-M08-08",
+      "name": "Luxury Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "High-value products or services are sold through controlled brand, experience, trust, and exclusivity.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "d5db1e7c-1585-590f-8af1-312e2cc4074f",
+      "stable_code": "G-M08-09",
+      "name": "Resale Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Previously owned products are marketed and sold as a specialized retail format.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "22c4dbaa-44a9-5a19-bcda-ad73f5535d26",
+      "stable_code": "G-M08-10",
+      "name": "Circular Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Products and materials remain in use through resale, repair, return, refurbishment, or reuse loops.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "ba0be5f8-19b0-5f6f-8fbb-4db21a28a0d6",
+      "stable_code": "G-M08-11",
+      "name": "Sustainable Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Commercial decisions prioritize reduced environmental and social harm with supportable claims.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "4392d52e-25b4-57ea-aa18-85e5e099fe12",
+      "stable_code": "G-M08-12",
+      "name": "Rental Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Temporary access is the core commercial proposition, with asset utilization and recovery as central controls.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "df66973f-0c03-56ee-a557-684a76ba6321",
+      "stable_code": "G-M08-13",
+      "name": "Fractional Ownership Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Multiple buyers acquire defined ownership interests or usage rights in a shared asset.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "dbb0b6e4-a48e-56c0-98cf-b354acc18c1f",
+      "stable_code": "G-M08-14",
+      "name": "Donation-Based Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Payments are voluntary contributions rather than conventional consideration for a purchase.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "6d31da6c-a7b8-5ced-a9a1-9994f96b23f1",
+      "stable_code": "G-M08-15",
+      "name": "Nonprofit Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Commercial activity supports a nonprofit mission and operates under nonprofit governance constraints.",
+      "taxonomy_version": "1.0.0"
+    },
+    {
+      "id": "53c0e340-a9cf-552c-8294-7ad504dfaa49",
+      "stable_code": "G-M08-16",
+      "name": "Cause-Related Commerce General",
+      "role": "GENERAL",
+      "parent_id": "22c8d3e1-65e9-5cc1-b574-2bc11c24ef84",
+      "parent_code": "M08",
+      "definition": "Purchases are linked to a stated social or environmental cause through defined contributions or campaigns.",
+      "taxonomy_version": "1.0.0"
+    }
+  ]
+}

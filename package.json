@@ -22,13 +22,20 @@
     "lint": "node scripts/run-pnpm.mjs --recursive lint",
     "test": "node scripts/run-pnpm.mjs --recursive test",
     "test:e2e": "node e2e/entral.e2e.mjs",
+    "test:phase160": "node --test scripts/canonical-taxonomy.test.mjs",
     "test:release-positioning": "node --test scripts/release-positioning.test.mjs",
     "release:check": "node scripts/release-readiness.mjs",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "prisma:invariants": "node scripts/verify-canonical-taxonomy.mjs",
     "prisma:roles": "prisma db execute --file prisma/security/046_roles_and_grants.sql --schema prisma/schema.prisma",
+    "prisma:seed": "node scripts/seed-canonical-taxonomy.mjs",
+    "prisma:reset:seed": "node scripts/reset-canonical-database.mjs",
     "prisma:studio": "prisma studio --schema prisma/schema.prisma"
+  },
+  "prisma": {
+    "seed": "node scripts/seed-canonical-taxonomy.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0"
