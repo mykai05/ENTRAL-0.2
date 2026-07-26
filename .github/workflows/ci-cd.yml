@@ -37,10 +37,11 @@ jobs:
         run: pnpm audit --audit-level high
         continue-on-error: true
       - run: pnpm test:release-positioning
+      - run: pnpm test:phase160
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
-      - name: Verify Phase 150 PostgreSQL identities, isolation, and transactions
+      - name: Verify Phase 150 and 160 PostgreSQL gates
         env:
           RUN_POSTGRES_INTEGRATION: "1"
           TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
@@ -49,6 +50,7 @@ jobs:
           tests/canonicalControlPlanePostgres.integration.test.ts
           tests/memberSeatPostgres.integration.test.ts
           tests/phase150DatabaseAccess.integration.test.ts
+          tests/phase160CanonicalTaxonomyPostgres.integration.test.ts
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build

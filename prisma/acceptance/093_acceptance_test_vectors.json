@@ -1,0 +1,170 @@
+{
+  "schema_version": "1.0.0",
+  "notes": [
+    "Use deterministic Commander and Soldier UUIDs created by the integration-test setup.",
+    "Invalid operational routes must be persisted as REJECTED and never delivered.",
+    "Governance actions are separate from operational messages."
+  ],
+  "hierarchy": [
+    {
+      "id": "HIER-VALID-MARSHAL",
+      "child_role": "MARSHAL",
+      "parent_role": "ENTRAL",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "HIER-VALID-GENERAL",
+      "child_role": "GENERAL",
+      "parent_role": "MARSHAL",
+      "expected": "ACCEPT"
+    },
+    {
+      "id": "HIER-INVALID-GENERAL-ENTRAL",
+      "child_role": "GENERAL",
+      "parent_role": "ENTRAL",
+      "expected": "REJECT",
+      "reason": "Skipped canonical parent role"
+    },
+    {
+      "id": "HIER-INVALID-SOLDIER-GENERAL",
+      "child_role": "SOLDIER",
+      "parent_role": "GENERAL",
+      "expected": "REJECT",
+      "reason": "Soldier must report to Commander"
+    }
+  ],
+  "operational_routes": [
+    {
+      "id": "ROUTE-HUMAN-ENTRAL",
+      "sender": {
+        "kind": "HUMAN",
+        "id": "11111111-1111-4111-8111-111111111111"
+      },
+      "recipient": {
+        "kind": "ENTITY",
+        "id": "45638366-d6f0-5b27-91bf-d2362df27922",
+        "role": "ENTRAL"
+      },
+      "message_type": "MissionOrder",
+      "expected": {
+        "route_valid": true,
+        "direction": "DOWN"
+      }
+    },
+    {
+      "id": "ROUTE-ENTRAL-MARSHAL",
+      "sender": {
+        "kind": "ENTITY",
+        "id": "45638366-d6f0-5b27-91bf-d2362df27922",
+        "role": "ENTRAL"
+      },
+      "recipient": {
+        "kind": "ENTITY",
+        "id": "39ba1ebb-f916-5115-937a-225419f42175",
+        "role": "MARSHAL"
+      },
+      "message_type": "MissionOrder",
+      "expected": {
+        "route_valid": true,
+        "direction": "DOWN"
+      }
+    },
+    {
+      "id": "ROUTE-MARSHAL-GENERAL",
+      "sender": {
+        "kind": "ENTITY",
+        "id": "39ba1ebb-f916-5115-937a-225419f42175",
+        "role": "MARSHAL"
+      },
+      "recipient": {
+        "kind": "ENTITY",
+        "id": "39ed11de-7346-5cb0-b06c-751d7f306bad",
+        "role": "GENERAL"
+      },
+      "message_type": "DoctrineUpdate",
+      "expected": {
+        "route_valid": true,
+        "direction": "DOWN"
+      }
+    },
+    {
+      "id": "ROUTE-HUMAN-GENERAL-REJECT",
+      "sender": {
+        "kind": "HUMAN",
+        "id": "11111111-1111-4111-8111-111111111111"
+      },
+      "recipient": {
+        "kind": "ENTITY",
+        "id": "39ed11de-7346-5cb0-b06c-751d7f306bad",
+        "role": "GENERAL"
+      },
+      "message_type": "MissionOrder",
+      "expected": {
+        "route_valid": false,
+        "status": "REJECTED"
+      }
+    },
+    {
+      "id": "ROUTE-ENTRAL-GENERAL-REJECT",
+      "sender": {
+        "kind": "ENTITY",
+        "id": "45638366-d6f0-5b27-91bf-d2362df27922",
+        "role": "ENTRAL"
+      },
+      "recipient": {
+        "kind": "ENTITY",
+        "id": "39ed11de-7346-5cb0-b06c-751d7f306bad",
+        "role": "GENERAL"
+      },
+      "message_type": "MissionOrder",
+      "expected": {
+        "route_valid": false,
+        "status": "REJECTED"
+      }
+    },
+    {
+      "id": "ROUTE-PEER-GENERAL-REJECT",
+      "sender": {
+        "kind": "ENTITY",
+        "id": "39ed11de-7346-5cb0-b06c-751d7f306bad",
+        "role": "GENERAL"
+      },
+      "recipient": {
+        "kind": "ENTITY",
+        "id": "d11cf902-1ca3-532d-9651-1503b369afd7",
+        "role": "GENERAL"
+      },
+      "message_type": "Clarification",
+      "expected": {
+        "route_valid": false,
+        "status": "REJECTED"
+      }
+    }
+  ],
+  "governance_actions": [
+    {
+      "id": "GOV-HUMAN-PAUSE-SOLDIER",
+      "initiator": "HUMAN_AUTHORITY",
+      "target": "SOLDIER",
+      "action_type": "PAUSE",
+      "expected": "AUTHORIZE_IF_POLICY_SCOPE_VERSION_PASS",
+      "must_not_create_operational_message": true
+    },
+    {
+      "id": "GOV-ENTRAL-REPAIR-COMMANDER",
+      "initiator": "ENTRAL",
+      "target": "COMMANDER",
+      "action_type": "REPAIR",
+      "expected": "AUTHORIZE_IF_POLICY_SCOPE_BUDGET_PASS",
+      "must_propagate_parent_chain_effects": true
+    },
+    {
+      "id": "GOV-MARSHAL-PAUSE-SOLDIER-REJECT",
+      "initiator": "MARSHAL",
+      "target": "SOLDIER",
+      "action_type": "PAUSE",
+      "expected": "REJECT",
+      "reason": "Sovereign action initiator must be Human authority or ENTRAL"
+    }
+  ]
+}
