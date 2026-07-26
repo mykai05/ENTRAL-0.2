@@ -158,20 +158,20 @@ function proposalDetails(message: string, entity: EntitySummary): {
   if (/\b(pause|stop|disable)\b/.test(value) && /\b(agent|entity|selected|this)\b/.test(value)) {
     return {
       actionType: "PAUSE",
-      proposedChanges: { status: "PAUSED" },
+      proposedChanges: { containment_policy: "FINISH_IN_FLIGHT", status: "PAUSED" },
       requestedOutcome: `Pause ${entity.name}.`,
       riskClass: "MEDIUM",
-      rollbackPlan: { status: entity.status },
+      rollbackPlan: { action: "RESUME", previous_status: entity.status },
       summary: `Pause ${entity.name}.`
     };
   }
   if (/\b(resume|restart|enable)\b/.test(value) && /\b(agent|entity|selected|this)\b/.test(value)) {
     return {
       actionType: "RESUME",
-      proposedChanges: { status: "ACTIVE" },
+      proposedChanges: { containment_policy: "FINISH_IN_FLIGHT", status: "ACTIVE" },
       requestedOutcome: `Resume ${entity.name}.`,
       riskClass: "MEDIUM",
-      rollbackPlan: { status: entity.status },
+      rollbackPlan: { action: "PAUSE", previous_status: entity.status },
       summary: `Resume ${entity.name}.`
     };
   }

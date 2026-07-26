@@ -1,17 +1,31 @@
 "use client";
 
-import type { EntityFullRecord, EntityRole, EntitySummary, HealthState } from "@entral/contracts";
+import {
+  assertEntityLifecycleActionResult,
+  type EntityFullRecord,
+  type EntityLifecycleActionRequest,
+  type EntityLifecycleActionResult,
+  type EntityLifecycleActionType,
+  type EntityRole,
+  type EntityStatus,
+  type EntitySummary,
+  type HealthState
+} from "@entral/contracts";
 import {
   AlertTriangle,
   ArrowLeft,
+  CheckCircle2,
   Database,
   Loader2,
+  Pause,
+  Play,
   RefreshCw,
+  RotateCcw,
   Search,
   ShieldCheck
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApiError } from "../lib/api";
+import { ApiError, apiFetch } from "../lib/api";
 import {
   canonicalPortfolioCache,
   canonicalQueryKeys,
@@ -117,14 +131,20 @@ function JsonRecordSection({
 export function CanonicalInfrastructure({
   entities,
   eventSequence,
+  humanUserId,
+  onRefresh,
   organizationId,
   onSelectedEntityChange,
+  scopeLabel,
   selectedEntityId
 }: {
   entities: readonly EntitySummary[];
   eventSequence: number;
+  humanUserId: string;
+  onRefresh: () => void;
   organizationId: string;
   onSelectedEntityChange: (entityId: string | null) => void;
+  scopeLabel: string;
   selectedEntityId: string | null;
 }) {
   const source = useMemo<CanonicalPortfolioSource>(() => ({ organizationId }), [organizationId]);
@@ -142,11 +162,26 @@ export function CanonicalInfrastructure({
   const [recordSequence, setRecordSequence] = useState(0);
   const [recordError, setRecordError] = useState("");
   const [isRecordLoading, setIsRecordLoading] = useState(false);
+  const [lifecycleReason, setLifecycleReason] = useState("");
+  const [lifecycleError, setLifecycleError] = useState("");
+  const [lifecycleResult, setLifecycleResult] = useState<EntityLifecycleActionResult | null>(null);
+  const [isLifecycleRunning, setIsLifecycleRunning] = useState(false);
   const [focusedEntityId, setFocusedEntityId] = useState<string | null>(selectedEntityId);
   const hierarchy = useMemo(() => orderCanonicalInfrastructureEntities(entities), [entities]);
   const selectedSummary = selectedEntityId
     ? entities.find((entity) => entity.entity_id === selectedEntityId) ?? null
     : null;
+  const selectedLifecycleResult = lifecycleResult?.target.entity_id === selectedSummary?.entity_id
+    ? lifecycleResult
+    : null;
+  const selectedLifecycleStatus = selectedLifecycleResult?.after.status ?? selectedSummary?.status;
+  const selectedLifecycleVersion = selectedLifecycleResult?.after.version ?? selectedSummary?.version;
+
+  useEffect(() => {
+    setLifecycleReason("");
+    setLifecycleError("");
+    setLifecycleResult(null);
+  }, [selectedEntityId]);
 
   const { filtered, matchCount } = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -380,13 +415,120 @@ export function CanonicalInfrastructure({
     if (index >= 0) ensureIndexIsVisible(index);
   }
 
+  function lifecycleRequest(
+    entity: EntitySummary,
+    actionType: EntityLifecycleActionType,
+    reason: string,
+    expectedVersion: number,
+    previousStatus: EntityStatus,
+    restoresActionId?: string
+  ): EntityLifecycleActionRequest {
+    const actionId = crypto.randomUUID();
+    const businessId = entity.assigned_business_id;
+    return {
+      action_id: actionId,
+      action_type: actionType,
+      actor_id: humanUserId,
+      actor_type: "HUMAN",
+      authority_basis: {
+        channel: "MEMBER_INFRASTRUCTURE",
+        explicit_confirmation_required: true,
+        target_version: expectedVersion
+      },
+      business_id: businessId,
+      confidence: 1,
+      expected_version: expectedVersion,
+      idempotency_key: `member-infrastructure:${actionId}`,
+      proposed_changes: {
+        containment_policy: "FINISH_IN_FLIGHT",
+        status: actionType === "PAUSE" ? "PAUSED" : "ACTIVE"
+      },
+      reason,
+      requested_at: new Date().toISOString(),
+      requested_outcome: `${actionType === "PAUSE" ? "Pause" : "Resume"} ${entity.name}.`,
+      restores_action_id: restoresActionId,
+      risk_class: "MEDIUM",
+      rollback_plan: {
+        action: actionType === "PAUSE" ? "RESUME" : "PAUSE",
+        previous_status: previousStatus
+      },
+      scope: businessId
+        ? {
+            business_id: businessId,
+            display_label: scopeLabel,
+            entity_id: entity.entity_id,
+            scope_id: businessId,
+            scope_type: "BUSINESS"
+          }
+        : {
+            display_label: scopeLabel,
+            entity_id: entity.entity_id,
+            scope_id: humanUserId,
+            scope_type: "USER"
+          },
+      target_id: entity.entity_id,
+      target_type: "ENTITY",
+      verification_plan: {
+        checks: [
+          "Read target status and version after mutation.",
+          "Verify the descendant new-work leasing guard.",
+          "Require canonical event, audit, outbox, and ENTRAL completion receipts."
+        ]
+      }
+    };
+  }
+
+  async function runLifecycleAction(
+    actionType: EntityLifecycleActionType,
+    restoration?: EntityLifecycleActionResult
+  ) {
+    if (!selectedSummary || isLifecycleRunning) return;
+    const reason = restoration
+      ? `Restore ${selectedSummary.name} by reversing governed action ${restoration.action_id}.`
+      : lifecycleReason.trim();
+    if (!reason) {
+      setLifecycleError("Enter a concise operational reason before changing this entity.");
+      return;
+    }
+    const expectedVersion = restoration?.after.version ?? selectedLifecycleVersion ?? selectedSummary.version;
+    const previousStatus = restoration?.after.status ?? selectedLifecycleStatus ?? selectedSummary.status;
+    const request = lifecycleRequest(
+      selectedSummary,
+      actionType,
+      reason,
+      expectedVersion,
+      previousStatus,
+      restoration?.action_id
+    );
+    setIsLifecycleRunning(true);
+    setLifecycleError("");
+    try {
+      const payload = await apiFetch<unknown>(
+        `/member/organizations/${encodeURIComponent(organizationId)}/entities/${encodeURIComponent(selectedSummary.entity_id)}/actions/${actionType.toLocaleLowerCase()}`,
+        { json: request, method: "POST" }
+      );
+      if (!payload || typeof payload !== "object" || !("action" in payload)) {
+        throw new Error("The lifecycle response did not contain an action receipt.");
+      }
+      const action = (payload as { action: EntityLifecycleActionResult }).action;
+      assertEntityLifecycleActionResult(action);
+      setLifecycleResult(action);
+      setLifecycleReason("");
+      onRefresh();
+    } catch (error) {
+      setLifecycleError(errorMessage(error));
+    } finally {
+      setIsLifecycleRunning(false);
+    }
+  }
+
   return (
     <section className="phase180-infrastructure" aria-labelledby="infrastructure-heading">
       <header className="phase180-surface-heading">
         <div>
           <p className="eyebrow">Canonical records · event {eventSequence}</p>
           <h1 id="infrastructure-heading">Infrastructure</h1>
-          <p>Searchable RLS-visible hierarchy and on-demand full records. Mutations remain hidden until a complete governed executor exists.</p>
+          <p>Searchable RLS-visible hierarchy and on-demand full records. Eligible lower entities expose verified, version-bound Pause and Resume actions.</p>
         </div>
         <div className="phase180-integrity-note"><ShieldCheck size={18} /><span>PostgreSQL readback<strong>Version checked</strong></span></div>
       </header>
@@ -464,12 +606,75 @@ export function CanonicalInfrastructure({
               <header className="phase180-record-heading">
                 <button className="phase180-record-back" onClick={() => onSelectedEntityChange(null)} type="button"><ArrowLeft size={18} /> Back</button>
                 <div>
-                  <p className="eyebrow">{selectedSummary.entity_type} · version {selectedSummary.version}</p>
+                  <p className="eyebrow">{selectedSummary.entity_type} · version {selectedLifecycleVersion}</p>
                   <h2>{selectedSummary.name}</h2>
-                  <p>{selectedSummary.stable_code} · {selectedSummary.status} · {selectedSummary.health}</p>
+                  <p>{selectedSummary.stable_code} · {selectedLifecycleStatus} · {selectedSummary.health}</p>
                 </div>
                 <span>{recordSequence ? `Aligned snapshot event ${recordSequence}` : `Workspace event ${eventSequence}`}</span>
               </header>
+              {selectedSummary.entity_type !== "ENTRAL" ? (
+                <section className="phase190-lifecycle" aria-label="Governed pause and resume">
+                  <div className="phase190-lifecycle-heading">
+                    <div>
+                      <span>Governed lifecycle</span>
+                      <strong>{selectedLifecycleStatus === "PAUSED" ? "New work blocked" : "Current work state preserved"}</strong>
+                    </div>
+                    <small>Optimistic v{selectedLifecycleVersion} · finish in-flight</small>
+                  </div>
+                  <label>
+                    <span>Operational reason</span>
+                    <textarea
+                      disabled={isLifecycleRunning}
+                      maxLength={2_000}
+                      onChange={(event) => setLifecycleReason(event.target.value)}
+                      placeholder={`Why should ${selectedSummary.name} be ${selectedLifecycleStatus === "PAUSED" ? "resumed" : "paused"}?`}
+                      rows={2}
+                      value={lifecycleReason}
+                    />
+                  </label>
+                  <div className="phase190-lifecycle-actions">
+                    {selectedLifecycleStatus === "PAUSED" ? (
+                      <button
+                        disabled={isLifecycleRunning}
+                        onClick={() => void runLifecycleAction("RESUME")}
+                        type="button"
+                      >
+                        {isLifecycleRunning ? <Loader2 aria-hidden="true" className="spin" size={17} /> : <Play aria-hidden="true" size={17} />}
+                        Resume entity
+                      </button>
+                    ) : selectedLifecycleStatus === "ACTIVE" || selectedLifecycleStatus === "DEGRADED" ? (
+                      <button
+                        disabled={isLifecycleRunning}
+                        onClick={() => void runLifecycleAction("PAUSE")}
+                        type="button"
+                      >
+                        {isLifecycleRunning ? <Loader2 aria-hidden="true" className="spin" size={17} /> : <Pause aria-hidden="true" size={17} />}
+                        Pause entity
+                      </button>
+                    ) : (
+                      <p>This entity cannot be paused or resumed from its current {selectedLifecycleStatus?.toLocaleLowerCase()} state.</p>
+                    )}
+                  </div>
+                  {selectedLifecycleResult ? (
+                    <div className="phase190-lifecycle-receipt" role="status">
+                      <CheckCircle2 aria-hidden="true" size={18} />
+                      <span>
+                        <strong>{selectedLifecycleResult.action_type === "PAUSE" ? "Paused" : "Resumed"} and verified</strong>
+                        Version {selectedLifecycleResult.before.version} → {selectedLifecycleResult.after.version} · event {selectedLifecycleResult.canonical_event.sequence_number}
+                      </span>
+                      <button
+                        disabled={isLifecycleRunning}
+                        onClick={() => void runLifecycleAction(selectedLifecycleResult.rollback.action_type, selectedLifecycleResult)}
+                        type="button"
+                      >
+                        <RotateCcw aria-hidden="true" size={15} />
+                        Undo
+                      </button>
+                    </div>
+                  ) : null}
+                  {lifecycleError ? <p className="phase190-lifecycle-error" role="alert">{lifecycleError}</p> : null}
+                </section>
+              ) : null}
               {isRecordLoading ? (
                 <div className="phase180-record-state" role="status"><Loader2 className="spin" size={22} /> Loading canonical full record...</div>
               ) : recordError ? (

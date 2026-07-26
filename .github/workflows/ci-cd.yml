@@ -43,7 +43,7 @@ jobs:
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
-      - name: Verify Phase 150 through 180 PostgreSQL gates
+      - name: Verify Phase 150 through 190 PostgreSQL gates
         env:
           RUN_POSTGRES_INTEGRATION: "1"
           TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
@@ -54,6 +54,7 @@ jobs:
           tests/phase150DatabaseAccess.integration.test.ts
           tests/phase160CanonicalTaxonomyPostgres.integration.test.ts
           tests/phase170CanonicalPortfolioPostgres.integration.test.ts
+          tests/phase190EntityLifecyclePostgres.integration.test.ts
       - run: pnpm lint
       - run: pnpm test
       - name: Verify login, canonical Dashboard, business detail, and phone layout

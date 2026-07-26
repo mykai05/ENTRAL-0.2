@@ -50,6 +50,12 @@ ALTER ROLE entral_worker SET row_security = on;
 ALTER ROLE entral_audit_reader SET row_security = on;
 ALTER ROLE entral_verifier SET row_security = on;
 
+-- entral_api may prove deterministic lifecycle readback without inheriting or
+-- assuming verifier table privileges. The provenance trigger checks membership;
+-- SET and INHERIT remain disabled so verification stays bound to the API's
+-- authenticated canonical session.
+GRANT entral_verifier TO entral_api WITH INHERIT FALSE, SET FALSE;
+
 REVOKE ALL ON SCHEMA entral FROM PUBLIC;
 REVOKE ALL ON ALL TABLES IN SCHEMA entral FROM PUBLIC;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA entral FROM PUBLIC;
@@ -227,6 +233,10 @@ GRANT EXECUTE ON FUNCTION entral.can_access_mission(uuid, text)
 TO entral_api;
 GRANT EXECUTE ON FUNCTION entral.can_access_ai_run(uuid, text)
 TO entral_api, entral_verifier;
+GRANT EXECUTE ON FUNCTION entral.entity_accepts_new_work(uuid)
+TO entral_api, entral_worker, entral_verifier;
+GRANT EXECUTE ON FUNCTION entral.entity_lifecycle_receipt_counts(uuid, uuid)
+TO entral_api;
 
 GRANT EXECUTE ON FUNCTION entral.session_app_user_id()
 TO entral_api, entral_audit_reader, entral_verifier;

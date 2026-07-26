@@ -133,6 +133,103 @@ describe("Canonical ENTRAL assistant", () => {
     expect(onRefresh).toHaveBeenCalled();
   });
 
+  it("executes a confirmed pause through the production lifecycle endpoint and reports one verified event", async () => {
+    const actionId = "423e4567-e89b-42d3-a456-426614174000";
+    const messageId = "523e4567-e89b-42d3-a456-426614174000";
+    api.apiFetch.mockResolvedValueOnce({
+      action: {
+        action_id: actionId,
+        action_type: "PAUSE",
+        after: { status: "PAUSED", version: 8 },
+        audit_entry_ids: ["623e4567-e89b-42d3-a456-426614174000"],
+        before: { status: "ACTIVE", version: 7 },
+        canonical_event: {
+          aggregate_version: 8,
+          event_id: "723e4567-e89b-42d3-a456-426614174000",
+          sequence_number: 52
+        },
+        completed_at: "2026-07-26T20:00:01.000Z",
+        containment: {
+          descendants_affected: 0,
+          new_work_leasing: "BLOCKED",
+          policy: "FINISH_IN_FLIGHT"
+        },
+        conversation_message_id: messageId,
+        idempotency_key: `member-assistant:${actionId}`,
+        idempotent_replay: false,
+        requested_at: "2026-07-26T20:00:00.000Z",
+        restoration_of_action_id: null,
+        rollback: {
+          action_type: "RESUME",
+          available: true,
+          expected_version: 8,
+          restores_action_id: actionId
+        },
+        status: "SUCCEEDED",
+        target: {
+          business_id: null,
+          entity_id: agentId,
+          entity_role: "SOLDIER",
+          status: "PAUSED",
+          version: 8
+        },
+        verification: {
+          checked_at: "2026-07-26T20:00:01.000Z",
+          expected_status: "PAUSED",
+          expected_version: 8,
+          observed_status: "PAUSED",
+          observed_version: 8,
+          passed: true,
+          verification_id: "823e4567-e89b-42d3-a456-426614174000"
+        }
+      }
+    });
+    const onRefresh = vi.fn();
+    renderAssistant({ onRefresh });
+    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL assistant" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Message ENTRAL" }), {
+      target: { value: "Pause the selected agent" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message to ENTRAL" }));
+
+    expect(screen.getByRole("article", { name: "Governed agent change" })).toHaveTextContent(
+      "Pause Interface Sentinel"
+    );
+    expect(api.apiFetch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Submit governed change" }));
+
+    await waitFor(() => {
+      expect(api.apiFetch).toHaveBeenCalledWith(
+        `/member/organizations/ck1234567890123456789012/entities/${agentId}/actions/pause`,
+        expect.objectContaining({
+          json: expect.objectContaining({
+            action_type: "PAUSE",
+            actor_id: humanUserId,
+            authority_basis: {
+              channel: "MEMBER_ENTRAL_ASSISTANT",
+              explicit_confirmation_required: true,
+              target_version: 7
+            },
+            expected_version: 7,
+            proposed_changes: {
+              containment_policy: "FINISH_IN_FLIGHT",
+              status: "PAUSED"
+            },
+            rollback_plan: {
+              action: "RESUME",
+              previous_status: "ACTIVE"
+            }
+          }),
+          method: "POST"
+        })
+      );
+    });
+    expect(screen.getByText(/paused at canonical version 8/i)).toHaveTextContent(
+      "Dashboard, Infrastructure, Graph, and this conversation now share event 52"
+    );
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
   it("sends canonical context hints to the member-scoped assistant endpoint", async () => {
     api.apiFetch.mockResolvedValueOnce({
       action_plan: { authorizationRequired: false, intent: "conversation" },

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createGovernanceAction: vi.fn(),
+  executeEntityLifecycle: vi.fn(),
   getBusiness: vi.fn(),
   getBusinessFull: vi.fn(),
   getEntityFull: vi.fn(),
@@ -13,6 +14,12 @@ const mocks = vi.hoisted(() => ({
   listBusinesses: vi.fn(),
   listHierarchy: vi.fn(),
   userFindUnique: vi.fn()
+}));
+
+vi.mock("../src/services/canonicalEntityLifecycle.js", () => ({
+  canonicalEntityLifecycleService: {
+    execute: mocks.executeEntityLifecycle
+  }
 }));
 
 vi.mock("../src/db.js", () => ({
@@ -70,6 +77,25 @@ function requestBody() {
     target_id: targetId,
     target_type: "ENTITY",
     verification_plan: { checks: ["read-after-write"] }
+  } as const;
+}
+
+function lifecycleRequestBody() {
+  return {
+    ...requestBody(),
+    authority_basis: {
+      channel: "CONTROL_PLANE",
+      explicit_confirmation_required: true,
+      target_version: 1
+    },
+    proposed_changes: {
+      containment_policy: "FINISH_IN_FLIGHT",
+      status: "PAUSED"
+    },
+    rollback_plan: {
+      action: "RESUME",
+      previous_status: "ACTIVE"
+    }
   } as const;
 }
 
@@ -286,6 +312,47 @@ describe("canonical control-plane routes", () => {
     });
     expect(entralActorResponse.statusCode).toBe(403);
     expect(mocks.createGovernanceAction).toHaveBeenCalledTimes(1);
+    await app.close();
+  });
+
+  it("routes a typed pause to the transactional lifecycle executor and binds the path operation", async () => {
+    mocks.executeEntityLifecycle.mockResolvedValueOnce({
+      action_id: actionId,
+      action_type: "PAUSE",
+      status: "SUCCEEDED"
+    });
+    const { app, authorization } = await buildControlPlaneTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: lifecycleRequestBody(),
+      url: `/api/v1/control-plane/entities/${targetId}/actions/pause`
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      action: { action_id: actionId, action_type: "PAUSE", status: "SUCCEEDED" }
+    });
+    expect(mocks.executeEntityLifecycle).toHaveBeenCalledWith(
+      lifecycleRequestBody(),
+      {
+        authenticatedHumanEmail: "authority@example.test",
+        databaseSession: {
+          actionReason: "A verified dependency is unavailable.",
+          authSubject: "internal-user",
+          correlationId: expect.any(String)
+        }
+      }
+    );
+
+    const mismatch = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: lifecycleRequestBody(),
+      url: `/api/v1/control-plane/entities/${targetId}/actions/resume`
+    });
+    expect(mismatch.statusCode).toBe(403);
+    expect(mocks.executeEntityLifecycle).toHaveBeenCalledTimes(1);
     await app.close();
   });
 

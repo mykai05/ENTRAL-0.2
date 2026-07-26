@@ -192,6 +192,77 @@ export interface GovernanceActionRequest {
   readonly expected_version: number;
   readonly idempotency_key: string;
   readonly requested_at: string;
+  readonly restores_action_id?: string;
+}
+
+export type EntityLifecycleActionType = "PAUSE" | "RESUME";
+export type EntityLifecycleContainmentPolicy = "FINISH_IN_FLIGHT";
+
+export interface EntityLifecycleActionRequest extends GovernanceActionRequest {
+  readonly action_type: EntityLifecycleActionType;
+  readonly target_type: "ENTITY";
+  readonly target_id: string;
+  readonly proposed_changes: {
+    readonly containment_policy: EntityLifecycleContainmentPolicy;
+    readonly status: "ACTIVE" | "PAUSED";
+  };
+  readonly rollback_plan: {
+    readonly action: EntityLifecycleActionType;
+    readonly previous_status: EntityStatus;
+  };
+}
+
+export interface EntityLifecycleActionResult {
+  readonly action_id: string;
+  readonly action_type: EntityLifecycleActionType;
+  readonly status: "SUCCEEDED";
+  readonly target: {
+    readonly business_id: string | null;
+    readonly entity_id: string;
+    readonly entity_role: Exclude<EntityRole, "ENTRAL">;
+    readonly status: "ACTIVE" | "PAUSED";
+    readonly version: number;
+  };
+  readonly before: {
+    readonly status: EntityStatus;
+    readonly version: number;
+  };
+  readonly after: {
+    readonly status: "ACTIVE" | "PAUSED";
+    readonly version: number;
+  };
+  readonly containment: {
+    readonly descendants_affected: number;
+    readonly new_work_leasing: "BLOCKED" | "ELIGIBLE";
+    readonly policy: EntityLifecycleContainmentPolicy;
+  };
+  readonly verification: {
+    readonly checked_at: string;
+    readonly expected_status: "ACTIVE" | "PAUSED";
+    readonly expected_version: number;
+    readonly observed_status: "ACTIVE" | "PAUSED";
+    readonly observed_version: number;
+    readonly passed: true;
+    readonly verification_id: string;
+  };
+  readonly canonical_event: {
+    readonly aggregate_version: number;
+    readonly event_id: string;
+    readonly sequence_number: number;
+  };
+  readonly audit_entry_ids: readonly string[];
+  readonly conversation_message_id: string;
+  readonly idempotency_key: string;
+  readonly idempotent_replay: boolean;
+  readonly requested_at: string;
+  readonly completed_at: string;
+  readonly rollback: {
+    readonly action_type: EntityLifecycleActionType;
+    readonly available: true;
+    readonly expected_version: number;
+    readonly restores_action_id: string;
+  };
+  readonly restoration_of_action_id: string | null;
 }
 
 export interface VerificationResult {

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  assertEntityLifecycleActionResult,
   parseMemberEntralAssistantMessageResponse,
   type CanonicalEntralConversationMessage,
   type EntitySummary,
@@ -226,10 +227,10 @@ export function CanonicalEntralAssistant({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [isOpen, mode, storagePrefix]);
 
-  function addMessage(role: AssistantMessage["role"], content: string) {
+  function addMessage(role: AssistantMessage["role"], content: string, id = localMessageId()) {
     setMessages((current) => mergeAssistantMessages(current, [{
       content,
-      id: localMessageId(),
+      id,
       role,
       timestamp: new Date().toISOString()
     }]));
@@ -323,6 +324,32 @@ export function CanonicalEntralAssistant({
     setIsSubmittingProposal(true);
     setError("");
     try {
+      if (
+        (request.action_type === "PAUSE" || request.action_type === "RESUME")
+        && request.target_type === "ENTITY"
+        && request.target_id
+      ) {
+        const payload = await apiFetch<unknown>(
+          `/member/organizations/${encodeURIComponent(organizationId)}/entities/${encodeURIComponent(request.target_id)}/actions/${request.action_type.toLocaleLowerCase()}`,
+          {
+            json: request,
+            method: "POST"
+          }
+        );
+        if (!payload || typeof payload !== "object" || !("action" in payload)) {
+          throw new Error("The lifecycle response did not contain an action receipt.");
+        }
+        const action = (payload as { action: unknown }).action;
+        assertEntityLifecycleActionResult(action);
+        addMessage(
+          "assistant",
+          `${pendingProposal?.entity.name ?? "Entity"} ${action.action_type === "PAUSE" ? "paused" : "resumed"} at canonical version ${action.after.version}. Readback verification passed; Dashboard, Infrastructure, Graph, and this conversation now share event ${action.canonical_event.sequence_number}.`,
+          `canonical-${action.conversation_message_id}`
+        );
+        setPendingProposal(null);
+        onRefresh();
+        return;
+      }
       const response = await apiFetch<{
         action: { action_id: string; status: string };
       }>(`/member/organizations/${encodeURIComponent(organizationId)}/governance-actions`, {

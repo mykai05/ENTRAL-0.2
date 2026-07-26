@@ -23,6 +23,15 @@ const portfolio = vi.hoisted(() => {
   };
 });
 
+const lifecycleApi = vi.hoisted(() => ({
+  fetch: vi.fn()
+}));
+
+vi.mock("../lib/api", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../lib/api")>(),
+  apiFetch: lifecycleApi.fetch
+}));
+
 vi.mock("../lib/canonical-portfolio", () => ({
   canonicalPortfolioCache: {
     get: portfolio.get,
@@ -94,14 +103,18 @@ const hierarchy = [
 function renderInfrastructure(
   entities: readonly EntitySummary[],
   selectedEntityId: string | null = null,
-  eventSequence = 9
+  eventSequence = 9,
+  onRefresh = vi.fn()
 ) {
   return render(
     <CanonicalInfrastructure
       entities={entities}
       eventSequence={eventSequence}
+      humanUserId="11111111-1111-4111-8111-111111111111"
+      onRefresh={onRefresh}
       organizationId="organization-1"
       onSelectedEntityChange={vi.fn()}
+      scopeLabel="Human portfolio"
       selectedEntityId={selectedEntityId}
     />
   );
@@ -113,6 +126,7 @@ beforeEach(() => {
   portfolio.invalidate.mockClear();
   portfolio.loadEntity.mockReset();
   portfolio.set.mockClear();
+  lifecycleApi.fetch.mockReset();
 });
 
 describe("CanonicalInfrastructure hierarchy", () => {
@@ -262,5 +276,125 @@ describe("CanonicalInfrastructure full-record alignment", () => {
     expect(portfolio.loadEntity).toHaveBeenCalledTimes(3);
     expect(portfolio.invalidate).toHaveBeenCalledTimes(3);
     expect(screen.queryByText("Configuration")).not.toBeInTheDocument();
+  });
+});
+
+describe("CanonicalInfrastructure governed lifecycle", () => {
+  const selectedId = "423e4567-e89b-42d3-a456-426614174000";
+  const actionId = "523e4567-e89b-42d3-a456-426614174000";
+  const restorationActionId = "a23e4567-e89b-42d3-a456-426614174000";
+  const verificationId = "623e4567-e89b-42d3-a456-426614174000";
+  const eventId = "723e4567-e89b-42d3-a456-426614174000";
+  const auditId = "823e4567-e89b-42d3-a456-426614174000";
+  const messageId = "923e4567-e89b-42d3-a456-426614174000";
+
+  function lifecycleResult(actionType: "PAUSE" | "RESUME", beforeVersion: number) {
+    const paused = actionType === "PAUSE";
+    const currentActionId = paused ? actionId : restorationActionId;
+    return {
+      action_id: currentActionId,
+      action_type: actionType,
+      after: { status: paused ? "PAUSED" : "ACTIVE", version: beforeVersion + 1 },
+      audit_entry_ids: [auditId],
+      before: { status: paused ? "ACTIVE" : "PAUSED", version: beforeVersion },
+      canonical_event: {
+        aggregate_version: beforeVersion + 1,
+        event_id: eventId,
+        sequence_number: 41 + beforeVersion
+      },
+      completed_at: "2026-07-26T20:00:01.000Z",
+      containment: {
+        descendants_affected: 0,
+        new_work_leasing: paused ? "BLOCKED" : "ELIGIBLE",
+        policy: "FINISH_IN_FLIGHT"
+      },
+      conversation_message_id: messageId,
+      idempotency_key: `member-infrastructure:${currentActionId}`,
+      idempotent_replay: false,
+      requested_at: "2026-07-26T20:00:00.000Z",
+      restoration_of_action_id: paused ? null : actionId,
+      rollback: {
+        action_type: paused ? "RESUME" : "PAUSE",
+        available: true,
+        expected_version: beforeVersion + 1,
+        restores_action_id: currentActionId
+      },
+      status: "SUCCEEDED",
+      target: {
+        business_id: null,
+        entity_id: selectedId,
+        entity_role: "SOLDIER",
+        status: paused ? "PAUSED" : "ACTIVE",
+        version: beforeVersion + 1
+      },
+      verification: {
+        checked_at: "2026-07-26T20:00:01.000Z",
+        expected_status: paused ? "PAUSED" : "ACTIVE",
+        expected_version: beforeVersion + 1,
+        observed_status: paused ? "PAUSED" : "ACTIVE",
+        observed_version: beforeVersion + 1,
+        passed: true,
+        verification_id: verificationId
+      }
+    };
+  }
+
+  it("pauses with a reason, reports verified canonical convergence, and restores through a new action", async () => {
+    const selected = entity(selectedId, "SOLDIER", null, "S-VALID");
+    const onRefresh = vi.fn();
+    portfolio.loadEntity.mockResolvedValue({
+      entity: fullRecord(selected, selected.version),
+      event_sequence: 9
+    });
+    lifecycleApi.fetch
+      .mockResolvedValueOnce({ action: lifecycleResult("PAUSE", 1) })
+      .mockResolvedValueOnce({ action: lifecycleResult("RESUME", 2) });
+
+    renderInfrastructure([selected], selectedId, 9, onRefresh);
+    await screen.findByText("Configuration");
+    fireEvent.change(screen.getByLabelText("Operational reason"), {
+      target: { value: "Pause while a dependency is repaired." }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Pause entity" }));
+
+    expect(await screen.findByText("Paused and verified")).toBeInTheDocument();
+    expect(screen.getByText(/Version 1 → 2 · event 42/)).toBeInTheDocument();
+    expect(lifecycleApi.fetch).toHaveBeenNthCalledWith(
+      1,
+      `/member/organizations/organization-1/entities/${selectedId}/actions/pause`,
+      expect.objectContaining({
+        json: expect.objectContaining({
+          action_type: "PAUSE",
+          expected_version: 1,
+          proposed_changes: {
+            containment_policy: "FINISH_IN_FLIGHT",
+            status: "PAUSED"
+          }
+        }),
+        method: "POST"
+      })
+    );
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(lifecycleApi.fetch).toHaveBeenCalledTimes(2));
+    expect(lifecycleApi.fetch).toHaveBeenNthCalledWith(
+      2,
+      `/member/organizations/organization-1/entities/${selectedId}/actions/resume`,
+      expect.objectContaining({
+        json: expect.objectContaining({
+          action_type: "RESUME",
+          expected_version: 2,
+          restores_action_id: actionId,
+          rollback_plan: {
+            action: "PAUSE",
+            previous_status: "PAUSED"
+          }
+        }),
+        method: "POST"
+      })
+    );
+    expect(await screen.findByText("Resumed and verified")).toBeInTheDocument();
+    expect(onRefresh).toHaveBeenCalledTimes(2);
   });
 });

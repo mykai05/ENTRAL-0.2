@@ -457,8 +457,11 @@ export function CanonicalMemberShell({
             <CanonicalInfrastructure
               entities={scopedEntities}
               eventSequence={hierarchy.event_sequence}
+              humanUserId={portfolio.scope.user_id}
+              onRefresh={() => void refreshWorkspace()}
               onSelectedEntityChange={setSelectedEntityId}
               organizationId={organizationId}
+              scopeLabel={scopeLabel}
               selectedEntityId={selectedEntityId}
             />
           )}
