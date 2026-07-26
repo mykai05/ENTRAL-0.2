@@ -768,7 +768,32 @@ const tests = [
           await expectVisible(canvas, `${profile.name} 2D Graph after 3D parity verification`, 30_000);
 
           const infrastructureStart = performance.now();
-          await page.getByRole("link", { name: "Infrastructure" }).click();
+          const infrastructureLink = page.getByRole("link", { name: "Infrastructure" });
+          if (profile.isMobile) {
+            const hitTarget = await infrastructureLink.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              const x = rect.left + rect.width / 2;
+              const y = rect.top + rect.height / 2;
+              const hit = document.elementFromPoint(x, y);
+              return {
+                contains_hit: hit ? element.contains(hit) : false,
+                height: rect.height,
+                hit_element: hit
+                  ? `${hit.tagName.toLowerCase()}${hit.getAttribute("href") ? `[href="${hit.getAttribute("href")}"]` : ""}`
+                  : null,
+                width: rect.width,
+                x,
+                y
+              };
+            });
+            if (!hitTarget.contains_hit) {
+              throw new Error(`Phone Infrastructure destination is not the center hit target: ${JSON.stringify(hitTarget)}`);
+            }
+            await page.mouse.click(hitTarget.x, hitTarget.y);
+          } else {
+            await infrastructureLink.click();
+          }
+          await expectUrl(page, /\/member\/infrastructure$/, `${profile.name} Infrastructure navigation`);
           await expectVisible(page.getByRole("heading", { name: "Infrastructure", exact: true }), `${profile.name} Infrastructure`);
           const tree = page.getByRole("tree", { name: "Canonical hierarchy" });
           await expectVisible(tree, `${profile.name} virtualized hierarchy`);
