@@ -5,6 +5,14 @@
 
 BEGIN;
 
+-- PostgreSQL roles are cluster-wide, while this grant script can be deployed
+-- concurrently against separate databases. Serialize the existence check and
+-- CREATE ROLE block so parallel migrations cannot race on pg_authid. The lock
+-- is released automatically with this transaction.
+SELECT pg_advisory_xact_lock(
+    hashtextextended('entral:roles-and-grants:v1', 0)
+);
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'entral_api') THEN
