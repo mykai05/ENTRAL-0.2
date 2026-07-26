@@ -1,9 +1,10 @@
+import { randomUUID } from "node:crypto";
 import {
   assertGovernanceActionRequest,
   ContractError,
   type GovernanceActionRequest
 } from "@entral/contracts";
-import type { FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { requireAdmin, setPrivateNoStoreHeaders } from "../auth.js";
 import {
@@ -19,23 +20,50 @@ function unauthenticated(reply: FastifyReply) {
   return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
 }
 
+function databaseSession(request: FastifyRequest, actionReason: string) {
+  const currentUser = request.user;
+  if (!currentUser) {
+    throw new CanonicalControlPlaneError(
+      "AUTHENTICATED_SESSION_REQUIRED",
+      "Authentication is required.",
+      401
+    );
+  }
+  return {
+    actionReason,
+    authSubject: currentUser.sub,
+    correlationId: randomUUID()
+  } as const;
+}
+
 export async function controlPlaneRoutes(app: FastifyInstance) {
   app.addHook("onRequest", (_request, reply, done) => {
     setPrivateNoStoreHeaders(reply);
     done();
   });
 
-  app.get("/control-plane/hierarchy", { preHandler: requireAdmin }, async (_request, reply) => {
-    return reply.send({ entities: await canonicalControlPlaneRepository.listHierarchy() });
+  app.get("/control-plane/hierarchy", { preHandler: requireAdmin }, async (request, reply) => {
+    return reply.send({
+      entities: await canonicalControlPlaneRepository.listHierarchy(
+        databaseSession(request, "Read the canonical entity hierarchy.")
+      )
+    });
   });
 
-  app.get("/control-plane/businesses", { preHandler: requireAdmin }, async (_request, reply) => {
-    return reply.send({ businesses: await canonicalControlPlaneRepository.listBusinesses() });
+  app.get("/control-plane/businesses", { preHandler: requireAdmin }, async (request, reply) => {
+    return reply.send({
+      businesses: await canonicalControlPlaneRepository.listBusinesses(
+        databaseSession(request, "Read canonical business summaries.")
+      )
+    });
   });
 
   app.get("/control-plane/businesses/:businessId", { preHandler: requireAdmin }, async (request, reply) => {
     const { businessId } = businessParamsSchema.parse(request.params);
-    const business = await canonicalControlPlaneRepository.getBusiness(businessId);
+    const business = await canonicalControlPlaneRepository.getBusiness(
+      businessId,
+      databaseSession(request, `Read canonical business ${businessId}.`)
+    );
     if (!business) {
       return reply.code(404).send({ error: "Not Found", message: "Business not found." });
     }
@@ -71,7 +99,8 @@ export async function controlPlaneRoutes(app: FastifyInstance) {
 
     try {
       const action = await canonicalControlPlaneRepository.createGovernanceAction(candidate, {
-        authenticatedHumanEmail: currentUser.email
+        authenticatedHumanEmail: currentUser.email,
+        databaseSession: databaseSession(request, candidate.reason)
       });
       return reply.code(201).send({ action });
     } catch (error) {

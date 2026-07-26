@@ -9,7 +9,11 @@ import {
   type JsonValue
 } from "@entral/contracts";
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { prisma } from "../db.js";
+import {
+  prisma,
+  withCanonicalSession,
+  type CanonicalSessionContext
+} from "../db.js";
 
 type RawEntitySummary = {
   activeAlert: string | null;
@@ -99,6 +103,11 @@ export type GovernanceActionRecord = {
   target_id: string | null;
   target_type: GovernanceTargetType;
   version: number;
+};
+
+export type CanonicalOperationContext = {
+  authenticatedHumanEmail?: string;
+  databaseSession: CanonicalSessionContext;
 };
 
 export class CanonicalControlPlaneError extends Error {
@@ -318,149 +327,111 @@ async function findGovernanceAction(
 export class CanonicalControlPlaneRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
-  async listHierarchy(): Promise<EntitySummary[]> {
-    const rows = await this.db.$queryRaw<RawEntitySummary[]>`
-      SELECT
-        e.id AS "entityId",
-        e.stable_code AS "stableCode",
-        e.role::text AS "entityType",
-        e.name,
-        e.status::text AS status,
-        COALESCE(bs.health_state::text, 'UNKNOWN') AS health,
-        e.parent_id AS "parentId",
-        COUNT(child.id)::integer AS "childCount",
-        e.business_id AS "assignedBusinessId",
-        mp.model_name AS "modelClass",
-        mp.compute_tier AS "computeTier",
-        (
-          SELECT m.objective
-          FROM entral.missions m
-          WHERE m.owner_entity_id = e.id
-            AND m.status IN ('ROUTING','ACKNOWLEDGED','ACTIVE','BLOCKED')
-          ORDER BY m.priority DESC, m.created_at
-          LIMIT 1
-        ) AS "currentMission",
-        (
-          SELECT COUNT(*)::integer
-          FROM entral.tasks t
-          WHERE t.owner_entity_id = e.id
-            AND t.status IN ('NOT_STARTED','ACTIVE','BLOCKED')
-        ) AS "activeTaskCount",
-        COALESCE((
-          SELECT t.result
-          FROM entral.tasks t
-          WHERE t.owner_entity_id = e.id AND t.result IS NOT NULL
-          ORDER BY t.updated_at DESC
-          LIMIT 1
-        ), 'null'::jsonb) AS "latestMaterialResult",
-        NULL::text AS "activeAlert",
-        e.updated_at AS "updatedAt",
-        e.version::integer AS version
-      FROM entral.entities e
-      LEFT JOIN entral.entities child ON child.parent_id = e.id
-      LEFT JOIN entral.business_states bs ON bs.business_id = e.business_id
-      LEFT JOIN entral.model_profiles mp ON mp.id = e.model_profile_id
-      GROUP BY e.id, bs.health_state, mp.model_name, mp.compute_tier
-      ORDER BY
-        CASE e.role
-          WHEN 'ENTRAL' THEN 0
-          WHEN 'MARSHAL' THEN 1
-          WHEN 'GENERAL' THEN 2
-          WHEN 'COMMANDER' THEN 3
-          WHEN 'SOLDIER' THEN 4
-        END,
-        e.stable_code
-    `;
-    return rows.map(mapEntity);
+  async listHierarchy(session: CanonicalSessionContext): Promise<EntitySummary[]> {
+    return withCanonicalSession(this.db, session, async (transaction) => {
+      const rows = await transaction.$queryRaw<RawEntitySummary[]>`
+        SELECT
+          entity_id AS "entityId",
+          stable_code AS "stableCode",
+          entity_type::text AS "entityType",
+          name,
+          status::text AS status,
+          health,
+          parent_id AS "parentId",
+          child_count::integer AS "childCount",
+          assigned_business_id AS "assignedBusinessId",
+          model_class AS "modelClass",
+          compute_tier AS "computeTier",
+          current_mission AS "currentMission",
+          active_task_count::integer AS "activeTaskCount",
+          COALESCE(latest_material_result, 'null'::jsonb) AS "latestMaterialResult",
+          active_alert AS "activeAlert",
+          updated_at AS "updatedAt",
+          version::integer AS version
+        FROM entral.v_entity_summary
+        ORDER BY
+          CASE entity_type
+            WHEN 'ENTRAL' THEN 0
+            WHEN 'MARSHAL' THEN 1
+            WHEN 'GENERAL' THEN 2
+            WHEN 'COMMANDER' THEN 3
+            WHEN 'SOLDIER' THEN 4
+          END,
+          stable_code
+      `;
+      return rows.map(mapEntity);
+    });
   }
 
-  async listBusinesses(): Promise<BusinessSummary[]> {
-    return (await this.businessRows()).map(mapBusiness);
+  async listBusinesses(session: CanonicalSessionContext): Promise<BusinessSummary[]> {
+    return withCanonicalSession(this.db, session, async (transaction) => (
+      await this.businessRows(transaction)
+    ).map(mapBusiness));
   }
 
-  async getBusiness(businessId: string): Promise<BusinessSummary | null> {
-    const rows = await this.businessRows(businessId);
-    return rows[0] ? mapBusiness(rows[0]) : null;
+  async getBusiness(
+    businessId: string,
+    session: CanonicalSessionContext
+  ): Promise<BusinessSummary | null> {
+    return withCanonicalSession(this.db, session, async (transaction) => {
+      const rows = await this.businessRows(transaction, businessId);
+      return rows[0] ? mapBusiness(rows[0]) : null;
+    });
   }
 
-  private async businessRows(businessId?: string): Promise<RawBusinessSummary[]> {
+  private async businessRows(
+    transaction: Prisma.TransactionClient,
+    businessId?: string
+  ): Promise<RawBusinessSummary[]> {
     const where = businessId
-      ? Prisma.sql`WHERE b.id = ${businessId}::uuid`
+      ? Prisma.sql`WHERE business_id = ${businessId}::uuid`
       : Prisma.empty;
-    return this.db.$queryRaw<RawBusinessSummary[]>(Prisma.sql`
+    return transaction.$queryRaw<RawBusinessSummary[]>(Prisma.sql`
       SELECT
-        b.id AS "businessId",
-        b.stable_code AS "stableCode",
-        b.name AS "businessName",
-        b.commander_id AS "commanderId",
-        b.general_id AS "generalId",
-        general.name AS "generalName",
-        b.marshal_id AS "marshalId",
-        marshal.name AS "marshalName",
-        b.status::text AS status,
-        COALESCE(state.health_state::text, 'UNKNOWN') AS "healthState",
-        state.health_score AS "healthScore",
-        COALESCE(state.health_drivers, '[]'::jsonb) AS "healthDrivers",
-        finance.period_start AS "revenuePeriodStart",
-        finance.period_end AS "revenuePeriodEnd",
-        finance.gross_revenue AS "grossRevenue",
-        finance.net_contribution AS "netContribution",
-        COALESCE(finance.currency, b.currency) AS currency,
-        finance.capital_available AS "capitalAvailable",
-        (
-          SELECT COUNT(*)::integer FROM entral.entities e
-          WHERE e.business_id = b.id AND e.role = 'SOLDIER' AND e.status <> 'RETIRED'
-        ) AS "agentCount",
-        (
-          SELECT COUNT(*)::integer FROM entral.tool_grants grant_row
-          WHERE grant_row.business_id = b.id
-            AND (grant_row.expires_at IS NULL OR grant_row.expires_at > CURRENT_TIMESTAMP)
-        ) AS "toolCount",
-        (
-          SELECT COUNT(*)::integer FROM entral.schedules schedule
-          WHERE schedule.business_id = b.id AND schedule.status = 'ACTIVE'
-        ) AS "automationCount",
-        0::integer AS "integrationCount",
-        (
-          SELECT COUNT(*)::integer FROM entral.missions mission
-          WHERE mission.business_id = b.id
-            AND mission.status IN ('ROUTING','ACKNOWLEDGED','ACTIVE','BLOCKED')
-        ) AS "activeMissionCount",
-        (
-          SELECT COUNT(*)::integer FROM entral.tasks task
-          WHERE task.business_id = b.id
-            AND task.status IN ('NOT_STARTED','ACTIVE','BLOCKED')
-        ) AS "activeTaskCount",
-        COALESCE(state.primary_objective, b.primary_objective) AS "primaryObjective",
-        state.top_exception AS "topException",
-        NULL::text AS "topRecommendation",
-        b.updated_at AS "updatedAt",
-        COALESCE(state.source_freshness, '{}'::jsonb) AS "sourceFreshness",
-        b.version::integer AS version
-      FROM entral.businesses b
-      JOIN entral.entities general ON general.id = b.general_id
-      JOIN entral.entities marshal ON marshal.id = b.marshal_id
-      LEFT JOIN entral.business_states state ON state.business_id = b.id
-      LEFT JOIN LATERAL (
-        SELECT snapshot.*
-        FROM entral.financial_snapshots snapshot
-        WHERE snapshot.business_id = b.id
-        ORDER BY snapshot.period_end DESC, snapshot.observed_at DESC
-        LIMIT 1
-      ) finance ON true
+        business_id AS "businessId",
+        stable_code AS "stableCode",
+        business_name AS "businessName",
+        commander_id AS "commanderId",
+        general_id AS "generalId",
+        general_name AS "generalName",
+        marshal_id AS "marshalId",
+        marshal_name AS "marshalName",
+        status::text AS status,
+        COALESCE(health_state::text, 'UNKNOWN') AS "healthState",
+        health_score AS "healthScore",
+        COALESCE(health_drivers, '[]'::jsonb) AS "healthDrivers",
+        revenue_period_start AS "revenuePeriodStart",
+        revenue_period_end AS "revenuePeriodEnd",
+        gross_revenue AS "grossRevenue",
+        net_contribution AS "netContribution",
+        currency,
+        capital_available AS "capitalAvailable",
+        agent_count::integer AS "agentCount",
+        tool_count::integer AS "toolCount",
+        automation_count::integer AS "automationCount",
+        integration_count::integer AS "integrationCount",
+        active_mission_count::integer AS "activeMissionCount",
+        active_task_count::integer AS "activeTaskCount",
+        primary_objective AS "primaryObjective",
+        top_exception AS "topException",
+        top_recommendation AS "topRecommendation",
+        updated_at AS "updatedAt",
+        COALESCE(source_freshness, '{}'::jsonb) AS "sourceFreshness",
+        version::integer AS version
+      FROM entral.v_business_summary
       ${where}
-      ORDER BY b.stable_code
+      ORDER BY stable_code
     `);
   }
 
   async createGovernanceAction(
     request: GovernanceActionRequest,
-    context: { authenticatedHumanEmail?: string } = {}
+    context: CanonicalOperationContext
   ): Promise<GovernanceActionRecord> {
     assertGovernanceActionRequest(request);
     const hash = requestHash(request);
 
-    return this.db.$transaction(async (tx) => {
+    return withCanonicalSession(this.db, context.databaseSession, async (tx, appUserId) => {
       const scopeId = request.scope.scope_type === "SYSTEM" ? null : request.scope.scope_id;
       const claimed = await tx.$queryRaw<{ key: string }[]>`
         INSERT INTO entral.idempotency_keys (
@@ -509,6 +480,13 @@ export class CanonicalControlPlaneRepository {
       }
 
       if (request.actor_type === "HUMAN") {
+        if (request.actor_id !== appUserId) {
+          throw new CanonicalControlPlaneError(
+            "ACTOR_SESSION_MISMATCH",
+            "The governance actor does not match the bound database session.",
+            403
+          );
+        }
         const actorRows = await tx.$queryRaw<{ email: string }[]>`
           SELECT email
           FROM entral.app_users
@@ -644,38 +622,45 @@ export class CanonicalControlPlaneRepository {
   async updateEntityStatus(
     entityId: string,
     status: EntityStatus,
-    expectedVersion: number
+    expectedVersion: number,
+    session: CanonicalSessionContext
   ): Promise<{ entityId: string; status: EntityStatus; version: number }> {
-    const updated = await this.db.$queryRaw<{ entityId: string; status: EntityStatus; version: number }[]>`
-      UPDATE entral.entities
-      SET
-        status = ${status}::entral.entity_status,
-        retired_at = CASE
-          WHEN ${status}::entral.entity_status = 'RETIRED' THEN COALESCE(retired_at, CURRENT_TIMESTAMP)
-          ELSE NULL
-        END
-      WHERE id = ${entityId}::uuid
-        AND version = ${expectedVersion}
-      RETURNING
-        id AS "entityId",
-        status::text AS status,
-        version::integer AS version
-    `;
-    if (updated[0]) return updated[0];
+    return withCanonicalSession(this.db, session, async (transaction) => {
+      const updated = await transaction.$queryRaw<{
+        entityId: string;
+        status: EntityStatus;
+        version: number;
+      }[]>`
+        UPDATE entral.entities
+        SET
+          status = ${status}::entral.entity_status,
+          retired_at = CASE
+            WHEN ${status}::entral.entity_status = 'RETIRED' THEN COALESCE(retired_at, CURRENT_TIMESTAMP)
+            ELSE NULL
+          END
+        WHERE id = ${entityId}::uuid
+          AND version = ${expectedVersion}
+        RETURNING
+          id AS "entityId",
+          status::text AS status,
+          version::integer AS version
+      `;
+      if (updated[0]) return updated[0];
 
-    const current = await this.db.$queryRaw<{ version: number }[]>`
-      SELECT version::integer AS version
-      FROM entral.entities
-      WHERE id = ${entityId}::uuid
-    `;
-    if (!current[0]) {
-      throw new CanonicalControlPlaneError("ENTITY_NOT_FOUND", "Entity not found.", 404);
-    }
-    throw new CanonicalControlPlaneError(
-      "STALE_EXPECTED_VERSION",
-      `Expected entity version ${expectedVersion}, but found ${current[0].version}.`,
-      409
-    );
+      const current = await transaction.$queryRaw<{ version: number }[]>`
+        SELECT version::integer AS version
+        FROM entral.entities
+        WHERE id = ${entityId}::uuid
+      `;
+      if (!current[0]) {
+        throw new CanonicalControlPlaneError("ENTITY_NOT_FOUND", "Entity not found.", 404);
+      }
+      throw new CanonicalControlPlaneError(
+        "STALE_EXPECTED_VERSION",
+        `Expected entity version ${expectedVersion}, but found ${current[0].version}.`,
+        409
+      );
+    });
   }
 }
 

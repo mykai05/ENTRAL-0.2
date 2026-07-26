@@ -27,6 +27,7 @@
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "prisma:roles": "prisma db execute --file prisma/security/046_roles_and_grants.sql --schema prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema prisma/schema.prisma"
   },
   "dependencies": {
@@ -42,7 +43,8 @@
       "fast-uri@>=3.0.0 <3.1.4": "3.1.4",
       "form-data@>=4.0.0 <4.0.6": "4.0.6",
       "postcss@<8.5.18": "8.5.23",
-      "sharp@<0.35.0": "0.35.3"
+      "sharp@<0.35.0": "0.35.3",
+      "yaml@>=2.0.0 <2.8.3": "2.8.3"
     }
   }
 }

@@ -66,6 +66,14 @@ function governanceRequest(input: {
   };
 }
 
+function authenticatedDatabaseSession(authSubject: string, actionReason: string) {
+  return {
+    actionReason,
+    authSubject,
+    correlationId: randomUUID(),
+  } as const;
+}
+
 describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control plane", () => {
   it("enforces hierarchy, business, routing, governance, concurrency, and restart invariants", async () => {
     const baseUrl = new URL(testDatabaseUrl!);
@@ -106,11 +114,29 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
       const repository = new CanonicalControlPlaneRepository(client);
       const humanId = randomUUID();
       const nonHumanId = randomUUID();
+      const humanSubject = `phase140-authority-${randomUUID()}`;
+      await client.user.create({
+        data: {
+          email: "authority@example.test",
+          id: humanSubject,
+          name: "Human Authority",
+          passwordHash: "integration-test-only",
+          role: "ADMIN"
+        }
+      });
       await client.$executeRaw`
-        INSERT INTO entral.app_users (id, email, display_name, is_human_authority)
+        INSERT INTO entral.app_users (
+          id, email, display_name, is_human_authority, auth_subject
+        )
         VALUES
-          (${humanId}::uuid, 'authority@example.test', 'Human Authority', true),
-          (${nonHumanId}::uuid, 'member@example.test', 'Non-authority User', false)
+          (
+            ${humanId}::uuid,
+            'authority@example.test',
+            'Human Authority',
+            true,
+            ${humanSubject}
+          ),
+          (${nonHumanId}::uuid, 'member@example.test', 'Non-authority User', false, NULL)
       `;
 
       const entralId = randomUUID();
@@ -449,7 +475,8 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
       for (const targetCase of targetCases) {
         const request = governanceRequest({ ...targetCase, actorId: humanId });
         const action = await repository.createGovernanceAction(request, {
-          authenticatedHumanEmail: "authority@example.test"
+          authenticatedHumanEmail: "authority@example.test",
+          databaseSession: authenticatedDatabaseSession(humanSubject, request.reason)
         });
         expect(action).toMatchObject({
           action_id: request.action_id,
@@ -459,7 +486,8 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
           target_type: targetCase.targetType
         });
         const replay = await repository.createGovernanceAction(request, {
-          authenticatedHumanEmail: "authority@example.test"
+          authenticatedHumanEmail: "authority@example.test",
+          databaseSession: authenticatedDatabaseSession(humanSubject, request.reason)
         });
         expect(replay.action_id).toBe(action.action_id);
         createdActions.push(action);
@@ -473,7 +501,8 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
         targetType: "GOVERNANCE_ACTION"
       });
       await expect(repository.createGovernanceAction(rollbackRequest, {
-        authenticatedHumanEmail: "authority@example.test"
+        authenticatedHumanEmail: "authority@example.test",
+        databaseSession: authenticatedDatabaseSession(humanSubject, rollbackRequest.reason)
       })).resolves.toMatchObject({ status: "PROPOSED", target_type: "GOVERNANCE_ACTION" });
 
       const staleRequest = governanceRequest({
@@ -485,7 +514,8 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
         targetType: "ENTITY"
       });
       await expect(repository.createGovernanceAction(staleRequest, {
-        authenticatedHumanEmail: "authority@example.test"
+        authenticatedHumanEmail: "authority@example.test",
+        databaseSession: authenticatedDatabaseSession(humanSubject, staleRequest.reason)
       })).rejects.toMatchObject({ code: "STALE_EXPECTED_VERSION", statusCode: 409 });
 
       const lifecycleActionId = createdActions[1]!.action_id;
@@ -514,6 +544,41 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
         SET status = 'VERIFYING'
         WHERE id = ${lifecycleActionId}::uuid
       `;
+      const lifecycleVerificationId = randomUUID();
+      await client.$transaction(async (tx) => {
+        await tx.$queryRaw`
+          SELECT entral.bind_authenticated_app_user(${humanSubject})
+        `;
+        await tx.$executeRaw`
+          INSERT INTO entral.verification_results (
+            id,
+            subject_type,
+            subject_id,
+            status,
+            verification_method,
+            assertions,
+            observed_state,
+            expected_state,
+            completed_at
+          )
+          VALUES (
+            ${lifecycleVerificationId}::uuid,
+            'GOVERNANCE_ACTION',
+            ${lifecycleActionId}::uuid,
+            'PASSED',
+            'database-readback',
+            '{"checks":["lifecycle-state"]}'::jsonb,
+            '{"status":"VERIFYING"}'::jsonb,
+            '{"status":"VERIFYING"}'::jsonb,
+            CURRENT_TIMESTAMP
+          )
+        `;
+      });
+      await client.$executeRaw`
+        UPDATE entral.governance_actions
+        SET verification_result_id = ${lifecycleVerificationId}::uuid
+        WHERE id = ${lifecycleActionId}::uuid
+      `;
       await client.$executeRaw`
         UPDATE entral.governance_actions
         SET status = 'SUCCEEDED', completed_at = CURRENT_TIMESTAMP
@@ -529,7 +594,7 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
         FROM entral.governance_actions
         WHERE id = ${lifecycleActionId}::uuid
       `;
-      expect(lifecycle[0]).toEqual({ status: "ROLLED_BACK", version: 7 });
+      expect(lifecycle[0]).toEqual({ status: "ROLLED_BACK", version: 8 });
 
       const systemActionId = randomUUID();
       await expect(client.$executeRaw`
@@ -560,8 +625,18 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
       `).rejects.toThrow();
 
       const concurrent = await Promise.allSettled([
-        repository.updateEntityStatus(secondMarshalId, "PAUSED", 1),
-        repository.updateEntityStatus(secondMarshalId, "PAUSED", 1)
+        repository.updateEntityStatus(
+          secondMarshalId,
+          "PAUSED",
+          1,
+          authenticatedDatabaseSession(humanSubject, "Pause the secondary Marshal.")
+        ),
+        repository.updateEntityStatus(
+          secondMarshalId,
+          "PAUSED",
+          1,
+          authenticatedDatabaseSession(humanSubject, "Pause the secondary Marshal.")
+        )
       ]);
       expect(concurrent.filter((result) => result.status === "fulfilled")).toHaveLength(1);
       const rejected = concurrent.find((result) => result.status === "rejected");
@@ -572,7 +647,9 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
         statusCode: 409
       });
 
-      const hierarchy = await repository.listHierarchy();
+      const hierarchy = await repository.listHierarchy(
+        authenticatedDatabaseSession(humanSubject, "Read the canonical entity hierarchy.")
+      );
       expect(hierarchy).toEqual(expect.arrayContaining([
         expect.objectContaining({ entity_id: entralId, entity_type: "ENTRAL", parent_id: null }),
         expect.objectContaining({
@@ -582,7 +659,10 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
           parent_id: commanderId
         })
       ]));
-      await expect(repository.getBusiness(businessId)).resolves.toMatchObject({
+      await expect(repository.getBusiness(
+        businessId,
+        authenticatedDatabaseSession(humanSubject, "Read the canonical business.")
+      )).resolves.toMatchObject({
         business_id: businessId,
         commander_id: commanderId,
         general_id: generalId,
@@ -593,11 +673,16 @@ describe.skipIf(!integrationEnabled)("Phase 140 canonical PostgreSQL control pla
       await client.$disconnect();
       client = new PrismaClient({ datasources: { db: { url: databaseUrl.toString() } } });
       const restartedRepository = new CanonicalControlPlaneRepository(client);
-      await expect(restartedRepository.getBusiness(businessId)).resolves.toMatchObject({
+      await expect(restartedRepository.getBusiness(
+        businessId,
+        authenticatedDatabaseSession(humanSubject, "Read the canonical business after restart.")
+      )).resolves.toMatchObject({
         business_id: businessId,
         version: 1
       });
-      await expect(restartedRepository.listHierarchy()).resolves.toEqual(expect.arrayContaining([
+      await expect(restartedRepository.listHierarchy(
+        authenticatedDatabaseSession(humanSubject, "Read the canonical hierarchy after restart.")
+      )).resolves.toEqual(expect.arrayContaining([
         expect.objectContaining({ entity_id: entralId }),
         expect.objectContaining({ entity_id: soldierId })
       ]));
