@@ -1,3 +1,4 @@
+export * from "./assistant.js";
 export * from "./domain.js";
 export * from "./integration.js";
 export * from "./member.js";

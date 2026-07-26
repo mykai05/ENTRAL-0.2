@@ -87,10 +87,12 @@ type CommandCenterSurface = "internal" | "member";
 type NeuronsCommandCenterProps = {
   canonicalEntities?: readonly EntitySummary[];
   canonicalEventSequence?: number;
+  canonicalInspectorCollapsed?: boolean;
   canonicalMotionPaused?: boolean;
   canonicalSelectedEntityId?: string | null;
   embeddedGraphOnly?: boolean;
   initialDestination?: MemberDestination;
+  onCanonicalInspectorCollapsedChange?: (collapsed: boolean) => void;
   onCanonicalOpenFullRecord?: (entityId: string) => void;
   onCanonicalSelectedEntityChange?: (entityId: string | null) => void;
   onLogout: () => void;
@@ -2057,10 +2059,12 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
 export function NeuronsCommandCenter({
   canonicalEntities,
   canonicalEventSequence = 0,
+  canonicalInspectorCollapsed = true,
   canonicalMotionPaused = false,
   canonicalSelectedEntityId = null,
   embeddedGraphOnly = false,
   initialDestination = "dashboard",
+  onCanonicalInspectorCollapsedChange,
   onCanonicalOpenFullRecord,
   onCanonicalSelectedEntityChange,
   organizationId,
@@ -2172,6 +2176,9 @@ export function NeuronsCommandCenter({
   const [infrastructureSection, setInfrastructureSection] = useState<"records" | "agents" | "automations" | "governance" | "operations">("records");
   const [infrastructureSearch, setInfrastructureSearch] = useState("");
   const [isGraphSettingsOpen, setIsGraphSettingsOpen] = useState(false);
+  const [isNodeDrawerCollapsed, setIsNodeDrawerCollapsed] = useState(
+    embeddedGraphOnly ? canonicalInspectorCollapsed : false
+  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const commandInputRef = useRef<HTMLInputElement | null>(null);
   const graphControlsRef = useRef(graphControls);
@@ -2221,6 +2228,16 @@ export function NeuronsCommandCenter({
   const nodeMap = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
   const selectedNode = nodeMap.get(selectedNodeId) ?? nodeMap.get("entral") ?? null;
   const visibleNodes = graph.nodes.filter((node) => node.type === "core" || !groupMap.get(node.groupId)?.collapsed);
+
+  useEffect(() => {
+    if (!embeddedGraphOnly) return;
+    setIsNodeDrawerCollapsed(canonicalInspectorCollapsed);
+  }, [canonicalInspectorCollapsed, embeddedGraphOnly]);
+
+  const changeNodeDrawerCollapsed = useCallback((collapsed: boolean) => {
+    setIsNodeDrawerCollapsed(collapsed);
+    onCanonicalInspectorCollapsedChange?.(collapsed);
+  }, [onCanonicalInspectorCollapsedChange]);
 
   useEffect(() => {
     if (!canonicalGraph) {
@@ -2473,6 +2490,10 @@ export function NeuronsCommandCenter({
         }
       }
 
+      if (detail?.target === "graph-inspector") {
+        changeNodeDrawerCollapsed(false);
+      }
+
       if (detail?.target === "business-wizard") {
         setIsCommandConsoleOpen(true);
         setIsPanelOpen(false);
@@ -2493,7 +2514,7 @@ export function NeuronsCommandCenter({
 
     window.addEventListener("entral:academy-prepare-target", prepareAcademyTarget);
     return () => window.removeEventListener("entral:academy-prepare-target", prepareAcademyTarget);
-  }, []);
+  }, [changeNodeDrawerCollapsed]);
 
   useEffect(() => {
     function openGuidedBusinessSetup() {
@@ -7217,33 +7238,66 @@ export function NeuronsCommandCenter({
             ) : null}
 
             {selectedNode ? (
-              <aside className="phase110-node-drawer" data-academy="graph-inspector" aria-label="Selected graph entity">
-                <header>
-                  <span className={`phase110-status-dot status-${selectedNode.status}`} />
-                  <div>
-                    <p className="eyebrow">{selectedNode.title}</p>
+              <aside
+                aria-label="Selected graph entity"
+                className="phase110-node-drawer"
+                data-academy="graph-inspector"
+                data-collapsed={isNodeDrawerCollapsed}
+              >
+                {isNodeDrawerCollapsed ? (
+                  <header className="phase110-node-drawer-compact">
                     <h2>{selectedNode.name}</h2>
-                  </div>
-                  <strong>{statusLabel(selectedNode.status)}</strong>
-                </header>
-                <p>{selectedNode.description ?? selectedNode.role}</p>
-                <dl>
-                  <div><dt>Health</dt><dd>{selectedNode.health}%</dd></div>
-                  <div><dt>Parent</dt><dd>{selectedParent?.name ?? "Human authority"}</dd></div>
-                  <div><dt>Children</dt><dd>{selectedChildren.length}</dd></div>
-                  <div><dt>Current objective</dt><dd>{selectedNode.currentTask ?? "None recorded"}</dd></div>
-                  <div><dt>Latest material result</dt><dd>{selectedLatestResult ?? "None recorded"}</dd></div>
-                </dl>
-                <Link
-                  href={destinationHref(`/infrastructure?entity=${encodeURIComponent(selectedNode.canonicalEntityId ?? selectedNode.id)}`)}
-                  onClick={onCanonicalOpenFullRecord ? (event) => {
-                    event.preventDefault();
-                    onCanonicalOpenFullRecord(selectedNode.canonicalEntityId ?? selectedNode.id);
-                  } : undefined}
-                  scroll={false}
-                >
-                  Open full record
-                </Link>
+                    <button
+                      aria-controls="phase110-node-drawer-details"
+                      aria-expanded="false"
+                      aria-label={`Expand details for ${selectedNode.name}`}
+                      onClick={() => changeNodeDrawerCollapsed(false)}
+                      type="button"
+                    >
+                      <PanelRightOpen aria-hidden="true" size={18} />
+                    </button>
+                  </header>
+                ) : (
+                  <>
+                    <header>
+                      <span className={`phase110-status-dot status-${selectedNode.status}`} />
+                      <div>
+                        <p className="eyebrow">{selectedNode.title}</p>
+                        <h2>{selectedNode.name}</h2>
+                      </div>
+                      <strong>{statusLabel(selectedNode.status)}</strong>
+                      {embeddedGraphOnly ? (
+                        <button
+                          aria-controls="phase110-node-drawer-details"
+                          aria-expanded="true"
+                          aria-label={`Collapse details for ${selectedNode.name}`}
+                          onClick={() => changeNodeDrawerCollapsed(true)}
+                          type="button"
+                        >
+                          <PanelRightClose aria-hidden="true" size={18} />
+                        </button>
+                      ) : null}
+                    </header>
+                    <p>{selectedNode.description ?? selectedNode.role}</p>
+                    <dl id="phase110-node-drawer-details">
+                      <div><dt>Health</dt><dd>{selectedNode.health}%</dd></div>
+                      <div><dt>Parent</dt><dd>{selectedParent?.name ?? "Human authority"}</dd></div>
+                      <div><dt>Children</dt><dd>{selectedChildren.length}</dd></div>
+                      <div><dt>Current objective</dt><dd>{selectedNode.currentTask ?? "None recorded"}</dd></div>
+                      <div><dt>Latest material result</dt><dd>{selectedLatestResult ?? "None recorded"}</dd></div>
+                    </dl>
+                    <Link
+                      href={destinationHref(`/infrastructure?entity=${encodeURIComponent(selectedNode.canonicalEntityId ?? selectedNode.id)}`)}
+                      onClick={onCanonicalOpenFullRecord ? (event) => {
+                        event.preventDefault();
+                        onCanonicalOpenFullRecord(selectedNode.canonicalEntityId ?? selectedNode.id);
+                      } : undefined}
+                      scroll={false}
+                    >
+                      Open full record
+                    </Link>
+                  </>
+                )}
               </aside>
             ) : null}
           </>

@@ -25,7 +25,8 @@ describe("Phase 170 responsive and route contract", () => {
     expect(graphWorkspace).toContain("<CanonicalUniverseGraph");
     expect(graphWorkspace).toContain("<CanonicalUniverse3DGraph");
     expect(canonicalShell).toContain("<CanonicalInfrastructure");
-    expect(canonicalShell).toContain('initialDestination !== "graph"');
+    expect(canonicalShell).toContain("!isEntralRoom");
+    expect(canonicalShell).toContain("<CanonicalEntralAssistant");
   });
 
   it("keeps shared dual-graph controls visible while using wide panes and narrow stacking", () => {
@@ -60,6 +61,21 @@ describe("Phase 170 responsive and route contract", () => {
     );
     expect(phase180Css).toMatch(
       /\.phase180-shell-header \.member-destination-nav a span\s*\{[\s\S]*max-width:\s*100%;[\s\S]*overflow-wrap:\s*anywhere;[\s\S]*white-space:\s*normal;/
+    );
+  });
+
+  it("keeps the persistent ENTRAL assistant viewport-fixed and clear of graph controls", () => {
+    expect(phase180Css).toMatch(
+      /body:has\(\.phase180-shell\)\s*\{[\s\S]*filter:\s*none;/
+    );
+    expect(phase180Css).toMatch(
+      /\.phase180-entral-emblem\s*\{[\s\S]*position:\s*fixed;/
+    );
+    expect(phase180Css).toMatch(
+      /\.phase180-assistant-widget\s*\{[\s\S]*width:\s*min\(23rem,\s*calc\(100dvw - 2rem\)\);/
+    );
+    expect(phase180Css).toMatch(
+      /data-fullscreen-dimension="3d"[\s\S]*\.phase110-node-drawer\s*\{[\s\S]*right:\s*5\.5rem;/
     );
   });
 });

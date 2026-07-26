@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ENTRAL implemented API
-  version: 1.3.0
+  version: 1.4.0
   description: >
     Gate 180 contract surface. Only paths with complete backend behavior are
     included. Canonical control-plane paths require internal Admin
@@ -146,6 +146,66 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/member/organizations/{organizationId}/entral/assistant/messages:
+    post:
+      operationId: createMemberEntralAssistantMessage
+      summary: Generate an audited ENTRAL response from server-resolved member workspace context.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberEntralAssistantMessageRequest" }
+      responses:
+        "200":
+          description: Contextual assistant response with the authoritative resolved scope and AI usage receipt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MemberEntralAssistantMessageResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          description: The authenticated user's AI usage window is exhausted.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiUsageLimitEnvelope" }
+  /api/v1/member/organizations/{organizationId}/governance-actions:
+    post:
+      operationId: createMemberCanonicalGovernanceAction
+      summary: Record an idempotent Human-authorized governance proposal for a member-visible target.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GovernanceActionRequest" }
+      responses:
+        "201":
+          description: Member governance proposal recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [action]
+                properties:
+                  action: { $ref: "#/components/schemas/GovernanceActionRecord" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /api/v1/control-plane/hierarchy:
     get:
       operationId: listCanonicalHierarchy
@@ -704,6 +764,155 @@ components:
           items: { $ref: "#/components/schemas/CanonicalEntralConversationMessage" }
         event_sequence: { type: integer, minimum: 0 }
         generated_at: { type: string, format: date-time }
+    MemberEntralSurface:
+      type: string
+      enum: [dashboard, graph, infrastructure]
+    MemberEntralAssistantContextInput:
+      type: object
+      additionalProperties: false
+      required: [business_id, observed_event_sequence, selected_entity_id, surface]
+      properties:
+        business_id: { type: [string, "null"], format: uuid }
+        observed_event_sequence: { type: integer, minimum: 0 }
+        selected_entity_id: { type: [string, "null"], format: uuid }
+        surface: { $ref: "#/components/schemas/MemberEntralSurface" }
+    MemberEntralAssistantMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [context, message]
+      properties:
+        context: { $ref: "#/components/schemas/MemberEntralAssistantContextInput" }
+        conversation_id: { type: string, minLength: 1, maxLength: 160 }
+        message: { type: string, minLength: 1, maxLength: 4000 }
+    MemberEntralAssistantResolvedContext:
+      type: object
+      additionalProperties: false
+      required: [business_id, event_sequence, scope_label, selected_entity, surface]
+      properties:
+        business_id: { type: [string, "null"], format: uuid }
+        event_sequence: { type: integer, minimum: 0 }
+        scope_label: { type: string, minLength: 1, maxLength: 500 }
+        selected_entity:
+          oneOf:
+            - type: "null"
+            - { $ref: "#/components/schemas/CanonicalEntitySummary" }
+        surface: { $ref: "#/components/schemas/MemberEntralSurface" }
+    MemberEntralAssistantUserMessage:
+      type: object
+      additionalProperties: false
+      required: [content, created_at, message_id]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 4000 }
+        created_at: { type: string, format: date-time }
+        message_id: { type: string, minLength: 1, maxLength: 160 }
+    AiActionPlanStep:
+      type: object
+      additionalProperties: false
+      required: [id, label, requiresApproval, status]
+      properties:
+        id: { type: string, minLength: 1 }
+        label: { type: string, minLength: 1 }
+        requiresApproval: { type: boolean }
+        status: { type: string, enum: [blocked, planned, ready] }
+    AiActionPlan:
+      type: object
+      additionalProperties: false
+      required:
+        - authorizationRequired
+        - createdAt
+        - entitiesAffected
+        - expectedOutput
+        - intent
+        - planId
+        - riskLevel
+        - steps
+        - summary
+        - toolsRequired
+        - userRequest
+      properties:
+        authorizationRequired: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        entitiesAffected:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        expectedOutput: { type: string, minLength: 1 }
+        intent: { type: string, minLength: 1 }
+        planId: { type: string, minLength: 1 }
+        riskLevel: { type: string, enum: [Low, Medium, High, Critical] }
+        steps:
+          type: array
+          maxItems: 8
+          items: { $ref: "#/components/schemas/AiActionPlanStep" }
+        summary: { type: string, minLength: 1 }
+        toolsRequired:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        userRequest: { type: string, minLength: 1, maxLength: 4000 }
+    AiUsageWindow:
+      type: object
+      additionalProperties: false
+      required: [limitCents, remainingCents, usedCents]
+      properties:
+        limitCents: { type: integer, minimum: 0 }
+        remainingCents: { type: integer, minimum: 0 }
+        usedCents: { type: integer, minimum: 0 }
+    AiUsageSummary:
+      type: object
+      additionalProperties: false
+      required: [daily, mode, monthly, provider]
+      properties:
+        daily: { $ref: "#/components/schemas/AiUsageWindow" }
+        mode: { type: string, enum: [mock, real] }
+        monthly: { $ref: "#/components/schemas/AiUsageWindow" }
+        provider:
+          type: object
+          additionalProperties: false
+          required: [modelName, providerName, status]
+          properties:
+            modelName: { type: string, minLength: 1 }
+            providerName: { type: string, minLength: 1 }
+            status: { type: string, minLength: 1 }
+    MemberEntralAssistantUsage:
+      type: object
+      additionalProperties: false
+      required: [estimated_cost_cents, summary]
+      properties:
+        estimated_cost_cents: { type: integer, minimum: 0 }
+        summary: { $ref: "#/components/schemas/AiUsageSummary" }
+    MemberEntralAssistantMessageResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - action_plan
+        - content
+        - context
+        - conversation_id
+        - created_at
+        - message_id
+        - usage
+        - user_message
+      properties:
+        action_plan: { $ref: "#/components/schemas/AiActionPlan" }
+        content: { type: string, minLength: 1 }
+        context: { $ref: "#/components/schemas/MemberEntralAssistantResolvedContext" }
+        conversation_id: { type: string, minLength: 1, maxLength: 160 }
+        created_at: { type: string, format: date-time }
+        message_id: { type: string, minLength: 1, maxLength: 160 }
+        usage: { $ref: "#/components/schemas/MemberEntralAssistantUsage" }
+        user_message: { $ref: "#/components/schemas/MemberEntralAssistantUserMessage" }
+    AiUsageLimitEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error, message, mode, summary]
+      properties:
+        error: { type: string, const: "Usage Limit Reached" }
+        message: { type: string, minLength: 1 }
+        mode: { type: string, const: real }
+        summary: { $ref: "#/components/schemas/AiUsageSummary" }
     GovernanceActionRequest:
       type: object
       additionalProperties: false

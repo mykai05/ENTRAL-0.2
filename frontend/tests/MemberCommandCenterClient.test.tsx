@@ -213,7 +213,7 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     expect(screen.getByText("Tutorial library")).toBeInTheDocument();
   });
 
-  it("opens a member-safe version-aligned ENTRAL context without calling internal conversation APIs", async () => {
+  it("opens the compact member-safe ENTRAL assistant without calling internal conversation APIs", async () => {
     render(
       <MemberCommandCenterClient
         organizationId="organization-1"
@@ -224,12 +224,12 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /Dashboard$/ })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL conversation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL assistant" }));
 
-    expect(screen.getByRole("region", { name: "Canonical ENTRAL context" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "ENTRAL assistant" })).toBeInTheDocument();
     expect(screen.getByText("Event 0")).toBeInTheDocument();
-    expect(screen.getByText(/No action-status event is present/i)).toBeInTheDocument();
-    expect(screen.getByText(/aligned to canonical event 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/Same RLS scope, selection, and canonical event/i)).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Message ENTRAL" })).toBeInTheDocument();
     expect(api.apiFetch).not.toHaveBeenCalledWith(expect.stringContaining("/ai/"), expect.anything());
   });
 
@@ -271,10 +271,10 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     );
 
     await screen.findByRole("heading", { name: /Dashboard$/ });
-    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL conversation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL assistant" }));
 
     expect(screen.getByText("Canonical receipt is still being recorded.")).toBeInTheDocument();
-    expect(screen.getByText(/Event receipt pending/i)).toBeInTheDocument();
+    expect(screen.getByText("Event 0")).toBeInTheDocument();
   });
 
   it("does not let a stale organization refresh overwrite the newly selected workspace", async () => {
@@ -438,8 +438,8 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     );
 
     await screen.findByRole("heading", { name: /Dashboard$/ });
-    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL conversation" }));
-    expect(screen.getByText(/aligned to canonical event 0/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL assistant" }));
+    expect(screen.getByText("Event 0")).toBeInTheDocument();
 
     let resolveRefreshedPortfolio!: (value: typeof portfolio) => void;
     let resolveRefreshedHierarchy!: (value: typeof hierarchy) => void;
@@ -481,7 +481,7 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     });
     expect(screen.getAllByText("Event channel connected · refreshing canonical snapshot through event 1")).not.toHaveLength(0);
     expect(screen.queryByText(/Connected · canonical event 1/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/verification is pending while canonical synchronization is connecting/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Connected Â· canonical event 1/i)).not.toBeInTheDocument();
 
     const refreshedPortfolio = {
       ...portfolio,
@@ -499,8 +499,8 @@ describe("MemberCommandCenterClient authentication handoff", () => {
       await Promise.resolve();
     });
 
-    expect(await screen.findByText(/aligned to canonical event 1/i)).toBeInTheDocument();
-    expect(screen.queryByText(/verification is pending/i)).not.toBeInTheDocument();
+    expect(await screen.findByText("Event 1")).toBeInTheDocument();
+    expect(screen.getAllByText(/canonical event 1/i)).not.toHaveLength(0);
   });
 
   it("keeps a failed post-event refresh blocked when the event channel polls successfully again", async () => {
@@ -512,7 +512,7 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     );
 
     await screen.findByRole("heading", { name: /Dashboard$/ });
-    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL conversation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open ENTRAL assistant" }));
     api.apiFetch.mockImplementation((path: string) => {
       if (path.endsWith("/portfolio/summary") || path.endsWith("/hierarchy")) {
         return Promise.reject(new Error("post-event snapshot unavailable"));
@@ -549,8 +549,8 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     });
     expect(await screen.findAllByText("post-event snapshot unavailable")).not.toHaveLength(0);
     expect(screen.queryByText(/Connected · canonical event 1/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/aligned to canonical event 0/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/verification is pending while canonical synchronization is disconnected/i)).toBeInTheDocument();
+    expect(screen.getByText("Event 0")).toBeInTheDocument();
+    expect(screen.queryByText("Event 1")).not.toBeInTheDocument();
   });
 
   it("clears the published identity only after backend sign-out succeeds", async () => {

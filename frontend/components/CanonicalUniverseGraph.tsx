@@ -5,6 +5,10 @@ import {
   ArrowLeft,
   Focus,
   LocateFixed,
+  Maximize2,
+  Minimize2,
+  PauseCircle,
+  PlayCircle,
   Search,
   Settings2,
   X,
@@ -47,15 +51,23 @@ function healthColor(entity: EntitySummary) {
 export function CanonicalUniverseGraph({
   entities,
   eventSequence,
+  fullscreenActive = false,
   movementPaused,
+  motionLocked = false,
   onOpenFullRecord,
+  onFullscreenToggle,
+  onMovementToggle,
   onSelectedEntityChange,
   selectedEntityId
 }: {
   entities: readonly EntitySummary[];
   eventSequence: number;
+  fullscreenActive?: boolean;
   movementPaused: boolean;
+  motionLocked?: boolean;
   onOpenFullRecord: (entityId: string) => void;
+  onFullscreenToggle?: (trigger: HTMLButtonElement) => void;
+  onMovementToggle?: () => void;
   onSelectedEntityChange: (entityId: string | null) => void;
   selectedEntityId: string | null;
 }) {
@@ -403,9 +415,34 @@ export function CanonicalUniverseGraph({
           <h2 id="universe-heading">2D Graph</h2>
           <p>{entities.length.toLocaleString()} RLS-visible entities. Selection preserves its complete lineage and subtree.</p>
         </div>
-        <span className="phase180-panel-state" data-state={movementPaused ? "paused" : "stable"}>
-          {movementPaused ? "Movement paused" : "Stable topology"}
-        </span>
+        <div className="phase180-surface-actions">
+          <span className="phase180-panel-state" data-state={movementPaused ? "paused" : "stable"}>
+            {movementPaused ? "Movement paused" : "Stable topology"}
+          </span>
+          {fullscreenActive && onMovementToggle ? (
+            <button
+              className="phase180-surface-action"
+              disabled={motionLocked}
+              onClick={onMovementToggle}
+              title={motionLocked ? "Movement is paused by your device reduced-motion setting." : undefined}
+              type="button"
+            >
+              {movementPaused && !motionLocked ? <PlayCircle aria-hidden="true" size={17} /> : <PauseCircle aria-hidden="true" size={17} />}
+              {motionLocked ? "Movement paused" : movementPaused ? "Resume movement" : "Stop movement"}
+            </button>
+          ) : null}
+          {onFullscreenToggle ? (
+            <button
+              aria-label={fullscreenActive ? "Exit 2D Graph full screen" : "Enter 2D Graph full screen"}
+              className="phase180-surface-action"
+              onClick={(event) => onFullscreenToggle(event.currentTarget)}
+              type="button"
+            >
+              {fullscreenActive ? <Minimize2 aria-hidden="true" size={17} /> : <Maximize2 aria-hidden="true" size={17} />}
+              {fullscreenActive ? "Exit full screen" : "Full screen"}
+            </button>
+          ) : null}
+        </div>
       </header>
       <div className="phase180-graph-toolbar">
         <label className="phase180-graph-search" htmlFor={SEARCH_INPUT_ID}>

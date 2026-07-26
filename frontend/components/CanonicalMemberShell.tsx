@@ -3,7 +3,6 @@
 import type {
   CanonicalEntralConversationMessage,
   CanonicalHierarchyResponse,
-  CanonicalPortfolioEvent,
   MemberOrganizationsResponse,
   PortfolioSummaryResponse
 } from "@entral/contracts";
@@ -11,13 +10,9 @@ import {
   AlertTriangle,
   BookOpen,
   ChevronUp,
-  Expand,
   LogOut,
-  MessageCircle,
-  Minimize2,
   RefreshCw,
-  Settings,
-  X
+  Settings
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -25,7 +20,6 @@ import { ApiError, apiFetch } from "../lib/api";
 import { clearAuthenticatedUserSession, writeAuthenticatedUserIdentity } from "../lib/auth-session";
 import {
   loadCanonicalEntralConversation,
-  loadCanonicalEvents,
   loadCanonicalHierarchy,
   loadCanonicalPortfolio,
   subscribeCanonicalPortfolioEvents,
@@ -33,8 +27,13 @@ import {
 } from "../lib/canonical-portfolio";
 import { entitiesForBusinessScope } from "../lib/canonical-universe";
 import { BrandMark } from "./BrandMark";
-import { CanonicalEntralPanel } from "./CanonicalEntralPanel";
-import { CanonicalGraphWorkspace, type CanonicalGraphDimension } from "./CanonicalGraphWorkspace";
+import { CanonicalEntralAssistant } from "./CanonicalEntralAssistant";
+import {
+  CanonicalGraphWorkspace,
+  type CanonicalGraphAssistantCommand,
+  type CanonicalGraphAssistantCommandInput,
+  type CanonicalGraphDimension
+} from "./CanonicalGraphWorkspace";
 import { CanonicalInfrastructure } from "./CanonicalInfrastructure";
 import { CanonicalPortfolioDashboard } from "./CanonicalPortfolioDashboard";
 import { type MemberDestination, MemberDestinationNav } from "./MemberDestinationNav";
@@ -42,8 +41,7 @@ import { type MemberDestination, MemberDestinationNav } from "./MemberDestinatio
 const organizationStorageKey = "entral-phase180-organization";
 const scopeStorageKey = "entral-phase180-business-scope";
 const selectedEntityStorageKey = "entral-phase180-selected-entity";
-const chatOpenStorageKey = "entral-phase180-chat-open";
-const chatExpandedStorageKey = "entral-phase180-chat-expanded";
+const pendingAssistantCommandStorageKey = "entral-phase180-pending-assistant-command";
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError) {
@@ -76,10 +74,9 @@ export function CanonicalMemberShell({
   const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Connecting to canonical events");
   const [syncState, setSyncState] = useState<"connecting" | "connected" | "disconnected">("connecting");
-  const [conversationEvents, setConversationEvents] = useState<readonly CanonicalPortfolioEvent[]>([]);
   const [conversationMessages, setConversationMessages] = useState<readonly CanonicalEntralConversationMessage[]>([]);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatExpanded, setChatExpanded] = useState(false);
+  const [assistantCommand, setAssistantCommand] = useState<CanonicalGraphAssistantCommand | null>(null);
+  const assistantCommandSequenceRef = useRef(0);
   const activeOrganizationRef = useRef(organizationId);
   const refreshGenerationRef = useRef(0);
   const alignedEventSequenceRef = useRef<number | null>(null);
@@ -90,6 +87,7 @@ export function CanonicalMemberShell({
     ?? initialSession.organizations[0]
     ?? null;
   const selectedBusiness = portfolio?.businesses.find((business) => business.business_id === businessScopeId) ?? null;
+  const isEntralRoom = initialDestination === "dashboard" && searchParams.get("section") === "entral";
   const scopeLabel = selectedBusiness
     ? `Business · ${selectedBusiness.business_name}`
     : portfolio?.scope.label ?? "Resolving canonical scope";
@@ -132,14 +130,7 @@ export function CanonicalMemberShell({
         throw new Error("Canonical surfaces changed during snapshot assembly. Entral will retry before displaying mixed versions.");
       }
       if (!isCurrentRefresh()) return;
-      const [history, conversation] = await Promise.all([
-        loadCanonicalEvents(
-          source,
-          Math.max(0, accepted.portfolio.event_sequence - 200),
-          { signal }
-        ),
-        loadCanonicalEntralConversation(source, businessScopeId, { signal })
-      ]);
+      const conversation = await loadCanonicalEntralConversation(source, businessScopeId, { signal });
       if (conversation.event_sequence < accepted.portfolio.event_sequence) {
         throw new Error("ENTRAL conversation history is behind the accepted canonical workspace snapshot.");
       }
@@ -153,9 +144,6 @@ export function CanonicalMemberShell({
       ) {
         pendingEventSequenceRef.current = null;
       }
-      setConversationEvents(history.events.filter(
-        (event) => event.sequence_number <= accepted!.portfolio.event_sequence
-      ));
       setConversationMessages(conversation.messages.filter(
         (message) => message.event_sequence === null
           || message.event_sequence <= accepted!.portfolio.event_sequence
@@ -205,8 +193,15 @@ export function CanonicalMemberShell({
       const storedEntity = window.sessionStorage.getItem(selectedEntityStorageKey);
       if (routeEntityId) setSelectedEntityId(routeEntityId);
       else if (storedEntity) setSelectedEntityId(storedEntity);
-      setChatOpen(window.sessionStorage.getItem(chatOpenStorageKey) === "true");
-      setChatExpanded(window.sessionStorage.getItem(chatExpandedStorageKey) === "true");
+      if (initialDestination === "graph") {
+        const storedCommand = window.sessionStorage.getItem(pendingAssistantCommandStorageKey);
+        if (storedCommand) {
+          const command = JSON.parse(storedCommand) as CanonicalGraphAssistantCommandInput;
+          assistantCommandSequenceRef.current += 1;
+          setAssistantCommand({ ...command, id: assistantCommandSequenceRef.current } as CanonicalGraphAssistantCommand);
+          window.sessionStorage.removeItem(pendingAssistantCommandStorageKey);
+        }
+      }
     } catch {
       // Canonical server state remains usable when browser storage is unavailable.
     }
@@ -252,10 +247,6 @@ export function CanonicalMemberShell({
         );
         setSyncState("connecting");
         setSyncStatus(`Refreshing through canonical event ${response.next_sequence}`);
-        setConversationEvents((current) => [
-          ...current,
-          ...response.events.filter((event) => !current.some((item) => item.event_id === event.event_id))
-        ].slice(-200));
         refreshPendingEvents();
       },
       onPoll: (response) => {
@@ -332,24 +323,26 @@ export function CanonicalMemberShell({
     router.replace(`/member/graph?${nextSearch.toString()}`, { scroll: false });
   }
 
-  function setConversationOpen(open: boolean) {
-    setChatOpen(open);
-    if (!open) setChatExpanded(false);
-    try {
-      window.sessionStorage.setItem(chatOpenStorageKey, String(open));
-      if (!open) window.sessionStorage.setItem(chatExpandedStorageKey, "false");
-    } catch {
-      // The canonical panel still works when browser storage is unavailable.
+  function handleAssistantGraphCommand(command: CanonicalGraphAssistantCommandInput) {
+    assistantCommandSequenceRef.current += 1;
+    const sequenced = {
+      ...command,
+      id: assistantCommandSequenceRef.current
+    } as CanonicalGraphAssistantCommand;
+    if (command.type === "select") setSelectedEntityId(command.entityId);
+    if (initialDestination === "graph") {
+      setAssistantCommand(sequenced);
+      return;
     }
-  }
-
-  function setConversationExpanded(expanded: boolean) {
-    setChatExpanded(expanded);
     try {
-      window.sessionStorage.setItem(chatExpandedStorageKey, String(expanded));
+      window.sessionStorage.setItem(pendingAssistantCommandStorageKey, JSON.stringify(command));
     } catch {
-      // Expansion persistence is an optional presentation enhancement.
+      // Navigation still opens the graph when storage is unavailable.
     }
+    const dimension = command.type === "fullscreen" && command.dimension
+      ? `?graph=${command.dimension}`
+      : "";
+    router.push(`/member/graph${dimension}`);
   }
 
   return (
@@ -379,7 +372,6 @@ export function CanonicalMemberShell({
                 setOrganizationId(event.target.value);
                 setBusinessScopeId(null);
                 setSelectedEntityId(null);
-                setConversationEvents([]);
                 setConversationMessages([]);
                 setPortfolio(null);
                 setHierarchy(null);
@@ -427,7 +419,22 @@ export function CanonicalMemberShell({
 
       {!workspaceError && portfolio && hierarchy ? (
         <div className="phase180-shell-content">
-          {initialDestination === "dashboard" ? (
+          {initialDestination === "dashboard" && isEntralRoom ? (
+            <CanonicalEntralAssistant
+              businessId={businessScopeId}
+              canonicalMessages={conversationMessages}
+              destination={initialDestination}
+              entities={scopedEntities}
+              eventSequence={portfolio.event_sequence}
+              humanUserId={portfolio.scope.user_id}
+              mode="room"
+              onGraphCommand={handleAssistantGraphCommand}
+              onRefresh={() => void refreshWorkspace()}
+              organizationId={organizationId}
+              scopeLabel={scopeLabel}
+              selectedEntityId={selectedEntityId}
+            />
+          ) : initialDestination === "dashboard" ? (
             <CanonicalPortfolioDashboard
               organizationId={organizationId}
               scopeBusinessId={businessScopeId}
@@ -437,6 +444,7 @@ export function CanonicalMemberShell({
             />
           ) : initialDestination === "graph" ? (
             <CanonicalGraphWorkspace
+              assistantCommand={assistantCommand}
               entities={scopedEntities}
               eventSequence={hierarchy.event_sequence}
               onOpenFullRecord={openFullRecord}
@@ -457,46 +465,20 @@ export function CanonicalMemberShell({
         </div>
       ) : null}
 
-      {initialDestination !== "graph" ? (
-        <>
-          <button
-            aria-expanded={chatOpen}
-            aria-label={chatOpen ? "Close ENTRAL conversation" : "Open ENTRAL conversation"}
-            className="phase180-entral-emblem"
-            onClick={() => setConversationOpen(!chatOpen)}
-            type="button"
-          >
-            <MessageCircle aria-hidden="true" size={22} /><span>ENTRAL</span>
-          </button>
-          {chatOpen ? (
-            <aside className={chatExpanded ? "phase180-chat-shell expanded" : "phase180-chat-shell"} aria-label="ENTRAL conversation">
-              <header>
-                <div><strong>ENTRAL</strong><span>{scopeLabel}</span></div>
-                <button aria-label={chatExpanded ? "Compact ENTRAL" : "Expand ENTRAL"} onClick={() => setConversationExpanded(!chatExpanded)} type="button">
-                  {chatExpanded ? <Minimize2 size={18} /> : <Expand size={18} />}
-                </button>
-                <button aria-label="Close ENTRAL" onClick={() => setConversationOpen(false)} type="button"><X size={18} /></button>
-              </header>
-              <div className="phase180-chat-content">
-                <CanonicalEntralPanel
-                  eventSequence={portfolio?.event_sequence ?? hierarchy?.event_sequence ?? 0}
-                  events={conversationEvents}
-                  isAligned={Boolean(
-                    portfolio
-                    && hierarchy
-                    && portfolio.event_sequence === hierarchy.event_sequence
-                  )}
-                  messages={conversationMessages}
-                  scopeBusinessId={businessScopeId}
-                  scopeLabel={scopeLabel}
-                  selectedEntityId={selectedEntityId}
-                  syncState={syncState}
-                  workspaceError={workspaceError}
-                />
-              </div>
-            </aside>
-          ) : null}
-        </>
+      {!isEntralRoom && portfolio && hierarchy ? (
+        <CanonicalEntralAssistant
+          businessId={businessScopeId}
+          canonicalMessages={conversationMessages}
+          destination={initialDestination}
+          entities={scopedEntities}
+          eventSequence={portfolio.event_sequence}
+          humanUserId={portfolio.scope.user_id}
+          onGraphCommand={handleAssistantGraphCommand}
+          onRefresh={() => void refreshWorkspace()}
+          organizationId={organizationId}
+          scopeLabel={scopeLabel}
+          selectedEntityId={selectedEntityId}
+        />
       ) : null}
     </main>
   );

@@ -8406,6 +8406,115 @@ app.get("/api/v1/member/organizations/:organizationId/entral/conversation", { pr
   messages: []
 }));
 
+app.post("/api/v1/member/organizations/:organizationId/entral/assistant/messages", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { organizationId } = request.params as { organizationId: string };
+  if (!teamsForUser(user.id).some((team) => team.id === organizationId)) {
+    return reply.code(404).send({ error: "Not Found", message: "Organization not found." });
+  }
+
+  const body = request.body as {
+    context?: {
+      business_id?: string | null;
+      observed_event_sequence?: number;
+      selected_entity_id?: string | null;
+      surface?: "dashboard" | "graph" | "infrastructure";
+    };
+    conversation_id?: string;
+    message?: string;
+  };
+  const messageText = body.message?.trim() ?? "";
+  const surface = body.context?.surface;
+  if (!messageText || !surface || !["dashboard", "graph", "infrastructure"].includes(surface)) {
+    return reply.code(400).send({ error: "Bad Request", message: "A message and valid member surface are required." });
+  }
+
+  const snapshot = phase180MemorySnapshot();
+  const selectedEntity = body.context?.selected_entity_id
+    ? snapshot.entities.find((entity) => entity.entity_id === body.context?.selected_entity_id) ?? null
+    : null;
+  if (body.context?.selected_entity_id && !selectedEntity) {
+    return reply.code(404).send({ error: "Not Found", message: "Entity not found." });
+  }
+  const selectedBusiness = body.context?.business_id
+    ? snapshot.portfolio.businesses.find((business) => business.business_id === body.context?.business_id) ?? null
+    : null;
+  if (body.context?.business_id && !selectedBusiness) {
+    return reply.code(404).send({ error: "Not Found", message: "Business not found." });
+  }
+
+  const existingConversation = body.conversation_id
+    ? state.conversations.get(body.conversation_id)
+    : null;
+  if (body.conversation_id && (!existingConversation || existingConversation.userId !== user.id)) {
+    return reply.code(404).send({ error: "Not Found", message: "Conversation was not found." });
+  }
+  const conversation: Conversation = existingConversation ?? {
+    createdAt: now(),
+    id: id("convo"),
+    messages: [],
+    title: `ENTRAL workspace · ${selectedEntity?.name ?? selectedBusiness?.business_name ?? surface}`,
+    updatedAt: now(),
+    userId: user.id
+  };
+  state.conversations.set(conversation.id, conversation);
+
+  const userMessage: Message = {
+    content: messageText,
+    createdAt: now(),
+    id: id("msg"),
+    role: "user"
+  };
+  conversation.messages.push(userMessage);
+  const assistantMessage: Message = {
+    content: selectedEntity
+      ? `I can see ${selectedEntity.name} in the development canonical ${surface} context. I can answer questions here, while graph presentation commands remain local and agent changes remain governed.`
+      : `I can see the development canonical ${surface} context for ${selectedBusiness?.business_name ?? snapshot.portfolio.scope.label}. I can answer questions here, while canonical changes remain governed.`,
+    createdAt: now(),
+    id: id("msg"),
+    role: "assistant"
+  };
+  conversation.messages.push(assistantMessage);
+  conversation.updatedAt = assistantMessage.createdAt;
+
+  return reply.send({
+    action_plan: {
+      authorizationRequired: false,
+      intent: "contextual_member_chat",
+      riskLevel: "Low",
+      steps: []
+    },
+    content: assistantMessage.content,
+    context: {
+      business_id: selectedBusiness?.business_id ?? null,
+      event_sequence: snapshot.portfolio.event_sequence,
+      scope_label: selectedBusiness?.business_name ?? snapshot.portfolio.scope.label,
+      selected_entity: selectedEntity,
+      surface
+    },
+    conversation_id: conversation.id,
+    created_at: assistantMessage.createdAt,
+    message_id: assistantMessage.id,
+    user_message: {
+      content: userMessage.content,
+      created_at: userMessage.createdAt,
+      message_id: userMessage.id
+    }
+  });
+});
+
+app.post("/api/v1/member/organizations/:organizationId/governance-actions", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { organizationId } = request.params as { organizationId: string };
+  if (!teamsForUser(user.id).some((team) => team.id === organizationId)) {
+    return reply.code(404).send({ error: "Not Found", message: "Organization not found." });
+  }
+  return reply.code(501).send({
+    error: "Not Implemented",
+    message: "Development-memory mode cannot persist canonical governance actions. Use the canonical database backend."
+  });
+});
+
 app.get("/api/v1/member/organizations/:organizationId/businesses/:businessId/full", { preHandler: requireAuth }, async (request, reply) => {
   const snapshot = phase180MemorySnapshot();
   if ((request.params as { businessId: string }).businessId !== snapshot.business.business_id) {

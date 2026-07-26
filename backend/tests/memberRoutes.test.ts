@@ -3,13 +3,27 @@ import cookie from "@fastify/cookie";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  assertAiUsageAllowed: vi.fn(),
+  conversationCreate: vi.fn(),
+  conversationFindFirst: vi.fn(),
+  conversationUpdate: vi.fn(),
+  createAiAuditEntry: vi.fn(),
+  createGovernanceAction: vi.fn(),
+  createProviderBackedAiDecision: vi.fn(),
   getBusinessFull: vi.fn(),
   getEntralConversation: vi.fn(),
   getEntityFull: vi.fn(),
   getHierarchySnapshot: vi.fn(),
   getPortfolio: vi.fn(),
+  getAiUsageSummary: vi.fn(),
   listPortfolioEvents: vi.fn(),
   memberWorkspaceFindUnique: vi.fn(),
+  messageCreate: vi.fn(),
+  messageDelete: vi.fn(),
+  messageFindMany: vi.fn(),
+  openAiCreateReply: vi.fn(),
+  recordAiUsageEvent: vi.fn(),
+  recordAuditLog: vi.fn(),
   taskCount: vi.fn(),
   taskFindMany: vi.fn(),
   teamMemberFindMany: vi.fn(),
@@ -19,6 +33,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../src/services/canonicalControlPlane.js", () => ({
   canonicalControlPlaneRepository: {
+    createGovernanceAction: mocks.createGovernanceAction,
     getBusinessFull: mocks.getBusinessFull,
     getEntralConversation: mocks.getEntralConversation,
     getEntityFull: mocks.getEntityFull,
@@ -30,6 +45,16 @@ vi.mock("../src/services/canonicalControlPlane.js", () => ({
 
 vi.mock("../src/db.js", () => ({
   prisma: {
+    conversation: {
+      create: mocks.conversationCreate,
+      findFirst: mocks.conversationFindFirst,
+      update: mocks.conversationUpdate
+    },
+    message: {
+      create: mocks.messageCreate,
+      delete: mocks.messageDelete,
+      findMany: mocks.messageFindMany
+    },
     memberWorkspaceSnapshot: {
       findUnique: mocks.memberWorkspaceFindUnique
     },
@@ -47,9 +72,33 @@ vi.mock("../src/db.js", () => ({
   }
 }));
 
+vi.mock("../src/services/aiBrain.js", () => ({
+  createAiAuditEntry: mocks.createAiAuditEntry
+}));
+
+vi.mock("../src/services/aiUsage.js", () => ({
+  AiUsageLimitError: class AiUsageLimitError extends Error {},
+  assertAiUsageAllowed: mocks.assertAiUsageAllowed,
+  getAiUsageSummary: mocks.getAiUsageSummary,
+  recordAiUsageEvent: mocks.recordAiUsageEvent
+}));
+
+vi.mock("../src/services/audit.js", () => ({
+  recordAuditLog: mocks.recordAuditLog
+}));
+
+vi.mock("../src/services/openaiService.js", () => ({
+  createProviderBackedAiDecision: mocks.createProviderBackedAiDecision,
+  openAiChatService: {
+    createReply: mocks.openAiCreateReply
+  }
+}));
+
 const organizationId = "ck1234567890123456789012";
 const otherOrganizationId = "ck9876543210987654321098";
 const businessId = "123e4567-e89b-42d3-a456-426614174000";
+const entityId = "223e4567-e89b-42d3-a456-426614174000";
+const humanId = "323e4567-e89b-42d3-a456-426614174000";
 
 async function buildMemberTestServer() {
   const [{ memberRoutes }, { signAuthToken }] = await Promise.all([
@@ -358,6 +407,218 @@ describe("member organization routes", () => {
         authSubject: "user-1"
       })
     );
+    await app.close();
+  });
+
+  it("re-resolves canonical graph context before answering through the member assistant", async () => {
+    const createdAt = new Date("2026-07-26T08:00:00.000Z");
+    const entity = {
+      active_alert: null,
+      active_task_count: 1,
+      assigned_business_id: businessId,
+      child_count: 0,
+      compute_tier: "standard",
+      current_mission: "Verify the member workspace",
+      entity_id: entityId,
+      entity_type: "SOLDIER",
+      health: "HEALTHY",
+      latest_material_result: null,
+      model_class: "reasoning",
+      name: "Interface Sentinel",
+      parent_id: null,
+      stable_code: "OPS.INTERFACE_SENTINEL",
+      status: "ACTIVE",
+      updated_at: createdAt.toISOString(),
+      version: 7
+    };
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getPortfolio.mockResolvedValueOnce({
+      businesses: [{ business_id: businessId, business_name: "Interface Operations" }],
+      event_sequence: 51,
+      scope: { label: "Human portfolio" }
+    });
+    mocks.getHierarchySnapshot.mockResolvedValueOnce({
+      entities: [entity],
+      event_sequence: 50
+    });
+    mocks.assertAiUsageAllowed.mockResolvedValueOnce({ estimatedCostCents: 2 });
+    mocks.conversationCreate.mockResolvedValueOnce({
+      id: "ck1234567890123456789012",
+      userId: "user-1"
+    });
+    mocks.messageCreate
+      .mockResolvedValueOnce({ content: "What is selected?", createdAt, id: "ck2234567890123456789012", role: "user" })
+      .mockResolvedValueOnce({ content: "Interface Sentinel is selected.", createdAt, id: "ck3234567890123456789012", role: "assistant" });
+    mocks.messageFindMany.mockResolvedValueOnce([
+      { content: "What is selected?", createdAt, id: "ck2234567890123456789012", role: "user" }
+    ]);
+    mocks.createProviderBackedAiDecision.mockResolvedValueOnce({
+      errors: [],
+      plan: { authorizationRequired: false, intent: "inspect_selection", riskLevel: "Low" }
+    });
+    mocks.openAiCreateReply.mockResolvedValueOnce({
+      content: "Interface Sentinel is selected.",
+      model: "test-model",
+      providerName: "OpenAI",
+      usedLocalFallback: false
+    });
+    mocks.recordAiUsageEvent.mockResolvedValueOnce({ estimatedCostCents: 2, id: "usage-1" });
+    mocks.getAiUsageSummary.mockResolvedValueOnce({ used: 1 });
+    mocks.createAiAuditEntry.mockReturnValueOnce({ outcome: "contextual response" });
+    mocks.recordAuditLog.mockResolvedValueOnce(undefined);
+
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: {
+        context: {
+          business_id: businessId,
+          observed_event_sequence: 49,
+          selected_entity_id: entityId,
+          surface: "graph"
+        },
+        message: "What is selected?"
+      },
+      url: `/api/v1/member/organizations/${organizationId}/entral/assistant/messages`
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      content: "Interface Sentinel is selected.",
+      context: {
+        business_id: businessId,
+        event_sequence: 50,
+        scope_label: "Interface Operations",
+        selected_entity: { entity_id: entityId, name: "Interface Sentinel" },
+        surface: "graph"
+      }
+    });
+    expect(mocks.getPortfolio).toHaveBeenCalledWith(expect.objectContaining({ authSubject: "user-1" }));
+    expect(mocks.getHierarchySnapshot).toHaveBeenCalledWith(expect.objectContaining({ authSubject: "user-1" }));
+    expect(mocks.openAiCreateReply).toHaveBeenCalledWith(
+      [expect.objectContaining({
+        content: expect.stringContaining("selected_entity=Interface Sentinel")
+      })],
+      expect.any(Object)
+    );
+    expect(mocks.messageCreate).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      data: expect.objectContaining({ content: "What is selected?", role: "user" })
+    }));
+    await app.close();
+  });
+
+  it("rejects a graph entity hint that is outside the server-resolved member hierarchy", async () => {
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getPortfolio.mockResolvedValueOnce({
+      businesses: [],
+      event_sequence: 51,
+      scope: { label: "Human portfolio" }
+    });
+    mocks.getHierarchySnapshot.mockResolvedValueOnce({ entities: [], event_sequence: 51 });
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: {
+        context: {
+          business_id: null,
+          observed_event_sequence: 51,
+          selected_entity_id: entityId,
+          surface: "graph"
+        },
+        message: "Inspect this entity."
+      },
+      url: `/api/v1/member/organizations/${organizationId}/entral/assistant/messages`
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: "Not Found", message: "Entity not found." });
+    expect(mocks.assertAiUsageAllowed).not.toHaveBeenCalled();
+    expect(mocks.conversationCreate).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it("submits an explicitly confirmed member change as a canonical governed request", async () => {
+    const request = {
+      action_id: "423e4567-e89b-42d3-a456-426614174000",
+      action_type: "MODEL_CHANGE",
+      actor_id: humanId,
+      actor_type: "HUMAN",
+      authority_basis: {
+        channel: "MEMBER_ENTRAL_ASSISTANT",
+        explicit_confirmation_required: true,
+        target_version: 7
+      },
+      business_id: businessId,
+      confidence: 1,
+      expected_version: 7,
+      idempotency_key: "member-assistant:423e4567-e89b-42d3-a456-426614174000",
+      proposed_changes: { model_class: "gpt-5.6" },
+      reason: "Human-confirmed model change through ENTRAL.",
+      requested_at: "2026-07-26T08:00:00.000Z",
+      requested_outcome: "Change the selected entity model.",
+      risk_class: "MEDIUM",
+      rollback_plan: { model_class: "reasoning" },
+      scope: {
+        business_id: businessId,
+        display_label: "Interface Operations",
+        entity_id: entityId,
+        scope_id: businessId,
+        scope_type: "BUSINESS"
+      },
+      target_id: entityId,
+      target_type: "ENTITY",
+      verification_plan: { checks: ["Canonical readback"] }
+    };
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getEntityFull.mockResolvedValueOnce({ entity: { summary: { entity_id: entityId } } });
+    mocks.createGovernanceAction.mockResolvedValueOnce({
+      action_id: request.action_id,
+      status: "REQUESTED"
+    });
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: request,
+      url: `/api/v1/member/organizations/${organizationId}/governance-actions`
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({
+      action: { action_id: request.action_id, status: "REQUESTED" }
+    });
+    expect(mocks.createGovernanceAction).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({
+        authenticatedHumanEmail: "ada@example.com",
+        databaseSession: expect.objectContaining({ authSubject: "user-1" })
+      })
+    );
+
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    const unconfirmedResponse = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: {
+        ...request,
+        authority_basis: {
+          channel: "MEMBER_ENTRAL_ASSISTANT",
+          explicit_confirmation_required: false,
+          target_version: request.expected_version
+        }
+      },
+      url: `/api/v1/member/organizations/${organizationId}/governance-actions`
+    });
+
+    expect(unconfirmedResponse.statusCode).toBe(400);
+    expect(unconfirmedResponse.json()).toEqual({
+      error: "Bad Request",
+      message: "Member ENTRAL governance requests require explicit confirmation for the current target version."
+    });
+    expect(mocks.getEntityFull).toHaveBeenCalledTimes(1);
+    expect(mocks.createGovernanceAction).toHaveBeenCalledTimes(1);
     await app.close();
   });
 
