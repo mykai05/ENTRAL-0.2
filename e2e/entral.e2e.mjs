@@ -521,7 +521,11 @@ const tests = [
             }
           }
 
-          await page.goto(`${frontendUrl}/agents`);
+          // Return to the canonical surface before exercising the shared account
+          // control. Secondary workspaces retain their own scroll positions, which
+          // must not turn a cross-route check into a click through another nav item.
+          await page.goto(`${frontendUrl}/dashboard`);
+          await page.waitForLoadState("domcontentloaded");
           const settingsTrigger = page.getByRole("button", { name: "Settings" });
           await expectVisible(settingsTrigger, "Settings trigger");
           await settingsTrigger.focus();
