@@ -18,12 +18,142 @@ import {
   assertValidParentRole,
   assertExpectedVersion,
   assertGovernanceActionRequest,
-  parseMemberOrganizationsResponse
+  parseBusinessFullRecordResponse,
+  parseCanonicalPortfolioEventsResponse,
+  parseMemberOrganizationsResponse,
+  parsePortfolioSummaryResponse
 } from "../dist/index.js";
 
 const id = "123e4567-e89b-42d3-a456-426614174000";
 const secondId = "223e4567-e89b-42d3-a456-426614174000";
 const thirdId = "323e4567-e89b-42d3-a456-426614174000";
+
+function canonicalBusinessSummary(overrides = {}) {
+  return {
+    active_mission_count: 1,
+    active_task_count: 2,
+    agent_count: 3,
+    automation_count: 1,
+    business_id: id,
+    business_name: "Canonical Software",
+    capital_available: 5000,
+    commander_id: secondId,
+    currency: "USD",
+    general_id: thirdId,
+    general_name: "Software",
+    gross_revenue: 12500,
+    health_drivers: [{
+      code: "margin",
+      direction: "POSITIVE",
+      explanation: "Contribution is positive.",
+      label: "Margin"
+    }],
+    health_score: 91,
+    health_state: "HEALTHY",
+    integration_count: 2,
+    marshal_id: "423e4567-e89b-42d3-a456-426614174000",
+    marshal_name: "Digital Businesses",
+    net_contribution: 4400,
+    primary_objective: "Grow verified recurring revenue.",
+    revenue_period_end: "2026-07-25T00:00:00.000Z",
+    revenue_period_start: "2026-07-01T00:00:00.000Z",
+    source_freshness: { finance: "2026-07-25T00:00:00.000Z" },
+    stable_code: "business.software.canonical",
+    status: "OPERATING",
+    tool_count: 4,
+    top_exception: null,
+    top_recommendation: "Review the next verified expansion.",
+    updated_at: "2026-07-25T01:00:00.000Z",
+    version: 3,
+    ...overrides
+  };
+}
+
+test("Phase 170 portfolio parser accepts canonical summaries and resolved scope", () => {
+  const parsed = parsePortfolioSummaryResponse({
+    businesses: [canonicalBusinessSummary()],
+    event_sequence: 12,
+    generated_at: "2026-07-25T02:00:00.000Z",
+    scope: {
+      label: "Human portfolio / all canonical businesses",
+      mode: "HUMAN_PORTFOLIO",
+      user_id: secondId,
+      visible_business_ids: [id]
+    },
+    totals: {
+      active_commanders: 1,
+      active_soldiers: 3,
+      businesses: 1,
+      financials: [{
+        business_count: 1,
+        businesses_with_financials: 1,
+        capital_available: 5000,
+        currency: "USD",
+        gross_revenue: 12500,
+        net_contribution: 4400
+      }],
+      health_distribution: { CRITICAL: 0, DEGRADED: 0, HEALTHY: 1, UNKNOWN: 0, WATCH: 0 },
+      unresolved_exceptions: 0
+    }
+  });
+
+  assert.equal(parsed.businesses[0].business_name, "Canonical Software");
+  assert.equal(parsed.scope.mode, "HUMAN_PORTFOLIO");
+  assert.equal(parsed.totals.financials[0].net_contribution, 4400);
+});
+
+test("Phase 170 full-record parser enforces summary and aggregate version equality", () => {
+  const payload = {
+    business: {
+      agents_and_tools: { agents: [] },
+      aggregate_version: 3,
+      decisions_and_changes: { decisions: [] },
+      evidence_ids: [thirdId],
+      external_activity: { sources: [] },
+      financials: { snapshots: [] },
+      issues_and_recommendations: { recommendations: [] },
+      loaded_at: "2026-07-25T02:00:00.000Z",
+      operations: { missions: [] },
+      overview: { profile: null },
+      performance: { metrics: [] },
+      summary: canonicalBusinessSummary(),
+      version_history: [{ changed_at: "2026-07-25T01:00:00.000Z", reason: "Verified update", version: 3 }]
+    }
+  };
+
+  assert.equal(parseBusinessFullRecordResponse(payload).business.aggregate_version, 3);
+  assert.throws(
+    () => parseBusinessFullRecordResponse({
+      business: { ...payload.business, aggregate_version: 2 }
+    }),
+    (error) => {
+      assert.equal(error.code, "BUSINESS_VERSION_MISMATCH");
+      return true;
+    }
+  );
+});
+
+test("Phase 170 event parser accepts minimal invalidation metadata and rejects bad cursors", () => {
+  const parsed = parseCanonicalPortfolioEventsResponse({
+    events: [{
+      aggregate_id: id,
+      aggregate_type: "BUSINESS",
+      aggregate_version: 4,
+      business_id: id,
+      event_id: secondId,
+      event_type: "BUSINESS_UPDATED",
+      occurred_at: "2026-07-25T03:00:00.000Z",
+      sequence_number: 13
+    }],
+    next_sequence: 13
+  });
+
+  assert.equal(parsed.events[0].business_id, id);
+  assert.throws(
+    () => parseCanonicalPortfolioEventsResponse({ events: [], next_sequence: -1 }),
+    ContractError
+  );
+});
 
 test("canonical parent roles pass and invalid roles fail", () => {
   assert.doesNotThrow(() => assertValidParentRole("ENTRAL", null));
@@ -443,20 +573,29 @@ test("event and audit consumers reject malformed canonical records", () => {
   assert.throws(() => assertAuditEntry({ ...audit, result: "PENDING" }), ContractError);
 });
 
-test("OpenAPI exposes only implemented member and Phase 140 control-plane paths", async () => {
+test("OpenAPI exposes only implemented member and Phase 170 control-plane paths", async () => {
   const openapi = await readFile(new URL("../openapi.yaml", import.meta.url), "utf8");
   const document = parseYaml(openapi);
   assert.equal(document.openapi, "3.1.0");
   assert.deepEqual(Object.keys(document.paths).sort(), [
     "/api/v1/control-plane/businesses",
     "/api/v1/control-plane/businesses/{businessId}",
+    "/api/v1/control-plane/businesses/{businessId}/full",
+    "/api/v1/control-plane/events",
     "/api/v1/control-plane/governance-actions",
     "/api/v1/control-plane/hierarchy",
+    "/api/v1/control-plane/portfolio/summary",
     "/api/v1/member/organizations",
-    "/api/v1/member/organizations/{organizationId}/overview"
+    "/api/v1/member/organizations/{organizationId}/businesses/{businessId}/full",
+    "/api/v1/member/organizations/{organizationId}/events",
+    "/api/v1/member/organizations/{organizationId}/overview",
+    "/api/v1/member/organizations/{organizationId}/portfolio/summary"
   ]);
   assert.equal(document.components.schemas.CanonicalEntitySummary.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalBusinessSummary.additionalProperties, false);
+  assert.equal(document.components.schemas.CanonicalPortfolioSummary.additionalProperties, false);
+  assert.equal(document.components.schemas.CanonicalBusinessFullRecord.additionalProperties, false);
+  assert.equal(document.components.schemas.CanonicalPortfolioEvents.additionalProperties, false);
   assert.equal(document.components.schemas.GovernanceActionRequest.additionalProperties, false);
   assert.equal(document.components.schemas.MemberOverviewResponse.additionalProperties, false);
   assert.equal(document.components.schemas.MemberWorkspace.additionalProperties, false);

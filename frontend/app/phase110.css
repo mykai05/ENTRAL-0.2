@@ -848,6 +848,7 @@
 
 @media (max-width: 760px) {
   .phase110-member-header {
+    backdrop-filter: none;
     gap: 0.4rem;
     grid-template-columns: minmax(0, 1fr) auto;
     min-height: 3.75rem;

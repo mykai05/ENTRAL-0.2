@@ -1,15 +1,25 @@
+import { randomUUID } from "node:crypto";
 import {
   parseMemberOrganizationsResponse,
   parseMemberOverviewResponse
 } from "@entral/contracts";
-import type { FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { requireAuth, setPrivateNoStoreHeaders } from "../auth.js";
 import { prisma } from "../db.js";
+import { canonicalControlPlaneRepository } from "../services/canonicalControlPlane.js";
 import { parseMemberWorkspace } from "../services/memberWorkspace.js";
 
 const organizationParamsSchema = z.object({
   organizationId: z.string().cuid()
+});
+
+const organizationBusinessParamsSchema = organizationParamsSchema.extend({
+  businessId: z.string().uuid()
+});
+
+const canonicalEventQuerySchema = z.object({
+  afterSequence: z.coerce.number().int().min(0).default(0)
 });
 
 const unavailableSubscription = {
@@ -32,6 +42,44 @@ const unavailableMemberFeatures = {
 
 function unauthenticated(reply: FastifyReply) {
   return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
+}
+
+function canonicalDatabaseSession(request: FastifyRequest, actionReason: string) {
+  const currentUser = request.user;
+  if (!currentUser) {
+    throw new Error("Authenticated member session is required.");
+  }
+  return {
+    actionReason,
+    authSubject: currentUser.sub,
+    correlationId: randomUUID()
+  } as const;
+}
+
+async function hasOrganizationAccess(userId: string, organizationId: string) {
+  const membership = await prisma.teamMember.findUnique({
+    where: {
+      userId_teamId: {
+        teamId: organizationId,
+        userId
+      }
+    },
+    select: {
+      team: {
+        select: {
+          memberAccessEnabled: true
+        }
+      }
+    }
+  });
+  return membership?.team.memberAccessEnabled === true;
+}
+
+function organizationNotFound(reply: FastifyReply) {
+  return reply.code(404).send({
+    error: "Not Found",
+    message: "Organization not found or unavailable."
+  });
 }
 
 function parseSerializedWireContract<T>(
@@ -217,5 +265,50 @@ export async function memberRoutes(app: FastifyInstance) {
       workspace
     };
     return reply.send(parseSerializedWireContract(response, parseMemberOverviewResponse));
+  });
+
+  app.get("/member/organizations/:organizationId/portfolio/summary", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+    const { organizationId } = organizationParamsSchema.parse(request.params);
+    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+      return organizationNotFound(reply);
+    }
+    return reply.send(await canonicalControlPlaneRepository.getPortfolio(
+      canonicalDatabaseSession(request, `Read the canonical portfolio for organization ${organizationId}.`)
+    ));
+  });
+
+  app.get("/member/organizations/:organizationId/businesses/:businessId/full", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+    const { businessId, organizationId } = organizationBusinessParamsSchema.parse(request.params);
+    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+      return organizationNotFound(reply);
+    }
+    const business = await canonicalControlPlaneRepository.getBusinessFull(
+      businessId,
+      canonicalDatabaseSession(request, `Read canonical business ${businessId} for organization ${organizationId}.`)
+    );
+    // RLS deliberately makes an inaccessible business indistinguishable from
+    // a missing one, preventing cross-business identifier discovery.
+    if (!business) {
+      return reply.code(404).send({ error: "Not Found", message: "Business not found." });
+    }
+    return reply.send({ business });
+  });
+
+  app.get("/member/organizations/:organizationId/events", { preHandler: requireAuth }, async (request, reply) => {
+    const currentUser = request.user;
+    if (!currentUser) return unauthenticated(reply);
+    const { organizationId } = organizationParamsSchema.parse(request.params);
+    const { afterSequence } = canonicalEventQuerySchema.parse(request.query);
+    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+      return organizationNotFound(reply);
+    }
+    return reply.send(await canonicalControlPlaneRepository.listPortfolioEvents(
+      afterSequence,
+      canonicalDatabaseSession(request, `Read canonical portfolio events for organization ${organizationId}.`)
+    ));
   });
 }

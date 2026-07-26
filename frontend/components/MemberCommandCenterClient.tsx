@@ -73,5 +73,13 @@ export function MemberCommandCenterClient({ initialDestination = "dashboard", or
   // Passing a null internal operator prevents Command OS persistence and all
   // internal-only API access; the backend independently rejects member tokens
   // on those routes while local visual controls continue to work.
-  return <NeuronsCommandCenter initialDestination={initialDestination} surface="member" user={null} onLogout={handleLogout} />;
+  return (
+    <NeuronsCommandCenter
+      initialDestination={initialDestination}
+      organizationId={organizationId}
+      surface="member"
+      user={null}
+      onLogout={handleLogout}
+    />
+  );
 }

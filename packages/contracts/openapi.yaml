@@ -1,11 +1,12 @@
 openapi: 3.1.0
 info:
   title: ENTRAL implemented API
-  version: 1.1.0
+  version: 1.2.0
   description: >
-    Gate 140 contract surface. Only paths with complete backend behavior are
+    Gate 170 contract surface. Only paths with complete backend behavior are
     included. Canonical control-plane paths require internal Admin
-    authentication and database-enforced Human authority where applicable.
+    authentication. Member portfolio paths require organization membership;
+    PostgreSQL row-level security resolves Human portfolio or assigned scope.
 paths:
   /api/v1/member/organizations:
     get:
@@ -38,6 +39,56 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MemberOverviewResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/member/organizations/{organizationId}/portfolio/summary:
+    get:
+      operationId: getMemberCanonicalPortfolio
+      summary: Get lightweight canonical business summaries in the member's RLS-visible scope.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      responses:
+        "200":
+          description: Scoped canonical portfolio.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CanonicalPortfolioSummary" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/member/organizations/{organizationId}/businesses/{businessId}/full:
+    get:
+      operationId: getMemberCanonicalBusinessFull
+      summary: Get a full canonical business record on demand when visible to the member.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+        - $ref: "#/components/parameters/BusinessId"
+      responses:
+        "200":
+          description: Full canonical business record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CanonicalBusinessFullResponse" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/member/organizations/{organizationId}/events:
+    get:
+      operationId: listMemberCanonicalPortfolioEvents
+      summary: List minimal canonical event metadata used to invalidate member portfolio caches.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+        - $ref: "#/components/parameters/AfterSequence"
+      responses:
+        "200":
+          description: Scoped canonical events after the supplied cursor.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CanonicalPortfolioEvents" }
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -80,6 +131,18 @@ paths:
                     items: { $ref: "#/components/schemas/CanonicalBusinessSummary" }
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /api/v1/control-plane/portfolio/summary:
+    get:
+      operationId: getCanonicalPortfolio
+      summary: Get lightweight canonical business summaries and RLS-resolved portfolio totals.
+      responses:
+        "200":
+          description: Canonical portfolio.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CanonicalPortfolioSummary" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /api/v1/control-plane/businesses/{businessId}:
     get:
       operationId: getCanonicalBusiness
@@ -104,6 +167,36 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/control-plane/businesses/{businessId}/full:
+    get:
+      operationId: getCanonicalBusinessFull
+      summary: Get full canonical sections for one RLS-visible business on demand.
+      parameters:
+        - $ref: "#/components/parameters/BusinessId"
+      responses:
+        "200":
+          description: Full canonical business record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CanonicalBusinessFullResponse" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/control-plane/events:
+    get:
+      operationId: listCanonicalPortfolioEvents
+      summary: List minimal canonical event metadata used to invalidate UI caches.
+      parameters:
+        - $ref: "#/components/parameters/AfterSequence"
+      responses:
+        "200":
+          description: Canonical events after the supplied cursor.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CanonicalPortfolioEvents" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /api/v1/control-plane/governance-actions:
     post:
       operationId: createCanonicalGovernanceAction
@@ -133,6 +226,22 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 components:
+  parameters:
+    OrganizationId:
+      name: organizationId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    BusinessId:
+      name: businessId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AfterSequence:
+      name: afterSequence
+      in: query
+      required: false
+      schema: { type: integer, minimum: 0, default: 0 }
   responses:
     Unauthorized:
       description: Authentication is missing or invalid.
@@ -278,6 +387,135 @@ components:
         updated_at: { type: string, format: date-time }
         source_freshness: { type: object, additionalProperties: { type: [string, "null"] } }
         version: { type: integer, minimum: 1 }
+    CanonicalPortfolioFinancialTotal:
+      type: object
+      additionalProperties: false
+      required: [business_count, businesses_with_financials, capital_available, currency, gross_revenue, net_contribution]
+      properties:
+        business_count: { type: integer, minimum: 0 }
+        businesses_with_financials: { type: integer, minimum: 0 }
+        capital_available: { type: number }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        gross_revenue: { type: number }
+        net_contribution: { type: number }
+    CanonicalPortfolioScope:
+      type: object
+      additionalProperties: false
+      required: [label, mode, user_id, visible_business_ids]
+      properties:
+        label: { type: string, minLength: 1 }
+        mode: { type: string, enum: [HUMAN_PORTFOLIO, ASSIGNED_BUSINESSES] }
+        user_id: { type: string, format: uuid }
+        visible_business_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, format: uuid }
+    CanonicalPortfolioTotals:
+      type: object
+      additionalProperties: false
+      required: [active_commanders, active_soldiers, businesses, financials, health_distribution, unresolved_exceptions]
+      properties:
+        active_commanders: { type: integer, minimum: 0 }
+        active_soldiers: { type: integer, minimum: 0 }
+        businesses: { type: integer, minimum: 0 }
+        financials:
+          type: array
+          items: { $ref: "#/components/schemas/CanonicalPortfolioFinancialTotal" }
+        health_distribution:
+          type: object
+          additionalProperties: false
+          required: [CRITICAL, DEGRADED, HEALTHY, UNKNOWN, WATCH]
+          properties:
+            CRITICAL: { type: integer, minimum: 0 }
+            DEGRADED: { type: integer, minimum: 0 }
+            HEALTHY: { type: integer, minimum: 0 }
+            UNKNOWN: { type: integer, minimum: 0 }
+            WATCH: { type: integer, minimum: 0 }
+        unresolved_exceptions: { type: integer, minimum: 0 }
+    CanonicalPortfolioSummary:
+      type: object
+      additionalProperties: false
+      required: [businesses, event_sequence, generated_at, scope, totals]
+      properties:
+        businesses:
+          type: array
+          items: { $ref: "#/components/schemas/CanonicalBusinessSummary" }
+        event_sequence: { type: integer, minimum: 0 }
+        generated_at: { type: string, format: date-time }
+        scope: { $ref: "#/components/schemas/CanonicalPortfolioScope" }
+        totals: { $ref: "#/components/schemas/CanonicalPortfolioTotals" }
+    CanonicalBusinessVersion:
+      type: object
+      additionalProperties: false
+      required: [changed_at, reason, version]
+      properties:
+        changed_at: { type: string, format: date-time }
+        reason: { type: [string, "null"] }
+        version: { type: integer, minimum: 1 }
+    CanonicalBusinessFullRecord:
+      type: object
+      additionalProperties: false
+      required:
+        - agents_and_tools
+        - aggregate_version
+        - decisions_and_changes
+        - evidence_ids
+        - external_activity
+        - financials
+        - issues_and_recommendations
+        - loaded_at
+        - operations
+        - overview
+        - performance
+        - summary
+        - version_history
+      properties:
+        agents_and_tools: {}
+        aggregate_version: { type: integer, minimum: 1 }
+        decisions_and_changes: {}
+        evidence_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, format: uuid }
+        external_activity: {}
+        financials: {}
+        issues_and_recommendations: {}
+        loaded_at: { type: string, format: date-time }
+        operations: {}
+        overview: {}
+        performance: {}
+        summary: { $ref: "#/components/schemas/CanonicalBusinessSummary" }
+        version_history:
+          type: array
+          items: { $ref: "#/components/schemas/CanonicalBusinessVersion" }
+    CanonicalBusinessFullResponse:
+      type: object
+      additionalProperties: false
+      required: [business]
+      properties:
+        business: { $ref: "#/components/schemas/CanonicalBusinessFullRecord" }
+    CanonicalPortfolioEvent:
+      type: object
+      additionalProperties: false
+      required: [aggregate_id, aggregate_type, aggregate_version, business_id, event_id, event_type, occurred_at, sequence_number]
+      properties:
+        aggregate_id: { type: string, format: uuid }
+        aggregate_type: { type: string, minLength: 1 }
+        aggregate_version: { type: [integer, "null"], minimum: 0 }
+        business_id: { type: [string, "null"], format: uuid }
+        event_id: { type: string, format: uuid }
+        event_type: { type: string, minLength: 1 }
+        occurred_at: { type: string, format: date-time }
+        sequence_number: { type: integer, minimum: 1 }
+    CanonicalPortfolioEvents:
+      type: object
+      additionalProperties: false
+      required: [events, next_sequence]
+      properties:
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/CanonicalPortfolioEvent" }
+        next_sequence: { type: integer, minimum: 0 }
     GovernanceActionRequest:
       type: object
       additionalProperties: false

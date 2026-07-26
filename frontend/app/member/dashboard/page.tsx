@@ -10,8 +10,8 @@ import { loadMemberSession } from "../../../lib/member-session.server";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Command Center",
-  description: "Authenticated Entral member command center."
+  title: "Dashboard",
+  description: "Authenticated Entral canonical portfolio dashboard."
 };
 
 export default async function MemberCommandCenterPage() {

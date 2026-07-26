@@ -188,6 +188,153 @@ async function newPage(options = {}) {
   return { context, page };
 }
 
+const phase170Ids = {
+  business: "423e4567-e89b-42d3-a456-426614174000",
+  commander: "223e4567-e89b-42d3-a456-426614174000",
+  event: "e23e4567-e89b-42d3-a456-426614174000",
+  general: "523e4567-e89b-42d3-a456-426614174000",
+  marshal: "323e4567-e89b-42d3-a456-426614174000",
+  user: "123e4567-e89b-42d3-a456-426614174000"
+};
+
+function phase170Business(version = 3) {
+  return {
+    active_mission_count: 1,
+    active_task_count: 2,
+    agent_count: 3,
+    automation_count: 1,
+    business_id: phase170Ids.business,
+    business_name: "Atlas Software",
+    capital_available: 5000,
+    commander_id: phase170Ids.commander,
+    currency: "USD",
+    general_id: phase170Ids.general,
+    general_name: "Software",
+    gross_revenue: 12500,
+    health_drivers: [{
+      code: "verified-margin",
+      direction: "POSITIVE",
+      evidence_ids: [],
+      explanation: "The verified contribution snapshot is positive.",
+      label: "Verified margin",
+      severity: "INFO",
+      source_freshness: "2026-07-25T00:00:00.000Z",
+      value: 0.35
+    }],
+    health_score: 91,
+    health_state: "HEALTHY",
+    integration_count: 2,
+    marshal_id: phase170Ids.marshal,
+    marshal_name: "Digital Businesses",
+    net_contribution: 4400,
+    primary_objective: "Grow verified recurring revenue.",
+    revenue_period_end: "2026-07-25T00:00:00.000Z",
+    revenue_period_start: "2026-07-01T00:00:00.000Z",
+    source_freshness: { finance: "2026-07-25T00:00:00.000Z" },
+    stable_code: "business.software.atlas",
+    status: "OPERATING",
+    tool_count: 4,
+    top_exception: null,
+    top_recommendation: "Review the next evidence-backed expansion.",
+    updated_at: version === 3 ? "2026-07-25T01:00:00.000Z" : "2026-07-25T03:00:00.000Z",
+    version
+  };
+}
+
+function phase170Portfolio(version = 3) {
+  return {
+    businesses: [phase170Business(version)],
+    event_sequence: version === 3 ? 9 : 10,
+    generated_at: "2026-07-25T03:00:00.000Z",
+    scope: {
+      label: "Human portfolio / all canonical businesses",
+      mode: "HUMAN_PORTFOLIO",
+      user_id: phase170Ids.user,
+      visible_business_ids: [phase170Ids.business]
+    },
+    totals: {
+      active_commanders: 1,
+      active_soldiers: 2,
+      businesses: 1,
+      financials: [{
+        business_count: 1,
+        businesses_with_financials: 1,
+        capital_available: 5000,
+        currency: "USD",
+        gross_revenue: 12500,
+        net_contribution: 4400
+      }],
+      health_distribution: { CRITICAL: 0, DEGRADED: 0, HEALTHY: 1, UNKNOWN: 0, WATCH: 0 },
+      unresolved_exceptions: 0
+    }
+  };
+}
+
+function phase170FullBusiness(version = 3) {
+  return {
+    business: {
+      agents_and_tools: { agents: [{ name: "Support Soldier", status: "ACTIVE" }], tool_grants: [] },
+      aggregate_version: version,
+      decisions_and_changes: { audit_timeline: [], decisions: [], governance_actions: [] },
+      evidence_ids: [],
+      external_activity: { source_records: [] },
+      financials: { snapshots: [{ gross_revenue: 12500, net_contribution: 4400 }] },
+      issues_and_recommendations: { recommendations: [] },
+      loaded_at: "2026-07-25T03:00:00.000Z",
+      operations: { missions: [{ title: "Verified delivery mission" }], schedules: [], tasks: [] },
+      overview: { profile: { business_model: "Software" }, state: { status: "OPERATING" } },
+      performance: { experiments: [], health_assessments: [], metrics: [], outcomes: [] },
+      summary: phase170Business(version),
+      version_history: [{
+        changed_at: "2026-07-25T03:00:00.000Z",
+        reason: "Canonical event refresh",
+        version
+      }]
+    }
+  };
+}
+
+async function installPhase170Routes(page, { emitEvent = false } = {}) {
+  let version = 3;
+  let eventSent = false;
+  await page.route("**/api/v1/control-plane/portfolio/summary", async (route) => {
+    await route.fulfill({ contentType: "application/json", json: phase170Portfolio(version), status: 200 });
+  });
+  await page.route(`**/api/v1/control-plane/businesses/${phase170Ids.business}/full`, async (route) => {
+    await route.fulfill({ contentType: "application/json", json: phase170FullBusiness(version), status: 200 });
+  });
+  await page.route("**/api/v1/control-plane/events?afterSequence=*", async (route) => {
+    const afterSequence = Number(new URL(route.request().url()).searchParams.get("afterSequence") ?? "0");
+    if (emitEvent && !eventSent && afterSequence === 9) {
+      eventSent = true;
+      version = 4;
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          events: [{
+            aggregate_id: phase170Ids.business,
+            aggregate_type: "BUSINESS",
+            aggregate_version: 4,
+            business_id: phase170Ids.business,
+            event_id: phase170Ids.event,
+            event_type: "BUSINESS_UPDATED",
+            occurred_at: "2026-07-25T03:00:00.000Z",
+            sequence_number: 10
+          }],
+          next_sequence: 10
+        },
+        status: 200
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      json: { events: [], next_sequence: Math.max(afterSequence, version === 4 ? 10 : 9) },
+      status: 200
+    });
+  });
+}
+
 async function enterWorkspace(page, email = uniqueEmail("operator")) {
   const response = await page.context().request.post(`${frontendUrl}/api/v1/signup`, {
     data: {
@@ -257,35 +404,44 @@ const tests = [
     }
   },
   {
-    name: "owner session opens dashboard with visible mode labels",
+    name: "owner session opens canonical Dashboard, refreshes from events, and opens business detail",
     run: async () => {
       const { context, page } = await newPage();
       try {
+        await installPhase170Routes(page, { emitEvent: true });
         await enterWorkspace(page, uniqueEmail("dashboard"));
-        await expectVisible(page.getByLabel("Command center mode status"), "Command center mode status");
-        await expectVisible(page.getByText("Real workspace"), "Real workspace label");
-        await expectVisible(page.getByText("Mock tools labeled"), "Mock tools label");
-        await expectVisible(page.getByText("Read-only before trust"), "Read-only label");
-        await expectVisible(page.getByLabel("3D interactive ENTRAL neuron graph"), "Command graph canvas");
+        await expectVisible(page.getByRole("heading", { name: "E2E Operator's Dashboard" }), "Canonical Dashboard");
+        await expectVisible(page.getByText("Human portfolio / all canonical businesses"), "Human portfolio scope");
+        const businessCard = page.locator(".phase170-business-card").filter({ hasText: "Atlas Software" });
+        await expectVisible(businessCard, "Canonical business card");
+        await expectVisible(businessCard.getByText("Version 4"), "Event-refreshed business version", 15_000);
+        await businessCard.getByRole("link", { name: "Open business" }).click();
+        await expectUrl(page, new RegExp(`/dashboard\\?business=${phase170Ids.business}$`), "Canonical business detail");
+        await expectVisible(page.getByRole("heading", { name: "Atlas Software" }), "Business detail heading");
+        await expectVisible(page.getByText("Agents and tools"), "Agents and tools section");
+        await expectVisible(page.getByText("External activity"), "External activity section");
+        await expectVisible(page.getByText("Version 4"), "Version-consistent full record");
       } finally {
         await context.close();
       }
     }
   },
   {
-    name: "chat sends a directive and shows AI cost guardrails",
+    name: "ENTRAL workspace shows AI cost guardrails and disables unconfigured execution",
     run: async () => {
       const { context, page } = await newPage();
       try {
         await enterWorkspace(page, uniqueEmail("chat"));
         await page.goto(`${frontendUrl}/chat`);
-        await expectVisible(page.getByRole("heading", { name: /entral communications/i }), "Communications heading");
+        await expectUrl(page, /\/dashboard\?section=entral$/, "ENTRAL workspace");
+        await expectVisible(page.getByRole("heading", { name: /entral communications/i }), "ENTRAL communications heading");
         await expectVisible(page.getByText("AI cost guardrails"), "AI usage guardrail");
-        const directive = "Prepare a short readiness report for this private beta workspace.";
-        await page.getByLabel("Enter command directive").fill(directive);
-        await page.getByRole("button", { name: "Send directive" }).click();
-        await expectVisible(page.locator(".message-user").filter({ hasText: directive }), "User directive bubble");
-        await expectVisible(page.locator(".message-assistant").filter({ hasText: /AI Provider Not Connected|Situation:/ }), "Assistant response");
+        await expectVisible(page.getByText(/Read-only conversation history/i), "Read-only provider boundary");
+        const directiveInput = page.getByLabel("Enter command directive");
+        await expectVisible(directiveInput, "Directive input");
+        if (await directiveInput.isEnabled()) {
+          throw new Error("The directive input was enabled without a configured real AI provider.");
+        }
         await expectVisible(page.getByText(/Mock provider|Real provider|Budget cap/), "Provider mode badge");
       } finally {
         await context.close();
@@ -293,7 +449,7 @@ const tests = [
     }
   },
   {
-    name: "mobile dashboard exposes command tabs without a blank screen",
+    name: "mobile canonical Dashboard remains usable without horizontal overflow",
     run: async () => {
       const { context, page } = await newPage({
         viewport: { width: 390, height: 844 },
@@ -301,46 +457,19 @@ const tests = [
         deviceScaleFactor: 2
       });
       try {
+        await installPhase170Routes(page);
         await enterWorkspace(page, uniqueEmail("mobile"));
-        await expectVisible(page.getByLabel("Mobile command tabs"), "Mobile command tabs");
         const academyClose = page.getByRole("button", { name: "Close ENTRAL Academy" });
         await academyClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => undefined);
         if (await academyClose.count() && await academyClose.isVisible()) {
           await academyClose.click();
         }
 
-        await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Initial mobile command console");
-        const initialCommandSelected = await page.getByRole("tab", { name: "Open Command tab" }).getAttribute("aria-selected");
-        if (initialCommandSelected !== "true") {
-          throw new Error("The mobile command center did not open on the command tab.");
-        }
-        await page.getByRole("tab", { name: "View command graph" }).click();
-        await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command open button");
-        await page.getByRole("tab", { name: "Open Command tab" }).click();
-        await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Mobile command console");
-        await page.getByRole("button", { name: "Close command console and view graph" }).click();
-        await expectVisible(page.getByRole("button", { name: "Open command console" }), "Mobile command reopen button");
-        const graphSelected = await page.getByRole("tab", { name: "View command graph" }).getAttribute("aria-selected");
-        if (graphSelected !== "true") {
-          throw new Error("Closing the mobile command console did not activate the graph tab.");
-        }
-        await page.getByRole("tab", { name: "Open Command tab" }).click();
-        await expectVisible(page.getByRole("region", { name: "ENTRAL command console" }), "Reopened mobile command console");
-        const commandInput = page.getByLabel("ENTRAL command directive");
-        await expectVisible(commandInput, "Mobile command directive input");
-        const activeElementId = await page.evaluate(() => document.activeElement?.id ?? "");
-        if (activeElementId !== "entral-command-input") {
-          throw new Error(`Mobile command input was not focused after reopening. Active element: ${activeElementId || "none"}`);
-        }
-        const mobileDirective = "Mobile readiness report";
-        await commandInput.fill(mobileDirective);
-        await page.getByRole("button", { name: "Send command" }).click();
-        await expectVisible(page.locator(".command-console-message.operator").filter({ hasText: mobileDirective }), "Mobile command history entry");
-        const hierarchyTab = page.getByRole("tab", { name: /open hierarchy tab/i });
-        await expectVisible(hierarchyTab, "Hierarchy mobile tab");
-        await hierarchyTab.click();
-        await expectVisible(page.getByLabel("Mobile command access"), "Mobile hierarchy panel");
-        await expectVisible(page.getByRole("heading", { name: /command structure/i }), "Mobile hierarchy heading");
+        await expectVisible(page.getByRole("heading", { name: "E2E Operator's Dashboard" }), "Mobile canonical Dashboard");
+        await expectVisible(page.locator(".phase170-business-card").filter({ hasText: "Atlas Software" }), "Mobile business card");
+        await expectVisible(page.getByPlaceholder("Business, Marshal, General, objective"), "Mobile portfolio search");
+        await expectVisible(page.getByRole("link", { name: "Graph" }), "Manually available Graph destination");
+        await expectVisible(page.getByRole("button", { name: "Academy" }), "Manually available Academy");
         const noHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2);
         if (!noHorizontalOverflow) {
           throw new Error(`Mobile viewport has horizontal overflow: ${await page.evaluate(() => document.documentElement.scrollWidth)}px`);
@@ -364,6 +493,14 @@ const tests = [
         });
 
         try {
+          await installPhase170Routes(page);
+          await enterWorkspace(page, uniqueEmail(`secondary-${viewport.width}`));
+          const academyClose = page.getByRole("button", { name: "Close ENTRAL Academy" });
+          await academyClose.waitFor({ state: "visible", timeout: 3000 }).catch(() => undefined);
+          if (await academyClose.count() && await academyClose.isVisible()) {
+            await academyClose.click();
+          }
+
           for (const pathname of ["/agents", "/automations", "/chat", "/admin", "/route-not-found"]) {
             await page.goto(`${frontendUrl}${pathname}`);
             await page.waitForLoadState("domcontentloaded");
@@ -384,8 +521,12 @@ const tests = [
             }
           }
 
-          await page.goto(`${frontendUrl}/agents`);
-          const settingsTrigger = page.getByRole("button", { name: "Open settings" });
+          // Return to the canonical surface before exercising the shared account
+          // control. Secondary workspaces retain their own scroll positions, which
+          // must not turn a cross-route check into a click through another nav item.
+          await page.goto(`${frontendUrl}/dashboard`);
+          await page.waitForLoadState("domcontentloaded");
+          const settingsTrigger = page.getByRole("button", { name: "Settings" });
           await expectVisible(settingsTrigger, "Settings trigger");
           await settingsTrigger.focus();
           await settingsTrigger.click();

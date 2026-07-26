@@ -16,6 +16,10 @@ const businessParamsSchema = z.object({
   businessId: z.string().uuid()
 });
 
+const eventQuerySchema = z.object({
+  afterSequence: z.coerce.number().int().min(0).default(0)
+});
+
 function unauthenticated(reply: FastifyReply) {
   return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
 }
@@ -58,6 +62,12 @@ export async function controlPlaneRoutes(app: FastifyInstance) {
     });
   });
 
+  app.get("/control-plane/portfolio/summary", { preHandler: requireAdmin }, async (request, reply) => {
+    return reply.send(await canonicalControlPlaneRepository.getPortfolio(
+      databaseSession(request, "Read the canonical portfolio summary.")
+    ));
+  });
+
   app.get("/control-plane/businesses/:businessId", { preHandler: requireAdmin }, async (request, reply) => {
     const { businessId } = businessParamsSchema.parse(request.params);
     const business = await canonicalControlPlaneRepository.getBusiness(
@@ -68,6 +78,26 @@ export async function controlPlaneRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not Found", message: "Business not found." });
     }
     return reply.send({ business });
+  });
+
+  app.get("/control-plane/businesses/:businessId/full", { preHandler: requireAdmin }, async (request, reply) => {
+    const { businessId } = businessParamsSchema.parse(request.params);
+    const business = await canonicalControlPlaneRepository.getBusinessFull(
+      businessId,
+      databaseSession(request, `Read the full canonical business ${businessId}.`)
+    );
+    if (!business) {
+      return reply.code(404).send({ error: "Not Found", message: "Business not found." });
+    }
+    return reply.send({ business });
+  });
+
+  app.get("/control-plane/events", { preHandler: requireAdmin }, async (request, reply) => {
+    const { afterSequence } = eventQuerySchema.parse(request.query);
+    return reply.send(await canonicalControlPlaneRepository.listPortfolioEvents(
+      afterSequence,
+      databaseSession(request, "Read canonical portfolio synchronization events.")
+    ));
   });
 
   app.post("/control-plane/governance-actions", { preHandler: requireAdmin }, async (request, reply) => {
