@@ -427,19 +427,21 @@ const tests = [
     }
   },
   {
-    name: "chat sends a directive and shows AI cost guardrails",
+    name: "ENTRAL workspace shows AI cost guardrails and disables unconfigured execution",
     run: async () => {
       const { context, page } = await newPage();
       try {
         await enterWorkspace(page, uniqueEmail("chat"));
         await page.goto(`${frontendUrl}/chat`);
-        await expectVisible(page.getByRole("heading", { name: /entral communications/i }), "Communications heading");
+        await expectUrl(page, /\/dashboard\?section=entral$/, "ENTRAL workspace");
+        await expectVisible(page.getByRole("heading", { name: /entral communications/i }), "ENTRAL communications heading");
         await expectVisible(page.getByText("AI cost guardrails"), "AI usage guardrail");
-        const directive = "Prepare a short readiness report for this private beta workspace.";
-        await page.getByLabel("Enter command directive").fill(directive);
-        await page.getByRole("button", { name: "Send directive" }).click();
-        await expectVisible(page.locator(".message-user").filter({ hasText: directive }), "User directive bubble");
-        await expectVisible(page.locator(".message-assistant").filter({ hasText: /AI Provider Not Connected|Situation:/ }), "Assistant response");
+        await expectVisible(page.getByText(/Read-only conversation history/i), "Read-only provider boundary");
+        const directiveInput = page.getByLabel("Enter command directive");
+        await expectVisible(directiveInput, "Directive input");
+        if (await directiveInput.isEnabled()) {
+          throw new Error("The directive input was enabled without a configured real AI provider.");
+        }
         await expectVisible(page.getByText(/Mock provider|Real provider|Budget cap/), "Provider mode badge");
       } finally {
         await context.close();

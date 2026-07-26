@@ -14,7 +14,7 @@
 
 .phase170-page-heading,
 .phase170-business-detail > header {
-  align-items: start;
+  align-items: flex-start;
   display: flex;
   gap: 1rem;
   justify-content: space-between;
@@ -184,7 +184,7 @@
 }
 
 .phase170-business-list > header {
-  align-items: end;
+  align-items: flex-end;
   display: flex;
   justify-content: space-between;
 }
@@ -348,7 +348,7 @@
 }
 
 .phase170-priority-lines p {
-  align-items: start;
+  align-items: flex-start;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 10px;
   display: flex;
@@ -427,7 +427,7 @@
 }
 
 .phase170-dashboard-footnotes p {
-  align-items: start;
+  align-items: flex-start;
   color: var(--muted);
   display: flex;
   font-size: 0.68rem;
@@ -608,7 +608,7 @@
   }
 
   .phase170-business-card > header {
-    align-items: start;
+    align-items: flex-start;
   }
 
   .phase170-business-metrics,
