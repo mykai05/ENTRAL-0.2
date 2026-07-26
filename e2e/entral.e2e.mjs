@@ -179,6 +179,26 @@ async function expectUrl(page, pattern, label) {
   }
 }
 
+async function expectStableScreenshot(locator, label, attempts = 12, intervalMs = 150) {
+  let previous = await locator.screenshot();
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    await locator.page().waitForTimeout(intervalMs);
+    const current = await locator.screenshot();
+    if (previous.equals(current)) return current;
+    previous = current;
+  }
+  throw new Error(`${label} did not settle into two consecutive identical frames.`);
+}
+
+async function expectScreenshotChange(locator, baseline, label, attempts = 12, intervalMs = 100) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    await locator.page().waitForTimeout(intervalMs);
+    const current = await locator.screenshot();
+    if (!baseline.equals(current)) return current;
+  }
+  throw new Error(`${label} did not change the rendered frame.`);
+}
+
 async function newPage(options = {}) {
   const context = await browser.newContext({
     viewport: options.viewport ?? { width: 1366, height: 900 },
@@ -933,20 +953,17 @@ const tests = [
         if (pausedWorkspaceState !== "paused") {
           throw new Error(`Stop movement did not pause the graph workspace: ${pausedWorkspaceState}`);
         }
-        await page.waitForTimeout(250);
-        const pausedFrame = await original3DCanvas.screenshot();
-        await page.waitForTimeout(250);
-        const pausedFrameLater = await original3DCanvas.screenshot();
-        if (!pausedFrame.equals(pausedFrameLater)) {
-          throw new Error("The original 3D Graph continued visual animation after Stop movement.");
-        }
+        const pausedFrame = await expectStableScreenshot(
+          original3DCanvas,
+          "The original 3D Graph after Stop movement"
+        );
         await original3DCanvas.focus();
         await page.keyboard.press("+");
-        await page.waitForTimeout(250);
-        const pausedCameraFrame = await original3DCanvas.screenshot();
-        if (pausedFrameLater.equals(pausedCameraFrame)) {
-          throw new Error("The original 3D Graph camera stopped responding while visual movement was paused.");
-        }
+        await expectScreenshotChange(
+          original3DCanvas,
+          pausedFrame,
+          "The original 3D Graph camera while visual movement was paused"
+        );
         await page.getByRole("button", { name: "Resume movement" }).click();
         if (await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion") !== "running") {
           throw new Error("Resume movement did not restart graph animation.");
