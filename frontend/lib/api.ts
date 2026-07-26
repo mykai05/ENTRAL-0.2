@@ -8,6 +8,10 @@ function currentBrowserOrigin() {
   return typeof window === "undefined" ? "" : window.location.origin;
 }
 
+function currentBrowserPathname() {
+  return typeof window === "undefined" ? "" : window.location.pathname;
+}
+
 function sameOrigin(first: string, second: string) {
   try {
     return new URL(first).origin === new URL(second).origin;
@@ -72,6 +76,12 @@ export function resolveApiBaseUrl(
 
 export const API_BASE_URL = resolveApiBaseUrl();
 
+export function resolveApiPath(path: string, runtimePathname = currentBrowserPathname()) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const usesMemberProxy = runtimePathname === "/member" || runtimePathname.startsWith("/member/");
+  return `${usesMemberProxy ? "/member/api/v1" : "/api/v1"}${normalizedPath}`;
+}
+
 type ApiOptions = RequestInit & {
   json?: unknown;
   timeoutMs?: number;
@@ -102,7 +112,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   let response: Response;
 
   try {
-    response = await fetch(`${resolveApiBaseUrl()}/api/v1${path}`, {
+    response = await fetch(`${resolveApiBaseUrl()}${resolveApiPath(path)}`, {
       ...requestOptions,
       headers,
       credentials: "include",

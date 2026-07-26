@@ -19,6 +19,10 @@ export default function nextConfig(phase) {
 
       return [
         {
+          source: "/member/api/v1/:path*",
+          destination: `${apiProxyUrl}/api/v1/:path*`
+        },
+        {
           source: "/api/v1/:path*",
           destination: `${apiProxyUrl}/api/v1/:path*`
         },

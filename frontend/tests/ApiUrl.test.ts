@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveApiBaseUrl } from "../lib/api";
+import { resolveApiBaseUrl, resolveApiPath } from "../lib/api";
 import { apiProxyBase } from "../lib/server-api-proxy";
 
 describe("resolveApiBaseUrl", () => {
@@ -30,6 +30,20 @@ describe("resolveApiBaseUrl", () => {
 
   it("keeps a real backend URL outside the browser when one is configured", () => {
     expect(resolveApiBaseUrl("", "production", "https://entral-0-2-production.up.railway.app/")).toBe("https://entral-0-2-production.up.railway.app");
+  });
+});
+
+describe("resolveApiPath", () => {
+  it("keeps authenticated member requests under the reverse-proxied member namespace", () => {
+    expect(resolveApiPath("/command-os/state", "/member/graph")).toBe(
+      "/member/api/v1/command-os/state"
+    );
+    expect(resolveApiPath("logout", "/member/dashboard")).toBe("/member/api/v1/logout");
+  });
+
+  it("keeps non-member requests on the standard API proxy", () => {
+    expect(resolveApiPath("/dashboard", "/dashboard")).toBe("/api/v1/dashboard");
+    expect(resolveApiPath("health", "")).toBe("/api/v1/health");
   });
 });
 
