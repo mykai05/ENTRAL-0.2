@@ -3,12 +3,23 @@ import cookie from "@fastify/cookie";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  getBusinessFull: vi.fn(),
+  getPortfolio: vi.fn(),
+  listPortfolioEvents: vi.fn(),
   memberWorkspaceFindUnique: vi.fn(),
   taskCount: vi.fn(),
   taskFindMany: vi.fn(),
   teamMemberFindMany: vi.fn(),
   teamMemberFindUnique: vi.fn(),
   userFindUnique: vi.fn()
+}));
+
+vi.mock("../src/services/canonicalControlPlane.js", () => ({
+  canonicalControlPlaneRepository: {
+    getBusinessFull: mocks.getBusinessFull,
+    getPortfolio: mocks.getPortfolio,
+    listPortfolioEvents: mocks.listPortfolioEvents
+  }
 }));
 
 vi.mock("../src/db.js", () => ({
@@ -32,6 +43,7 @@ vi.mock("../src/db.js", () => ({
 
 const organizationId = "ck1234567890123456789012";
 const otherOrganizationId = "ck9876543210987654321098";
+const businessId = "123e4567-e89b-42d3-a456-426614174000";
 
 async function buildMemberTestServer() {
   const [{ memberRoutes }, { signAuthToken }] = await Promise.all([
@@ -241,6 +253,90 @@ describe("member organization routes", () => {
     expect(mocks.taskCount).not.toHaveBeenCalled();
     expect(mocks.taskFindMany).not.toHaveBeenCalled();
     expect(mocks.memberWorkspaceFindUnique).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it("serves the RLS-scoped canonical portfolio and event cursor to a provisioned member", async () => {
+    mocks.teamMemberFindUnique
+      .mockResolvedValueOnce({ team: { memberAccessEnabled: true } })
+      .mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getPortfolio.mockResolvedValueOnce({
+      businesses: [],
+      event_sequence: 21,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      scope: {
+        label: "Assigned canonical businesses",
+        mode: "ASSIGNED_BUSINESSES",
+        user_id: businessId,
+        visible_business_ids: []
+      },
+      totals: {
+        active_commanders: 0,
+        active_soldiers: 0,
+        businesses: 0,
+        financials: [],
+        health_distribution: { CRITICAL: 0, DEGRADED: 0, HEALTHY: 0, UNKNOWN: 0, WATCH: 0 },
+        unresolved_exceptions: 0
+      }
+    });
+    mocks.listPortfolioEvents.mockResolvedValueOnce({ events: [], next_sequence: 21 });
+    const { app, authorization } = await buildMemberTestServer();
+
+    const portfolio = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/member/organizations/${organizationId}/portfolio/summary`
+    });
+    const events = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/member/organizations/${organizationId}/events?afterSequence=19`
+    });
+
+    expect(portfolio.statusCode).toBe(200);
+    expect(portfolio.json().scope.mode).toBe("ASSIGNED_BUSINESSES");
+    expect(events.statusCode).toBe(200);
+    expect(mocks.getPortfolio).toHaveBeenCalledWith(expect.objectContaining({
+      actionReason: `Read the canonical portfolio for organization ${organizationId}.`,
+      authSubject: "user-1"
+    }));
+    expect(mocks.listPortfolioEvents).toHaveBeenCalledWith(
+      19,
+      expect.objectContaining({ authSubject: "user-1" })
+    );
+    await app.close();
+  });
+
+  it("does not distinguish an out-of-scope business from a missing business", async () => {
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getBusinessFull.mockResolvedValueOnce(null);
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/member/organizations/${organizationId}/businesses/${businessId}/full`
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: "Not Found", message: "Business not found." });
+    expect(mocks.getBusinessFull).toHaveBeenCalledWith(
+      businessId,
+      expect.objectContaining({ authSubject: "user-1" })
+    );
+    await app.close();
+  });
+
+  it("rejects unprovisioned organizations before calling the canonical repository", async () => {
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: false } });
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/member/organizations/${organizationId}/portfolio/summary`
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(mocks.getPortfolio).not.toHaveBeenCalled();
     await app.close();
   });
 });

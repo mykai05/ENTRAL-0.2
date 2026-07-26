@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   createGovernanceAction: vi.fn(),
   getBusiness: vi.fn(),
+  getBusinessFull: vi.fn(),
+  getPortfolio: vi.fn(),
+  listPortfolioEvents: vi.fn(),
   listBusinesses: vi.fn(),
   listHierarchy: vi.fn(),
   userFindUnique: vi.fn()
@@ -25,6 +28,9 @@ vi.mock("../src/services/canonicalControlPlane.js", async (importOriginal) => {
     canonicalControlPlaneRepository: {
       createGovernanceAction: mocks.createGovernanceAction,
       getBusiness: mocks.getBusiness,
+      getBusinessFull: mocks.getBusinessFull,
+      getPortfolio: mocks.getPortfolio,
+      listPortfolioEvents: mocks.listPortfolioEvents,
       listBusinesses: mocks.listBusinesses,
       listHierarchy: mocks.listHierarchy
     }
@@ -126,6 +132,84 @@ describe("canonical control-plane routes", () => {
       authSubject: "internal-user",
       correlationId: expect.any(String)
     });
+    await app.close();
+  });
+
+  it("serves lightweight portfolio, on-demand detail, and event invalidation routes", async () => {
+    mocks.getPortfolio.mockResolvedValueOnce({
+      businesses: [],
+      event_sequence: 7,
+      generated_at: "2026-07-25T00:00:00.000Z",
+      scope: {
+        label: "Human portfolio / all canonical businesses",
+        mode: "HUMAN_PORTFOLIO",
+        user_id: actorId,
+        visible_business_ids: []
+      },
+      totals: {
+        active_commanders: 0,
+        active_soldiers: 0,
+        businesses: 0,
+        financials: [],
+        health_distribution: { CRITICAL: 0, DEGRADED: 0, HEALTHY: 0, UNKNOWN: 0, WATCH: 0 },
+        unresolved_exceptions: 0
+      }
+    });
+    mocks.getBusinessFull.mockResolvedValueOnce({
+      aggregate_version: 3,
+      summary: { business_id: targetId, version: 3 }
+    });
+    mocks.listPortfolioEvents.mockResolvedValueOnce({
+      events: [{ aggregate_id: targetId, business_id: targetId, sequence_number: 8 }],
+      next_sequence: 8
+    });
+    const { app, authorization } = await buildControlPlaneTestServer();
+
+    const portfolio = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: "/api/v1/control-plane/portfolio/summary"
+    });
+    const detail = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/control-plane/businesses/${targetId}/full`
+    });
+    const events = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: "/api/v1/control-plane/events?afterSequence=7"
+    });
+
+    expect(portfolio.statusCode).toBe(200);
+    expect(portfolio.headers["cache-control"]).toBe("private, no-store");
+    expect(portfolio.json().scope.mode).toBe("HUMAN_PORTFOLIO");
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json().business.aggregate_version).toBe(3);
+    expect(events.statusCode).toBe(200);
+    expect(events.json().next_sequence).toBe(8);
+    expect(mocks.getBusinessFull).toHaveBeenCalledWith(
+      targetId,
+      expect.objectContaining({ authSubject: "internal-user" })
+    );
+    expect(mocks.listPortfolioEvents).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ actionReason: "Read canonical portfolio synchronization events." })
+    );
+    await app.close();
+  });
+
+  it("returns the same not-found envelope for missing or out-of-scope full businesses", async () => {
+    mocks.getBusinessFull.mockResolvedValueOnce(null);
+    const { app, authorization } = await buildControlPlaneTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "GET",
+      url: `/api/v1/control-plane/businesses/${targetId}/full`
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: "Not Found", message: "Business not found." });
     await app.close();
   });
 

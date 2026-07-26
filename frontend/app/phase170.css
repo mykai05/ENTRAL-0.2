@@ -1,0 +1,636 @@
+/* Phase 170: canonical portfolio summaries and on-demand business records. */
+.phase170-portfolio,
+.phase170-business-detail {
+  color: var(--ink);
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.phase170-portfolio *,
+.phase170-business-detail * {
+  min-width: 0;
+}
+
+.phase170-page-heading,
+.phase170-business-detail > header {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.phase170-page-heading h1,
+.phase170-business-detail h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  letter-spacing: -0.04em;
+  margin: 0.12rem 0 0.45rem;
+}
+
+.phase170-page-heading p,
+.phase170-business-detail > header p {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 58rem;
+}
+
+.phase170-scope-card {
+  align-items: center;
+  background: rgba(var(--neon-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.28);
+  border-radius: 14px;
+  display: flex;
+  flex: 0 1 24rem;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.phase170-scope-card svg {
+  color: rgb(var(--neon-accent-rgb));
+  flex: 0 0 auto;
+}
+
+.phase170-scope-card span {
+  display: grid;
+  font-size: 0.72rem;
+  gap: 0.18rem;
+}
+
+.phase170-scope-card strong {
+  font-size: 0.82rem;
+}
+
+.phase170-loading,
+.phase170-error {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  display: flex;
+  gap: 0.8rem;
+  min-height: 7rem;
+  padding: 1rem;
+}
+
+.phase170-error {
+  border-color: rgba(255, 111, 111, 0.34);
+}
+
+.phase170-error > div {
+  flex: 1;
+}
+
+.phase170-error h2,
+.phase170-error p {
+  margin: 0;
+}
+
+.phase170-error p {
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+
+.phase170-summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+
+.phase170-summary-grid article {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  display: grid;
+  gap: 0.35rem;
+  min-height: 7rem;
+  padding: 1rem;
+}
+
+.phase170-summary-grid article.unavailable {
+  border-style: dashed;
+}
+
+.phase170-summary-grid span,
+.phase170-summary-grid small {
+  color: var(--muted);
+}
+
+.phase170-summary-grid strong {
+  font-size: clamp(1.3rem, 3vw, 1.85rem);
+  overflow-wrap: anywhere;
+}
+
+.phase170-controls {
+  background: rgba(4, 7, 11, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.8rem), 1fr));
+  padding: 0.75rem;
+}
+
+.phase170-controls label {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.42rem 0.58rem;
+}
+
+.phase170-controls label > span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.phase170-controls select,
+.phase170-controls input {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.78rem;
+  min-height: 1.75rem;
+  outline: none;
+  width: 100%;
+}
+
+.phase170-controls option {
+  background: var(--panel);
+}
+
+.phase170-search {
+  grid-column: span 2;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.phase170-search > span {
+  grid-column: 2;
+}
+
+.phase170-search > svg {
+  color: rgb(var(--neon-accent-rgb));
+  grid-row: 1 / span 2;
+}
+
+.phase170-business-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.phase170-business-list > header {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+}
+
+.phase170-business-list h2,
+.phase170-business-list p {
+  margin: 0;
+}
+
+.phase170-business-list > header > span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.phase170-business-card {
+  background:
+    linear-gradient(135deg, rgba(var(--neon-accent-rgb), 0.055), transparent 45%),
+    rgba(10, 13, 19, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 18px;
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.phase170-business-card > header,
+.phase170-business-card > footer {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.phase170-business-card header p,
+.phase170-business-card h3 {
+  margin: 0;
+}
+
+.phase170-business-card header p {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.phase170-business-card h3 {
+  font-size: 1.28rem;
+  margin-top: 0.15rem;
+}
+
+.phase170-status {
+  border: 1px solid rgba(var(--neon-accent-rgb), 0.3);
+  border-radius: 999px;
+  color: rgb(var(--neon-accent-rgb));
+  flex: 0 0 auto;
+  font-size: 0.67rem;
+  padding: 0.28rem 0.5rem;
+}
+
+.phase170-status.status-degraded,
+.health-critical,
+.health-degraded {
+  color: #ff8b8b;
+}
+
+.phase170-status.status-paused,
+.health-watch {
+  color: #ffd166;
+}
+
+.health-healthy {
+  color: #76f7c8;
+}
+
+.health-unknown {
+  color: var(--muted);
+}
+
+.phase170-business-metrics {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.phase170-business-metrics > div {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  display: grid;
+  gap: 0.22rem;
+  padding: 0.7rem;
+}
+
+.phase170-business-metrics span,
+.phase170-business-metrics small {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+.phase170-business-metrics strong {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.phase170-health-drivers {
+  display: grid;
+  gap: 0.42rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.phase170-health-drivers li {
+  border-left: 2px solid rgba(var(--neon-accent-rgb), 0.48);
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.3rem 0.55rem;
+}
+
+.phase170-health-drivers li.driver-negative {
+  border-color: #ff7676;
+}
+
+.phase170-health-drivers li.driver-positive {
+  border-color: #76f7c8;
+}
+
+.phase170-health-drivers span,
+.phase170-empty-copy {
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin: 0;
+}
+
+.phase170-component-counts {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.phase170-component-counts > div {
+  align-items: baseline;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+}
+
+.phase170-component-counts dt {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.phase170-component-counts dd {
+  font-weight: 700;
+  margin: 0;
+}
+
+.phase170-priority-lines {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.phase170-priority-lines p {
+  align-items: start;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.55rem;
+}
+
+.phase170-priority-lines p.urgent {
+  background: rgba(255, 90, 90, 0.09);
+}
+
+.phase170-priority-lines svg {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.phase170-priority-lines span {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.73rem;
+  gap: 0.12rem;
+}
+
+.phase170-priority-lines strong {
+  color: var(--ink);
+}
+
+.phase170-business-card > footer {
+  color: var(--muted);
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+}
+
+.phase170-business-card > footer span,
+.phase170-business-card > footer a {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.28rem;
+}
+
+.phase170-business-card > footer a,
+.phase170-back-link {
+  color: rgb(var(--neon-accent-rgb));
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.phase170-empty-state {
+  align-items: center;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  color: var(--muted);
+  display: grid;
+  justify-items: center;
+  min-height: 12rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.phase170-empty-state h3,
+.phase170-empty-state p {
+  margin: 0.3rem 0 0;
+}
+
+.phase170-empty-state p {
+  max-width: 42rem;
+}
+
+.phase170-dashboard-footnotes {
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  padding-top: 0.9rem;
+}
+
+.phase170-dashboard-footnotes p {
+  align-items: start;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.68rem;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.phase170-dashboard-footnotes svg {
+  color: rgb(var(--neon-accent-rgb));
+  flex: 0 0 auto;
+}
+
+.phase170-dashboard-footnotes span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.phase170-dashboard-footnotes strong {
+  color: var(--ink);
+}
+
+.phase170-back-link {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+  justify-self: start;
+}
+
+.phase170-business-detail > header {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.phase170-business-detail > header > dl {
+  display: grid;
+  flex: 0 1 28rem;
+  gap: 0.45rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.phase170-business-detail > header dl div {
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 10px;
+  padding: 0.55rem;
+}
+
+.phase170-business-detail dt {
+  color: var(--muted);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.phase170-business-detail dd {
+  font-size: 0.77rem;
+  margin: 0.2rem 0 0;
+}
+
+.phase170-detail-sections {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.phase170-detail-sections details {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  overflow: clip;
+}
+
+.phase170-detail-sections summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-weight: 700;
+  justify-content: space-between;
+  padding: 0.8rem 0.9rem;
+}
+
+.phase170-detail-sections summary small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.phase170-detail-sections details > div {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.8rem;
+}
+
+.phase170-json-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.phase170-json-list > article {
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 10px;
+  padding: 0.65rem;
+}
+
+.phase170-record-fields {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  margin: 0;
+}
+
+.phase170-record-fields > div {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  overflow-wrap: anywhere;
+  padding: 0.4rem 0;
+}
+
+.phase170-record-fields.nested {
+  grid-template-columns: 1fr;
+}
+
+.phase170-record-fields dd {
+  line-height: 1.45;
+}
+
+.phase170-business-detail > footer {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.68rem;
+  gap: 0.8rem;
+}
+
+.phase170-unavailable {
+  color: var(--muted);
+  font-style: italic;
+}
+
+@media (max-width: 860px) {
+  .phase170-page-heading,
+  .phase170-business-detail > header {
+    display: grid;
+  }
+
+  .phase170-scope-card,
+  .phase170-business-detail > header > dl {
+    max-width: none;
+    width: 100%;
+  }
+
+  .phase170-business-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .phase110-command-center[data-destination="dashboard"] .phase110-account-actions button:first-child {
+    display: inline-flex;
+    font-size: 0.65rem;
+    justify-content: center;
+    padding-inline: 0.45rem;
+  }
+
+  .phase170-portfolio,
+  .phase170-business-detail {
+    overflow-x: clip;
+  }
+
+  .phase170-page-heading h1,
+  .phase170-business-detail h1 {
+    font-size: 1.72rem;
+  }
+
+  .phase170-search {
+    grid-column: auto;
+  }
+
+  .phase170-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .phase170-business-card > header {
+    align-items: start;
+  }
+
+  .phase170-business-metrics,
+  .phase170-component-counts,
+  .phase170-business-detail > header > dl {
+    grid-template-columns: 1fr;
+  }
+
+  .phase170-component-counts > div {
+    min-height: 2.3rem;
+  }
+
+  .phase170-business-card > footer {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .phase170-business-card > footer a {
+    min-height: 2.75rem;
+  }
+
+  .phase170-detail-sections summary {
+    min-height: 3rem;
+  }
+}

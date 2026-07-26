@@ -9,6 +9,7 @@ import { AdminDashboard } from "./AdminDashboard";
 import { AgentDashboard } from "./AgentDashboard";
 import { AutomationConsole } from "./AutomationConsole";
 import { ChatWindow } from "./ChatWindow";
+import { CanonicalPortfolioDashboard } from "./CanonicalPortfolioDashboard";
 import { Logo } from "./Logo";
 import { MemberDestinationNav, type MemberDestination } from "./MemberDestinationNav";
 import { ModeStatusStrip, type ModeStatusItem } from "./ModeStatus";
@@ -85,6 +86,7 @@ type CommandCenterSurface = "internal" | "member";
 type NeuronsCommandCenterProps = {
   initialDestination?: MemberDestination;
   onLogout: () => void;
+  organizationId?: string;
   surface?: CommandCenterSurface;
   user?: DashboardUser | null;
 };
@@ -1811,6 +1813,7 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
 
 export function NeuronsCommandCenter({
   initialDestination = "dashboard",
+  organizationId,
   user,
   onLogout,
   surface = "internal"
@@ -6441,8 +6444,6 @@ export function NeuronsCommandCenter({
     .filter((message) => message.role === "system" && /^\s*Situation:\n/i.test(message.content))
     .slice(-5)
     .reverse();
-  const dashboardExceptions = graph.nodes.filter((node) => node.status === "error" || node.status === "waiting" || node.status === "offline");
-  const activeDashboardTasks = graph.tasks.filter((task) => task.status === "assigned" || task.status === "running");
   const infrastructureNodes = graph.nodes.filter((node) => {
     const query = infrastructureSearch.trim().toLowerCase();
     if (!query) return true;
@@ -6624,11 +6625,13 @@ export function NeuronsCommandCenter({
           ) : <span className="phase110-graph-account-spacer" aria-hidden="true" />}
         </header>
 
-        <div className="phase110-scope-bar" role="status">
-          <span>Scope</span>
-          <strong>{initialDestination === "dashboard" ? "Portfolio / All businesses" : visibleScope}</strong>
-          <small>{sourceStatusLabel}</small>
-        </div>
+        {initialDestination !== "dashboard" ? (
+          <div className="phase110-scope-bar" role="status">
+            <span>Scope</span>
+            <strong>{visibleScope}</strong>
+            <small>{sourceStatusLabel}</small>
+          </div>
+        ) : null}
 
         {initialDestination === "dashboard" ? (
           <div className="phase110-dashboard" data-academy="portfolio-dashboard" aria-label="Portfolio dashboard">
@@ -6637,113 +6640,7 @@ export function NeuronsCommandCenter({
               <Link aria-current={dashboardSection === "entral" ? "page" : undefined} href={destinationHref("/dashboard?section=entral")} scroll={false}>ENTRAL</Link>
             </nav>
             {dashboardSection === "portfolio" ? (
-              <>
-            <header className="phase110-page-heading">
-              <div>
-                <p className="eyebrow">Portfolio mode</p>
-                <h1>{user?.name ? `${user.name}'s Dashboard` : "Dashboard"}</h1>
-                <p>Current command state only. Unavailable business and financial fields are not estimated.</p>
-              </div>
-              <span className={`phase110-source-badge source-${commandSourceStatus}`}>{sourceStatusLabel}</span>
-            </header>
-
-            <section className="phase110-summary-grid" aria-label="Portfolio summary">
-              <article>
-                <span>Businesses</span>
-                <strong>{commanderNodes.length}</strong>
-                <small>Commander records</small>
-              </article>
-              <article>
-                <span>Active work</span>
-                <strong>{activeDashboardTasks.length}</strong>
-                <small>Assigned or running tasks</small>
-              </article>
-              <article>
-                <span>Exceptions</span>
-                <strong>{dashboardExceptions.length}</strong>
-                <small>Waiting, error, or offline entities</small>
-              </article>
-              <article className="unavailable">
-                <span>Financial period</span>
-                <strong>Unavailable</strong>
-                <small>No canonical financial payload is connected in this phase</small>
-              </article>
-            </section>
-
-            <div className="phase110-dashboard-columns">
-              <section className="phase110-panel">
-                <header>
-                  <div>
-                    <p className="eyebrow">Businesses</p>
-                    <h2>Current portfolio</h2>
-                  </div>
-                  <Link href={destinationHref("/infrastructure")} scroll={false}>View infrastructure</Link>
-                </header>
-                {commanderNodes.length > 0 ? (
-                  <div className="phase110-record-list">
-                    {commanderNodes.map((node) => (
-                      <article key={node.id}>
-                        <span className={`phase110-status-dot status-${node.status}`} />
-                        <div>
-                          <strong>{node.businessName ?? node.name}</strong>
-                          <small>{node.parentGeneralName ?? nodeMap.get(node.parentId ?? "")?.name ?? "No General assigned"} / {statusLabel(node.status)}</small>
-                        </div>
-                        <span>{node.health}% health</span>
-                        <Link href={destinationHref(`/infrastructure?entity=${encodeURIComponent(node.id)}`)} scroll={false}>Open record</Link>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="phase110-empty-state">
-                    <Network aria-hidden="true" size={24} />
-                    <strong>No business records exist.</strong>
-                    <p>The Dashboard will not create sample businesses or infer portfolio totals.</p>
-                  </div>
-                )}
-              </section>
-
-              <section className="phase110-panel">
-                <header>
-                  <div>
-                    <p className="eyebrow">Current work</p>
-                    <h2>Tasks and exceptions</h2>
-                  </div>
-                </header>
-                {activeDashboardTasks.length > 0 ? (
-                  <div className="phase110-task-list">
-                    {activeDashboardTasks.slice(0, 8).map((task) => (
-                      <article key={task.id}>
-                        <span className={`task-dot task-${task.status}`} />
-                        <div>
-                          <strong>{task.name}</strong>
-                          <small>{taskStatusLabel(task.status)}</small>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="phase110-empty-state compact">
-                    <Activity aria-hidden="true" size={22} />
-                    <strong>No active task records.</strong>
-                    <p>No execution activity is implied.</p>
-                  </div>
-                )}
-                {dashboardExceptions.length > 0 ? (
-                  <div className="phase110-exception-list">
-                    {dashboardExceptions.slice(0, 6).map((node) => (
-                      <Link href={destinationHref(`/infrastructure?entity=${encodeURIComponent(node.id)}`)} key={node.id} scroll={false}>
-                        <AlertTriangle aria-hidden="true" size={16} />
-                        <span>{node.name}</span>
-                        <strong>{statusLabel(node.status)}</strong>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="phase110-clear-state">No waiting, error, or offline entity records.</p>
-                )}
-              </section>
-            </div>
-              </>
+              <CanonicalPortfolioDashboard organizationId={organizationId} userName={user?.name} />
             ) : (
               <section className="phase110-embedded-workspace" data-academy="entral-workspace" aria-label="ENTRAL conversation">
                 <ChatWindow />
