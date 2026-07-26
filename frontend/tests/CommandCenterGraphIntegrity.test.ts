@@ -38,13 +38,19 @@ describe("Command Center graph integrity", () => {
     expect(canonical3DSource).toContain("<OriginalUniverseRenderer");
     expect(canonical3DSource).toContain("canonicalEntities={entities}");
     expect(canonical3DSource).toContain("canonicalEventSequence={eventSequence}");
+    expect(canonical3DSource).toContain("canonicalMotionPaused={movementPaused}");
   });
 
-  it("preserves the approved motion and WebGL field with the canonical scale-batching path", () => {
+  it("preserves the approved WebGL field while freezing only its visual clock and node motion", () => {
     expect(source).toContain("const useScaleBatching = renderNodes.length > 2_000");
     expect(source).toContain("drawPointBatch(batch.points, batch.color, batch.size, batch.alpha)");
+    expect(source).toContain("const motionPaused = graphMotionPausedRef.current");
+    expect(source).toContain("const settle = motionPaused ? 0 : gravitySettle");
+    expect(graphWorkspaceSource).toContain("setMovementPaused");
+    expect(graphWorkspaceSource).not.toContain("executeCommand");
+    expect(graphWorkspaceSource).not.toContain("apiFetch");
     expect(sha256(sourceSegment("  function getNodeMotion", "  function setCamera")))
-      .toBe("59871f84ce72058554f36a6a01e85c72801f0568357661872911a579decff9da");
+      .toBe("0cb2230d087c8aca7201939392fc417692882f2609968def6cfc88c4a8dc3774");
   });
 
   it("preserves the approved pointer, touch, wheel, and keyboard camera controls", () => {

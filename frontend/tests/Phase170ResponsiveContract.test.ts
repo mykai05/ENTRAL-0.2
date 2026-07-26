@@ -28,13 +28,30 @@ describe("Phase 170 responsive and route contract", () => {
     expect(canonicalShell).toContain('initialDestination !== "graph"');
   });
 
-  it("keeps the dual-graph selector below the sticky shell on desktop and phone", () => {
+  it("keeps shared dual-graph controls visible while using wide panes and narrow stacking", () => {
     expect(phase180Css).toMatch(
-      /\.phase180-graph-view-switch\s*\{[\s\S]*position:\s*sticky;[\s\S]*top:\s*calc\(72px \+ 54px \+ 0\.5rem\);[\s\S]*z-index:\s*35;/
+      /\.phase180-graph-control-bar\s*\{[\s\S]*position:\s*sticky;[\s\S]*top:\s*calc\(72px \+ 54px \+ 0\.5rem\);[\s\S]*z-index:\s*35;/
     );
     expect(phase180Css).toMatch(
-      /@media \(max-width:\s*760px\)[\s\S]*\.phase180-graph-view-switch\s*\{[\s\S]*top:\s*calc\(62px \+ 0\.5rem\);/
+      /\.phase180-graph-panels\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/
     );
+    expect(phase180Css).toMatch(
+      /@media \(max-width:\s*1180px\)[\s\S]*\.phase180-graph-panels\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\);/
+    );
+    expect(phase180Css).toMatch(
+      /@media \(max-width:\s*760px\)[\s\S]*\.phase180-graph-control-bar\s*\{[\s\S]*top:\s*calc\(62px \+ 0\.5rem\);/
+    );
+    expect(phase180Css).toMatch(/\.phase180-motion-toggle\s*\{[\s\S]*min-height:\s*44px/);
+    expect(phase180Css).toMatch(
+      /\.phase180-graph-control-bar button:focus-visible,[\s\S]*box-shadow:[\s\S]*outline:\s*2px solid/
+    );
+    expect(phase180Css).toMatch(
+      /\.phase180-graph-control-guide summary\s*\{[\s\S]*min-height:\s*44px/
+    );
+    expect(phase180Css).toMatch(
+      /\.phase180-graph-search,[\s\S]*\.phase180-infrastructure-search\s*\{[\s\S]*min-height:\s*44px/
+    );
+    expect(phase180Css).toContain(".phase180-graph-control-guide[open] .phase180-guide-chevron");
   });
 
   it("contains every destination label inside its own navigation grid cell", () => {

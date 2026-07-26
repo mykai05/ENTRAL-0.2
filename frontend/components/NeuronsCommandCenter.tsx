@@ -87,6 +87,7 @@ type CommandCenterSurface = "internal" | "member";
 type NeuronsCommandCenterProps = {
   canonicalEntities?: readonly EntitySummary[];
   canonicalEventSequence?: number;
+  canonicalMotionPaused?: boolean;
   canonicalSelectedEntityId?: string | null;
   embeddedGraphOnly?: boolean;
   initialDestination?: MemberDestination;
@@ -1341,6 +1342,32 @@ export function graphStateFromCanonicalEntities(
   };
 }
 
+export function reconcileCanonicalGraphPositions(
+  nextGraph: GraphState3D,
+  currentGraph: GraphState3D
+): GraphState3D {
+  const currentNodes = new Map(currentGraph.nodes.map((node) => [node.id, node]));
+
+  return {
+    ...nextGraph,
+    nodes: nextGraph.nodes.map((node) => {
+      const current = currentNodes.get(node.id);
+
+      if (!current) return node;
+
+      return {
+        ...node,
+        vx: current.vx,
+        vy: current.vy,
+        vz: current.vz,
+        x: current.x,
+        y: current.y,
+        z: current.z
+      };
+    })
+  };
+}
+
 function createInitialState(): GraphState3D {
   return graphStateFromCommandNodes(createDefaultCommandHierarchy());
 }
@@ -2030,6 +2057,7 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
 export function NeuronsCommandCenter({
   canonicalEntities,
   canonicalEventSequence = 0,
+  canonicalMotionPaused = false,
   canonicalSelectedEntityId = null,
   embeddedGraphOnly = false,
   initialDestination = "dashboard",
@@ -2175,6 +2203,11 @@ export function NeuronsCommandCenter({
   const motionRef = useRef<Map<string, NodeMotion>>(new Map());
   const previousBodyOverflowRef = useRef<string | null>(null);
   const reducedMotionRef = useRef(false);
+  const graphMotionPausedRef = useRef(canonicalMotionPaused);
+  const motionPausedAtRef = useRef<number | null>(null);
+  const accumulatedPausedTimeRef = useRef(0);
+  const graphViewportVisibleRef = useRef(true);
+  const pausedVisualDirtyRef = useRef(true);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const deepSpaceRef = useRef<SpacePoint[]>([
     ...createDeepSpacePoints(140, 0),
@@ -2194,9 +2227,14 @@ export function NeuronsCommandCenter({
       setCanonicalGraphState(null);
       return;
     }
-    graphRef.current = canonicalGraph;
-    motionRef.current.clear();
-    setCanonicalGraphState(canonicalGraph);
+    const reconciledGraph = reconcileCanonicalGraphPositions(canonicalGraph, graphRef.current);
+    const nextNodeIds = new Set(reconciledGraph.nodes.map((node) => node.id));
+
+    for (const nodeId of motionRef.current.keys()) {
+      if (!nextNodeIds.has(nodeId)) motionRef.current.delete(nodeId);
+    }
+    graphRef.current = reconciledGraph;
+    setCanonicalGraphState(reconciledGraph);
   }, [canonicalGraph]);
 
   useEffect(() => {
@@ -2325,6 +2363,30 @@ export function NeuronsCommandCenter({
       writeLocalStorageValue(scopedBrowserKey(unscopedGraphControlsKey, user.id), JSON.stringify(graphControls));
     }
   }, [graphControls, user?.id]);
+
+  useEffect(() => {
+    graphMotionPausedRef.current = canonicalMotionPaused;
+    pausedVisualDirtyRef.current = true;
+    if (canonicalMotionPaused) {
+      desiredCameraRef.current = {
+        ...cameraRef.current,
+        target: { ...cameraRef.current.target }
+      };
+    }
+  }, [canonicalMotionPaused]);
+
+  useEffect(() => {
+    pausedVisualDirtyRef.current = true;
+  }, [
+    activeGroupId,
+    activeStatusFilter,
+    graph,
+    graphControls,
+    hoveredNodeId,
+    search,
+    selectedNodeId,
+    settings.accentColor
+  ]);
 
   useEffect(() => {
     const nodeIds = new Set(graph.nodes.map((node) => node.id));
@@ -2867,6 +2929,24 @@ export function NeuronsCommandCenter({
     `);
 
     const positionBuffer = glContext.createBuffer();
+    let canvasSizeDirty = true;
+    const visibilityObserver = typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(([entry]) => {
+          graphViewportVisibleRef.current = entry?.isIntersecting ?? true;
+          if (entry?.isIntersecting) {
+            canvasSizeDirty = true;
+            pausedVisualDirtyRef.current = true;
+          }
+        })
+      : null;
+    const sizeObserver = typeof ResizeObserver === "function"
+      ? new ResizeObserver(() => {
+          canvasSizeDirty = true;
+          pausedVisualDirtyRef.current = true;
+        })
+      : null;
+    visibilityObserver?.observe(canvasElement);
+    sizeObserver?.observe(canvasElement);
     let frameId = 0;
 
     function setCanvasSize() {
@@ -2878,9 +2958,12 @@ export function NeuronsCommandCenter({
       if (canvasElement.width !== nextWidth || canvasElement.height !== nextHeight) {
         canvasElement.width = nextWidth;
         canvasElement.height = nextHeight;
+        glContext.viewport(0, 0, canvasElement.width, canvasElement.height);
+        return true;
       }
 
       glContext.viewport(0, 0, canvasElement.width, canvasElement.height);
+      return false;
     }
 
     function drawPolyline(points: Vec3[], color: string, alpha = 0.58, mode: number = glContext.LINE_STRIP) {
@@ -3016,8 +3099,40 @@ export function NeuronsCommandCenter({
       const previousSeconds = lastFrameTimeRef.current ?? seconds;
       const dt = Math.min(Math.max(seconds - previousSeconds, 0.001), 0.05);
       lastFrameTimeRef.current = seconds;
-      timeRef.current = reducedMotionRef.current ? 0 : seconds;
-      setCanvasSize();
+      const motionPaused = graphMotionPausedRef.current;
+      if (reducedMotionRef.current) {
+        timeRef.current = 0;
+      } else if (motionPaused) {
+        motionPausedAtRef.current ??= seconds;
+        timeRef.current = motionPausedAtRef.current - accumulatedPausedTimeRef.current;
+      } else {
+        if (motionPausedAtRef.current !== null) {
+          accumulatedPausedTimeRef.current += seconds - motionPausedAtRef.current;
+          motionPausedAtRef.current = null;
+        }
+        timeRef.current = seconds - accumulatedPausedTimeRef.current;
+      }
+      if (!graphViewportVisibleRef.current) {
+        frameId = window.requestAnimationFrame(render);
+        return;
+      }
+      const canvasResized = canvasSizeDirty ? setCanvasSize() : false;
+      canvasSizeDirty = false;
+      const currentCamera = cameraRef.current;
+      const desiredCamera = desiredCameraRef.current;
+      const cameraNeedsRender = (
+        Math.abs(currentCamera.distance - desiredCamera.distance) > 0.05
+        || Math.abs(currentCamera.pitch - desiredCamera.pitch) > 0.0005
+        || Math.abs(currentCamera.yaw - desiredCamera.yaw) > 0.0005
+        || Math.abs(currentCamera.target.x - desiredCamera.target.x) > 0.05
+        || Math.abs(currentCamera.target.y - desiredCamera.target.y) > 0.05
+        || Math.abs(currentCamera.target.z - desiredCamera.target.z) > 0.05
+      );
+      if (motionPaused && !cameraNeedsRender && !canvasResized && !pausedVisualDirtyRef.current) {
+        frameId = window.requestAnimationFrame(render);
+        return;
+      }
+      pausedVisualDirtyRef.current = false;
 
       const graphNow = graphRef.current;
       const controlsNow = graphControlsRef.current;
@@ -3064,7 +3179,7 @@ export function NeuronsCommandCenter({
         const shellMeta = orbitMeta(groupIndex);
         const effectiveGravity = nodeGravity(node, controlsNow);
         const effectiveTightness = gravityTightness(effectiveGravity);
-        const settle = gravitySettle(effectiveGravity, dt, reducedMotionRef.current);
+        const settle = motionPaused ? 0 : gravitySettle(effectiveGravity, dt, reducedMotionRef.current);
         const marshalCenter = orbitPoint(
           { ...shellMeta, radius: shellMeta.radius * effectiveTightness },
           timeRef.current * shellMeta.speed * controlsNow.orbitSpeed + shellMeta.phase,
@@ -3124,7 +3239,7 @@ export function NeuronsCommandCenter({
 
       const lockedNode = lockedNodeIdRef.current ? nodes.get(lockedNodeIdRef.current) : null;
 
-      if (lockedNode && lockedNode.type !== "core") {
+      if (!motionPaused && lockedNode && lockedNode.type !== "core") {
         desiredCameraRef.current = clampCamera({
           ...desiredCameraRef.current,
           distance: Math.min(desiredCameraRef.current.distance, lockedNode.commandType === "soldier" ? 360 : lockedNode.commandType === "commander" ? 420 : lockedNode.commandType === "general" ? 520 : 620),
@@ -3332,6 +3447,8 @@ export function NeuronsCommandCenter({
 
     return () => {
       window.cancelAnimationFrame(frameId);
+      visibilityObserver?.disconnect();
+      sizeObserver?.disconnect();
       if (positionBuffer) glContext.deleteBuffer(positionBuffer);
       glContext.deleteProgram(pointProgram.program);
       glContext.deleteProgram(lineProgram.program);
@@ -6900,13 +7017,16 @@ export function NeuronsCommandCenter({
     return null;
   }
 
+  const RootElement = embeddedGraphOnly ? "section" : "main";
+
   return (
-    <main
+    <RootElement
       className={["command-center-page", "phase110-command-center", embeddedGraphOnly ? "phase180-embedded-3d" : "", isMemberSurface ? "member-surface" : "", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")}
       data-canonical-entity-count={canonicalEntities?.length}
       data-canonical-event-sequence={canonicalGraph ? canonicalEventSequence : undefined}
       data-destination={initialDestination}
       data-graph-dimension={canonicalGraph ? "3d" : undefined}
+      data-graph-motion={canonicalGraph ? (canonicalMotionPaused ? "paused" : "running") : undefined}
       data-mobile-tab={mobileTab}
       aria-label={canonicalGraph ? "ENTRAL 3D Graph" : "ENTRAL Command Center"}
     >
@@ -8797,6 +8917,6 @@ export function NeuronsCommandCenter({
       </aside>
         </>
       ) : null}
-    </main>
+    </RootElement>
   );
 }

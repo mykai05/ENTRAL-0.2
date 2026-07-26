@@ -7,7 +7,9 @@ import {
   LocateFixed,
   Search,
   Settings2,
-  X
+  X,
+  ZoomIn,
+  ZoomOut
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -45,12 +47,14 @@ function healthColor(entity: EntitySummary) {
 export function CanonicalUniverseGraph({
   entities,
   eventSequence,
+  movementPaused,
   onOpenFullRecord,
   onSelectedEntityChange,
   selectedEntityId
 }: {
   entities: readonly EntitySummary[];
   eventSequence: number;
+  movementPaused: boolean;
   onOpenFullRecord: (entityId: string) => void;
   onSelectedEntityChange: (entityId: string | null) => void;
   selectedEntityId: string | null;
@@ -391,13 +395,17 @@ export function CanonicalUniverseGraph({
       data-canonical-entity-count={entities.length}
       data-canonical-event-sequence={eventSequence}
       data-graph-dimension="2d"
+      data-graph-motion={movementPaused ? "paused" : "stable"}
     >
       <header className="phase180-surface-heading">
         <div>
           <p className="eyebrow">Canonical topology · event {eventSequence}</p>
-          <h1 id="universe-heading">2D Graph</h1>
+          <h2 id="universe-heading">2D Graph</h2>
           <p>{entities.length.toLocaleString()} RLS-visible entities. Selection preserves its complete lineage and subtree.</p>
         </div>
+        <span className="phase180-panel-state" data-state={movementPaused ? "paused" : "stable"}>
+          {movementPaused ? "Movement paused" : "Stable topology"}
+        </span>
       </header>
       <div className="phase180-graph-toolbar">
         <label className="phase180-graph-search" htmlFor={SEARCH_INPUT_ID}>
@@ -436,6 +444,20 @@ export function CanonicalUniverseGraph({
           type="button"
         >
           <ArrowLeft aria-hidden="true" size={17} /> Back
+        </button>
+        <button
+          aria-label="Zoom in 2D Graph"
+          onClick={() => setCamera((current) => ({ ...current, zoom: Math.min(4, current.zoom * 1.2) }))}
+          type="button"
+        >
+          <ZoomIn aria-hidden="true" size={17} /> Zoom in
+        </button>
+        <button
+          aria-label="Zoom out 2D Graph"
+          onClick={() => setCamera((current) => ({ ...current, zoom: Math.max(MIN_ZOOM, current.zoom / 1.2) }))}
+          type="button"
+        >
+          <ZoomOut aria-hidden="true" size={17} /> Zoom out
         </button>
         <button onClick={fit} type="button"><LocateFixed aria-hidden="true" size={17} /> Fit</button>
         <button

@@ -183,6 +183,7 @@ async function newPage(options = {}) {
   const context = await browser.newContext({
     viewport: options.viewport ?? { width: 1366, height: 900 },
     isMobile: options.isMobile ?? false,
+    hasTouch: options.hasTouch ?? options.isMobile ?? false,
     deviceScaleFactor: options.deviceScaleFactor ?? 1
   });
   const page = await context.newPage();
@@ -523,8 +524,11 @@ const tests = [
         await destinationNav.getByRole("link", { name: /universe graph/i }).click();
         await expectUrl(page, /\/member\/graph$/, "Phase 180 Universe Graph");
         await expectVisible(page.getByRole("heading", { name: "2D Graph" }), "2D Graph heading");
+        await expectVisible(page.getByRole("heading", { name: "3D Graph" }), "3D Graph heading");
         const canvas = page.getByLabel(/Canonical Universe Graph with 5 entities/i);
         await expectVisible(canvas, "Canonical 2D Graph canvas");
+        const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
+        await expectVisible(original3DCanvas, "Original full 3D Universe Graph canvas", 30_000);
         const twoDimensionalSnapshot = await page.locator('[data-graph-dimension="2d"]').evaluate((element) => ({
           entities: element.getAttribute("data-canonical-entity-count"),
           event: element.getAttribute("data-canonical-event-sequence")
@@ -544,11 +548,9 @@ const tests = [
         await page.setViewportSize({ width: 390, height: 844 });
         await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Graph selection after portrait recovery");
 
-        await page.getByRole("button", { name: "3D Graph" }).click();
-        await expectUrl(page, /\/member\/graph\?graph=3d$/, "Original 3D Universe Graph");
-        await expectVisible(page.getByRole("heading", { name: "3D Graph" }), "3D Graph heading");
-        const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
-        await expectVisible(original3DCanvas, "Original full 3D Universe Graph canvas", 30_000);
+        await page.getByRole("button", { name: "Jump to 3D" }).click();
+        await expectUrl(page, /\/member\/graph\?graph=3d$/, "Original 3D Universe Graph focus");
+        await expectVisible(page.getByRole("heading", { name: "2D Graph" }), "2D Graph remains mounted beside 3D");
         const threeDimensionalSnapshot = await page.locator(".phase180-graph-3d").evaluate((element) => ({
           entities: element.getAttribute("data-canonical-entity-count"),
           event: element.getAttribute("data-canonical-event-sequence")
@@ -564,9 +566,36 @@ const tests = [
         await expectVisible(page.getByRole("toolbar", { name: "Universe Graph toolbar" }), "Original 3D Graph toolbar");
         await expectVisible(page.getByLabel("Selected graph entity"), "Original 3D Graph selected-entity drawer");
 
-        await page.getByRole("button", { name: "2D Graph" }).click();
-        await expectUrl(page, /\/member\/graph\?graph=2d$/, "Retained 2D Graph");
-        await expectVisible(page.getByRole("heading", { name: "2D Graph" }), "2D Graph after view switch");
+        const stopMovement = page.getByRole("button", { name: "Stop movement" });
+        await expectVisible(stopMovement, "Visible graph-only movement control");
+        await stopMovement.click();
+        await expectVisible(page.getByText(/Graph movement paused\. Agent activity and live canonical updates continue\./i), "Truthful visual-pause boundary");
+        const pausedWorkspaceState = await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion");
+        if (pausedWorkspaceState !== "paused") {
+          throw new Error(`Stop movement did not pause the graph workspace: ${pausedWorkspaceState}`);
+        }
+        await page.waitForTimeout(250);
+        const pausedFrame = await original3DCanvas.screenshot();
+        await page.waitForTimeout(250);
+        const pausedFrameLater = await original3DCanvas.screenshot();
+        if (!pausedFrame.equals(pausedFrameLater)) {
+          throw new Error("The original 3D Graph continued visual animation after Stop movement.");
+        }
+        await original3DCanvas.focus();
+        await page.keyboard.press("+");
+        await page.waitForTimeout(250);
+        const pausedCameraFrame = await original3DCanvas.screenshot();
+        if (pausedFrameLater.equals(pausedCameraFrame)) {
+          throw new Error("The original 3D Graph camera stopped responding while visual movement was paused.");
+        }
+        await page.getByRole("button", { name: "Resume movement" }).click();
+        if (await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion") !== "running") {
+          throw new Error("Resume movement did not restart graph animation.");
+        }
+
+        await page.getByRole("button", { name: "Jump to 2D" }).click();
+        await expectUrl(page, /\/member\/graph\?graph=2d$/, "Retained 2D Graph focus");
+        await expectVisible(original3DCanvas, "3D Graph remains mounted beside 2D");
 
         await context.setOffline(true);
         await page.waitForTimeout(5_500);
@@ -673,26 +702,52 @@ const tests = [
           await closeAcademyIfOpen(page);
           const canvas = page.getByRole("application", { name: /Canonical Universe Graph with 10000 entities/i });
           await expectVisible(canvas, `${profile.name} 10,000-entity production Graph`, 30_000);
+          const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
+          await expectVisible(original3DCanvas, `${profile.name} 10,000-entity original 3D Graph`, 30_000);
           const graphReadyMs = performance.now() - graphStart;
           if (graphReadyMs > 30_000) {
-            throw new Error(`${profile.name} Graph readiness exceeded 30s: ${graphReadyMs.toFixed(1)}ms.`);
+            throw new Error(`${profile.name} simultaneous Graph readiness exceeded 30s: ${graphReadyMs.toFixed(1)}ms.`);
           }
-          await page.getByRole("button", { name: "Fit" }).click();
+          const panelGeometry = await page.locator(".phase180-graph-panels").evaluate((element) => {
+            const twoDimensional = element.querySelector('[data-panel="2d"]')?.getBoundingClientRect();
+            const threeDimensional = element.querySelector('[data-panel="3d"]')?.getBoundingClientRect();
+            return twoDimensional && threeDimensional
+              ? {
+                  two: { bottom: twoDimensional.bottom, left: twoDimensional.left, top: twoDimensional.top },
+                  three: { left: threeDimensional.left, top: threeDimensional.top }
+                }
+              : null;
+          });
+          if (!panelGeometry) throw new Error(`${profile.name} simultaneous Graph panels did not expose geometry.`);
+          if (profile.isMobile && panelGeometry.three.top < panelGeometry.two.bottom - 2) {
+            throw new Error("Phone Graph panels did not stack cleanly.");
+          }
+          if (!profile.isMobile && (Math.abs(panelGeometry.three.top - panelGeometry.two.top) > 2 || panelGeometry.three.left <= panelGeometry.two.left)) {
+            throw new Error("Desktop Graph panels did not render side by side.");
+          }
+          await page.getByRole("button", { name: "Fit", exact: true }).click();
           if (profile.isMobile) {
             await page.waitForTimeout(100);
-            const bounds = await canvas.boundingBox();
-            if (!bounds) throw new Error("Phone Graph canvas did not expose interaction bounds.");
-            const center = {
-              x: bounds.x + bounds.width / 2,
-              y: bounds.y + bounds.height / 2
-            };
             const touch = await context.newCDPSession(page);
             try {
+              await canvas.scrollIntoViewIfNeeded();
               const fittedFrame = await canvas.screenshot();
+              const bounds = await canvas.boundingBox();
+              if (!bounds) throw new Error("Phone Graph canvas did not expose interaction bounds.");
+              const center = {
+                x: bounds.x + bounds.width / 2,
+                y: bounds.y + bounds.height / 2
+              };
               await touch.send("Input.dispatchTouchEvent", {
                 type: "touchStart",
                 touchPoints: [{ x: center.x - 35, y: center.y - 20 }]
               });
+              await page.waitForTimeout(30);
+              await touch.send("Input.dispatchTouchEvent", {
+                type: "touchMove",
+                touchPoints: [{ x: center.x, y: center.y }]
+              });
+              await page.waitForTimeout(30);
               await touch.send("Input.dispatchTouchEvent", {
                 type: "touchMove",
                 touchPoints: [{ x: center.x + 35, y: center.y + 30 }]
@@ -701,7 +756,7 @@ const tests = [
                 type: "touchEnd",
                 touchPoints: []
               });
-              await page.waitForTimeout(100);
+              await page.waitForTimeout(500);
               const pannedFrame = await canvas.screenshot();
               if (fittedFrame.equals(pannedFrame)) {
                 throw new Error("Phone Graph one-finger touch pan did not change the production canvas.");
@@ -714,6 +769,7 @@ const tests = [
                   { x: center.x + 35, y: center.y }
                 ]
               });
+              await page.waitForTimeout(30);
               await touch.send("Input.dispatchTouchEvent", {
                 type: "touchMove",
                 touchPoints: [
@@ -725,7 +781,7 @@ const tests = [
                 type: "touchEnd",
                 touchPoints: []
               });
-              await page.waitForTimeout(100);
+              await page.waitForTimeout(500);
               const pinchedFrame = await canvas.screenshot();
               if (pannedFrame.equals(pinchedFrame)) {
                 throw new Error("Phone Graph two-finger pinch did not change the production canvas zoom.");
@@ -750,11 +806,7 @@ const tests = [
           });
 
           const graph3DStart = performance.now();
-          const graph3DButton = page.getByRole("button", { name: "3D Graph" });
-          await graph3DButton.focus();
-          await page.keyboard.press("Enter");
-          const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
-          await expectVisible(original3DCanvas, `${profile.name} 10,000-entity original 3D Graph`, 30_000);
+          await page.getByRole("button", { name: "Jump to 3D" }).click();
           const graph3DReadyMs = performance.now() - graph3DStart;
           const graph3DSnapshot = await page.locator(".phase180-graph-3d").evaluate((element) => ({
             entities: element.getAttribute("data-canonical-entity-count"),
@@ -764,8 +816,15 @@ const tests = [
             throw new Error(`${profile.name} 3D Graph did not retain the 10,000-entity canonical event: ${JSON.stringify(graph3DSnapshot)}`);
           }
           await page.getByRole("button", { name: "Fit view" }).click();
-          await page.getByRole("button", { name: "2D Graph" }).click();
-          await expectVisible(canvas, `${profile.name} 2D Graph after 3D parity verification`, 30_000);
+          await page.getByRole("button", { name: "Stop movement" }).click();
+          if (await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion") !== "paused") {
+            throw new Error(`${profile.name} Stop movement did not pause both Graph views.`);
+          }
+          await original3DCanvas.focus();
+          await page.keyboard.press("+");
+          await page.getByRole("button", { name: "Resume movement" }).click();
+          await page.getByRole("button", { name: "Jump to 2D" }).click();
+          await expectVisible(canvas, `${profile.name} 2D Graph after simultaneous 3D parity verification`, 30_000);
 
           const infrastructureStart = performance.now();
           const infrastructureLink = page.getByRole("link", { name: "Infrastructure" });
