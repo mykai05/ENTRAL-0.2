@@ -729,12 +729,16 @@ export class CanonicalEntityLifecycleService {
       `;
       await tx.$executeRaw`
         UPDATE entral.governance_actions
-        SET status = 'AUTHORIZED', authorized_at = CURRENT_TIMESTAMP
+        SET
+          status = 'AUTHORIZED',
+          authorized_at = GREATEST(clock_timestamp(), requested_at)
         WHERE id = ${request.action_id}::uuid
       `;
       await tx.$executeRaw`
         UPDATE entral.governance_actions
-        SET status = 'EXECUTING', started_at = CURRENT_TIMESTAMP
+        SET
+          status = 'EXECUTING',
+          started_at = GREATEST(clock_timestamp(), requested_at)
         WHERE id = ${request.action_id}::uuid
       `;
 
@@ -831,7 +835,7 @@ export class CanonicalEntityLifecycleService {
           ${observedState}::jsonb,
           ${expectedState}::jsonb,
           '[]'::jsonb,
-          CURRENT_TIMESTAMP
+          GREATEST(clock_timestamp(), ${new Date(request.requested_at)})
         )
       `;
       await tx.$executeRaw`
@@ -841,14 +845,21 @@ export class CanonicalEntityLifecycleService {
       `;
       await tx.$executeRaw`
         UPDATE entral.governance_actions
-        SET status = 'SUCCEEDED', completed_at = CURRENT_TIMESTAMP
+        SET
+          status = 'SUCCEEDED',
+          completed_at = GREATEST(clock_timestamp(), requested_at)
         WHERE id = ${request.action_id}::uuid
       `;
 
       if (request.restores_action_id) {
         await tx.$executeRaw`
           UPDATE entral.governance_actions
-          SET status = 'ROLLED_BACK', rolled_back_at = CURRENT_TIMESTAMP
+          SET
+            status = 'ROLLED_BACK',
+            rolled_back_at = GREATEST(
+              clock_timestamp(),
+              ${new Date(request.requested_at)}
+            )
           WHERE id = ${request.restores_action_id}::uuid
             AND status = 'SUCCEEDED'
         `;
@@ -934,7 +945,10 @@ export class CanonicalEntityLifecycleService {
             'entityId', ${target.entityId}::text,
             'version', ${Number(readback.version)}
           ),
-          completed_at = CURRENT_TIMESTAMP,
+          completed_at = GREATEST(
+            clock_timestamp(),
+            ${new Date(request.requested_at)}
+          ),
           locked_until = NULL
         WHERE key = ${request.idempotency_key}
       `;

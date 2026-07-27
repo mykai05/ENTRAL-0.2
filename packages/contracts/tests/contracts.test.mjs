@@ -5,27 +5,47 @@ import { parse as parseYaml } from "yaml";
 import {
   ContractError,
   IdempotencyKeyRegistry,
+  PHASE_195_RELEASE_MIGRATION_NAME,
+  PHASE_195_RELEASE_PHASE,
   assertActionRequest,
   assertAuditEntry,
+  assertCanonicalReleaseRecord,
   assertCanonicalEvent,
+  assertDeploymentEvidence,
   assertEntityLifecycleActionRequest,
   assertEntityLifecycleActionResult,
   assertExecutableIntegration,
   assertIntegrationRegistryRecord,
   assertMemberCommandHierarchy,
   assertMemberOverviewResponse,
+  assertMigrationFingerprint,
   assertOperationalRoute,
+  assertPhaseGateRecord,
   assertPersonalityProfile,
+  assertPullRequestDisposition,
   assertQueueJobEnvelope,
+  assertRuntimeModeRecord,
   assertValidParentRole,
   assertExpectedVersion,
   assertGovernanceActionRequest,
+  bindCanonicalGraphRuntimeState,
+  buildGraphProjection,
+  canonicalGraphEdgeId,
+  canonicalGraphPreferenceSettings,
   parseBusinessFullRecordResponse,
   parseCanonicalEntralConversationResponse,
   parseCanonicalHierarchyResponse,
   parseCanonicalPortfolioEventsResponse,
   parseEntityFullRecordResponse,
+  parseGraphProjection,
+  parseGraphRendererTelemetryRequest,
+  parseGraphRendererTelemetryResponse,
+  parseGraphSharedViewState,
+  parseGraphViewPreferencesResetRequest,
+  parseGraphViewPreferencesUpdateRequest,
   parseMemberOrganizationsResponse,
+  parsePhaseReleaseEvidenceReadback,
+  parseWorkerReadinessEvidence,
   parsePortfolioSummaryResponse
 } from "../dist/index.js";
 
@@ -96,6 +116,565 @@ function canonicalEntitySummary(overrides = {}) {
     ...overrides
   };
 }
+
+function releaseRecordBase(recordType, overrides = {}) {
+  return {
+    actor: {
+      actor_id: "phase195-verifier",
+      actor_type: "SERVICE"
+    },
+    business_id: null,
+    classification: "INTERNAL",
+    contract_version: "1.0.0",
+    created_at: "2026-07-26T01:00:00.000Z",
+    deletion_behavior: "RETAIN",
+    environment: "production",
+    evidence_references: [{
+      captured_at: "2026-07-26T01:00:00.000Z",
+      content_sha256: "a".repeat(64),
+      reference_id: `phase195:${recordType}`,
+      reference_type: "DATABASE_READBACK"
+    }],
+    exportable: true,
+    idempotency_key: `phase195:${recordType}:verification`,
+    organization_id: null,
+    phase: 195,
+    record_id: randomReleaseId(recordType),
+    record_type: recordType,
+    retention: "RELEASE_LIFETIME",
+    schema_version: 1,
+    updated_at: "2026-07-26T01:01:00.000Z",
+    verification_state: "VERIFIED",
+    version: 1,
+    ...overrides
+  };
+}
+
+function randomReleaseId(recordType) {
+  const prefixes = {
+    CANONICAL_RELEASE: "423e4567",
+    MIGRATION_FINGERPRINT: "523e4567",
+    DEPLOYMENT_EVIDENCE: "623e4567",
+    PULL_REQUEST_DISPOSITION: "723e4567",
+    RUNTIME_MODE: "823e4567",
+    PHASE_GATE: "923e4567"
+  };
+  return `${prefixes[recordType]}-e89b-42d3-a456-426614174000`;
+}
+
+test("Phase 195 graph projection preserves canonical identity and one truthful hierarchy", () => {
+  const hierarchy = parseCanonicalHierarchyResponse({
+    entities: [
+      canonicalEntitySummary(),
+      canonicalEntitySummary({
+        entity_id: secondId,
+        entity_type: "MARSHAL",
+        name: "Revenue Marshal",
+        parent_id: id,
+        stable_code: "MARSHAL.REVENUE"
+      }),
+      canonicalEntitySummary({
+        entity_id: thirdId,
+        entity_type: "GENERAL",
+        name: "Commerce General",
+        parent_id: secondId,
+        stable_code: "GENERAL.COMMERCE"
+      })
+    ],
+    event_sequence: 195,
+    generated_at: "2026-07-26T02:00:00.000Z",
+    scope: {
+      label: "Human portfolio / all canonical businesses",
+      mode: "HUMAN_PORTFOLIO",
+      user_id: id,
+      visible_business_ids: []
+    }
+  });
+  const projection = buildGraphProjection({
+    hierarchy,
+    organization_id: "team_phase195"
+  });
+
+  assert.equal(projection.root_id, id);
+  assert.equal(projection.projection_version, 195);
+  assert.equal(projection.entities[2].marshal_id, secondId);
+  assert.deepEqual(projection.entities[2].lineage_ids, [id, secondId, thirdId]);
+  assert.equal(projection.edges[1].edge_id, canonicalGraphEdgeId(secondId, thirdId));
+  assert.doesNotThrow(() => parseGraphProjection(projection));
+  assert.throws(() => parseGraphProjection({
+    ...projection,
+    edges: projection.edges.slice(0, 1)
+  }), (error) => error.code === "GRAPH_EDGE_COUNT_MISMATCH");
+  assert.throws(() => parseGraphProjection({
+    ...projection,
+    fabricated_entities: []
+  }), (error) => error.code === "UNKNOWN_GRAPH_SETTING");
+});
+
+test("Phase 195 runtime-agent compatibility joins only onto authorized projection entities", () => {
+  const projection = buildGraphProjection({
+    hierarchy: parseCanonicalHierarchyResponse({
+      entities: [
+        canonicalEntitySummary(),
+        canonicalEntitySummary({
+          entity_id: secondId,
+          entity_type: "MARSHAL",
+          name: "Revenue Marshal",
+          parent_id: id,
+          stable_code: "MARSHAL.REVENUE"
+        })
+      ],
+      event_sequence: 195,
+      generated_at: "2026-07-26T02:00:00.000Z",
+      scope: {
+        label: "Human portfolio / all canonical businesses",
+        mode: "HUMAN_PORTFOLIO",
+        user_id: id,
+        visible_business_ids: []
+      }
+    }),
+    organization_id: "team_phase195"
+  });
+  const agentInstance = {
+    agent_instance_id: "future-agent-instance-1",
+    version: 1
+  };
+  const assignment = {
+    assignment_id: "future-assignment-1",
+    version: 1
+  };
+  const joined = bindCanonicalGraphRuntimeState(projection, [{
+    agent_instance: agentInstance,
+    assignment,
+    entity_id: secondId
+  }]);
+
+  assert.equal(joined.length, projection.entities.length);
+  assert.strictEqual(joined[0].graph_entity, projection.entities[0]);
+  assert.strictEqual(joined[0].runtime_state, null);
+  assert.strictEqual(joined[1].graph_entity, projection.entities[1]);
+  assert.strictEqual(joined[1].runtime_state.agent_instance, agentInstance);
+  assert.strictEqual(joined[1].runtime_state.assignment, assignment);
+  assert.deepEqual(
+    joined.map((entry) => entry.graph_entity.entity_id),
+    projection.entities.map((entity) => entity.entity_id)
+  );
+
+  assert.throws(() => bindCanonicalGraphRuntimeState(projection, [{
+    agent_instance: agentInstance,
+    assignment: null,
+    entity_id: "unauthorized-runtime-entity"
+  }]), (error) => error.code === "GRAPH_RUNTIME_STATE_SCOPE_MISMATCH");
+  assert.throws(() => bindCanonicalGraphRuntimeState(projection, [{
+    agent_instance: agentInstance,
+    assignment: null,
+    entity_id: secondId
+  }, {
+    agent_instance: { ...agentInstance },
+    assignment: null,
+    entity_id: secondId
+  }]), (error) => error.code === "DUPLICATE_GRAPH_RUNTIME_STATE");
+});
+
+test("Phase 195 shared graph state and preferences reject unknown or unsafe settings", () => {
+  assert.doesNotThrow(() => parseGraphSharedViewState({
+    arrangement: "SIDE_BY_SIDE",
+    breadcrumb_entity_ids: [id, secondId],
+    contract_version: "1.0.0",
+    expanded_entity_ids: [id],
+    filters: {
+      authority_tiers: [0, 1],
+      business_ids: [],
+      domain_ids: [secondId],
+      entity_types: ["ENTRAL", "MARSHAL"],
+      health_states: ["HEALTHY"],
+      relation_types: ["HIERARCHY"],
+      statuses: ["ACTIVE"]
+    },
+    focused_entity_id: secondId,
+    isolated_root_id: null,
+    navigation_history: {
+      back: [id],
+      current: secondId,
+      forward: []
+    },
+    organization_id: "team_phase195",
+    schema_version: 1,
+    search_query: "",
+    selected_entity_id: secondId,
+    synchronized_navigation: true
+  }));
+
+  const migrated = parseGraphViewPreferencesUpdateRequest({
+    contract_version: "1.0.0",
+    expected_version: 0,
+    idempotency_key: "phase195-legacy-settings",
+    schema_version: 1,
+    settings: {
+      advanced_2d: {},
+      advanced_3d: {},
+      advanced_shared: {},
+      pinned_positions: [],
+      simple: { arrangement: "STACK" }
+    }
+  });
+  assert.equal(migrated.schema_version, 2);
+  assert.equal(migrated.migrated_from_schema_version, 1);
+  assert.equal(migrated.settings.simple.arrangement, "STACK");
+  assert.equal(migrated.settings.advanced_shared.frame_rate_cap, 60);
+
+  const invalidSettings = canonicalGraphPreferenceSettings();
+  assert.throws(() => parseGraphViewPreferencesUpdateRequest({
+    contract_version: "1.0.0",
+    expected_version: 0,
+    idempotency_key: "phase195-invalid-fps",
+    schema_version: 2,
+    settings: {
+      ...invalidSettings,
+      advanced_shared: {
+        ...invalidSettings.advanced_shared,
+        frame_rate_cap: 75
+      }
+    }
+  }), (error) => error.code === "INVALID_GRAPH_ENUM");
+  assert.throws(() => parseGraphViewPreferencesUpdateRequest({
+    contract_version: "1.0.0",
+    expected_version: 0,
+    idempotency_key: "phase195-unknown-setting",
+    schema_version: 2,
+    settings: {
+      ...invalidSettings,
+      secret_override: true
+    }
+  }), (error) => error.code === "UNKNOWN_GRAPH_SETTING");
+  assert.deepEqual(parseGraphViewPreferencesResetRequest({
+    contract_version: "1.0.0",
+    expected_version: 3,
+    idempotency_key: "phase195-reset-view-2d",
+    reset_scope: "VIEW_2D"
+  }).reset_scope, "VIEW_2D");
+});
+
+test("Phase 195 renderer telemetry is bounded, renderer-specific, and payload-free", () => {
+  const telemetry = {
+    contract_version: "1.0.0",
+    dropped_frame_rate_ratio: 0.02,
+    edge_count: 131,
+    error_code: "NONE",
+    frame_rate_fps: 59.5,
+    layout_pattern: "AUTHORITY_RADIAL",
+    layout_time_ms: 16.25,
+    node_count: 132,
+    observed_at: "2026-07-26T02:00:00.000Z",
+    projection_id: id,
+    projection_version: 195,
+    render_time_ms: 8.5,
+    renderer: "2D",
+    sample_window_ms: 5000,
+    schema_version: 1,
+    settings_version: 3,
+    telemetry_id: secondId
+  };
+  assert.doesNotThrow(() => parseGraphRendererTelemetryRequest(telemetry));
+  assert.throws(() => parseGraphRendererTelemetryRequest({
+    ...telemetry,
+    customer_payload: { search: "sensitive customer query" }
+  }), (error) => error.code === "UNKNOWN_GRAPH_SETTING");
+  assert.throws(() => parseGraphRendererTelemetryRequest({
+    ...telemetry,
+    layout_pattern: "AUTHORITY_RINGS"
+  }), (error) => error.code === "INVALID_GRAPH_ENUM");
+  assert.throws(() => parseGraphRendererTelemetryRequest({
+    ...telemetry,
+    dropped_frame_rate_ratio: 1.01
+  }), (error) => error.code === "INVALID_GRAPH_RANGE");
+  assert.doesNotThrow(() => parseGraphRendererTelemetryResponse({
+    accepted: true,
+    contract_version: "1.0.0",
+    organization_id: "team_phase195",
+    recorded_at: "2026-07-26T02:00:01.000Z",
+    schema_version: 1,
+    telemetry_id: secondId
+  }));
+});
+
+test("Phase 195 release and worker evidence contracts fail closed", () => {
+  assert.equal(PHASE_195_RELEASE_PHASE, 195);
+  assert.equal(
+    PHASE_195_RELEASE_MIGRATION_NAME,
+    "20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness"
+  );
+  const release = releaseRecordBase("CANONICAL_RELEASE", {
+    accepted_at: "2026-07-26T01:00:30.000Z",
+    git_commit_sha: "b".repeat(40),
+    release_status: "DEPLOYED",
+    release_tag: "phase-195",
+    repository: "entral/entral",
+    rollback_status: "AVAILABLE"
+  });
+  const migration = releaseRecordBase("MIGRATION_FINGERPRINT", {
+    applied_at: "2026-07-26T01:00:10.000Z",
+    checksum_sha256:
+      "d2224f0648920a8be9a9d50561c4139ea3199f11ca953dba2963186c2cdaf1ad",
+    migration_name: PHASE_195_RELEASE_MIGRATION_NAME,
+    recovery_status: "FORWARD_RECOVERY_VERIFIED",
+    release_id: release.record_id,
+    verified_at: "2026-07-26T01:00:20.000Z"
+  });
+  const deployment = releaseRecordBase("DEPLOYMENT_EVIDENCE", {
+    checked_at: "2026-07-26T01:00:40.000Z",
+    deployed_at: "2026-07-26T01:00:35.000Z",
+    deployed_commit_sha: release.git_commit_sha,
+    deployment_role: "API",
+    deployment_id: "dpl_phase195",
+    deployment_status: "READY",
+    provider: "RAILWAY",
+    public_url: "https://api.example.test",
+    release_id: release.record_id,
+    service_name: "entral-api",
+    source_freshness_seconds: 5
+  });
+  const frontendDeployment = releaseRecordBase("DEPLOYMENT_EVIDENCE", {
+    checked_at: "2026-07-26T01:00:40.000Z",
+    deployed_at: "2026-07-26T01:00:35.000Z",
+    deployed_commit_sha: release.git_commit_sha,
+    deployment_role: "FRONTEND",
+    deployment_id: "dpl_phase195_frontend",
+    deployment_status: "READY",
+    idempotency_key: "phase195:DEPLOYMENT_EVIDENCE:frontend",
+    provider: "VERCEL",
+    public_url: "https://example.test",
+    record_id: "633e4567-e89b-42d3-a456-426614174000",
+    release_id: release.record_id,
+    service_name: "entral-frontend",
+    source_freshness_seconds: 5
+  });
+  const workerDeployment = releaseRecordBase("DEPLOYMENT_EVIDENCE", {
+    checked_at: "2026-07-26T01:00:40.000Z",
+    deployed_at: "2026-07-26T01:00:35.000Z",
+    deployed_commit_sha: release.git_commit_sha,
+    deployment_role: "WORKER",
+    deployment_id: "dpl_phase195_worker",
+    deployment_status: "READY",
+    idempotency_key: "phase195:DEPLOYMENT_EVIDENCE:worker",
+    provider: "RAILWAY",
+    public_url: "https://worker.example.test/health",
+    record_id: "643e4567-e89b-42d3-a456-426614174000",
+    release_id: release.record_id,
+    service_name: "entral-worker",
+    source_freshness_seconds: 5
+  });
+  const disposition = releaseRecordBase("PULL_REQUEST_DISPOSITION", {
+    decided_at: "2026-07-26T01:00:25.000Z",
+    disposition: "MERGED",
+    head_commit_sha: release.git_commit_sha,
+    pull_request_number: 195,
+    rationale: "Merged and verified at the canonical release commit.",
+    release_id: release.record_id,
+    repository: "entral/entral"
+  });
+  const runtime = releaseRecordBase("RUNTIME_MODE", {
+    deterministic_fallback_reachable: false,
+    in_memory_canonical_state_reachable: false,
+    observed_at: "2026-07-26T01:00:45.000Z",
+    observed_commit_sha: release.git_commit_sha,
+    process_role: "API",
+    release_id: release.record_id,
+    runtime_mode: "PRODUCTION",
+    sample_data_reachable: false,
+    service_name: "entral-api"
+  });
+  const workerRuntime = releaseRecordBase("RUNTIME_MODE", {
+    deterministic_fallback_reachable: false,
+    in_memory_canonical_state_reachable: false,
+    observed_at: "2026-07-26T01:00:46.000Z",
+    observed_commit_sha: release.git_commit_sha,
+    process_role: "WORKER",
+    record_id: "a23e4567-e89b-42d3-a456-426614174000",
+    release_id: release.record_id,
+    runtime_mode: "PRODUCTION",
+    sample_data_reachable: false,
+    service_name: "entral-worker"
+  });
+  const gate = releaseRecordBase("PHASE_GATE", {
+    authenticated_smoke_receipt_id: "smoke-phase195-production",
+    authenticated_smoke_status: "PASSED",
+    authenticated_smoke_target_url: "https://example.test/member/graph",
+    ci_artifact_ids: ["phase195-release-evidence"],
+    ci_git_commit_sha: release.git_commit_sha,
+    ci_provider: "GITHUB_ACTIONS",
+    ci_repository: release.repository,
+    ci_result: "SUCCESS",
+    ci_run_id: "195000",
+    ci_run_url: "https://github.com/entral/entral/actions/runs/195000",
+    ci_workflow: ".github/workflows/ci-cd.yml",
+    closed_at: "2026-07-26T01:01:00.000Z",
+    deployment_evidence_ids: [
+      frontendDeployment.record_id,
+      deployment.record_id,
+      workerDeployment.record_id
+    ],
+    expected_release_version: release.version,
+    gate_id: "phase-195-production",
+    gate_status: "PASSED",
+    migration_fingerprint_ids: [migration.record_id],
+    pull_request_disposition_ids: [disposition.record_id],
+    release_id: release.record_id,
+    remaining_external_boundaries: [],
+    rollback_recovery_reference: "runbook:phase195-forward-recovery",
+    runtime_mode_record_ids: [runtime.record_id, workerRuntime.record_id],
+    test_evidence_references: ["artifact:phase195-tests"]
+  });
+
+  assert.doesNotThrow(() => assertCanonicalReleaseRecord(release));
+  assert.doesNotThrow(() => assertMigrationFingerprint(migration));
+  assert.doesNotThrow(() => assertDeploymentEvidence(deployment));
+  assert.doesNotThrow(() => assertDeploymentEvidence(frontendDeployment));
+  assert.doesNotThrow(() => assertDeploymentEvidence(workerDeployment));
+  assert.doesNotThrow(() => assertPullRequestDisposition(disposition));
+  assert.doesNotThrow(() => assertRuntimeModeRecord(runtime));
+  assert.doesNotThrow(() => assertRuntimeModeRecord(workerRuntime));
+  assert.doesNotThrow(() => assertPhaseGateRecord(gate));
+  assert.doesNotThrow(() => parsePhaseReleaseEvidenceReadback({
+    blockers: [],
+    canonical_release: release,
+    complete: true,
+    contract_version: "1.0.0",
+    deployments: [frontendDeployment, deployment, workerDeployment],
+    generated_at: "2026-07-26T01:02:00.000Z",
+    migration_fingerprints: [migration],
+    phase: 195,
+    phase_gate: gate,
+    pull_request_dispositions: [disposition],
+    runtime_modes: [runtime, workerRuntime],
+    schema_version: 1
+  }));
+  assert.throws(() => parsePhaseReleaseEvidenceReadback({
+    blockers: [],
+    canonical_release: release,
+    complete: true,
+    contract_version: "1.0.0",
+    deployments: [frontendDeployment, deployment, workerDeployment],
+    generated_at: "2026-07-26T01:02:00.000Z",
+    migration_fingerprints: [],
+    phase: 195,
+    phase_gate: gate,
+    pull_request_dispositions: [disposition],
+    runtime_modes: [runtime, workerRuntime],
+    schema_version: 1
+  }), (error) => error.code === "FALSE_RELEASE_COMPLETION");
+  assert.throws(() => parsePhaseReleaseEvidenceReadback({
+    blockers: [],
+    canonical_release: release,
+    complete: true,
+    contract_version: "1.0.0",
+    deployments: [frontendDeployment, deployment, workerDeployment],
+    generated_at: "2026-07-26T01:02:00.000Z",
+    migration_fingerprints: [migration],
+    phase: 195,
+    phase_gate: gate,
+    pull_request_dispositions: [disposition],
+    runtime_modes: [runtime],
+    schema_version: 1
+  }), (error) => error.code === "RELEASE_GATE_REFERENCE_MISMATCH");
+  assert.throws(() => assertPhaseGateRecord({
+    ...gate,
+    authenticated_smoke_receipt_id: null,
+    authenticated_smoke_status: "PENDING"
+  }), (error) => error.code === "UNVERIFIED_PHASE_GATE");
+  assert.throws(() => assertPhaseGateRecord({
+    ...gate,
+    deployment_evidence_ids: [
+      frontendDeployment.record_id,
+      deployment.record_id,
+      deployment.record_id
+    ]
+  }), (error) => error.code === "DUPLICATE_RELEASE_REFERENCE");
+  assert.throws(() => assertPhaseGateRecord({
+    ...gate,
+    ci_run_url: "https://github.com/other/entral/actions/runs/195000"
+  }), (error) => error.code === "INVALID_CI_URL");
+  assert.throws(() => assertPhaseGateRecord({
+    ...gate,
+    ci_provider: "OTHER_CI"
+  }), (error) => error.code === "UNVERIFIED_PHASE_GATE");
+  assert.throws(() => parsePhaseReleaseEvidenceReadback({
+    blockers: [],
+    canonical_release: release,
+    complete: true,
+    contract_version: "1.0.0",
+    deployments: [frontendDeployment, deployment, workerDeployment],
+    generated_at: "2026-07-26T01:02:00.000Z",
+    migration_fingerprints: [migration],
+    phase: 195,
+    phase_gate: {
+      ...gate,
+      ci_git_commit_sha: "a".repeat(40)
+    },
+    pull_request_dispositions: [disposition],
+    runtime_modes: [runtime, workerRuntime],
+    schema_version: 1
+  }), (error) => error.code === "FALSE_RELEASE_COMPLETION");
+  const extraDeployment = {
+    ...deployment,
+    idempotency_key: "phase195:DEPLOYMENT_EVIDENCE:extra-api",
+    record_id: "653e4567-e89b-42d3-a456-426614174000",
+    service_name: "entral-api-extra"
+  };
+  assert.throws(() => parsePhaseReleaseEvidenceReadback({
+    blockers: [],
+    canonical_release: release,
+    complete: true,
+    contract_version: "1.0.0",
+    deployments: [
+      frontendDeployment,
+      deployment,
+      workerDeployment,
+      extraDeployment
+    ],
+    generated_at: "2026-07-26T01:02:00.000Z",
+    migration_fingerprints: [migration],
+    phase: 195,
+    phase_gate: gate,
+    pull_request_dispositions: [disposition],
+    runtime_modes: [runtime, workerRuntime],
+    schema_version: 1
+  }), (error) => error.code === "RELEASE_GATE_REFERENCE_MISMATCH");
+  assert.doesNotThrow(() => parseWorkerReadinessEvidence({
+    age_seconds: null,
+    components: {
+      agent_orchestrator: false,
+      automation_worker: false,
+      autonomy_scheduler: false,
+      canonical_outbox_dispatcher: false,
+      process: false
+    },
+    contract_version: "1.0.0",
+    evidence_source: "NONE",
+    observed_at: null,
+    queue: null,
+    ready: false,
+    schema_version: 1,
+    status: "UNAVAILABLE"
+  }));
+  assert.throws(() => parseWorkerReadinessEvidence({
+    age_seconds: null,
+    components: {
+      agent_orchestrator: false,
+      automation_worker: false,
+      autonomy_scheduler: false,
+      canonical_outbox_dispatcher: false,
+      process: false
+    },
+    contract_version: "1.0.0",
+    evidence_source: "NONE",
+    observed_at: null,
+    queue: null,
+    ready: true,
+    schema_version: 1,
+    status: "UNAVAILABLE"
+  }), (error) => error.code === "WORKER_READINESS_MISMATCH");
+});
 
 test("Phase 180 hierarchy and entity full-record parsers enforce snapshot integrity", () => {
   const scope = {
@@ -819,7 +1398,7 @@ test("event and audit consumers reject malformed canonical records", () => {
   assert.throws(() => assertAuditEntry({ ...audit, result: "PENDING" }), ContractError);
 });
 
-test("OpenAPI exposes only implemented member and Phase 190 control-plane paths", async () => {
+test("OpenAPI exposes only implemented member and Phase 195 control-plane paths", async () => {
   const openapi = await readFile(new URL("../openapi.yaml", import.meta.url), "utf8");
   const document = parseYaml(openapi);
   assert.equal(document.openapi, "3.1.0");
@@ -833,6 +1412,7 @@ test("OpenAPI exposes only implemented member and Phase 190 control-plane paths"
     "/api/v1/control-plane/governance-actions",
     "/api/v1/control-plane/hierarchy",
     "/api/v1/control-plane/portfolio/summary",
+    "/api/v1/control-plane/releases/phases/{phase}/evidence",
     "/api/v1/member/organizations",
     "/api/v1/member/organizations/{organizationId}/businesses/{businessId}/full",
     "/api/v1/member/organizations/{organizationId}/entities/{entityId}/actions/{operation}",
@@ -841,6 +1421,9 @@ test("OpenAPI exposes only implemented member and Phase 190 control-plane paths"
     "/api/v1/member/organizations/{organizationId}/entral/conversation",
     "/api/v1/member/organizations/{organizationId}/events",
     "/api/v1/member/organizations/{organizationId}/governance-actions",
+    "/api/v1/member/organizations/{organizationId}/graph/preferences",
+    "/api/v1/member/organizations/{organizationId}/graph/projection",
+    "/api/v1/member/organizations/{organizationId}/graph/telemetry",
     "/api/v1/member/organizations/{organizationId}/hierarchy",
     "/api/v1/member/organizations/{organizationId}/overview",
     "/api/v1/member/organizations/{organizationId}/portfolio/summary"
@@ -860,6 +1443,40 @@ test("OpenAPI exposes only implemented member and Phase 190 control-plane paths"
   assert.equal(document.components.schemas.EntityLifecycleActionEnvelope.additionalProperties, false);
   assert.equal(document.components.schemas.MemberOverviewResponse.additionalProperties, false);
   assert.equal(document.components.schemas.MemberWorkspace.additionalProperties, false);
+  assert.equal(document.components.schemas.GraphProjection.additionalProperties, false);
+  assert.equal(document.components.schemas.GraphViewPreferences.additionalProperties, false);
+  assert.equal(document.components.schemas.GraphViewPreferencesUpdateRequest.additionalProperties, false);
+  assert.equal(document.components.schemas.GraphViewPreferencesResetRequest.additionalProperties, false);
+  assert.equal(document.components.schemas.GraphViewPreferencesMutationResponse.additionalProperties, false);
+  assert.equal(document.components.schemas.GraphRendererTelemetryRequest.additionalProperties, false);
+  assert.equal(document.components.schemas.GraphRendererTelemetryResponse.additionalProperties, false);
+  assert.equal(document.components.schemas.PhaseReleaseEvidenceReadback.additionalProperties, false);
+  const phaseGateSchema = document.components.schemas.PhaseGateRecord.allOf[1];
+  for (const ciIdentityField of [
+    "ci_repository",
+    "ci_workflow",
+    "ci_git_commit_sha"
+  ]) {
+    assert.ok(
+      phaseGateSchema.required.includes(ciIdentityField),
+      `${ciIdentityField} must be retained in phase-gate readback`
+    );
+  }
+  for (const uniqueEvidenceArray of [
+    "migration_fingerprint_ids",
+    "deployment_evidence_ids",
+    "pull_request_disposition_ids",
+    "runtime_mode_record_ids",
+    "test_evidence_references",
+    "ci_artifact_ids",
+    "remaining_external_boundaries"
+  ]) {
+    assert.equal(
+      phaseGateSchema.properties[uniqueEvidenceArray].uniqueItems,
+      true,
+      `${uniqueEvidenceArray} must reject duplicate evidence identities`
+    );
+  }
   assert.equal(
     document.paths["/api/v1/member/organizations/{organizationId}/entral/assistant/messages"]
       .post.requestBody.content["application/json"].schema.$ref,
@@ -874,6 +1491,21 @@ test("OpenAPI exposes only implemented member and Phase 190 control-plane paths"
     document.paths["/api/v1/member/organizations/{organizationId}/entities/{entityId}/actions/{operation}"]
       .post.responses["200"].content["application/json"].schema.$ref,
     "#/components/schemas/EntityLifecycleActionEnvelope"
+  );
+  assert.equal(
+    document.paths["/api/v1/member/organizations/{organizationId}/graph/preferences"]
+      .put.requestBody.content["application/json"].schema.$ref,
+    "#/components/schemas/GraphViewPreferencesUpdateRequest"
+  );
+  assert.equal(
+    document.paths["/api/v1/control-plane/releases/phases/{phase}/evidence"]
+      .get.responses["200"].content["application/json"].schema.$ref,
+    "#/components/schemas/PhaseReleaseEvidenceReadback"
+  );
+  assert.equal(
+    document.paths["/api/v1/member/organizations/{organizationId}/graph/telemetry"]
+      .post.requestBody.content["application/json"].schema.$ref,
+    "#/components/schemas/GraphRendererTelemetryRequest"
   );
   for (const unimplemented of ["/portfolio", "/businesses", "/entities", "/actions", "/audit", "/events"]) {
     assert.equal(openapi.includes(`  ${unimplemented}`), false, `${unimplemented} must not be exposed`);

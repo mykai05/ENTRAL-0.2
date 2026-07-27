@@ -1,6 +1,7 @@
 import type { AutomationJob } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
+import { assertDurableAuthorization } from "./durableAuthorization.js";
 import { recordAuditLog } from "./audit.js";
 import type { GrowthApprovalAction, GrowthApprovalPacket } from "./growthPlans.js";
 import type { MerchStoreSnapshot } from "./merchReports.js";
@@ -252,16 +253,19 @@ export function buildShopifyStoreCreationHandoffApprovalPacket(input: {
 }
 
 export async function createShopifyStoreCreationHandoffJob(input: {
+  authorizationVersion: number;
   payload: ShopifyStoreCreationHandoffJobPayload;
   scheduledAt?: Date | null;
   userId: string;
 }) {
+  await assertDurableAuthorization(input);
   const payload = shopifyStoreCreationHandoffJobPayloadSchema.parse(input.payload);
   const scheduledAt = input.scheduledAt ?? null;
   const status = scheduledAt && scheduledAt.getTime() > Date.now() ? "scheduled" : "pending";
 
   return prisma.automationJob.create({
     data: {
+      authorizationVersion: input.authorizationVersion,
       payloadJson: stringifySecureJson(payload),
       scheduledAt,
       status,
@@ -284,7 +288,7 @@ export async function createShopifyStoreCreationHandoffJob(input: {
 }
 
 export async function runShopifyStoreCreationHandoffJob(
-  job: Pick<AutomationJob, "id" | "payloadJson" | "userId">,
+  job: Pick<AutomationJob, "authorizationVersion" | "id" | "payloadJson" | "userId">,
   logStep: (message: string, level?: "info" | "warn" | "error") => Promise<void>
 ) {
   const payload = parseSecureJson<ShopifyStoreCreationHandoffJobPayload>(job.payloadJson);
@@ -320,6 +324,7 @@ export async function runShopifyStoreCreationHandoffJob(
   const shouldQueueResume = input.queueAutonomyResume && plan.status !== "not_applicable";
   const browserTaskJob = input.queueBrowserTask && plan.status === "dev_dashboard_creation_required"
     ? await createShopifyStoreCreationBrowserTaskJob({
+      authorizationVersion: job.authorizationVersion,
       payload: {
         browserTask: plan.creationHandoff.browserTask,
         countryCode: input.countryCode,
@@ -336,6 +341,7 @@ export async function runShopifyStoreCreationHandoffJob(
     : null;
   const resumeJob = shouldQueueResume
     ? await createShopifyAutonomyResumeJob({
+      authorizationVersion: job.authorizationVersion,
       payload: {
         connectionWatchAttempt: 0,
         connectionWatchIntervalMinutes: input.connectionWatchIntervalMinutes,

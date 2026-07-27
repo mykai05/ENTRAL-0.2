@@ -1,9 +1,19 @@
 "use client";
 
-import type { EntitySummary } from "@entral/contracts";
+import type { EntitySummary, GraphPreferenceSettings } from "@entral/contracts";
 import { Hand, Maximize2, Minimize2, PauseCircle, PlayCircle } from "lucide-react";
 import dynamic from "next/dynamic";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  CanonicalGraphEmptyState,
+  CanonicalGraphErrorBoundary
+} from "./CanonicalGraphErrorBoundary";
+import type {
+  CanonicalRendererFrameDiagnostics,
+  CanonicalWebGlRendererEvent
+} from "../lib/canonical-universe";
+import type { GraphLayout3DResult } from "../lib/graph-layouts";
+import { CanonicalGraphSemanticsOverlay } from "./CanonicalGraphSemanticsOverlay";
 
 const OriginalUniverseRenderer = dynamic(
   () => import("./NeuronsCommandCenter").then((module) => module.NeuronsCommandCenter),
@@ -17,47 +27,98 @@ const OriginalUniverseRenderer = dynamic(
   }
 );
 
+function graphDetailAttribute(value: EntitySummary["latest_material_result"]) {
+  if (value === null) return undefined;
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
 export function CanonicalUniverse3DGraph({
   entities,
   eventSequence,
+  focusedEntityId,
   fullscreenActive = false,
   inspectorCollapsed,
+  layout,
   movementPaused,
   motionLocked = false,
   onOpenFullRecord,
   onFullscreenToggle,
   onInspectorCollapsedChange,
   onMovementToggle,
+  onFrameDiagnostics,
   onSelectedEntityChange,
-  selectedEntityId
+  onWebGlStateChange,
+  selectedEntityId,
+  settings,
+  onRendererFailure,
+  viewFitSignal = 0,
+  viewFocusSignal = 0
 }: {
   entities: readonly EntitySummary[];
   eventSequence: number;
+  focusedEntityId: string | null;
   fullscreenActive?: boolean;
   inspectorCollapsed: boolean;
+  layout: GraphLayout3DResult;
   movementPaused: boolean;
   motionLocked?: boolean;
   onOpenFullRecord: (entityId: string) => void;
   onFullscreenToggle?: (trigger: HTMLButtonElement) => void;
   onInspectorCollapsedChange: (collapsed: boolean) => void;
   onMovementToggle?: () => void;
+  onFrameDiagnostics?: (diagnostics: CanonicalRendererFrameDiagnostics) => void;
+  onRendererFailure?: (diagnosticClass: string) => void;
   onSelectedEntityChange: (entityId: string | null) => void;
+  onWebGlStateChange?: (event: CanonicalWebGlRendererEvent) => void;
   selectedEntityId: string | null;
+  settings: GraphPreferenceSettings;
+  viewFitSignal?: number;
+  viewFocusSignal?: number;
 }) {
   const [touchInteractionActive, setTouchInteractionActive] = useState(false);
+  const selectedEntity = useMemo(
+    () => selectedEntityId
+      ? entities.find((entity) => entity.entity_id === selectedEntityId) ?? null
+      : null,
+    [entities, selectedEntityId]
+  );
 
   useEffect(() => {
     if (!fullscreenActive) setTouchInteractionActive(false);
   }, [fullscreenActive]);
+
+  const handleWebGlStateChange = useCallback((event: CanonicalWebGlRendererEvent) => {
+    onWebGlStateChange?.(event);
+  }, [onWebGlStateChange]);
 
   return (
     <section
       aria-labelledby="universe-3d-heading"
       className="phase180-graph phase180-graph-3d"
       data-canonical-entity-count={entities.length}
+      data-canonical-edge-count={layout.edges.length}
+      data-canonical-edge-ids={layout.edges.map((edge) => edge.edgeId).join(",")}
       data-canonical-event-sequence={eventSequence}
+      data-canonical-entity-ids={layout.points.map((point) => point.entityId).join(",")}
+      data-canonical-detail-surface="3d"
+      data-canonical-selected-active-alert={
+        selectedEntity?.active_alert ?? undefined
+      }
+      data-canonical-selected-active-task-count={
+        selectedEntity?.active_task_count
+      }
+      data-canonical-selected-child-count={selectedEntity?.child_count}
+      data-canonical-selected-current-mission={
+        selectedEntity?.current_mission ?? undefined
+      }
+      data-canonical-selected-entity-id={selectedEntity?.entity_id}
+      data-canonical-selected-latest-material-result={
+        graphDetailAttribute(selectedEntity?.latest_material_result ?? null)
+      }
       data-graph-dimension="3d"
       data-graph-motion={movementPaused ? "paused" : "running"}
+      data-graph-pattern={layout.pattern}
+      data-graph-snapshot-strategy="preserved-drawing-buffer"
     >
       <header className="phase180-surface-heading">
         <div>
@@ -106,23 +167,48 @@ export function CanonicalUniverse3DGraph({
         </div>
       </header>
       <div className="phase180-graph-3d-stage">
-        <OriginalUniverseRenderer
-          canonicalEntities={entities}
-          canonicalEventSequence={eventSequence}
-          canonicalFullscreenActive={fullscreenActive}
-          canonicalInspectorCollapsed={inspectorCollapsed}
-          canonicalMotionPaused={movementPaused}
-          canonicalSelectedEntityId={selectedEntityId}
-          canonicalTouchInteractionActive={fullscreenActive || touchInteractionActive}
-          embeddedGraphOnly
-          initialDestination="graph"
-          onCanonicalInspectorCollapsedChange={onInspectorCollapsedChange}
-          onCanonicalOpenFullRecord={onOpenFullRecord}
-          onCanonicalSelectedEntityChange={onSelectedEntityChange}
-          onLogout={() => undefined}
-          surface="member"
-          user={null}
-        />
+        {entities.length === 0 ? (
+          <CanonicalGraphEmptyState label="3D Graph" />
+        ) : (
+          <CanonicalGraphErrorBoundary
+            entities={entities}
+            label="3D Graph"
+            onFailure={onRendererFailure}
+          >
+            <OriginalUniverseRenderer
+              canonicalEntities={entities}
+              canonicalEventSequence={eventSequence}
+              canonicalFocusedEntityId={focusedEntityId}
+              canonicalFullscreenActive={fullscreenActive}
+              canonicalInspectorCollapsed={inspectorCollapsed}
+              canonicalLayout3D={layout}
+              canonicalMotionPaused={movementPaused}
+              canonicalGraphSettings={settings}
+              canonicalSelectedEntityId={selectedEntityId}
+              canonicalTouchInteractionActive={fullscreenActive || touchInteractionActive}
+              canonicalViewFitSignal={viewFitSignal}
+              canonicalViewFocusSignal={viewFocusSignal}
+              embeddedGraphOnly
+              initialDestination="graph"
+              onCanonicalInspectorCollapsedChange={onInspectorCollapsedChange}
+              onCanonicalFrameDiagnostics={onFrameDiagnostics}
+              onCanonicalOpenFullRecord={onOpenFullRecord}
+              onCanonicalSelectedEntityChange={onSelectedEntityChange}
+              onCanonicalWebGlStateChange={handleWebGlStateChange}
+              onLogout={() => undefined}
+              surface="member"
+              user={null}
+            />
+          </CanonicalGraphErrorBoundary>
+        )}
+        {entities.length > 0 ? (
+          <CanonicalGraphSemanticsOverlay
+            dimension="3D"
+            entities={entities}
+            legendVisible={settings.advanced_shared.legend_visible}
+            pattern={layout.pattern}
+          />
+        ) : null}
       </div>
     </section>
   );

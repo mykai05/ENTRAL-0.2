@@ -83,7 +83,7 @@ const envSchema = z.object({
   SHOPIFY_DEV_DASHBOARD_STORAGE_STATE_PATH: optionalTrimmedString,
   INTEGRATION_REGISTRY_JSON: optionalTrimmedString,
   AI_FEATURE_ENABLED: booleanFromEnv.default(true),
-  AI_LOCAL_FALLBACK: booleanFromEnv.default(true),
+  AI_LOCAL_FALLBACK: booleanFromEnv.default(false),
   AI_DAILY_COST_LIMIT_CENTS: z.coerce.number().int().min(0).default(250),
   AI_MONTHLY_COST_LIMIT_CENTS: z.coerce.number().int().min(0).default(2500),
   AI_DECISION_ESTIMATED_COST_CENTS: z.coerce.number().int().min(0).default(1),
@@ -93,7 +93,7 @@ const envSchema = z.object({
   AUTOMATION_FEATURE_ENABLED: booleanFromEnv.default(true),
   AUTOMATION_WORKER_ENABLED: booleanFromEnv.default(true),
   AUTOMATION_ALLOWED_DOMAINS: z.string().default("example.com"),
-  AUTOMATION_LOCAL_FALLBACK: booleanFromEnv.default(true),
+  AUTOMATION_LOCAL_FALLBACK: booleanFromEnv.default(false),
   AUTOMATION_MAX_CONCURRENCY: z.coerce.number().int().min(1).max(5).default(2),
   PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: z.string().trim().optional(),
   AGENT_ORCHESTRATOR_ENABLED: booleanFromEnv.default(true),
@@ -131,6 +131,55 @@ const envSchema = z.object({
         code: z.ZodIssueCode.custom,
         path: ["AUTH_EMAIL_FROM"],
         message: "AUTH_EMAIL_FROM is required when AUTH_EMAIL_PROVIDER is resend."
+      });
+    }
+  }
+
+  if (value.NODE_ENV === "production" && value.AI_LOCAL_FALLBACK) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["AI_LOCAL_FALLBACK"],
+      message: "AI_LOCAL_FALLBACK cannot be enabled in production."
+    });
+  }
+
+  if (value.NODE_ENV === "production" && value.AUTOMATION_LOCAL_FALLBACK) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["AUTOMATION_LOCAL_FALLBACK"],
+      message: "AUTOMATION_LOCAL_FALLBACK cannot be enabled in production."
+    });
+  }
+
+  if (value.NODE_ENV === "production" && isWorkerProcess) {
+    for (const component of [
+      "AUTOMATION_WORKER_ENABLED",
+      "AGENT_ORCHESTRATOR_ENABLED",
+      "AUTONOMY_SCHEDULER_ENABLED",
+      "CANONICAL_OUTBOX_DISPATCHER_ENABLED"
+    ] as const) {
+      if (!value[component]) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [component],
+          message: `Production worker requires ${component}=true.`
+        });
+      }
+    }
+
+    if (!value.REDIS_URL) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["REDIS_URL"],
+        message: "Production worker requires REDIS_URL."
+      });
+    }
+
+    if (!value.CANONICAL_OUTBOX_SERVICE_APP_USER_ID) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["CANONICAL_OUTBOX_SERVICE_APP_USER_ID"],
+        message: "Production worker requires CANONICAL_OUTBOX_SERVICE_APP_USER_ID."
       });
     }
   }

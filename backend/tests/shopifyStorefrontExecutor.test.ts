@@ -111,6 +111,15 @@ function engineProduct(input: Partial<RevenueEngineProductSnapshot> & { id: stri
 beforeEach(resetEnv);
 
 describe("Shopify Storefront Draft Executor", () => {
+  it("normalizes only exact single-label myshopify.com domains", async () => {
+    const { normalizeShopDomain } = await import("../src/services/shopifyStorefrontExecutor.js");
+
+    expect(normalizeShopDomain("https://iron-house.myshopify.com/admin")).toBe("iron-house.myshopify.com");
+    expect(normalizeShopDomain("nested.iron-house.myshopify.com")).toBeNull();
+    expect(normalizeShopDomain("iron-house.myshopify.com.attacker.example")).toBeNull();
+    expect(normalizeShopDomain("myshopify.com")).toBeNull();
+  });
+
   it("builds a dry-run plan without contacting Shopify", async () => {
     const { buildShopifyStorefrontDraftPlan } = await import("../src/services/shopifyStorefrontExecutor.js");
     const plan = buildShopifyStorefrontDraftPlan({

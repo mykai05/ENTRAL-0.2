@@ -1,10 +1,5 @@
-import React, { Suspense } from "react";
-import { DashboardClient } from "../../components/DashboardClient";
+import { redirect } from "next/navigation";
 
 export default function GraphPage() {
-  return (
-    <Suspense fallback={<main className="command-center-page command-center-loading" role="status">Loading Universe Graph...</main>}>
-      <DashboardClient initialDestination="graph" />
-    </Suspense>
-  );
+  redirect("/member/graph");
 }

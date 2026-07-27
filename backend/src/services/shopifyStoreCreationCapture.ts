@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import type { ShopifyStoreCreationCaptureInput } from "../schemas.js";
 import { recordAuditLog } from "./audit.js";
 import { createShopifyAutonomyResumeJob } from "./shopifyAutonomyJobs.js";
 import { buildShopifyOAuthStart, normalizeShopifyOAuthShopDomain } from "./shopifyOAuth.js";
 import { attachShopifyOAuthContinuationAudit, createShopifyOAuthContinuation } from "./shopifyOAuthContinuations.js";
+import { assertDurableAuthorization } from "./durableAuthorization.js";
 
 export class ShopifyStoreCreationCaptureError extends Error {
   statusCode: number;
@@ -26,11 +28,14 @@ export type ShopifyStoreCreationCaptureResult = Awaited<ReturnType<typeof captur
 
 export async function captureShopifyStoreCreationForStore(input: {
   approvalPacketId?: string | null;
+  authorizationVersion: number;
+  operationKey?: string;
   reviewStatus?: "approved" | "rejected" | null;
   store: ShopifyStoreCreationCaptureStore;
   userId: string;
   value: ShopifyStoreCreationCaptureInput;
 }) {
+  await assertDurableAuthorization(input);
   if (input.store.storePlatform !== "SHOPIFY") {
     throw new ShopifyStoreCreationCaptureError(400, "Shopify store creation capture can only be recorded for Shopify merch stores.");
   }
@@ -62,11 +67,16 @@ export async function captureShopifyStoreCreationForStore(input: {
   if (input.value.startOAuth) {
     try {
       oauthStart = buildShopifyOAuthStart({
+        authorizationVersion: input.authorizationVersion,
         returnTo: input.value.returnTo,
         scopes: input.value.scopes,
         shopDomain,
         storeId: input.store.id,
         userId: input.userId
+      }, {
+        nonce: input.operationKey
+          ? createHash("sha256").update(input.operationKey).digest("base64url").slice(0, 32)
+          : undefined
       });
     } catch (error) {
       throw new ShopifyStoreCreationCaptureError(400, error instanceof Error ? error.message : "Shopify OAuth start failed.");
@@ -83,6 +93,7 @@ export async function captureShopifyStoreCreationForStore(input: {
   const ownerEmail = input.value.ownerEmail ?? input.store.email;
   const continuation = oauthStart && input.value.continueAfterApproval
     ? await createShopifyOAuthContinuation({
+      authorizationVersion: input.authorizationVersion,
       expiresAt: new Date(oauthStart.stateExpiresAt),
       payload: {
         connectorApproval: input.value.connectorApproval,
@@ -106,6 +117,7 @@ export async function captureShopifyStoreCreationForStore(input: {
     : null;
   const resumeJob = input.value.queueAutonomyResume
     ? await createShopifyAutonomyResumeJob({
+      authorizationVersion: input.authorizationVersion,
       payload: {
         connectionWatchAttempt: 0,
         connectionWatchIntervalMinutes: input.value.connectionWatchIntervalMinutes,
@@ -125,6 +137,7 @@ export async function captureShopifyStoreCreationForStore(input: {
         storeType: input.value.storeType,
         watchForConnection: true
       },
+      sourceOperationKey: input.operationKey ? `${input.operationKey}:resume` : undefined,
       userId: input.userId
     })
     : null;

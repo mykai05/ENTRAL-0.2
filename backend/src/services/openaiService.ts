@@ -30,6 +30,7 @@ export type AiBrainDecision = {
   errors: string[];
   plan: AiActionPlan;
   provider: AiProviderState;
+  providerRequestId?: string;
   source: "deterministic" | "provider";
 };
 
@@ -165,6 +166,7 @@ export async function createProviderBackedAiDecision(message: string): Promise<A
 
   try {
     const response = await openAiProvider.request({
+      maxOutputTokens: 800,
       responseFormat: "json_object",
       temperature: 0,
       messages: [
@@ -190,6 +192,7 @@ export async function createProviderBackedAiDecision(message: string): Promise<A
         errors: ["Provider returned invalid JSON. Deterministic classification used."],
         plan: fallbackPlan,
         provider: { ...provider, modelName: response.model, providerName: response.providerName },
+        providerRequestId: response.requestId,
         source: "deterministic"
       };
     }
@@ -203,6 +206,7 @@ export async function createProviderBackedAiDecision(message: string): Promise<A
       errors: [],
       plan,
       provider: { ...provider, modelName: response.model, providerName: response.providerName },
+      providerRequestId: response.requestId,
       source: "provider"
     };
   } catch (error) {
@@ -252,6 +256,7 @@ export class OpenAiChatService implements AiService {
 
     try {
       const response = await openAiProvider.request({
+        maxOutputTokens: 1_200,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "system", content: aiBrainContext },
@@ -346,6 +351,7 @@ export class OpenAiChatService implements AiService {
 
     try {
       const response = await openAiProvider.request({
+        maxOutputTokens: 1_200,
         messages: chatMessages,
         temperature: 0.2
       });

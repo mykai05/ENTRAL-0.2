@@ -12,10 +12,13 @@ import { openAiChatService, createProviderBackedAiDecision, type AiReply, type A
 import { createAiAuditEntry, type AiActionPlan } from "../services/aiBrain.js";
 import { recordAuditLog } from "../services/audit.js";
 import {
+  AiUsageIdempotencyError,
   AiUsageLimitError,
-  assertAiUsageAllowed,
+  failAiUsageReservation,
   getAiUsageSummary,
-  recordAiUsageEvent,
+  reserveAiUsage,
+  resolveAiUsageRequestId,
+  settleAiUsageReservation,
   type AiUsageRequestKind
 } from "../services/aiUsage.js";
 import {
@@ -47,6 +50,13 @@ function sendAiUsageLimit(reply: FastifyReply, error: AiUsageLimitError) {
     message: error.message,
     mode: "real",
     summary: error.summary
+  });
+}
+
+function sendAiIdempotencyConflict(reply: FastifyReply, error: AiUsageIdempotencyError) {
+  return reply.code(error.statusCode).send({
+    error: "Idempotency Conflict",
+    message: error.message
   });
 }
 
@@ -227,20 +237,38 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
     const requestKind: AiUsageRequestKind = isDevelopmentWriteActionRequest(input.message)
       ? "development_write_refusal"
       : isDevelopmentStatusRequest(input.message) ? "development_status" : "chat";
-    let usagePreflight: Awaited<ReturnType<typeof assertAiUsageAllowed>>;
+    let usageRequestId: string;
+    let usageReservation: Awaited<ReturnType<typeof reserveAiUsage>>;
 
     try {
-      usagePreflight = await assertAiUsageAllowed(currentUser.sub, requestKind);
+      usageRequestId = resolveAiUsageRequestId(
+        request.id,
+        request.headers["idempotency-key"] ?? request.headers["x-idempotency-key"]
+      );
+      usageReservation = await reserveAiUsage({
+        metadata: { route: "/ai/chat" },
+        requestId: usageRequestId,
+        requestKind,
+        userId: currentUser.sub
+      });
     } catch (error) {
       if (error instanceof AiUsageLimitError) {
         return sendAiUsageLimit(reply, error);
+      }
+      if (error instanceof AiUsageIdempotencyError) {
+        return sendAiIdempotencyConflict(reply, error);
       }
 
       throw error;
     }
 
+    let completedProviderRequestId: string | undefined;
+    let providerCallSucceeded = false;
+    try {
     const startedAt = performance.now();
     const brainDecision = await createProviderBackedAiDecision(input.message);
+    completedProviderRequestId = brainDecision.providerRequestId;
+    providerCallSucceeded = brainDecision.source === "provider" || Boolean(completedProviderRequestId);
     const brainPlan = brainDecision.plan;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -320,6 +348,8 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       await prisma.message.delete({ where: { id: result.userMessage.id } }).catch(() => undefined);
       throw error;
     }
+    completedProviderRequestId = aiReply.requestId ?? completedProviderRequestId;
+    providerCallSucceeded ||= !aiReply.usedLocalFallback && Boolean(aiReply.requestId);
 
     const assistantMessage = await prisma.message.create({
       data: {
@@ -333,22 +363,26 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       where: { id: result.conversation.id },
       data: { updatedAt: new Date() }
     });
-    const usageEvent = await recordAiUsageEvent({
-      estimatedCostCents: usagePreflight.estimatedCostCents,
+    const usageEvent = await settleAiUsageReservation({
       metadata: {
         authorizationRequired: brainPlan.authorizationRequired,
         intent: brainPlan.intent,
         riskLevel: brainPlan.riskLevel,
         source: brainDecision.source,
+        decisionProviderRequestId: brainDecision.providerRequestId,
         toolsRequired: brainPlan.toolsRequired
       },
       modelName: aiReply.model,
       providerName: aiReply.providerName,
-      requestId: request.id,
-      requestKind,
+      providerRequestId: completedProviderRequestId,
+      requestId: usageRequestId,
+      reservationId: usageReservation.id,
       usedLocalFallback: aiReply.usedLocalFallback,
       userId: currentUser.sub
     });
+    if (!usageEvent) {
+      throw new Error("AI usage reservation settlement did not return an event.");
+    }
 
     const brainAuditEntry = createAiAuditEntry({
       errors: brainDecision.errors,
@@ -427,6 +461,19 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         summary: await getAiUsageSummary(currentUser.sub)
       }
     });
+    } catch (error) {
+      await failAiUsageReservation({
+        error,
+        providerCallSucceeded,
+        providerRequestId: completedProviderRequestId,
+        requestId: usageRequestId,
+        reservationId: usageReservation.id,
+        userId: currentUser.sub
+      }).catch((reservationError) => {
+        request.log.error({ err: reservationError, usageReservationId: usageReservation.id }, "AI usage reservation failure write failed");
+      });
+      throw error;
+    }
   });
 
   app.post("/ai/screen", {
@@ -449,20 +496,38 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
     }
 
     const input = screenInsightSchema.parse(request.body);
-    let usagePreflight: Awaited<ReturnType<typeof assertAiUsageAllowed>>;
+    let usageRequestId: string;
+    let usageReservation: Awaited<ReturnType<typeof reserveAiUsage>>;
 
     try {
-      usagePreflight = await assertAiUsageAllowed(currentUser.sub, "screen");
+      usageRequestId = resolveAiUsageRequestId(
+        request.id,
+        request.headers["idempotency-key"] ?? request.headers["x-idempotency-key"]
+      );
+      usageReservation = await reserveAiUsage({
+        metadata: { route: "/ai/screen" },
+        requestId: usageRequestId,
+        requestKind: "screen",
+        userId: currentUser.sub
+      });
     } catch (error) {
       if (error instanceof AiUsageLimitError) {
         return sendAiUsageLimit(reply, error);
+      }
+      if (error instanceof AiUsageIdempotencyError) {
+        return sendAiIdempotencyConflict(reply, error);
       }
 
       throw error;
     }
 
+    let completedProviderRequestId: string | undefined;
+    let providerCallSucceeded = false;
+    try {
     const startedAt = performance.now();
     const brainDecision = await createProviderBackedAiDecision(input.message);
+    completedProviderRequestId = brainDecision.providerRequestId;
+    providerCallSucceeded = brainDecision.source === "provider" || Boolean(completedProviderRequestId);
     const brainPlan = brainDecision.plan;
 
     const result = await prisma.$transaction(async (tx) => {
@@ -516,6 +581,8 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       await prisma.message.delete({ where: { id: result.userMessage.id } }).catch(() => undefined);
       throw error;
     }
+    completedProviderRequestId = aiReply.requestId ?? completedProviderRequestId;
+    providerCallSucceeded ||= !aiReply.usedLocalFallback && Boolean(aiReply.requestId);
 
     const assistantMessage = await prisma.message.create({
       data: {
@@ -529,22 +596,26 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
       where: { id: result.conversation.id },
       data: { updatedAt: new Date() }
     });
-    const usageEvent = await recordAiUsageEvent({
-      estimatedCostCents: usagePreflight.estimatedCostCents,
+    const usageEvent = await settleAiUsageReservation({
       metadata: {
         authorizationRequired: brainPlan.authorizationRequired,
         intent: brainPlan.intent,
         riskLevel: brainPlan.riskLevel,
         source: brainDecision.source,
+        decisionProviderRequestId: brainDecision.providerRequestId,
         toolsRequired: brainPlan.toolsRequired
       },
       modelName: aiReply.model,
       providerName: aiReply.providerName,
-      requestId: request.id,
-      requestKind: "screen",
+      providerRequestId: completedProviderRequestId,
+      requestId: usageRequestId,
+      reservationId: usageReservation.id,
       usedLocalFallback: aiReply.usedLocalFallback,
       userId: currentUser.sub
     });
+    if (!usageEvent) {
+      throw new Error("AI usage reservation settlement did not return an event.");
+    }
 
     const brainAuditEntry = createAiAuditEntry({
       errors: brainDecision.errors,
@@ -618,5 +689,18 @@ export async function aiRoutes(app: FastifyInstance, options: AiRoutesOptions = 
         summary: await getAiUsageSummary(currentUser.sub)
       }
     });
+    } catch (error) {
+      await failAiUsageReservation({
+        error,
+        providerCallSucceeded,
+        providerRequestId: completedProviderRequestId,
+        requestId: usageRequestId,
+        reservationId: usageReservation.id,
+        userId: currentUser.sub
+      }).catch((reservationError) => {
+        request.log.error({ err: reservationError, usageReservationId: usageReservation.id }, "AI usage reservation failure write failed");
+      });
+      throw error;
+    }
   });
 }

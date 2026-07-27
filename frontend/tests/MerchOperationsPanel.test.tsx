@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent, { PointerEventsCheckLevel } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MerchOperationsPanel } from "../components/MerchOperationsPanel";
@@ -11683,6 +11683,10 @@ describe("MerchOperationsPanel", () => {
   });
 
   it("runs the Revenue Engine and applies internal rotation only after preview", async () => {
+    const user = userEvent.setup({
+      pointerEventsCheck: PointerEventsCheckLevel.Never,
+      skipHover: true
+    });
     const onRefreshStores = vi.fn();
     const manualLaunchEvidenceNote = "Supplier setup evidence.";
     const manualLaunchEvidenceOverrides = {
@@ -11717,7 +11721,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("Revenue Engine")).toBeInTheDocument();
     expect(screen.getByText("Internal Portfolio Mode")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /load dashboard/i }));
+    await user.click(screen.getByRole("button", { name: /load dashboard/i }));
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/dashboard");
     expect(await screen.findByText("Revenue Engine Portfolio Dashboard")).toBeInTheDocument();
@@ -11780,7 +11784,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText(/Audit audit-first-store-signal \/ hash hash-first-s/)).toBeInTheDocument();
 
     const ownerLaunchApprovalRegion = screen.getByLabelText("Owner manual launch approval packet");
-    await userEvent.click(within(ownerLaunchApprovalRegion).getByRole("button", { name: /preview approval receipt/i }));
+    await user.click(within(ownerLaunchApprovalRegion).getByRole("button", { name: /preview approval receipt/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/owner-launch-approval/apply", {
       json: {
@@ -11794,7 +11798,7 @@ describe("MerchOperationsPanel", () => {
     });
     expect(await screen.findByText("Owner manual live launch approval receipt previewed for Iron House Gym. External execution remains locked.")).toBeInTheDocument();
 
-    await userEvent.click(within(ownerLaunchApprovalRegion).getByRole("button", { name: /record approval receipt/i }));
+    await user.click(within(ownerLaunchApprovalRegion).getByRole("button", { name: /record approval receipt/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/owner-launch-approval/apply", {
       json: {
@@ -11812,12 +11816,14 @@ describe("MerchOperationsPanel", () => {
     const manualLaunchEvidenceFields = screen.getByLabelText("First-store manual launch evidence fields");
     const evidenceCategorySelect = within(manualLaunchEvidenceFields).getByLabelText(/evidence category/i);
     expect(within(manualLaunchEvidenceFields).queryByRole("option", { name: "ads" })).not.toBeInTheDocument();
-    await userEvent.selectOptions(evidenceCategorySelect, "pod_supplier");
+    await user.selectOptions(evidenceCategorySelect, "pod_supplier");
     const manualStepInput = within(manualLaunchEvidenceFields).getByLabelText(/manual step/i);
-    await userEvent.clear(manualStepInput);
-    await userEvent.type(manualStepInput, "2");
-    await userEvent.type(within(manualLaunchEvidenceFields).getByLabelText(/evidence note/i), manualLaunchEvidenceNote);
-    await userEvent.click(within(manualLaunchEvidenceRegion).getByRole("button", { name: /preview launch evidence/i }));
+    await user.clear(manualStepInput);
+    await user.type(manualStepInput, "2");
+    fireEvent.change(within(manualLaunchEvidenceFields).getByLabelText(/evidence note/i), {
+      target: { value: manualLaunchEvidenceNote }
+    });
+    await user.click(within(manualLaunchEvidenceRegion).getByRole("button", { name: /preview launch evidence/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/manual-launch-evidence/apply", {
       json: {
@@ -11834,7 +11840,7 @@ describe("MerchOperationsPanel", () => {
     });
     expect(await screen.findByText("First-store manual launch evidence previewed for Iron House Gym: pod supplier step 2. External execution remains locked.")).toBeInTheDocument();
 
-    await userEvent.click(within(manualLaunchEvidenceRegion).getByRole("button", { name: /record launch evidence/i }));
+    await user.click(within(manualLaunchEvidenceRegion).getByRole("button", { name: /record launch evidence/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/manual-launch-evidence/apply", {
       json: {
@@ -11860,7 +11866,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText(/manualGrossRevenue/)).toBeInTheDocument();
 
     const firstWeekLoopRegion = screen.getByLabelText("First week manual revenue loop");
-    await userEvent.click(within(firstWeekLoopRegion).getByRole("button", { name: /preview first-store signals/i }));
+    await user.click(within(firstWeekLoopRegion).getByRole("button", { name: /preview first-store signals/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/manual-signal-snapshot/apply", {
       json: {
@@ -11883,7 +11889,7 @@ describe("MerchOperationsPanel", () => {
     });
     expect(await screen.findByText("First-store manual signal snapshot previewed for Iron House Gym: 0 units, 0 gross revenue, 0 net profit.")).toBeInTheDocument();
 
-    await userEvent.click(within(firstWeekLoopRegion).getByRole("button", { name: /record first-store signals/i }));
+    await user.click(within(firstWeekLoopRegion).getByRole("button", { name: /record first-store signals/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/manual-signal-snapshot/apply", {
       json: {
@@ -11923,7 +11929,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getAllByText(/APPROVE INTERNAL WINNER CLONE PACKET/).length).toBeGreaterThanOrEqual(1);
 
     const tenStoreClonePacketRegion = screen.getByLabelText("10-store winner clone packet controls");
-    await userEvent.click(within(tenStoreClonePacketRegion).getByRole("button", { name: /preview clone packet/i }));
+    await user.click(within(tenStoreClonePacketRegion).getByRole("button", { name: /preview clone packet/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/winner-clone-packet-approval/apply", {
       json: {
@@ -11938,7 +11944,7 @@ describe("MerchOperationsPanel", () => {
     });
     expect(await screen.findByText("10-store internal winner clone packet previewed for Iron House Gym with 9 private draft slots. External execution remains locked.")).toBeInTheDocument();
 
-    await userEvent.click(within(tenStoreClonePacketRegion).getByRole("button", { name: /record clone approval/i }));
+    await user.click(within(tenStoreClonePacketRegion).getByRole("button", { name: /record clone approval/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/first-store-cash-loop/winner-clone-packet-approval/apply", {
       json: {
@@ -11973,7 +11979,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("Archive internally / Iron House Gym")).toBeInTheDocument();
 
     const dashboardNextMoves = screen.getByLabelText("Revenue portfolio dashboard next actions");
-    await userEvent.click(within(dashboardNextMoves).getByRole("button", { name: /preview kill for weak tee/i }));
+    await user.click(within(dashboardNextMoves).getByRole("button", { name: /preview kill for weak tee/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio/action", {
       json: {
@@ -11991,7 +11997,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("kill is matches scoring, internal status change, product status change, high review risk.")).toBeInTheDocument();
     expect(screen.getByText("product status change / review required")).toBeInTheDocument();
 
-    await userEvent.click(within(dashboardNextMoves).getByRole("button", { name: /record kill for weak tee/i }));
+    await user.click(within(dashboardNextMoves).getByRole("button", { name: /record kill for weak tee/i }));
 
     expect(apiFetch).toHaveBeenCalledWith("/merch/revenue-engine/portfolio/action", {
       json: {
@@ -12006,7 +12012,7 @@ describe("MerchOperationsPanel", () => {
     expect(await screen.findByText(/kill recorded for Weak Tee/i)).toBeInTheDocument();
     await waitFor(() => expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/dashboard"));
 
-    await userEvent.click(screen.getByRole("button", { name: /run engine/i }));
+    await user.click(screen.getByRole("button", { name: /run engine/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio");
     expect(await screen.findByText("Revenue Engine Asset Portfolio")).toBeInTheDocument();
@@ -12025,10 +12031,10 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("2/3")).toBeInTheDocument();
     expect(screen.getAllByText("Rotation").length).toBeGreaterThan(0);
 
-    await userEvent.click(screen.getByRole("button", { name: /select command-ready/i }));
+    await user.click(screen.getByRole("button", { name: /select command-ready/i }));
     expect(screen.getByText("4 selected")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview selected/i }));
+    await user.click(screen.getByRole("button", { name: /preview selected/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio/actions", {
       json: {
@@ -12050,7 +12056,7 @@ describe("MerchOperationsPanel", () => {
     expect(screen.getByText("2 internal status changes / 2 audit-only / review required")).toBeInTheDocument();
     expect(screen.getByText("1 product changes / 1 store changes / 0 skipped")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /apply selected/i }));
+    await user.click(screen.getByRole("button", { name: /apply selected/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio/actions", {
       json: {
@@ -12067,7 +12073,7 @@ describe("MerchOperationsPanel", () => {
 
     const weakRow = screen.getByRole("row", { name: /Weak Tee/i });
     expect(within(weakRow).getAllByRole("button")).toHaveLength(5);
-    await userEvent.click(within(weakRow).getByRole("button", { name: /^kill$/i }));
+    await user.click(within(weakRow).getByRole("button", { name: /^kill$/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/portfolio/action", {
       json: {
@@ -12082,12 +12088,12 @@ describe("MerchOperationsPanel", () => {
     expect(await screen.findByText(/kill recorded for Weak Tee/i)).toBeInTheDocument();
 
     const weakRowAfterAction = screen.getByRole("row", { name: /Weak Tee/i });
-    await userEvent.click(within(weakRowAfterAction).getByRole("button", { name: /history/i }));
+    await user.click(within(weakRowAfterAction).getByRole("button", { name: /history/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/asset-controls?assetId=product-2&assetType=product&limit=25&storeId=store-1");
     expect(await screen.findByText("Revenue Engine Asset Control Ledger")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /preview rotation/i }));
+    await user.click(screen.getByRole("button", { name: /preview rotation/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/rotation/apply", {
       json: {
@@ -12098,7 +12104,7 @@ describe("MerchOperationsPanel", () => {
     });
     expect(await screen.findByText("Dry run ready: 2 internal rotation changes identified.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /apply internal rotation/i }));
+    await user.click(screen.getByRole("button", { name: /apply internal rotation/i }));
 
     expect(apiFetch).toHaveBeenLastCalledWith("/merch/revenue-engine/rotation/apply", {
       json: {

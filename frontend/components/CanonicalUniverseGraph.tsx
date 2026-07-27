@@ -1,6 +1,10 @@
 "use client";
 
-import type { EntitySummary } from "@entral/contracts";
+import {
+  canonicalGraphPreferenceSettings,
+  type EntitySummary,
+  type GraphPreferenceSettings
+} from "@entral/contracts";
 import {
   ArrowUp,
   Focus,
@@ -18,21 +22,88 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  canonicalGraphMotionProgress,
   canonicalLineageAndSubtree,
   fitUniverseCamera,
-  layoutCanonicalUniverse,
   MAX_UNIVERSE_ZOOM,
   MIN_UNIVERSE_ZOOM,
   nextUniverseEntityId,
-  semanticUniverseIds
+  semanticUniverseIds,
+  type CanonicalRendererFrameDiagnostics
 } from "../lib/canonical-universe";
+import {
+  GRAPH_AUTHORITY_ROLES,
+  stableGraphHash
+} from "../lib/graph-authority";
+import {
+  layoutGraph2D,
+  type GraphLayout2DResult
+} from "../lib/graph-layouts";
+import { buildRendererGraphProjection } from "../lib/graph-projection";
+import { effectiveGraphRendererSettings } from "../lib/graph-renderer-performance";
+import { CanonicalGraphSemanticsOverlay } from "./CanonicalGraphSemanticsOverlay";
 
 type Camera = { x: number; y: number; zoom: number };
 type PointerRecord = { x: number; y: number };
+type Canonical2DRenderPoint = {
+  readonly entity: EntitySummary;
+  readonly x: number;
+  readonly y: number;
+};
+type Canonical2DLayoutTransition = {
+  readonly durationMs: number;
+  readonly easing: GraphPreferenceSettings["advanced_shared"]["motion_easing"];
+  readonly fromById: ReadonlyMap<string, PointerRecord>;
+  readonly startedAtMs: number;
+};
 
 const SEARCH_INPUT_ID = "phase180-graph-search";
 const SEARCH_RESULTS_ID = "phase180-graph-search-results";
 const GRAPH_INSTRUCTIONS_ID = "phase180-graph-instructions";
+export const CANONICAL_2D_RENDER_ID_SIGNATURE_SEED =
+  "entral-phase-195-2d-render-frame-v1";
+
+export function canonical2DRenderedIdSignature(entityIds: readonly string[]) {
+  return stableGraphHash(
+    entityIds.join("\u0000"),
+    CANONICAL_2D_RENDER_ID_SIGNATURE_SEED
+  ).toString(16).padStart(8, "0");
+}
+
+export function phase195Canonical2DRenderIds(
+  points: readonly {
+    readonly entity: Pick<EntitySummary, "entity_id">;
+  }[]
+) {
+  return new Set(points.map((point) => point.entity.entity_id));
+}
+
+export function canonical2DFramePosition(
+  point: {
+    readonly entity: Pick<EntitySummary, "entity_id">;
+    readonly x: number;
+    readonly y: number;
+  },
+  visibleIds: ReadonlySet<string>,
+  camera: Readonly<Camera>,
+  viewportWidth: number,
+  viewportHeight: number
+): PointerRecord | null {
+  if (!visibleIds.has(point.entity.entity_id)) return null;
+  const position = {
+    x: viewportWidth / 2 + camera.x + point.x * camera.zoom,
+    y: viewportHeight / 2 + camera.y + point.y * camera.zoom
+  };
+  return (
+    position.x < -80 || position.x > viewportWidth + 80
+    || position.y < -40 || position.y > viewportHeight + 40
+  ) ? null : position;
+}
+
+function graphDetailAttribute(value: EntitySummary["latest_material_result"]) {
+  if (value === null) return undefined;
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
 
 function clampZoom(zoom: number) {
   return Math.max(MIN_UNIVERSE_ZOOM, Math.min(MAX_UNIVERSE_ZOOM, zoom));
@@ -58,12 +129,77 @@ function zoomCameraAt(
   };
 }
 
+export function interpolateCanonical2DGraphPoints(
+  targetPoints: readonly Canonical2DRenderPoint[],
+  fromById: ReadonlyMap<string, PointerRecord>,
+  elapsedMs: number,
+  durationMs: number,
+  easing: GraphPreferenceSettings["advanced_shared"]["motion_easing"]
+): readonly Canonical2DRenderPoint[] {
+  const progress = canonicalGraphMotionProgress(
+    elapsedMs,
+    durationMs,
+    easing
+  );
+  return targetPoints.map((point) => {
+    const from = fromById.get(point.entity.entity_id);
+    if (!from || progress >= 1) return point;
+    return {
+      ...point,
+      x: from.x + (point.x - from.x) * progress,
+      y: from.y + (point.y - from.y) * progress
+    };
+  });
+}
+
+export function canonical2DLayoutTransitionEnabled({
+  durationMs,
+  hasPreviousLayout,
+  motionLocked,
+  motionMode,
+  movementPaused,
+  positionsChanged
+}: {
+  readonly durationMs: number;
+  readonly hasPreviousLayout: boolean;
+  readonly motionLocked: boolean;
+  readonly motionMode: GraphPreferenceSettings["simple"]["motion"];
+  readonly movementPaused: boolean;
+  readonly positionsChanged: boolean;
+}) {
+  return (
+    hasPreviousLayout
+    && positionsChanged
+    && durationMs > 0
+    && !movementPaused
+    && !motionLocked
+    && motionMode !== "OFF"
+    && motionMode !== "REDUCED"
+  );
+}
+
 const roleColors = {
   ENTRAL: "#f4f7ff",
   MARSHAL: "#8eb9ff",
   GENERAL: "#55e8d5",
   COMMANDER: "#d6a7ff",
   SOLDIER: "#ffca75"
+} as const;
+
+const healthColors = {
+  HEALTHY: "#57e6a3",
+  WATCH: "#ffd56a",
+  DEGRADED: "#ff8e67",
+  CRITICAL: "#ff5c73",
+  UNKNOWN: "#8795ad"
+} as const;
+
+const statusColors = {
+  ACTIVE: "#57e6a3",
+  BUILDING: "#8eb9ff",
+  PAUSED: "#ffd56a",
+  DEGRADED: "#ff8e67",
+  OTHER: "#8795ad"
 } as const;
 
 function healthColor(entity: EntitySummary) {
@@ -74,31 +210,80 @@ function healthColor(entity: EntitySummary) {
   return roleColors[entity.entity_type];
 }
 
+function statusColor(entity: EntitySummary) {
+  if (entity.status === "ACTIVE") return "#57e6a3";
+  if (entity.status === "BUILDING") return "#8eb9ff";
+  if (entity.status === "PAUSED") return "#ffd56a";
+  if (entity.status === "DEGRADED") return "#ff8e67";
+  return "#8795ad";
+}
+
+function entityColor(
+  entity: EntitySummary,
+  mode: GraphPreferenceSettings["advanced_shared"]["color_mode"]
+) {
+  if (mode === "HEALTH") return healthColor(entity);
+  if (mode === "STATUS") return statusColor(entity);
+  return roleColors[entity.entity_type];
+}
+
 export function CanonicalUniverseGraph({
   entities,
   eventSequence,
+  focusedEntityId = null,
   fullscreenActive = false,
+  layout: suppliedLayout,
   movementPaused,
   motionLocked = false,
   onOpenFullRecord,
   onFullscreenToggle,
+  onFrameDiagnostics,
   onMovementToggle,
   onSelectedEntityChange,
-  selectedEntityId
+  selectedEntityId,
+  settings: suppliedSettings,
+  viewFitSignal = 0,
+  viewFocusSignal = 0
 }: {
   entities: readonly EntitySummary[];
   eventSequence: number;
+  focusedEntityId?: string | null;
   fullscreenActive?: boolean;
+  layout?: GraphLayout2DResult;
   movementPaused: boolean;
   motionLocked?: boolean;
   onOpenFullRecord: (entityId: string) => void;
   onFullscreenToggle?: (trigger: HTMLButtonElement) => void;
+  onFrameDiagnostics?: (diagnostics: CanonicalRendererFrameDiagnostics) => void;
   onMovementToggle?: () => void;
   onSelectedEntityChange: (entityId: string | null) => void;
   selectedEntityId: string | null;
+  settings?: GraphPreferenceSettings;
+  viewFitSignal?: number;
+  viewFocusSignal?: number;
 }) {
+  const requestedSettings = useMemo(
+    () => suppliedSettings ?? canonicalGraphPreferenceSettings(),
+    [suppliedSettings]
+  );
+  const rendererPerformance = useMemo(
+    () => effectiveGraphRendererSettings(requestedSettings, entities.length),
+    [entities.length, requestedSettings]
+  );
+  const settings = rendererPerformance.settings;
+  const fallbackProjection = useMemo(
+    () => suppliedLayout ? null : buildRendererGraphProjection(entities),
+    [entities, suppliedLayout]
+  );
+  const layout = useMemo(
+    () => suppliedLayout ?? layoutGraph2D(fallbackProjection!),
+    [fallbackProjection, suppliedLayout]
+  );
+  const surfaceRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number | null>(null);
+  const lastViewFitSignalRef = useRef(viewFitSignal);
+  const lastViewFocusSignalRef = useRef(viewFocusSignal);
   const initialFitRef = useRef(false);
   const pointersRef = useRef(new Map<number, PointerRecord>());
   const gestureRef = useRef<{ camera: Camera; distance: number; midpoint: PointerRecord } | null>(null);
@@ -112,38 +297,166 @@ export function CanonicalUniverseGraph({
   const [showGrid, setShowGrid] = useState(true);
   const [dimUnrelated, setDimUnrelated] = useState(true);
   const [touchInteractionActive, setTouchInteractionActive] = useState(false);
-  const points = useMemo(() => layoutCanonicalUniverse(entities), [entities]);
+  const [rendererFailure, setRendererFailure] = useState<Error | null>(null);
+  const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<PointerRecord | null>(null);
+  const [keyboardTooltipActive, setKeyboardTooltipActive] = useState(false);
+  const points = useMemo<readonly Canonical2DRenderPoint[]>(() => {
+    const entityById = new Map(entities.map((entity) => [entity.entity_id, entity]));
+    return layout.points.flatMap((point) => {
+      const entity = entityById.get(point.entityId);
+      return entity ? [{ entity, x: point.x, y: point.y }] : [];
+    });
+  }, [entities, layout]);
+  const renderedPointsRef = useRef<readonly Canonical2DRenderPoint[]>(points);
+  const layoutTransitionRef = useRef<Canonical2DLayoutTransition | null>(null);
+  const hadLayoutRef = useRef(points.length > 0);
   const byId = useMemo(() => new Map(entities.map((entity) => [entity.entity_id, entity])), [entities]);
   const pointById = useMemo(() => new Map(points.map((point) => [point.entity.entity_id, point])), [points]);
   const selected = selectedEntityId ? byId.get(selectedEntityId) ?? null : null;
+  const tooltipEntity = hoveredEntityId
+    ? byId.get(hoveredEntityId) ?? null
+    : keyboardTooltipActive
+      ? selected
+      : null;
   const relatedIds = useMemo(
     () => canonicalLineageAndSubtree(entities, selectedEntityId),
     [entities, selectedEntityId]
   );
-  const visibleIds = useMemo(
-    () => semanticUniverseIds(entities, selectedEntityId, camera.zoom),
-    [camera.zoom, entities, selectedEntityId]
+  const canonicalRenderIds = useMemo(
+    () => suppliedLayout
+      ? phase195Canonical2DRenderIds(points)
+      : null,
+    [points, suppliedLayout]
   );
+  const legacyVisibleIds = useMemo(
+    () => canonicalRenderIds
+      ? null
+      : semanticUniverseIds(entities, selectedEntityId, camera.zoom),
+    [camera.zoom, canonicalRenderIds, entities, selectedEntityId]
+  );
+  const visibleIds = canonicalRenderIds ?? legacyVisibleIds!;
+  const activeLevelOfDetail = rendererPerformance.effectiveLevelOfDetail;
+  const maximumLiveLabels = settings.advanced_shared.maximum_live_labels;
+  const legend = useMemo(() => {
+    if (settings.advanced_shared.color_mode === "HEALTH") {
+      return { entries: Object.entries(healthColors), label: "Health legend" };
+    }
+    if (settings.advanced_shared.color_mode === "STATUS") {
+      return { entries: Object.entries(statusColors), label: "Status legend" };
+    }
+    return { entries: Object.entries(roleColors), label: "Entity type legend" };
+  }, [settings.advanced_shared.color_mode]);
+
+  useEffect(() => {
+    setShowLabels(settings.simple.labels !== "OFF");
+    setShowGrid(settings.advanced_shared.grid_visible);
+    setDimUnrelated(settings.simple.connections !== "ALL");
+  }, [
+    settings.advanced_shared.grid_visible,
+    settings.simple.connections,
+    settings.simple.labels
+  ]);
+
+  useEffect(() => {
+    const currentById = new Map(
+      renderedPointsRef.current.map((point) => [
+        point.entity.entity_id,
+        point
+      ])
+    );
+    const positionsChanged = points.some((point) => {
+      const current = currentById.get(point.entity.entity_id);
+      return Boolean(
+        current
+        && (current.x !== point.x || current.y !== point.y)
+      );
+    });
+    const durationMs = Math.max(
+      0,
+      Math.min(5_000, settings.advanced_shared.animation_duration_ms)
+    );
+    const shouldAnimate = canonical2DLayoutTransitionEnabled({
+      durationMs,
+      hasPreviousLayout: hadLayoutRef.current,
+      motionLocked,
+      motionMode: settings.simple.motion,
+      movementPaused,
+      positionsChanged
+    });
+
+    layoutTransitionRef.current = shouldAnimate
+      ? {
+          durationMs,
+          easing: settings.advanced_shared.motion_easing,
+          fromById: new Map(points.map((point) => {
+            const current = currentById.get(point.entity.entity_id);
+            return [
+              point.entity.entity_id,
+              {
+                x: current?.x ?? point.x,
+                y: current?.y ?? point.y
+              }
+            ];
+          })),
+          startedAtMs: performance.now()
+        }
+      : null;
+    renderedPointsRef.current = shouldAnimate
+      ? interpolateCanonical2DGraphPoints(
+          points,
+          layoutTransitionRef.current!.fromById,
+          0,
+          durationMs,
+          settings.advanced_shared.motion_easing
+        )
+      : points;
+    hadLayoutRef.current = points.length > 0;
+  }, [
+    motionLocked,
+    movementPaused,
+    points,
+    settings.advanced_shared.animation_duration_ms,
+    settings.advanced_shared.motion_easing,
+    settings.simple.motion
+  ]);
 
   const fit = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !points.length) return;
-    const fitted = fitUniverseCamera(points, canvas.clientWidth, canvas.clientHeight);
+    const fitted = fitUniverseCamera(
+      points,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      settings.advanced_2d.fit_padding
+    );
     if (fitted) setCamera(fitted);
-  }, [points]);
+  }, [points, settings.advanced_2d.fit_padding]);
+
+  useEffect(() => {
+    if (lastViewFitSignalRef.current === viewFitSignal) return undefined;
+    lastViewFitSignalRef.current = viewFitSignal;
+    const frame = window.requestAnimationFrame(fit);
+    return () => window.cancelAnimationFrame(frame);
+  }, [fit, viewFitSignal]);
 
   useEffect(() => {
     if (initialFitRef.current || !points.length) return undefined;
     const frame = window.requestAnimationFrame(() => {
       const canvas = canvasRef.current;
       if (!canvas || initialFitRef.current) return;
-      const fitted = fitUniverseCamera(points, canvas.clientWidth, canvas.clientHeight);
+      const fitted = fitUniverseCamera(
+        points,
+        canvas.clientWidth,
+        canvas.clientHeight,
+        settings.advanced_2d.fit_padding
+      );
       if (!fitted) return;
       initialFitRef.current = true;
       setCamera(fitted);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [points]);
+  }, [points, settings.advanced_2d.fit_padding]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -180,16 +493,28 @@ export function CanonicalUniverseGraph({
     if (!fullscreenActive) setTouchInteractionActive(false);
   }, [fullscreenActive]);
 
-  const focusEntity = useCallback((entityId: string) => {
-    const point = pointById.get(entityId);
+  const moveCameraToEntity = useCallback((entityId: string) => {
+    const point = renderedPointsRef.current.find(
+      (candidate) => candidate.entity.entity_id === entityId
+    ) ?? pointById.get(entityId);
     if (!point) return;
     setCamera((current) => ({
       x: -point.x * Math.max(current.zoom, 0.75),
       y: -point.y * Math.max(current.zoom, 0.75),
       zoom: clampZoom(Math.max(current.zoom, 0.75))
     }));
+  }, [pointById]);
+
+  const focusEntity = useCallback((entityId: string) => {
+    moveCameraToEntity(entityId);
     onSelectedEntityChange(entityId);
-  }, [onSelectedEntityChange, pointById]);
+  }, [moveCameraToEntity, onSelectedEntityChange]);
+
+  useEffect(() => {
+    if (lastViewFocusSignalRef.current === viewFocusSignal) return;
+    lastViewFocusSignalRef.current = viewFocusSignal;
+    if (focusedEntityId) moveCameraToEntity(focusedEntityId);
+  }, [focusedEntityId, moveCameraToEntity, viewFocusSignal]);
 
   useEffect(() => {
     if (!selectedEntityId || byId.has(selectedEntityId)) return;
@@ -197,11 +522,26 @@ export function CanonicalUniverseGraph({
   }, [byId, onSelectedEntityChange, selectedEntityId]);
 
   useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    delete surface.dataset.renderedCanonicalIdCount;
+    delete surface.dataset.renderedCanonicalIdSignature;
+  }, [camera, points, visibleIds]);
+
+  useEffect(() => {
     const currentCanvas = canvasRef.current;
     if (!currentCanvas) return;
     const canvas: HTMLCanvasElement = currentCanvas;
+    let lastAnimatedRenderAt: number | null = null;
     const resize = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      const qualityLimit =
+        settings.advanced_shared.performance_mode === "PERFORMANCE"
+        || settings.advanced_shared.rendering_quality === "LOW"
+          ? 1
+          : settings.advanced_shared.rendering_quality === "MEDIUM"
+            ? 1.5
+            : 2;
+      const ratio = Math.min(window.devicePixelRatio || 1, qualityLimit);
       const width = Math.max(1, Math.floor(canvas.clientWidth * ratio));
       const height = Math.max(1, Math.floor(canvas.clientHeight * ratio));
       if (canvas.width !== width || canvas.height !== height) {
@@ -217,18 +557,61 @@ export function CanonicalUniverseGraph({
     return () => {
       observer.disconnect();
       window.removeEventListener("orientationchange", resize);
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
     };
 
     function draw() {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-      frameRef.current = requestAnimationFrame(() => {
-        const context = canvas.getContext("2d");
-        if (!context) return;
+      frameRef.current = requestAnimationFrame(renderFrame);
+    }
+
+    function renderFrame(frameTime: number) {
+      const transition = layoutTransitionRef.current;
+      const minimumFrameInterval =
+        1_000 / settings.advanced_shared.frame_rate_cap;
+      if (
+        transition
+        && lastAnimatedRenderAt !== null
+        && frameTime - lastAnimatedRenderAt < minimumFrameInterval
+      ) {
+        frameRef.current = requestAnimationFrame(renderFrame);
+        return;
+      }
+      if (transition) lastAnimatedRenderAt = frameTime;
+      const elapsedMs = transition
+        ? Math.max(0, frameTime - transition.startedAtMs)
+        : 0;
+      const renderPoints = transition
+        ? interpolateCanonical2DGraphPoints(
+            points,
+            transition.fromById,
+            elapsedMs,
+            transition.durationMs,
+            transition.easing
+          )
+        : points;
+      renderedPointsRef.current = renderPoints;
+      if (transition && elapsedMs >= transition.durationMs) {
+        layoutTransitionRef.current = null;
+      }
+      const renderPointById = new Map(
+        renderPoints.map((point) => [point.entity.entity_id, point])
+      );
+
+        const renderStartedAt = performance.now();
+        try {
+          const context = canvas.getContext("2d");
+          if (!context) throw new Error("Canvas2DUnavailable");
         const ratio = canvas.width / Math.max(1, canvas.clientWidth);
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         context.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-        context.fillStyle = "#050913";
-        context.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+        if (settings.advanced_shared.background_visible) {
+          context.fillStyle = "#050913";
+          context.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+        }
         const centerX = canvas.clientWidth / 2 + camera.x;
         const centerY = canvas.clientHeight / 2 + camera.y;
 
@@ -252,10 +635,13 @@ export function CanonicalUniverseGraph({
           x: centerX + point.x * camera.zoom,
           y: centerY + point.y * camera.zoom
         });
-        context.lineWidth = Math.max(0.5, Math.min(1.5, camera.zoom));
-        for (const point of points) {
+        context.lineWidth = Math.max(
+          0.25,
+          settings.advanced_shared.edge_width * Math.min(1.5, Math.max(0.5, camera.zoom))
+        );
+        for (const point of renderPoints) {
           if (!visibleIds.has(point.entity.entity_id) || !point.entity.parent_id) continue;
-          const parent = pointById.get(point.entity.parent_id);
+          const parent = renderPointById.get(point.entity.parent_id);
           if (!parent || !visibleIds.has(parent.entity.entity_id)) continue;
           const from = screen(parent);
           const to = screen(point);
@@ -264,12 +650,46 @@ export function CanonicalUniverseGraph({
             || Math.max(from.y, to.y) < -20 || Math.min(from.y, to.y) > canvas.clientHeight + 20
           ) continue;
           const related = relatedIds.has(point.entity.entity_id) && relatedIds.has(parent.entity.entity_id);
+          const direct = selectedEntityId === point.entity.entity_id
+            || selectedEntityId === parent.entity.entity_id;
+          if (
+            settings.simple.connections === "LINEAGE" && selected && !related
+            || settings.simple.connections === "DIRECT" && selected && !direct
+            || settings.simple.connections === "DIRECT" && !selected
+          ) continue;
+          const baseOpacity = settings.advanced_shared.edge_opacity;
+          const emphasizedOpacity = Math.min(
+            1,
+            baseOpacity * settings.advanced_shared.lineage_emphasis
+          );
           context.strokeStyle = related
-            ? "rgba(112, 230, 211, .72)"
-            : `rgba(112, 146, 197, ${dimUnrelated && selected ? 0.08 : 0.24})`;
+            ? `rgba(112, 230, 211, ${emphasizedOpacity})`
+            : `rgba(112, 146, 197, ${
+              baseOpacity * (dimUnrelated && selected ? 0.2 : 0.65)
+            })`;
           context.beginPath();
           context.moveTo(from.x, from.y);
-          context.lineTo(to.x, to.y);
+          if (settings.advanced_2d.edge_routing === "ORTHOGONAL") {
+            context.lineTo(from.x, to.y);
+            context.lineTo(to.x, to.y);
+          } else if (
+            settings.advanced_2d.edge_routing === "CURVED"
+            && settings.advanced_shared.edge_curvature > 0
+          ) {
+            const midpointX = (from.x + to.x) / 2;
+            const midpointY = (from.y + to.y) / 2;
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            const curvature = settings.advanced_shared.edge_curvature;
+            context.quadraticCurveTo(
+              midpointX - dy * curvature,
+              midpointY + dx * curvature,
+              to.x,
+              to.y
+            );
+          } else {
+            context.lineTo(to.x, to.y);
+          }
           context.stroke();
         }
 
@@ -280,18 +700,29 @@ export function CanonicalUniverseGraph({
           position: PointerRecord;
           radius: number;
         }> = [];
-        for (const point of points) {
-          if (!visibleIds.has(point.entity.entity_id)) continue;
-          const position = screen(point);
-          if (
-            position.x < -80 || position.x > canvas.clientWidth + 80
-            || position.y < -40 || position.y > canvas.clientHeight + 40
-          ) continue;
+        const renderedCanonicalIds: string[] = [];
+        for (const point of renderPoints) {
+          const position = canonical2DFramePosition(
+            point,
+            visibleIds,
+            camera,
+            canvas.clientWidth,
+            canvas.clientHeight
+          );
+          if (!position) continue;
+          renderedCanonicalIds.push(point.entity.entity_id);
           const isSelected = selectedEntityId === point.entity.entity_id;
           const unrelated = Boolean(selected) && !relatedIds.has(point.entity.entity_id);
-          const radius = isSelected ? 8 : point.entity.entity_type === "SOLDIER" ? 2.4 : 4.6;
+          const radius = (
+            isSelected
+              ? 8 * settings.advanced_shared.selected_node_scale
+              : point.entity.entity_type === "SOLDIER" ? 2.4 : 4.6
+          ) * settings.advanced_shared.node_scale;
           context.globalAlpha = dimUnrelated && unrelated ? 0.22 : 1;
-          context.fillStyle = healthColor(point.entity);
+          context.fillStyle = entityColor(
+            point.entity,
+            settings.advanced_shared.color_mode
+          );
           context.beginPath();
           context.arc(position.x, position.y, radius, 0, Math.PI * 2);
           context.fill();
@@ -304,10 +735,21 @@ export function CanonicalUniverseGraph({
           }
           const structuralLabel = point.entity.entity_type === "ENTRAL"
             || (point.entity.entity_type === "MARSHAL" && camera.zoom >= 0.02);
+          const labelsAlways = settings.simple.labels === "ALWAYS";
+          const labelIsRelevant = !selected || relatedIds.has(point.entity.entity_id);
+          const labelByMode =
+            labelsAlways
+            || settings.simple.labels === "RELEVANT" && labelIsRelevant
+            || settings.simple.labels === "HOVER_OR_FOCUS" && isSelected;
           if (
             showLabels
-            && point.entity.entity_type !== "SOLDIER"
-            && (camera.zoom >= 0.48 || isSelected || structuralLabel)
+            && labelByMode
+            && (labelsAlways || point.entity.entity_type !== "SOLDIER" || isSelected)
+            && (
+              camera.zoom >= settings.advanced_shared.label_threshold
+              || isSelected
+              || structuralLabel
+            )
           ) {
             labelCandidates.push({
               alpha: dimUnrelated && unrelated ? 0.22 : 1,
@@ -319,8 +761,15 @@ export function CanonicalUniverseGraph({
           }
           context.globalAlpha = 1;
         }
+        const surface = surfaceRef.current;
+        if (surface) {
+          surface.dataset.renderedCanonicalIdCount =
+            String(renderedCanonicalIds.length);
+          surface.dataset.renderedCanonicalIdSignature =
+            canonical2DRenderedIdSignature(renderedCanonicalIds);
+        }
 
-        context.font = "600 11px Inter, system-ui, sans-serif";
+        context.font = `600 ${11 * settings.advanced_shared.label_scale}px Inter, system-ui, sans-serif`;
         const occupiedLabels: Array<{ bottom: number; left: number; right: number; top: number }> = [];
         labelCandidates
           .sort((left, right) => {
@@ -334,6 +783,7 @@ export function CanonicalUniverseGraph({
             return priority(left) - priority(right)
               || left.entity.stable_code.localeCompare(right.entity.stable_code);
           })
+          .slice(0, maximumLiveLabels)
           .forEach((candidate) => {
             const left = candidate.position.x + candidate.radius + 5;
             const top = candidate.position.y - 8;
@@ -352,16 +802,84 @@ export function CanonicalUniverseGraph({
             context.fillText(candidate.entity.name, left, candidate.position.y + 4);
             context.globalAlpha = 1;
           });
-      });
+        if (settings.advanced_2d.minimap_visible && renderPoints.length > 1) {
+          const mapWidth = 116;
+          const mapHeight = 82;
+          const mapLeft = canvas.clientWidth - mapWidth - 12;
+          const mapTop = canvas.clientHeight - mapHeight - 12;
+          const xs = renderPoints.map((point) => point.x);
+          const ys = renderPoints.map((point) => point.y);
+          const minX = Math.min(...xs);
+          const maxX = Math.max(...xs);
+          const minY = Math.min(...ys);
+          const maxY = Math.max(...ys);
+          const spanX = Math.max(1, maxX - minX);
+          const spanY = Math.max(1, maxY - minY);
+          context.fillStyle = "rgba(5, 9, 19, .82)";
+          context.strokeStyle = "rgba(142, 185, 255, .48)";
+          context.lineWidth = 1;
+          context.fillRect(mapLeft, mapTop, mapWidth, mapHeight);
+          context.strokeRect(mapLeft, mapTop, mapWidth, mapHeight);
+          for (const point of renderPoints) {
+            context.fillStyle = entityColor(
+              point.entity,
+              settings.advanced_shared.color_mode
+            );
+            context.fillRect(
+              mapLeft + 6 + (point.x - minX) / spanX * (mapWidth - 12),
+              mapTop + 6 + (point.y - minY) / spanY * (mapHeight - 12),
+              2,
+              2
+            );
+          }
+        }
+          const renderTimeMs = Math.max(0, performance.now() - renderStartedAt);
+          const frameBudgetMs = 1_000 / settings.advanced_shared.frame_rate_cap;
+          const expectedFrameSlots = Math.max(
+            1,
+            Math.ceil(renderTimeMs / frameBudgetMs)
+          );
+          const droppedFrameRateRatio =
+            (expectedFrameSlots - 1) / expectedFrameSlots;
+          onFrameDiagnostics?.({
+            droppedFrameRateRatio,
+            errorCode: droppedFrameRateRatio > 0.2
+              ? "GRAPH_PERFORMANCE_DEGRADED"
+              : "NONE",
+            frameRateFps: Math.min(
+              settings.advanced_shared.frame_rate_cap,
+              1_000 / Math.max(1, renderTimeMs)
+            ),
+            renderer: "2D",
+            renderTimeMs,
+            sampleWindowMs: Math.max(1, renderTimeMs)
+          });
+        } catch {
+          layoutTransitionRef.current = null;
+          const error = new Error("The 2D graph renderer is unavailable.");
+          error.name = "Canvas2DRendererFailure";
+          setRendererFailure(error);
+        } finally {
+          frameRef.current = null;
+          if (layoutTransitionRef.current) {
+            frameRef.current = requestAnimationFrame(renderFrame);
+          }
+        }
     }
   }, [
     camera,
     dimUnrelated,
-    pointById,
+    motionLocked,
+    movementPaused,
     points,
     relatedIds,
     selected,
     selectedEntityId,
+    settings.advanced_shared.node_scale,
+    settings.advanced_shared.selected_node_scale,
+    settings,
+    maximumLiveLabels,
+    onFrameDiagnostics,
     showGrid,
     showLabels,
     visibleIds
@@ -388,9 +906,23 @@ export function CanonicalUniverseGraph({
   }
 
   function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    const next = canvasPoint(event);
+    const centerX = event.currentTarget.clientWidth / 2 + camera.x;
+    const centerY = event.currentTarget.clientHeight / 2 + camera.y;
+    let nearest: { distance: number; id: string } | null = null;
+    for (const candidate of renderedPointsRef.current) {
+      if (!visibleIds.has(candidate.entity.entity_id)) continue;
+      const x = centerX + candidate.x * camera.zoom;
+      const y = centerY + candidate.y * camera.zoom;
+      const distance = Math.hypot(next.x - x, next.y - y);
+      if (distance <= 18 && (!nearest || distance < nearest.distance)) {
+        nearest = { distance, id: candidate.entity.entity_id };
+      }
+    }
+    setHoveredEntityId(nearest?.id ?? null);
+    setTooltipPosition(nearest ? next : null);
     if (!pointersRef.current.has(event.pointerId)) return;
     const previous = pointersRef.current.get(event.pointerId)!;
-    const next = canvasPoint(event);
     pointersRef.current.set(event.pointerId, next);
     if (pointersRef.current.size === 1) {
       setCamera((current) => ({ ...current, x: current.x + next.x - previous.x, y: current.y + next.y - previous.y }));
@@ -425,7 +957,7 @@ export function CanonicalUniverseGraph({
     const centerX = event.currentTarget.clientWidth / 2 + camera.x;
     const centerY = event.currentTarget.clientHeight / 2 + camera.y;
     let nearest: { distance: number; id: string } | null = null;
-    for (const candidate of points) {
+    for (const candidate of renderedPointsRef.current) {
       if (!visibleIds.has(candidate.entity.entity_id)) continue;
       const x = centerX + candidate.x * camera.zoom;
       const y = centerY + candidate.y * camera.zoom;
@@ -504,7 +1036,11 @@ export function CanonicalUniverseGraph({
       event.preventDefault();
       if (selectedEntityId) onOpenFullRecord(selectedEntityId);
       else {
-        const firstId = nextUniverseEntityId(points, null, "right");
+        const firstId = nextUniverseEntityId(
+          renderedPointsRef.current,
+          null,
+          "right"
+        );
         if (firstId) focusEntity(firstId);
       }
       return;
@@ -517,6 +1053,11 @@ export function CanonicalUniverseGraph({
     if (event.key === "-") {
       event.preventDefault();
       setCamera((current) => ({ ...current, zoom: clampZoom(current.zoom / 1.2) }));
+      return;
+    }
+    if (event.key.toLowerCase() === "f") {
+      event.preventDefault();
+      fit();
       return;
     }
     const direction = {
@@ -535,18 +1076,44 @@ export function CanonicalUniverseGraph({
       if (direction === "down") setCamera((current) => ({ ...current, y: current.y - movement }));
       return;
     }
-    const nextId = nextUniverseEntityId(points, selectedEntityId, direction);
+    const nextId = nextUniverseEntityId(
+      renderedPointsRef.current,
+      selectedEntityId,
+      direction
+    );
     if (nextId) focusEntity(nextId);
   }
+
+  if (rendererFailure) throw rendererFailure;
 
   return (
     <section
       className="phase180-graph"
       aria-labelledby="universe-heading"
       data-canonical-entity-count={entities.length}
+      data-canonical-edge-count={layout.edges.length}
+      data-canonical-edge-ids={layout.edges.map((edge) => edge.edgeId).join(",")}
       data-canonical-event-sequence={eventSequence}
+      data-canonical-entity-ids={layout.points.map((point) => point.entityId).join(",")}
+      data-canonical-render-candidate-count={visibleIds.size}
+      data-canonical-selected-active-alert={selected?.active_alert ?? undefined}
+      data-canonical-selected-active-task-count={selected?.active_task_count}
+      data-canonical-selected-child-count={selected?.child_count}
+      data-canonical-selected-current-mission={selected?.current_mission ?? undefined}
+      data-canonical-selected-entity-id={selected?.entity_id}
+      data-canonical-selected-latest-material-result={
+        graphDetailAttribute(selected?.latest_material_result ?? null)
+      }
       data-graph-dimension="2d"
+      data-graph-animation-duration={settings.advanced_shared.animation_duration_ms}
+      data-graph-level-of-detail={activeLevelOfDetail.toLowerCase()}
+      data-graph-motion-easing={settings.advanced_shared.motion_easing}
+      data-graph-pattern={layout.pattern}
       data-graph-motion={movementPaused ? "paused" : "stable"}
+      data-rendered-canonical-id-signature-algorithm={
+        `fnv1a32:${CANONICAL_2D_RENDER_ID_SIGNATURE_SEED}`
+      }
+      ref={surfaceRef}
     >
       <header className="phase180-surface-heading">
         <div>
@@ -568,6 +1135,17 @@ export function CanonicalUniverseGraph({
             >
               {movementPaused && !motionLocked ? <PlayCircle aria-hidden="true" size={17} /> : <PauseCircle aria-hidden="true" size={17} />}
               {motionLocked ? "Movement paused" : movementPaused ? "Resume movement" : "Stop movement"}
+            </button>
+          ) : null}
+          {!fullscreenActive ? (
+            <button
+              aria-pressed={touchInteractionActive}
+              className="phase180-surface-action phase180-touch-interaction-toggle"
+              onClick={() => setTouchInteractionActive((active) => !active)}
+              type="button"
+            >
+              <Hand aria-hidden="true" size={17} />
+              {touchInteractionActive ? "Release 2D Graph touch controls" : "Interact with 2D Graph"}
             </button>
           ) : null}
           {onFullscreenToggle ? (
@@ -635,17 +1213,6 @@ export function CanonicalUniverseGraph({
         >
           <ZoomOut aria-hidden="true" size={17} /> Zoom out
         </button>
-        {!fullscreenActive ? (
-          <button
-            aria-pressed={touchInteractionActive}
-            className="phase180-touch-interaction-toggle"
-            onClick={() => setTouchInteractionActive((active) => !active)}
-            type="button"
-          >
-            <Hand aria-hidden="true" size={17} />
-            {touchInteractionActive ? "Release 2D Graph touch controls" : "Interact with 2D Graph"}
-          </button>
-        ) : null}
         <button onClick={fit} type="button"><LocateFixed aria-hidden="true" size={17} /> Fit</button>
         <button
           aria-expanded={settingsOpen}
@@ -698,7 +1265,7 @@ export function CanonicalUniverseGraph({
         scrolling to zoom, or use the zoom buttons. On touch screens, use Interact with 2D Graph before panning or
         pinching. In full screen, graph touch controls and scroll-to-zoom are active directly. Arrow Up moves to the
         parent, Arrow Down enters the closest child, and Arrow Left or Right moves between siblings. Shift + Arrow pans;
-        Enter opens the selected record; Escape clears the selection.
+        F fits the authorized graph; Enter opens the selected record; Escape clears the selection.
       </p>
       <p className="sr-only" aria-live="polite">
         {selected
@@ -707,11 +1274,22 @@ export function CanonicalUniverseGraph({
       </p>
       <div className="phase180-graph-stage">
         <canvas
-          aria-describedby={GRAPH_INSTRUCTIONS_ID}
+          className="phase180-graph-canvas"
+          aria-describedby={[
+            GRAPH_INSTRUCTIONS_ID,
+            tooltipEntity ? "canonical-2d-node-tooltip" : null
+          ].filter(Boolean).join(" ")}
+          aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Shift+ArrowUp Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight F Enter Escape"
           aria-label={`Canonical Universe Graph with ${entities.length} entities`}
           data-touch-interaction={fullscreenActive || touchInteractionActive ? "graph" : "page"}
+          onBlur={() => setKeyboardTooltipActive(false)}
+          onFocus={() => setKeyboardTooltipActive(true)}
           onPointerCancel={handlePointerCancel}
           onPointerDown={handlePointerDown}
+          onPointerLeave={() => {
+            setHoveredEntityId(null);
+            setTooltipPosition(null);
+          }}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onKeyDown={handleCanvasKeyDown}
@@ -719,12 +1297,60 @@ export function CanonicalUniverseGraph({
           role="application"
           tabIndex={0}
         />
-        <div className="phase180-graph-legend" aria-label="Rank legend">
-          {Object.entries(roleColors).map(([role, color]) => <span key={role}><i style={{ background: color }} />{role}</span>)}
-        </div>
+        <CanonicalGraphSemanticsOverlay
+          dimension="2D"
+          entities={entities}
+          legendVisible={settings.advanced_shared.legend_visible}
+          pattern={layout.pattern}
+        />
+        {tooltipEntity ? (
+          <div
+            aria-live="polite"
+            className={[
+              "phase195-graph-tooltip",
+              tooltipPosition ? "" : "keyboard"
+            ].filter(Boolean).join(" ")}
+            id="canonical-2d-node-tooltip"
+            role="tooltip"
+            style={tooltipPosition ? {
+              left: `min(calc(100% - 15rem), ${tooltipPosition.x + 14}px)`,
+              top: `min(calc(100% - 8rem), ${tooltipPosition.y + 14}px)`
+            } : undefined}
+          >
+            <strong>{tooltipEntity.name}</strong>
+            <span>
+              Tier {GRAPH_AUTHORITY_ROLES.indexOf(tooltipEntity.entity_type)} / {tooltipEntity.entity_type}
+            </span>
+            <span>Status {tooltipEntity.status} / Health {tooltipEntity.health}</span>
+            <small>
+              {tooltipEntity.entity_id === selectedEntityId
+                ? "Selected entity; the white halo marks this node."
+                : "Pointer target; select to inspect its authorized lineage."}
+            </small>
+          </div>
+        ) : null}
+        {settings.advanced_shared.legend_visible ? (
+          <div className="phase180-graph-legend" aria-label={legend.label}>
+            {legend.entries.map(([meaning, color]) => (
+              <span key={meaning}><i aria-hidden="true" style={{ background: color }} />{meaning}</span>
+            ))}
+          </div>
+        ) : null}
       </div>
       {selected ? (
-        <aside className="phase180-graph-drawer" aria-label={`${selected.name} graph details`}>
+        <aside
+          aria-label={`${selected.name} graph details`}
+          className="phase180-graph-drawer"
+          data-canonical-detail-surface="2d"
+          data-canonical-selected-active-alert={selected.active_alert ?? undefined}
+          data-canonical-selected-active-task-count={selected.active_task_count}
+          data-canonical-selected-child-count={selected.child_count}
+          data-canonical-selected-current-mission={selected.current_mission ?? undefined}
+          data-canonical-selected-entity-id={selected.entity_id}
+          data-canonical-selected-latest-material-result={
+            graphDetailAttribute(selected.latest_material_result)
+          }
+        >
           <header>
             <div><span>{selected.entity_type}</span><h2>{selected.name}</h2></div>
             <button aria-label="Close entity details" onClick={() => onSelectedEntityChange(null)} type="button"><X size={18} /></button>

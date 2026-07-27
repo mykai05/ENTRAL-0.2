@@ -1,6 +1,7 @@
 import type { AutomationJob } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
+import { assertDurableAuthorization } from "./durableAuthorization.js";
 import { recordAuditLog } from "./audit.js";
 import type { GrowthApprovalAction, GrowthApprovalPacket } from "./growthPlans.js";
 import { stringifySecureJson, parseSecureJson } from "./secureJson.js";
@@ -598,20 +599,24 @@ function productSnapshot(product: ClientMerchStoreWithProducts["products"][numbe
 }
 
 export async function createShopifyAutonomyResumeJob(input: {
+  authorizationVersion: number;
   payload: ShopifyAutonomyResumeJobPayload;
   scheduledAt?: Date | null;
+  sourceOperationKey?: string;
   userId: string;
 }) {
+  await assertDurableAuthorization(input);
   const payload = shopifyAutonomyResumeJobPayloadSchema.parse(input.payload);
   const scheduledAt = input.scheduledAt ?? null;
   const status = scheduledAt && scheduledAt.getTime() > Date.now() ? "scheduled" : "pending";
   const watchSuffix = payload.watchForConnection
     ? ` (connection watch attempt ${payload.connectionWatchAttempt}/${payload.maxConnectionWatchAttempts})`
     : "";
-  const job = await prisma.automationJob.create({
-    data: {
+  const data = {
+      authorizationVersion: input.authorizationVersion,
       payloadJson: stringifySecureJson(payload),
       scheduledAt,
+      sourceOperationKey: input.sourceOperationKey,
       status,
       type: shopifyAutonomyResumeJobType,
       userId: input.userId,
@@ -622,19 +627,29 @@ export async function createShopifyAutonomyResumeJob(input: {
             : `Shopify autonomy resume job queued${watchSuffix}`
         }
       }
-    },
-    include: {
-      logs: {
-        orderBy: { createdAt: "asc" }
-      }
+    };
+  const include = {
+    logs: {
+      orderBy: { createdAt: "asc" as const }
     }
-  });
+  };
+  const job = input.sourceOperationKey
+    ? await prisma.automationJob.upsert({
+      where: { sourceOperationKey: input.sourceOperationKey },
+      create: data,
+      update: {},
+      include
+    })
+    : await prisma.automationJob.create({
+      data,
+      include
+    });
 
   return job;
 }
 
 export async function runShopifyAutonomyResumeJob(
-  job: Pick<AutomationJob, "id" | "payloadJson" | "userId">,
+  job: Pick<AutomationJob, "authorizationVersion" | "id" | "payloadJson" | "userId">,
   logStep: (message: string, level?: "info" | "warn" | "error") => Promise<void>
 ) {
   const payload = parseSecureJson<ShopifyAutonomyResumeJobPayload>(job.payloadJson);
@@ -695,11 +710,13 @@ export async function runShopifyAutonomyResumeJob(
   });
   const followUpJob = connectionWatch.shouldSchedule && connectionWatch.scheduledAt && connectionWatch.nextAttempt !== null
     ? await createShopifyAutonomyResumeJob({
+      authorizationVersion: job.authorizationVersion,
       payload: {
         ...input,
         connectionWatchAttempt: connectionWatch.nextAttempt
       },
       scheduledAt: connectionWatch.scheduledAt,
+      sourceOperationKey: `shopify-autonomy:${job.id}:watch:${connectionWatch.nextAttempt}`,
       userId: job.userId
     })
     : null;

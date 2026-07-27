@@ -21,6 +21,8 @@ import { adminRoutes } from "./routes/admin.js";
 import { memberRoutes } from "./routes/member.js";
 import { memberTaskVisibilityRoutes } from "./routes/memberTaskVisibility.js";
 import { controlPlaneRoutes } from "./routes/controlPlane.js";
+import { graphPreferenceRoutes } from "./routes/graphPreferences.js";
+import { releaseEvidenceRoutes } from "./routes/releaseEvidence.js";
 import { env } from "./env.js";
 import { enforceSessionBoundary, requireTrustedOrigin } from "./auth.js";
 import type { AiService } from "./services/openaiService.js";
@@ -130,6 +132,8 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(memberRoutes, { prefix: "/api/v1" });
   await app.register(memberTaskVisibilityRoutes, { prefix: "/api/v1" });
   await app.register(controlPlaneRoutes, { prefix: "/api/v1" });
+  await app.register(graphPreferenceRoutes, { prefix: "/api/v1" });
+  await app.register(releaseEvidenceRoutes, { prefix: "/api/v1" });
   await app.register(accountRoutes, { prefix: "/api/v1" });
   await app.register(dashboardRoutes, { prefix: "/api/v1" });
   await app.register(taskRoutes, { prefix: "/api/v1" });
@@ -144,17 +148,32 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(adminRoutes, { prefix: "/api/v1" });
 
   if (shouldStartEmbeddedWorkers(processRole)) {
-    const stopCanonicalOutboxWorker = await startCanonicalOutboxWorker({
-      logger: app.log
-    });
-    const stopAutomationWorker = startAutomationWorker(app.log);
-    const stopAgentOrchestrator = startAgentOrchestrator(app.log);
-    const stopAutonomyScheduler = startAutonomyScheduler(app.log);
+    const stopEmbeddedWorkers: Array<() => Promise<void>> = [];
+    try {
+      stopEmbeddedWorkers.push(await startCanonicalOutboxWorker({
+        logger: app.log
+      }));
+      stopEmbeddedWorkers.push(await startAutomationWorker({
+        logger: app.log
+      }));
+      stopEmbeddedWorkers.push(await startAgentOrchestrator({
+        logger: app.log
+      }));
+      stopEmbeddedWorkers.push(await startAutonomyScheduler({
+        logger: app.log
+      }));
+    } catch (error) {
+      await Promise.allSettled(
+        [...stopEmbeddedWorkers].reverse().map((stopWorker) => stopWorker())
+      );
+      throw error;
+    }
     app.addHook("onClose", async () => {
-      stopAutomationWorker();
-      stopAgentOrchestrator();
-      stopAutonomyScheduler();
-      await stopCanonicalOutboxWorker();
+      const results = await Promise.allSettled(
+        [...stopEmbeddedWorkers].reverse().map((stopWorker) => stopWorker())
+      );
+      const failure = results.find((result) => result.status === "rejected");
+      if (failure?.status === "rejected") throw failure.reason;
     });
   }
 

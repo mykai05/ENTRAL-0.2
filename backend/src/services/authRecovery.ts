@@ -274,6 +274,25 @@ export async function confirmPasswordReset(token: string, password: string, cont
   const passwordHash = await bcrypt.hash(password, 12);
 
   const user = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${passwordResetToken.userId}, 0))`;
+
+    const claim = await tx.passwordResetToken.updateMany({
+      data: { consumedAt: now },
+      where: {
+        consumedAt: null,
+        expiresAt: { gt: now },
+        id: passwordResetToken.id,
+        tokenHash
+      }
+    });
+
+    if (claim.count !== 1) {
+      return null;
+    }
+
+    // A successful claim invalidates every sibling reset link for this user.
+    // The per-user transaction lock prevents two different valid links from
+    // resetting the account concurrently.
     await tx.passwordResetToken.updateMany({
       data: { consumedAt: now },
       where: {
@@ -285,11 +304,25 @@ export async function confirmPasswordReset(token: string, password: string, cont
     return tx.user.update({
       data: {
         emailVerifiedAt: passwordResetToken.user.emailVerifiedAt ?? now,
-        passwordHash
+        passwordHash,
+        sessionVersion: { increment: 1 }
       },
       where: { id: passwordResetToken.userId }
     });
   });
+
+  if (!user) {
+    await recordAuditLog({
+      action: "auth.password_reset.confirm_failed",
+      metadata: { tokenHash: hashForAudit(tokenHash) },
+      outcome: "failure",
+      requestId: context.requestId,
+      severity: "medium",
+      targetType: "PasswordResetToken"
+    });
+
+    return { ok: false as const, reason: "invalid" as const };
+  }
 
   await recordAuditLog({
     action: "auth.password_reset.confirmed",

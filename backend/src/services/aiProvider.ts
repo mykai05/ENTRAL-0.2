@@ -19,6 +19,7 @@ export type AiProviderState = {
 };
 
 export type AiProviderRequest = {
+  maxOutputTokens?: number;
   messages: ChatCompletionMessageParam[];
   responseFormat?: "json_object" | "text";
   temperature?: number;
@@ -147,9 +148,11 @@ export class OpenAiProvider {
     }
 
     this.client ??= new OpenAI({ apiKey: env.OPENAI_API_KEY });
+    const maxOutputTokens = Math.max(1, Math.min(4_096, Math.trunc(input.maxOutputTokens ?? 1_200)));
 
     try {
       const response = await this.client.chat.completions.create({
+        max_completion_tokens: maxOutputTokens,
         model: env.OPENAI_MODEL,
         messages: input.messages,
         response_format: input.responseFormat === "json_object" ? { type: "json_object" } : undefined,
@@ -217,6 +220,7 @@ export class OpenAiProvider {
 
     try {
       await this.request({
+        maxOutputTokens: 64,
         messages: [
           { role: "system", content: "Return a terse ENTRAL provider health acknowledgement." },
           { role: "user", content: "Provider health check." }

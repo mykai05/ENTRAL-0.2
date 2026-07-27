@@ -19,6 +19,7 @@ export type ShopifyOAuthContinuationPayload = {
 };
 
 export type ShopifyOAuthContinuationRecord = {
+  authorizationVersion: number;
   auditLogId: string | null;
   consumedAt: Date | null;
   createdAt: Date;
@@ -51,6 +52,7 @@ function rowToRecord(row: ShopifyOAuthContinuationRow): ShopifyOAuthContinuation
 }
 
 export async function createShopifyOAuthContinuation(input: {
+  authorizationVersion: number;
   expiresAt: Date;
   payload: ShopifyOAuthContinuationPayload;
   shopDomain: string;
@@ -63,6 +65,7 @@ export async function createShopifyOAuthContinuation(input: {
     INSERT INTO "ShopifyOAuthContinuation" (
       "id",
       "userId",
+      "authorizationVersion",
       "storeId",
       "shopDomain",
       "stateNonce",
@@ -74,6 +77,7 @@ export async function createShopifyOAuthContinuation(input: {
     ) VALUES (
       ${randomUUID()},
       ${input.userId},
+      ${input.authorizationVersion},
       ${input.storeId},
       ${input.shopDomain},
       ${input.stateNonce},
@@ -84,6 +88,7 @@ export async function createShopifyOAuthContinuation(input: {
       ${now}
     )
     ON CONFLICT ("stateNonce") DO UPDATE SET
+      "authorizationVersion" = EXCLUDED."authorizationVersion",
       "status" = 'pending',
       "payloadJson" = EXCLUDED."payloadJson",
       "expiresAt" = EXCLUDED."expiresAt",

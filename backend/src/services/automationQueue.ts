@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { FastifyBaseLogger } from "fastify";
 import { prisma } from "../db.js";
 import { env } from "../env.js";
@@ -13,10 +14,23 @@ import {
   type ShopifyStoreCreationBrowserTaskReceipt
 } from "./shopifyStoreCreationBrowserTask.js";
 import { createQueueJobEnvelope, parseQueueTaskId } from "./contractRuntime.js";
+import { assertDurableAuthorization } from "./durableAuthorization.js";
 
 const queuedJobs = new Set<string>();
+const automationJobTimers = new Map<string, NodeJS.Timeout>();
+const automationJobRuns = new Set<Promise<void>>();
 let runningJobs = 0;
 let workerTimer: NodeJS.Timeout | undefined;
+let workerStarting = false;
+let acceptingAutomationJobs = false;
+let automationWorkerHealthCallback: ((healthy: boolean) => void) | undefined;
+
+type StartAutomationWorkerOptions = {
+  logger?: FastifyBaseLogger;
+  onHealthChange?: (healthy: boolean) => void;
+  poll?: () => Promise<void>;
+  pollIntervalMs?: number;
+};
 
 const shopifyStoreCreationBrowserAutoRecoveryLogMessage = "Shopify Dev Dashboard session recovery requeued this store-creation browser task.";
 const shopifyStoreCreationBrowserAutoCaptureRecoveryLogMessage = "Shopify capture-ready browser evidence was recovered by the automation worker.";
@@ -160,6 +174,11 @@ async function runAutomationJob(jobId: string, logger?: FastifyBaseLogger) {
   runningJobs += 1;
 
   try {
+    await assertDurableAuthorization({
+      authorizationVersion: job.authorizationVersion,
+      userId: job.userId
+    });
+
     const claim = await prisma.automationJob.updateMany({
       where: {
         id: jobId,
@@ -185,6 +204,11 @@ async function runAutomationJob(jobId: string, logger?: FastifyBaseLogger) {
     if (!runningJob) {
       return;
     }
+
+    await assertDurableAuthorization({
+      authorizationVersion: runningJob.authorizationVersion,
+      userId: runningJob.userId
+    });
 
     await addJobLog(jobId, "Job started");
     const result = await executeAutomationJob(runningJob, (message, level = "info") => addJobLog(jobId, message, level));
@@ -230,6 +254,29 @@ async function runAutomationJob(jobId: string, logger?: FastifyBaseLogger) {
   } finally {
     runningJobs -= 1;
   }
+}
+
+function launchAutomationJob(jobId: string, logger?: FastifyBaseLogger) {
+  if (!acceptingAutomationJobs) {
+    queuedJobs.delete(jobId);
+    return Promise.resolve();
+  }
+  const run = runAutomationJob(jobId, logger);
+  automationJobRuns.add(run);
+  void run.then(
+    () => automationJobRuns.delete(run),
+    () => automationJobRuns.delete(run)
+  );
+  return run;
+}
+
+function stopAcceptingAutomationJobs() {
+  acceptingAutomationJobs = false;
+  for (const timer of automationJobTimers.values()) {
+    clearTimeout(timer);
+  }
+  automationJobTimers.clear();
+  queuedJobs.clear();
 }
 
 async function requeueRecoverableShopifyStoreCreationBrowserTasks(limit: number, logger?: FastifyBaseLogger) {
@@ -301,18 +348,34 @@ function shopifyOAuthAppConfigured() {
 
 async function updateShopifyBrowserTaskAutoCaptureResult(input: {
   jobId: string;
+  recoveryClaimToken?: string;
   result: { auditLogId?: string; receipt: ShopifyStoreCreationBrowserTaskReceipt };
   receipt: ShopifyStoreCreationBrowserTaskReceipt;
 }) {
-  await prisma.automationJob.update({
-    where: { id: input.jobId },
+  const data = {
+    resultJson: JSON.stringify({
+      ...input.result,
+      receipt: input.receipt
+    })
+  };
+  if (!input.recoveryClaimToken) {
+    await prisma.automationJob.update({
+      where: { id: input.jobId },
+      data
+    });
+    return true;
+  }
+  const updated = await prisma.automationJob.updateMany({
+    where: {
+      id: input.jobId,
+      recoveryClaimToken: input.recoveryClaimToken,
+      status: "completed"
+    },
     data: {
-      resultJson: JSON.stringify({
-        ...input.result,
-        receipt: input.receipt
-      })
+      ...data
     }
   });
+  return updated.count === 1;
 }
 
 async function markShopifyBrowserTaskAutoCaptureRecoverySkipped(jobId: string, message: string) {
@@ -398,12 +461,33 @@ async function recoverCaptureReadyShopifyStoreCreationBrowserTasks(limit: number
       continue;
     }
 
+    const recoveryClaimToken = randomUUID();
+    const recoveryClaimedAt = new Date();
+    const recoveryClaim = await prisma.automationJob.updateMany({
+      where: {
+        authorizationVersion: job.authorizationVersion,
+        id: job.id,
+        status: "completed",
+        OR: [
+          { recoveryClaimedAt: null },
+          { recoveryClaimedAt: { lt: new Date(recoveryClaimedAt.getTime() - 5 * 60 * 1000) } }
+        ]
+      },
+      data: {
+        recoveryClaimedAt,
+        recoveryClaimToken
+      }
+    });
+    if (recoveryClaim.count !== 1) continue;
+
     try {
       const captureInput = buildShopifyStoreCreationCaptureInputFromBrowserReceipt({
         payload: payload.payload,
         receipt: result.receipt
       });
       const captureResult = await captureShopifyStoreCreationForStore({
+        authorizationVersion: job.authorizationVersion,
+        operationKey: `shopify-browser-auto-capture:${job.id}`,
         store,
         userId: job.userId,
         value: captureInput
@@ -420,9 +504,16 @@ async function recoverCaptureReadyShopifyStoreCreationBrowserTasks(limit: number
         autoCaptureError: null
       };
 
-      await updateShopifyBrowserTaskAutoCaptureResult({ jobId: job.id, receipt, result });
-      await addJobLog(job.id, shopifyStoreCreationBrowserAutoCaptureRecoveryLogMessage);
-      recoveredJobIds.push(job.id);
+      const finalized = await updateShopifyBrowserTaskAutoCaptureResult({
+        jobId: job.id,
+        receipt,
+        recoveryClaimToken,
+        result
+      });
+      if (finalized) {
+        await addJobLog(job.id, shopifyStoreCreationBrowserAutoCaptureRecoveryLogMessage);
+        recoveredJobIds.push(job.id);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Shopify store creation auto-capture recovery failed.";
       const receipt = {
@@ -430,9 +521,27 @@ async function recoverCaptureReadyShopifyStoreCreationBrowserTasks(limit: number
         autoCaptureError: message
       };
 
-      await updateShopifyBrowserTaskAutoCaptureResult({ jobId: job.id, receipt, result });
-      await addJobLog(job.id, shopifyStoreCreationBrowserAutoCaptureRecoveryLogMessage, "warn");
-      logger?.warn({ automationJobId: job.id, err: error }, "Shopify capture-ready browser evidence recovery failed");
+      const finalized = await updateShopifyBrowserTaskAutoCaptureResult({
+        jobId: job.id,
+        receipt,
+        recoveryClaimToken,
+        result
+      });
+      if (finalized) {
+        await addJobLog(job.id, shopifyStoreCreationBrowserAutoCaptureRecoveryLogMessage, "warn");
+        logger?.warn({ automationJobId: job.id, err: error }, "Shopify capture-ready browser evidence recovery failed");
+      }
+    } finally {
+      await prisma.automationJob.updateMany({
+        where: {
+          id: job.id,
+          recoveryClaimToken
+        },
+        data: {
+          recoveryClaimedAt: null,
+          recoveryClaimToken: null
+        }
+      });
     }
   }
 
@@ -440,18 +549,26 @@ async function recoverCaptureReadyShopifyStoreCreationBrowserTasks(limit: number
 }
 
 export function enqueueAutomationJob(jobId: string, delayMs = 0, logger?: FastifyBaseLogger) {
-  if (!env.AUTOMATION_FEATURE_ENABLED || queuedJobs.has(jobId)) {
+  if (!acceptingAutomationJobs || !env.AUTOMATION_FEATURE_ENABLED || queuedJobs.has(jobId)) {
     return;
   }
 
   queuedJobs.add(jobId);
   const envelope = createQueueJobEnvelope("automation-job", { taskId: jobId }, `automation-job:${jobId}`);
-  setTimeout(() => {
+  const timer = setTimeout(() => {
+    automationJobTimers.delete(jobId);
+    if (!acceptingAutomationJobs) {
+      queuedJobs.delete(jobId);
+      return;
+    }
     const queuedJobId = parseQueueTaskId(envelope, "automation-job");
-    void runAutomationJob(queuedJobId, logger).catch((error) => {
+    void launchAutomationJob(queuedJobId, logger).catch((error) => {
+      automationWorkerHealthCallback?.(false);
       logger?.error({ automationJobId: queuedJobId, err: error }, "Automation job runner crashed");
     });
   }, Math.max(delayMs, 0));
+  automationJobTimers.set(jobId, timer);
+  timer.unref();
 }
 
 export async function enqueueDueAutomationJobs(logger?: FastifyBaseLogger) {
@@ -491,24 +608,86 @@ export async function enqueueDueAutomationJobs(logger?: FastifyBaseLogger) {
   jobs.forEach((job) => enqueueAutomationJob(job.id, 0, logger));
 }
 
-export function startAutomationWorker(logger?: FastifyBaseLogger) {
-  if (!env.AUTOMATION_WORKER_ENABLED || workerTimer) {
-    return () => undefined;
+export async function startAutomationWorker(
+  options: StartAutomationWorkerOptions = {}
+): Promise<() => Promise<void>> {
+  const reportHealth = options.onHealthChange ?? (() => undefined);
+  if (!env.AUTOMATION_WORKER_ENABLED) {
+    reportHealth(false);
+    return async () => undefined;
+  }
+  if (workerTimer || workerStarting) {
+    throw new Error("Automation worker is already started.");
+  }
+  if (env.NODE_ENV === "production" && !env.AUTOMATION_FEATURE_ENABLED) {
+    reportHealth(false);
+    throw new Error("Production automation worker requires AUTOMATION_FEATURE_ENABLED=true.");
   }
 
-  void enqueueDueAutomationJobs(logger).catch((error) => {
-    logger?.error({ err: error }, "Automation worker polling failed");
-  });
-  workerTimer = setInterval(() => {
-    void enqueueDueAutomationJobs(logger).catch((error) => {
-      logger?.error({ err: error }, "Automation worker polling failed");
-    });
-  }, 5000);
+  workerStarting = true;
+  acceptingAutomationJobs = true;
+  automationWorkerHealthCallback = reportHealth;
+  const poll = options.poll ?? (() => enqueueDueAutomationJobs(options.logger));
+  const pollIntervalMs = options.pollIntervalMs ?? 5_000;
+  let activePoll: Promise<void> | undefined;
+  let stopped = false;
 
-  return () => {
+  const runPoll = async () => {
+    try {
+      await poll();
+      reportHealth(true);
+    } catch (error) {
+      reportHealth(false);
+      throw error;
+    }
+  };
+
+  try {
+    await runPoll();
+  } catch (error) {
+    stopAcceptingAutomationJobs();
+    workerStarting = false;
+    automationWorkerHealthCallback = undefined;
+    throw error;
+  }
+  workerStarting = false;
+
+  const schedule = () => {
+    if (stopped) return;
+    workerTimer = setTimeout(() => {
+      const pollRun = runPoll();
+      activePoll = pollRun;
+      void pollRun.catch((error) => {
+          options.logger?.error({ err: error }, "Automation worker polling failed");
+        })
+        .finally(() => {
+          if (activePoll === pollRun) activePoll = undefined;
+          schedule();
+        });
+    }, pollIntervalMs);
+    workerTimer.unref();
+  };
+  schedule();
+
+  return async () => {
+    if (stopped) return;
+    stopped = true;
+    stopAcceptingAutomationJobs();
     if (workerTimer) {
-      clearInterval(workerTimer);
+      clearTimeout(workerTimer);
       workerTimer = undefined;
+    }
+    await activePoll;
+    const jobResults = await Promise.allSettled([...automationJobRuns]);
+    const jobErrors = jobResults
+      .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+      .map((result) => result.reason);
+    if (automationWorkerHealthCallback === reportHealth) {
+      automationWorkerHealthCallback = undefined;
+    }
+    reportHealth(false);
+    if (jobErrors.length > 0) {
+      throw new AggregateError(jobErrors, "Automation worker jobs failed while draining.");
     }
   };
 }

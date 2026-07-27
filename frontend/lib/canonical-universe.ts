@@ -1,4 +1,58 @@
-import type { EntityRole, EntitySummary } from "@entral/contracts";
+import type {
+  EntityRole,
+  EntitySummary,
+  GraphPreferenceSettings,
+  GraphRenderer,
+  GraphRendererErrorCode
+} from "@entral/contracts";
+
+export type CanonicalWebGlRendererEvent =
+  | {
+      readonly errorCode: "GRAPH_RENDERER_FAILURE";
+      readonly recoverable: true;
+      readonly type: "WEBGL_UNAVAILABLE";
+    }
+  | {
+      readonly errorCode: "GRAPH_WEBGL_CONTEXT_LOST";
+      readonly recoverable: true;
+      readonly type: "WEBGL_CONTEXT_LOST";
+    }
+  | {
+      readonly errorCode: "NONE";
+      readonly recoverable: true;
+      readonly type: "WEBGL_CONTEXT_RESTORED";
+    };
+
+export type CanonicalRendererFrameDiagnostics = {
+  readonly droppedFrameRateRatio: number;
+  readonly errorCode: GraphRendererErrorCode;
+  readonly frameRateFps: number;
+  readonly renderer: GraphRenderer;
+  readonly renderTimeMs: number;
+  readonly sampleWindowMs: number;
+};
+
+export function easedGraphMotionProgress(
+  progress: number,
+  easing: GraphPreferenceSettings["advanced_shared"]["motion_easing"]
+) {
+  const bounded = Math.max(0, Math.min(1, progress));
+  if (easing === "LINEAR") return bounded;
+  if (easing === "EASE_IN") return bounded * bounded;
+  if (easing === "EASE_OUT") return 1 - (1 - bounded) * (1 - bounded);
+  return bounded < 0.5
+    ? 2 * bounded * bounded
+    : 1 - Math.pow(-2 * bounded + 2, 2) / 2;
+}
+
+export function canonicalGraphMotionProgress(
+  elapsedMs: number,
+  durationMs: number,
+  easing: GraphPreferenceSettings["advanced_shared"]["motion_easing"]
+) {
+  if (durationMs <= 0) return 1;
+  return easedGraphMotionProgress(elapsedMs / durationMs, easing);
+}
 
 export type UniversePoint = {
   readonly entity: EntitySummary;

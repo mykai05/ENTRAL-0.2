@@ -49,15 +49,23 @@ GRANT entral_verifier TO entral_verifier_login;
 ENTRAL's runtime login roles use `INHERIT` so Prisma receives the matching
 group privileges without issuing `SET ROLE`.
 
-After migrations 043-045:
+After the complete repository migration sequence, including the Phase 195
+migration:
 
 ```powershell
 $env:DATABASE_URL = "<bootstrap-or-admin-url>"
 corepack pnpm prisma:roles
 ```
 
-The role policy is idempotent and atomically revokes and rebuilds the group
-allowlists. Re-run it after adding canonical tables or functions.
+The command validates that both
+`prisma/security/046_roles_and_grants.sql` and
+`prisma/security/047_phase_195_roles_and_grants.sql` have exactly one outer
+`BEGIN`/`COMMIT` wrapper. It strips only those wrappers and sends both policies,
+in that order, through one `prisma db execute --stdin` connection under one
+outer transaction. Normalization or SQL failure leaves neither policy
+committed, so there is no revoke/grant gap or partially applied role state.
+The combined role policy remains idempotent; re-run it after adding canonical
+tables or functions.
 
 ## Reconcile pre-Phase-150 identities
 
@@ -205,7 +213,8 @@ audit identity whose operational purpose and credential handling require it.
 
 1. Back up the production database and record its restore point.
 2. Apply repository migrations with the migration-only URL.
-3. Apply `prisma/security/046_roles_and_grants.sql` with the bootstrap URL.
+3. Run `pnpm prisma:roles` with the bootstrap URL so security policies 046 and
+   047 apply through one connection and one transaction.
 4. Provision or rotate the four environment login roles.
 5. Provision the outbox, verifier, and audit service identities and their
    separate grants.

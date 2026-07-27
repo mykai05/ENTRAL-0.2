@@ -3,9 +3,11 @@ import { scrapePayloadSchema, type ScrapePayload } from "../schemas.js";
 import { runShopifyAutonomyResumeJob, shopifyAutonomyResumeJobType } from "./shopifyAutonomyJobs.js";
 import { runShopifyStoreCreationBrowserTaskJob, shopifyStoreCreationBrowserTaskJobType } from "./shopifyStoreCreationBrowserTask.js";
 import { runShopifyStoreCreationHandoffJob, shopifyStoreCreationHandoffJobType } from "./shopifyStoreCreationHandoffJobs.js";
+import { safeOutboundHttpRequest } from "./safeOutboundHttp.js";
 import { assertSafePublicHttpUrl } from "./urlSafety.js";
 
 export type AutomationJobRecord = {
+  authorizationVersion: number;
   id: string;
   type: string;
   payloadJson: string;
@@ -59,51 +61,23 @@ function extractSimpleSelector(html: string, selector?: string) {
   return stripHtml(html);
 }
 
-async function responseTextWithLimit(response: Response, limitBytes = 250000) {
-  if (!response.body) {
-    return (await response.text()).slice(0, limitBytes);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let size = 0;
-  let text = "";
-
-  while (size < limitBytes) {
-    const { done, value } = await reader.read();
-
-    if (done || !value) {
-      break;
-    }
-
-    size += value.byteLength;
-    text += decoder.decode(value, { stream: true });
-  }
-
-  await reader.cancel().catch(() => undefined);
-  return `${text}${decoder.decode()}`.slice(0, limitBytes);
-}
-
 async function scrapeWithHttpFallback(payload: ScrapePayload, startedAt: number): Promise<AutomationResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const response = await safeOutboundHttpRequest(payload.url, {
+    maxRedirects: 0,
+    maxResponseBytes: 250_000,
+    timeoutMs: 15_000,
+    validateUrl: (url) => assertAllowedAutomationUrl(url.toString())
+  });
+  const content = extractSimpleSelector(response.body.toString("utf8"), payload.selector).slice(0, 10000);
 
-  try {
-    const response = await fetch(payload.url, { signal: controller.signal });
-    const html = await responseTextWithLimit(response);
-    const content = extractSimpleSelector(html, payload.selector).slice(0, 10000);
-
-    return {
-      engine: "http-fallback",
-      url: payload.url,
-      selector: payload.selector ?? null,
-      statusCode: response.status,
-      content,
-      durationMs: Date.now() - startedAt
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
+  return {
+    engine: "http-fallback",
+    url: payload.url,
+    selector: payload.selector ?? null,
+    statusCode: response.status,
+    content,
+    durationMs: Date.now() - startedAt
+  };
 }
 
 async function runScrapeTask(payload: ScrapePayload, logStep: LogStep): Promise<AutomationResult> {
@@ -114,17 +88,55 @@ async function runScrapeTask(payload: ScrapePayload, logStep: LogStep): Promise<
     await logStep("Launching browser");
     const { chromium } = await import("playwright-core");
     const browser = await chromium.launch({
+      args: [
+        "--host-resolver-rules=MAP * ~NOTFOUND",
+        "--proxy-server=http://127.0.0.1:9",
+        "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
+        "--webrtc-ip-handling-policy=disable_non_proxied_udp"
+      ],
       headless: true,
       executablePath: env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined
     });
 
     try {
-      await logStep("Creating isolated browser context without proxy, stealth, or fingerprint overrides");
-      const context = await browser.newContext();
+      await logStep("Creating an isolated browser context with all outbound HTTP routed through the vetted connector");
+      const context = await browser.newContext({ serviceWorkers: "block" });
 
       await logStep("Opening target URL");
 
       try {
+        await context.route("**/*", async (route) => {
+          const request = route.request();
+
+          try {
+            const response = await safeOutboundHttpRequest(request.url(), {
+              body: request.postDataBuffer(),
+              headers: request.headers(),
+              maxRedirects: 0,
+              maxRequestBytes: 1_000_000,
+              maxResponseBytes: 250_000,
+              method: request.method(),
+              timeoutMs: 15_000,
+              validateUrl: (url) => assertAllowedAutomationUrl(url.toString())
+            });
+            const headers = Object.fromEntries(Object.entries(response.headers).filter(([name]) => ![
+              "connection",
+              "content-length",
+              "transfer-encoding"
+            ].includes(name.toLowerCase())));
+
+            await route.fulfill({
+              body: response.body,
+              headers,
+              status: response.status
+            });
+          } catch {
+            await route.abort("blockedbyclient");
+          }
+        });
+        await context.routeWebSocket(/.*/, async (webSocket) => {
+          await webSocket.close({ code: 1008, reason: "Outbound WebSockets are disabled for automation scraping." });
+        });
         const page = await context.newPage();
         await page.goto(payload.url, { waitUntil: "domcontentloaded", timeout: 15000 });
 

@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: ENTRAL implemented API
-  version: 1.5.0
+  version: 1.6.0
   description: >
-    Gate 190 contract surface. Only paths with complete backend behavior are
+    Gate 195 contract surface. Only paths with complete backend behavior are
     included. Canonical control-plane paths require internal Admin
     authentication. Member portfolio paths require organization membership;
     PostgreSQL row-level security resolves Human portfolio or assigned scope.
@@ -88,6 +88,109 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CanonicalHierarchyResponse" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/member/organizations/{organizationId}/graph/projection:
+    get:
+      operationId: getMemberCanonicalGraphProjection
+      summary: Get one renderer-neutral projection of the authorized canonical hierarchy.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      responses:
+        "200":
+          description: Versioned, permission-safe canonical graph projection.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphProjection" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/member/organizations/{organizationId}/graph/preferences:
+    get:
+      operationId: getMemberGraphViewPreferences
+      summary: Read canonical defaults or the authenticated member's saved graph overrides.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      responses:
+        "200":
+          description: Current user-and-organization scoped graph preferences.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphViewPreferences" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateMemberGraphViewPreferences
+      summary: Persist validated graph overrides using optimistic concurrency and idempotency.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GraphViewPreferencesUpdateRequest" }
+      responses:
+        "200":
+          description: Saved preferences and canonical event receipts.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphViewPreferencesMutationResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: resetMemberGraphViewPreferences
+      summary: Delete or replace a bounded saved-override scope using optimistic concurrency and idempotency.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GraphViewPreferencesResetRequest" }
+      responses:
+        "200":
+          description: Reset preferences and canonical event receipts.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphViewPreferencesMutationResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/member/organizations/{organizationId}/graph/telemetry:
+    post:
+      operationId: recordMemberGraphRendererTelemetry
+      summary: Record bounded graph performance measurements without customer payloads.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GraphRendererTelemetryRequest" }
+      responses:
+        "202":
+          description: Structured graph telemetry accepted by production observability.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphRendererTelemetryResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -336,6 +439,22 @@ paths:
               schema: { $ref: "#/components/schemas/CanonicalPortfolioEvents" }
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /api/v1/control-plane/releases/phases/{phase}/evidence:
+    get:
+      operationId: getPhaseReleaseEvidence
+      summary: Read fail-closed, machine-verifiable production evidence for one phase.
+      parameters:
+        - $ref: "#/components/parameters/Phase"
+      responses:
+        "200":
+          description: Canonical production release, migration, deployment, pull-request, runtime, and gate evidence.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PhaseReleaseEvidenceReadback" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /api/v1/control-plane/entities/{entityId}/full:
     get:
       operationId: getCanonicalEntityFull
@@ -433,6 +552,11 @@ components:
       in: query
       required: false
       schema: { type: integer, minimum: 0, default: 0 }
+    Phase:
+      name: phase
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1, maximum: 10000 }
   responses:
     Unauthorized:
       description: Authentication is missing or invalid.
@@ -474,6 +598,692 @@ components:
     HealthState:
       type: string
       enum: [HEALTHY, WATCH, DEGRADED, CRITICAL, UNKNOWN]
+    GraphEntity:
+      type: object
+      additionalProperties: false
+      required:
+        - entity_id
+        - organization_id
+        - entity_type
+        - hierarchy_level
+        - authority_tier
+        - authority_score
+        - parent_id
+        - lineage_ids
+        - marshal_id
+        - domain_id
+        - business_id
+        - stable_code
+        - display_name
+        - status
+        - health
+        - version
+      properties:
+        entity_id: { type: string, format: uuid }
+        organization_id: { type: string, minLength: 1 }
+        entity_type: { $ref: "#/components/schemas/EntityRole" }
+        hierarchy_level: { type: integer, minimum: 0, maximum: 4 }
+        authority_tier: { type: integer, minimum: 0, maximum: 4 }
+        authority_score: { type: [number, "null"], minimum: 0, maximum: 1 }
+        parent_id: { type: [string, "null"], format: uuid }
+        lineage_ids:
+          type: array
+          minItems: 1
+          maxItems: 64
+          uniqueItems: true
+          items: { type: string, format: uuid }
+        marshal_id: { type: [string, "null"], format: uuid }
+        domain_id: { type: [string, "null"], format: uuid }
+        business_id: { type: [string, "null"], format: uuid }
+        stable_code: { type: string, minLength: 1, maxLength: 200 }
+        display_name: { type: string, minLength: 1, maxLength: 300 }
+        status: { $ref: "#/components/schemas/EntityStatus" }
+        health: { $ref: "#/components/schemas/HealthState" }
+        version: { type: integer, minimum: 1 }
+    GraphEdge:
+      type: object
+      additionalProperties: false
+      required: [edge_id, source_id, target_id, relation_type, direction, lineage, status]
+      properties:
+        edge_id: { type: string, minLength: 1 }
+        source_id: { type: string, format: uuid }
+        target_id: { type: string, format: uuid }
+        relation_type: { type: string, const: HIERARCHY }
+        direction: { type: string, const: OUTBOUND }
+        lineage: { type: boolean, const: true }
+        status: { $ref: "#/components/schemas/EntityStatus" }
+    GraphProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - contract_version
+        - schema_version
+        - organization_id
+        - projection_version
+        - root_id
+        - entities
+        - edges
+        - generated_at
+        - evidence_version_reference
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        organization_id: { type: string, minLength: 1 }
+        projection_version: { type: integer, minimum: 0 }
+        root_id: { type: string, format: uuid }
+        entities:
+          type: array
+          maxItems: 100000
+          items: { $ref: "#/components/schemas/GraphEntity" }
+        edges:
+          type: array
+          maxItems: 200000
+          items: { $ref: "#/components/schemas/GraphEdge" }
+        generated_at: { type: string, format: date-time }
+        evidence_version_reference:
+          type: object
+          additionalProperties: false
+          required: [source, event_sequence]
+          properties:
+            source: { type: string, const: canonical_hierarchy }
+            event_sequence: { type: integer, minimum: 0 }
+    GraphSimpleSettings:
+      type: object
+      additionalProperties: false
+      required:
+        - arrangement
+        - two_d_layout
+        - three_d_layout
+        - density
+        - labels
+        - connections
+        - motion
+        - synchronized_navigation
+      properties:
+        arrangement: { type: string, enum: [AUTO, SIDE_BY_SIDE, STACK, TWO_D_ONLY, THREE_D_ONLY] }
+        two_d_layout: { type: string, enum: [AUTHORITY_RADIAL, HIERARCHY_TREE, DOMAIN_CLUSTERS, COMPACT_RADIAL] }
+        three_d_layout: { type: string, enum: [AUTHORITY_RINGS, ELLIPTICAL_ORBITS, SPHERICAL_SHELLS, DOMAIN_CLUSTERS] }
+        density: { type: string, enum: [COMPACT, BALANCED, SPACIOUS] }
+        labels: { type: string, enum: [ALWAYS, RELEVANT, HOVER_OR_FOCUS, "OFF"] }
+        connections: { type: string, enum: [RELEVANT, LINEAGE, DIRECT, ALL] }
+        motion: { type: string, enum: [NORMAL, REDUCED, "OFF"] }
+        synchronized_navigation: { type: boolean }
+    GraphAdvancedSharedSettings:
+      type: object
+      additionalProperties: false
+      required:
+        - authority_band_spacing
+        - authority_score_influence
+        - node_scale
+        - selected_node_scale
+        - edge_width
+        - edge_opacity
+        - edge_curvature
+        - label_threshold
+        - label_scale
+        - lineage_emphasis
+        - color_mode
+        - background_visible
+        - grid_visible
+        - legend_visible
+        - animation_duration_ms
+        - motion_easing
+        - stable_layout_seed
+        - performance_mode
+        - level_of_detail
+        - maximum_live_labels
+        - frame_rate_cap
+        - worker_usage
+        - rendering_quality
+      properties:
+        authority_band_spacing: { type: number, minimum: 0.5, maximum: 3 }
+        authority_score_influence: { type: number, minimum: 0, maximum: 0.45 }
+        node_scale: { type: number, minimum: 0.25, maximum: 4 }
+        selected_node_scale: { type: number, minimum: 1, maximum: 5 }
+        edge_width: { type: number, minimum: 0.25, maximum: 8 }
+        edge_opacity: { type: number, minimum: 0, maximum: 1 }
+        edge_curvature: { type: number, minimum: 0, maximum: 1 }
+        label_threshold: { type: number, minimum: 0, maximum: 1 }
+        label_scale: { type: number, minimum: 0.5, maximum: 3 }
+        lineage_emphasis: { type: number, minimum: 1, maximum: 5 }
+        color_mode: { type: string, enum: [AUTHORITY, HEALTH, STATUS] }
+        background_visible: { type: boolean }
+        grid_visible: { type: boolean }
+        legend_visible: { type: boolean }
+        animation_duration_ms: { type: integer, minimum: 0, maximum: 5000 }
+        motion_easing: { type: string, enum: [LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT] }
+        stable_layout_seed: { type: string, minLength: 1, maxLength: 100 }
+        performance_mode: { type: string, enum: [AUTO, QUALITY, BALANCED, PERFORMANCE] }
+        level_of_detail: { type: string, enum: [AUTO, FULL, BALANCED, AGGRESSIVE] }
+        maximum_live_labels: { type: integer, minimum: 0, maximum: 10000 }
+        frame_rate_cap: { type: integer, enum: [30, 45, 60, 90, 120] }
+        worker_usage: { type: string, enum: [AUTO, "ON", "OFF"] }
+        rendering_quality: { type: string, enum: [LOW, MEDIUM, HIGH] }
+    GraphAdvancedTwoDSettings:
+      type: object
+      additionalProperties: false
+      required:
+        - ring_spacing
+        - tree_orientation
+        - sibling_spacing
+        - level_spacing
+        - sector_padding
+        - collision_padding
+        - force_iterations
+        - edge_routing
+        - minimap_visible
+        - grid_snapping
+        - grid_size
+        - fit_padding
+      properties:
+        ring_spacing: { type: number, minimum: 20, maximum: 2000 }
+        tree_orientation: { type: string, enum: [TOP_DOWN, LEFT_RIGHT, CENTER_OUT] }
+        sibling_spacing: { type: number, minimum: 4, maximum: 500 }
+        level_spacing: { type: number, minimum: 10, maximum: 2000 }
+        sector_padding: { type: number, minimum: 0, maximum: 0.45 }
+        collision_padding: { type: number, minimum: 0, maximum: 200 }
+        force_iterations: { type: integer, minimum: 0, maximum: 500 }
+        edge_routing: { type: string, enum: [STRAIGHT, CURVED, ORTHOGONAL] }
+        minimap_visible: { type: boolean }
+        grid_snapping: { type: boolean }
+        grid_size: { type: number, minimum: 1, maximum: 200 }
+        fit_padding: { type: number, minimum: 0, maximum: 500 }
+    GraphAdvancedThreeDSettings:
+      type: object
+      additionalProperties: false
+      required:
+        - ring_spacing
+        - ellipse_eccentricity
+        - orbit_tilt_degrees
+        - cluster_spread
+        - vertical_spread
+        - depth_scale
+        - collision_radius
+        - camera_field_of_view
+        - near_clip
+        - far_clip
+        - minimum_zoom
+        - maximum_zoom
+        - focus_distance
+        - auto_orbit_enabled
+        - auto_orbit_speed
+        - orbit_direction
+        - node_billboard
+        - edge_depth_fade
+        - bloom_intensity
+        - lighting_intensity
+        - focus_transition_ms
+      properties:
+        ring_spacing: { type: number, minimum: 20, maximum: 5000 }
+        ellipse_eccentricity: { type: number, minimum: 0, maximum: 0.9 }
+        orbit_tilt_degrees: { type: number, minimum: -85, maximum: 85 }
+        cluster_spread: { type: number, minimum: 0.1, maximum: 10 }
+        vertical_spread: { type: number, minimum: 0, maximum: 10 }
+        depth_scale: { type: number, minimum: 0.1, maximum: 10 }
+        collision_radius: { type: number, minimum: 0, maximum: 500 }
+        camera_field_of_view: { type: number, minimum: 20, maximum: 100 }
+        near_clip: { type: number, minimum: 0.001, maximum: 100 }
+        far_clip: { type: number, minimum: 100, maximum: 100000 }
+        minimum_zoom: { type: number, minimum: 0.01, maximum: 100 }
+        maximum_zoom: { type: number, minimum: 0.01, maximum: 100 }
+        focus_distance: { type: number, minimum: 1, maximum: 100000 }
+        auto_orbit_enabled: { type: boolean }
+        auto_orbit_speed: { type: number, minimum: 0, maximum: 5 }
+        orbit_direction: { type: string, enum: [CLOCKWISE, COUNTERCLOCKWISE] }
+        node_billboard: { type: boolean }
+        edge_depth_fade: { type: boolean }
+        bloom_intensity: { type: number, minimum: 0, maximum: 3 }
+        lighting_intensity: { type: number, minimum: 0, maximum: 5 }
+        focus_transition_ms: { type: integer, minimum: 0, maximum: 5000 }
+    GraphPinnedPosition:
+      type: object
+      additionalProperties: false
+      required: [entity_id, renderer, x, y, z]
+      properties:
+        entity_id: { type: string, format: uuid }
+        renderer: { type: string, enum: ["2D", "3D"] }
+        x: { type: number, minimum: -1000000, maximum: 1000000 }
+        y: { type: number, minimum: -1000000, maximum: 1000000 }
+        z: { type: [number, "null"], minimum: -1000000, maximum: 1000000 }
+    GraphPreferenceSettings:
+      type: object
+      additionalProperties: false
+      required: [simple, advanced_shared, advanced_2d, advanced_3d, pinned_positions]
+      properties:
+        simple: { $ref: "#/components/schemas/GraphSimpleSettings" }
+        advanced_shared: { $ref: "#/components/schemas/GraphAdvancedSharedSettings" }
+        advanced_2d: { $ref: "#/components/schemas/GraphAdvancedTwoDSettings" }
+        advanced_3d: { $ref: "#/components/schemas/GraphAdvancedThreeDSettings" }
+        pinned_positions:
+          type: array
+          maxItems: 5000
+          items: { $ref: "#/components/schemas/GraphPinnedPosition" }
+    GraphViewPreferences:
+      type: object
+      additionalProperties: false
+      required:
+        - contract_version
+        - schema_version
+        - preference_id
+        - user_id
+        - organization_id
+        - source
+        - settings
+        - version
+        - created_at
+        - updated_at
+        - migrated_from_schema_version
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 2 }
+        preference_id: { type: [string, "null"], format: uuid }
+        user_id: { type: string, format: uuid }
+        organization_id: { type: string, minLength: 1 }
+        source: { type: string, enum: [CANONICAL_DEFAULTS, SAVED_OVERRIDE] }
+        settings: { $ref: "#/components/schemas/GraphPreferenceSettings" }
+        version: { type: integer, minimum: 0 }
+        created_at: { type: [string, "null"], format: date-time }
+        updated_at: { type: [string, "null"], format: date-time }
+        migrated_from_schema_version: { type: [integer, "null"], minimum: 1, maximum: 1 }
+    GraphViewPreferencesUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, expected_version, idempotency_key, settings]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, enum: [1, 2] }
+        expected_version: { type: integer, minimum: 0 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        settings: { $ref: "#/components/schemas/GraphPreferenceSettings" }
+    GraphViewPreferencesResetRequest:
+      type: object
+      additionalProperties: false
+      required: [contract_version, expected_version, idempotency_key, reset_scope]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        expected_version: { type: integer, minimum: 0 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        reset_scope: { type: string, enum: [ALL, SHARED, VIEW_2D, VIEW_3D, PINNED_POSITIONS] }
+    GraphViewPreferencesMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [preferences, idempotent_replay, event_ids]
+      properties:
+        preferences: { $ref: "#/components/schemas/GraphViewPreferences" }
+        idempotent_replay: { type: boolean }
+        event_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, format: uuid }
+    GraphRendererTelemetryRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - contract_version
+        - schema_version
+        - telemetry_id
+        - observed_at
+        - renderer
+        - layout_pattern
+        - projection_id
+        - projection_version
+        - node_count
+        - edge_count
+        - settings_version
+        - layout_time_ms
+        - render_time_ms
+        - sample_window_ms
+        - frame_rate_fps
+        - dropped_frame_rate_ratio
+        - error_code
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        telemetry_id: { type: string, format: uuid }
+        observed_at: { type: string, format: date-time }
+        renderer: { type: string, enum: ["2D", "3D"] }
+        layout_pattern:
+          type: string
+          enum:
+            - AUTHORITY_RADIAL
+            - HIERARCHY_TREE
+            - DOMAIN_CLUSTERS
+            - COMPACT_RADIAL
+            - AUTHORITY_RINGS
+            - ELLIPTICAL_ORBITS
+            - SPHERICAL_SHELLS
+        projection_id: { type: string, format: uuid }
+        projection_version: { type: integer, minimum: 0 }
+        node_count: { type: integer, minimum: 0, maximum: 100000 }
+        edge_count: { type: integer, minimum: 0, maximum: 200000 }
+        settings_version: { type: integer, minimum: 0 }
+        layout_time_ms: { type: number, minimum: 0, maximum: 600000 }
+        render_time_ms: { type: number, minimum: 0, maximum: 600000 }
+        sample_window_ms: { type: number, minimum: 1, maximum: 600000 }
+        frame_rate_fps: { type: number, minimum: 0, maximum: 1000 }
+        dropped_frame_rate_ratio: { type: number, minimum: 0, maximum: 1 }
+        error_code:
+          type: string
+          enum:
+            - NONE
+            - GRAPH_LAYOUT_FAILURE
+            - GRAPH_RENDERER_FAILURE
+            - GRAPH_WEBGL_CONTEXT_LOST
+            - GRAPH_WORKER_FAILURE
+            - GRAPH_EXPORT_FAILURE
+            - GRAPH_PERFORMANCE_DEGRADED
+    GraphRendererTelemetryResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - contract_version
+        - schema_version
+        - telemetry_id
+        - organization_id
+        - accepted
+        - recorded_at
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        telemetry_id: { type: string, format: uuid }
+        organization_id: { type: string, minLength: 1 }
+        accepted: { type: boolean, const: true }
+        recorded_at: { type: string, format: date-time }
+    ReleaseEvidenceReference:
+      type: object
+      additionalProperties: false
+      required: [reference_id, reference_type, content_sha256, captured_at]
+      properties:
+        reference_id: { type: string, minLength: 1, maxLength: 500 }
+        reference_type:
+          type: string
+          enum: [ARTIFACT, DATABASE_READBACK, DEPLOYMENT_READBACK, TEST_RESULT, EXTERNAL_RECEIPT]
+        content_sha256:
+          type: [string, "null"]
+          pattern: "^[a-f0-9]{64}$"
+        captured_at: { type: string, format: date-time }
+    ReleaseActor:
+      type: object
+      additionalProperties: false
+      required: [actor_type, actor_id]
+      properties:
+        actor_type: { type: string, enum: [HUMAN, SERVICE, SYSTEM] }
+        actor_id: { type: string, minLength: 1, maxLength: 200 }
+    ReleaseEvidenceRecordBase:
+      type: object
+      required:
+        - contract_version
+        - schema_version
+        - record_id
+        - record_type
+        - phase
+        - organization_id
+        - business_id
+        - environment
+        - actor
+        - idempotency_key
+        - version
+        - verification_state
+        - evidence_references
+        - classification
+        - retention
+        - exportable
+        - deletion_behavior
+        - created_at
+        - updated_at
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        record_id: { type: string, format: uuid }
+        record_type: { type: string }
+        phase: { type: integer, minimum: 1 }
+        organization_id: { type: [string, "null"] }
+        business_id: { type: [string, "null"], format: uuid }
+        environment: { type: string, enum: [development, preview, staging, production] }
+        actor: { $ref: "#/components/schemas/ReleaseActor" }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        version: { type: integer, minimum: 1 }
+        verification_state: { type: string, enum: [PENDING, VERIFIED, FAILED, BLOCKED] }
+        evidence_references:
+          type: array
+          maxItems: 1000
+          items: { $ref: "#/components/schemas/ReleaseEvidenceReference" }
+        classification: { type: string, const: INTERNAL }
+        retention: { type: string, const: RELEASE_LIFETIME }
+        exportable: { type: boolean, const: true }
+        deletion_behavior: { type: string, const: RETAIN }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CanonicalReleaseRecord:
+      allOf:
+        - $ref: "#/components/schemas/ReleaseEvidenceRecordBase"
+        - type: object
+          required: [repository, git_commit_sha, release_tag, release_status, accepted_at, rollback_status]
+          properties:
+            record_type: { type: string, const: CANONICAL_RELEASE }
+            repository: { type: string, minLength: 1, maxLength: 300 }
+            git_commit_sha: { type: string, pattern: "^[a-f0-9]{40}$" }
+            release_tag: { type: string, minLength: 1, maxLength: 200 }
+            release_status: { type: string, enum: [CANDIDATE, ACCEPTED, DEPLOYED, ROLLED_BACK] }
+            accepted_at: { type: [string, "null"], format: date-time }
+            rollback_status: { type: string, enum: [NOT_REQUIRED, AVAILABLE, EXECUTED, UNAVAILABLE] }
+      unevaluatedProperties: false
+    MigrationFingerprint:
+      allOf:
+        - $ref: "#/components/schemas/ReleaseEvidenceRecordBase"
+        - type: object
+          required: [release_id, migration_name, checksum_sha256, applied_at, verified_at, recovery_status]
+          properties:
+            record_type: { type: string, const: MIGRATION_FINGERPRINT }
+            release_id: { type: string, format: uuid }
+            migration_name: { type: string, minLength: 1, maxLength: 300 }
+            checksum_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+            applied_at: { type: [string, "null"], format: date-time }
+            verified_at: { type: [string, "null"], format: date-time }
+            recovery_status: { type: string, enum: [UNVERIFIED, FORWARD_RECOVERY_VERIFIED, RESTORE_VERIFIED] }
+      unevaluatedProperties: false
+    DeploymentEvidence:
+      allOf:
+        - $ref: "#/components/schemas/ReleaseEvidenceRecordBase"
+        - type: object
+          required:
+            - release_id
+            - deployment_role
+            - service_name
+            - provider
+            - deployment_id
+            - deployed_commit_sha
+            - public_url
+            - deployment_status
+            - deployed_at
+            - checked_at
+            - source_freshness_seconds
+          properties:
+            record_type: { type: string, const: DEPLOYMENT_EVIDENCE }
+            release_id: { type: string, format: uuid }
+            deployment_role: { type: string, enum: [FRONTEND, API, WORKER] }
+            service_name: { type: string, minLength: 1, maxLength: 200 }
+            provider: { type: string, minLength: 1, maxLength: 200 }
+            deployment_id: { type: string, minLength: 1, maxLength: 300 }
+            deployed_commit_sha: { type: string, pattern: "^[a-f0-9]{40}$" }
+            public_url: { type: [string, "null"], format: uri }
+            deployment_status: { type: string, enum: [PENDING, READY, FAILED, ROLLED_BACK] }
+            deployed_at: { type: [string, "null"], format: date-time }
+            checked_at: { type: string, format: date-time }
+            source_freshness_seconds: { type: number, minimum: 0 }
+      unevaluatedProperties: false
+    PullRequestDisposition:
+      allOf:
+        - $ref: "#/components/schemas/ReleaseEvidenceRecordBase"
+        - type: object
+          required: [release_id, repository, pull_request_number, head_commit_sha, disposition, rationale, decided_at]
+          properties:
+            record_type: { type: string, const: PULL_REQUEST_DISPOSITION }
+            release_id: { type: string, format: uuid }
+            repository: { type: string, minLength: 1, maxLength: 300 }
+            pull_request_number: { type: integer, minimum: 1 }
+            head_commit_sha: { type: string, pattern: "^[a-f0-9]{40}$" }
+            disposition: { type: string, enum: [MERGED, SUPERSEDED, REJECTED, OPEN_BLOCKER] }
+            rationale: { type: string, minLength: 1, maxLength: 2000 }
+            decided_at: { type: string, format: date-time }
+      unevaluatedProperties: false
+    RuntimeModeRecord:
+      allOf:
+        - $ref: "#/components/schemas/ReleaseEvidenceRecordBase"
+        - type: object
+          required:
+            - release_id
+            - service_name
+            - process_role
+            - runtime_mode
+            - observed_commit_sha
+            - in_memory_canonical_state_reachable
+            - deterministic_fallback_reachable
+            - sample_data_reachable
+            - observed_at
+          properties:
+            record_type: { type: string, const: RUNTIME_MODE }
+            release_id: { type: string, format: uuid }
+            service_name: { type: string, minLength: 1, maxLength: 200 }
+            process_role: { type: string, enum: [API, WORKER, COMBINED] }
+            runtime_mode: { type: string, enum: [DEVELOPMENT, TEST, PRODUCTION] }
+            observed_commit_sha: { type: string, pattern: "^[a-f0-9]{40}$" }
+            in_memory_canonical_state_reachable: { type: boolean }
+            deterministic_fallback_reachable: { type: boolean }
+            sample_data_reachable: { type: boolean }
+            observed_at: { type: string, format: date-time }
+      unevaluatedProperties: false
+    PhaseGateRecord:
+      allOf:
+        - $ref: "#/components/schemas/ReleaseEvidenceRecordBase"
+        - type: object
+          required:
+            - release_id
+            - gate_id
+            - gate_status
+            - expected_release_version
+            - migration_fingerprint_ids
+            - deployment_evidence_ids
+            - pull_request_disposition_ids
+            - runtime_mode_record_ids
+            - test_evidence_references
+            - ci_provider
+            - ci_repository
+            - ci_workflow
+            - ci_git_commit_sha
+            - ci_run_id
+            - ci_run_url
+            - ci_result
+            - ci_artifact_ids
+            - authenticated_smoke_receipt_id
+            - authenticated_smoke_target_url
+            - authenticated_smoke_status
+            - rollback_recovery_reference
+            - remaining_external_boundaries
+            - closed_at
+          properties:
+            record_type: { type: string, const: PHASE_GATE }
+            release_id: { type: string, format: uuid }
+            gate_id: { type: string, minLength: 1, maxLength: 200 }
+            gate_status: { type: string, enum: [OPEN, PASSED, FAILED, BLOCKED] }
+            expected_release_version: { type: integer, minimum: 1 }
+            migration_fingerprint_ids:
+              type: array
+              uniqueItems: true
+              items: { type: string, format: uuid }
+            deployment_evidence_ids:
+              type: array
+              uniqueItems: true
+              items: { type: string, format: uuid }
+            pull_request_disposition_ids:
+              type: array
+              uniqueItems: true
+              items: { type: string, format: uuid }
+            runtime_mode_record_ids:
+              type: array
+              uniqueItems: true
+              items: { type: string, format: uuid }
+            test_evidence_references:
+              type: array
+              uniqueItems: true
+              items: { type: string, minLength: 1, maxLength: 1000 }
+            ci_provider: { type: [string, "null"], minLength: 1, maxLength: 200 }
+            ci_repository: { type: [string, "null"], minLength: 1, maxLength: 300 }
+            ci_workflow: { type: [string, "null"], minLength: 1, maxLength: 300 }
+            ci_git_commit_sha:
+              type: [string, "null"]
+              pattern: "^[a-f0-9]{40}$"
+            ci_run_id: { type: [string, "null"], minLength: 1, maxLength: 200 }
+            ci_run_url: { type: [string, "null"], format: uri }
+            ci_result: { type: string, enum: [PENDING, SUCCESS, FAILED] }
+            ci_artifact_ids:
+              type: array
+              uniqueItems: true
+              items: { type: string, minLength: 1, maxLength: 1000 }
+            authenticated_smoke_receipt_id:
+              type: [string, "null"]
+              minLength: 1
+              maxLength: 200
+            authenticated_smoke_target_url: { type: [string, "null"], format: uri }
+            authenticated_smoke_status:
+              type: string
+              enum: [PENDING, PASSED, FAILED]
+            rollback_recovery_reference:
+              type: [string, "null"]
+              minLength: 1
+              maxLength: 200
+            remaining_external_boundaries:
+              type: array
+              uniqueItems: true
+              items: { type: string, minLength: 1, maxLength: 1000 }
+            closed_at: { type: [string, "null"], format: date-time }
+      unevaluatedProperties: false
+    PhaseReleaseEvidenceReadback:
+      type: object
+      additionalProperties: false
+      required:
+        - contract_version
+        - schema_version
+        - phase
+        - complete
+        - canonical_release
+        - phase_gate
+        - migration_fingerprints
+        - deployments
+        - pull_request_dispositions
+        - runtime_modes
+        - blockers
+        - generated_at
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        phase: { type: integer, minimum: 1 }
+        complete: { type: boolean }
+        canonical_release:
+          oneOf:
+            - $ref: "#/components/schemas/CanonicalReleaseRecord"
+            - type: "null"
+        phase_gate:
+          oneOf:
+            - $ref: "#/components/schemas/PhaseGateRecord"
+            - type: "null"
+        migration_fingerprints:
+          type: array
+          items: { $ref: "#/components/schemas/MigrationFingerprint" }
+        deployments:
+          type: array
+          items: { $ref: "#/components/schemas/DeploymentEvidence" }
+        pull_request_dispositions:
+          type: array
+          items: { $ref: "#/components/schemas/PullRequestDisposition" }
+        runtime_modes:
+          type: array
+          items: { $ref: "#/components/schemas/RuntimeModeRecord" }
+        blockers:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 1000 }
+        generated_at: { type: string, format: date-time }
     CanonicalEntitySummary:
       type: object
       additionalProperties: false

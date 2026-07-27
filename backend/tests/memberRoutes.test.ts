@@ -3,7 +3,7 @@ import cookie from "@fastify/cookie";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  assertAiUsageAllowed: vi.fn(),
+  failAiUsageReservation: vi.fn(),
   conversationCreate: vi.fn(),
   conversationFindFirst: vi.fn(),
   conversationUpdate: vi.fn(),
@@ -23,7 +23,9 @@ const mocks = vi.hoisted(() => ({
   messageDelete: vi.fn(),
   messageFindMany: vi.fn(),
   openAiCreateReply: vi.fn(),
-  recordAiUsageEvent: vi.fn(),
+  reserveAiUsage: vi.fn(),
+  resolveAiUsageRequestId: vi.fn(),
+  settleAiUsageReservation: vi.fn(),
   recordAuditLog: vi.fn(),
   taskCount: vi.fn(),
   taskFindMany: vi.fn(),
@@ -84,10 +86,13 @@ vi.mock("../src/services/aiBrain.js", () => ({
 }));
 
 vi.mock("../src/services/aiUsage.js", () => ({
+  AiUsageIdempotencyError: class AiUsageIdempotencyError extends Error {},
   AiUsageLimitError: class AiUsageLimitError extends Error {},
-  assertAiUsageAllowed: mocks.assertAiUsageAllowed,
+  failAiUsageReservation: mocks.failAiUsageReservation,
   getAiUsageSummary: mocks.getAiUsageSummary,
-  recordAiUsageEvent: mocks.recordAiUsageEvent
+  reserveAiUsage: mocks.reserveAiUsage,
+  resolveAiUsageRequestId: mocks.resolveAiUsageRequestId,
+  settleAiUsageReservation: mocks.settleAiUsageReservation
 }));
 
 vi.mock("../src/services/audit.js", () => ({
@@ -131,6 +136,17 @@ beforeEach(() => {
   process.env.COOKIE_NAME = "entral_token";
   process.env.CORS_ORIGIN = "http://localhost:3000";
   process.env.APP_PUBLIC_URL = "http://localhost:3000";
+  mocks.userFindUnique.mockResolvedValue({ sessionVersion: 0 });
+  mocks.resolveAiUsageRequestId.mockImplementation((requestId) => requestId);
+  mocks.reserveAiUsage.mockResolvedValue({
+    estimatedCostCents: 2,
+    id: "usage-1",
+    requestId: "request-1",
+    status: "reserved",
+    userId: "user-1"
+  });
+  mocks.settleAiUsageReservation.mockResolvedValue({ estimatedCostCents: 2, id: "usage-1" });
+  mocks.failAiUsageReservation.mockResolvedValue(undefined);
 });
 
 describe("member organization routes", () => {
@@ -145,7 +161,9 @@ describe("member organization routes", () => {
 
   it("returns only the signed-in user's organization memberships", async () => {
     const joinedAt = new Date("2026-07-01T12:00:00.000Z");
-    mocks.userFindUnique.mockResolvedValueOnce({ id: "user-1", name: "Ada Lovelace", email: "ada@example.com" });
+    mocks.userFindUnique
+      .mockResolvedValueOnce({ sessionVersion: 0 })
+      .mockResolvedValueOnce({ id: "user-1", name: "Ada Lovelace", email: "ada@example.com" });
     mocks.teamMemberFindMany.mockResolvedValueOnce([
       {
         joinedAt,
@@ -177,7 +195,9 @@ describe("member organization routes", () => {
   });
 
   it("fails closed to the member role when a stored role is not public", async () => {
-    mocks.userFindUnique.mockResolvedValueOnce({ id: "user-1", name: "Ada Lovelace", email: "ada@example.com" });
+    mocks.userFindUnique
+      .mockResolvedValueOnce({ sessionVersion: 0 })
+      .mockResolvedValueOnce({ id: "user-1", name: "Ada Lovelace", email: "ada@example.com" });
     mocks.teamMemberFindMany.mockResolvedValueOnce([{
       joinedAt: new Date("2026-07-01T12:00:00.000Z"),
       role: "INTERNAL_SUPERUSER",
@@ -448,7 +468,6 @@ describe("member organization routes", () => {
       entities: [entity],
       event_sequence: 50
     });
-    mocks.assertAiUsageAllowed.mockResolvedValueOnce({ estimatedCostCents: 2 });
     mocks.conversationCreate.mockResolvedValueOnce({
       id: "ck1234567890123456789012",
       userId: "user-1"
@@ -469,7 +488,6 @@ describe("member organization routes", () => {
       providerName: "OpenAI",
       usedLocalFallback: false
     });
-    mocks.recordAiUsageEvent.mockResolvedValueOnce({ estimatedCostCents: 2, id: "usage-1" });
     mocks.getAiUsageSummary.mockResolvedValueOnce({ used: 1 });
     mocks.createAiAuditEntry.mockReturnValueOnce({ outcome: "contextual response" });
     mocks.recordAuditLog.mockResolvedValueOnce(undefined);
@@ -509,6 +527,17 @@ describe("member organization routes", () => {
       })],
       expect.any(Object)
     );
+    expect(mocks.reserveAiUsage).toHaveBeenCalledWith(expect.objectContaining({
+      requestKind: "chat",
+      userId: "user-1"
+    }));
+    expect(mocks.reserveAiUsage.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.createProviderBackedAiDecision.mock.invocationCallOrder[0]
+    );
+    expect(mocks.settleAiUsageReservation).toHaveBeenCalledWith(expect.objectContaining({
+      reservationId: "usage-1",
+      userId: "user-1"
+    }));
     expect(mocks.messageCreate).toHaveBeenNthCalledWith(1, expect.objectContaining({
       data: expect.objectContaining({ content: "What is selected?", role: "user" })
     }));
@@ -541,7 +570,7 @@ describe("member organization routes", () => {
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ error: "Not Found", message: "Entity not found." });
-    expect(mocks.assertAiUsageAllowed).not.toHaveBeenCalled();
+    expect(mocks.reserveAiUsage).not.toHaveBeenCalled();
     expect(mocks.conversationCreate).not.toHaveBeenCalled();
     await app.close();
   });

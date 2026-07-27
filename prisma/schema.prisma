@@ -14,6 +14,7 @@ model User {
   passwordHash String
   role         String       @default("USER")
   internalAccess Boolean    @default(false)
+  sessionVersion Int        @default(0)
   emailVerifiedAt DateTime?
   lastDashboardSeenAt DateTime?
   createdAt    DateTime     @default(now())
@@ -202,6 +203,7 @@ model ShopifyConnection {
 model ShopifyOAuthContinuation {
   id               String           @id @default(cuid())
   userId           String
+  authorizationVersion Int          @default(0)
   storeId          String
   shopDomain       String
   stateNonce       String           @unique
@@ -902,6 +904,9 @@ model Agent {
   status           String         @default("idle")
   isPaused         Boolean        @default(false)
   runInBackground  Boolean        @default(true)
+  executionLeaseToken String?
+  executionLeaseTaskId String?
+  executionLeaseAcquiredAt DateTime?
   lastActivitySeenAt DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -912,6 +917,7 @@ model Agent {
   schedules        AgentSchedule[]
 
   @@index([userId, status])
+  @@index([executionLeaseTaskId])
 }
 
 model AgentTask {
@@ -921,6 +927,7 @@ model AgentTask {
   title       String
   action      String
   status      String         @default("queued")
+  authorizationVersion Int   @default(0)
   payloadJson String
   resultJson  String?
   error       String?
@@ -948,6 +955,7 @@ model AgentSchedule {
   action          String
   payloadJson     String
   status          String      @default("active")
+  authorizationVersion Int    @default(0)
   intervalMinutes Int
   nextRunAt       DateTime
   lastRunAt       DateTime?
@@ -1098,13 +1106,19 @@ model AiUsageEvent {
   estimatedCostCents Int
   usedLocalFallback  Boolean  @default(false)
   requestId          String?
+  providerRequestId  String?
+  status             String   @default("settled")
+  settledAt          DateTime?
+  failedAt           DateTime?
   metadataJson       String?
   createdAt          DateTime @default(now())
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([userId, requestKind, createdAt])
+  @@unique([userId, requestId])
   @@index([requestId])
+  @@index([userId, status, createdAt])
 }
 
 model AutomationJob {
@@ -1112,10 +1126,14 @@ model AutomationJob {
   userId      String
   type        String
   status      String          @default("pending")
+  authorizationVersion Int    @default(0)
   payloadJson String
   resultJson  String?
   error       String?
   scheduledAt DateTime?
+  recoveryClaimedAt DateTime?
+  recoveryClaimToken String?
+  sourceOperationKey String?      @unique
   startedAt   DateTime?
   completedAt DateTime?
   createdAt   DateTime        @default(now())
@@ -1125,6 +1143,7 @@ model AutomationJob {
 
   @@index([userId, createdAt])
   @@index([status, scheduledAt])
+  @@index([status, recoveryClaimedAt])
 }
 
 model AutomationLog {

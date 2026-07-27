@@ -40,7 +40,7 @@ describe("Command Center browser-state isolation", () => {
   it("never auto-assigns an unscoped legacy hierarchy to a signed-in user", () => {
     window.localStorage.setItem("entral-command-os-state-v3", JSON.stringify(stateWithMarshal));
 
-    expect(readStoredCommandState("user-a").nodes.map((node) => node.id)).toEqual(["entral"]);
+    expect(readStoredCommandState("user-a").nodes).toEqual([]);
     expect(readUnscopedCommandStateForExplicitRecovery()?.nodes.map((node) => node.id)).toContain("commerce-marshal");
   });
 
@@ -52,7 +52,7 @@ describe("Command Center browser-state isolation", () => {
     }));
 
     expect(readStoredCommandState("user-a").nodes.map((node) => node.id)).toContain("commerce-marshal");
-    expect(readStoredCommandState("user-b").nodes.map((node) => node.id)).toEqual(["entral"]);
+    expect(readStoredCommandState("user-b").nodes).toEqual([]);
     expect(readStoredGraphControls("user-a")).toMatchObject({ gravity: 2.5, showRings: false });
     expect(readStoredGraphControls("user-b")).toMatchObject({ gravity: 0.72, showRings: true });
   });

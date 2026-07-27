@@ -3,6 +3,8 @@
 import type {
   CanonicalEntralConversationMessage,
   CanonicalHierarchyResponse,
+  GraphProjection,
+  GraphViewPreferences,
   MemberOrganizationsResponse,
   PortfolioSummaryResponse
 } from "@entral/contracts";
@@ -26,6 +28,10 @@ import {
   type CanonicalPortfolioSource
 } from "../lib/canonical-portfolio";
 import { entitiesForBusinessScope } from "../lib/canonical-universe";
+import {
+  loadCanonicalGraphPreferences,
+  loadCanonicalGraphProjection
+} from "../lib/canonical-graph";
 import { BrandMark } from "./BrandMark";
 import { CanonicalEntralAssistant } from "./CanonicalEntralAssistant";
 import {
@@ -70,6 +76,8 @@ export function CanonicalMemberShell({
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(routeEntityId);
   const [portfolio, setPortfolio] = useState<PortfolioSummaryResponse | null>(null);
   const [hierarchy, setHierarchy] = useState<CanonicalHierarchyResponse | null>(null);
+  const [graphProjection, setGraphProjection] = useState<GraphProjection | null>(null);
+  const [graphPreferences, setGraphPreferences] = useState<GraphViewPreferences | null>(null);
   const [workspaceError, setWorkspaceError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Connecting to canonical events");
@@ -135,6 +143,27 @@ export function CanonicalMemberShell({
         throw new Error("ENTRAL conversation history is behind the accepted canonical workspace snapshot.");
       }
       if (!isCurrentRefresh()) return;
+      if (initialDestination === "graph") {
+        const [nextProjection, nextPreferences] = await Promise.all([
+          loadCanonicalGraphProjection(requestedOrganizationId, { signal }),
+          loadCanonicalGraphPreferences(requestedOrganizationId, { signal })
+        ]);
+        if (
+          nextProjection.organization_id !== requestedOrganizationId
+          || nextProjection.projection_version !== accepted.hierarchy.event_sequence
+        ) {
+          throw new Error("Canonical graph projection is not aligned with the accepted hierarchy snapshot.");
+        }
+        if (
+          nextPreferences.organization_id !== requestedOrganizationId
+          || nextPreferences.user_id !== accepted.portfolio.scope.user_id
+        ) {
+          throw new Error("Graph preferences are outside the active authenticated scope.");
+        }
+        if (!isCurrentRefresh()) return;
+        setGraphProjection(nextProjection);
+        setGraphPreferences(nextPreferences);
+      }
       setPortfolio(accepted.portfolio);
       setHierarchy(accepted.hierarchy);
       alignedEventSequenceRef.current = accepted.portfolio.event_sequence;
@@ -163,7 +192,7 @@ export function CanonicalMemberShell({
     } finally {
       if (isCurrentRefresh()) setIsLoading(false);
     }
-  }, [businessScopeId, organizationId, source]);
+  }, [businessScopeId, initialDestination, organizationId, source]);
 
   const refreshPendingEvents = useCallback(() => {
     const pendingSequence = pendingEventSequenceRef.current;
@@ -375,6 +404,8 @@ export function CanonicalMemberShell({
                 setConversationMessages([]);
                 setPortfolio(null);
                 setHierarchy(null);
+                setGraphProjection(null);
+                setGraphPreferences(null);
                 setWorkspaceError("");
                 setIsLoading(true);
                 setSyncState("connecting");
@@ -442,17 +473,26 @@ export function CanonicalMemberShell({
               workspacePortfolio={portfolio}
               workspaceStatus={syncStatus}
             />
-          ) : initialDestination === "graph" ? (
+          ) : initialDestination === "graph" && graphProjection && graphPreferences ? (
             <CanonicalGraphWorkspace
               assistantCommand={assistantCommand}
               entities={scopedEntities}
               eventSequence={hierarchy.event_sequence}
+              organizationId={organizationId}
               onOpenFullRecord={openFullRecord}
+              onPreferencesChange={setGraphPreferences}
               onPreferredDimensionChange={changePreferredGraphDimension}
               onSelectedEntityChange={setSelectedEntityId}
+              preferences={graphPreferences}
               preferredDimension={preferredGraphDimension}
+              projection={graphProjection}
+              scopeBusinessId={businessScopeId}
               selectedEntityId={selectedEntityId}
             />
+          ) : initialDestination === "graph" ? (
+            <section className="phase180-loading" role="status">
+              <RefreshCw className="spin" size={24} /> Synchronizing authorized graph projection and preferences...
+            </section>
           ) : (
             <CanonicalInfrastructure
               entities={scopedEntities}

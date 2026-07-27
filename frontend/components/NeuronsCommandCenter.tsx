@@ -1,6 +1,12 @@
 "use client";
 
-import type { EntitySummary } from "@entral/contracts";
+import {
+  canonicalGraphEdgeId,
+  type EntitySummary,
+  type GraphConnectionMode,
+  type GraphLabelMode,
+  type GraphPreferenceSettings
+} from "@entral/contracts";
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Activity, AlertTriangle, Bot, Crosshair, Eye, Info, LogOut, Maximize2, Menu, Mic, MicOff, Network, PanelRightClose, PanelRightOpen, Pause, Play, Plus, RotateCcw, Search, Send, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Volume2, X, Zap, ZoomIn, ZoomOut } from "lucide-react";
 import Link from "next/link";
@@ -38,7 +44,6 @@ import {
   commandStatusLabel,
   commandTaskStatusLabel,
   createCommandId,
-  createDefaultCommandHierarchy,
   inferSoldierBlueprint,
   type CommandMemory,
   type CommandNode,
@@ -77,8 +82,14 @@ import { buildCommandOSReport, buildCommandOSReportRecord } from "../lib/command
 import { getContextCommandSuggestions, getInspectorSuggestedActions } from "../lib/command-suggestions";
 import { creationBlockedTransmission, hierarchyNameFromCommandText, nextCommandPlaceholderName } from "../lib/command-creation";
 import { createAiActionPlan, createAiAuditEntry, formatActionPlanSummary, type AiActionPlan, type AiAuditEntry } from "../lib/ai-brain";
-import { buildMockToolExecution, defaultToolRegistry, toolById, type MockToolExecutionResult, type ToolRegistryEntry } from "../lib/tool-registry";
+import type { ToolRegistryEntry } from "../lib/tool-registry";
 import { useDialogFocus } from "../lib/dialog-focus";
+import type { GraphLayout3DResult } from "../lib/graph-layouts";
+import type {
+  CanonicalRendererFrameDiagnostics,
+  CanonicalWebGlRendererEvent
+} from "../lib/canonical-universe";
+import { canonicalGraphMotionProgress } from "../lib/canonical-universe";
 
 type GraphStatus = CommandStatus;
 
@@ -87,16 +98,23 @@ type CommandCenterSurface = "internal" | "member";
 type NeuronsCommandCenterProps = {
   canonicalEntities?: readonly EntitySummary[];
   canonicalEventSequence?: number;
+  canonicalFocusedEntityId?: string | null;
   canonicalFullscreenActive?: boolean;
   canonicalInspectorCollapsed?: boolean;
+  canonicalLayout3D?: GraphLayout3DResult;
   canonicalMotionPaused?: boolean;
+  canonicalGraphSettings?: GraphPreferenceSettings;
   canonicalSelectedEntityId?: string | null;
   canonicalTouchInteractionActive?: boolean;
+  canonicalViewFitSignal?: number;
+  canonicalViewFocusSignal?: number;
   embeddedGraphOnly?: boolean;
   initialDestination?: MemberDestination;
   onCanonicalInspectorCollapsedChange?: (collapsed: boolean) => void;
+  onCanonicalFrameDiagnostics?: (diagnostics: CanonicalRendererFrameDiagnostics) => void;
   onCanonicalOpenFullRecord?: (entityId: string) => void;
   onCanonicalSelectedEntityChange?: (entityId: string | null) => void;
+  onCanonicalWebGlStateChange?: (event: CanonicalWebGlRendererEvent) => void;
   onLogout: () => void;
   organizationId?: string;
   surface?: CommandCenterSurface;
@@ -109,7 +127,7 @@ type Vec3 = {
   z: number;
 };
 
-type GraphNode3D = Vec3 & {
+export type GraphNode3D = Vec3 & {
   activeCommanders?: number;
   activeGenerals?: number;
   activeProjects?: string[];
@@ -118,6 +136,8 @@ type GraphNode3D = Vec3 & {
   businessName?: string;
   capabilities?: string[];
   canonicalEntityId?: string;
+  canonicalHealthState?: EntitySummary["health"];
+  canonicalStatus?: EntitySummary["status"];
   canonicalVersion?: number;
   children?: string[];
   commandType: NodeType;
@@ -163,7 +183,7 @@ type GraphNode3D = Vec3 & {
   vz: number;
 };
 
-type GraphEdge = {
+export type GraphEdge = {
   id: string;
   label: string;
   source: string;
@@ -226,10 +246,15 @@ type PickResult = {
 };
 
 type TooltipState = {
+  health: number;
+  healthState: EntitySummary["health"] | null;
   groupName: string;
   name: string;
+  role: string;
   status: GraphStatus;
+  statusState: EntitySummary["status"] | null;
   task: string;
+  tier: number | null;
   x: number;
   y: number;
 };
@@ -287,6 +312,14 @@ type NodeMotion = {
   localTiltZ: number;
   phase: number;
   trail: Vec3[];
+};
+
+type CanonicalLayoutTransition = {
+  readonly durationMs: number;
+  readonly easing: GraphPreferenceSettings["advanced_shared"]["motion_easing"];
+  readonly fromById: ReadonlyMap<string, Vec3>;
+  readonly startedAtMs: number;
+  readonly targetById: ReadonlyMap<string, Vec3>;
 };
 
 type SpacePoint = Vec3 & {
@@ -1183,6 +1216,13 @@ function canonicalMaterialResult(value: EntitySummary["latest_material_result"])
   return JSON.stringify(value);
 }
 
+export function canonicalGraphDetailChildCount(
+  canonicalEntity: EntitySummary | null,
+  renderedChildCount: number
+) {
+  return canonicalEntity?.child_count ?? renderedChildCount;
+}
+
 function canonicalGraphStatus(status: EntitySummary["status"]): GraphStatus {
   if (status === "ACTIVE") return "working";
   if (status === "BUILDING") return "thinking";
@@ -1206,19 +1246,21 @@ function canonicalCommandType(role: EntitySummary["entity_type"]): NodeType {
 
 export function graphStateFromCanonicalEntities(
   entities: readonly EntitySummary[],
-  eventSequence = 0
+  eventSequence = 0,
+  layout?: GraphLayout3DResult
 ): GraphState3D {
-  const root = entities.find((entity) => entity.entity_type === "ENTRAL") ?? null;
-  const rootCanonicalId = root?.entity_id ?? null;
   const sourceById = new Map(entities.map((entity) => [entity.entity_id, entity]));
   const childrenByParent = new Map<string, EntitySummary[]>();
+  const layoutPointById = new Map(
+    (layout?.points ?? []).map((point) => [point.entityId, point])
+  );
   for (const entity of entities) {
     if (!entity.parent_id) continue;
     const siblings = childrenByParent.get(entity.parent_id) ?? [];
     siblings.push(entity);
     childrenByParent.set(entity.parent_id, siblings);
   }
-  const internalId = (entityId: string) => entityId === rootCanonicalId ? "entral" : entityId;
+  const internalId = (entityId: string) => entityId;
 
   function ancestor(entity: EntitySummary, role: EntitySummary["entity_type"]) {
     let candidate = entity.parent_id ? sourceById.get(entity.parent_id) ?? null : null;
@@ -1253,6 +1295,7 @@ export function graphStateFromCanonicalEntities(
             ? 450
             : 530;
     const health = canonicalHealthScore(entity.health);
+    const layoutPoint = layoutPointById.get(entity.entity_id);
     const latestResult = canonicalMaterialResult(entity.latest_material_result);
     const marshal = entity.entity_type === "MARSHAL" ? entity : ancestor(entity, "MARSHAL");
     const general = entity.entity_type === "GENERAL" ? entity : ancestor(entity, "GENERAL");
@@ -1282,6 +1325,8 @@ export function graphStateFromCanonicalEntities(
       businessName: entity.assigned_business_id ?? undefined,
       capabilities,
       canonicalEntityId: entity.entity_id,
+      canonicalHealthState: entity.health,
+      canonicalStatus: entity.status,
       canonicalVersion: entity.version,
       children: children.map((candidate) => internalId(candidate.entity_id)),
       commandType,
@@ -1333,9 +1378,9 @@ export function graphStateFromCanonicalEntities(
       vx: 0,
       vy: 0,
       vz: 0,
-      x: Math.cos(offset) * radius,
-      y: Math.sin(offset * 1.7) * Math.min(120, radius * 0.3),
-      z: Math.sin(offset) * radius
+      x: layoutPoint?.x ?? Math.cos(offset) * radius,
+      y: layoutPoint?.y ?? Math.sin(offset * 1.7) * Math.min(120, radius * 0.3),
+      z: layoutPoint?.z ?? Math.sin(offset) * radius
     };
   });
   const groups: GraphGroup[] = [
@@ -1350,14 +1395,21 @@ export function graphStateFromCanonicalEntities(
   ];
 
   return {
-    edges: nodes
-      .filter((node) => node.parentId)
-      .map((node) => ({
-        id: `e-${node.parentId}-${node.id}`,
-        label: `${node.commandType} canonical link`,
-        source: node.parentId as string,
-        target: node.id
-      })),
+    edges: layout
+      ? layout.edges.map((edge) => ({
+          id: edge.edgeId,
+          label: `${edge.relationType.toLocaleLowerCase()} canonical link`,
+          source: edge.sourceId,
+          target: edge.targetId
+        }))
+      : nodes
+          .filter((node) => node.parentId)
+          .map((node) => ({
+            id: canonicalGraphEdgeId(node.parentId as string, node.id),
+            label: `${node.commandType} canonical link`,
+            source: node.parentId as string,
+            target: node.id
+          })),
     groups,
     nodes,
     tasks: []
@@ -1391,7 +1443,12 @@ export function reconcileCanonicalGraphPositions(
 }
 
 function createInitialState(): GraphState3D {
-  return graphStateFromCommandNodes(createDefaultCommandHierarchy());
+  return {
+    edges: [],
+    groups: [],
+    nodes: [],
+    tasks: []
+  };
 }
 
 function initializeCommandCenterGraph({
@@ -1776,19 +1833,27 @@ function createProgramBundle(gl: WebGLRenderingContext, vertexSource: string, fr
   };
 }
 
-function getCameraMatrix(camera: CameraState, width: number, height: number) {
+function getCameraMatrix(
+  camera: CameraState,
+  width: number,
+  height: number,
+  preferences?: GraphPreferenceSettings["advanced_3d"]
+) {
   const clampedPitch = Math.max(-1.25, Math.min(1.25, camera.pitch));
   const eye = {
     x: camera.target.x + Math.sin(camera.yaw) * Math.cos(clampedPitch) * camera.distance,
     y: camera.target.y + Math.sin(clampedPitch) * camera.distance,
     z: camera.target.z + Math.cos(camera.yaw) * Math.cos(clampedPitch) * camera.distance
   };
-  const clip = graphCameraClipPlanes(camera.distance);
+  const fallbackClip = graphCameraClipPlanes(camera.distance);
+  const near = preferences?.near_clip ?? fallbackClip.near;
+  const far = preferences?.far_clip ?? fallbackClip.far;
+  const fieldOfView = preferences?.camera_field_of_view ?? 56.25;
   const projection = perspective(
-    Math.PI / 3.2,
+    fieldOfView * Math.PI / 180,
     Math.max(width / Math.max(height, 1), 0.2),
-    clip.near,
-    clip.far
+    near,
+    far
   );
   const view = lookAt(eye, camera.target);
 
@@ -1978,7 +2043,7 @@ function parentNodeFromMoveCommand(text: string, nodes: GraphNode3D[]) {
   return null;
 }
 
-function descendantIdsFromNodes(nodeId: string, nodes: GraphNode3D[]) {
+function descendantIdsFromNodes(nodeId: string, nodes: readonly GraphNode3D[]) {
   const childrenByParent = new Map<string, string[]>();
   for (const node of nodes) {
     if (!node.parentId) continue;
@@ -1998,18 +2063,171 @@ function descendantIdsFromNodes(nodeId: string, nodes: GraphNode3D[]) {
   return descendants;
 }
 
-function visibleNodeIdsForSelection(selectedId: string | null, nodes: GraphNode3D[]) {
+export function relatedNodeIdsForSelection(
+  selectedId: string | null,
+  nodes: readonly GraphNode3D[]
+): ReadonlySet<string> {
   const selected = selectedId ? nodes.find((node) => node.id === selectedId) : null;
 
+  if (!selected) return new Set();
+
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const visible = new Set([selected.id, ...descendantIdsFromNodes(selected.id, nodes)]);
+  let current = selected;
+  const visited = new Set<string>();
+  while (current.parentId && !visited.has(current.parentId)) {
+    visited.add(current.parentId);
+    visible.add(current.parentId);
+    const parent = byId.get(current.parentId);
+    if (!parent) break;
+    current = parent;
+  }
+  return visible;
+}
+
+export function visibleNodeIdsForSelection(
+  selectedId: string | null,
+  nodes: readonly GraphNode3D[],
+  preserveFullGraph = false
+): ReadonlySet<string> {
+  if (preserveFullGraph) return new Set(nodes.map((node) => node.id));
+  const selected = selectedId ? nodes.find((node) => node.id === selectedId) : null;
   if (!selected || selected.commandType === "emperor") {
     return new Set(nodes.map((node) => node.id));
   }
+  return relatedNodeIdsForSelection(selectedId, nodes);
+}
 
-  if (selected.commandType === "soldier") {
-    return new Set([selected.id, selected.parentId].filter((id): id is string => Boolean(id)));
+export function canonicalEdgesForConnectionMode(
+  edges: readonly GraphEdge[],
+  nodes: readonly GraphNode3D[],
+  selectedId: string | null,
+  mode: GraphConnectionMode
+): readonly GraphEdge[] {
+  if (mode === "ALL" || mode === "RELEVANT") return edges;
+  if (!selectedId || !nodes.some((node) => node.id === selectedId)) {
+    return mode === "DIRECT" ? [] : edges;
   }
+  if (mode === "DIRECT") {
+    return edges.filter((edge) => edge.source === selectedId || edge.target === selectedId);
+  }
+  const relatedIds = relatedNodeIdsForSelection(selectedId, nodes);
+  return edges.filter((edge) => relatedIds.has(edge.source) && relatedIds.has(edge.target));
+}
 
-  return new Set([selected.id, ...descendantIdsFromNodes(selected.id, nodes)]);
+export function canonicalLabelNodeIds({
+  hoveredId,
+  labelThreshold,
+  maximumLiveLabels,
+  mode,
+  nodes,
+  selectedId,
+  zoomFactor
+}: {
+  hoveredId: string | null;
+  labelThreshold: number;
+  maximumLiveLabels: number;
+  mode: GraphLabelMode;
+  nodes: readonly GraphNode3D[];
+  selectedId: string | null;
+  zoomFactor: number;
+}): readonly string[] {
+  if (mode === "OFF" || maximumLiveLabels <= 0) return [];
+  const relatedIds = relatedNodeIdsForSelection(selectedId, nodes);
+  const candidates = nodes.filter((node) => {
+    const isSelected = node.id === selectedId;
+    const isHovered = node.id === hoveredId;
+    const isStructural = node.commandType === "emperor" || node.commandType === "marshal";
+    const includedByMode = mode === "ALWAYS"
+      || mode === "RELEVANT" && (!selectedId || relatedIds.has(node.id))
+      || mode === "HOVER_OR_FOCUS" && (isSelected || isHovered);
+    if (!includedByMode) return false;
+    return zoomFactor >= labelThreshold || isSelected || isHovered || isStructural;
+  });
+  const priority = (node: GraphNode3D) => {
+    if (node.id === selectedId) return 0;
+    if (node.id === hoveredId) return 1;
+    if (node.commandType === "emperor") return 2;
+    if (node.commandType === "marshal") return 3;
+    if (relatedIds.has(node.id)) return 4;
+    return 5;
+  };
+  return candidates
+    .sort((left, right) =>
+      priority(left) - priority(right)
+      || (left.stableCode ?? left.name).localeCompare(right.stableCode ?? right.name)
+      || left.id.localeCompare(right.id)
+    )
+    .slice(0, Math.max(0, Math.floor(maximumLiveLabels)))
+    .map((node) => node.id);
+}
+
+export type ActiveCanonicalLevelOfDetail = "FULL" | "BALANCED" | "AGGRESSIVE";
+
+export function resolveCanonicalLevelOfDetail(
+  requested: GraphPreferenceSettings["advanced_shared"]["level_of_detail"],
+  nodeCount: number
+): ActiveCanonicalLevelOfDetail {
+  if (requested !== "AUTO") return requested;
+  if (nodeCount > 5_000) return "AGGRESSIVE";
+  if (nodeCount > 1_000) return "BALANCED";
+  return "FULL";
+}
+
+export function acceptedGraphFrameDeltaSeconds(
+  seconds: number,
+  previousAcceptedSeconds: number | null
+) {
+  const previous = previousAcceptedSeconds ?? seconds;
+  return Math.min(Math.max(seconds - previous, 0.001), 0.05);
+}
+
+export function canonicalEdgeStrokeOffsets(edgeWidth: number) {
+  const boundedWidth = Math.max(0.25, Math.min(8, edgeWidth));
+  const strokeCount = Math.max(1, Math.ceil(boundedWidth));
+  if (strokeCount === 1) return [0];
+  const extent = (boundedWidth - 1) / 2;
+  return Array.from(
+    { length: strokeCount },
+    (_, index) => -extent + (index / (strokeCount - 1)) * extent * 2
+  );
+}
+
+export function nextCanonicalGraphEntityId(
+  nodes: readonly GraphNode3D[],
+  selectedId: string | null,
+  direction: "left" | "right" | "up" | "down"
+): string | null {
+  if (nodes.length === 0) return null;
+  const ordered = [...nodes].sort((left, right) =>
+    (left.stableCode ?? left.name).localeCompare(right.stableCode ?? right.name)
+    || left.id.localeCompare(right.id)
+  );
+  const current = selectedId ? nodes.find((node) => node.id === selectedId) ?? null : null;
+  if (!current) {
+    return nodes.find((node) => node.commandType === "emperor")?.id ?? ordered[0]!.id;
+  }
+  if (direction === "up" && current.parentId && nodes.some((node) => node.id === current.parentId)) {
+    return current.parentId;
+  }
+  const children = ordered.filter((node) => node.parentId === current.id);
+  if (direction === "down" && children[0]) return children[0].id;
+  const siblings = ordered.filter((node) =>
+    node.id !== current.id
+    && node.parentId === current.parentId
+  );
+  if (direction === "left" || direction === "right") {
+    const family = [...siblings, current].sort((left, right) =>
+      (left.stableCode ?? left.name).localeCompare(right.stableCode ?? right.name)
+      || left.id.localeCompare(right.id)
+    );
+    const index = family.findIndex((node) => node.id === current.id);
+    const nextIndex = direction === "left"
+      ? Math.max(0, index - 1)
+      : Math.min(family.length - 1, index + 1);
+    return family[nextIndex]?.id ?? current.id;
+  }
+  return current.id;
 }
 
 function nodeVisualSize(node: GraphNode3D) {
@@ -2027,6 +2245,68 @@ function nodeLevelAccent(node: GraphNode3D) {
   if (node.commandType === "general") return "#ffffff";
   if (node.commandType === "commander") return "#00BFFF";
   return "#39FF14";
+}
+
+function canonicalNodeRoleAndTier(node: GraphNode3D) {
+  if (node.commandType === "emperor") return { role: "ENTRAL", tier: 0 };
+  if (node.commandType === "marshal") return { role: "MARSHAL", tier: 1 };
+  if (node.commandType === "general") return { role: "GENERAL", tier: 2 };
+  if (node.commandType === "commander") return { role: "COMMANDER", tier: 3 };
+  return { role: "SOLDIER", tier: 4 };
+}
+
+function canonicalAuthorityColor(node: GraphNode3D) {
+  if (node.commandType === "emperor") return "#f4f7ff";
+  if (node.commandType === "marshal") return "#8eb9ff";
+  if (node.commandType === "general") return "#55e8d5";
+  if (node.commandType === "commander") return "#d6a7ff";
+  return "#ffca75";
+}
+
+function canonicalNodeColor(
+  node: GraphNode3D,
+  mode: GraphPreferenceSettings["advanced_shared"]["color_mode"]
+) {
+  if (mode === "HEALTH") {
+    if (node.canonicalHealthState === "HEALTHY") return "#57e6a3";
+    if (node.canonicalHealthState === "WATCH") return "#ffd56a";
+    if (node.canonicalHealthState === "DEGRADED") return "#ff8e67";
+    if (node.canonicalHealthState === "CRITICAL") return "#ff5c73";
+    return canonicalAuthorityColor(node);
+  }
+  if (mode === "STATUS") {
+    if (node.canonicalStatus === "ACTIVE") return "#57e6a3";
+    if (node.canonicalStatus === "BUILDING") return "#8eb9ff";
+    if (node.canonicalStatus === "PAUSED") return "#ffd56a";
+    if (node.canonicalStatus === "DEGRADED") return "#ff8e67";
+    return "#8795ad";
+  }
+  return canonicalAuthorityColor(node);
+}
+
+function curvedGraphEdgePoints(source: Vec3, target: Vec3, curvature: number): Vec3[] {
+  if (curvature <= 0.001) return [source, target];
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const dz = target.z - source.z;
+  const length = Math.hypot(dx, dy, dz) || 1;
+  const bend = Math.min(length * 0.35, 180) * curvature;
+  const control = {
+    x: (source.x + target.x) / 2 - dy / length * bend,
+    y: (source.y + target.y) / 2 + dx / length * bend,
+    z: (source.z + target.z) / 2 + bend * 0.25
+  };
+  const points: Vec3[] = [];
+  for (let step = 0; step <= 8; step += 1) {
+    const t = step / 8;
+    const inverse = 1 - t;
+    points.push({
+      x: inverse * inverse * source.x + 2 * inverse * t * control.x + t * t * target.x,
+      y: inverse * inverse * source.y + 2 * inverse * t * control.y + t * t * target.y,
+      z: inverse * inverse * source.z + 2 * inverse * t * control.z + t * t * target.z
+    });
+  }
+  return points;
 }
 
 function billboardPoint(center: Vec3, axes: ReturnType<typeof getCameraBillboardAxes>, x: number, y: number): Vec3 {
@@ -2060,15 +2340,35 @@ function smoothCamera(current: CameraState, desired: CameraState, amount: number
   };
 }
 
-function clampCamera(camera: CameraState): CameraState {
+function clampCamera(
+  camera: CameraState,
+  preferences?: GraphPreferenceSettings["advanced_3d"]
+): CameraState {
+  const minimumDistance = preferences
+    ? Math.max(
+      GRAPH_CAMERA_DISTANCE.min,
+      preferences.focus_distance / preferences.maximum_zoom
+    )
+    : GRAPH_CAMERA_DISTANCE.min;
+  const maximumDistance = preferences
+    ? Math.min(
+      GRAPH_CAMERA_DISTANCE.max,
+      preferences.focus_distance / preferences.minimum_zoom
+    )
+    : GRAPH_CAMERA_DISTANCE.max;
   return {
     ...camera,
-    distance: clampGraphCameraDistance(camera.distance),
+    distance: Math.max(minimumDistance, Math.min(maximumDistance, camera.distance)),
     pitch: Math.max(-1.2, Math.min(1.2, camera.pitch))
   };
 }
 
-function fitCameraToGraph(nodes: readonly Vec3[], viewportWidth: number, viewportHeight: number): CameraState {
+function fitCameraToGraph(
+  nodes: readonly Vec3[],
+  viewportWidth: number,
+  viewportHeight: number,
+  preferences?: GraphPreferenceSettings["advanced_3d"]
+): CameraState {
   if (!nodes.length || viewportWidth <= 0 || viewportHeight <= 0) {
     return { ...defaultCamera, target: { ...defaultCamera.target } };
   }
@@ -2111,7 +2411,7 @@ function fitCameraToGraph(nodes: readonly Vec3[], viewportWidth: number, viewpor
     ...defaultCamera,
     distance,
     target
-  });
+  }, preferences);
 }
 
 function midpoint(points: GesturePoint[]) {
@@ -2131,16 +2431,23 @@ function pointDistance(first: GesturePoint, second: GesturePoint) {
 export function NeuronsCommandCenter({
   canonicalEntities,
   canonicalEventSequence = 0,
+  canonicalFocusedEntityId = null,
   canonicalFullscreenActive = false,
   canonicalInspectorCollapsed = true,
+  canonicalLayout3D,
   canonicalMotionPaused = false,
+  canonicalGraphSettings,
   canonicalSelectedEntityId = null,
   canonicalTouchInteractionActive = false,
+  canonicalViewFitSignal = 0,
+  canonicalViewFocusSignal = 0,
   embeddedGraphOnly = false,
   initialDestination = "dashboard",
   onCanonicalInspectorCollapsedChange,
+  onCanonicalFrameDiagnostics,
   onCanonicalOpenFullRecord,
   onCanonicalSelectedEntityChange,
+  onCanonicalWebGlStateChange,
   organizationId,
   user,
   onLogout,
@@ -2152,13 +2459,20 @@ export function NeuronsCommandCenter({
   const { settings, updateSettings } = useTheme();
   const { isSpeaking, settings: voiceSettings, speak, stopSpeaking } = useVoice();
   const canonicalGraph = useMemo(
-    () => canonicalEntities ? graphStateFromCanonicalEntities(canonicalEntities, canonicalEventSequence) : null,
-    [canonicalEntities, canonicalEventSequence]
+    () => canonicalEntities
+      ? graphStateFromCanonicalEntities(canonicalEntities, canonicalEventSequence, canonicalLayout3D)
+      : null,
+    [canonicalEntities, canonicalEventSequence, canonicalLayout3D]
+  );
+  const canonicalEntityById = useMemo(
+    () => new Map(
+      (canonicalEntities ?? []).map((entity) => [entity.entity_id, entity])
+    ),
+    [canonicalEntities]
   );
   const canonicalRootEntityId = canonicalEntities?.find((entity) => entity.entity_type === "ENTRAL")?.entity_id ?? null;
-  const canonicalSelectionId = canonicalSelectedEntityId === canonicalRootEntityId
-    ? "entral"
-    : canonicalSelectedEntityId;
+  const rootNodeId = canonicalRootEntityId ?? "entral";
+  const canonicalSelectionId = canonicalSelectedEntityId;
   const [commandGraph, dispatchGraph] = useReducer(
     commandOSReducer<GraphNode3D>,
     { canonicalGraph, userId: user?.id ?? null },
@@ -2166,6 +2480,13 @@ export function NeuronsCommandCenter({
   );
   const [canonicalGraphState, setCanonicalGraphState] = useState<GraphState3D | null>(canonicalGraph);
   const graph = canonicalGraphState ?? commandGraph;
+  const canonicalRenderingActive = canonicalEntities !== undefined;
+  const canonicalActiveLevelOfDetail = canonicalGraphSettings
+    ? resolveCanonicalLevelOfDetail(
+      canonicalGraphSettings.advanced_shared.level_of_detail,
+      canonicalEntities?.length ?? 0
+    )
+    : null;
   const graphRef = useRef(graph);
   const setGraph = useCallback<React.Dispatch<React.SetStateAction<GraphState3D>>>((update) => {
     const current = graphRef.current;
@@ -2184,9 +2505,13 @@ export function NeuronsCommandCenter({
       type: "replace"
     });
   }, [canonicalGraphState]);
-  const [selectedNodeId, setSelectedNodeId] = useState(canonicalSelectionId ?? "entral");
+  const initialSelectedNodeId = canonicalRenderingActive
+    ? canonicalSelectionId
+    : canonicalSelectionId ?? rootNodeId;
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(initialSelectedNodeId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [canvasKeyboardTooltipActive, setCanvasKeyboardTooltipActive] = useState(false);
   const [search, setSearch] = useState("");
   const [command, setCommand] = useState("");
   const [commandHistory, setCommandHistory] = useState<CommandConsoleMessage[]>([
@@ -2223,7 +2548,8 @@ export function NeuronsCommandCenter({
   const [isNavigationOpen, setIsNavigationOpen] = useState(!isMemberSurface);
   const [commandConsoleSection, setCommandConsoleSection] = useState<CommandConsoleSection>("command");
   const [isFocusMode, setIsFocusMode] = useState(false);
-  const [isWebGlReady, setIsWebGlReady] = useState(true);
+  const [webGlState, setWebGlState] = useState<"ready" | "unavailable" | "context-lost">("ready");
+  const [webGlGeneration, setWebGlGeneration] = useState(0);
   const [businessWizard, setBusinessWizard] = useState<BusinessWizardState>(defaultBusinessWizard);
   const [pendingAuthorization, setPendingAuthorization] = useState<PendingAuthorization | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileCommandTab>(isMemberSurface ? "graph" : "command");
@@ -2256,12 +2582,17 @@ export function NeuronsCommandCenter({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const commandInputRef = useRef<HTMLInputElement | null>(null);
   const graphControlsRef = useRef(graphControls);
+  const canonicalGraphSettingsRef = useRef(canonicalGraphSettings);
+  const handledCanonicalViewFitSignalRef = useRef(canonicalViewFitSignal);
+  const handledCanonicalViewFocusSignalRef = useRef(canonicalViewFocusSignal);
+  const canonicalFrameDiagnosticsRef = useRef(onCanonicalFrameDiagnostics);
+  const canonicalWebGlStateChangeRef = useRef(onCanonicalWebGlStateChange);
   const commandSyncTimerRef = useRef<number | null>(null);
   const hadStoredCommandStateRef = useRef(hasStoredCommandState(user?.id));
   const lastSyncedCommandStateRef = useRef<string | null>(null);
   const lockedNodeIdRef = useRef<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
-  const selectedRef = useRef("entral");
+  const selectedRef = useRef<string | null>(initialSelectedNodeId);
   const graphSelectionHistoryRef = useRef<string[]>([]);
   const searchRef = useRef("");
   const activeGroupRef = useRef<string | null>(null);
@@ -2272,6 +2603,7 @@ export function NeuronsCommandCenter({
   const cameraRef = useRef<CameraState>({ ...defaultCamera, target: { ...defaultCamera.target } });
   const desiredCameraRef = useRef<CameraState>({ ...defaultCamera, target: { ...defaultCamera.target } });
   const matrixRef = useRef<Matrix4 | null>(null);
+  const canvasSizeDirtyRef = useRef(true);
   const dragRef = useRef<{ button: number; lastX: number; lastY: number; mode: "orbit" | "pan"; moved: boolean } | null>(null);
   const touchGestureRef = useRef<TouchGestureState>({
     lastCenter: null,
@@ -2282,6 +2614,8 @@ export function NeuronsCommandCenter({
   });
   const lastFrameTimeRef = useRef<number | null>(null);
   const motionRef = useRef<Map<string, NodeMotion>>(new Map());
+  const canonicalLayoutTransitionRef = useRef<CanonicalLayoutTransition | null>(null);
+  const hadCanonicalGraphRef = useRef(Boolean(canonicalGraph));
   const reducedMotionRef = useRef(false);
   const graphMotionPausedRef = useRef(canonicalMotionPaused);
   const motionPausedAtRef = useRef<number | null>(null);
@@ -2299,8 +2633,44 @@ export function NeuronsCommandCenter({
 
   const groupMap = useMemo(() => new Map(graph.groups.map((group) => [group.id, group])), [graph.groups]);
   const nodeMap = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
-  const selectedNode = nodeMap.get(selectedNodeId) ?? nodeMap.get("entral") ?? null;
+  const selectedNode = selectedNodeId
+    ? nodeMap.get(selectedNodeId) ?? null
+    : canonicalRenderingActive
+      ? null
+      : nodeMap.get(rootNodeId) ?? null;
   const visibleNodes = graph.nodes.filter((node) => node.type === "core" || !groupMap.get(node.groupId)?.collapsed);
+  const keyboardTooltip = (
+    canonicalRenderingActive
+    && canvasKeyboardTooltipActive
+    && selectedNode
+    && canonicalGraphSettings?.simple.labels !== "OFF"
+  ) ? {
+      ...canonicalNodeRoleAndTier(selectedNode),
+      groupName: groupMap.get(selectedNode.groupId)?.name ?? "Ungrouped",
+      health: selectedNode.health,
+      healthState: selectedNode.canonicalHealthState ?? null,
+      name: selectedNode.name,
+      status: selectedNode.status,
+      statusState: selectedNode.canonicalStatus ?? null,
+      task: selectedNode.currentTask ?? "No active task.",
+      x: 18,
+      y: 18
+    } satisfies TooltipState
+    : null;
+  const activeTooltip = (
+    !canonicalRenderingActive
+    || canonicalGraphSettings?.simple.labels !== "OFF"
+  ) ? tooltip ?? keyboardTooltip : null;
+  const activeTooltipCanonicalEntityId = tooltip
+    ? hoveredNodeId
+      ? nodeMap.get(hoveredNodeId)?.canonicalEntityId ?? hoveredNodeId
+      : null
+    : keyboardTooltip && selectedNode
+      ? selectedNode.canonicalEntityId ?? selectedNode.id
+      : null;
+  const activeTooltipCanonicalEntity = activeTooltipCanonicalEntityId
+    ? canonicalEntityById.get(activeTooltipCanonicalEntityId) ?? null
+    : null;
 
   useEffect(() => {
     if (!embeddedGraphOnly) return;
@@ -2314,25 +2684,90 @@ export function NeuronsCommandCenter({
 
   useEffect(() => {
     if (!canonicalGraph) {
+      canonicalLayoutTransitionRef.current = null;
+      hadCanonicalGraphRef.current = false;
       setCanonicalGraphState(null);
       return;
     }
-    const reconciledGraph = reconcileCanonicalGraphPositions(canonicalGraph, graphRef.current);
-    const nextNodeIds = new Set(reconciledGraph.nodes.map((node) => node.id));
+    const nextNodeIds = new Set(canonicalGraph.nodes.map((node) => node.id));
 
     for (const nodeId of motionRef.current.keys()) {
       if (!nextNodeIds.has(nodeId)) motionRef.current.delete(nodeId);
     }
-    graphRef.current = reconciledGraph;
-    setCanonicalGraphState(reconciledGraph);
-  }, [canonicalGraph]);
+    const currentGraph = graphRef.current;
+    const currentNodeById = new Map(
+      currentGraph.nodes.map((node) => [node.id, node])
+    );
+    const durationMs = Math.max(
+      0,
+      Math.min(
+        5_000,
+        canonicalGraphSettings?.advanced_shared.animation_duration_ms ?? 0
+      )
+    );
+    const easing = canonicalGraphSettings?.advanced_shared.motion_easing ?? "LINEAR";
+    const positionsChanged = canonicalGraph.nodes.some((node) => {
+      const current = currentNodeById.get(node.id);
+      return Boolean(
+        current
+        && (
+          current.x !== node.x
+          || current.y !== node.y
+          || current.z !== node.z
+        )
+      );
+    });
+    const shouldAnimate = (
+      hadCanonicalGraphRef.current
+      && positionsChanged
+      && durationMs > 0
+      && !canonicalMotionPaused
+      && !reducedMotionRef.current
+    );
+    const nextGraph = shouldAnimate
+      ? reconcileCanonicalGraphPositions(canonicalGraph, currentGraph)
+      : canonicalGraph;
+
+    canonicalLayoutTransitionRef.current = shouldAnimate
+      ? {
+          durationMs,
+          easing,
+          fromById: new Map(nextGraph.nodes.map((node) => [
+            node.id,
+            { x: node.x, y: node.y, z: node.z }
+          ])),
+          startedAtMs: performance.now(),
+          targetById: new Map(canonicalGraph.nodes.map((node) => [
+            node.id,
+            { x: node.x, y: node.y, z: node.z }
+          ]))
+        }
+      : null;
+    hadCanonicalGraphRef.current = true;
+    graphRef.current = nextGraph;
+    setCanonicalGraphState(nextGraph);
+    pausedVisualDirtyRef.current = true;
+  }, [
+    canonicalGraph,
+    canonicalGraphSettings?.advanced_shared.animation_duration_ms,
+    canonicalGraphSettings?.advanced_shared.motion_easing,
+    canonicalMotionPaused
+  ]);
 
   useEffect(() => {
     if (!canonicalGraph) return;
-    const nextSelectionId = canonicalSelectionId ?? "entral";
-    if (!canonicalGraph.nodes.some((node) => node.id === nextSelectionId)) return;
+    const nextSelectionId = canonicalSelectionId
+      && canonicalGraph.nodes.some((node) => node.id === canonicalSelectionId)
+      ? canonicalSelectionId
+      : null;
     if (selectedRef.current === nextSelectionId) return;
     suppressCanonicalSelectionCallbackRef.current = true;
+    selectedRef.current = nextSelectionId;
+    if (!nextSelectionId) {
+      setLockedNodeId(null);
+      lockedNodeIdRef.current = null;
+      setActiveGroupId(null);
+    }
     setSelectedNodeId(nextSelectionId);
   }, [canonicalGraph, canonicalSelectionId]);
 
@@ -2343,7 +2778,11 @@ export function NeuronsCommandCenter({
       suppressCanonicalSelectionCallbackRef.current = false;
       return;
     }
-    onCanonicalSelectedEntityChange?.(nodeMap.get(selectedNodeId)?.canonicalEntityId ?? null);
+    onCanonicalSelectedEntityChange?.(
+      selectedNodeId
+        ? nodeMap.get(selectedNodeId)?.canonicalEntityId ?? null
+        : null
+    );
   }, [canonicalGraph, nodeMap, onCanonicalSelectedEntityChange, selectedNodeId]);
 
   useEffect(() => {
@@ -2455,9 +2894,84 @@ export function NeuronsCommandCenter({
   }, [graphControls, user?.id]);
 
   useEffect(() => {
+    canonicalGraphSettingsRef.current = canonicalGraphSettings;
+    canvasSizeDirtyRef.current = true;
+    pausedVisualDirtyRef.current = true;
+    if (canonicalGraphSettings) {
+      desiredCameraRef.current = clampCamera(
+        desiredCameraRef.current,
+        canonicalGraphSettings.advanced_3d
+      );
+    }
+  }, [canonicalGraphSettings]);
+
+  useEffect(() => {
+    canonicalFrameDiagnosticsRef.current = onCanonicalFrameDiagnostics;
+  }, [onCanonicalFrameDiagnostics]);
+
+  useEffect(() => {
+    canonicalWebGlStateChangeRef.current = onCanonicalWebGlStateChange;
+  }, [onCanonicalWebGlStateChange]);
+
+  useEffect(() => {
+    if (
+      handledCanonicalViewFitSignalRef.current === canonicalViewFitSignal
+      || !canonicalGraph
+    ) {
+      return;
+    }
+    handledCanonicalViewFitSignalRef.current = canonicalViewFitSignal;
+    const canvas = canvasRef.current;
+    const next = fitCameraToGraph(
+      graphRef.current.nodes,
+      canvas?.clientWidth ?? 1,
+      canvas?.clientHeight ?? 1,
+      canonicalGraphSettingsRef.current?.advanced_3d
+    );
+    desiredCameraRef.current = next;
+    cameraRef.current = next;
+    pausedVisualDirtyRef.current = true;
+  }, [canonicalGraph, canonicalViewFitSignal]);
+
+  useEffect(() => {
+    if (
+      handledCanonicalViewFocusSignalRef.current === canonicalViewFocusSignal
+      || !canonicalGraph
+    ) {
+      return;
+    }
+    handledCanonicalViewFocusSignalRef.current = canonicalViewFocusSignal;
+    if (!canonicalFocusedEntityId) return;
+    const node = graphRef.current.nodes.find((candidate) => candidate.id === canonicalFocusedEntityId);
+    if (!node) return;
+    const next = clampCamera({
+      ...desiredCameraRef.current,
+      distance: canonicalGraphSettingsRef.current?.advanced_3d.focus_distance
+        ?? (node.type === "core" ? 500 : 420),
+      target: { x: node.x, y: node.y, z: node.z }
+    }, canonicalGraphSettingsRef.current?.advanced_3d);
+    desiredCameraRef.current = next;
+    if (reducedMotionRef.current) cameraRef.current = next;
+    setLockedNodeId(node.type === "core" ? null : node.id);
+    lockedNodeIdRef.current = node.type === "core" ? null : node.id;
+    pausedVisualDirtyRef.current = true;
+  }, [canonicalFocusedEntityId, canonicalGraph, canonicalViewFocusSignal]);
+
+  useEffect(() => {
     graphMotionPausedRef.current = canonicalMotionPaused;
     pausedVisualDirtyRef.current = true;
     if (canonicalMotionPaused) {
+      const transition = canonicalLayoutTransitionRef.current;
+      if (transition) {
+        for (const node of graphRef.current.nodes) {
+          const target = transition.targetById.get(node.id);
+          if (!target) continue;
+          node.x = target.x;
+          node.y = target.y;
+          node.z = target.z;
+        }
+        canonicalLayoutTransitionRef.current = null;
+      }
       desiredCameraRef.current = {
         ...cameraRef.current,
         target: { ...cameraRef.current.target }
@@ -2654,9 +3168,24 @@ export function NeuronsCommandCenter({
         return;
       }
 
+      if (canonicalRenderingActive) {
+        if (selectedRef.current || activeGroupRef.current || activeStatusFilterRef.current?.length || searchRef.current.trim()) {
+          event.preventDefault();
+          selectedRef.current = null;
+          setSelectedNodeId(null);
+          setLockedNodeId(null);
+          lockedNodeIdRef.current = null;
+          setActiveGroupId(null);
+          setActiveStatusFilter(null);
+          setSearch("");
+          pausedVisualDirtyRef.current = true;
+        }
+        return;
+      }
+
       if (
         focusModeRef.current ||
-        selectedRef.current !== "entral" ||
+        selectedRef.current !== rootNodeId ||
         activeGroupRef.current ||
         activeStatusFilterRef.current?.length ||
         searchRef.current.trim()
@@ -2668,7 +3197,7 @@ export function NeuronsCommandCenter({
 
     window.addEventListener("keydown", handleGlobalEscape);
     return () => window.removeEventListener("keydown", handleGlobalEscape);
-  }, []);
+  }, [canonicalRenderingActive, rootNodeId]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -2951,7 +3480,11 @@ export function NeuronsCommandCenter({
     const x = clientX - rect.left;
     const y = clientY - rect.top;
     let best: PickResult | null = null;
-    const visibleIds = visibleNodeIdsForSelection(selectedRef.current, graphRef.current.nodes);
+    const visibleIds = visibleNodeIdsForSelection(
+      selectedRef.current,
+      graphRef.current.nodes,
+      Boolean(canonicalGraphSettingsRef.current)
+    );
 
     for (const node of graphRef.current.nodes) {
       if (!visibleIds.has(node.id)) continue;
@@ -2979,14 +3512,50 @@ export function NeuronsCommandCenter({
 
     if (!canvas) return undefined;
 
-    const gl = canvas.getContext("webgl", { alpha: true, antialias: true });
+    let frameId = 0;
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      if (frameId) window.cancelAnimationFrame(frameId);
+      matrixRef.current = null;
+      setWebGlState("context-lost");
+      canonicalWebGlStateChangeRef.current?.({
+        errorCode: "GRAPH_WEBGL_CONTEXT_LOST",
+        recoverable: true,
+        type: "WEBGL_CONTEXT_LOST"
+      });
+    };
+    const handleContextRestored = () => {
+      setWebGlState("ready");
+      canonicalWebGlStateChangeRef.current?.({
+        errorCode: "NONE",
+        recoverable: true,
+        type: "WEBGL_CONTEXT_RESTORED"
+      });
+      setWebGlGeneration((generation) => generation + 1);
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLost);
+    canvas.addEventListener("webglcontextrestored", handleContextRestored);
+
+    const gl = canvas.getContext("webgl", {
+      alpha: true,
+      antialias: true,
+      preserveDrawingBuffer: canonicalRenderingActive
+    });
 
     if (!gl) {
-      setIsWebGlReady(false);
-      return undefined;
+      setWebGlState("unavailable");
+      canonicalWebGlStateChangeRef.current?.({
+        errorCode: "GRAPH_RENDERER_FAILURE",
+        recoverable: true,
+        type: "WEBGL_UNAVAILABLE"
+      });
+      return () => {
+        canvas.removeEventListener("webglcontextlost", handleContextLost);
+        canvas.removeEventListener("webglcontextrestored", handleContextRestored);
+      };
     }
 
-    setIsWebGlReady(true);
+    setWebGlState("ready");
     const canvasElement = canvas;
     const glContext = gl;
 
@@ -3028,31 +3597,153 @@ export function NeuronsCommandCenter({
         gl_FragColor = vec4(u_color, u_alpha);
       }
     `);
+    const labelProgram = canonicalRenderingActive
+      ? createProgram(glContext, `
+          attribute vec2 a_position;
+          attribute vec2 a_texcoord;
+          varying vec2 v_texcoord;
+          void main() {
+            gl_Position = vec4(a_position, 0.0, 1.0);
+            v_texcoord = a_texcoord;
+          }
+        `, `
+          precision mediump float;
+          uniform sampler2D u_texture;
+          varying vec2 v_texcoord;
+          void main() {
+            gl_FragColor = texture2D(u_texture, v_texcoord);
+          }
+        `)
+      : null;
+    const labelPositionAttribute = labelProgram
+      ? glContext.getAttribLocation(labelProgram, "a_position")
+      : -1;
+    const labelTextureCoordinateAttribute = labelProgram
+      ? glContext.getAttribLocation(labelProgram, "a_texcoord")
+      : -1;
+    const labelTextureUniform = labelProgram
+      ? glContext.getUniformLocation(labelProgram, "u_texture")
+      : null;
+    const labelTexture = canonicalRenderingActive ? glContext.createTexture() : null;
+    const labelBuffer = canonicalRenderingActive ? glContext.createBuffer() : null;
+    const labelSurface = canonicalRenderingActive ? document.createElement("canvas") : null;
+    const labelContext = labelSurface?.getContext("2d") ?? null;
 
     const positionBuffer = glContext.createBuffer();
-    let canvasSizeDirty = true;
+    if (
+      !positionBuffer
+      || canonicalRenderingActive && (
+        !labelProgram
+        || labelPositionAttribute < 0
+        || labelTextureCoordinateAttribute < 0
+        || !labelTextureUniform
+        || !labelTexture
+        || !labelBuffer
+        || !labelSurface
+        || !labelContext
+      )
+    ) {
+      setWebGlState("unavailable");
+      canonicalWebGlStateChangeRef.current?.({
+        errorCode: "GRAPH_RENDERER_FAILURE",
+        recoverable: true,
+        type: "WEBGL_UNAVAILABLE"
+      });
+      if (labelTexture) glContext.deleteTexture(labelTexture);
+      if (labelBuffer) glContext.deleteBuffer(labelBuffer);
+      if (labelProgram) glContext.deleteProgram(labelProgram);
+      glContext.deleteProgram(pointProgram.program);
+      glContext.deleteProgram(lineProgram.program);
+      return () => {
+        canvas.removeEventListener("webglcontextlost", handleContextLost);
+        canvas.removeEventListener("webglcontextrestored", handleContextRestored);
+      };
+    }
+    if (labelTexture && labelBuffer) {
+      glContext.bindTexture(glContext.TEXTURE_2D, labelTexture);
+      glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_WRAP_S, glContext.CLAMP_TO_EDGE);
+      glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_WRAP_T, glContext.CLAMP_TO_EDGE);
+      glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_MIN_FILTER, glContext.LINEAR);
+      glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_MAG_FILTER, glContext.LINEAR);
+      glContext.bindBuffer(glContext.ARRAY_BUFFER, labelBuffer);
+      glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array([
+        -1, -1, 0, 1,
+        1, -1, 1, 1,
+        -1, 1, 0, 0,
+        -1, 1, 0, 0,
+        1, -1, 1, 1,
+        1, 1, 1, 0
+      ]), glContext.STATIC_DRAW);
+    }
+    canvasSizeDirtyRef.current = true;
     const visibilityObserver = typeof IntersectionObserver === "function"
       ? new IntersectionObserver(([entry]) => {
           graphViewportVisibleRef.current = entry?.isIntersecting ?? true;
           if (entry?.isIntersecting) {
-            canvasSizeDirty = true;
+            canvasSizeDirtyRef.current = true;
             pausedVisualDirtyRef.current = true;
           }
         })
       : null;
     const sizeObserver = typeof ResizeObserver === "function"
       ? new ResizeObserver(() => {
-          canvasSizeDirty = true;
+          canvasSizeDirtyRef.current = true;
           pausedVisualDirtyRef.current = true;
         })
       : null;
     visibilityObserver?.observe(canvasElement);
     sizeObserver?.observe(canvasElement);
-    let frameId = 0;
+    let lastRenderedSeconds = 0;
+    let diagnosticWindowStartedAt = performance.now();
+    let diagnosticRenderedFrames = 0;
+    let diagnosticMissedFrames = 0;
+    let diagnosticRenderTimeMs = 0;
+
+    function publishFrameDiagnostics(renderFinishedAt: number) {
+      const sampleWindowMs = renderFinishedAt - diagnosticWindowStartedAt;
+      if (sampleWindowMs < 1_000) return;
+      const totalExpectedFrames = diagnosticRenderedFrames + diagnosticMissedFrames;
+      const droppedFrameRateRatio = totalExpectedFrames > 0
+        ? diagnosticMissedFrames / totalExpectedFrames
+        : 0;
+      const diagnostics: CanonicalRendererFrameDiagnostics = {
+        droppedFrameRateRatio,
+        errorCode: droppedFrameRateRatio > 0.2
+          ? "GRAPH_PERFORMANCE_DEGRADED"
+          : "NONE",
+        frameRateFps: diagnosticRenderedFrames * 1_000 / Math.max(sampleWindowMs, 1),
+        renderer: "3D",
+        renderTimeMs: diagnosticRenderTimeMs / Math.max(diagnosticRenderedFrames, 1),
+        sampleWindowMs
+      };
+      canonicalFrameDiagnosticsRef.current?.(diagnostics);
+      diagnosticWindowStartedAt = renderFinishedAt;
+      diagnosticRenderedFrames = 0;
+      diagnosticMissedFrames = 0;
+      diagnosticRenderTimeMs = 0;
+    }
 
     function setCanvasSize() {
       const rect = canvasElement.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const graphSettings = canonicalGraphSettingsRef.current;
+      const renderingQualityLimit = graphSettings?.advanced_shared.rendering_quality === "LOW"
+        ? 1
+        : graphSettings?.advanced_shared.rendering_quality === "MEDIUM"
+          ? 1.5
+          : 2;
+      const performanceModeLimit = graphSettings?.advanced_shared.performance_mode === "PERFORMANCE"
+        ? 1
+        : graphSettings?.advanced_shared.performance_mode === "BALANCED"
+          ? 1.5
+          : graphSettings?.advanced_shared.performance_mode === "AUTO"
+            ? graphRef.current.nodes.length > 5_000
+              ? 1
+              : graphRef.current.nodes.length > 1_000
+                ? 1.5
+                : 2
+            : 2;
+      const qualityLimit = Math.min(renderingQualityLimit, performanceModeLimit);
+      const dpr = Math.min(window.devicePixelRatio || 1, qualityLimit);
       const nextWidth = Math.max(1, Math.floor(rect.width * dpr));
       const nextHeight = Math.max(1, Math.floor(rect.height * dpr));
 
@@ -3071,12 +3762,19 @@ export function NeuronsCommandCenter({
       const currentMatrix = matrixRef.current;
 
       if (!positionBuffer || !currentMatrix || points.length < 2) return;
-      const safeAlpha = Math.min(alpha * graphControlsRef.current.glowIntensity, 0.95);
+      const graphSettings = canonicalGraphSettingsRef.current;
+      const lighting = graphSettings?.advanced_3d.lighting_intensity ?? 1;
+      const safeAlpha = Math.min(
+        alpha
+        * (graphSettings ? lighting : graphControlsRef.current.glowIntensity),
+        0.95
+      );
 
       glContext.useProgram(lineProgram.program);
       glContext.uniformMatrix4fv(lineProgram.matrix, false, currentMatrix);
       glContext.uniform3fv(lineProgram.color, hexToRgb01(color));
       glContext.uniform1f(lineProgram.alpha, safeAlpha);
+      glContext.lineWidth(1);
       glContext.bindBuffer(glContext.ARRAY_BUFFER, positionBuffer);
       glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array(points.flatMap((point) => [point.x, point.y, point.z])), glContext.STREAM_DRAW);
       glContext.enableVertexAttribArray(lineProgram.position);
@@ -3093,12 +3791,19 @@ export function NeuronsCommandCenter({
 
       if (!positionBuffer || !currentMatrix) return;
       const controls = graphControlsRef.current;
+      const graphSettings = canonicalGraphSettingsRef.current;
+      const bloom = graphSettings?.advanced_3d.bloom_intensity ?? 0;
+      const lighting = graphSettings?.advanced_3d.lighting_intensity ?? 1;
+      const nodeScale = graphSettings?.advanced_shared.node_scale ?? controls.particleSize;
 
       glContext.useProgram(pointProgram.program);
       glContext.uniformMatrix4fv(pointProgram.matrix, false, currentMatrix);
       glContext.uniform3fv(pointProgram.color, hexToRgb01(color));
-      glContext.uniform1f(pointProgram.alpha, Math.min(alpha * controls.glowIntensity, 1.25));
-      glContext.uniform1f(pointProgram.size ?? null, size * controls.particleSize);
+      glContext.uniform1f(
+        pointProgram.alpha,
+        Math.min(alpha * (graphSettings ? lighting + bloom : controls.glowIntensity), 1.25)
+      );
+      glContext.uniform1f(pointProgram.size ?? null, size * nodeScale);
       glContext.bindBuffer(glContext.ARRAY_BUFFER, positionBuffer);
       glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array([point.x, point.y, point.z]), glContext.STREAM_DRAW);
       glContext.enableVertexAttribArray(pointProgram.position);
@@ -3111,12 +3816,19 @@ export function NeuronsCommandCenter({
 
       if (!positionBuffer || !currentMatrix || points.length === 0) return;
       const controls = graphControlsRef.current;
+      const graphSettings = canonicalGraphSettingsRef.current;
+      const bloom = graphSettings?.advanced_3d.bloom_intensity ?? 0;
+      const lighting = graphSettings?.advanced_3d.lighting_intensity ?? 1;
+      const nodeScale = graphSettings?.advanced_shared.node_scale ?? controls.particleSize;
 
       glContext.useProgram(pointProgram.program);
       glContext.uniformMatrix4fv(pointProgram.matrix, false, currentMatrix);
       glContext.uniform3fv(pointProgram.color, hexToRgb01(color));
-      glContext.uniform1f(pointProgram.alpha, Math.min(alpha * controls.glowIntensity, 1.25));
-      glContext.uniform1f(pointProgram.size ?? null, size * controls.particleSize);
+      glContext.uniform1f(
+        pointProgram.alpha,
+        Math.min(alpha * (graphSettings ? lighting + bloom : controls.glowIntensity), 1.25)
+      );
+      glContext.uniform1f(pointProgram.size ?? null, size * nodeScale);
       glContext.bindBuffer(glContext.ARRAY_BUFFER, positionBuffer);
       glContext.bufferData(
         glContext.ARRAY_BUFFER,
@@ -3195,11 +3907,143 @@ export function NeuronsCommandCenter({
       }
     }
 
+    function drawCanonicalLabelOverlay(
+      nodes: readonly GraphNode3D[],
+      matrix: Matrix4,
+      camera: CameraState,
+      activeLevelOfDetail: ActiveCanonicalLevelOfDetail
+    ) {
+      const graphSettings = canonicalGraphSettingsRef.current;
+      if (
+        !graphSettings
+        || !labelProgram
+        || !labelTexture
+        || !labelBuffer
+        || !labelSurface
+        || !labelContext
+      ) {
+        return;
+      }
+      const width = canvasElement.width;
+      const height = canvasElement.height;
+      if (labelSurface.width !== width || labelSurface.height !== height) {
+        labelSurface.width = width;
+        labelSurface.height = height;
+      } else {
+        labelContext.clearRect(0, 0, width, height);
+      }
+      const configuredMaximum = graphSettings.advanced_shared.maximum_live_labels;
+      const maximumLiveLabels = activeLevelOfDetail === "AGGRESSIVE"
+        ? Math.min(configuredMaximum, 48)
+        : activeLevelOfDetail === "BALANCED"
+          ? Math.min(configuredMaximum, 120)
+          : configuredMaximum;
+      const zoomFactor = graphSettings.advanced_3d.focus_distance
+        / Math.max(camera.distance, 1);
+      const labelIds = canonicalLabelNodeIds({
+        hoveredId: hoveredRef.current,
+        labelThreshold: graphSettings.advanced_shared.label_threshold,
+        maximumLiveLabels,
+        mode: graphSettings.simple.labels,
+        nodes,
+        selectedId: selectedRef.current,
+        zoomFactor
+      });
+      if (labelIds.length === 0) return;
+      const nodesById = new Map(nodes.map((node) => [node.id, node]));
+      const relatedIds = relatedNodeIdsForSelection(selectedRef.current, nodes);
+      const pixelRatio = width / Math.max(canvasElement.clientWidth, 1);
+      const fontSize = 11 * graphSettings.advanced_shared.label_scale * pixelRatio;
+      labelContext.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+      labelContext.lineJoin = "round";
+      labelContext.textBaseline = "middle";
+      const occupied: Array<{ bottom: number; left: number; right: number; top: number }> = [];
+
+      for (const nodeId of labelIds) {
+        const node = nodesById.get(nodeId);
+        if (!node) continue;
+        const projected = projectPoint(node, matrix, width, height);
+        if (
+          !projected.visible
+          || projected.screenX < -120 * pixelRatio
+          || projected.screenX > width + 120 * pixelRatio
+          || projected.screenY < -40 * pixelRatio
+          || projected.screenY > height + 40 * pixelRatio
+        ) {
+          continue;
+        }
+        const isSelected = node.id === selectedRef.current;
+        const isHovered = node.id === hoveredRef.current;
+        const left = projected.screenX
+          + (nodeVisualSize(node) * graphSettings.advanced_shared.node_scale * 0.28 + 6) * pixelRatio;
+        const textWidth = labelContext.measureText(node.name).width;
+        const top = projected.screenY - fontSize * 0.65;
+        const right = left + textWidth;
+        const bottom = projected.screenY + fontSize * 0.65;
+        const overlaps = occupied.some((bounds) =>
+          left < bounds.right + 6 * pixelRatio
+          && right + 6 * pixelRatio > bounds.left
+          && top < bounds.bottom + 3 * pixelRatio
+          && bottom + 3 * pixelRatio > bounds.top
+        );
+        if (overlaps && !isSelected && !isHovered) continue;
+        occupied.push({ bottom, left, right, top });
+        const unrelated = Boolean(selectedRef.current) && !relatedIds.has(node.id);
+        labelContext.globalAlpha =
+          graphSettings.simple.connections !== "ALL" && unrelated
+            ? 0.28
+            : 1;
+        labelContext.lineWidth = Math.max(2, 3 * pixelRatio);
+        labelContext.strokeStyle = "rgba(3, 7, 14, 0.92)";
+        labelContext.fillStyle = "#f0f5ff";
+        labelContext.strokeText(node.name, left, projected.screenY);
+        labelContext.fillText(node.name, left, projected.screenY);
+      }
+      labelContext.globalAlpha = 1;
+
+      glContext.activeTexture(glContext.TEXTURE0);
+      glContext.bindTexture(glContext.TEXTURE_2D, labelTexture);
+      glContext.pixelStorei(glContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      glContext.texImage2D(
+        glContext.TEXTURE_2D,
+        0,
+        glContext.RGBA,
+        glContext.RGBA,
+        glContext.UNSIGNED_BYTE,
+        labelSurface
+      );
+      glContext.useProgram(labelProgram);
+      glContext.uniform1i(labelTextureUniform, 0);
+      glContext.bindBuffer(glContext.ARRAY_BUFFER, labelBuffer);
+      glContext.enableVertexAttribArray(labelPositionAttribute);
+      glContext.vertexAttribPointer(labelPositionAttribute, 2, glContext.FLOAT, false, 16, 0);
+      glContext.enableVertexAttribArray(labelTextureCoordinateAttribute);
+      glContext.vertexAttribPointer(labelTextureCoordinateAttribute, 2, glContext.FLOAT, false, 16, 8);
+      glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE_MINUS_SRC_ALPHA);
+      glContext.drawArrays(glContext.TRIANGLES, 0, 6);
+    }
+
     function render(time: number) {
       const seconds = time / 1000;
-      const previousSeconds = lastFrameTimeRef.current ?? seconds;
-      const dt = Math.min(Math.max(seconds - previousSeconds, 0.001), 0.05);
+      const canonicalSettingsNow = canonicalGraphSettingsRef.current;
+      const frameRateCap = canonicalSettingsNow?.advanced_shared.frame_rate_cap ?? 120;
+      const minimumFrameInterval = 1 / frameRateCap;
+      if (
+        lastRenderedSeconds > 0
+        && seconds - lastRenderedSeconds < minimumFrameInterval
+      ) {
+        frameId = window.requestAnimationFrame(render);
+        return;
+      }
+      if (lastRenderedSeconds > 0) {
+        diagnosticMissedFrames += Math.max(
+          0,
+          Math.floor((seconds - lastRenderedSeconds) / minimumFrameInterval) - 1
+        );
+      }
+      const dt = acceptedGraphFrameDeltaSeconds(seconds, lastFrameTimeRef.current);
       lastFrameTimeRef.current = seconds;
+      lastRenderedSeconds = seconds;
       const motionPaused = graphMotionPausedRef.current;
       if (reducedMotionRef.current) {
         timeRef.current = 0;
@@ -3217,8 +4061,8 @@ export function NeuronsCommandCenter({
         frameId = window.requestAnimationFrame(render);
         return;
       }
-      const canvasResized = canvasSizeDirty ? setCanvasSize() : false;
-      canvasSizeDirty = false;
+      const canvasResized = canvasSizeDirtyRef.current ? setCanvasSize() : false;
+      canvasSizeDirtyRef.current = false;
       const currentCamera = cameraRef.current;
       const desiredCamera = desiredCameraRef.current;
       const cameraNeedsRender = (
@@ -3234,16 +4078,80 @@ export function NeuronsCommandCenter({
         return;
       }
       pausedVisualDirtyRef.current = false;
+      const renderStartedAt = performance.now();
 
       const graphNow = graphRef.current;
       const controlsNow = graphControlsRef.current;
+      const advanced3D = canonicalSettingsNow?.advanced_3d;
+      const advancedShared = canonicalSettingsNow?.advanced_shared;
       const renderNodes = graphNow.nodes;
-      const useScaleBatching = renderNodes.length > 2_000;
-      const cameraEase = reducedMotionRef.current ? 1 : Math.min(0.34, 0.13 + controlsNow.cameraSensitivity * 0.055);
+      const layoutTransition = canonicalLayoutTransitionRef.current;
+      if (layoutTransition) {
+        const rawProgress = reducedMotionRef.current
+          ? 1
+          : (time - layoutTransition.startedAtMs) / Math.max(layoutTransition.durationMs, 1);
+        const easedProgress = reducedMotionRef.current
+          ? 1
+          : canonicalGraphMotionProgress(
+              time - layoutTransition.startedAtMs,
+              layoutTransition.durationMs,
+              layoutTransition.easing
+            );
+        for (const node of renderNodes) {
+          const from = layoutTransition.fromById.get(node.id);
+          const target = layoutTransition.targetById.get(node.id);
+          if (!from || !target) continue;
+          node.x = lerp(from.x, target.x, easedProgress);
+          node.y = lerp(from.y, target.y, easedProgress);
+          node.z = lerp(from.z, target.z, easedProgress);
+        }
+        if (rawProgress >= 1) canonicalLayoutTransitionRef.current = null;
+      }
+      const activeLevelOfDetail = advancedShared
+        ? resolveCanonicalLevelOfDetail(advancedShared.level_of_detail, renderNodes.length)
+        : "FULL";
+      const useScaleBatching = renderNodes.length > 2_000
+        || activeLevelOfDetail !== "FULL";
+      if (
+        advanced3D?.auto_orbit_enabled
+        && !motionPaused
+        && !reducedMotionRef.current
+      ) {
+        const direction = advanced3D.orbit_direction === "CLOCKWISE" ? 1 : -1;
+        desiredCameraRef.current = {
+          ...desiredCameraRef.current,
+          yaw:
+            desiredCameraRef.current.yaw
+            + dt * advanced3D.auto_orbit_speed * direction
+        };
+      }
+      const cameraEase = reducedMotionRef.current
+        ? 1
+        : advanced3D
+          ? advanced3D.focus_transition_ms <= 0
+            ? 1
+            : Math.min(
+              1,
+              Math.max(
+                0.01,
+                1 - Math.exp(-dt * 1000 / advanced3D.focus_transition_ms)
+              )
+            )
+          : Math.min(0.34, 0.13 + controlsNow.cameraSensitivity * 0.055);
       cameraRef.current = smoothCamera(cameraRef.current, desiredCameraRef.current, cameraEase);
       const camera = cameraRef.current;
-      const matrix = getCameraMatrix(camera, canvasElement.width, canvasElement.height);
-      const billboardAxes = getCameraBillboardAxes(camera);
+      const matrix = getCameraMatrix(
+        camera,
+        canvasElement.width,
+        canvasElement.height,
+        advanced3D
+      );
+      const billboardAxes = advanced3D?.node_billboard === false
+        ? {
+          right: { x: 1, y: 0, z: 0 },
+          up: { x: 0, y: 1, z: 0 }
+        }
+        : getCameraBillboardAxes(camera);
       matrixRef.current = matrix;
 
       glContext.clearColor(0, 0, 0, 0);
@@ -3255,10 +4163,29 @@ export function NeuronsCommandCenter({
       const groups = new Map(graphNow.groups.map((group) => [group.id, group]));
       const nodes = new Map(graphNow.nodes.map((node) => [node.id, node]));
       const selectedForRender = selectedRef.current ? nodes.get(selectedRef.current) ?? null : null;
-      const visibleNodeIds = visibleNodeIdsForSelection(selectedRef.current, renderNodes);
+      const canonicalMode = Boolean(canonicalSettingsNow);
+      const visibleNodeIds = visibleNodeIdsForSelection(
+        selectedRef.current,
+        renderNodes,
+        canonicalMode
+      );
       const visibleNodes = renderNodes.filter((node) => visibleNodeIds.has(node.id));
-      const visibleEdges = graphNow.edges.filter((edge) => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target));
+      const relatedNodeIds = relatedNodeIdsForSelection(selectedRef.current, renderNodes);
+      const visibleEdges = canonicalMode
+        ? canonicalEdgesForConnectionMode(
+          graphNow.edges,
+          renderNodes,
+          selectedRef.current,
+          canonicalSettingsNow!.simple.connections
+        )
+        : graphNow.edges.filter((edge) => {
+            if (!visibleNodeIds.has(edge.source) || !visibleNodeIds.has(edge.target)) return false;
+            return canonicalSettingsNow?.simple.connections !== "DIRECT"
+              || edge.source === selectedRef.current
+              || edge.target === selectedRef.current;
+          });
       const showHierarchyRings = !selectedForRender || selectedForRender.commandType === "emperor" || selectedForRender.commandType === "marshal" || selectedForRender.commandType === "general";
+      const showGridDetail = !canonicalMode || advancedShared?.grid_visible !== false;
       const activeGroups = graphNow.groups.filter((group) => group.id !== "core");
       const groupIndexes = new Map(activeGroups.map((group, index) => [group.id, index]));
       const parentLocalIndexes = new Map<string, number>();
@@ -3273,6 +4200,14 @@ export function NeuronsCommandCenter({
           node.x = 0;
           node.y = 0;
           node.z = 0;
+          continue;
+        }
+
+        if (canonicalGraph) {
+          node.vx = 0;
+          node.vy = 0;
+          node.vz = 0;
+          getNodeMotion(node).trail.length = 0;
           continue;
         }
 
@@ -3343,20 +4278,30 @@ export function NeuronsCommandCenter({
       if (!motionPaused && lockedNode && lockedNode.type !== "core") {
         desiredCameraRef.current = clampCamera({
           ...desiredCameraRef.current,
-          distance: Math.min(desiredCameraRef.current.distance, lockedNode.commandType === "soldier" ? 360 : lockedNode.commandType === "commander" ? 420 : lockedNode.commandType === "general" ? 520 : 620),
+          distance: advanced3D?.focus_distance
+            ?? Math.min(desiredCameraRef.current.distance, lockedNode.commandType === "soldier" ? 360 : lockedNode.commandType === "commander" ? 420 : lockedNode.commandType === "general" ? 520 : 620),
           target: { x: lockedNode.x, y: lockedNode.y, z: lockedNode.z }
-        });
+        }, advanced3D);
       }
 
       const emphasized = new Set<string>();
 
-      if (selectedRef.current) emphasized.add(selectedRef.current);
-      if (hoveredRef.current) emphasized.add(hoveredRef.current);
+      if (canonicalMode) {
+        if (
+          selectedRef.current
+          && canonicalSettingsNow!.simple.connections !== "ALL"
+        ) {
+          for (const nodeId of relatedNodeIds) emphasized.add(nodeId);
+        }
+      } else {
+        if (selectedRef.current) emphasized.add(selectedRef.current);
+        if (hoveredRef.current) emphasized.add(hoveredRef.current);
 
-      for (const edge of visibleEdges) {
-        if (edge.source === selectedRef.current || edge.target === selectedRef.current || edge.source === hoveredRef.current || edge.target === hoveredRef.current) {
-          emphasized.add(edge.source);
-          emphasized.add(edge.target);
+        for (const edge of visibleEdges) {
+          if (edge.source === selectedRef.current || edge.target === selectedRef.current || edge.source === hoveredRef.current || edge.target === hoveredRef.current) {
+            emphasized.add(edge.source);
+            emphasized.add(edge.target);
+          }
         }
       }
 
@@ -3378,14 +4323,16 @@ export function NeuronsCommandCenter({
         }
       }
 
-      for (const fog of spaceFogRef.current) {
-        const drift = reducedMotionRef.current ? 0 : Math.sin(timeRef.current * 0.035 + fog.drift) * 42;
-        drawPoint({ x: fog.x + drift, y: fog.y + drift * 0.22, z: fog.z - drift * 0.55 }, fog.color, fog.size, fog.alpha);
-      }
+      if (advancedShared?.background_visible !== false) {
+        for (const fog of spaceFogRef.current) {
+          const drift = reducedMotionRef.current ? 0 : Math.sin(timeRef.current * 0.035 + fog.drift) * 42;
+          drawPoint({ x: fog.x + drift, y: fog.y + drift * 0.22, z: fog.z - drift * 0.55 }, fog.color, fog.size, fog.alpha);
+        }
 
-      for (const star of deepSpaceRef.current) {
-        const drift = reducedMotionRef.current ? 0 : Math.sin(timeRef.current * 0.018 + star.drift) * 8;
-        drawPoint({ x: star.x + drift, y: star.y + drift * 0.35, z: star.z }, star.color, star.size, star.alpha);
+        for (const star of deepSpaceRef.current) {
+          const drift = reducedMotionRef.current ? 0 : Math.sin(timeRef.current * 0.018 + star.drift) * 8;
+          drawPoint({ x: star.x + drift, y: star.y + drift * 0.35, z: star.z }, star.color, star.size, star.alpha);
+        }
       }
 
       for (const [index, group] of activeGroups.entries()) {
@@ -3398,7 +4345,7 @@ export function NeuronsCommandCenter({
         const meta = { ...baseMeta, radius: baseMeta.radius * orbitTightness };
         const active = activeGroupRef.current === group.id || emphasized.size === 0 || groupNodes.some((node) => emphasized.has(node.id));
 
-        if (controlsNow.showRings && showHierarchyRings) {
+        if (controlsNow.showRings && showGridDetail && showHierarchyRings && activeLevelOfDetail !== "AGGRESSIVE") {
           drawOrbit(meta, orbitPattern, active ? group.color : "#123a42", 156, active ? 0.28 : 0.13);
         }
 
@@ -3408,7 +4355,7 @@ export function NeuronsCommandCenter({
           const radius = Math.max(44, Math.max(...groupNodes.map((node) => Math.hypot(node.x - groupCenter.x, node.y - groupCenter.y, node.z - groupCenter.z))) + 28);
           const clusterMeta = { ...meta, radius };
 
-          if (controlsNow.showRings) {
+          if (controlsNow.showRings && showGridDetail && activeLevelOfDetail !== "AGGRESSIVE") {
             const haloPoints: Vec3[] = [];
             for (let i = 0; i <= 48; i += 1) {
               const point = orbitPoint(clusterMeta, (i / 48) * Math.PI * 2, orbitPattern);
@@ -3419,7 +4366,75 @@ export function NeuronsCommandCenter({
         }
       }
 
-      if (useScaleBatching) {
+      const edgeVisual = (source: GraphNode3D, target: GraphNode3D) => {
+        const depthFade = advanced3D?.edge_depth_fade
+          ? 1 / (1 + Math.abs((source.z + target.z) / 2 - camera.target.z) / 1_500)
+          : 1;
+        const configuredOpacity = advancedShared?.edge_opacity ?? 0.42;
+        if (!canonicalMode) {
+          const active = emphasized.size === 0 || emphasized.has(source.id) || emphasized.has(target.id);
+          return {
+            alpha: (active ? configuredOpacity : configuredOpacity * 0.34) * depthFade,
+            color: active ? groups.get(target.groupId)?.color ?? settings.accentColor : "#14313c"
+          };
+        }
+        const related = Boolean(selectedRef.current)
+          && relatedNodeIds.has(source.id)
+          && relatedNodeIds.has(target.id);
+        const unrelatedOpacity = !selectedRef.current
+          || canonicalSettingsNow!.simple.connections === "ALL"
+          ? 0.65
+          : 0.2;
+        return {
+          alpha: Math.min(
+            1,
+            configuredOpacity * (
+              related
+                ? advancedShared?.lineage_emphasis ?? 1
+                : unrelatedOpacity
+            )
+          ) * depthFade,
+          color: related ? "#70e6d3" : "#7092c5"
+        };
+      };
+      const edgeCurvature = canonicalMode ? advancedShared?.edge_curvature ?? 0 : 0;
+      const configuredEdgeWidth = canonicalMode
+        ? advancedShared?.edge_width ?? 1
+        : 1;
+      const edgeStrokeOffsets = canonicalEdgeStrokeOffsets(configuredEdgeWidth);
+      const edgeAlphaScale = Math.min(1, Math.max(0.25, configuredEdgeWidth));
+      const fieldOfViewRadians = (
+        advanced3D?.camera_field_of_view
+        ?? 56.25
+      ) * Math.PI / 180;
+      const worldUnitsPerPixel = (
+        2
+        * camera.distance
+        * Math.tan(fieldOfViewRadians / 2)
+        / Math.max(canvasElement.height, 1)
+      );
+      const edgeStrokePaths = (points: Vec3[]) => {
+        const direction = sub(points.at(-1) ?? points[0]!, points[0]!);
+        const screenX = dot(direction, billboardAxes.right);
+        const screenY = dot(direction, billboardAxes.up);
+        const perpendicular = Math.hypot(screenX, screenY) > 0.0001
+          ? normalize(addVec(
+              scaleVec(billboardAxes.right, -screenY),
+              scaleVec(billboardAxes.up, screenX)
+            ))
+          : billboardAxes.right;
+
+        return edgeStrokeOffsets.map((offset) => {
+          if (offset === 0) return points;
+          const shift = scaleVec(
+            perpendicular,
+            offset * worldUnitsPerPixel
+          );
+          return points.map((point) => addVec(point, shift));
+        });
+      };
+
+      if (useScaleBatching && edgeCurvature <= 0.001) {
         const edgeBatches = new Map<string, { alpha: number; color: string; points: Vec3[] }>();
         for (const edge of visibleEdges) {
           const source = nodes.get(edge.source);
@@ -3429,12 +4444,13 @@ export function NeuronsCommandCenter({
           if (source.type !== "core" && groups.get(source.groupId)?.collapsed) continue;
           if (target.type !== "core" && groups.get(target.groupId)?.collapsed) continue;
 
-          const active = emphasized.size === 0 || emphasized.has(source.id) || emphasized.has(target.id);
-          const color = active ? groups.get(target.groupId)?.color ?? settings.accentColor : "#14313c";
-          const alpha = active ? 0.42 : 0.14;
+          const { alpha: rawAlpha, color } = edgeVisual(source, target);
+          const alpha = rawAlpha * edgeAlphaScale;
           const key = `${color}:${alpha}`;
           const batch = edgeBatches.get(key) ?? { alpha, color, points: [] };
-          batch.points.push(source, target);
+          for (const path of edgeStrokePaths([source, target])) {
+            batch.points.push(path[0]!, path[1]!);
+          }
           edgeBatches.set(key, batch);
         }
         for (const batch of edgeBatches.values()) {
@@ -3449,15 +4465,39 @@ export function NeuronsCommandCenter({
           if (source.type !== "core" && groups.get(source.groupId)?.collapsed) continue;
           if (target.type !== "core" && groups.get(target.groupId)?.collapsed) continue;
 
-          const active = emphasized.size === 0 || emphasized.has(source.id) || emphasized.has(target.id);
-          drawLine([source, target], active ? groups.get(target.groupId)?.color ?? settings.accentColor : "#14313c", active ? 0.42 : 0.14);
+          const { alpha: rawAlpha, color } = edgeVisual(source, target);
+          for (const path of edgeStrokePaths(
+            curvedGraphEdgePoints(source, target, edgeCurvature)
+          )) {
+            drawPolyline(path, color, rawAlpha * edgeAlphaScale);
+          }
         }
       }
 
-      const coreColor = groups.get("core")?.color ?? settings.accentColor;
+      const canonicalRootNode = nodes.get(rootNodeId);
+      const coreColor = canonicalMode && canonicalRootNode && advancedShared
+        ? canonicalNodeColor(canonicalRootNode, advancedShared.color_mode)
+        : groups.get("core")?.color ?? settings.accentColor;
       const corePulse = reducedMotionRef.current ? 1 : 1 + Math.sin(timeRef.current * 2.4) * 0.06;
+      const nodeColor = (node: GraphNode3D, dimmed: boolean) => {
+        if (dimmed) return "#17404a";
+        if (canonicalMode && advancedShared) {
+          return canonicalNodeColor(node, advancedShared.color_mode);
+        }
+        if (advancedShared?.color_mode === "STATUS") {
+          return commandStatusColor(node.status);
+        }
+        if (advancedShared?.color_mode === "HEALTH") {
+          if (node.health >= 90) return "#57e6a3";
+          if (node.health >= 65) return "#ffd56a";
+          if (node.health >= 40) return "#ff8e67";
+          return "#ff5c73";
+        }
+        return groups.get(node.groupId)?.color ?? settings.accentColor;
+      };
+      const selectedNodeScale = advancedShared?.selected_node_scale ?? 1.18;
 
-      if (visibleNodeIds.has("entral")) {
+      if (visibleNodeIds.has(rootNodeId)) {
         drawPoint({ x: 0, y: 0, z: 0 }, coreColor, 190 * corePulse, 0.14);
         drawPoint({ x: 0, y: 0, z: 0 }, coreColor, 132 * corePulse, 0.44);
         drawPoint({ x: 0, y: 0, z: 0 }, coreColor, 94 * corePulse, 0.92);
@@ -3478,7 +4518,7 @@ export function NeuronsCommandCenter({
           if (node.type === "core" || group?.collapsed) continue;
 
           const dimmed = emphasized.size > 0 && !emphasized.has(node.id);
-          const color = dimmed ? "#17404a" : group?.color ?? settings.accentColor;
+          const color = nodeColor(node, dimmed);
           const statusColor = commandStatusColor(node.status);
           const size = nodeVisualSize(node);
           addPointToBatch(node, statusColor, size + 15, dimmed ? 0.08 : 0.28);
@@ -3492,9 +4532,9 @@ export function NeuronsCommandCenter({
           const node = nodes.get(nodeId);
           if (!node || node.type === "core") continue;
           const group = groups.get(node.groupId);
-          const color = group?.color ?? settings.accentColor;
+          const color = nodeColor(node, false);
           const statusColor = commandStatusColor(node.status);
-          const size = nodeVisualSize(node) * 1.18;
+          const size = nodeVisualSize(node) * selectedNodeScale;
           drawPoint(node, statusColor, size + 24, 0.42);
           drawPoint(node, color, size + 12, 1);
           drawNodeMarker(node, color, statusColor, size, false, 1, billboardAxes);
@@ -3506,9 +4546,13 @@ export function NeuronsCommandCenter({
           if (node.type !== "core" && group?.collapsed) continue;
 
           const dimmed = emphasized.size > 0 && !emphasized.has(node.id);
-          const color = dimmed ? "#17404a" : group?.color ?? settings.accentColor;
+          const color = nodeColor(node, dimmed);
           const accent = dimmed ? "#31545f" : nodeLevelAccent(node);
-          const size = nodeVisualSize(node) * (node.id === selectedRef.current || node.id === hoveredRef.current ? 1.18 : 1);
+          const size = nodeVisualSize(node) * (
+            node.id === selectedRef.current || node.id === hoveredRef.current
+              ? selectedNodeScale
+              : 1
+          );
 
           if (node.type === "core") {
             if (node.id === selectedRef.current || node.id === hoveredRef.current) {
@@ -3541,27 +4585,40 @@ export function NeuronsCommandCenter({
         }
       }
 
+      if (canonicalMode) {
+        drawCanonicalLabelOverlay(visibleNodes, matrix, camera, activeLevelOfDetail);
+      }
+      const renderFinishedAt = performance.now();
+      diagnosticRenderedFrames += 1;
+      diagnosticRenderTimeMs += renderFinishedAt - renderStartedAt;
+      publishFrameDiagnostics(renderFinishedAt);
       frameId = window.requestAnimationFrame(render);
     }
 
+    lastFrameTimeRef.current = null;
     frameId = window.requestAnimationFrame(render);
 
     return () => {
       window.cancelAnimationFrame(frameId);
       visibilityObserver?.disconnect();
       sizeObserver?.disconnect();
-      if (positionBuffer) glContext.deleteBuffer(positionBuffer);
+      canvasElement.removeEventListener("webglcontextlost", handleContextLost);
+      canvasElement.removeEventListener("webglcontextrestored", handleContextRestored);
+      glContext.deleteBuffer(positionBuffer);
+      if (labelTexture) glContext.deleteTexture(labelTexture);
+      if (labelBuffer) glContext.deleteBuffer(labelBuffer);
+      if (labelProgram) glContext.deleteProgram(labelProgram);
       glContext.deleteProgram(pointProgram.program);
       glContext.deleteProgram(lineProgram.program);
     };
-  }, [initialDestination, settings.accentColor]);
+  }, [canonicalRenderingActive, initialDestination, settings.accentColor, webGlGeneration]);
 
   function setCamera(nextCamera: Partial<CameraState>, immediate = false) {
     const next = clampCamera({
       ...desiredCameraRef.current,
       ...nextCamera,
       target: nextCamera.target ? { ...nextCamera.target } : desiredCameraRef.current.target
-    });
+    }, canonicalGraphSettingsRef.current?.advanced_3d);
 
     desiredCameraRef.current = next;
 
@@ -3838,7 +4895,7 @@ export function NeuronsCommandCenter({
       ?? nodes.find((node) => node.name === "Niche Research Soldier")
       ?? businessCommander
       ?? nodes.find((node) => node.id === "merch-marshal")
-      ?? nodes.find((node) => node.id === "entral");
+      ?? nodes.find((node) => node.id === rootNodeId);
 
     if (!planner) {
       return;
@@ -3881,7 +4938,7 @@ export function NeuronsCommandCenter({
     };
     const productNames = products.map((product) => product.productName);
     const affectedNames = new Set([
-      "entral",
+      graphRef.current.nodes.find((node) => node.id === rootNodeId)?.name ?? "ENTRAL",
       ...path.map((node) => node.name),
       "Niche Research Soldier",
       "Design Soldier",
@@ -4136,7 +5193,7 @@ export function NeuronsCommandCenter({
         ...current,
         tasks: [...result.tasks, ...current.tasks],
         nodes: current.nodes.map((node) => {
-          if (node.id === "entral") {
+          if (node.id === rootNodeId) {
             return {
               ...node,
               logs: [`Recorded ${result.tasks.length}-step merch launch workflow as pending; no execution receipt exists.`, ...node.logs].slice(0, 10),
@@ -4545,7 +5602,7 @@ export function NeuronsCommandCenter({
     setPendingAuthorization(null);
 
     if (pending.type === "ai-action-plan") {
-      completeMockAiAction(pending.plan);
+      rejectUnavailableAiAction(pending.plan);
       return;
     }
 
@@ -4795,7 +5852,7 @@ export function NeuronsCommandCenter({
       marshalType: template.marshalType,
       memory: makeMemory(`${marshalName} broad operating domain`, `Oversee ${template.label.toLowerCase()} niches, enforce approvals, and report domain readiness to ENTRAL.`, [`Template: ${template.label}.`]),
       name: marshalName,
-      parentId: "entral",
+      parentId: rootNodeId,
       permissions: ["govern_hierarchy", "route_commands", "manage_niche_generals"],
       progress: 12,
       reasoning: "Created as the broad operating domain for guided business onboarding.",
@@ -4933,7 +5990,7 @@ export function NeuronsCommandCenter({
       commanderName,
       completedAt: null,
       createdAt: now,
-      delegationPath: ["entral", marshalId, generalId, commanderId, firstSoldierId],
+      delegationPath: [rootNodeId, marshalId, generalId, commanderId, firstSoldierId],
       description: `Capture business basics, audience, offer, and immediate launch objective for ${businessName}.`,
       generalId,
       generalName,
@@ -4960,7 +6017,7 @@ export function NeuronsCommandCenter({
           : [...current.groups, { color: template.color, id: marshalId, name: marshalName }],
         nodes: [
           ...current.nodes.map((node) => {
-            if (node.id === "entral" && !existingMarshal) {
+            if (node.id === rootNodeId && !existingMarshal) {
               return { ...node, children: [...(node.children ?? []), marshalId], logs: [`${marshalName} added through guided onboarding.`, ...node.logs].slice(0, 10) };
             }
 
@@ -5139,7 +6196,7 @@ export function NeuronsCommandCenter({
     }
 
     const descendants = descendantIdsFor(target.id);
-    const nextSelectedId = target.parentId ?? "entral";
+    const nextSelectedId = target.parentId ?? rootNodeId;
 
     setGraph((current) => {
       const { state: next } = removeCommandEntity(current, target.id, createInitialState());
@@ -5198,18 +6255,29 @@ export function NeuronsCommandCenter({
 
   function focusNode(node: GraphNode3D) {
     const previousNodeId = selectedRef.current;
-    if (previousNodeId !== node.id && graphRef.current.nodes.some((candidate) => candidate.id === previousNodeId)) {
+    if (
+      previousNodeId
+      && previousNodeId !== node.id
+      && graphRef.current.nodes.some((candidate) => candidate.id === previousNodeId)
+    ) {
       graphSelectionHistoryRef.current = [...graphSelectionHistoryRef.current.slice(-19), previousNodeId];
       setGraphHistoryDepth(graphSelectionHistoryRef.current.length);
     }
     setSelectedNodeId(node.id);
+    selectedRef.current = node.id;
     setIsPanelOpen(true);
     setActiveStatusFilter(null);
-    setActiveGroupId(node.groupId === "core" ? null : node.groupId);
+    setActiveGroupId(
+      canonicalRenderingActive || node.groupId === "core"
+        ? null
+        : node.groupId
+    );
     setLockedNodeId(node.type === "core" ? null : node.id);
     lockedNodeIdRef.current = node.type === "core" ? null : node.id;
     setCamera({
-      distance: node.type === "core" ? 500 : 420,
+      distance:
+        canonicalGraphSettingsRef.current?.advanced_3d.focus_distance
+        ?? (node.type === "core" ? 500 : 420),
       target: { x: node.x, y: node.y, z: node.z }
     });
     setStatusMessage(`Zoomed to ${node.name}. ENTRAL updated graph focus from command directive.`);
@@ -5217,7 +6285,12 @@ export function NeuronsCommandCenter({
 
   function fitGraph(message = "Fit graph to the full command field.") {
     const previousNodeId = selectedRef.current;
-    if (previousNodeId !== "entral" && graphRef.current.nodes.some((candidate) => candidate.id === previousNodeId)) {
+    if (
+      !canonicalRenderingActive
+      && previousNodeId
+      && previousNodeId !== rootNodeId
+      && graphRef.current.nodes.some((candidate) => candidate.id === previousNodeId)
+    ) {
       graphSelectionHistoryRef.current = [...graphSelectionHistoryRef.current.slice(-19), previousNodeId];
       setGraphHistoryDepth(graphSelectionHistoryRef.current.length);
     }
@@ -5228,12 +6301,15 @@ export function NeuronsCommandCenter({
       fitCameraToGraph(
         graphRef.current.nodes,
         canvas?.clientWidth ?? 1,
-        canvas?.clientHeight ?? 1
+        canvas?.clientHeight ?? 1,
+        canonicalGraphSettingsRef.current?.advanced_3d
       ),
       true
     );
-    setSelectedNodeId("entral");
-    selectedRef.current = "entral";
+    if (!canonicalRenderingActive) {
+      setSelectedNodeId(rootNodeId);
+      selectedRef.current = rootNodeId;
+    }
     setActiveGroupId(null);
     setActiveStatusFilter(null);
     setSearch("");
@@ -5353,21 +6429,21 @@ export function NeuronsCommandCenter({
     respond(formatActionPlanSummary(plan), "AI Brain action plan awaiting authorization.");
   }
 
-  function completeMockAiAction(plan: AiActionPlan) {
-    const registry = toolRegistry.length ? toolRegistry : defaultToolRegistry;
-    const primaryTool = plan.toolsRequired.length ? toolById(plan.toolsRequired[0], registry) : null;
-    const mockResult = primaryTool ? buildMockToolExecution(primaryTool, plan.userRequest) : null;
-    const executionResult = mockResult?.simulatedResult ?? "Local Command OS plan approved. No external tool was required or contacted.";
+  function rejectUnavailableAiAction(plan: AiActionPlan) {
+    const unavailableTools = plan.toolsRequired.filter((toolId) =>
+      !toolRegistry.some((tool) => tool.id === toolId && tool.status === "Connected")
+    );
+    const executionResult = unavailableTools.length
+      ? `Execution blocked because these provider tools are not active: ${unavailableTools.join(", ")}.`
+      : "Execution blocked because this legacy command path has no verified provider receipt.";
 
-    recordAiBrainAudit(plan, "approved", executionResult, primaryTool ? [primaryTool.id] : []);
+    recordAiBrainAudit(plan, "blocked", executionResult, []);
     respond({
-      analysis: mockResult
-        ? `${mockResult.message} ${mockResult.simulatedResult}`
-        : "The AI Brain plan was approved for local handling only. No external service was contacted.",
-      nextActions: mockResult?.nextSteps ?? ["Continue with local Command OS controls.", "Connect credentials only when ready.", "Require approval before external execution."],
-      recommendation: "Keep mock mode active until the relevant external integration has credentials, scopes, and a reviewed execution policy.",
-      situation: "AI Brain authorization approved and executed in safe mock mode."
-    }, "AI Brain mock execution completed.");
+      analysis: executionResult,
+      nextActions: ["Verify the provider connection and exact operation grant.", "Retry through the governed provider-backed action path."],
+      recommendation: "Do not substitute local or simulated output for an unavailable production provider.",
+      situation: "Provider execution unavailable. No external or simulated action ran."
+    }, "AI Brain execution blocked; provider readback is unavailable.");
   }
 
   function openGraphControls() {
@@ -5550,7 +6626,7 @@ export function NeuronsCommandCenter({
   function parentIdForNewNode(type: Exclude<NodeType, "emperor">) {
     const selected = selectedRef.current ? graphRef.current.nodes.find((node) => node.id === selectedRef.current) : null;
 
-    if (type === "marshal") return "entral";
+    if (type === "marshal") return rootNodeId;
 
     if (type === "general") {
       if (activeGroupId && graphRef.current.nodes.some((node) => node.id === activeGroupId && node.commandType === "marshal")) {
@@ -5585,6 +6661,7 @@ export function NeuronsCommandCenter({
 
   function focusCommandNode(node: GraphNode3D) {
     focusNode(node);
+    if (canonicalRenderingActive) return;
 
     if (node.commandType === "marshal") {
       const marshalGeneralCount = graphRef.current.nodes.filter((candidate) => candidate.parentId === node.id && candidate.commandType === "general").length;
@@ -5688,13 +6765,13 @@ export function NeuronsCommandCenter({
     return buildCommandOSReport({
       label,
       nodes: graphRef.current.nodes,
-      targetId: "entral",
+      targetId: rootNodeId,
       tasks: graphRef.current.tasks
     });
   }
 
   function createFocusedReport(target: GraphNode3D | null | undefined, label?: string) {
-    const reportTarget = target ?? graphRef.current.nodes.find((node) => node.id === "entral") ?? null;
+    const reportTarget = target ?? graphRef.current.nodes.find((node) => node.id === rootNodeId) ?? null;
 
     return buildCommandOSReport({
       label,
@@ -5705,7 +6782,7 @@ export function NeuronsCommandCenter({
   }
 
   function recordFocusedReport(target: GraphNode3D | null | undefined, label?: string) {
-    const reportTarget = target ?? graphRef.current.nodes.find((node) => node.id === "entral") ?? null;
+    const reportTarget = target ?? graphRef.current.nodes.find((node) => node.id === rootNodeId) ?? null;
     const record = buildCommandOSReportRecord({
       createdAt: new Date().toISOString(),
       label,
@@ -5832,22 +6909,6 @@ export function NeuronsCommandCenter({
       "Troubleshooting:",
       "If a directive needs more detail, ENTRAL will ask for the missing Marshal, General, Commander, Soldier, or approval before execution proceeds."
     ].join("\n");
-  }
-
-  function requestDemoEnvironmentAuthorization() {
-    const template = businessTemplates[0];
-
-    setMobileTab("command");
-    setIsCommandConsoleOpen(true);
-    requestBusinessTemplateAuthorization(template, {
-      ...defaultBusinessWizard,
-      audience: "Demo operators learning ENTRAL",
-      businessName: "Demo Merch Lab",
-      goal: "Explore Command OS structure safely",
-      industry: "Client merch and POD operations",
-      isOpen: false,
-      templateId: template.id
-    });
   }
 
   function isBriefingCommand(normalized: string) {
@@ -6021,7 +7082,7 @@ export function NeuronsCommandCenter({
         situation: "Voice command channel selected."
       });
     } else if (actionPlan.kind === "return_to_entral") {
-      const entral = graphRef.current.nodes.find((node) => node.id === "entral");
+      const entral = graphRef.current.nodes.find((node) => node.id === rootNodeId);
       if (entral) focusCommandNode(entral);
     } else if (actionPlan.kind === "open_tasks") {
       openCommandAccessTab("tasks");
@@ -6050,7 +7111,7 @@ export function NeuronsCommandCenter({
         situation: "Niche Generals displayed."
       }, "Niche General list displayed.", "general");
     } else if (intent.kind === "report_request") {
-      const reportTarget = commandNode ?? selected ?? graphRef.current.nodes.find((node) => node.id === "entral") ?? null;
+      const reportTarget = commandNode ?? selected ?? graphRef.current.nodes.find((node) => node.id === rootNodeId) ?? null;
       const reportLabel = normalized.includes("morning")
         ? "Morning briefing"
         : normalized.includes("what needs attention") || normalized.includes("what is wrong")
@@ -6088,7 +7149,12 @@ export function NeuronsCommandCenter({
     } else if (actionPlan.kind === "show_active") {
       setStatusHighlight(["working", "thinking"], "Highlighted working and thinking hierarchy nodes.");
     } else if (normalized.includes("demo environment") || normalized.includes("demo command") || normalized.includes("load demo")) {
-      requestDemoEnvironmentAuthorization();
+      respond({
+        analysis: "Sample command hierarchies are isolated to automated tests and cannot be loaded by a production route.",
+        nextActions: ["Restore an authorized backend snapshot.", "Open the canonical member graph for the RLS-visible hierarchy."],
+        recommendation: "Use canonical production records; do not substitute demonstration entities.",
+        situation: "Demo hierarchy request blocked."
+      }, "Demo hierarchy unavailable in production.");
     } else if (!explicitHierarchyCreateType && intent.kind === "template_request") {
       const template = templateFromText(text);
       openBusinessWizard(template?.id);
@@ -6670,7 +7736,7 @@ export function NeuronsCommandCenter({
           distance: desiredCameraRef.current.distance * zoomRatio,
           pitch: desiredCameraRef.current.pitch + dy * 0.0038 * sensitivity,
           yaw: desiredCameraRef.current.yaw + dx * 0.0038 * sensitivity
-        });
+        }, canonicalGraphSettingsRef.current?.advanced_3d);
 
         desiredCameraRef.current = next;
         gesture.lastDistance = distance;
@@ -6684,7 +7750,7 @@ export function NeuronsCommandCenter({
         const next = clampCamera({
           ...desiredCameraRef.current,
           target: addVec(desiredCameraRef.current.target, panOffset)
-        });
+        }, canonicalGraphSettingsRef.current?.advanced_3d);
 
         desiredCameraRef.current = next;
         gesture.lastDistance = null;
@@ -6716,7 +7782,7 @@ export function NeuronsCommandCenter({
           ...desiredCameraRef.current,
           pitch: desiredCameraRef.current.pitch + dy * 0.0038 * sensitivity,
           yaw: desiredCameraRef.current.yaw + dx * 0.0038 * sensitivity
-        });
+        }, canonicalGraphSettingsRef.current?.advanced_3d);
         desiredCameraRef.current = next;
       } else {
         const scale = desiredCameraRef.current.distance * 0.0017 * graphControlsRef.current.cameraSensitivity;
@@ -6728,7 +7794,7 @@ export function NeuronsCommandCenter({
         const next = clampCamera({
           ...desiredCameraRef.current,
           target: addVec(desiredCameraRef.current.target, panOffset)
-        });
+        }, canonicalGraphSettingsRef.current?.advanced_3d);
         desiredCameraRef.current = next;
       }
 
@@ -6742,11 +7808,21 @@ export function NeuronsCommandCenter({
       setHoveredNodeId(nextHoveredId);
     }
 
-    setTooltip(picked ? {
+    const tooltipAllowed = !canonicalRenderingActive
+      || canonicalGraphSettingsRef.current?.simple.labels !== "OFF";
+    const roleAndTier = picked
+      ? canonicalNodeRoleAndTier(picked.node)
+      : null;
+    setTooltip(picked && tooltipAllowed ? {
+      health: picked.node.health,
+      healthState: picked.node.canonicalHealthState ?? null,
       groupName: graphRef.current.groups.find((group) => group.id === picked.node.groupId)?.name ?? "Ungrouped",
       name: picked.node.name,
+      role: roleAndTier?.role ?? picked.node.commandType.toUpperCase(),
       status: picked.node.status,
+      statusState: picked.node.canonicalStatus ?? null,
       task: picked.node.currentTask ?? "No active task.",
+      tier: canonicalRenderingActive ? roleAndTier?.tier ?? null : null,
       x: event.clientX,
       y: event.clientY
     } : null);
@@ -6804,6 +7880,82 @@ export function NeuronsCommandCenter({
     const key = event.key.toLowerCase();
     const amount = event.shiftKey ? 0.18 : 0.08;
 
+    if (canonicalRenderingActive) {
+      if (key === "escape") {
+        event.preventDefault();
+        selectedRef.current = null;
+        setSelectedNodeId(null);
+        setLockedNodeId(null);
+        lockedNodeIdRef.current = null;
+        setActiveGroupId(null);
+        setActiveStatusFilter(null);
+        pausedVisualDirtyRef.current = true;
+        return;
+      }
+      if (key === "enter") {
+        event.preventDefault();
+        const selected = selectedRef.current
+          ? graphRef.current.nodes.find((node) => node.id === selectedRef.current) ?? null
+          : null;
+        if (selected) {
+          onCanonicalOpenFullRecord?.(selected.canonicalEntityId ?? selected.id);
+        } else {
+          const firstId = nextCanonicalGraphEntityId(graphRef.current.nodes, null, "right");
+          const first = firstId
+            ? graphRef.current.nodes.find((node) => node.id === firstId) ?? null
+            : null;
+          if (first) focusNode(first);
+        }
+        return;
+      }
+      if (key === "f" || key === "home") {
+        event.preventDefault();
+        fitGraph();
+        return;
+      }
+      if (key === "+" || key === "=") {
+        event.preventDefault();
+        setLockedNodeId(null);
+        lockedNodeIdRef.current = null;
+        setCamera({ distance: desiredCameraRef.current.distance * 0.9 }, true);
+        return;
+      }
+      if (key === "-" || key === "_") {
+        event.preventDefault();
+        setLockedNodeId(null);
+        lockedNodeIdRef.current = null;
+        setCamera({ distance: desiredCameraRef.current.distance * 1.1 }, true);
+        return;
+      }
+      const direction = {
+        arrowdown: "down",
+        arrowleft: "left",
+        arrowright: "right",
+        arrowup: "up"
+      }[key] as "left" | "right" | "up" | "down" | undefined;
+      if (!direction) return;
+      event.preventDefault();
+      if (event.shiftKey) {
+        setLockedNodeId(null);
+        lockedNodeIdRef.current = null;
+        if (direction === "left") setCamera({ yaw: desiredCameraRef.current.yaw - amount }, true);
+        if (direction === "right") setCamera({ yaw: desiredCameraRef.current.yaw + amount }, true);
+        if (direction === "up") setCamera({ pitch: desiredCameraRef.current.pitch - amount }, true);
+        if (direction === "down") setCamera({ pitch: desiredCameraRef.current.pitch + amount }, true);
+        return;
+      }
+      const nextId = nextCanonicalGraphEntityId(
+        graphRef.current.nodes,
+        selectedRef.current,
+        direction
+      );
+      const nextNode = nextId
+        ? graphRef.current.nodes.find((node) => node.id === nextId) ?? null
+        : null;
+      if (nextNode) focusNode(nextNode);
+      return;
+    }
+
     if (key === "arrowleft" || key === "arrowright" || key === "arrowup" || key === "arrowdown" || key === "+" || key === "=" || key === "-" || key === "_" || key === "home") {
       event.preventDefault();
       setLockedNodeId(null);
@@ -6828,7 +7980,8 @@ export function NeuronsCommandCenter({
   }
 
   function deleteSelectedNode() {
-    requestRemoveNode(selectedNode?.id ?? selectedNodeId);
+    const nodeId = selectedNode?.id ?? selectedNodeId;
+    if (nodeId) requestRemoveNode(nodeId);
   }
 
   const filteredNodes = search.trim()
@@ -6842,6 +7995,15 @@ export function NeuronsCommandCenter({
   const commanderNodes = graph.nodes.filter((node) => node.commandType === "commander");
   const soldierNodes = graph.nodes.filter((node) => node.commandType === "soldier");
   const selectedChildren = selectedNode ? graph.nodes.filter((node) => node.parentId === selectedNode.id) : [];
+  const selectedCanonicalEntity = selectedNode
+    ? canonicalEntityById.get(
+      selectedNode.canonicalEntityId ?? selectedNode.id
+    ) ?? null
+    : null;
+  const selectedDetailChildCount = canonicalGraphDetailChildCount(
+    selectedCanonicalEntity,
+    selectedChildren.length
+  );
   const selectedParent = selectedNode?.parentId ? nodeMap.get(selectedNode.parentId) : null;
   const selectedLineage = selectedNode ? lineageForNode(selectedNode.id, graph.nodes) : [];
   const selectedCommandPath = selectedLineage.map((node) => node.name).join(" / ");
@@ -7124,21 +8286,42 @@ export function NeuronsCommandCenter({
       className={["command-center-page", "phase110-command-center", embeddedGraphOnly ? "phase180-embedded-3d" : "", isMemberSurface ? "member-surface" : "", isPanelOpen ? "info-panel-open" : "", isCommandConsoleOpen ? "" : "chat-closed", isFocusMode ? "focus-mode" : ""].filter(Boolean).join(" ")}
       data-canonical-entity-count={canonicalEntities?.length}
       data-canonical-event-sequence={canonicalGraph ? canonicalEventSequence : undefined}
+      data-canonical-edge-count={canonicalGraph?.edges.length}
       data-destination={initialDestination}
       data-graph-dimension={canonicalGraph ? "3d" : undefined}
       data-graph-motion={canonicalGraph ? (canonicalMotionPaused ? "paused" : "running") : undefined}
+      data-graph-animation-duration={canonicalGraphSettings?.advanced_shared.animation_duration_ms}
+      data-graph-motion-easing={canonicalGraphSettings?.advanced_shared.motion_easing}
+      data-graph-pattern={canonicalLayout3D?.pattern}
+      data-graph-settings-version={canonicalGraphSettings ? 2 : undefined}
+      data-graph-auto-orbit={canonicalGraphSettings?.advanced_3d.auto_orbit_enabled ? "on" : "off"}
+      data-graph-background={canonicalGraphSettings?.advanced_shared.background_visible === false ? "hidden" : "visible"}
+      data-graph-camera-fov={canonicalGraphSettings?.advanced_3d.camera_field_of_view}
+      data-graph-edge-depth-fade={canonicalGraphSettings?.advanced_3d.edge_depth_fade ? "on" : "off"}
+      data-graph-level-of-detail={canonicalActiveLevelOfDetail ?? undefined}
+      data-graph-node-billboard={canonicalGraphSettings?.advanced_3d.node_billboard ? "on" : "off"}
+      data-graph-snapshot-strategy={canonicalRenderingActive ? "preserved-drawing-buffer" : undefined}
+      data-graph-webgl-state={webGlState}
       data-mobile-tab={mobileTab}
       aria-label={canonicalGraph ? "ENTRAL 3D Graph" : "ENTRAL Command Center"}
     >
       {initialDestination === "graph" ? (
         <>
           <canvas
-            aria-describedby="command-center-camera-help"
-            aria-label="3D interactive ENTRAL neuron graph"
+            aria-describedby={[
+              "command-center-camera-help",
+              activeTooltip ? "command-center-node-tooltip" : null
+            ].filter(Boolean).join(" ")}
+            aria-label={canonicalRenderingActive
+              ? `Canonical 3D Universe Graph with ${canonicalEntities?.length ?? 0} entities`
+              : "3D interactive ENTRAL neuron graph"}
             className="command-center-canvas"
             data-academy="command-graph"
+            data-graph-snapshot-strategy={canonicalRenderingActive ? "preserved-drawing-buffer" : undefined}
             data-touch-interaction={!embeddedGraphOnly || canonicalTouchInteractionActive ? "graph" : "page"}
+            onBlur={() => setCanvasKeyboardTooltipActive(false)}
             onContextMenu={(event) => event.preventDefault()}
+            onFocus={() => setCanvasKeyboardTooltipActive(true)}
             onKeyDown={handleCanvasKeyDown}
             onPointerCancel={handlePointerCancel}
             onPointerDown={handlePointerDown}
@@ -7164,6 +8347,9 @@ export function NeuronsCommandCenter({
             tabIndex={0}
           />
           <p className="sr-only" id="command-center-camera-help">
+            {canonicalRenderingActive
+              ? "Use the arrow keys to move through the authorized hierarchy. Hold Shift with an arrow key to orbit the camera. Press Enter to open the selected entity, Escape to clear selection, F or Home to fit the graph, and Plus or Minus to zoom. "
+              : null}
             On touch screens, drag one finger to pan up, down, left, and right. Drag two fingers to rotate around ENTRAL.
             Pinch two fingers to zoom after activating graph touch controls; full screen activates them automatically.
             On desktop, drag to orbit and right click drag to pan. When this graph is embedded, the mouse wheel scrolls
@@ -7232,7 +8418,7 @@ export function NeuronsCommandCenter({
                   onChange={(event) => setSearch(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key !== "Enter") return;
-                    const match = filteredVisibleNodes.find((node) => node.id !== "entral") ?? filteredVisibleNodes[0];
+                    const match = filteredVisibleNodes.find((node) => node.id !== rootNodeId) ?? filteredVisibleNodes[0];
                     if (match) focusNode(match);
                   }}
                   placeholder="Search"
@@ -7373,6 +8559,35 @@ export function NeuronsCommandCenter({
                 aria-label="Selected graph entity"
                 className="phase110-node-drawer"
                 data-academy="graph-inspector"
+                data-canonical-detail-surface={
+                  canonicalRenderingActive ? "3d-inspector" : undefined
+                }
+                data-canonical-selected-active-alert={
+                  selectedCanonicalEntity?.active_alert ?? undefined
+                }
+                data-canonical-selected-active-task-count={
+                  selectedCanonicalEntity?.active_task_count
+                }
+                data-canonical-selected-child-count={
+                  canonicalRenderingActive
+                    ? selectedDetailChildCount
+                    : undefined
+                }
+                data-canonical-selected-current-mission={
+                  canonicalRenderingActive
+                    ? selectedNode.currentTask ?? undefined
+                    : undefined
+                }
+                data-canonical-selected-entity-id={
+                  canonicalRenderingActive
+                    ? selectedNode.canonicalEntityId ?? selectedNode.id
+                    : undefined
+                }
+                data-canonical-selected-latest-material-result={
+                  canonicalRenderingActive
+                    ? selectedLatestResult ?? undefined
+                    : undefined
+                }
                 data-collapsed={isNodeDrawerCollapsed}
               >
                 {isNodeDrawerCollapsed ? (
@@ -7413,7 +8628,7 @@ export function NeuronsCommandCenter({
                     <dl id="phase110-node-drawer-details">
                       <div><dt>Health</dt><dd>{selectedNode.health}%</dd></div>
                       <div><dt>Parent</dt><dd>{selectedParent?.name ?? "Human authority"}</dd></div>
-                      <div><dt>Children</dt><dd>{selectedChildren.length}</dd></div>
+                      <div><dt>Children</dt><dd>{selectedDetailChildCount}</dd></div>
                       <div><dt>Current objective</dt><dd>{selectedNode.currentTask ?? "None recorded"}</dd></div>
                       <div><dt>Latest material result</dt><dd>{selectedLatestResult ?? "None recorded"}</dd></div>
                     </dl>
@@ -7637,7 +8852,7 @@ export function NeuronsCommandCenter({
               {!isMemberSurface ? <button type="button" onClick={() => openMobileTab("command")}>Command</button> : null}
             </header>
             <div className="command-mobile-tree">
-              {graph.nodes.find((node) => node.id === "entral") ? renderMobileHierarchyNode(graph.nodes.find((node) => node.id === "entral") as GraphNode3D) : null}
+              {graph.nodes.find((node) => node.id === rootNodeId) ? renderMobileHierarchyNode(graph.nodes.find((node) => node.id === rootNodeId) as GraphNode3D) : null}
             </div>
           </>
         ) : null}
@@ -7714,7 +8929,7 @@ export function NeuronsCommandCenter({
             </header>
             <div className="command-mobile-action-grid">
               <button type="button" onClick={() => openBusinessWizard()}>Business setup</button>
-              {isMemberSurface ? <button type="button" onClick={() => openMobileTab("reports")}>Reports</button> : <button type="button" onClick={requestDemoEnvironmentAuthorization}>Load demo</button>}
+              <button type="button" onClick={() => openMobileTab("reports")}>Reports</button>
               {!isMemberSurface ? <button type="button" onClick={() => requestNodeAuthorization("marshal")}>Add Marshal</button> : null}
               <button type="button" onClick={openGraphControls}>Graph controls</button>
               <button type="button" onClick={() => openSettings()}>Settings</button>
@@ -7758,8 +8973,8 @@ export function NeuronsCommandCenter({
         </div>
         <details open>
           <summary>Hierarchy</summary>
-          <button className={selectedNodeId === "entral" ? "active" : ""} type="button" onClick={() => {
-            const entral = graphRef.current.nodes.find((node) => node.id === "entral");
+          <button className={selectedNodeId === rootNodeId ? "active" : ""} type="button" onClick={() => {
+            const entral = graphRef.current.nodes.find((node) => node.id === rootNodeId);
             if (entral) focusCommandNode(entral);
           }}>
             ENTRAL / Central Command
@@ -7807,25 +9022,69 @@ export function NeuronsCommandCenter({
         <kbd>Shift + Drag</kbd>
       </div> : null}
 
-      {tooltip ? (
+      {activeTooltip ? (
         <div
+          aria-live="polite"
           className="command-node-tooltip"
+          data-canonical-detail-surface={
+            canonicalRenderingActive ? "3d-tooltip" : undefined
+          }
+          data-canonical-selected-active-alert={
+            activeTooltipCanonicalEntity?.active_alert ?? undefined
+          }
+          data-canonical-selected-active-task-count={
+            activeTooltipCanonicalEntity?.active_task_count
+          }
+          data-canonical-selected-child-count={
+            activeTooltipCanonicalEntity?.child_count
+          }
+          data-canonical-selected-current-mission={
+            activeTooltipCanonicalEntity?.current_mission ?? undefined
+          }
+          data-canonical-selected-entity-id={
+            activeTooltipCanonicalEntity?.entity_id
+          }
+          data-canonical-selected-latest-material-result={
+            activeTooltipCanonicalEntity
+              ? canonicalMaterialResult(
+                activeTooltipCanonicalEntity.latest_material_result
+              ) ?? undefined
+              : undefined
+          }
+          id="command-center-node-tooltip"
           role="tooltip"
           style={{
-            left: Math.min(tooltip.x + 18, window.innerWidth - 280),
-            top: Math.min(tooltip.y + 18, window.innerHeight - 150)
+            left: Math.min(activeTooltip.x + 18, window.innerWidth - 280),
+            top: Math.min(activeTooltip.y + 18, window.innerHeight - 150)
           }}
         >
-          <strong>{tooltip.name}</strong>
-          <span>{tooltip.groupName} / {statusLabel(tooltip.status)}</span>
-          <p>{tooltip.task}</p>
+          <strong>{activeTooltip.name}</strong>
+          <span>
+            {activeTooltip.tier === null ? null : `Tier ${activeTooltip.tier} / `}
+            {activeTooltip.role} / {activeTooltip.groupName}
+          </span>
+          <span>
+            Status {activeTooltip.statusState ?? statusLabel(activeTooltip.status)}
+            {" / "}
+            Health {activeTooltip.healthState ?? `${Math.round(activeTooltip.health)}%`}
+          </span>
+          <p>{activeTooltip.task}</p>
         </div>
       ) : null}
 
-      {!isWebGlReady ? (
+      {webGlState !== "ready" ? (
         <div className="command-center-webgl-error" role="alert">
           <Info aria-hidden="true" size={20} />
-          WebGL is unavailable in this browser, so the 3D neuron field cannot render.
+          <span>
+            {webGlState === "context-lost"
+              ? "The WebGL context was interrupted. The authorized hierarchy remains unchanged while the renderer waits for recovery."
+              : "WebGL is unavailable in this browser, so the authorized 3D hierarchy cannot render. No substitute graph was loaded."}
+          </span>
+          {webGlState === "unavailable" ? (
+            <button onClick={() => setWebGlGeneration((generation) => generation + 1)} type="button">
+              Retry 3D renderer
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -7955,18 +9214,15 @@ export function NeuronsCommandCenter({
               <Button type="button" variant="secondary" onClick={() => routeWorkspaceAction("Training channel selected. Opening ENTRAL Academy.", undefined, "entral:open-tutorial")}>
                 Start tutorial
               </Button>
-              <Button type="button" variant="secondary" onClick={() => requestNodeAuthorization("marshal", "First Marshal")}>
+              <Button type="button" variant="secondary" disabled={!nodeMap.has(rootNodeId)} onClick={() => requestNodeAuthorization("marshal", "First Marshal")}>
                 Create First Marshal
               </Button>
-              <Button type="button" onClick={() => openBusinessWizard()}>
+              <Button type="button" disabled={!nodeMap.has(rootNodeId)} onClick={() => openBusinessWizard()}>
                 <Sparkles aria-hidden="true" size={16} />
                 Start guided setup
               </Button>
               <Button type="button" variant="secondary" onClick={() => executeCommand("Start voice guide")}>
                 Voice introduction
-              </Button>
-              <Button type="button" variant="secondary" onClick={requestDemoEnvironmentAuthorization}>
-                Load demo environment
               </Button>
             </div>
             </section>
@@ -8624,14 +9880,6 @@ export function NeuronsCommandCenter({
                 onEvent={(message) => {
                   recordActivity(message);
                   setStatusMessage(message);
-                }}
-                onMockResult={(result: MockToolExecutionResult) => {
-                  respond({
-                    analysis: `${result.message} ${result.simulatedResult}`,
-                    nextActions: result.nextSteps,
-                    recommendation: "Keep this action in mock mode until credentials, authorization policy, and external scopes are reviewed.",
-                    situation: `${result.toolName} mock result prepared.`
-                  }, `${result.toolName} mock execution prepared.`);
                 }}
                 onRegistryLoad={setToolRegistry}
               />

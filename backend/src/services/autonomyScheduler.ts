@@ -6,10 +6,12 @@ import { emitGovernanceAlert } from "./alerts.js";
 import { recordAuditLog } from "./audit.js";
 import { parseSecureJson } from "./secureJson.js";
 import { createAssignedAgentMessage, enqueueAgentTask } from "./agentOrchestrator.js";
+import { assertDurableAuthorization } from "./durableAuthorization.js";
 
 type ScheduleRecord = {
   action: string;
   agentId: string;
+  authorizationVersion: number;
   id: string;
   intervalMinutes: number;
   nextRunAt: Date;
@@ -19,12 +21,34 @@ type ScheduleRecord = {
 };
 
 const runningSchedules = new Set<string>();
+const scheduleRuns = new Set<Promise<void>>();
 let schedulerTimer: NodeJS.Timeout | undefined;
-type BullQueueLike = { add: (name: string, data: unknown, options?: unknown) => Promise<unknown>; close: () => Promise<void> };
-type BullWorkerLike = { close: () => Promise<void> };
+let acceptingSchedules = false;
+type BullQueueLike = {
+  add: (name: string, data: unknown, options?: unknown) => Promise<unknown>;
+  close: () => Promise<void>;
+  on?: (event: "error", listener: (error: Error) => void) => unknown;
+  waitUntilReady: () => Promise<unknown>;
+};
+type BullWorkerLike = {
+  close: () => Promise<void>;
+  on?: (event: "error", listener: (error: Error) => void) => unknown;
+  waitUntilReady: () => Promise<unknown>;
+};
 let bullScheduleQueue: BullQueueLike | null = null;
 let bullScheduleWorker: BullWorkerLike | null = null;
 let bullScheduleInitStarted = false;
+let schedulerStarting = false;
+let schedulerHealthCallback: ((healthy: boolean) => void) | undefined;
+
+type StartAutonomySchedulerOptions = {
+  initializeQueue?: () => Promise<void>;
+  logger?: FastifyBaseLogger;
+  onHealthChange?: (healthy: boolean) => void;
+  poll?: () => Promise<void>;
+  pollIntervalMs?: number;
+  probeQueue?: () => Promise<void>;
+};
 
 function nextRunFromNow(intervalMinutes: number) {
   return new Date(Date.now() + intervalMinutes * 60 * 1000);
@@ -42,12 +66,58 @@ async function runScheduleById(scheduleId: string, logger?: FastifyBaseLogger) {
   });
 
   if (schedule) {
-    await runSchedule(schedule, logger);
+    await launchSchedule(schedule, logger);
   }
 }
 
-async function initializeBullScheduleQueue(logger?: FastifyBaseLogger) {
+async function closeBullScheduleQueue(logger?: FastifyBaseLogger) {
+  const worker = bullScheduleWorker;
+  const queue = bullScheduleQueue;
+  bullScheduleWorker = null;
+  bullScheduleQueue = null;
+  bullScheduleInitStarted = false;
+  const errors: unknown[] = [];
+  if (worker) {
+    try {
+      await worker.close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (queue) {
+    try {
+      await queue.close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  for (const error of errors) {
+    logger?.warn({ err: error }, "Unable to close BullMQ schedule queue resource");
+  }
+  if (errors.length > 0) {
+    throw new AggregateError(errors, "BullMQ schedule resources failed to close.");
+  }
+}
+
+async function probeBullScheduleQueue(required: boolean) {
+  if (!bullScheduleQueue || !bullScheduleWorker) {
+    if (required) {
+      throw new Error("Production autonomy scheduler requires ready BullMQ queue and worker connections.");
+    }
+    return;
+  }
+  await Promise.all([
+    bullScheduleQueue.waitUntilReady(),
+    bullScheduleWorker.waitUntilReady()
+  ]);
+}
+
+async function initializeBullScheduleQueue(logger?: FastifyBaseLogger, required = false) {
   if (bullScheduleInitStarted || bullScheduleQueue || !env.REDIS_URL) {
+    if (required && !env.REDIS_URL) {
+      throw new Error("Production autonomy scheduler requires REDIS_URL.");
+    }
+    await probeBullScheduleQueue(required);
     return;
   }
 
@@ -70,18 +140,25 @@ async function initializeBullScheduleQueue(logger?: FastifyBaseLogger) {
       concurrency: 2,
       connection
     });
+    bullScheduleQueue.on?.("error", () => schedulerHealthCallback?.(false));
+    bullScheduleWorker.on?.("error", () => schedulerHealthCallback?.(false));
+    await probeBullScheduleQueue(required);
     logger?.info("BullMQ repeatable agent schedule queue initialized");
   } catch (error) {
+    await closeBullScheduleQueue(logger);
+    if (required) {
+      throw error;
+    }
     logger?.warn({ err: error }, "BullMQ repeatable schedules unavailable; using durable database scheduling");
   }
 }
 
-export function registerAgentScheduleRepeat(schedule: ScheduleRecord, logger?: FastifyBaseLogger) {
+async function addAgentScheduleRepeat(schedule: ScheduleRecord) {
   if (!bullScheduleQueue || schedule.intervalMinutes < 1) {
     return;
   }
 
-  void bullScheduleQueue.add("agent-schedule", { scheduleId: schedule.id }, {
+  await bullScheduleQueue.add("agent-schedule", { scheduleId: schedule.id }, {
     jobId: schedule.id,
     removeOnComplete: true,
     removeOnFail: false,
@@ -89,16 +166,31 @@ export function registerAgentScheduleRepeat(schedule: ScheduleRecord, logger?: F
       every: schedule.intervalMinutes * 60 * 1000,
       immediately: schedule.nextRunAt <= new Date()
     }
-  }).catch((error) => {
+  });
+}
+
+export function registerAgentScheduleRepeat(schedule: ScheduleRecord, logger?: FastifyBaseLogger) {
+  void addAgentScheduleRepeat(schedule).catch((error) => {
+    schedulerHealthCallback?.(false);
     logger?.warn({ err: error, scheduleId: schedule.id }, "Unable to register BullMQ repeatable agent schedule");
   });
 }
 
-async function pauseScheduleForPolicy(schedule: ScheduleRecord, reason: string, logger?: FastifyBaseLogger) {
-  await prisma.agentSchedule.update({
-    where: { id: schedule.id },
+async function pauseScheduleForPolicy(
+  schedule: ScheduleRecord,
+  expectedStatus: "active" | "running",
+  reason: string,
+  logger?: FastifyBaseLogger
+) {
+  const paused = await prisma.agentSchedule.updateMany({
+    where: {
+      authorizationVersion: schedule.authorizationVersion,
+      id: schedule.id,
+      status: expectedStatus
+    },
     data: { status: "paused" }
   });
+  if (paused.count !== 1) return false;
   await prisma.agentLog.create({
     data: {
       agentId: schedule.agentId,
@@ -131,6 +223,7 @@ async function pauseScheduleForPolicy(schedule: ScheduleRecord, reason: string, 
     title: "Background schedule paused by policy"
   }, logger);
   logger?.warn({ agentId: schedule.agentId, scheduleId: schedule.id, reason }, "Agent schedule blocked by policy");
+  return true;
 }
 
 async function runSchedule(schedule: ScheduleRecord, logger?: FastifyBaseLogger) {
@@ -141,8 +234,24 @@ async function runSchedule(schedule: ScheduleRecord, logger?: FastifyBaseLogger)
   runningSchedules.add(schedule.id);
 
   try {
+    try {
+      await assertDurableAuthorization({
+        authorizationVersion: schedule.authorizationVersion,
+        userId: schedule.userId
+      });
+    } catch {
+      await pauseScheduleForPolicy(
+        schedule,
+        "active",
+        "The account authorization changed after this schedule was approved; explicit re-authorization is required.",
+        logger
+      );
+      return;
+    }
+
     const claim = await prisma.agentSchedule.updateMany({
       where: {
+        authorizationVersion: schedule.authorizationVersion,
         id: schedule.id,
         nextRunAt: { lte: new Date() },
         status: "active"
@@ -162,17 +271,23 @@ async function runSchedule(schedule: ScheduleRecord, logger?: FastifyBaseLogger)
     });
 
     if (!agent || agent.isPaused || !agent.runInBackground) {
-      await prisma.agentSchedule.update({
-        where: { id: schedule.id },
+      const paused = await prisma.agentSchedule.updateMany({
+        where: {
+          authorizationVersion: schedule.authorizationVersion,
+          id: schedule.id,
+          status: "running"
+        },
         data: { status: "paused" }
       });
-      await prisma.agentLog.create({
-        data: {
-          agentId: schedule.agentId,
-          level: "warn",
-          message: "Schedule paused because background work is disabled"
-        }
-      });
+      if (paused.count === 1) {
+        await prisma.agentLog.create({
+          data: {
+            agentId: schedule.agentId,
+            level: "warn",
+            message: "Schedule paused because background work is disabled"
+          }
+        });
+      }
       return;
     }
 
@@ -198,29 +313,46 @@ async function runSchedule(schedule: ScheduleRecord, logger?: FastifyBaseLogger)
     });
 
     if (!policyResult.allowed) {
-      await pauseScheduleForPolicy(schedule, policyResult.violations.map((violation) => violation.message).join(" "), logger);
+      await pauseScheduleForPolicy(
+        schedule,
+        "running",
+        policyResult.violations.map((violation) => violation.message).join(" "),
+        logger
+      );
       return;
     }
 
-    const task = await prisma.agentTask.create({
-      data: {
-        action: schedule.action,
-        agentId: schedule.agentId,
-        payloadJson: schedule.payloadJson,
-        scheduleId: schedule.id,
-        title: schedule.title,
-        userId: schedule.userId
-      }
+    const task = await prisma.$transaction(async (transaction) => {
+      const advanced = await transaction.agentSchedule.updateMany({
+        where: {
+          authorizationVersion: schedule.authorizationVersion,
+          id: schedule.id,
+          status: "running"
+        },
+        data: {
+          lastRunAt: new Date(),
+          nextRunAt: nextRunFromNow(schedule.intervalMinutes),
+          status: "active"
+        }
+      });
+      if (advanced.count !== 1) return null;
+      return transaction.agentTask.create({
+        data: {
+          action: schedule.action,
+          agentId: schedule.agentId,
+          authorizationVersion: schedule.authorizationVersion,
+          payloadJson: schedule.payloadJson,
+          scheduleId: schedule.id,
+          title: schedule.title,
+          userId: schedule.userId
+        }
+      });
     });
 
-    await prisma.agentSchedule.update({
-      where: { id: schedule.id },
-      data: {
-        lastRunAt: new Date(),
-        nextRunAt: nextRunFromNow(schedule.intervalMinutes),
-        status: "active"
-      }
-    });
+    if (!task) {
+      logger?.info({ scheduleId: schedule.id }, "Agent schedule stopped before task creation");
+      return;
+    }
     await createAssignedAgentMessage({
       action: schedule.action,
       agentId: schedule.agentId,
@@ -245,6 +377,7 @@ async function runSchedule(schedule: ScheduleRecord, logger?: FastifyBaseLogger)
     const message = error instanceof Error ? error.message : "Schedule execution failed.";
     await prisma.agentSchedule.updateMany({
       where: {
+        authorizationVersion: schedule.authorizationVersion,
         id: schedule.id,
         status: "running"
       },
@@ -278,6 +411,17 @@ async function runSchedule(schedule: ScheduleRecord, logger?: FastifyBaseLogger)
   }
 }
 
+function launchSchedule(schedule: ScheduleRecord, logger?: FastifyBaseLogger) {
+  if (!acceptingSchedules) return Promise.resolve();
+  const run = runSchedule(schedule, logger);
+  scheduleRuns.add(run);
+  void run.then(
+    () => scheduleRuns.delete(run),
+    () => scheduleRuns.delete(run)
+  );
+  return run;
+}
+
 export async function enqueueDueAgentSchedules(logger?: FastifyBaseLogger) {
   if (!env.AUTONOMY_SCHEDULER_ENABLED) {
     return;
@@ -294,22 +438,38 @@ export async function enqueueDueAgentSchedules(logger?: FastifyBaseLogger) {
   });
 
   schedules.forEach((schedule) => {
-    void runSchedule(schedule, logger).catch((error) => {
+    void launchSchedule(schedule, logger).catch((error) => {
+      schedulerHealthCallback?.(false);
       logger?.error({ err: error, scheduleId: schedule.id }, "Agent schedule runner crashed");
     });
   });
 }
 
-export function startAutonomyScheduler(logger?: FastifyBaseLogger) {
-  if (!env.AUTONOMY_SCHEDULER_ENABLED || schedulerTimer) {
-    return () => undefined;
+export async function startAutonomyScheduler(
+  options: StartAutonomySchedulerOptions = {}
+): Promise<() => Promise<void>> {
+  const onHealthChange = options.onHealthChange ?? (() => undefined);
+  let lastReportedHealth: boolean | undefined;
+  const reportHealth = (healthy: boolean) => {
+    if (healthy === lastReportedHealth) return;
+    lastReportedHealth = healthy;
+    onHealthChange(healthy);
+  };
+  if (!env.AUTONOMY_SCHEDULER_ENABLED) {
+    reportHealth(false);
+    return async () => undefined;
+  }
+  if (schedulerTimer || schedulerStarting) {
+    throw new Error("Autonomy scheduler is already started.");
   }
 
-  void initializeBullScheduleQueue(logger).then(async () => {
-    if (!bullScheduleQueue) {
-      return;
-    }
-
+  schedulerStarting = true;
+  acceptingSchedules = true;
+  schedulerHealthCallback = reportHealth;
+  const production = env.NODE_ENV === "production";
+  const initializeQueue = options.initializeQueue ?? (async () => {
+    await initializeBullScheduleQueue(options.logger, production);
+    if (!bullScheduleQueue) return;
     const schedules = await prisma.agentSchedule.findMany({
       where: {
         status: "active",
@@ -318,28 +478,93 @@ export function startAutonomyScheduler(logger?: FastifyBaseLogger) {
       orderBy: { nextRunAt: "asc" },
       take: 100
     });
-    schedules.forEach((schedule) => registerAgentScheduleRepeat(schedule, logger));
-  }).catch((error) => {
-    logger?.warn({ err: error }, "Unable to initialize BullMQ repeatable agent schedules");
+    await Promise.all(schedules.map((schedule) => addAgentScheduleRepeat(schedule)));
   });
-  void enqueueDueAgentSchedules(logger).catch((error) => {
-    logger?.error({ err: error }, "Background agent scheduler polling failed");
-  });
-  schedulerTimer = setInterval(() => {
-    void enqueueDueAgentSchedules(logger).catch((error) => {
-      logger?.error({ err: error }, "Background agent scheduler polling failed");
-    });
-  }, env.AUTONOMY_SCHEDULER_INTERVAL_MS);
+  const poll = options.poll ?? (() => enqueueDueAgentSchedules(options.logger));
+  const probeQueue = options.probeQueue ?? (() => probeBullScheduleQueue(production));
+  const pollIntervalMs = options.pollIntervalMs ?? env.AUTONOMY_SCHEDULER_INTERVAL_MS;
+  let activePoll: Promise<void> | undefined;
+  let stopped = false;
 
-  return () => {
+  const runPoll = async () => {
+    try {
+      const results = await Promise.allSettled([poll(), probeQueue()]);
+      const errors = results
+        .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+        .map((result) => result.reason);
+      if (errors.length > 0) {
+        throw new AggregateError(errors, "Autonomy scheduler poll or queue probe failed.");
+      }
+      reportHealth(true);
+    } catch (error) {
+      reportHealth(false);
+      throw error;
+    }
+  };
+
+  try {
+    await initializeQueue();
+    await runPoll();
+  } catch (error) {
+    reportHealth(false);
+    acceptingSchedules = false;
+    schedulerStarting = false;
+    schedulerHealthCallback = undefined;
+    try {
+      await closeBullScheduleQueue(options.logger);
+    } catch (closeError) {
+      throw new AggregateError([error, closeError], "Autonomy scheduler startup and cleanup failed.");
+    }
+    throw error;
+  }
+  schedulerStarting = false;
+
+  const schedule = () => {
+    if (stopped) return;
+    schedulerTimer = setTimeout(() => {
+      const pollRun = runPoll();
+      activePoll = pollRun;
+      void pollRun.catch((error) => {
+          options.logger?.error({ err: error }, "Background agent scheduler polling failed");
+        })
+        .finally(() => {
+          if (activePoll === pollRun) activePoll = undefined;
+          schedule();
+        });
+    }, pollIntervalMs);
+    schedulerTimer.unref();
+  };
+  schedule();
+
+  return async () => {
+    if (stopped) return;
+    stopped = true;
+    acceptingSchedules = false;
     if (schedulerTimer) {
-      clearInterval(schedulerTimer);
+      clearTimeout(schedulerTimer);
       schedulerTimer = undefined;
     }
-    void bullScheduleWorker?.close().catch((error) => logger?.warn({ err: error }, "Unable to close BullMQ schedule worker"));
-    void bullScheduleQueue?.close().catch((error) => logger?.warn({ err: error }, "Unable to close BullMQ schedule queue"));
-    bullScheduleWorker = null;
-    bullScheduleQueue = null;
-    bullScheduleInitStarted = false;
+    const errors: unknown[] = [];
+    try {
+      await activePoll;
+    } catch (error) {
+      errors.push(error);
+    }
+    try {
+      await closeBullScheduleQueue(options.logger);
+    } catch (error) {
+      errors.push(error);
+    }
+    const runResults = await Promise.allSettled([...scheduleRuns]);
+    errors.push(...runResults
+      .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+      .map((result) => result.reason));
+    if (schedulerHealthCallback === reportHealth) {
+      schedulerHealthCallback = undefined;
+    }
+    reportHealth(false);
+    if (errors.length > 0) {
+      throw new AggregateError(errors, "Autonomy scheduler failed while draining.");
+    }
   };
 }

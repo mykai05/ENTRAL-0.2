@@ -1,6 +1,7 @@
 import { env } from "../env.js";
+import { readWorkerReadinessEvidence } from "./workerReadiness.js";
 
-export function buildHealthPayload(requestId: string) {
+export async function buildHealthPayload(requestId: string) {
   return {
     environment: env.NODE_ENV,
     features: {
@@ -13,6 +14,7 @@ export function buildHealthPayload(requestId: string) {
     requestId,
     service: "entral-backend",
     timestamp: new Date().toISOString(),
-    uptimeSeconds: Math.round(process.uptime())
+    uptimeSeconds: Math.round(process.uptime()),
+    worker: await readWorkerReadinessEvidence()
   };
 }

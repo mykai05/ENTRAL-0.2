@@ -18,10 +18,13 @@ import {
 } from "../services/canonicalEntityLifecycle.js";
 import { createAiAuditEntry } from "../services/aiBrain.js";
 import {
+  AiUsageIdempotencyError,
   AiUsageLimitError,
-  assertAiUsageAllowed,
+  failAiUsageReservation,
   getAiUsageSummary,
-  recordAiUsageEvent
+  reserveAiUsage,
+  resolveAiUsageRequestId,
+  settleAiUsageReservation
 } from "../services/aiUsage.js";
 import { recordAuditLog } from "../services/audit.js";
 import { parseMemberWorkspace } from "../services/memberWorkspace.js";
@@ -128,6 +131,13 @@ function assistantUsageLimit(reply: FastifyReply, error: AiUsageLimitError) {
     message: error.message,
     mode: "real",
     summary: error.summary
+  });
+}
+
+function assistantIdempotencyConflict(reply: FastifyReply, error: AiUsageIdempotencyError) {
+  return reply.code(error.statusCode).send({
+    error: "Idempotency Conflict",
+    message: error.message
   });
 }
 
@@ -448,14 +458,28 @@ export async function memberRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not Found", message: "Business not found." });
     }
 
-    let usagePreflight: Awaited<ReturnType<typeof assertAiUsageAllowed>>;
+    let usageRequestId: string;
+    let usageReservation: Awaited<ReturnType<typeof reserveAiUsage>>;
     try {
-      usagePreflight = await assertAiUsageAllowed(currentUser.sub, "chat");
+      usageRequestId = resolveAiUsageRequestId(
+        request.id,
+        request.headers["idempotency-key"] ?? request.headers["x-idempotency-key"]
+      );
+      usageReservation = await reserveAiUsage({
+        metadata: { organizationId, route: "/member/entral/assistant/messages" },
+        requestId: usageRequestId,
+        requestKind: "chat",
+        userId: currentUser.sub
+      });
     } catch (error) {
       if (error instanceof AiUsageLimitError) return assistantUsageLimit(reply, error);
+      if (error instanceof AiUsageIdempotencyError) return assistantIdempotencyConflict(reply, error);
       throw error;
     }
 
+    let completedProviderRequestId: string | undefined;
+    let providerCallSucceeded = false;
+    try {
     const conversation = input.conversation_id
       ? await prisma.conversation.findFirst({
           where: { id: input.conversation_id, userId: currentUser.sub }
@@ -500,6 +524,8 @@ export async function memberRoutes(app: FastifyInstance) {
         : message
     ));
     const brainDecision = await createProviderBackedAiDecision(input.message);
+    completedProviderRequestId = brainDecision.providerRequestId;
+    providerCallSucceeded = brainDecision.source === "provider" || Boolean(completedProviderRequestId);
     let assistantReply;
     try {
       assistantReply = await openAiChatService.createReply(contextualHistory, {
@@ -509,6 +535,8 @@ export async function memberRoutes(app: FastifyInstance) {
       await prisma.message.delete({ where: { id: userMessage.id } }).catch(() => undefined);
       throw error;
     }
+    completedProviderRequestId = assistantReply.requestId ?? completedProviderRequestId;
+    providerCallSucceeded ||= !assistantReply.usedLocalFallback && Boolean(assistantReply.requestId);
     const assistantMessage = await prisma.message.create({
       data: {
         content: assistantReply.content,
@@ -520,22 +548,26 @@ export async function memberRoutes(app: FastifyInstance) {
       data: { updatedAt: new Date() },
       where: { id: conversation.id }
     });
-    const usageEvent = await recordAiUsageEvent({
-      estimatedCostCents: usagePreflight.estimatedCostCents,
+    const usageEvent = await settleAiUsageReservation({
       metadata: {
         canonicalEventSequence: resolvedEventSequence,
         intent: brainDecision.plan.intent,
         memberSurface: input.context.surface,
         organizationId,
+        decisionProviderRequestId: brainDecision.providerRequestId,
         selectedEntityId: selectedEntity?.entity_id ?? null
       },
       modelName: assistantReply.model,
       providerName: assistantReply.providerName,
-      requestId: request.id,
-      requestKind: "chat",
+      providerRequestId: completedProviderRequestId,
+      requestId: usageRequestId,
+      reservationId: usageReservation.id,
       usedLocalFallback: assistantReply.usedLocalFallback,
       userId: currentUser.sub
     });
+    if (!usageEvent) {
+      throw new Error("AI usage reservation settlement did not return an event.");
+    }
     const auditEntry = createAiAuditEntry({
       errors: brainDecision.errors,
       executionResult: "Contextual response prepared. No canonical mutation was executed.",
@@ -586,6 +618,19 @@ export async function memberRoutes(app: FastifyInstance) {
         message_id: userMessage.id
       }
     });
+    } catch (error) {
+      await failAiUsageReservation({
+        error,
+        providerCallSucceeded,
+        providerRequestId: completedProviderRequestId,
+        requestId: usageRequestId,
+        reservationId: usageReservation.id,
+        userId: currentUser.sub
+      }).catch((reservationError) => {
+        request.log.error({ err: reservationError, usageReservationId: usageReservation.id }, "Member AI usage reservation failure write failed");
+      });
+      throw error;
+    }
   });
 
   app.post("/member/organizations/:organizationId/entities/:entityId/actions/:operation", {

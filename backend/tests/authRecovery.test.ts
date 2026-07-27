@@ -18,7 +18,8 @@ describe("auth recovery workflows", () => {
       email: "ada@example.com",
       emailVerifiedAt: null,
       id: "user_123",
-      name: "Ada Lovelace"
+      name: "Ada Lovelace",
+      sessionVersion: 0
     };
     const sendVerificationEmail = vi.fn(async () => ({
       provider: "console" as const,
@@ -80,6 +81,7 @@ describe("auth recovery workflows", () => {
 
     const findUnique = vi.fn(async () => resetRecord);
     const updateMany = vi.fn(async () => ({ count: 1 }));
+    const executeRaw = vi.fn(async () => 1);
     const updateUser = vi.fn(async ({ data }) => ({
       ...user,
       ...data
@@ -88,6 +90,7 @@ describe("auth recovery workflows", () => {
     vi.doMock("../src/db.js", () => ({
       prisma: {
         $transaction: (callback: (tx: unknown) => unknown) => callback({
+          $executeRaw: executeRaw,
           passwordResetToken: { updateMany },
           user: { update: updateUser }
         }),
@@ -110,13 +113,16 @@ describe("auth recovery workflows", () => {
     expect(updateMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {
         consumedAt: null,
-        userId: user.id
+        expiresAt: { gt: expect.any(Date) },
+        id: resetRecord.id,
+        tokenHash: resetRecord.tokenHash
       }
     }));
     expect(updateUser).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         emailVerifiedAt: expect.any(Date),
-        passwordHash: expect.not.stringContaining("new-secure-password")
+        passwordHash: expect.not.stringContaining("new-secure-password"),
+        sessionVersion: { increment: 1 }
       }),
       where: { id: user.id }
     }));
@@ -145,5 +151,62 @@ describe("auth recovery workflows", () => {
     const result = await confirmPasswordReset("used-reset-token-that-is-long-enough", "new-secure-password");
 
     expect(result).toEqual({ ok: false, reason: "invalid" });
+  });
+
+  it("allows only one concurrent claimant to reset the password", async () => {
+    const rawToken = "concurrent-reset-token-that-is-long-enough-123";
+    const user = {
+      email: "ada@example.com",
+      emailVerifiedAt: new Date(),
+      id: "user_123",
+      name: "Ada Lovelace",
+      sessionVersion: 3
+    };
+    const resetRecord = {
+      consumedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      flow: "member",
+      id: "reset_concurrent",
+      tokenHash: hashAuthToken(rawToken),
+      user,
+      userId: user.id
+    };
+    let claimed = false;
+    let transactionTail = Promise.resolve<unknown>(undefined);
+    const updateUser = vi.fn(async () => ({ ...user, sessionVersion: user.sessionVersion + 1 }));
+    const tx = {
+      $executeRaw: vi.fn(async () => 1),
+      passwordResetToken: {
+        updateMany: vi.fn(async ({ where }: { where: { id?: string } }) => {
+          if (!where.id) return { count: 0 };
+          if (claimed) return { count: 0 };
+          claimed = true;
+          return { count: 1 };
+        })
+      },
+      user: { update: updateUser }
+    };
+
+    vi.doMock("../src/db.js", () => ({
+      prisma: {
+        $transaction: (callback: (client: typeof tx) => unknown) => {
+          const result = transactionTail.then(() => callback(tx));
+          transactionTail = result.then(() => undefined, () => undefined);
+          return result;
+        },
+        passwordResetToken: { findUnique: vi.fn(async () => resetRecord) }
+      }
+    }));
+    vi.doMock("../src/services/audit.js", () => ({ recordAuditLog: vi.fn(async () => undefined) }));
+
+    const { confirmPasswordReset } = await import("../src/services/authRecovery.js");
+    const results = await Promise.all([
+      confirmPasswordReset(rawToken, "new-secure-password"),
+      confirmPasswordReset(rawToken, "new-secure-password")
+    ]);
+
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    expect(updateUser).toHaveBeenCalledTimes(1);
   });
 });

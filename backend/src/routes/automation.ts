@@ -176,7 +176,13 @@ async function buildBrowserOperationsForUser(userId: string, options: BrowserOpe
   });
 }
 
-async function applyBrowserOperationsRecovery(userId: string, plan: BrowserOperationsPlan, input: ApplyBrowserOperationsRecoveryInput, logger: Parameters<typeof enqueueAutomationJob>[2]) {
+async function applyBrowserOperationsRecovery(
+  userId: string,
+  authorizationVersion: number,
+  plan: BrowserOperationsPlan,
+  input: ApplyBrowserOperationsRecoveryInput,
+  logger: Parameters<typeof enqueueAutomationJob>[2]
+) {
   const recoveryRunbooks = plan.runbooks.filter((runbook) => (
     (runbook.action === "retry_failed_job" || runbook.action === "recover_stale_running_job")
     && runbook.targetId
@@ -217,10 +223,12 @@ async function applyBrowserOperationsRecovery(userId: string, plan: BrowserOpera
       const updated = await prisma.automationJob.updateMany({
         where: {
           id: runbook.targetId,
+          recoveryClaimToken: null,
           status: { in: ["failed", "canceled", "completed"] },
           userId
         },
         data: {
+          authorizationVersion,
           completedAt: null,
           error: null,
           resultJson: null,
@@ -305,7 +313,13 @@ export async function automationRoutes(app: FastifyInstance) {
       });
     }
 
-    const applied = await applyBrowserOperationsRecovery(currentUser.sub, plan, input, request.log);
+    const applied = await applyBrowserOperationsRecovery(
+      currentUser.sub,
+      currentUser.sessionVersion,
+      plan,
+      input,
+      request.log
+    );
     const refreshed = await buildBrowserOperationsForUser(currentUser.sub, input);
 
     return reply.send({
@@ -367,6 +381,7 @@ export async function automationRoutes(app: FastifyInstance) {
     const job = await prisma.automationJob.create({
       data: {
         userId: currentUser.sub,
+        authorizationVersion: currentUser.sessionVersion,
         type: input.type,
         status,
         payloadJson: JSON.stringify(input.payload),
@@ -472,27 +487,47 @@ export async function automationRoutes(app: FastifyInstance) {
       return reply.code(409).send({ error: "Conflict", message: "Only finished jobs can be retried." });
     }
 
-    const updated = await prisma.automationJob.update({
-      where: { id: job.id },
-      data: {
-        status: "pending",
-        resultJson: null,
-        error: null,
-        scheduledAt: null,
-        startedAt: null,
-        completedAt: null,
-        logs: {
-          create: {
-            message: "Job requeued"
+    const updated = await prisma.$transaction(async (transaction) => {
+      const retry = await transaction.automationJob.updateMany({
+        where: {
+          id: job.id,
+          recoveryClaimToken: null,
+          status: job.status,
+          userId: currentUser.sub
+        },
+        data: {
+          authorizationVersion: currentUser.sessionVersion,
+          status: "pending",
+          resultJson: null,
+          error: null,
+          scheduledAt: null,
+          startedAt: null,
+          completedAt: null
+        }
+      });
+      if (retry.count !== 1) return null;
+      await transaction.automationLog.create({
+        data: {
+          jobId: job.id,
+          message: "Job requeued"
+        }
+      });
+      return transaction.automationJob.findUnique({
+        where: { id: job.id },
+        include: {
+          logs: {
+            orderBy: { createdAt: "asc" }
           }
         }
-      },
-      include: {
-        logs: {
-          orderBy: { createdAt: "asc" }
-        }
-      }
+      });
     });
+
+    if (!updated) {
+      return reply.code(409).send({
+        error: "Conflict",
+        message: "This automation job is already being recovered or changed; retry after the current operation finishes."
+      });
+    }
 
     enqueueAutomationJob(updated.id, 0, request.log);
     return reply.send({ job: publicAutomationJob(updated) });

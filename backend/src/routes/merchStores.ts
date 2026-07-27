@@ -50,6 +50,7 @@ import { createShopifyStoreCreationHandoffJob } from "../services/shopifyStoreCr
 import { enqueueAutomationJob } from "../services/automationQueue.js";
 import { appendShopifyOAuthResultToReturnUrl, buildShopifyOAuthStart, exchangeShopifyOAuthCode, normalizeShopifyOAuthScopes, normalizeShopifyOAuthShopDomain, validateShopifyOAuthHmac, verifyShopifyOAuthState } from "../services/shopifyOAuth.js";
 import { attachShopifyOAuthContinuationAudit, createShopifyOAuthContinuation, getPendingShopifyOAuthContinuation, markShopifyOAuthContinuationConsumed, markShopifyOAuthContinuationFailed } from "../services/shopifyOAuthContinuations.js";
+import { assertDurableAuthorization } from "../services/durableAuthorization.js";
 import { buildShopifyStoreProvisioningPlan } from "../services/shopifyStoreProvisioning.js";
 import { executeShopifyStorefrontDraft } from "../services/shopifyStorefrontExecutor.js";
 import { executeShopifyFirstLiveRevenueLoop, type ShopifyFirstLiveRevenueLoopProduct } from "../services/shopifyFirstLiveRevenueLoop.js";
@@ -780,6 +781,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     try {
       start = buildShopifyOAuthStart({
+        authorizationVersion: currentUser.sessionVersion,
         returnTo: input.returnTo,
         scopes: input.scopes,
         shopDomain: input.shopDomain,
@@ -803,6 +805,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     const continuation = input.continueAfterApproval
       ? await createShopifyOAuthContinuation({
+        authorizationVersion: currentUser.sessionVersion,
         expiresAt: new Date(start.stateExpiresAt),
         payload: {
           connectorApproval: input.connectorApproval,
@@ -897,6 +900,18 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     if (state.shopDomain !== shopDomain) {
       return reply.code(400).send({ error: "Bad Request", message: "Shopify OAuth callback shop does not match the original request." });
+    }
+
+    try {
+      await assertDurableAuthorization({
+        authorizationVersion: state.authorizationVersion,
+        userId: state.userId
+      });
+    } catch {
+      return reply.code(403).send({
+        error: "Forbidden",
+        message: "This Shopify OAuth authorization is stale and must be started again."
+      });
     }
 
     const store = await prisma.clientMerchStore.findFirst({
@@ -1035,6 +1050,10 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     if (continuation) {
       try {
+        await assertDurableAuthorization({
+          authorizationVersion: continuation.authorizationVersion,
+          userId: continuation.userId
+        });
         const continuationPlan = await executeShopifyAutonomyRun({
           connectorApproval: continuation.payload.connectorApproval,
           connections: [publicShopifyConnection(connection)],
@@ -1303,6 +1322,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     });
     const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt) : null;
     const job = await createShopifyStoreCreationHandoffJob({
+      authorizationVersion: currentUser.sessionVersion,
       payload: {
         connectionWatchIntervalMinutes: input.connectionWatchIntervalMinutes,
         connectorApproval: input.connectorApproval,
@@ -1393,6 +1413,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     try {
       const result = await captureShopifyStoreCreationForStore({
+        authorizationVersion: currentUser.sessionVersion,
         store,
         userId: currentUser.sub,
         value: input
@@ -1627,6 +1648,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt) : null;
     const job = await createShopifyAutonomyResumeJob({
+      authorizationVersion: currentUser.sessionVersion,
       payload: {
         connectorApproval: input.connectorApproval,
         countryCode: input.countryCode,
@@ -1990,6 +2012,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
         }
 
         shopifyStoreCreationCapture = await captureShopifyStoreCreationForStore({
+          authorizationVersion: currentUser.sessionVersion,
           approvalPacketId: existing.id,
           reviewStatus: status,
           store,
@@ -2012,6 +2035,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     });
     const shopifyResumeJob = input.shopifyAutonomyResumeJob
       ? await createShopifyAutonomyResumeJob({
+        authorizationVersion: currentUser.sessionVersion,
         payload: {
           ...input.shopifyAutonomyResumeJob,
           storeId: params.storeId

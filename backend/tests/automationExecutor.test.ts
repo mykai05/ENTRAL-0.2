@@ -30,4 +30,10 @@ describe("automation URL allow-list", () => {
     expect(() => assertAllowedAutomationUrl("http://localhost:3000")).toThrow(/public host/i);
     expect(() => assertAllowedAutomationUrl("http://127.0.0.1:3000")).toThrow(/public host/i);
   });
+
+  it("rejects suffix-confusion hosts outside an allowed domain", async () => {
+    const { assertAllowedAutomationUrl } = await import("../src/services/automationExecutor.js");
+
+    expect(() => assertAllowedAutomationUrl("https://example.com.attacker.invalid/path")).toThrow(/not allowed/i);
+  });
 });

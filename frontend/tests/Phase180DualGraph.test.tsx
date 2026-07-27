@@ -11,6 +11,11 @@ import {
   graphStateFromCanonicalEntities,
   reconcileCanonicalGraphPositions
 } from "../components/NeuronsCommandCenter";
+import {
+  canonicalProjectionFixture,
+  graphPreferencesFixture,
+  PHASE195_ORGANIZATION_ID
+} from "./phase195-graph-fixtures";
 
 vi.mock("../components/CanonicalUniverse3DGraph", () => ({
   CanonicalUniverse3DGraph: ({
@@ -93,6 +98,21 @@ const hierarchy = [
   })
 ];
 
+function phase195WorkspaceProps(
+  entities: readonly EntitySummary[],
+  eventSequence: number
+) {
+  return {
+    onPreferencesChange: vi.fn(),
+    organizationId: PHASE195_ORGANIZATION_ID,
+    preferences: graphPreferencesFixture(),
+    projection: canonicalProjectionFixture(entities, {
+      projectionVersion: eventSequence
+    }),
+    scopeBusinessId: null
+  };
+}
+
 class ResizeObserverStub {
   disconnect() {}
   observe() {}
@@ -100,6 +120,7 @@ class ResizeObserverStub {
 }
 
 beforeEach(() => {
+  window.history.replaceState({}, "", "/member/graph");
   vi.stubGlobal("ResizeObserver", ResizeObserverStub);
   vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
@@ -125,6 +146,7 @@ describe("Phase 180 dual canonical Graph views", () => {
   it("keeps both renderers visible with one entity array, event sequence, and selection", () => {
     render(
       <CanonicalGraphWorkspace
+        {...phase195WorkspaceProps(hierarchy, 173)}
         entities={hierarchy}
         eventSequence={173}
         onOpenFullRecord={vi.fn()}
@@ -170,6 +192,7 @@ describe("Phase 180 dual canonical Graph views", () => {
 
     render(
       <CanonicalGraphWorkspace
+        {...phase195WorkspaceProps(establishedHierarchy, 173)}
         entities={establishedHierarchy}
         eventSequence={173}
         onOpenFullRecord={vi.fn()}
@@ -189,12 +212,13 @@ describe("Phase 180 dual canonical Graph views", () => {
     expect(adapted.edges).toHaveLength(131);
     expect(adapted.nodes.filter((node) => node.commandType === "marshal")).toHaveLength(8);
     expect(adapted.nodes.filter((node) => node.commandType === "general")).toHaveLength(123);
-    expect(adapted.nodes.find((node) => node.id === "entral")?.children).toHaveLength(8);
+    expect(adapted.nodes.find((node) => node.id === "entral-root")?.children).toHaveLength(8);
   });
 
   it("pauses only visual movement while keeping agent activity and live updates explicit", () => {
     const { container, rerender } = render(
       <CanonicalGraphWorkspace
+        {...phase195WorkspaceProps(hierarchy, 173)}
         entities={hierarchy}
         eventSequence={173}
         onOpenFullRecord={vi.fn()}
@@ -217,14 +241,18 @@ describe("Phase 180 dual canonical Graph views", () => {
     expect(workspace).toHaveAttribute("data-graph-motion", "paused");
     expect(screen.getByRole("region", { name: "2D Graph" })).toHaveAttribute("data-graph-motion", "paused");
     expect(screen.getByTestId("canonical-3d-graph")).toHaveAttribute("data-graph-motion", "paused");
-    expect(screen.getByText(/Agent activity and live canonical updates continue/i)).toBeVisible();
+    expect(screen.getByText(
+      /Graph movement is paused\. Agent activity and live canonical updates continue\./i
+    )).toBeVisible();
 
     const updatedHierarchy = [
       ...hierarchy,
       entity("soldier-two", "SOLDIER", "commander", { current_mission: "Continue working" })
     ];
+    expect(canonicalProjectionFixture(updatedHierarchy).entities).toHaveLength(6);
     rerender(
       <CanonicalGraphWorkspace
+        {...phase195WorkspaceProps(updatedHierarchy, 174)}
         entities={updatedHierarchy}
         eventSequence={174}
         onOpenFullRecord={vi.fn()}
@@ -255,6 +283,7 @@ describe("Phase 180 dual canonical Graph views", () => {
     })));
     const { container } = render(
       <CanonicalGraphWorkspace
+        {...phase195WorkspaceProps(hierarchy, 173)}
         entities={hierarchy}
         eventSequence={173}
         onOpenFullRecord={vi.fn()}
@@ -268,18 +297,21 @@ describe("Phase 180 dual canonical Graph views", () => {
     expect(container.querySelector(".phase180-graph-workspace")).toHaveAttribute("data-graph-motion", "paused");
     expect(screen.getByRole("button", { name: "Movement paused" })).toBeDisabled();
     expect(screen.getByText(/paused by your reduced-motion setting/i)).toHaveTextContent(
-      /Agent activity and live canonical updates continue/i
+      /live canonical updates continue/i
     );
     expect(screen.getByTestId("canonical-3d-graph")).toHaveAttribute("data-graph-motion", "paused");
 
     fireEvent.click(screen.getByRole("button", { name: "Enter 2D Graph full screen" }));
-    expect(screen.getAllByRole("button", { name: "Movement paused" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Movement paused" }).at(-1)).toBeDisabled();
+    for (const button of screen.getAllByRole("button", { name: "Movement paused" })) {
+      expect(button).toBeDisabled();
+    }
+    expect(screen.queryByRole("button", { name: "Resume movement" })).not.toBeInTheDocument();
   });
 
   it("offers a clean side-by-side or stacked layout without unmounting either graph", () => {
     const { container } = render(
       <CanonicalGraphWorkspace
+        {...phase195WorkspaceProps(hierarchy, 173)}
         entities={hierarchy}
         eventSequence={173}
         onOpenFullRecord={vi.fn()}
@@ -291,8 +323,8 @@ describe("Phase 180 dual canonical Graph views", () => {
     );
     const workspace = container.querySelector(".phase180-graph-workspace");
 
-    expect(workspace).toHaveAttribute("data-graph-layout", "side-by-side");
-    expect(screen.getByRole("button", { name: "Side by side" })).toHaveAttribute("aria-pressed", "true");
+    expect(workspace).toHaveAttribute("data-graph-layout", "auto");
+    expect(workspace).toHaveAttribute("data-effective-arrangement", "side-by-side");
     fireEvent.click(screen.getByRole("button", { name: "Stacked" }));
     expect(workspace).toHaveAttribute("data-graph-layout", "stacked");
     expect(screen.getByRole("heading", { name: "2D Graph" })).toBeVisible();
@@ -302,6 +334,7 @@ describe("Phase 180 dual canonical Graph views", () => {
   it("opens either graph full screen while preserving shared selection and movement state", () => {
     const { container } = render(
       <CanonicalGraphWorkspace
+        {...phase195WorkspaceProps(hierarchy, 173)}
         entities={hierarchy}
         eventSequence={173}
         onOpenFullRecord={vi.fn()}
@@ -337,7 +370,7 @@ describe("Phase 180 dual canonical Graph views", () => {
     );
     expect(graph.edges).toHaveLength(hierarchy.length - 1);
     expect(graph.nodes.find((node) => node.canonicalEntityId === "root-uuid")).toMatchObject({
-      id: "entral",
+      id: "root-uuid",
       name: "ENTRAL",
       type: "core"
     });

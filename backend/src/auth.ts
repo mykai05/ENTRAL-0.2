@@ -8,9 +8,13 @@ export type AuthUser = {
   email: string;
   role: "USER" | "ADMIN";
   session: "internal" | "member";
+  sessionVersion: number;
 };
 
-type SignableAuthUser = Omit<AuthUser, "session"> & { session?: AuthUser["session"] };
+type SignableAuthUser = Omit<AuthUser, "session" | "sessionVersion"> & {
+  session?: AuthUser["session"];
+  sessionVersion?: number;
+};
 
 const sessionAudiences = {
   internal: "entral-internal",
@@ -27,7 +31,12 @@ export const cookieOptions = {
 
 export function signAuthToken(user: SignableAuthUser) {
   const session = user.session ?? "internal";
-  return jwt.sign({ ...user, session }, env.JWT_SECRET, {
+  const sessionVersion = user.sessionVersion ?? 0;
+  if (!Number.isSafeInteger(sessionVersion) || sessionVersion < 0) {
+    throw new Error("Invalid session version");
+  }
+
+  return jwt.sign({ ...user, session, sessionVersion: undefined, sv: sessionVersion }, env.JWT_SECRET, {
     algorithm: "HS256",
     audience: sessionAudiences[session],
     expiresIn: "7d"
@@ -51,11 +60,16 @@ export function verifyAuthToken(token: string): AuthUser {
     throw new Error("Invalid session audience");
   }
 
+  if (!Number.isSafeInteger(payload.sv) || Number(payload.sv) < 0) {
+    throw new Error("Invalid session version");
+  }
+
   return {
     sub: String(payload.sub),
     email: String(payload.email),
     role: payload.role === "ADMIN" ? "ADMIN" : "USER",
-    session
+    session,
+    sessionVersion: Number(payload.sv)
   };
 }
 
@@ -141,7 +155,17 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
 
   try {
-    request.user = verifyAuthToken(token);
+    const tokenUser = verifyAuthToken(token);
+    const currentUser = await prisma.user.findUnique({
+      select: { sessionVersion: true },
+      where: { id: tokenUser.sub }
+    });
+
+    if (!currentUser || currentUser.sessionVersion !== tokenUser.sessionVersion) {
+      throw new Error("Session has been revoked");
+    }
+
+    request.user = tokenUser;
   } catch {
     return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
   }

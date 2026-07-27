@@ -45,6 +45,7 @@ type DispatchCanonicalOutboxBatchOptions = {
 type StartCanonicalOutboxWorkerOptions = {
   database?: PrismaClient;
   logger?: Pick<FastifyBaseLogger, "error" | "info" | "warn">;
+  onHealthChange?: (healthy: boolean) => void;
   publisher?: CanonicalOutboxPublisher;
   workerId?: string;
 };
@@ -311,6 +312,7 @@ async function createBullMqPublisher(redisUrl: string): Promise<CanonicalOutboxP
 export async function startCanonicalOutboxWorker(
   options: StartCanonicalOutboxWorkerOptions = {}
 ): Promise<() => Promise<void>> {
+  const reportHealth = options.onHealthChange ?? (() => undefined);
   assertCanonicalOutboxConfiguration({
     enabled: env.CANONICAL_OUTBOX_DISPATCHER_ENABLED,
     redisUrl: env.REDIS_URL,
@@ -318,6 +320,7 @@ export async function startCanonicalOutboxWorker(
   });
 
   if (!env.CANONICAL_OUTBOX_DISPATCHER_ENABLED) {
+    reportHealth(false);
     return async () => undefined;
   }
 
@@ -328,18 +331,29 @@ export async function startCanonicalOutboxWorker(
   let stopped = false;
   let timer: NodeJS.Timeout | undefined;
 
+  const dispatchBatch = async () => {
+    try {
+      const result = await dispatchCanonicalOutboxBatch({
+        database: options.database,
+        publisher,
+        serviceAppUserId,
+        workerId
+      });
+      reportHealth(result.failed === 0);
+      return result;
+    } catch (error) {
+      reportHealth(false);
+      throw error;
+    }
+  };
+
   const schedule = (delayMs: number) => {
     if (stopped) {
       return;
     }
 
     timer = setTimeout(() => {
-      activeBatch = dispatchCanonicalOutboxBatch({
-        database: options.database,
-        publisher,
-        serviceAppUserId,
-        workerId
-      }).then((result) => {
+      activeBatch = dispatchBatch().then((result) => {
         if (result.claimed > 0) {
           options.logger?.info({ ...result, workerId }, "Canonical outbox batch dispatched");
         }
@@ -358,7 +372,22 @@ export async function startCanonicalOutboxWorker(
     timer.unref();
   };
 
-  schedule(0);
+  let firstResult: CanonicalOutboxBatchResult;
+  try {
+    firstResult = await dispatchBatch();
+    if (firstResult.failed > 0) {
+      throw new Error("Canonical outbox startup probe could not publish every claimed event.");
+    }
+  } catch (error) {
+    reportHealth(false);
+    await publisher.close?.();
+    throw error;
+  }
+  schedule(
+    firstResult.claimed >= env.CANONICAL_OUTBOX_BATCH_SIZE
+      ? 0
+      : env.CANONICAL_OUTBOX_POLL_INTERVAL_MS
+  );
   options.logger?.info({ workerId }, "Canonical transactional-outbox dispatcher started");
 
   return async () => {
@@ -372,6 +401,7 @@ export async function startCanonicalOutboxWorker(
     }
     await activeBatch;
     await publisher.close?.();
+    reportHealth(false);
     options.logger?.info({ workerId }, "Canonical transactional-outbox dispatcher stopped");
   };
 }

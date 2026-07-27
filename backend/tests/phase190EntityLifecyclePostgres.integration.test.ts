@@ -62,6 +62,7 @@ function lifecycleRequest(input: {
   idempotencyKey?: string;
   previousStatus: EntityStatus;
   reason?: string;
+  requestedAt?: string;
   restoresActionId?: string;
   targetId: string;
 }): EntityLifecycleActionRequest {
@@ -87,7 +88,7 @@ function lifecycleRequest(input: {
       status: nextStatus
     },
     reason: input.reason ?? `${input.actionType} the Phase 190 integration target.`,
-    requested_at: new Date().toISOString(),
+    requested_at: input.requestedAt ?? new Date().toISOString(),
     requested_outcome: `${input.actionType} the entity with verified canonical convergence.`,
     restores_action_id: input.restoresActionId,
     risk_class: "MEDIUM",
@@ -573,6 +574,91 @@ describe.skipIf(!integrationEnabled)("Phase 190 entity pause/resume PostgreSQL g
         restartReplayRequest ??= pauseRequest;
         restartReplayEventId ??= paused.canonical_event.event_id;
       }
+
+      const timelineBeforeRows = await owner.$queryRaw<{
+        status: EntityStatus;
+        version: bigint;
+      }[]>`
+        SELECT status::text AS status, version
+        FROM entral.entities
+        WHERE id = ${marshalId}::uuid
+      `;
+      const timelineBefore = timelineBeforeRows[0]!;
+      const timelinePauseRequest = lifecycleRequest({
+        actionType: "PAUSE",
+        actorId: humanId,
+        businessId: null,
+        expectedVersion: Number(timelineBefore.version),
+        previousStatus: timelineBefore.status,
+        targetId: marshalId
+      });
+      const timelinePaused = await service.execute(timelinePauseRequest, {
+        authenticatedHumanEmail: humanEmail,
+        databaseSession: session(humanSubject, timelinePauseRequest.reason)
+      });
+      const futureClockRows = await owner.$queryRaw<{ requestedAt: Date }[]>`
+        SELECT clock_timestamp() + INTERVAL '5 minutes' AS "requestedAt"
+      `;
+      const futureResumeRequest = lifecycleRequest({
+        actionType: "RESUME",
+        actorId: humanId,
+        businessId: null,
+        expectedVersion: timelinePaused.after.version,
+        previousStatus: "PAUSED",
+        requestedAt: futureClockRows[0]!.requestedAt.toISOString(),
+        restoresActionId: timelinePauseRequest.action_id,
+        targetId: marshalId
+      });
+      const futureResumed = await service.execute(futureResumeRequest, {
+        authenticatedHumanEmail: humanEmail,
+        databaseSession: session(humanSubject, futureResumeRequest.reason)
+      });
+      expect(Date.parse(futureResumed.completed_at)).toBeGreaterThanOrEqual(
+        Date.parse(futureResumeRequest.requested_at)
+      );
+      const persistedTimelineRows = await owner.$queryRaw<{
+        completedAt: Date;
+        requestedAt: Date;
+      }[]>`
+        SELECT
+          completed_at AS "completedAt",
+          requested_at AS "requestedAt"
+        FROM entral.governance_actions
+        WHERE id = ${futureResumeRequest.action_id}::uuid
+      `;
+      const persistedTimeline = persistedTimelineRows[0]!;
+      expect(persistedTimeline.requestedAt.toISOString()).toBe(
+        futureResumeRequest.requested_at
+      );
+      expect(persistedTimeline.completedAt.toISOString()).toBe(
+        futureResumed.completed_at
+      );
+      expect(persistedTimeline.completedAt.getTime()).toBeGreaterThanOrEqual(
+        persistedTimeline.requestedAt.getTime()
+      );
+      const futureReplay = await service.execute(futureResumeRequest, {
+        authenticatedHumanEmail: humanEmail,
+        databaseSession: session(humanSubject, futureResumeRequest.reason)
+      });
+      expect(futureReplay).toMatchObject({
+        action_id: futureResumeRequest.action_id,
+        completed_at: futureResumed.completed_at,
+        idempotent_replay: true,
+        requested_at: futureResumeRequest.requested_at,
+        restoration_of_action_id: timelinePauseRequest.action_id
+      });
+      const timelineRestoredRows = await owner.$queryRaw<{
+        status: EntityStatus;
+        version: bigint;
+      }[]>`
+        SELECT status::text AS status, version
+        FROM entral.entities
+        WHERE id = ${marshalId}::uuid
+      `;
+      expect(timelineRestoredRows[0]).toEqual({
+        status: "ACTIVE",
+        version: BigInt(futureResumed.after.version)
+      });
 
       const soldierState = await owner.$queryRaw<{ status: EntityStatus; version: bigint }[]>`
         SELECT status::text AS status, version

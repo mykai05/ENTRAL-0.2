@@ -16,6 +16,7 @@ export const defaultShopifyScopes = [
 export type ShopifyOAuthFetch = typeof fetch;
 
 export type ShopifyOAuthStatePayload = {
+  authorizationVersion: number;
   exp: number;
   iat: number;
   kind: typeof stateKind;
@@ -135,6 +136,7 @@ export function shopifyOAuthCallbackUrl() {
 }
 
 export function buildShopifyOAuthState(input: {
+  authorizationVersion: number;
   returnTo?: string | null;
   scopes: string[];
   shopDomain: string;
@@ -145,6 +147,7 @@ export function buildShopifyOAuthState(input: {
   const ttlSeconds = options.ttlSeconds ?? defaultStateTtlSeconds;
   const iat = Math.floor(now.getTime() / 1000);
   const payload: ShopifyOAuthStatePayload = {
+    authorizationVersion: input.authorizationVersion,
     exp: iat + ttlSeconds,
     iat,
     kind: stateKind,
@@ -177,7 +180,13 @@ export function verifyShopifyOAuthState(token: string, options: StateOptions = {
   const payload = decodeJson<ShopifyOAuthStatePayload>(encoded);
   const nowSeconds = Math.floor((options.now ?? new Date()).getTime() / 1000);
 
-  if (!payload || payload.kind !== stateKind || payload.exp < nowSeconds) {
+  if (
+    !payload
+    || payload.kind !== stateKind
+    || payload.exp < nowSeconds
+    || !Number.isSafeInteger(payload.authorizationVersion)
+    || payload.authorizationVersion < 0
+  ) {
     throw new Error("Shopify OAuth state has expired.");
   }
 
@@ -219,6 +228,7 @@ export function validateShopifyOAuthHmac(query: Record<string, string | string[]
 }
 
 export function buildShopifyOAuthStart(input: {
+  authorizationVersion: number;
   returnTo?: string | null;
   scopes?: string[];
   shopDomain: string;
@@ -234,6 +244,7 @@ export function buildShopifyOAuthStart(input: {
   const scopes = normalizeShopifyOAuthScopes(input.scopes?.length ? input.scopes : env.SHOPIFY_APP_SCOPES);
   const callbackUrl = shopifyOAuthCallbackUrl();
   const state = buildShopifyOAuthState({
+    authorizationVersion: input.authorizationVersion,
     returnTo: input.returnTo,
     scopes,
     shopDomain,

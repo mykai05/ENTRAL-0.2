@@ -126,7 +126,8 @@ export async function authRoutes(app: FastifyInstance) {
       sub: user.id,
       email: user.email,
       role: normalizeUserRole(user.role),
-      session
+      session,
+      sessionVersion: user.sessionVersion
     });
     setAuthCookie(reply, token);
 
@@ -178,7 +179,8 @@ export async function authRoutes(app: FastifyInstance) {
         sub: result.user.id,
         email: result.user.email,
         role: normalizeUserRole(result.user.role),
-        session
+        session,
+        sessionVersion: result.user.sessionVersion
       }));
     } else {
       clearAuthCookie(reply);
@@ -235,7 +237,8 @@ export async function authRoutes(app: FastifyInstance) {
         sub: result.user.id,
         email: result.user.email,
         role: normalizeUserRole(result.user.role),
-        session
+        session,
+        sessionVersion: result.user.sessionVersion
       }));
     } else {
       clearAuthCookie(reply);

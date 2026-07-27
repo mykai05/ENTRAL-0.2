@@ -199,6 +199,13 @@ async function expectScreenshotChange(locator, baseline, label, attempts = 12, i
   throw new Error(`${label} did not change the rendered frame.`);
 }
 
+async function downloadText(download) {
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 async function newPage(options = {}) {
   const context = await browser.newContext({
     viewport: options.viewport ?? { width: 1366, height: 900 },
@@ -351,6 +358,459 @@ function phase180ScaleResponses() {
   };
 }
 
+const phase195MemoryIds = {
+  business: "11111111-1111-4111-8111-111111111116",
+  commander: "11111111-1111-4111-8111-111111111114",
+  entral: "11111111-1111-4111-8111-111111111111",
+  general: "11111111-1111-4111-8111-111111111113",
+  marshal: "11111111-1111-4111-8111-111111111112",
+  scopeUser: "11111111-1111-4111-8111-111111111117",
+  soldier: "11111111-1111-4111-8111-111111111115"
+};
+
+function phase195MemoryEntity(
+  entityId,
+  stableCode,
+  entityType,
+  name,
+  parentId,
+  businessId,
+  childCount,
+  overrides = {}
+) {
+  return {
+    active_alert: null,
+    active_task_count: entityType === "SOLDIER" ? 1 : 0,
+    assigned_business_id: businessId,
+    child_count: childCount,
+    compute_tier: entityType === "ENTRAL" ? "orchestration" : "standard",
+    current_mission: entityType === "SOLDIER" ? "Verify Phase 195 browser operation." : null,
+    entity_id: entityId,
+    entity_type: entityType,
+    health: "HEALTHY",
+    latest_material_result: entityType === "SOLDIER" ? { status: "verified" } : null,
+    model_class: "development-memory",
+    name,
+    parent_id: parentId,
+    stable_code: stableCode,
+    status: "ACTIVE",
+    updated_at: "2026-07-26T19:00:00.000Z",
+    version: 1,
+    ...overrides
+  };
+}
+
+function phase195RenderedIdSignature(entityIds) {
+  const seed = "entral-phase-195-2d-render-frame-v1";
+  const input = `${seed}\u0000${entityIds.join("\u0000")}`;
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function phase195MemoryHierarchy() {
+  const entities = [
+    phase195MemoryEntity(phase195MemoryIds.entral, "ENTRAL.DEV", "ENTRAL", "ENTRAL", null, null, 1),
+    phase195MemoryEntity(phase195MemoryIds.marshal, "MARSHAL.DEV", "MARSHAL", "Digital Businesses", phase195MemoryIds.entral, null, 1),
+    phase195MemoryEntity(phase195MemoryIds.general, "GENERAL.DEV", "GENERAL", "Software", phase195MemoryIds.marshal, null, 1),
+    phase195MemoryEntity(phase195MemoryIds.commander, "COMMANDER.DEV", "COMMANDER", "Atlas Commander", phase195MemoryIds.general, phase195MemoryIds.business, 1),
+    phase195MemoryEntity(phase195MemoryIds.soldier, "SOLDIER.DEV", "SOLDIER", "Atlas Operations", phase195MemoryIds.commander, phase195MemoryIds.business, 0)
+  ];
+  return {
+    entities,
+    event_sequence: 9,
+    generated_at: "2026-07-26T19:00:00.000Z",
+    scope: {
+      label: "Human portfolio / all canonical businesses",
+      mode: "HUMAN_PORTFOLIO",
+      user_id: phase195MemoryIds.scopeUser,
+      visible_business_ids: [phase195MemoryIds.business]
+    }
+  };
+}
+
+const phase195AcceptanceIds = {
+  businessA: "19510000-0000-4000-8000-000000000010",
+  businessB: "19510000-0000-4000-8000-000000000011",
+  commanderA: "19510000-0000-4000-8000-000000000006",
+  commanderB: "19510000-0000-4000-8000-000000000007",
+  entral: "19510000-0000-4000-8000-000000000001",
+  generalA: "19510000-0000-4000-8000-000000000004",
+  generalB: "19510000-0000-4000-8000-000000000005",
+  marshalA: "19510000-0000-4000-8000-000000000002",
+  marshalB: "19510000-0000-4000-8000-000000000003",
+  soldierA: "19510000-0000-4000-8000-000000000008",
+  soldierB: "19510000-0000-4000-8000-000000000009"
+};
+
+function phase195AcceptanceHierarchy() {
+  const entities = [
+    phase195MemoryEntity(phase195AcceptanceIds.entral, "entral", "ENTRAL", "ENTRAL", null, null, 2),
+    phase195MemoryEntity(phase195AcceptanceIds.marshalA, "marshal-a", "MARSHAL", "Marshal A", phase195AcceptanceIds.entral, null, 1),
+    phase195MemoryEntity(phase195AcceptanceIds.marshalB, "marshal-b", "MARSHAL", "Marshal B", phase195AcceptanceIds.entral, null, 1),
+    phase195MemoryEntity(phase195AcceptanceIds.generalA, "general-a", "GENERAL", "General A", phase195AcceptanceIds.marshalA, phase195AcceptanceIds.businessA, 1),
+    phase195MemoryEntity(phase195AcceptanceIds.generalB, "general-b", "GENERAL", "General B", phase195AcceptanceIds.marshalB, phase195AcceptanceIds.businessB, 1),
+    phase195MemoryEntity(phase195AcceptanceIds.commanderA, "commander-a", "COMMANDER", "Commander A", phase195AcceptanceIds.generalA, phase195AcceptanceIds.businessA, 1),
+    phase195MemoryEntity(phase195AcceptanceIds.commanderB, "commander-b", "COMMANDER", "Commander B", phase195AcceptanceIds.generalB, phase195AcceptanceIds.businessB, 1, {
+      active_alert: "Authorized Phase 195 parity alert.",
+      active_task_count: 3,
+      current_mission: "Coordinate authorized Phase 195 graph parity.",
+      latest_material_result: { status: "phase195-parity-verified" }
+    }),
+    phase195MemoryEntity(phase195AcceptanceIds.soldierA, "soldier-a", "SOLDIER", "Soldier A", phase195AcceptanceIds.commanderA, phase195AcceptanceIds.businessA, 0),
+    phase195MemoryEntity(phase195AcceptanceIds.soldierB, "soldier-b", "SOLDIER", "Soldier B", phase195AcceptanceIds.commanderB, phase195AcceptanceIds.businessB, 0, {
+      health: "WATCH",
+      status: "PAUSED"
+    })
+  ];
+  return {
+    entities,
+    event_sequence: 9,
+    generated_at: "2026-07-26T19:00:00.000Z",
+    scope: {
+      label: "Phase 195 authorized acceptance scope",
+      mode: "HUMAN_PORTFOLIO",
+      user_id: phase195MemoryIds.scopeUser,
+      visible_business_ids: [
+        phase195AcceptanceIds.businessA,
+        phase195AcceptanceIds.businessB
+      ]
+    }
+  };
+}
+
+function phase195AllMarshalAcceptanceFixture() {
+  const fixtureUuid = (sequence) =>
+    `19520000-0000-4000-8000-${String(sequence).padStart(12, "0")}`;
+  const entralId = fixtureUuid(1);
+  const marshalCases = [];
+  const entities = [];
+  let generalSequence = 100;
+
+  for (let marshalIndex = 0; marshalIndex < 8; marshalIndex += 1) {
+    const marshalId = fixtureUuid(marshalIndex + 2);
+    const generalCount = marshalIndex < 3 ? 16 : 15;
+    const generalIds = [];
+    for (let generalIndex = 0; generalIndex < generalCount; generalIndex += 1) {
+      const generalId = fixtureUuid(generalSequence);
+      generalSequence += 1;
+      generalIds.push(generalId);
+      entities.push(phase195MemoryEntity(
+        generalId,
+        `general-${String(marshalIndex + 1).padStart(2, "0")}-${String(generalIndex + 1).padStart(3, "0")}`,
+        "GENERAL",
+        `General ${marshalIndex + 1}.${generalIndex + 1}`,
+        marshalId,
+        null,
+        0
+      ));
+    }
+    marshalCases.push({
+      generalIds,
+      marshalId,
+      name: `Marshal ${marshalIndex + 1}`
+    });
+    entities.push(phase195MemoryEntity(
+      marshalId,
+      `marshal-${String(marshalIndex + 1).padStart(2, "0")}`,
+      "MARSHAL",
+      `Marshal ${marshalIndex + 1}`,
+      entralId,
+      null,
+      generalIds.length
+    ));
+  }
+
+  entities.unshift(phase195MemoryEntity(
+    entralId,
+    "entral",
+    "ENTRAL",
+    "ENTRAL",
+    null,
+    null,
+    marshalCases.length
+  ));
+  entities.sort((left, right) =>
+    left.entity_type === "ENTRAL"
+      ? -1
+      : right.entity_type === "ENTRAL"
+        ? 1
+        : left.stable_code.localeCompare(right.stable_code)
+  );
+
+  return {
+    hierarchy: {
+      entities,
+      event_sequence: 9,
+      generated_at: "2026-07-26T19:00:00.000Z",
+      scope: {
+        label: "Phase 195 all-eight-Marshal browser fixture",
+        mode: "HUMAN_PORTFOLIO",
+        user_id: phase195MemoryIds.scopeUser,
+        visible_business_ids: []
+      }
+    },
+    marshalCases,
+    rootId: entralId
+  };
+}
+
+function phase195GraphSettings() {
+  return {
+    advanced_2d: {
+      collision_padding: 12,
+      edge_routing: "CURVED",
+      fit_padding: 24,
+      force_iterations: 0,
+      grid_size: 16,
+      grid_snapping: false,
+      level_spacing: 64,
+      minimap_visible: true,
+      ring_spacing: 160,
+      sector_padding: 0.1,
+      sibling_spacing: 48,
+      tree_orientation: "TOP_DOWN"
+    },
+    advanced_3d: {
+      auto_orbit_enabled: false,
+      auto_orbit_speed: 0.1,
+      bloom_intensity: 0.2,
+      camera_field_of_view: 50,
+      cluster_spread: 1,
+      collision_radius: 12,
+      depth_scale: 1,
+      edge_depth_fade: true,
+      ellipse_eccentricity: 0.25,
+      far_clip: 5_000,
+      focus_distance: 600,
+      focus_transition_ms: 350,
+      lighting_intensity: 1,
+      maximum_zoom: 3,
+      minimum_zoom: 0.5,
+      near_clip: 0.1,
+      node_billboard: true,
+      orbit_direction: "CLOCKWISE",
+      orbit_tilt_degrees: 15,
+      ring_spacing: 220,
+      vertical_spread: 0.6
+    },
+    advanced_shared: {
+      animation_duration_ms: 300,
+      authority_band_spacing: 1,
+      authority_score_influence: 0.2,
+      background_visible: true,
+      color_mode: "AUTHORITY",
+      edge_curvature: 0.15,
+      edge_opacity: 0.5,
+      edge_width: 1,
+      frame_rate_cap: 60,
+      grid_visible: true,
+      label_scale: 1,
+      label_threshold: 0.35,
+      legend_visible: true,
+      level_of_detail: "AUTO",
+      lineage_emphasis: 1.4,
+      maximum_live_labels: 200,
+      motion_easing: "EASE_IN_OUT",
+      node_scale: 1,
+      performance_mode: "AUTO",
+      rendering_quality: "HIGH",
+      selected_node_scale: 1.35,
+      stable_layout_seed: "entral-authority-v1",
+      worker_usage: "AUTO"
+    },
+    pinned_positions: [],
+    simple: {
+      arrangement: "AUTO",
+      connections: "RELEVANT",
+      density: "BALANCED",
+      labels: "RELEVANT",
+      motion: "NORMAL",
+      synchronized_navigation: true,
+      three_d_layout: "AUTHORITY_RINGS",
+      two_d_layout: "AUTHORITY_RADIAL"
+    }
+  };
+}
+
+function phase195GraphProjection(hierarchy, organizationId) {
+  const tier = { COMMANDER: 3, ENTRAL: 0, GENERAL: 2, MARSHAL: 1, SOLDIER: 4 };
+  const byId = new Map(hierarchy.entities.map((entity) => [entity.entity_id, entity]));
+  const lineageById = new Map();
+  function lineage(entityId, visited = new Set()) {
+    if (lineageById.has(entityId)) return lineageById.get(entityId);
+    const entity = byId.get(entityId);
+    if (!entity || visited.has(entityId)) return [entityId];
+    const nextVisited = new Set(visited).add(entityId);
+    const value = entity.parent_id && byId.has(entity.parent_id)
+      ? [...lineage(entity.parent_id, nextVisited), entityId]
+      : [entityId];
+    lineageById.set(entityId, value);
+    return value;
+  }
+  const entities = hierarchy.entities.map((entity) => {
+    const lineageIds = lineage(entity.entity_id);
+    const marshalId = lineageIds
+      .map((entityId) => byId.get(entityId))
+      .find((candidate) => candidate?.entity_type === "MARSHAL")
+      ?.entity_id ?? null;
+    return {
+      authority_score: entity.authority_score ?? null,
+      authority_tier: tier[entity.entity_type],
+      business_id: entity.assigned_business_id,
+      display_name: entity.name,
+      domain_id: entity.domain_id ?? marshalId,
+      entity_id: entity.entity_id,
+      entity_type: entity.entity_type,
+      health: entity.health,
+      hierarchy_level: tier[entity.entity_type],
+      lineage_ids: lineageIds,
+      marshal_id: marshalId,
+      organization_id: organizationId,
+      parent_id: entity.parent_id,
+      stable_code: entity.stable_code,
+      status: entity.status,
+      version: entity.version
+    };
+  });
+  return {
+    contract_version: "1.0.0",
+    edges: entities
+      .filter((entity) => entity.parent_id)
+      .map((entity) => ({
+        direction: "OUTBOUND",
+        edge_id: `hierarchy:${entity.parent_id}:${entity.entity_id}`,
+        lineage: true,
+        relation_type: "HIERARCHY",
+        source_id: entity.parent_id,
+        status: entity.status,
+        target_id: entity.entity_id
+      })),
+    entities,
+    evidence_version_reference: {
+      event_sequence: hierarchy.event_sequence,
+      source: "canonical_hierarchy"
+    },
+    generated_at: hierarchy.generated_at,
+    organization_id: organizationId,
+    projection_version: hierarchy.event_sequence,
+    root_id: entities.find((entity) => entity.entity_type === "ENTRAL")?.entity_id ?? "no-authorized-root",
+    schema_version: 1
+  };
+}
+
+async function installPhase195GraphRoutes(page, hierarchy = phase195MemoryHierarchy()) {
+  const requests = [];
+  const telemetryRequests = [];
+  let failureStatus = null;
+  let preferenceVersion = 0;
+  let settings = phase195GraphSettings();
+
+  function organizationId(requestUrl) {
+    const segments = new URL(requestUrl).pathname.split("/");
+    const graphIndex = segments.lastIndexOf("graph");
+    return decodeURIComponent(segments[graphIndex - 1] ?? "");
+  }
+
+  function preferences(requestUrl) {
+    const saved = preferenceVersion > 0;
+    return {
+      contract_version: "1.0.0",
+      created_at: saved ? "2026-07-26T19:00:00.000Z" : null,
+      migrated_from_schema_version: null,
+      organization_id: organizationId(requestUrl),
+      preference_id: saved ? "19500000-0000-4000-8000-000000000003" : null,
+      schema_version: 2,
+      settings,
+      source: saved ? "SAVED_OVERRIDE" : "CANONICAL_DEFAULTS",
+      updated_at: saved ? "2026-07-26T19:00:00.000Z" : null,
+      user_id: hierarchy.scope.user_id,
+      version: preferenceVersion
+    };
+  }
+
+  await page.route("**/member/api/v1/member/organizations/*/graph/projection", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: phase195GraphProjection(hierarchy, organizationId(route.request().url())),
+      status: 200
+    });
+  });
+  await page.route("**/member/api/v1/member/organizations/*/graph/telemetry", async (route) => {
+    const request = route.request();
+    const body = request.postDataJSON();
+    telemetryRequests.push(body);
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        accepted: true,
+        contract_version: "1.0.0",
+        organization_id: organizationId(request.url()),
+        recorded_at: "2026-07-26T19:00:00.000Z",
+        schema_version: 1,
+        telemetry_id: body.telemetry_id
+      },
+      status: 202
+    });
+  });
+  await page.route("**/member/api/v1/member/organizations/*/graph/preferences", async (route) => {
+    const request = route.request();
+    const method = request.method();
+    if (method === "GET") {
+      await route.fulfill({ contentType: "application/json", json: preferences(request.url()), status: 200 });
+      return;
+    }
+    const body = request.postDataJSON();
+    requests.push({ body, method });
+    if (failureStatus) {
+      const status = failureStatus;
+      failureStatus = null;
+      await route.fulfill({
+        contentType: "application/json",
+        json: { error: status === 409 ? "Conflict" : "Service Unavailable", message: status === 409 ? "Graph preferences changed in another session." : "Graph preference service unavailable." },
+        status
+      });
+      return;
+    }
+    if (body.expected_version !== preferenceVersion) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: { error: "Conflict", message: "Graph preferences changed in another session." },
+        status: 409
+      });
+      return;
+    }
+    if (method === "PUT") {
+      settings = body.settings;
+      preferenceVersion += 1;
+    } else if (method === "DELETE") {
+      settings = phase195GraphSettings();
+      preferenceVersion = 0;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        event_ids: ["19500000-0000-4000-8000-000000000004"],
+        idempotent_replay: false,
+        preferences: preferences(request.url())
+      },
+      status: 200
+    });
+  });
+
+  return {
+    failNextMutation(status) {
+      failureStatus = status;
+    },
+    preferences: () => ({ settings, version: preferenceVersion }),
+    requests,
+    telemetryRequests
+  };
+}
+
 async function installPhase180ScaleRoutes(page, responses) {
   await page.route("**/member/api/v1/member/organizations/*/portfolio/summary", async (route) => {
     await route.fulfill({ contentType: "application/json", json: responses.portfolio, status: 200 });
@@ -358,6 +818,7 @@ async function installPhase180ScaleRoutes(page, responses) {
   await page.route("**/member/api/v1/member/organizations/*/hierarchy", async (route) => {
     await route.fulfill({ contentType: "application/json", json: responses.hierarchy, status: 200 });
   });
+  return installPhase195GraphRoutes(page, responses.hierarchy);
 }
 
 async function installPhase170Routes(page, { emitEvent = false } = {}) {
@@ -444,6 +905,7 @@ async function closeAcademyIfOpen(page) {
 
 async function installPhase190LifecycleRoute(page) {
   const requests = [];
+  const persistedLifecycleState = new Map();
   let pauseActionId = null;
   const receiptIds = {
     audit: {
@@ -465,6 +927,44 @@ async function installPhase190LifecycleRoute(page) {
   };
 
   await page.route(
+    "**/member/api/v1/member/organizations/*/hierarchy",
+    async (route) => {
+      if (persistedLifecycleState.size === 0) {
+        await route.continue();
+        return;
+      }
+      const response = await route.fetch();
+      if (!response.ok()) {
+        await route.fulfill({ response });
+        return;
+      }
+      const hierarchy = await response.json();
+      if (!Array.isArray(hierarchy.entities)) {
+        throw new Error("Phase 190 hierarchy response did not expose an entities array.");
+      }
+      const entities = hierarchy.entities.map((entity) => {
+        const persisted = persistedLifecycleState.get(entity.entity_id);
+        return persisted
+          ? {
+              ...entity,
+              status: persisted.status,
+              updated_at: persisted.updatedAt,
+              version: persisted.version
+            }
+          : entity;
+      });
+      await route.fulfill({
+        body: JSON.stringify({
+          ...hierarchy,
+          entities
+        }),
+        contentType: "application/json",
+        status: response.status()
+      });
+    }
+  );
+
+  await page.route(
     "**/member/api/v1/member/organizations/*/entities/*/actions/*",
     async (route) => {
       const request = route.request();
@@ -480,6 +980,11 @@ async function installPhase190LifecycleRoute(page) {
       const afterVersion = beforeVersion + 1;
       const afterStatus = actionType === "PAUSE" ? "PAUSED" : "ACTIVE";
       const completedAt = new Date(Date.parse(body.requested_at) + 1_000).toISOString();
+      persistedLifecycleState.set(body.target_id, {
+        status: afterStatus,
+        updatedAt: completedAt,
+        version: afterVersion
+      });
       await route.fulfill({
         contentType: "application/json",
         json: {
@@ -507,7 +1012,9 @@ async function installPhase190LifecycleRoute(page) {
             idempotency_key: body.idempotency_key,
             idempotent_replay: false,
             requested_at: body.requested_at,
-            restoration_of_action_id: actionType === "RESUME" ? body.restores_action_id : null,
+            restoration_of_action_id: actionType === "RESUME"
+              ? body.restores_action_id ?? null
+              : null,
             rollback: {
               action_type: actionType === "PAUSE" ? "RESUME" : "PAUSE",
               available: true,
@@ -540,6 +1047,7 @@ async function installPhase190LifecycleRoute(page) {
 
   return {
     getPauseActionId: () => pauseActionId,
+    persistedState: (entityId) => persistedLifecycleState.get(entityId) ?? null,
     requests
   };
 }
@@ -609,12 +1117,15 @@ const tests = [
         viewport: { width: 1440, height: 900 }
       });
       try {
+        await installPhase195GraphRoutes(page);
         await enterWorkspace(page, uniqueEmail("phase180-wheel-scroll"));
         await page.goto(`${frontendUrl}/member/graph`);
         await closeAcademyIfOpen(page);
         const canvases = [
           page.getByLabel(/Canonical Universe Graph with 5 entities/i),
-          page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" })
+          page.getByRole("application", {
+            name: /Canonical 3D Universe Graph with 5 entities/i
+          })
         ];
 
         for (const [index, canvas] of canvases.entries()) {
@@ -647,7 +1158,743 @@ const tests = [
     }
   },
   {
-    name: "Phase 190 member Infrastructure pauses and restores one canonical entity through verified receipts",
+    name: "Phase 195 Graph preserves canonical parity, shared state, responsive alignment, preferences, and exports",
+    run: async () => {
+      const hierarchy = phase195AcceptanceHierarchy();
+      const browserEvidence = [];
+      for (const profile of [
+        { name: "desktop", viewport: { width: 1440, height: 1000 }, isMobile: false, deviceScaleFactor: 1 },
+        { name: "tablet", viewport: { width: 900, height: 1100 }, isMobile: false, deviceScaleFactor: 1 },
+        { name: "mobile", viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 }
+      ]) {
+        const { context, page } = await newPage(profile);
+        const runtimeErrors = [];
+        try {
+          await page.route("**/member/api/v1/member/organizations/*/hierarchy", async (route) => {
+            await route.fulfill({ contentType: "application/json", json: hierarchy, status: 200 });
+          });
+          const graphRoutes = await installPhase195GraphRoutes(page, hierarchy);
+          await enterWorkspace(page, uniqueEmail(`phase195-${profile.name}`));
+          page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
+          page.on("console", (message) => {
+            const text = message.text();
+            const location = message.location();
+            const expectedPreferenceFailure = /Failed to load resource.*(?:409|503)/i.test(text);
+            const expectedDashboardBootstrapMiss =
+              location.url.endsWith("/api/v1/control-plane/portfolio/summary")
+              && /404|Not Found/i.test(text);
+            if (
+              message.type() === "error"
+              && !expectedPreferenceFailure
+              && !expectedDashboardBootstrapMiss
+            ) {
+              const source = location.url
+                ? ` (${location.url}${location.lineNumber ? `:${location.lineNumber}` : ""})`
+                : "";
+              runtimeErrors.push(`console: ${text}${source}`);
+            }
+          });
+
+          const query = new URLSearchParams({
+            arrangement: "side-by-side",
+            business: phase195AcceptanceIds.businessB,
+            domain: "19510000-0000-4000-8000-999999999999",
+            entity: phase195AcceptanceIds.soldierB,
+            health: "WATCH",
+            scope: "organization:hidden",
+            status: "PAUSED",
+            type: "SOLDIER"
+          });
+          await page.goto(`${frontendUrl}/member/graph?${query.toString()}`);
+          await expectVisible(
+            page.getByRole("heading", { name: "2D + 3D Universe Graph" }),
+            `${profile.name} Phase 195 workspace`,
+            30_000
+          );
+
+          const workspace = page.locator(".phase195-graph-workspace");
+          const twoD = workspace.locator(
+            '.phase180-graph-panel > [data-graph-dimension="2d"]'
+          );
+          const threeD = workspace.locator(
+            '.phase180-graph-panel > [data-graph-dimension="3d"]'
+          );
+          await expectVisible(twoD, `${profile.name} Phase 195 2D renderer`, 30_000);
+          await expectVisible(threeD, `${profile.name} Phase 195 3D renderer`, 30_000);
+          await expectVisible(
+            twoD.locator(".phase180-graph-canvas"),
+            `${profile.name} Phase 195 2D canvas`,
+            30_000
+          );
+          await expectVisible(
+            threeD.locator(".command-center-canvas"),
+            `${profile.name} Phase 195 3D canvas`,
+            30_000
+          );
+          const parity = await Promise.all([twoD, threeD].map(async (renderer) => ({
+            edges: (await renderer.getAttribute("data-canonical-edge-ids") ?? "").split(",").filter(Boolean).sort(),
+            entities: (await renderer.getAttribute("data-canonical-entity-ids") ?? "").split(",").filter(Boolean).sort(),
+            event: await renderer.getAttribute("data-canonical-event-sequence")
+          })));
+          if (
+            JSON.stringify(parity[0].entities) !== JSON.stringify(parity[1].entities)
+            || JSON.stringify(parity[0].edges) !== JSON.stringify(parity[1].edges)
+            || parity[0].event !== "9"
+            || parity[1].event !== "9"
+          ) {
+            throw new Error(`${profile.name} Phase 195 renderer parity failed: ${JSON.stringify(parity)}`);
+          }
+
+          const rewritten = new URL(page.url()).searchParams;
+          if (
+            rewritten.get("entity") !== phase195AcceptanceIds.soldierB
+            || rewritten.get("scope")?.includes("hidden")
+            || rewritten.has("domain")
+          ) {
+            throw new Error(`${profile.name} Graph retained an unauthorized deep-link value: ${rewritten.toString()}`);
+          }
+          if (await page.getByText(/Microsoft|Copilot|SharePoint/i).count()) {
+            throw new Error(`${profile.name} member Graph exposed Microsoft integration chrome.`);
+          }
+
+          const geometry = await workspace.evaluate((element) => {
+            const panel2D = element.querySelector('[data-panel="2d"]');
+            const panel3D = element.querySelector('[data-panel="3d"]');
+            const header2D = panel2D?.querySelector(".phase180-surface-heading");
+            const header3D = panel3D?.querySelector(".phase180-surface-heading");
+            const stage2D = panel2D?.querySelector(".phase180-graph-stage");
+            const stage3D = panel3D?.querySelector(".phase180-graph-3d-stage");
+            const canvas2D = panel2D?.querySelector(".phase180-graph-canvas");
+            const canvas3D = panel3D?.querySelector(".command-center-canvas");
+            const sharedToolbar = element.querySelector(".phase195-shared-toolbar");
+            const values = [panel2D, panel3D, header2D, header3D, stage2D, stage3D, canvas2D, canvas3D, sharedToolbar];
+            if (values.some((value) => !(value instanceof HTMLElement))) return null;
+            const box = (value) => {
+              const rect = value.getBoundingClientRect();
+              return {
+                bottom: rect.bottom,
+                height: rect.height,
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+                width: rect.width
+              };
+            };
+            return {
+              canvas2D: box(canvas2D),
+              canvas3D: box(canvas3D),
+              documentWidth: document.documentElement.scrollWidth,
+              header2D: box(header2D),
+              header3D: box(header3D),
+              panel2D: box(panel2D),
+              panel3D: box(panel3D),
+              stage2D: box(stage2D),
+              stage3D: box(stage3D),
+              toolbar: box(sharedToolbar),
+              viewportWidth: window.innerWidth
+            };
+          });
+          if (!geometry) throw new Error(`${profile.name} Phase 195 geometry was incomplete.`);
+          const withinTwoPixels = (left, right) => Math.abs(left - right) <= 2;
+          const aligned = [
+            [geometry.panel2D.width, geometry.panel3D.width],
+            [geometry.header2D.height, geometry.header3D.height],
+            [geometry.header2D.top - geometry.panel2D.top, geometry.header3D.top - geometry.panel3D.top],
+            [geometry.stage2D.height, geometry.stage3D.height],
+            [geometry.canvas2D.width, geometry.canvas3D.width],
+            [geometry.canvas2D.height, geometry.canvas3D.height]
+          ].every(([left, right]) => withinTwoPixels(left, right));
+          if (!aligned) {
+            throw new Error(`${profile.name} Graph cards, headers, stages, or canvases exceeded 2px alignment: ${JSON.stringify(geometry)}`);
+          }
+          if (geometry.documentWidth > geometry.viewportWidth + 2) {
+            throw new Error(`${profile.name} Phase 195 Graph overflowed horizontally.`);
+          }
+          const effectiveArrangement = await workspace.getAttribute("data-effective-arrangement");
+          if (profile.name === "desktop") {
+            if (
+              effectiveArrangement !== "side-by-side"
+              || !withinTwoPixels(geometry.panel2D.top, geometry.panel3D.top)
+              || !withinTwoPixels(geometry.panel2D.bottom, geometry.panel3D.bottom)
+            ) {
+              throw new Error(`Desktop Phase 195 Graph cards were not aligned side by side: ${JSON.stringify(geometry)}`);
+            }
+          } else if (
+            effectiveArrangement !== "stacked"
+            || geometry.panel3D.top < geometry.panel2D.bottom - 2
+          ) {
+            throw new Error(`${profile.name} Phase 195 Graph did not apply its safe stacked override.`);
+          }
+
+          const authorityTierCounts = await Promise.all([
+            twoD,
+            threeD
+          ].map((renderer) => renderer.locator(
+            ".phase195-authority-rings [data-authority-tier]"
+          ).count()));
+          if (authorityTierCounts.some((count) => count !== 5)) {
+            throw new Error(
+              `${profile.name} Phase 195 Graph did not render all five authority tier labels: ${JSON.stringify(authorityTierCounts)}`
+            );
+          }
+          await workspace.screenshot({
+            animations: "disabled",
+            path: join(
+              repoRoot,
+              "test-results",
+              "e2e",
+              `phase195-${profile.name}-dual-graph.png`
+            )
+          });
+
+          // The 3D renderer deliberately suspends its frame loop while its
+          // stacked canvas is outside the viewport. Bring that canvas into
+          // view before requiring its bounded frame-telemetry sample.
+          await threeD.locator(".command-center-canvas").scrollIntoViewIfNeeded();
+          const observedTelemetryRenderers = () => new Set(
+            graphRoutes.telemetryRequests.map((telemetry) => telemetry.renderer)
+          );
+          const hasRequiredTelemetryRenderers = () => {
+            const renderers = observedTelemetryRenderers();
+            return renderers.has("2D") && renderers.has("3D");
+          };
+          const telemetryDeadline = Date.now() + 10_000;
+          while (
+            !hasRequiredTelemetryRenderers()
+            && Date.now() < telemetryDeadline
+          ) {
+            await new Promise((resolveWait) => setTimeout(resolveWait, 100));
+          }
+          const telemetryRenderers = observedTelemetryRenderers();
+          if (
+            !telemetryRenderers.has("2D")
+            || !telemetryRenderers.has("3D")
+          ) {
+            throw new Error(`${profile.name} Phase 195 did not submit bounded telemetry for both renderers.`);
+          }
+          for (const telemetry of graphRoutes.telemetryRequests) {
+            if (
+              telemetry.node_count < 0
+              || telemetry.node_count > 100_000
+              || telemetry.edge_count < 0
+              || telemetry.edge_count > 200_000
+              || telemetry.frame_rate_fps < 0
+              || telemetry.frame_rate_fps > 1_000
+              || telemetry.dropped_frame_rate_ratio < 0
+              || telemetry.dropped_frame_rate_ratio > 1
+              || telemetry.sample_window_ms < 1
+              || telemetry.sample_window_ms > 600_000
+              || JSON.stringify(telemetry).includes(phase195AcceptanceIds.soldierB)
+            ) {
+              throw new Error(`${profile.name} Phase 195 renderer telemetry exceeded its bounded metadata contract.`);
+            }
+          }
+          const sharedToolbar = page.getByRole("region", {
+            name: "Shared graph navigation and filters"
+          });
+          await sharedToolbar.getByRole("button", { name: "Parent" }).click();
+          await page.waitForFunction((entityId) =>
+            new URL(window.location.href).searchParams.get("entity") === entityId,
+          phase195AcceptanceIds.commanderB);
+          const commanderTwoDDetails = twoD.getByRole("complementary", {
+            name: "Commander B graph details"
+          });
+          const commanderThreeDDetails = threeD.locator(".phase110-node-drawer");
+          await expectVisible(
+            commanderTwoDDetails,
+            `${profile.name} Commander B 2D authorized details`
+          );
+          await expectVisible(
+            commanderThreeDDetails,
+            `${profile.name} Commander B 3D authorized details`
+          );
+          const canonicalDetailAttributes = await Promise.all(
+            [twoD, threeD].map((renderer) => renderer.evaluate((surface) => ({
+              active_alert: surface.getAttribute(
+                "data-canonical-selected-active-alert"
+              ),
+              active_task_count: surface.getAttribute(
+                "data-canonical-selected-active-task-count"
+              ),
+              child_count: surface.getAttribute(
+                "data-canonical-selected-child-count"
+              ),
+              current_mission: surface.getAttribute(
+                "data-canonical-selected-current-mission"
+              ),
+              entity_id: surface.getAttribute(
+                "data-canonical-selected-entity-id"
+              ),
+              latest_material_result: surface.getAttribute(
+                "data-canonical-selected-latest-material-result"
+              )
+            })))
+          );
+          const expectedCanonicalDetails = {
+            active_alert: "Authorized Phase 195 parity alert.",
+            active_task_count: "3",
+            child_count: "1",
+            current_mission: "Coordinate authorized Phase 195 graph parity.",
+            entity_id: phase195AcceptanceIds.commanderB,
+            latest_material_result: '{"status":"phase195-parity-verified"}'
+          };
+          if (
+            canonicalDetailAttributes.some(
+              (details) =>
+                JSON.stringify(details) !== JSON.stringify(expectedCanonicalDetails)
+            )
+          ) {
+            throw new Error(
+              `${profile.name} renderer-selected authorized detail attributes diverged: `
+              + JSON.stringify(canonicalDetailAttributes)
+            );
+          }
+          await expectVisible(
+            twoD.getByText("Selected Commander B, COMMANDER. 1 direct children.", {
+              exact: true
+            }),
+            `${profile.name} Commander B 2D live child-count detail`
+          );
+          const expandCommanderThreeDDetails = commanderThreeDDetails.getByRole("button", {
+            name: "Expand details for Commander B"
+          });
+          if (await expandCommanderThreeDDetails.count()) {
+            await expandCommanderThreeDDetails.click();
+          }
+          const [twoDDetailValues, threeDDetailValues] = await Promise.all([
+            commanderTwoDDetails,
+            commanderThreeDDetails
+          ].map((details) => details.locator("dl").evaluate((list) =>
+            Object.fromEntries(
+              [...list.querySelectorAll(":scope > div")]
+                .map((row) => [
+                  row.querySelector("dt")?.textContent?.trim() ?? "",
+                  row.querySelector("dd")?.textContent?.trim() ?? ""
+                ])
+                .filter(([label]) => Boolean(label))
+            )
+          )));
+          const expectedCommanderMission = "Coordinate authorized Phase 195 graph parity.";
+          if (
+            twoDDetailValues.Children !== "1"
+            || threeDDetailValues.Children !== "1"
+            || twoDDetailValues.Mission !== expectedCommanderMission
+            || threeDDetailValues["Current objective"] !== expectedCommanderMission
+            || twoDDetailValues.Alert !== "Authorized Phase 195 parity alert."
+            || threeDDetailValues["Latest material result"] !== '{"status":"phase195-parity-verified"}'
+          ) {
+            throw new Error(
+              `${profile.name} Commander B 2D/3D authorized detail parity failed: `
+              + JSON.stringify({ three_d: threeDDetailValues, two_d: twoDDetailValues })
+            );
+          }
+          await page.getByRole("button", { name: "Back" }).click();
+          await page.waitForFunction((entityId) =>
+            new URL(window.location.href).searchParams.get("entity") === entityId,
+          phase195AcceptanceIds.soldierB);
+
+          await page.getByRole("textbox", { name: "Search both graphs" }).fill("Soldier B");
+          await page.getByRole("combobox", { name: "Filter by entity type" }).selectOption("SOLDIER");
+          await page.getByRole("combobox", { name: "Filter by status" }).selectOption("PAUSED");
+          await page.getByRole("combobox", { name: "Filter by health" }).selectOption("WATCH");
+          await page.waitForFunction(() =>
+            document.querySelector(".phase195-graph-workspace")?.getAttribute("data-canonical-entity-count") === "5"
+          );
+          await page.getByRole("button", { name: "Isolate lineage" }).click();
+          if (
+            await twoD.getAttribute("data-canonical-entity-count") !== "5"
+            || await threeD.getAttribute("data-canonical-entity-count") !== "5"
+          ) {
+            throw new Error(`${profile.name} shared Graph filters diverged between renderers.`);
+          }
+
+          await page.getByRole("button", { name: "Show all lineages" }).click();
+          await page.getByRole("button", { name: "Clear graph search" }).click();
+          await page.getByRole("combobox", { name: "Filter by entity type" }).selectOption("");
+          await page.getByRole("combobox", { name: "Filter by status" }).selectOption("");
+          await page.getByRole("combobox", { name: "Filter by health" }).selectOption("");
+
+          const arrangement = page.getByRole("combobox", { name: "Graph arrangement" });
+          const arrangementEvidence = [];
+          const responsiveDualArrangement = profile.name === "desktop"
+            ? "side-by-side"
+            : "stacked";
+          for (const [requested, effective, expectedRendererCount] of [
+            ["auto", responsiveDualArrangement, 2],
+            ["side-by-side", responsiveDualArrangement, 2],
+            ["stacked", "stacked", 2],
+            ["2d-only", "2d-only", 1],
+            ["3d-only", "3d-only", 1]
+          ]) {
+            await arrangement.selectOption(requested);
+            await page.waitForFunction(
+              ({ effectiveValue, requestedValue }) => {
+                const graph = document.querySelector(".phase195-graph-workspace");
+                return graph?.getAttribute("data-graph-layout") === requestedValue
+                  && graph?.getAttribute("data-effective-arrangement") === effectiveValue;
+              },
+              { effectiveValue: effective, requestedValue: requested }
+            );
+            const mountedRendererCount = await workspace
+              .locator(".phase180-graph-panel > [data-graph-dimension]")
+              .count();
+            if (mountedRendererCount !== expectedRendererCount) {
+              throw new Error(`${profile.name} Phase 195 arrangement ${requested} mounted the wrong renderer count.`);
+            }
+            arrangementEvidence.push({
+              effective,
+              mounted_renderer_count: mountedRendererCount,
+              requested
+            });
+          }
+          await expectVisible(
+            page.getByText(/Saved settings v\d+/).first(),
+            `${profile.name} saved Phase 195 arrangement`
+          );
+          if (
+            graphRoutes.preferences().settings.simple.arrangement !== "THREE_D_ONLY"
+            || !graphRoutes.requests.some((request) => request.method === "PUT")
+          ) {
+            throw new Error(`${profile.name} Phase 195 arrangement was not persisted through the versioned preference route.`);
+          }
+
+          await page.goto(`${frontendUrl}/member/graph`);
+          await expectVisible(
+            page.getByRole("heading", { name: "3D Graph" }),
+            `${profile.name} reloaded saved 3D-only arrangement`
+          );
+          await page.waitForFunction(() => {
+            const graph = document.querySelector(".phase195-graph-workspace");
+            return graph?.getAttribute("data-graph-layout") === "3d-only"
+              && graph?.getAttribute("data-effective-arrangement") === "3d-only";
+          });
+          const restoredLayout = {
+            effective: await workspace.getAttribute("data-effective-arrangement"),
+            requested: await workspace.getAttribute("data-graph-layout")
+          };
+          if (await page.getByRole("heading", { name: "2D Graph" }).count()) {
+            throw new Error(`${profile.name} reload did not restore the saved 3D-only arrangement.`);
+          }
+          const persistedPreference = graphRoutes.preferences();
+          const persistedArrangement = persistedPreference.settings.simple.arrangement;
+          const persistedPreferenceVersion = persistedPreference.version;
+
+          if (profile.name === "desktop") {
+            await workspace
+              .locator(":scope > .phase180-graph-control-bar")
+              .getByRole("button", { name: "Settings", exact: true })
+              .click();
+            graphRoutes.failNextMutation(409);
+            await page.getByLabel("2D layout").selectOption("HIERARCHY_TREE");
+            await expectVisible(
+              page.getByText(/Settings changed in another session/i).first(),
+              "Phase 195 preference conflict"
+            );
+            graphRoutes.failNextMutation(503);
+            await page.getByLabel("3D pattern").selectOption("SPHERICAL_SHELLS");
+            await expectVisible(
+              page.getByText(/Settings could not be saved.*remains local/i).first(),
+              "Phase 195 preference error"
+            );
+            graphRoutes.failNextMutation(409);
+            await page.getByRole("button", { name: "Delete all saved graph overrides" }).click();
+            await expectVisible(
+              page.getByText(/Reset conflict.*Reload the latest settings/i).first(),
+              "Phase 195 reset conflict"
+            );
+            const resetResponsePromise = page.waitForResponse((response) =>
+              response.url().includes("/graph/preferences")
+              && response.request().method() === "DELETE"
+            );
+            await page.getByRole("button", { name: "Delete all saved graph overrides" }).click();
+            const resetResponse = await resetResponsePromise;
+            if (resetResponse.status() !== 200) {
+              throw new Error(
+                `Phase 195 preference reset returned ${resetResponse.status()}: `
+                + await resetResponse.text()
+              );
+            }
+            await expectVisible(
+              page.getByText("Canonical defaults").first(),
+              "Phase 195 canonical preference reset readback"
+            );
+            await page.waitForFunction(() =>
+              document.querySelector(".phase195-graph-workspace")?.getAttribute("data-graph-layout") === "auto"
+            );
+            const successfulResetRequest = graphRoutes.requests.at(-1);
+            if (
+              graphRoutes.preferences().version !== 0
+              || successfulResetRequest?.method !== "DELETE"
+              || successfulResetRequest.body.reset_scope !== "ALL"
+            ) {
+              throw new Error(
+                "Phase 195 preference reset did not return canonical defaults: "
+                + JSON.stringify({
+                  request: successfulResetRequest,
+                  version: graphRoutes.preferences().version
+                })
+              );
+            }
+
+            await page.getByRole("textbox", { name: "Search both graphs" }).fill("Soldier B");
+            const jsonPromise = page.waitForEvent("download");
+            await page.getByRole("button", { name: "Export JSON" }).click();
+            const jsonDownload = await jsonPromise;
+            if (jsonDownload.suggestedFilename() !== "entral-graph-v9.json") {
+              throw new Error(`Unexpected Phase 195 JSON filename ${jsonDownload.suggestedFilename()}.`);
+            }
+            const exportedJson = JSON.parse(await downloadText(jsonDownload));
+            if (
+              exportedJson.metadata.entity_count !== 5
+              || !exportedJson.entities.some((entity) => entity.entity_id === phase195AcceptanceIds.soldierB)
+              || exportedJson.entities.some((entity) => entity.entity_id === phase195AcceptanceIds.soldierA)
+            ) {
+              throw new Error(`Phase 195 JSON export escaped the active authorized projection: ${JSON.stringify(exportedJson.metadata)}`);
+            }
+            const csvPromise = page.waitForEvent("download");
+            await page.getByRole("button", { name: "Export CSV" }).click();
+            const csvDownload = await csvPromise;
+            const exportedCsv = await downloadText(csvDownload);
+            if (
+              csvDownload.suggestedFilename() !== "entral-graph-v9.csv"
+              || !exportedCsv.includes(phase195AcceptanceIds.soldierB)
+              || exportedCsv.includes(phase195AcceptanceIds.soldierA)
+            ) {
+              throw new Error("Phase 195 CSV export escaped the active authorized projection.");
+            }
+            const imagePromise = page.waitForEvent("download");
+            await page.getByRole("button", { name: "Export current view image" }).click();
+            const imageDownload = await imagePromise;
+            if (imageDownload.suggestedFilename() !== "entral-current-graph-v9.png") {
+              throw new Error(`Unexpected Phase 195 image filename ${imageDownload.suggestedFilename()}.`);
+            }
+          }
+
+          browserEvidence.push({
+            arrangement_checks: arrangementEvidence,
+            authorized_detail_parity: {
+              active_alert: twoDDetailValues.Alert,
+              attribute_readback: canonicalDetailAttributes,
+              child_count_2d: Number(twoDDetailValues.Children),
+              child_count_3d: Number(threeDDetailValues.Children),
+              current_mission_2d: twoDDetailValues.Mission,
+              current_mission_3d: threeDDetailValues["Current objective"],
+              latest_material_result_3d: threeDDetailValues["Latest material result"],
+              selected_entity_id: phase195AcceptanceIds.commanderB
+            },
+            geometry,
+            initial_effective_arrangement: effectiveArrangement,
+            persisted_arrangement: persistedArrangement,
+            persisted_preference_version: persistedPreferenceVersion,
+            profile: profile.name,
+            restored_layout: restoredLayout,
+            screenshot: `phase195-${profile.name}-dual-graph.png`,
+            telemetry_renderers: [...telemetryRenderers].sort(),
+            viewport: profile.viewport
+          });
+          if (runtimeErrors.length) {
+            throw new Error(`Unexpected ${profile.name} Phase 195 browser errors:\n${runtimeErrors.join("\n")}`);
+          }
+        } finally {
+          await context.close();
+        }
+      }
+      await writeFile(
+        join(
+          repoRoot,
+          "test-results",
+          "e2e",
+          "phase195-dual-graph-browser-fixture.json"
+        ),
+        `${JSON.stringify({
+          accepted_production_evidence: false,
+          browser_session: "LOCAL_MEMORY_AUTHENTICATED",
+          evidence_class: "INTERCEPTED_BROWSER_FIXTURE",
+          generated_at: new Date().toISOString(),
+          profiles: browserEvidence,
+          route_interception: true,
+          status: "passed",
+          supports_local_vectors: [
+            "PHASE-195-AC-07",
+            "PHASE-195-AC-08",
+            "PHASE-195-AC-09",
+            "PHASE-195-AC-14"
+          ],
+          cannot_close: ["PHASE-195-AC-18"]
+        }, null, 2)}\n`,
+        "utf8"
+      );
+    }
+  },
+  {
+    name: "Phase 195 all-eight Marshal browser fixture preserves exact 132-entity drilldown parity",
+    run: async () => {
+      const {
+        hierarchy,
+        marshalCases,
+        rootId
+      } = phase195AllMarshalAcceptanceFixture();
+      const expectedProjection = phase195GraphProjection(
+        hierarchy,
+        "19520000-0000-4000-8000-999999999999"
+      );
+      if (
+        hierarchy.entities.length !== 132
+        || expectedProjection.edges.length !== 131
+        || marshalCases.length !== 8
+      ) {
+        throw new Error(
+          `All-eight Marshal fixture lost its exact 132/131/8 contract: ${JSON.stringify({
+            edges: expectedProjection.edges.length,
+            entities: hierarchy.entities.length,
+            marshals: marshalCases.length
+          })}`
+        );
+      }
+
+      const { context, page } = await newPage({
+        viewport: { width: 1440, height: 1000 }
+      });
+      const runtimeErrors = [];
+      const drilldownEvidence = [];
+      try {
+        await page.route(
+          "**/member/api/v1/member/organizations/*/hierarchy",
+          async (route) => {
+            await route.fulfill({
+              contentType: "application/json",
+              json: hierarchy,
+              status: 200
+            });
+          }
+        );
+        await installPhase195GraphRoutes(page, hierarchy);
+        page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
+        page.on("console", (message) => {
+          const text = message.text();
+          const location = message.location();
+          const expectedDashboardBootstrapMiss =
+            location.url.endsWith("/api/v1/control-plane/portfolio/summary")
+            && /404|Not Found/i.test(text);
+          if (message.type() === "error" && !expectedDashboardBootstrapMiss) {
+            runtimeErrors.push(`console: ${text}`);
+          }
+        });
+        await enterWorkspace(page, uniqueEmail("phase195-all-marshals"));
+
+        for (const marshalCase of marshalCases) {
+          await page.goto(
+            `${frontendUrl}/member/graph?arrangement=side-by-side&entity=${marshalCase.marshalId}`
+          );
+          const workspace = page.locator(".phase195-graph-workspace");
+          await expectVisible(
+            workspace,
+            `${marshalCase.name} Phase 195 drilldown workspace`,
+            30_000
+          );
+          const renderers = [
+            workspace.locator('.phase180-graph-panel > [data-graph-dimension="2d"]'),
+            workspace.locator('.phase180-graph-panel > [data-graph-dimension="3d"]')
+          ];
+          for (const [index, renderer] of renderers.entries()) {
+            await expectVisible(
+              renderer,
+              `${marshalCase.name} ${index === 0 ? "2D" : "3D"} renderer`,
+              30_000
+            );
+            const completeIds = (
+              await renderer.getAttribute("data-canonical-entity-ids") ?? ""
+            ).split(",").filter(Boolean).sort();
+            if (
+              completeIds.length !== 132
+              || JSON.stringify(completeIds)
+                !== JSON.stringify(hierarchy.entities.map((entity) => entity.entity_id).sort())
+            ) {
+              throw new Error(
+                `${marshalCase.name} ${index === 0 ? "2D" : "3D"} did not receive the exact 132 authorized IDs.`
+              );
+            }
+          }
+
+          await page.getByRole("button", { name: "Isolate lineage" }).click();
+          const expectedEntityIds = [
+            rootId,
+            marshalCase.marshalId,
+            ...marshalCase.generalIds
+          ].sort();
+          const expectedEdgeIds = [
+            `hierarchy:${rootId}:${marshalCase.marshalId}`,
+            ...marshalCase.generalIds.map(
+              (generalId) =>
+                `hierarchy:${marshalCase.marshalId}:${generalId}`
+            )
+          ].sort();
+          await page.waitForFunction(
+            (count) =>
+              document.querySelector(".phase195-graph-workspace")
+                ?.getAttribute("data-canonical-entity-count") === String(count),
+            expectedEntityIds.length
+          );
+
+          const parity = await Promise.all(renderers.map(async (renderer) => ({
+            edgeIds: (
+              await renderer.getAttribute("data-canonical-edge-ids") ?? ""
+            ).split(",").filter(Boolean).sort(),
+            entityIds: (
+              await renderer.getAttribute("data-canonical-entity-ids") ?? ""
+            ).split(",").filter(Boolean).sort()
+          })));
+          for (const [index, rendererEvidence] of parity.entries()) {
+            if (
+              JSON.stringify(rendererEvidence.entityIds)
+                !== JSON.stringify(expectedEntityIds)
+              || JSON.stringify(rendererEvidence.edgeIds)
+                !== JSON.stringify(expectedEdgeIds)
+            ) {
+              throw new Error(
+                `${marshalCase.name} ${index === 0 ? "2D" : "3D"} drilldown diverged from its exact authorized Generals.`
+              );
+            }
+          }
+          drilldownEvidence.push({
+            edge_count: expectedEdgeIds.length,
+            entity_count: expectedEntityIds.length,
+            general_count: marshalCase.generalIds.length,
+            marshal_id: marshalCase.marshalId
+          });
+        }
+
+        await writeFile(
+          join(
+            repoRoot,
+            "test-results",
+            "e2e",
+            "phase195-all-eight-marshal-browser-fixture.json"
+          ),
+          `${JSON.stringify({
+            accepted_production_evidence: false,
+            evidence_class: "INTERCEPTED_BROWSER_FIXTURE",
+            generated_at: new Date().toISOString(),
+            hierarchy_edge_count: 131,
+            hierarchy_entity_count: 132,
+            marshals: drilldownEvidence,
+            status: "passed",
+            vectors: ["PHASE-195-AC-15"]
+          }, null, 2)}\n`,
+          "utf8"
+        );
+        if (runtimeErrors.length) {
+          throw new Error(
+            `Unexpected all-eight Marshal browser errors:\n${runtimeErrors.join("\n")}`
+          );
+        }
+      } finally {
+        await context.close();
+      }
+    }
+  },
+  {
+    name: "Phase 190 lifecycle browser fixture rehydrates pause, resume, and undo across reload",
     run: async () => {
       const { context, page } = await newPage({ viewport: { width: 1440, height: 1000 } });
       const runtimeErrors = [];
@@ -664,6 +1911,34 @@ const tests = [
         await expectVisible(page.getByRole("heading", { name: "Infrastructure", exact: true }), "Phase 190 Infrastructure");
         await page.getByRole("treeitem", { name: /Atlas Operations, SOLDIER/ }).click();
         const lifecyclePanel = page.getByRole("region", { name: "Governed pause and resume" });
+        const reopenPersistedTarget = async (actionName, version) => {
+          await page.reload({ waitUntil: "domcontentloaded" });
+          await closeAcademyIfOpen(page);
+          try {
+            await page.getByRole("heading", {
+              name: "Infrastructure",
+              exact: true
+            }).waitFor({ state: "visible", timeout: 10_000 });
+          } catch (error) {
+            const diagnostic = await page.evaluate(() => ({
+              body: document.body.innerText.slice(0, 2_000),
+              title: document.title,
+              url: window.location.href
+            })).catch(() => ({ body: "", title: "", url: page.url() }));
+            throw new Error(
+              `Reloaded Phase 190 Infrastructure at version ${version} was not visible: ${JSON.stringify(diagnostic)}. ${error instanceof Error ? error.message : String(error)}`
+            );
+          }
+          await page.getByRole("treeitem", { name: /Atlas Operations, SOLDIER/ }).click();
+          await expectVisible(
+            lifecyclePanel.getByRole("button", { name: actionName }),
+            `Rehydrated ${actionName} control at version ${version}`
+          );
+          await expectVisible(
+            lifecyclePanel.getByText(new RegExp(`Optimistic v${version}\\b`)),
+            `Rehydrated lifecycle version ${version}`
+          );
+        };
         await expectVisible(lifecyclePanel, "Governed lifecycle panel");
         await lifecyclePanel.getByLabel("Operational reason").fill("Pause new work while the verified dependency is repaired.");
         await lifecyclePanel.getByRole("button", { name: "Pause entity" }).click();
@@ -686,23 +1961,100 @@ const tests = [
         ) {
           throw new Error(`Pause request lost its authority, version, or containment contract: ${JSON.stringify(pauseRequest)}`);
         }
+        if (
+          lifecycle.persistedState(phase195MemoryIds.soldier)?.status !== "PAUSED"
+          || lifecycle.persistedState(phase195MemoryIds.soldier)?.version !== 2
+        ) {
+          throw new Error("Pause did not update the browser fixture's durable hierarchy readback.");
+        }
+
+        await reopenPersistedTarget("Resume entity", 2);
+        await lifecyclePanel.getByLabel("Operational reason").fill(
+          "Resume verified work after the dependency recovery completed."
+        );
+        await lifecyclePanel.getByRole("button", { name: "Resume entity" }).click();
+        await expectVisible(lifecyclePanel.getByText("Resumed and verified"), "Verified direct resume receipt");
+        await expectVisible(lifecyclePanel.getByText(/Version 2 .* 3 .* event 93/), "Direct resume version and event convergence");
+        if (lifecycle.requests.length !== 2) {
+          throw new Error(`Direct resume produced ${lifecycle.requests.length} total lifecycle requests instead of two.`);
+        }
+        const directResumeRequest = lifecycle.requests[1];
+        if (
+          directResumeRequest.action_type !== "RESUME"
+          || directResumeRequest.expected_version !== 2
+          || directResumeRequest.restores_action_id
+          || directResumeRequest.rollback_plan?.action !== "PAUSE"
+        ) {
+          throw new Error(`Direct resume lost its version or rollback contract: ${JSON.stringify(directResumeRequest)}`);
+        }
+        if (
+          lifecycle.persistedState(phase195MemoryIds.soldier)?.status !== "ACTIVE"
+          || lifecycle.persistedState(phase195MemoryIds.soldier)?.version !== 3
+        ) {
+          throw new Error("Resume did not update the browser fixture's durable hierarchy readback.");
+        }
+
+        await reopenPersistedTarget("Pause entity", 3);
+        await lifecyclePanel.getByLabel("Operational reason").fill(
+          "Pause once more to verify governed undo lineage."
+        );
+        await lifecyclePanel.getByRole("button", { name: "Pause entity" }).click();
+        await expectVisible(lifecyclePanel.getByText("Paused and verified"), "Second verified pause receipt");
+        await expectVisible(lifecyclePanel.getByText(/Version 3 .* 4 .* event 94/), "Second pause version and event convergence");
+        if (lifecycle.requests.length !== 3) {
+          throw new Error(`Second pause produced ${lifecycle.requests.length} lifecycle requests instead of three.`);
+        }
+        const secondPauseRequest = lifecycle.requests[2];
+        if (
+          secondPauseRequest.action_type !== "PAUSE"
+          || secondPauseRequest.expected_version !== 3
+        ) {
+          throw new Error(`Second pause lost its expected version: ${JSON.stringify(secondPauseRequest)}`);
+        }
+        const secondPauseActionId = lifecycle.getPauseActionId();
 
         await lifecyclePanel.getByRole("button", { name: "Undo" }).click();
-        await expectVisible(lifecyclePanel.getByText("Resumed and verified"), "Verified restoration receipt");
-        await expectVisible(lifecyclePanel.getByText(/Version 2 .* 3 .* event 93/), "Restoration version and event convergence");
-        if (lifecycle.requests.length !== 2) {
-          throw new Error(`Undo produced ${lifecycle.requests.length} total lifecycle requests instead of two.`);
+        await expectVisible(lifecyclePanel.getByText("Resumed and verified"), "Verified undo receipt");
+        await expectVisible(lifecyclePanel.getByText(/Version 4 .* 5 .* event 95/), "Undo version and event convergence");
+        if (lifecycle.requests.length !== 4) {
+          throw new Error(`Undo produced ${lifecycle.requests.length} total lifecycle requests instead of four.`);
         }
-        const restorationRequest = lifecycle.requests[1];
+        const undoRequest = lifecycle.requests[3];
         if (
-          restorationRequest.action_type !== "RESUME"
-          || restorationRequest.expected_version !== 2
-          || restorationRequest.restores_action_id !== lifecycle.getPauseActionId()
-          || restorationRequest.rollback_plan?.action !== "PAUSE"
+          undoRequest.action_type !== "RESUME"
+          || undoRequest.expected_version !== 4
+          || undoRequest.restores_action_id !== secondPauseActionId
+          || undoRequest.rollback_plan?.action !== "PAUSE"
         ) {
-          throw new Error(`Restoration did not preserve the action lineage and next version: ${JSON.stringify(restorationRequest)}`);
+          throw new Error(`Undo did not preserve action lineage and next version: ${JSON.stringify(undoRequest)}`);
+        }
+        if (
+          lifecycle.persistedState(phase195MemoryIds.soldier)?.status !== "ACTIVE"
+          || lifecycle.persistedState(phase195MemoryIds.soldier)?.version !== 5
+        ) {
+          throw new Error("Undo did not update the browser fixture's durable hierarchy readback.");
         }
 
+        await reopenPersistedTarget("Pause entity", 5);
+        await writeFile(
+          join(
+            repoRoot,
+            "test-results",
+            "e2e",
+            "phase195-ac05-lifecycle-browser-fixture.json"
+          ),
+          `${JSON.stringify({
+            accepted_production_evidence: false,
+            evidence_class: "INTERCEPTED_BROWSER_FIXTURE",
+            final_status: "ACTIVE",
+            final_version: 5,
+            generated_at: new Date().toISOString(),
+            request_actions: lifecycle.requests.map((request) => request.action_type),
+            status: "passed",
+            vectors: ["PHASE-195-AC-05"]
+          }, null, 2)}\n`,
+          "utf8"
+        );
         const overlay = await page.locator(
           "[data-nextjs-dialog], .vite-error-overlay, #webpack-dev-server-client-overlay"
         ).count();
@@ -728,6 +2080,7 @@ const tests = [
       });
       const runtimeErrors = [];
       try {
+        await installPhase195GraphRoutes(page);
         await enterWorkspace(page, uniqueEmail("phase180-member"));
         await page.goto(`${frontendUrl}/member/dashboard`);
         await expectUrl(page, /\/member\/dashboard$/, "Phase 180 member Dashboard");
@@ -763,7 +2116,9 @@ const tests = [
         await expectVisible(page.getByRole("heading", { name: "3D Graph" }), "3D Graph heading");
         const canvas = page.getByLabel(/Canonical Universe Graph with 5 entities/i);
         await expectVisible(canvas, "Canonical 2D Graph canvas");
-        const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
+        const original3DCanvas = page.getByRole("application", {
+          name: /Canonical 3D Universe Graph with 5 entities/i
+        });
         await expectVisible(original3DCanvas, "Original full 3D Universe Graph canvas", 30_000);
         const touchScroll = await context.newCDPSession(page);
         try {
@@ -889,8 +2244,9 @@ const tests = [
         await page.setViewportSize({ width: 390, height: 844 });
         await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Graph selection after portrait recovery");
 
-        await page.getByRole("button", { name: "Jump to 3D" }).click();
-        await expectUrl(page, /\/member\/graph\?graph=3d$/, "Original 3D Universe Graph focus");
+        await original3DCanvas.scrollIntoViewIfNeeded();
+        await original3DCanvas.focus();
+        await expectUrl(page, /\/member\/graph(?:\?.*)?$/, "Original 3D Universe Graph focus");
         await expectVisible(page.getByRole("heading", { name: "2D Graph" }), "2D Graph remains mounted beside 3D");
         const threeDimensionalSnapshot = await page.locator(".phase180-graph-3d").evaluate((element) => ({
           entities: element.getAttribute("data-canonical-entity-count"),
@@ -904,40 +2260,23 @@ const tests = [
             `2D and 3D Graphs did not share one canonical snapshot: ${JSON.stringify({ threeDimensionalSnapshot, twoDimensionalSnapshot })}`
           );
         }
-        await expectVisible(page.getByRole("toolbar", { name: "Universe Graph toolbar" }), "Original 3D Graph toolbar");
-        await expectVisible(page.getByRole("button", { name: "Zoom in 3D Graph" }), "3D Graph zoom-in control");
-        await expectVisible(page.getByRole("button", { name: "Zoom out 3D Graph" }), "3D Graph zoom-out control");
-        await page.getByRole("button", { name: "Graph settings" }).click();
-        const formationGravity = page.getByRole("slider", { name: "3D formation gravity" });
-        await expectVisible(formationGravity, "3D view-only formation gravity control");
-        await expectVisible(
-          page.getByText(/Visual formation only\. Agent activity, tasks, and canonical updates continue unchanged\./i),
-          "3D gravity activity boundary"
-        );
-        await formationGravity.fill("1.5");
-        if (await formationGravity.inputValue() !== "1.5") {
-          throw new Error("3D formation gravity did not accept a precise adjustment.");
-        }
-        await page.getByRole("button", { name: "Close graph settings" }).click();
-        const toolbarGeometry = await page.getByRole("toolbar", { name: "Universe Graph toolbar" }).evaluate((toolbar) => {
-          const toolbarRect = toolbar.getBoundingClientRect();
-          const stageRect = toolbar.closest(".phase180-graph-3d-stage")?.getBoundingClientRect();
-          const buttons = [...toolbar.querySelectorAll("button")].map((button) => button.getBoundingClientRect());
-          return {
-            buttonsInside: buttons.every((button) => (
-              button.left >= toolbarRect.left - 1
-              && button.right <= toolbarRect.right + 1
-              && button.top >= toolbarRect.top - 1
-              && button.bottom <= toolbarRect.bottom + 1
-            )),
-            insideStage: Boolean(stageRect)
-              && toolbarRect.left >= stageRect.left - 1
-              && toolbarRect.right <= stageRect.right + 1,
-            noHorizontalOverflow: toolbar.scrollWidth <= toolbar.clientWidth + 1
-          };
+        const sharedGraphControls = page.getByRole("region", {
+          name: "Shared graph navigation and filters"
         });
-        if (!toolbarGeometry.buttonsInside || !toolbarGeometry.insideStage || !toolbarGeometry.noHorizontalOverflow) {
-          throw new Error(`3D Graph toolbar controls overflowed their embedded panel: ${JSON.stringify(toolbarGeometry)}`);
+        await expectVisible(sharedGraphControls, "Shared canonical Graph controls");
+        await expectVisible(
+          sharedGraphControls.getByRole("button", { name: "Fit visible" }),
+          "Shared canonical fit control"
+        );
+        if (
+          await page.getByRole("toolbar", { name: "Universe Graph toolbar" }).isVisible()
+            .catch(() => false)
+          || await page.getByRole("button", { name: "Graph settings" }).isVisible()
+            .catch(() => false)
+          || await page.getByRole("slider", { name: "3D formation gravity" }).isVisible()
+            .catch(() => false)
+        ) {
+          throw new Error("Phase 195 exposed duplicate legacy 3D controls beside the shared canonical controls.");
         }
         const threeDimensionalInspector = page.getByLabel("Selected graph entity");
         await expectVisible(threeDimensionalInspector, "Original 3D Graph selected-entity drawer");
@@ -960,7 +2299,7 @@ const tests = [
         const stopMovement = page.getByRole("button", { name: "Stop movement" });
         await expectVisible(stopMovement, "Visible graph-only movement control");
         await stopMovement.click();
-        await expectVisible(page.getByText(/Graph movement paused\. Agent activity and live canonical updates continue\./i), "Truthful visual-pause boundary");
+        await expectVisible(page.getByText(/Graph movement is paused\. Agent activity and live canonical updates continue\./i), "Truthful visual-pause boundary");
         const pausedWorkspaceState = await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion");
         if (pausedWorkspaceState !== "paused") {
           throw new Error(`Stop movement did not pause the graph workspace: ${pausedWorkspaceState}`);
@@ -981,8 +2320,9 @@ const tests = [
           throw new Error("Resume movement did not restart graph animation.");
         }
 
-        await page.getByRole("button", { name: "Jump to 2D" }).click();
-        await expectUrl(page, /\/member\/graph\?graph=2d$/, "Retained 2D Graph focus");
+        await canvas.scrollIntoViewIfNeeded();
+        await canvas.focus();
+        await expectUrl(page, /\/member\/graph(?:\?.*)?$/, "Retained 2D Graph focus");
         await expectVisible(original3DCanvas, "3D Graph remains mounted beside 2D");
 
         await context.setOffline(true);
@@ -1101,7 +2441,9 @@ const tests = [
           await closeAcademyIfOpen(page);
           const canvas = page.getByRole("application", { name: /Canonical Universe Graph with 10000 entities/i });
           await expectVisible(canvas, `${profile.name} 10,000-entity production Graph`, 30_000);
-          const original3DCanvas = page.getByRole("application", { name: "3D interactive ENTRAL neuron graph" });
+          const original3DCanvas = page.getByRole("application", {
+            name: /Canonical 3D Universe Graph with 10000 entities/i
+          });
           await expectVisible(original3DCanvas, `${profile.name} 10,000-entity original 3D Graph`, 30_000);
           const graphReadyMs = performance.now() - graphStart;
           if (graphReadyMs > 30_000) {
@@ -1124,9 +2466,61 @@ const tests = [
           if (!profile.isMobile && (Math.abs(panelGeometry.three.top - panelGeometry.two.top) > 2 || panelGeometry.three.left <= panelGeometry.two.left)) {
             throw new Error("Desktop Graph panels did not render side by side.");
           }
-          await page.getByRole("button", { name: "Fit", exact: true }).click();
+          await page.getByRole("button", { name: "Fit visible" }).click();
+          const twoDGraphSurface = page.locator('[data-graph-dimension="2d"]');
+          await page.waitForFunction(() => {
+            const surface = document.querySelector('[data-graph-dimension="2d"]');
+            return surface?.getAttribute("data-rendered-canonical-id-count")
+              === surface?.getAttribute("data-canonical-entity-count");
+          });
+          const renderedCanonicalCoverage = await twoDGraphSurface.evaluate((surface) => ({
+            algorithm: surface.getAttribute(
+              "data-rendered-canonical-id-signature-algorithm"
+            ),
+            canonical_ids: (
+              surface.getAttribute("data-canonical-entity-ids") ?? ""
+            ).split(",").filter(Boolean),
+            rendered_count: Number(
+              surface.getAttribute("data-rendered-canonical-id-count")
+            ),
+            rendered_signature: surface.getAttribute(
+              "data-rendered-canonical-id-signature"
+            )
+          }));
+          const expectedRenderedSignature = phase195RenderedIdSignature(
+            renderedCanonicalCoverage.canonical_ids
+          );
+          if (
+            renderedCanonicalCoverage.algorithm
+              !== "fnv1a32:entral-phase-195-2d-render-frame-v1"
+            || renderedCanonicalCoverage.canonical_ids.length !== 10_000
+            || renderedCanonicalCoverage.rendered_count !== 10_000
+            || renderedCanonicalCoverage.rendered_signature
+              !== expectedRenderedSignature
+          ) {
+            throw new Error(
+              `${profile.name} 2D render frame dropped or substituted canonical identities: `
+              + JSON.stringify({
+                algorithm: renderedCanonicalCoverage.algorithm,
+                canonical_count: renderedCanonicalCoverage.canonical_ids.length,
+                expected_signature: expectedRenderedSignature,
+                rendered_count: renderedCanonicalCoverage.rendered_count,
+                rendered_signature: renderedCanonicalCoverage.rendered_signature
+              })
+            );
+          }
           if (profile.isMobile) {
-            await page.getByRole("button", { name: "Interact with 2D Graph" }).click();
+            const touchInteractionControl = page.locator(
+              '[data-panel="2d"] .phase180-touch-interaction-toggle'
+            );
+            await expectVisible(
+              touchInteractionControl,
+              "Phone 2D Graph touch-interaction control"
+            );
+            if ((await touchInteractionControl.textContent())?.trim() !== "Interact with 2D Graph") {
+              throw new Error("Phone 2D Graph touch-interaction control did not expose its accessible activation label.");
+            }
+            await touchInteractionControl.click();
             if (await canvas.getAttribute("data-touch-interaction") !== "graph") {
               throw new Error("Phone Graph did not activate explicit touch interaction.");
             }
@@ -1192,28 +2586,59 @@ const tests = [
             } finally {
               await touch.detach();
             }
-            await page.getByRole("button", { name: "Release 2D Graph touch controls" }).click();
+            if ((await touchInteractionControl.textContent())?.trim() !== "Release 2D Graph touch controls") {
+              throw new Error("Phone 2D Graph touch-interaction control did not expose its accessible release label.");
+            }
+            await touchInteractionControl.click();
             if (await canvas.getAttribute("data-touch-interaction") !== "page") {
               throw new Error("Phone Graph did not restore page-touch scrolling.");
             }
           }
           await canvas.focus();
-          const graphInteractionStart = performance.now();
+          await canvas.evaluate((element) => {
+            const timing = { detailAt: null, keydownAt: null };
+            window.__phase180GraphKeyboardTiming = timing;
+            const observer = new MutationObserver(() => {
+              if (document.querySelector('[data-canonical-detail-surface="2d"]')) {
+                timing.detailAt = performance.now();
+                observer.disconnect();
+              }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            const recordKeydown = (event) => {
+              if (event.key !== "ArrowDown") return;
+              timing.keydownAt = performance.now();
+              element.removeEventListener("keydown", recordKeydown, true);
+            };
+            element.addEventListener("keydown", recordKeydown, true);
+          });
           await page.keyboard.press("ArrowDown");
-          await page.keyboard.press("+");
           const graphDetails = page.getByRole("complementary", { name: /ENTRAL graph details/i });
           await expectVisible(graphDetails, `${profile.name} graph keyboard selection`);
-          const graphInteractionMs = performance.now() - graphInteractionStart;
+          const graphInteractionTiming = await page.evaluate(() => {
+            const timing = window.__phase180GraphKeyboardTiming;
+            delete window.__phase180GraphKeyboardTiming;
+            return timing;
+          });
+          if (
+            typeof graphInteractionTiming?.keydownAt !== "number"
+            || typeof graphInteractionTiming.detailAt !== "number"
+          ) {
+            throw new Error(`${profile.name} Graph keyboard interaction timing evidence was incomplete.`);
+          }
+          const graphInteractionMs = graphInteractionTiming.detailAt - graphInteractionTiming.keydownAt;
           if (graphInteractionMs > 2_000) {
             throw new Error(`${profile.name} Graph keyboard interaction exceeded 2s: ${graphInteractionMs.toFixed(1)}ms.`);
           }
+          await page.keyboard.press("+");
           await page.keyboard.press("Escape");
           await graphDetails.waitFor({ state: "hidden", timeout: 2_000 }).catch(() => {
             throw new Error(`${profile.name} Escape did not clear the graph selection before switching views.`);
           });
 
           const graph3DStart = performance.now();
-          await page.getByRole("button", { name: "Jump to 3D" }).click();
+          await original3DCanvas.scrollIntoViewIfNeeded();
+          await original3DCanvas.focus();
           const graph3DReadyMs = performance.now() - graph3DStart;
           const graph3DSnapshot = await page.locator(".phase180-graph-3d").evaluate((element) => ({
             entities: element.getAttribute("data-canonical-entity-count"),
@@ -1222,7 +2647,7 @@ const tests = [
           if (graph3DSnapshot.entities !== "10000" || graph3DSnapshot.event !== "9") {
             throw new Error(`${profile.name} 3D Graph did not retain the 10,000-entity canonical event: ${JSON.stringify(graph3DSnapshot)}`);
           }
-          await page.getByRole("button", { name: "Fit view" }).click();
+          await page.getByRole("button", { name: "Fit visible" }).click();
           await page.getByRole("button", { name: "Stop movement" }).click();
           if (await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion") !== "paused") {
             throw new Error(`${profile.name} Stop movement did not pause both Graph views.`);
@@ -1230,12 +2655,14 @@ const tests = [
           await original3DCanvas.focus();
           await page.keyboard.press("+");
           await page.getByRole("button", { name: "Resume movement" }).click();
-          await page.getByRole("button", { name: "Jump to 2D" }).click();
+          await canvas.scrollIntoViewIfNeeded();
+          await canvas.focus();
           await expectVisible(canvas, `${profile.name} 2D Graph after simultaneous 3D parity verification`, 30_000);
 
           const infrastructureStart = performance.now();
           const infrastructureLink = page.getByRole("link", { name: "Infrastructure" });
           if (profile.isMobile) {
+            await infrastructureLink.scrollIntoViewIfNeeded();
             const hitTarget = await infrastructureLink.evaluate((element) => {
               const rect = element.getBoundingClientRect();
               const x = rect.left + rect.width / 2;
@@ -1293,6 +2720,7 @@ const tests = [
             `[e2e:phase180-scale] ${profile.name} graph_ready_ms=${graphReadyMs.toFixed(1)} `
             + `graph_interaction_ms=${graphInteractionMs.toFixed(1)} graph_3d_ready_ms=${graph3DReadyMs.toFixed(1)} `
             + `infrastructure_search_ms=${infrastructureReadyMs.toFixed(1)} `
+            + `rendered_canonical_ids=${renderedCanonicalCoverage.rendered_count} `
             + `rendered_tree_rows=${renderedRows}\n`
           );
           phase180ScaleMeasurements.push({
@@ -1301,6 +2729,11 @@ const tests = [
             graph_ready_ms: Number(graphReadyMs.toFixed(1)),
             infrastructure_search_ms: Number(infrastructureReadyMs.toFixed(1)),
             profile: profile.name,
+            rendered_canonical_id_count: renderedCanonicalCoverage.rendered_count,
+            rendered_canonical_id_signature:
+              renderedCanonicalCoverage.rendered_signature,
+            rendered_canonical_id_signature_algorithm:
+              renderedCanonicalCoverage.algorithm,
             rendered_tree_rows: renderedRows,
             viewport: profile.viewport
           });

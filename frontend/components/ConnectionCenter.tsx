@@ -1,14 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, FlaskConical, GitBranch, LockKeyhole, PlugZap, Rocket, ShieldAlert, Sparkles } from "lucide-react";
+import { CheckCircle2, FlaskConical, GitBranch, LockKeyhole, PlugZap, Rocket, ShieldAlert } from "lucide-react";
 import { apiFetch, ApiError } from "../lib/api";
 import {
-  buildMockToolExecution,
-  buildToolTestResult,
-  defaultToolRegistry,
   toolsByCategory,
-  type MockToolExecutionResult,
   type ToolRegistryEntry,
   type ToolTestResult
 } from "../lib/tool-registry";
@@ -49,7 +45,6 @@ type DevelopmentStatusResponse = {
 type ConnectionCenterProps = {
   latestRequest?: string;
   onEvent?: (message: string) => void;
-  onMockResult?: (result: MockToolExecutionResult) => void;
   onRegistryLoad?: (tools: ToolRegistryEntry[]) => void;
 };
 
@@ -67,10 +62,11 @@ function approvalLabel(tool: ToolRegistryEntry) {
   return "Standard approval policy";
 }
 
-export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, onRegistryLoad }: ConnectionCenterProps) {
-  const [tools, setTools] = useState<ToolRegistryEntry[]>(defaultToolRegistry);
+export function ConnectionCenter({ onEvent, onRegistryLoad }: ConnectionCenterProps) {
+  const [tools, setTools] = useState<ToolRegistryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeResult, setActiveResult] = useState<ToolTestResult | MockToolExecutionResult | null>(null);
+  const [activeResult, setActiveResult] = useState<ToolTestResult | null>(null);
+  const [activeError, setActiveError] = useState("");
   const [busyToolId, setBusyToolId] = useState<string | null>(null);
   const [developmentStatus, setDevelopmentStatus] = useState<DevelopmentStatusResponse | null>(null);
 
@@ -84,12 +80,18 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
         const statusResponse = await apiFetch<DevelopmentStatusResponse>("/connections/development-status", { timeoutMs: 8000 }).catch(() => null);
         if (isCancelled) return;
         setTools(response.items);
+        setActiveError("");
         setDevelopmentStatus(statusResponse);
         onRegistryLoad?.(response.items);
       } catch (error) {
         if (isCancelled) return;
-        setTools(defaultToolRegistry);
-        onEvent?.(error instanceof ApiError ? "Connection Center using local registry fallback." : "Connection Center registry fallback active.");
+        const message = error instanceof ApiError
+          ? `Connection registry unavailable (${error.status}). No local substitute was selected.`
+          : "Connection registry unavailable. No local substitute was selected.";
+        setTools([]);
+        setDevelopmentStatus(null);
+        setActiveError(message);
+        onEvent?.(message);
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -111,6 +113,7 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
 
   async function testTool(tool: ToolRegistryEntry) {
     setBusyToolId(tool.id);
+    setActiveError("");
     try {
       const response = await apiFetch<ToolResultResponse<ToolTestResult>>(`/connections/tools/${tool.id}/test`, {
         method: "POST",
@@ -118,31 +121,13 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
       });
       setActiveResult(response.result);
       onEvent?.(response.result.message);
-    } catch {
-      const fallback = buildToolTestResult(tool);
-      setActiveResult(fallback);
-      onEvent?.(fallback.message);
-    } finally {
-      setBusyToolId(null);
-    }
-  }
-
-  async function mockExecute(tool: ToolRegistryEntry) {
-    setBusyToolId(tool.id);
-    try {
-      const response = await apiFetch<ToolResultResponse<MockToolExecutionResult>>(`/connections/tools/${tool.id}/mock-execute`, {
-        method: "POST",
-        json: { request: latestRequest },
-        timeoutMs: 8000
-      });
-      setActiveResult(response.result);
-      onMockResult?.(response.result);
-      onEvent?.(response.result.message);
-    } catch {
-      const fallback = buildMockToolExecution(tool, latestRequest);
-      setActiveResult(fallback);
-      onMockResult?.(fallback);
-      onEvent?.(fallback.message);
+    } catch (error) {
+      const message = error instanceof ApiError
+        ? `${tool.name} provider test failed (${error.status}). No simulated result was substituted.`
+        : `${tool.name} provider test failed. No simulated result was substituted.`;
+      setActiveResult(null);
+      setActiveError(message);
+      onEvent?.(message);
     } finally {
       setBusyToolId(null);
     }
@@ -172,9 +157,9 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
             mode: "real"
           },
           {
-            description: "Missing credentials use local simulations before trust.",
-            label: "Mock Mode",
-            mode: "mock"
+            description: "Unavailable or unverified providers remain disabled and fail closed.",
+            label: "Unverified disabled",
+            mode: "read-only"
           },
           {
             description: "Repository, deployment, and provider health can run without write access.",
@@ -255,25 +240,27 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
                     : tool.requiredCredentials.length ? tool.requiredCredentials.join(", ") : "No credentials required"}
                 </p>
                 {tool.status === "Missing API Key" || tool.status === "Missing Credentials" || tool.status === "Mock Mode" ? (
-                  <p className="connection-mock-note">Mock Mode active. No provider secrets are exposed to the browser.</p>
+                  <p className="connection-mock-note">Provider unavailable. Configure and verify credentials before use; no simulated result will be returned.</p>
                 ) : null}
                 <div className="connection-actions">
-                  <button type="button" disabled={busyToolId === tool.id} onClick={() => void testTool(tool)}>
+                  <button
+                    type="button"
+                    disabled={busyToolId === tool.id || tool.status !== "Connected"}
+                    onClick={() => void testTool(tool)}
+                  >
                     <FlaskConical aria-hidden="true" size={14} />
                     Test
                   </button>
-                  {tool.status === "Mock Mode" || tool.availableActions.some((action) => action.endsWith(".mock")) ? (
-                    <button type="button" disabled={busyToolId === tool.id} onClick={() => void mockExecute(tool)}>
-                      <Sparkles aria-hidden="true" size={14} />
-                      Preview mock
-                    </button>
-                  ) : null}
                 </div>
               </article>
             ))}
           </div>
         </details>
       ))}
+
+      {activeError ? (
+        <p className="connection-result" role="alert">{activeError}</p>
+      ) : null}
 
       {activeResult ? (
         <article className="connection-result" aria-label="Latest connection result">
@@ -294,7 +281,6 @@ export function ConnectionCenter({ latestRequest = "", onEvent, onMockResult, on
               ))}
             </dl>
           ) : null}
-          {"simulatedResult" in activeResult ? <pre>{activeResult.simulatedResult}</pre> : null}
           <ul>
             {activeResult.nextSteps.map((step) => (
               <li key={step}>{step}</li>

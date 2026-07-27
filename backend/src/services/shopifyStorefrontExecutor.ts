@@ -2,6 +2,7 @@ import { ContractError } from "@entral/contracts";
 import { env } from "../env.js";
 import type { MerchProductSnapshot, MerchStoreSnapshot } from "./merchReports.js";
 import { getProviderExecutionAuthorization } from "./integrationRegistry.js";
+import { safeOutboundHttpRequest, type SafeOutboundResponse } from "./safeOutboundHttp.js";
 
 export const shopifyStorefrontDraftConfirmation = "EXECUTE CONTROLLED SHOPIFY STOREFRONT DRAFT";
 export const shopifyStorefrontDraftUnlockPhrase = "I APPROVE ENTRAL SHOPIFY DRAFT EXECUTION";
@@ -355,7 +356,7 @@ export function normalizeShopDomain(value: string | null | undefined) {
     .replace(/\/.*$/, "")
     .toLowerCase();
 
-  return /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/i.test(domain) ? domain : null;
+  return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/i.test(domain) ? domain : null;
 }
 
 function apiVersion(credentials?: ShopifyStorefrontDraftCredentials) {
@@ -1163,29 +1164,51 @@ function hydrateMenuAction(input: {
 async function callShopifyGraphql(input: {
   body: Record<string, unknown>;
   credentials: ReturnType<typeof credentialsWithDefaults>;
-  fetcher: ShopifyFetch;
+  fetcher?: ShopifyFetch;
   idempotencyKey?: string;
 }) {
   const url = `https://${input.credentials.shopDomain}/admin/api/${input.credentials.apiVersion}/graphql.json`;
-  const response = await input.fetcher(url, {
-    body: JSON.stringify(input.body),
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": input.credentials.adminToken ?? "",
-      ...(input.idempotencyKey ? { "X-Entral-Idempotency-Key": input.idempotencyKey } : {})
-    },
+  const requestBody = JSON.stringify(input.body);
+  const requestHeaders = {
+    "Content-Type": "application/json",
+    "X-Shopify-Access-Token": input.credentials.adminToken ?? "",
+    ...(input.idempotencyKey ? { "X-Entral-Idempotency-Key": input.idempotencyKey } : {})
+  };
+  const response = input.fetcher ? await input.fetcher(url, {
+    body: requestBody,
+    headers: requestHeaders,
     method: "POST"
+  }) : await safeOutboundHttpRequest(url, {
+    body: requestBody,
+    headers: requestHeaders,
+    maxRedirects: 0,
+    maxRequestBytes: 1_000_000,
+    maxResponseBytes: 512_000,
+    method: "POST",
+    timeoutMs: 15_000
   });
   let payload: unknown;
 
-  try {
-    payload = await response.json();
-  } catch {
-    payload = response.text ? await response.text() : null;
+  if (Buffer.isBuffer((response as SafeOutboundResponse).body)) {
+    const responseText = (response as SafeOutboundResponse).body.toString("utf8");
+
+    try {
+      payload = JSON.parse(responseText);
+    } catch {
+      payload = responseText;
+    }
+  } else {
+    const fetchResponse = response as Awaited<ReturnType<ShopifyFetch>>;
+
+    try {
+      payload = await fetchResponse.json();
+    } catch {
+      payload = fetchResponse.text ? await fetchResponse.text() : null;
+    }
   }
 
   return {
-    ok: response.ok,
+    ok: response.status >= 200 && response.status < 300,
     payload,
     status: response.status
   };
@@ -1211,7 +1234,7 @@ function shouldVerifyResolvedCredentials(inputCredentials?: ShopifyStorefrontDra
 
 async function verifyResolvedCredentialsBeforeExecution(input: {
   credentials: ReturnType<typeof credentialsWithDefaults>;
-  fetcher: ShopifyFetch;
+  fetcher?: ShopifyFetch;
 }) {
   const response = await callShopifyGraphql({
     body: {
@@ -1323,7 +1346,7 @@ function parseLookupResource(action: ShopifyStorefrontDraftAction, payload: unkn
 async function findExistingShopifyDraftResource(input: {
   action: ShopifyStorefrontDraftAction;
   credentials: ReturnType<typeof credentialsWithDefaults>;
-  fetcher: ShopifyFetch;
+  fetcher?: ShopifyFetch;
 }) {
   const body = lookupBodyForAction(input.action);
 
@@ -1378,7 +1401,7 @@ function existingResourceResult(action: ShopifyStorefrontDraftAction, resource: 
 async function callShopify(input: {
   action: ShopifyStorefrontDraftAction;
   credentials: ReturnType<typeof credentialsWithDefaults>;
-  fetcher: ShopifyFetch;
+  fetcher?: ShopifyFetch;
 }) {
   const response = await callShopifyGraphql({
     body: input.action.body,
@@ -1454,7 +1477,7 @@ export async function executeShopifyStorefrontDraft(input: {
       "Shopify execution requires the exact active provider API and storefront adapter versions"
     );
   }
-  const fetcher = input.fetcher ?? fetch;
+  const fetcher = input.fetcher;
   const storefrontActions: ShopifyStorefrontDraftAction[] = [];
 
   if (shouldVerifyResolvedCredentials(input.credentials)) {

@@ -21,6 +21,15 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
+      redis:
+        image: redis:8.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -36,14 +45,23 @@ jobs:
       - name: Report high dependency audit findings
         run: pnpm audit --audit-level high
         continue-on-error: true
+      - name: Verify and retain production dependency license inventory
+        run: pnpm test:phase195:licenses
       - run: pnpm test:release-positioning
       - run: pnpm test:phase160
       - name: Verify Phase 180 isolated 500-business and 10000-entity scale gate
         run: pnpm test:phase180
+      - name: Verify Phase 195 contracts, production-only rules, and release gates
+        run: pnpm test:phase195
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
-      - name: Verify Phase 150 through 190 PostgreSQL gates
+      - name: Verify Phase 195 runtime safety and graph observability routes
+        run: >-
+          pnpm --filter @entral/backend exec vitest run
+          tests/phase195RuntimeSafety.test.ts
+          tests/phase195GraphTelemetryRoutes.test.ts
+      - name: Verify Phase 150 through 195 PostgreSQL gates
         env:
           RUN_POSTGRES_INTEGRATION: "1"
           TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
@@ -55,6 +73,11 @@ jobs:
           tests/phase160CanonicalTaxonomyPostgres.integration.test.ts
           tests/phase170CanonicalPortfolioPostgres.integration.test.ts
           tests/phase190EntityLifecyclePostgres.integration.test.ts
+          tests/phase195CanonicalPersistencePostgres.integration.test.ts
+      - name: Verify Phase 195 backup, restore, forward recovery, and restart
+        env:
+          PHASE195_RECOVERY_GATE_CONFIRM: DISPOSABLE_ONLY
+        run: pnpm test:phase195:recovery
       - run: pnpm lint
       - run: pnpm test
       - name: Verify login, canonical Dashboard, business detail, and phone layout
@@ -69,8 +92,21 @@ jobs:
           path: test-results/e2e/phase180-scale.json
           if-no-files-found: warn
           retention-days: 30
+      - name: Retain Phase 195 browser and release evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-195-release-evidence
+          path: |
+            test-results/e2e/phase195-*.json
+            test-results/e2e/phase195-*.png
+            test-results/phase195/**
+          if-no-files-found: warn
+          retention-days: 90
       - run: pnpm build
       - run: pnpm release:check
+      - name: Verify build did not modify tracked sources
+        run: git diff --exit-code
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.VERCEL_ACTIONS_DEPLOY_ENABLED == 'true'
@@ -89,6 +125,6 @@ jobs:
           node-version: 20.19.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-      - run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-      - run: npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - run: npx --yes vercel@56.5.0 pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - run: npx --yes vercel@56.5.0 build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - run: npx --yes vercel@56.5.0 deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

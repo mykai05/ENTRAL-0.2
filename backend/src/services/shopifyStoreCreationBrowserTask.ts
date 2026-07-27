@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { z } from "zod";
 import { env } from "../env.js";
 import { prisma } from "../db.js";
+import { assertDurableAuthorization } from "./durableAuthorization.js";
 import { shopifyStoreCreationCaptureConfirmation, shopifyStoreCreationCaptureSchema } from "../schemas.js";
 import { recordAuditLog } from "./audit.js";
 import { parseSecureJson, stringifySecureJson } from "./secureJson.js";
@@ -248,6 +249,8 @@ function receiptFor(input: {
 }
 
 async function withAutomaticStoreCreationCapture(input: {
+  authorizationVersion: number;
+  operationKey: string;
   logStep: LogStep;
   payload: ShopifyStoreCreationBrowserTaskPayload;
   receipt: ShopifyStoreCreationBrowserTaskReceipt;
@@ -277,6 +280,8 @@ async function withAutomaticStoreCreationCapture(input: {
       receipt: input.receipt
     });
     const result = await captureShopifyStoreCreationForStore({
+      authorizationVersion: input.authorizationVersion,
+      operationKey: input.operationKey,
       store,
       userId: input.userId,
       value: captureInput
@@ -333,16 +338,19 @@ export function buildShopifyStoreCreationCaptureInputFromBrowserReceipt(input: {
 }
 
 export async function createShopifyStoreCreationBrowserTaskJob(input: {
+  authorizationVersion: number;
   payload: ShopifyStoreCreationBrowserTaskPayload;
   scheduledAt?: Date | null;
   userId: string;
 }) {
+  await assertDurableAuthorization(input);
   const payload = shopifyStoreCreationBrowserTaskPayloadSchema.parse(input.payload);
   const scheduledAt = input.scheduledAt ?? null;
   const status = scheduledAt && scheduledAt.getTime() > Date.now() ? "scheduled" : "pending";
 
   return prisma.automationJob.create({
     data: {
+      authorizationVersion: input.authorizationVersion,
       payloadJson: stringifySecureJson(payload),
       scheduledAt,
       status,
@@ -514,7 +522,7 @@ async function attemptBrowserTask(payload: ShopifyStoreCreationBrowserTaskPayloa
 }
 
 export async function runShopifyStoreCreationBrowserTaskJob(
-  job: { id: string; payloadJson: string; userId: string },
+  job: { authorizationVersion: number; id: string; payloadJson: string; userId: string },
   logStep: LogStep
 ) {
   const payload = parseSecureJson<ShopifyStoreCreationBrowserTaskPayload>(job.payloadJson);
@@ -527,6 +535,8 @@ export async function runShopifyStoreCreationBrowserTaskJob(
   const targetUrl = assertAllowedTaskTarget(input.browserTask);
   const browserReceipt = await attemptBrowserTask(input, targetUrl, logStep);
   const receipt = await withAutomaticStoreCreationCapture({
+    authorizationVersion: job.authorizationVersion,
+    operationKey: `shopify-browser-auto-capture:${job.id}`,
     logStep,
     payload: input,
     receipt: browserReceipt,

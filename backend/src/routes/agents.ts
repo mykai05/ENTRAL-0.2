@@ -335,6 +335,7 @@ export async function agentRoutes(app: FastifyInstance) {
     const task = await prisma.agentTask.create({
       data: {
         userId: currentUser.sub,
+        authorizationVersion: currentUser.sessionVersion,
         agentId: agent.id,
         title: input.title,
         action: input.action,
@@ -415,6 +416,7 @@ export async function agentRoutes(app: FastifyInstance) {
     const schedule = await prisma.agentSchedule.create({
       data: {
         userId: currentUser.sub,
+        authorizationVersion: currentUser.sessionVersion,
         agentId: agent.id,
         title: input.title,
         action: input.action,
@@ -514,6 +516,7 @@ export async function agentRoutes(app: FastifyInstance) {
     const updated = await prisma.agentSchedule.update({
       where: { id: schedule.id },
       data: {
+        authorizationVersion: currentUser.sessionVersion,
         status: "active",
         nextRunAt: new Date()
       }

@@ -137,4 +137,99 @@ describe("shopifyConnections", () => {
     expect(verification.errors.join(" ")).toContain("other-shop.myshopify.com");
     expect(verification.errors.join(" ")).toContain("write_products");
   });
+
+  it("accepts only an exact single-label myshopify.com domain for manual verification", async () => {
+    resetEnv();
+    const { verifyShopifyConnection } = await import("../src/services/shopifyConnections.js");
+    const fetcher = vi.fn();
+
+    for (const shopDomain of [
+      "myshopify.com",
+      "nested.iron-house.myshopify.com",
+      "iron-house.myshopify.com.attacker.example",
+      "iron_house.myshopify.com"
+    ]) {
+      const verification = await verifyShopifyConnection({
+        adminToken: "shpat_test_secret_token_1234",
+        fetcher,
+        shopDomain
+      });
+
+      expect(verification.status).toBe("failed");
+      expect(verification.providerContacted).toBe(false);
+    }
+
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("uses the pinned bounded no-redirect transport for real verification requests", async () => {
+    resetEnv();
+    const safeOutboundHttpRequest = vi.fn(async () => ({
+      body: Buffer.from(JSON.stringify({
+        data: {
+          currentAppInstallation: { accessScopes: [{ handle: "read_products" }] },
+          shop: {
+            id: "gid://shopify/Shop/1",
+            myshopifyDomain: "iron-house.myshopify.com",
+            name: "Iron House Gym",
+            primaryDomain: null
+          }
+        }
+      })),
+      headers: {},
+      status: 200,
+      url: "https://iron-house.myshopify.com/admin/api/2026-04/graphql.json"
+    }));
+    vi.doMock("../src/services/safeOutboundHttp.js", () => ({ safeOutboundHttpRequest }));
+
+    try {
+      const { verifyShopifyConnection } = await import("../src/services/shopifyConnections.js");
+      const verification = await verifyShopifyConnection({
+        adminToken: "shpat_test_secret_token_1234",
+        requiredScopes: ["read_products"],
+        shopDomain: "iron-house.myshopify.com"
+      });
+
+      expect(verification.status).toBe("verified");
+      expect(safeOutboundHttpRequest).toHaveBeenCalledWith(
+        "https://iron-house.myshopify.com/admin/api/2026-04/graphql.json",
+        expect.objectContaining({
+          maxRedirects: 0,
+          maxResponseBytes: 256_000,
+          method: "POST",
+          timeoutMs: 10_000
+        })
+      );
+    } finally {
+      vi.doUnmock("../src/services/safeOutboundHttp.js");
+      vi.resetModules();
+    }
+  });
+
+  it("selects credentials only for the exact store and never falls back to an unbound connection", async () => {
+    resetEnv();
+    const findMany = vi.fn(async () => []);
+    vi.doMock("../src/db.js", () => ({
+      prisma: {
+        shopifyConnection: { findMany }
+      }
+    }));
+
+    try {
+      const { getShopifyConnectionCredentials } = await import("../src/services/shopifyConnections.js");
+
+      await expect(getShopifyConnectionCredentials("user-1", "store-1")).resolves.toBeNull();
+      expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+        take: 1,
+        where: {
+          status: "active",
+          storeId: "store-1",
+          userId: "user-1"
+        }
+      }));
+    } finally {
+      vi.doUnmock("../src/db.js");
+      vi.resetModules();
+    }
+  });
 });

@@ -28,6 +28,7 @@ describe("shopifyOAuth", () => {
     resetEnv();
     const { buildShopifyOAuthState, verifyShopifyOAuthState } = await import("../src/services/shopifyOAuth.js");
     const state = buildShopifyOAuthState({
+      authorizationVersion: 7,
       returnTo: "https://app.entral.test/merch",
       scopes: ["write_products"],
       shopDomain: "iron-house.myshopify.com",
@@ -46,6 +47,7 @@ describe("shopifyOAuth", () => {
     });
 
     expect(payload).toMatchObject({
+      authorizationVersion: 7,
       nonce: "test-nonce",
       returnTo: "https://app.entral.test/merch",
       scopes: ["write_products"],
@@ -84,6 +86,7 @@ describe("shopifyOAuth", () => {
     resetEnv();
     const { buildShopifyOAuthStart } = await import("../src/services/shopifyOAuth.js");
     const start = buildShopifyOAuthStart({
+      authorizationVersion: 7,
       returnTo: "https://app.entral.test/merch",
       shopDomain: "https://iron-house.myshopify.com/admin",
       storeId: "store-1",

@@ -3,7 +3,14 @@ import type { EntityRole, EntitySummary } from "@entral/contracts";
 import { createEvent, fireEvent, render, screen } from "@testing-library/react";
 import React, { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CanonicalUniverseGraph } from "../components/CanonicalUniverseGraph";
+import {
+  canonical2DFramePosition,
+  canonical2DRenderedIdSignature,
+  CanonicalUniverseGraph,
+  phase195Canonical2DRenderIds
+} from "../components/CanonicalUniverseGraph";
+import { fitUniverseCamera } from "../lib/canonical-universe";
+import { largeCanonicalFixture } from "./phase195-graph-fixtures";
 
 function entity(
   entityId: string,
@@ -64,16 +71,22 @@ afterEach(() => {
 });
 
 function GraphHarness({
+  entities = hierarchy,
   fullscreenActive = false,
+  initialSelectedEntityId = null,
   onOpenFullRecord = vi.fn()
 }: {
+  entities?: readonly EntitySummary[];
   fullscreenActive?: boolean;
+  initialSelectedEntityId?: string | null;
   onOpenFullRecord?: (entityId: string) => void;
 }) {
-  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(
+    initialSelectedEntityId
+  );
   return (
     <CanonicalUniverseGraph
-      entities={hierarchy}
+      entities={entities}
       eventSequence={9}
       fullscreenActive={fullscreenActive}
       movementPaused={false}
@@ -85,6 +98,96 @@ function GraphHarness({
 }
 
 describe("Phase 180 Canonical Universe Graph interaction semantics", () => {
+  it("renders selected authorized detail fields and canonical child counts without a fallback summary", () => {
+    const detailedHierarchy = hierarchy.map((candidate) =>
+      candidate.entity_id === "general"
+        ? {
+            ...candidate,
+            active_alert: "Authorized Phase 195 parity alert.",
+            active_task_count: 3,
+            child_count: 2,
+            current_mission: "Coordinate authorized Phase 195 graph parity.",
+            latest_material_result: {
+              status: "phase195-parity-verified"
+            }
+          }
+        : candidate
+    );
+    const { container } = render(
+      <GraphHarness
+        entities={detailedHierarchy}
+        initialSelectedEntityId="general"
+      />
+    );
+    const graph = container.querySelector("[data-graph-dimension='2d']");
+    const drawer = screen.getByRole("complementary", {
+      name: /general graph details/i
+    });
+
+    for (const surface of [graph, drawer]) {
+      expect(surface).toHaveAttribute(
+        "data-canonical-selected-entity-id",
+        "general"
+      );
+      expect(surface).toHaveAttribute(
+        "data-canonical-selected-child-count",
+        "2"
+      );
+      expect(surface).toHaveAttribute(
+        "data-canonical-selected-current-mission",
+        "Coordinate authorized Phase 195 graph parity."
+      );
+      expect(surface).toHaveAttribute(
+        "data-canonical-selected-active-alert",
+        "Authorized Phase 195 parity alert."
+      );
+      expect(surface).toHaveAttribute(
+        "data-canonical-selected-active-task-count",
+        "3"
+      );
+      expect(surface).toHaveAttribute(
+        "data-canonical-selected-latest-material-result",
+        "{\"status\":\"phase195-parity-verified\"}"
+      );
+    }
+    expect(drawer).toHaveTextContent(
+      "Coordinate authorized Phase 195 graph parity."
+    );
+    expect(drawer).toHaveTextContent("Authorized Phase 195 parity alert.");
+  });
+
+  it("submits all 10,000 Phase 195 canonical IDs at fitted zoom and signs the exact draw set", () => {
+    const entities = largeCanonicalFixture(10_000);
+    const points = entities.map((candidate, index) => ({
+      entity: candidate,
+      x: (index % 100) * 1_000,
+      y: Math.floor(index / 100) * 1_000
+    }));
+    const visibleIds = phase195Canonical2DRenderIds(points);
+    const fitted = fitUniverseCamera(points, 1_440, 900, 48);
+
+    expect(fitted).not.toBeNull();
+    expect(fitted!.zoom).toBeLessThan(0.1);
+    const renderedIds = points.flatMap((point) =>
+      canonical2DFramePosition(
+        point,
+        visibleIds,
+        fitted!,
+        1_440,
+        900
+      )
+        ? [point.entity.entity_id]
+        : []
+    );
+
+    expect(renderedIds).toHaveLength(10_000);
+    expect(canonical2DRenderedIdSignature(renderedIds)).toBe(
+      canonical2DRenderedIdSignature(
+        points.map((point) => point.entity.entity_id)
+      )
+    );
+  });
+
   it("exposes an interactive graph and traverses canonical relationships by keyboard", () => {
     const openFullRecord = vi.fn();
     render(<GraphHarness onOpenFullRecord={openFullRecord} />);
@@ -146,9 +249,15 @@ describe("Phase 180 Canonical Universe Graph interaction semantics", () => {
   it("defaults touch input to page scrolling and only captures it after explicit activation", () => {
     render(<GraphHarness />);
     const graph = screen.getByRole("application", { name: /canonical universe graph with 5 entities/i });
+    const interactionToggle = screen.getByRole("button", {
+      name: "Interact with 2D Graph"
+    });
 
     expect(graph).toHaveAttribute("data-touch-interaction", "page");
-    fireEvent.click(screen.getByRole("button", { name: "Interact with 2D Graph" }));
+    expect(interactionToggle).toHaveClass("phase180-surface-action");
+    expect(interactionToggle.closest(".phase180-surface-actions")).not.toBeNull();
+    expect(interactionToggle.closest(".phase180-graph-toolbar")).toBeNull();
+    fireEvent.click(interactionToggle);
     expect(graph).toHaveAttribute("data-touch-interaction", "graph");
     fireEvent.click(screen.getByRole("button", { name: "Release 2D Graph touch controls" }));
     expect(graph).toHaveAttribute("data-touch-interaction", "page");

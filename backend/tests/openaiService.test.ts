@@ -30,16 +30,11 @@ describe("OpenAiChatService", () => {
     expect(reply.content).toContain("How should I plan onboarding?");
   });
 
-  it("keeps production chat in Mock Mode when the provider key is missing", async () => {
+  it("fails closed before production can enter local AI Mock Mode", async () => {
     process.env.NODE_ENV = "production";
-    const { OpenAiChatService } = await import("../src/services/openaiService.js");
-    const service = new OpenAiChatService();
-    const reply = await service.createReply([
-      { role: "user", content: "ENTRAL, report." }
-    ]);
-
-    expect(reply.usedLocalFallback).toBe(true);
-    expect(reply.content).toContain("AI Provider Not Connected");
+    await expect(import("../src/services/openaiService.js")).rejects.toThrow(
+      "AI_LOCAL_FALLBACK cannot be enabled in production"
+    );
   });
 
   it("uses a local fallback for screen analysis when no API key is configured", async () => {

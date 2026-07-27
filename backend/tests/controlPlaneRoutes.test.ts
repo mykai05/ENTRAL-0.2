@@ -125,7 +125,7 @@ beforeEach(() => {
   process.env.COOKIE_NAME = "entral_token";
   process.env.CORS_ORIGIN = "http://localhost:3000";
   process.env.APP_PUBLIC_URL = "http://localhost:3000";
-  mocks.userFindUnique.mockResolvedValue({ role: "ADMIN" });
+  mocks.userFindUnique.mockResolvedValue({ role: "ADMIN", sessionVersion: 0 });
 });
 
 describe("canonical control-plane routes", () => {

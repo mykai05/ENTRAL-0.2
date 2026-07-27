@@ -52,7 +52,7 @@ describe("Command Center graph integrity", () => {
     expect(graphWorkspaceSource).not.toContain("executeCommand");
     expect(graphWorkspaceSource).not.toContain("apiFetch");
     expect(sha256(sourceSegment("  function getNodeMotion", "  function setCamera")))
-      .toBe("5d9b3b741da8ced18900496f02d490437271be012fff4ea327c57de2fa0bc9cd");
+      .toBe("d707bd9d6bec9e82e812b42488d1c81a3354838e09505e27bd525206dbbad4d2");
   });
 
   it("preserves the approved pointer, touch, wheel, and keyboard camera controls", () => {
@@ -63,12 +63,12 @@ describe("Command Center graph integrity", () => {
     expect(source).not.toContain("document.body.style.overflow");
     expect(source).not.toContain("onPointerEnter={lockGraphScroll}");
     expect(sha256(sourceSegment("  function handlePointerDown", "  function deleteSelectedNode")))
-      .toBe("a1edc68d34f2c87bf51046b038ed19025576ac02ada0c76231bf37b770f12418");
+      .toBe("f75c5f2f284e6b8d3ca83a4e10a08fe698b8a5c3ebba404baa50706ea68af975");
   });
 
   it("preserves the approved graph canvas contract", () => {
     expect(sha256(sourceSegment("      <canvas", "      <p className=\"sr-only\"")))
-      .toBe("9fc9d63540a88ef66ab6fee4ff7af84d23bea62cbb41466e3b86f7e6460570c3");
+      .toBe("554dd0bb56a673c4de109acad611c99dc8f5b4702ffbc0c422e445fdb78e73f6");
   });
 
   it("renders the embedded 3D inspector as an accessible name-only compact card", () => {

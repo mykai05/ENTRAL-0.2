@@ -1,6 +1,7 @@
 import type { ShopifyConnection } from "@prisma/client";
 import { prisma } from "../db.js";
 import { parseSecureJson, stringifySecureJson } from "./secureJson.js";
+import { safeOutboundHttpRequest, type SafeOutboundResponse } from "./safeOutboundHttp.js";
 import { normalizeShopDomain, type ShopifyFetch, type ShopifyStorefrontDraftCredentials } from "./shopifyStorefrontExecutor.js";
 import { defaultShopifyScopes } from "./shopifyOAuth.js";
 
@@ -148,30 +149,51 @@ export async function verifyShopifyConnection(input: {
   }
 
   const apiVersion = input.apiVersion?.trim() || defaultApiVersion;
-  const fetcher = input.fetcher ?? fetch;
   const url = `https://${shopDomain}/admin/api/${apiVersion}/graphql.json`;
   let payload: unknown = null;
 
   try {
-    const response = await fetcher(url, {
-      body: JSON.stringify({
-        query: shopifyConnectionVerificationQuery
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": adminToken,
-        "X-Entral-Idempotency-Key": `entral:shopify:${shopDomain}:connection-verification`
-      },
+    const requestBody = JSON.stringify({
+      query: shopifyConnectionVerificationQuery
+    });
+    const requestHeaders = {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": adminToken,
+      "X-Entral-Idempotency-Key": `entral:shopify:${shopDomain}:connection-verification`
+    };
+    const response = input.fetcher ? await input.fetcher(url, {
+      body: requestBody,
+      headers: requestHeaders,
       method: "POST"
+    }) : await safeOutboundHttpRequest(url, {
+      body: requestBody,
+      headers: requestHeaders,
+      maxRedirects: 0,
+      maxRequestBytes: 64_000,
+      maxResponseBytes: 256_000,
+      method: "POST",
+      timeoutMs: 10_000
     });
 
-    try {
-      payload = await response.json();
-    } catch {
-      payload = response.text ? await response.text() : null;
+    if (Buffer.isBuffer((response as SafeOutboundResponse).body)) {
+      const responseText = (response as SafeOutboundResponse).body.toString("utf8");
+
+      try {
+        payload = JSON.parse(responseText);
+      } catch {
+        payload = responseText;
+      }
+    } else {
+      const fetchResponse = response as Awaited<ReturnType<ShopifyFetch>>;
+
+      try {
+        payload = await fetchResponse.json();
+      } catch {
+        payload = fetchResponse.text ? await fetchResponse.text() : null;
+      }
     }
 
-    if (!response.ok) {
+    if (!(response.status >= 200 && response.status < 300)) {
       return {
         errors: [typeof payload === "string" ? payload.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300) : `Shopify returned HTTP ${response.status}.`],
         grantedScopes: [],
@@ -309,21 +331,14 @@ export async function listShopifyConnections(userId: string, storeId?: string | 
 export async function getShopifyConnectionCredentials(userId: string, storeId?: string | null): Promise<ShopifyStorefrontDraftCredentials | null> {
   const connections = await prisma.shopifyConnection.findMany({
     orderBy: { updatedAt: "desc" },
-    take: 10,
+    take: 1,
     where: {
       status: "active",
+      storeId: storeId ?? null,
       userId,
-      ...(storeId ? {
-        OR: [
-          { storeId },
-          { storeId: null }
-        ]
-      } : {})
     }
   });
-  const selected = storeId
-    ? connections.find((connection) => connection.storeId === storeId) ?? connections.find((connection) => connection.storeId === null)
-    : connections[0];
+  const selected = connections[0];
 
   if (!selected) return null;
 

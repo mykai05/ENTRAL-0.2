@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "entral.phase195.production-license-policy.v1",
+  "scope": "Installed production dependencies for the current runner; review gate only, not legal approval.",
+  "noticeDocument": "THIRD_PARTY_NOTICES.md",
+  "baselineLicenseExpressions": [
+    "0BSD",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT"
+  ],
+  "noticeReviewLicenseExpressions": [
+    "Apache-2.0 AND LGPL-3.0-or-later",
+    "CC-BY-4.0",
+    "LGPL-3.0-or-later"
+  ],
+  "packages": {
+    "sharpCore": {
+      "name": "sharp",
+      "version": "0.35.3",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/lovell/sharp"
+    },
+    "sharpNative": {
+      "namePrefix": "@img/sharp-",
+      "platformPackageVersion": "0.35.3",
+      "libvipsPackageNamePrefix": "@img/sharp-libvips-",
+      "libvipsPackageVersion": "1.3.2",
+      "libvipsComponentVersion": "8.18.3",
+      "licenseToken": "LGPL-3.0-or-later",
+      "repository": "https://github.com/lovell/sharp-libvips"
+    },
+    "caniuseLite": {
+      "name": "caniuse-lite",
+      "version": "1.0.30001793",
+      "license": "CC-BY-4.0",
+      "attributionName": "Ben Briggs",
+      "repository": "https://github.com/browserslist/caniuse-lite",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+    }
+  }
+}
