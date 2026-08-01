@@ -1,0 +1,60 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 196,
+  "repository": "mykai05/ENTRAL-0.2",
+  "main_sha": "02c2084ef250ad152043c0bc02be56cb5aa6d6be",
+  "release_tag": "phase-196",
+  "tests_passed": true,
+  "protected_main_checks_passed": true,
+  "migrations_verified": true,
+  "deployments": [
+    {
+      "provider": "VERCEL",
+      "deployment_id": "dpl_Sf7FTHcRzkY3nmjrbKS8mvcD2Dhr",
+      "role": "FRONTEND",
+      "status": "READY",
+      "deployed_commit_sha": "02c2084ef250ad152043c0bc02be56cb5aa6d6be"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "dd58f662-04bf-478f-a140-72a4e73d80ff",
+      "role": "API",
+      "status": "READY",
+      "deployed_commit_sha": "02c2084ef250ad152043c0bc02be56cb5aa6d6be"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "87a73a8b-09da-4e25-bf52-3553a0a5a062",
+      "role": "WORKER",
+      "status": "READY",
+      "deployed_commit_sha": "02c2084ef250ad152043c0bc02be56cb5aa6d6be"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "phase-196-no-schema-change",
+      "status": "NO_SCHEMA_CHANGE",
+      "readback": "Production Prisma migration status is up to date with 42 applied migrations, zero unfinished migrations, and zero rolled-back migrations; evidence SHA-256 b33b54224128c4bd00e3a072982fd2641f18b9b23d0a2c226698ddaf3a77aef9.",
+      "production_schema_status": "UP_TO_DATE",
+      "applied_migration_count": 42,
+      "readback_sha256": "b33b54224128c4bd00e3a072982fd2641f18b9b23d0a2c226698ddaf3a77aef9"
+    }
+  ],
+  "authenticated_smoke": {
+    "status": "PASSED",
+    "receipt_sha256": "d3a214df0be06fdcbec8f67954b8aab412b8f5535906f441ba48d53fc193a685"
+  },
+  "production_readback": {
+    "status": "PASSED",
+    "main_sha": "02c2084ef250ad152043c0bc02be56cb5aa6d6be",
+    "receipt_sha256": "e7c46dba2ae7d8198b82f431489440fa1305fb0ca912511f4a983aeaf331bf76",
+    "blockers": []
+  },
+  "rollback_point": {
+    "status": "RESTORE_VERIFIED",
+    "reference": "release:phase-195:11058bffef238c1c7f917b2ea5bb3ff93800d35e",
+    "receipt_sha256": "9f147cd972ef379047da91bf5b0ad79665df1d251ed149338c826aba06048ce1"
+  },
+  "recorded_at": "2026-08-01T13:29:50.886Z"
+}

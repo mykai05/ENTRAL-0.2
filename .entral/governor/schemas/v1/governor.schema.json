@@ -6,7 +6,7 @@
   "required": ["contract_type", "payload"],
   "additionalProperties": false,
   "properties": {
-    "contract_type": { "type": "string", "enum": ["ProgramState", "TaskPacket", "ExecutionResult", "ReviewRecord", "ReleaseManifest", "IncidentRecord", "OwnerEscalation", "ImprovementCandidate", "PhaseAmendment", "SessionCheckpoint", "GovernorEvent", "GPTProReviewRequest", "ProReviewVerdict"] },
+    "contract_type": { "type": "string", "enum": ["ProgramState", "TaskPacket", "ExecutionResult", "ReviewRecord", "ReleaseManifest", "ReleaseControlPlan", "ReleaseControlEvidence", "ReleaseEvidenceBundle", "IncidentRecord", "OwnerEscalation", "ImprovementCandidate", "PhaseAmendment", "SessionCheckpoint", "GovernorEvent", "GPTProReviewRequest", "ProReviewVerdict"] },
     "payload": { "type": "object" }
   },
   "$defs": {
@@ -101,7 +101,69 @@
         "authenticated_smoke": { "type": "object", "required": ["status", "receipt_sha256"] },
         "production_readback": { "type": "object", "required": ["status", "main_sha", "receipt_sha256", "blockers"] },
         "rollback_point": { "type": "object" },
+        "repositories": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "object", "required": ["role", "repository", "main_sha", "contract_version", "compatibility_status"] } },
+        "release_controller": { "type": "object", "required": ["risk_tier", "decision", "plan_sha256", "evidence_bundle_sha256", "health_status", "failure_proof_status"] },
         "recorded_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "ReleaseControlPlan": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["plan_id", "phase", "repositories", "task", "risk_profile", "changed_surfaces", "migrations", "health_thresholds", "rollback_point", "created_at"],
+      "properties": {
+        "plan_id": { "type": "string", "minLength": 3 },
+        "phase": { "type": "integer", "minimum": 197 },
+        "repositories": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "object" } },
+        "task": { "type": "object" },
+        "risk_profile": { "type": "object" },
+        "changed_surfaces": { "type": "array", "minItems": 1, "items": { "enum": ["CUSTOMER", "FRONTEND", "API", "WORKER", "SCHEDULER", "CONNECTOR", "BILLING", "GRAPH", "TUTORIAL", "WEBSITE"] }, "uniqueItems": true },
+        "migrations": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "health_thresholds": { "type": "object" },
+        "rollback_point": { "type": "object" },
+        "created_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "ReleaseControlEvidence": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["evidence_id", "phase", "plan_sha256", "stage", "repositories", "task", "targeted_tests", "mandatory_suites", "status_checks", "reconciliation", "staging", "migration_verification", "deployments", "authenticated_smokes", "state_reconciliation", "health", "rollback_rehearsal", "failure_proof", "rollback_point", "produced_at"],
+      "properties": {
+        "evidence_id": { "type": "string", "minLength": 3 },
+        "phase": { "type": "integer", "minimum": 197 },
+        "plan_sha256": { "$ref": "#/$defs/sha256" },
+        "stage": { "enum": ["INTEGRATION", "PRODUCTION"] },
+        "repositories": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "object" } },
+        "task": { "type": "object" },
+        "targeted_tests": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "mandatory_suites": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "status_checks": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "reconciliation": { "type": "object" },
+        "staging": { "type": "object" },
+        "migration_verification": { "type": "object" },
+        "deployments": { "type": "array", "items": { "type": "object" } },
+        "authenticated_smokes": { "type": "array", "items": { "type": "object" } },
+        "state_reconciliation": { "type": "object" },
+        "health": { "type": "object" },
+        "rollback_rehearsal": { "type": "object" },
+        "failure_proof": { "type": "object" },
+        "rollback_point": { "type": "object" },
+        "produced_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "ReleaseEvidenceBundle": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["bundle_id", "phase", "risk_tier", "decision", "plan_sha256", "evidence_sha256", "components", "bundle_sha256", "created_at"],
+      "properties": {
+        "bundle_id": { "type": "string", "minLength": 3 },
+        "phase": { "type": "integer", "minimum": 197 },
+        "risk_tier": { "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+        "decision": { "enum": ["READY_FOR_MERGE", "PASS", "BLOCKED", "ROLLBACK_REQUIRED", "INCIDENT_REQUIRED"] },
+        "plan_sha256": { "$ref": "#/$defs/sha256" },
+        "evidence_sha256": { "$ref": "#/$defs/sha256" },
+        "components": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "bundle_sha256": { "$ref": "#/$defs/sha256" },
+        "created_at": { "$ref": "#/$defs/isoDate" }
       }
     },
     "SessionCheckpoint": {

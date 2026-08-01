@@ -42,6 +42,14 @@ ingest-review
 complete-review-corrections
 add-review-trigger
 record-incident
+release-inspect
+release-create-worktree
+release-reconcile
+release-evaluate
+release-bundle
+release-merge
+release-rollback
+release-select-tests
 ```
 
 Run `pnpm governor help` for the compact command reference. JSON inputs must be committed inside the repository, typed with contract `1.0.0`, and validated before state changes.
@@ -75,3 +83,5 @@ Each review request also binds per-path diff evidence to its exact base and head
 ## Verification
 
 Run `pnpm test:phase196`. The suite covers initialization, DAG enforcement, authorization, dual-writer contention, lease expiry, checkpoints, restart reconstruction, event tampering, retry and stagnation stops, context selection, sparse review policy, verdict gate supremacy, CLI recovery without external model credentials, and routine phase advancement.
+
+Run `pnpm test:phase197` for the deterministic release-controller gates. Phase 197 adds explicit `PRODUCT` and `CONTROL_WEBSITE` repository adapters, exact-origin/main worktree creation, coherent-commit and protected-check enforcement, low/medium/high/critical release paths, migration/backup policy, exact-SHA deployment evidence, authenticated smoke and state reconciliation, production health thresholds, hashed evidence bundles, and bounded provider rollback with incident containment. The controller calls existing Git, GitHub, Vercel, Railway, database, and CI boundaries; it does not store credentials or replace those providers.

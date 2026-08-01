@@ -55,6 +55,8 @@ jobs:
         run: pnpm test:phase195
       - name: Verify Phase 196 single-writer Governor, recovery, and review gateway
         run: pnpm test:phase196
+      - name: Verify Phase 197 deterministic release controller and rollback containment
+        run: pnpm test:phase197
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
@@ -113,6 +115,17 @@ jobs:
           path: |
             test-results/phase196/**
             .entral/governor/releases/phase-196.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain Phase 197 release-controller evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-197-release-controller-evidence
+          path: |
+            test-results/phase197/**
+            .entral/governor/release-control/phase-197/**
+            .entral/governor/releases/phase-197.json
           if-no-files-found: warn
           retention-days: 90
       - run: pnpm build
