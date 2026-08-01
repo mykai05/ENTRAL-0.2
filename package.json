@@ -28,7 +28,7 @@
     "test:phase195:licenses": "node scripts/phase195-license-compliance.mjs",
     "test:phase195:recovery": "node scripts/phase195-recovery-gate.mjs",
     "governor": "node .entral/governor/bin/governor.mjs",
-    "test:phase196": "node --test .entral/governor/tests/*.test.mjs scripts/phase196-release-gates.test.mjs",
+    "test:phase196": "node --test .entral/governor/tests/governor.test.mjs scripts/phase196-release-gates.test.mjs",
     "benchmark:phase180": "node scripts/phase180-benchmark.mjs",
     "test:release-positioning": "node --test scripts/release-positioning.test.mjs",
     "release:check": "node scripts/release-readiness.mjs",

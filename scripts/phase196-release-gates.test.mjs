@@ -20,7 +20,7 @@ test("Phase 196 retains exactly twenty-seven features and twenty-six acceptance 
 test("Governor remains repository-local, single-process, and dependency-free", async () => {
   const packageJson = JSON.parse(await projectFile("package.json"));
   assert.equal(packageJson.scripts.governor, "node .entral/governor/bin/governor.mjs");
-  assert.equal(packageJson.scripts["test:phase196"], "node --test .entral/governor/tests/*.test.mjs scripts/phase196-release-gates.test.mjs");
+  assert.equal(packageJson.scripts["test:phase196"], "node --test .entral/governor/tests/governor.test.mjs scripts/phase196-release-gates.test.mjs");
   const runtimeFiles = await Promise.all([
     ".entral/governor/lib/contracts.mjs",
     ".entral/governor/lib/store.mjs",
