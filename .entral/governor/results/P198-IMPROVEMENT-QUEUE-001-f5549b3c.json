@@ -1,0 +1,87 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P198-IMPROVEMENT-QUEUE-001-f5549b3c",
+  "task_packet_id": "P198-IMPROVEMENT-QUEUE-001",
+  "phase": 198,
+  "outcome": "PASSED",
+  "commit_sha": "f5549b3c27ee595064340db562e6585026c7e95d",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/README.md",
+    ".entral/governor/bin/governor.mjs",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/improvements/POLICY.v1.json",
+    ".entral/governor/lib/contracts.mjs",
+    ".entral/governor/lib/governor.mjs",
+    ".entral/governor/lib/improvement-queue.mjs",
+    ".entral/governor/lib/store.mjs",
+    ".entral/governor/phases/198/PHASE_CONTRACT.v1.json",
+    ".entral/governor/release-control/phase-197/EVIDENCE_BUNDLE.json",
+    ".entral/governor/releases/phase-197.json",
+    ".entral/governor/schemas/v1/governor.schema.json",
+    ".entral/governor/tasks/P198-IMPROVEMENT-QUEUE-001.json",
+    ".entral/governor/tests/improvement-queue.test.mjs",
+    ".github/workflows/ci-cd.yml",
+    "docs/PHASE_198_VERIFICATION.md",
+    "package.json",
+    "scripts/phase198-improvement-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test:phase198 (15 tests)",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test:phase197 (25 tests)",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test:phase196 (27 tests)",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test:phase195 (24 tests)",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm contracts:verify (30 tests and reproducible build)",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm prisma:generate",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm lint",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test (30 contract, 445 backend, and 418 frontend tests)",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm build",
+      "status": "PASSED"
+    },
+    {
+      "command": "Node 22.20.0 with pnpm 9.12.3: pnpm release:check",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    },
+    {
+      "command": "Governor verify at state version 26 and event count 26",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Exact-main-SHA production deployment follows protected-main integration of the verified Phase 198 commit."
+  },
+  "result_fingerprint": "aec1c92f319d308690d43a3df39e1b4306489ae700a92412816782249ed4d830",
+  "completed_at": "2026-08-01T15:39:37.157Z"
+}

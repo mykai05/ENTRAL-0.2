@@ -42,6 +42,13 @@ ingest-review
 complete-review-corrections
 add-review-trigger
 record-incident
+improvement-intake
+improvement-cycle
+improvement-backlog
+improvement-show
+improvement-decide
+improvement-measure
+improvement-apply-amendment
 release-inspect
 release-create-worktree
 release-reconcile
@@ -65,6 +72,7 @@ Run `pnpm governor help` for the compact command reference. JSON inputs must be 
 - `events/EVENTS.jsonl` — append-only event chain. Every event includes the prior hash, payload digest, event digest, and restart state snapshot.
 - `runtime/advance.lock` — short-lived local advancement lock. It is ignored by Git and can be replaced only after its declared expiry.
 - `pro-review/<checkpoint-id>/` — owner-invoked GPT-5.6 Pro review packets. The Governor never invokes or automates the review conversation.
+- `improvements/` — Phase 198 policy, candidates, evidence-preserving cycles, bounded task proposals, owner-reviewed amendments, accepted-amendment records, and production-bound outcomes.
 
 ## One-writer and recovery behavior
 
@@ -85,3 +93,5 @@ Each review request also binds per-path diff evidence to its exact base and head
 Run `pnpm test:phase196`. The suite covers initialization, DAG enforcement, authorization, dual-writer contention, lease expiry, checkpoints, restart reconstruction, event tampering, retry and stagnation stops, context selection, sparse review policy, verdict gate supremacy, CLI recovery without external model credentials, and routine phase advancement.
 
 Run `pnpm test:phase197` for the deterministic release-controller gates. Phase 197 adds explicit `PRODUCT` and `CONTROL_WEBSITE` repository adapters, exact-origin/main worktree creation, coherent-commit and protected-check enforcement, low/medium/high/critical release paths, migration/backup policy, exact-SHA deployment evidence, authenticated smoke and state reconciliation, production health thresholds, hashed evidence bundles, and bounded provider rollback with incident containment. The controller calls existing Git, GitHub, Vercel, Railway, database, and CI boundaries; it does not store credentials or replace those providers.
+
+Run `pnpm test:phase198` for the evidence-based improvement queue gates. Phase 198 normalizes eleven verified signal sources, deduplicates by root cause and affected capability, ranks candidates, reserves emergency capacity, remains idle under quiet/stop/no-value conditions, and emits automatic task proposals only for low-risk reversible tested work. Material or product-defining changes become versioned owner-reviewed `PhaseAmendment` records; an accepted amendment updates the target phase contract ledger and DAG and triggers the protocol-required conditional review path.

@@ -55,6 +55,49 @@ export const RELEASE_CONTROL_DECISIONS = Object.freeze([
   "ROLLBACK_REQUIRED",
   "INCIDENT_REQUIRED"
 ]);
+export const IMPROVEMENT_SOURCES = Object.freeze([
+  "TEST",
+  "INCIDENT",
+  "TELEMETRY",
+  "SUPPORT",
+  "ONBOARDING",
+  "SALES_OBJECTION",
+  "LOST_DEAL",
+  "FEATURE_USAGE",
+  "CONNECTOR_HEALTH",
+  "COST",
+  "VERIFIED_MARKET_EVIDENCE"
+]);
+export const IMPROVEMENT_CATEGORIES = Object.freeze([
+  "DEFECT_REPAIR",
+  "RELIABILITY_IMPROVEMENT",
+  "PRODUCT_ENHANCEMENT",
+  "TECHNICAL_DEBT",
+  "COMMERCIAL_CHANGE",
+  "RESEARCH_HYPOTHESIS"
+]);
+export const IMPROVEMENT_STATUSES = Object.freeze([
+  "NEW",
+  "QUEUED",
+  "AUTO_EXECUTION_ELIGIBLE",
+  "OWNER_REVIEW_REQUIRED",
+  "AMENDMENT_PROPOSED",
+  "AMENDMENT_ACCEPTED",
+  "DEFERRED",
+  "REJECTED",
+  "IMPLEMENTED",
+  "CLOSED_EVIDENCE_INVALID",
+  "CLOSED_ROOT_CAUSE_REMOVED"
+]);
+export const IMPROVEMENT_OWNER_REVIEW_TOPICS = Object.freeze([
+  "PRICING",
+  "PACKAGING",
+  "LEGAL",
+  "CUSTOMER_DATA_RIGHTS",
+  "PUBLIC_COMMITMENT",
+  "ARCHITECTURE_REPLACEMENT",
+  "MATERIAL_SPENDING"
+]);
 
 const SHA40 = /^[a-f0-9]{40}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -710,6 +753,181 @@ export function validateReviewVerdict(value) {
   return value;
 }
 
+function assertNullableString(value, field, maximum = 2_000) {
+  if (value !== null) assertString(value, field, 1, maximum);
+}
+
+function validateImprovementEvidence(value, field) {
+  assertRecord(value, field);
+  assertId(value.evidence_id, `${field}.evidence_id`);
+  assertEnum(value.kind, IMPROVEMENT_SOURCES, `${field}.kind`);
+  assertString(value.reference, `${field}.reference`, 1, 2_000);
+  assertSha256(value.lineage_sha256, `${field}.lineage_sha256`);
+  assertBoolean(value.valid, `${field}.valid`);
+  assertIso(value.observed_at, `${field}.observed_at`);
+}
+
+function validateImprovementAmendmentDetails(value, field) {
+  if (value === null) return;
+  assertRecord(value, field);
+  assertRecord(value.scope_delta, `${field}.scope_delta`);
+  assertStringArray(value.scope_delta.added_requirements, `${field}.scope_delta.added_requirements`, { minimum: 1, unique: true });
+  assertStringArray(value.scope_delta.removed_requirements, `${field}.scope_delta.removed_requirements`, { unique: true });
+  assertStringArray(value.scope_delta.affected_paths, `${field}.scope_delta.affected_paths`, { minimum: 1, unique: true });
+  assertStringArray(value.affected_contracts, `${field}.affected_contracts`, { minimum: 1, unique: true });
+  assertStringArray(value.acceptance_criteria, `${field}.acceptance_criteria`, { minimum: 1, unique: true });
+  assertString(value.commercial_unlock, `${field}.commercial_unlock`, 3, 2_000);
+  assertRecord(value.dag_update, `${field}.dag_update`);
+  assertInteger(value.dag_update.target_phase, `${field}.dag_update.target_phase`, 1);
+  assertArray(value.dag_update.dependencies, `${field}.dag_update.dependencies`, { minimum: 1, unique: true });
+  value.dag_update.dependencies.forEach((phase, index) => assertInteger(phase, `${field}.dag_update.dependencies[${index}]`, 1));
+  assertRecord(value.supersession_record, `${field}.supersession_record`);
+  assertStringArray(value.supersession_record.supersedes, `${field}.supersession_record.supersedes`, { minimum: 1, unique: true });
+  assertString(value.supersession_record.reason, `${field}.supersession_record.reason`, 3, 2_000);
+}
+
+export function validateImprovementCandidate(value) {
+  assertVersion(value, "improvement_candidate");
+  assertId(value.candidate_id, "improvement_candidate.candidate_id");
+  for (const field of ["tenant_id", "organization_id", "business_id"]) {
+    assertNullableString(value[field], `improvement_candidate.${field}`, 200);
+  }
+  assertExecutionActor(value.actor);
+  assertSha256(value.request_idempotency_key, "improvement_candidate.request_idempotency_key");
+  assertInteger(value.version, "improvement_candidate.version", 1);
+  assertEnum(value.source, IMPROVEMENT_SOURCES, "improvement_candidate.source");
+  assertEnum(value.category, IMPROVEMENT_CATEGORIES, "improvement_candidate.category");
+  assertString(value.title, "improvement_candidate.title", 3, 300);
+  assertString(value.root_cause, "improvement_candidate.root_cause", 3, 2_000);
+  assertEnum(value.root_cause_status, ["ACTIVE", "REMOVED"], "improvement_candidate.root_cause_status");
+  assertString(value.affected_capability, "improvement_candidate.affected_capability", 2, 300);
+  assertStringArray(value.affected_scope, "improvement_candidate.affected_scope", { minimum: 1, maximum: 100, unique: true });
+  assertArray(value.evidence, "improvement_candidate.evidence", { minimum: 1, maximum: 1_000 });
+  value.evidence.forEach((entry, index) => validateImprovementEvidence(entry, `improvement_candidate.evidence[${index}]`));
+  if (new Set(value.evidence.map((entry) => entry.evidence_id)).size !== value.evidence.length) {
+    fail("DUPLICATE_EVIDENCE", "ImprovementCandidate evidence IDs must be unique");
+  }
+  assertRecord(value.observed_impact, "improvement_candidate.observed_impact");
+  assertString(value.observed_impact.summary, "improvement_candidate.observed_impact.summary", 3, 2_000);
+  assertString(value.observed_impact.metric, "improvement_candidate.observed_impact.metric", 1, 200);
+  if (value.observed_impact.measured_value !== null) assertNumber(value.observed_impact.measured_value, "improvement_candidate.observed_impact.measured_value", -1_000_000_000, 1_000_000_000);
+  assertNullableString(value.observed_impact.unit, "improvement_candidate.observed_impact.unit", 100);
+  assertNumber(value.confidence, "improvement_candidate.confidence", 0, 1);
+  assertInteger(value.urgency, "improvement_candidate.urgency", 0, 100);
+  assertInteger(value.estimated_effort, "improvement_candidate.estimated_effort", 1, 100);
+  assertEnum(value.risk, ["LOW", "MEDIUM", "HIGH", "CRITICAL"], "improvement_candidate.risk");
+  assertEnum(value.reversibility, ["FULL", "PARTIAL", "NONE"], "improvement_candidate.reversibility");
+  assertRecord(value.expected_value, "improvement_candidate.expected_value");
+  for (const field of ["value", "customer_impact", "security_impact", "revenue_impact", "cost_impact"]) {
+    assertInteger(value.expected_value[field], `improvement_candidate.expected_value.${field}`, 0, 100);
+  }
+  assertRecord(value.score, "improvement_candidate.score");
+  for (const field of ["value", "confidence", "urgency", "customer_impact", "security_impact", "revenue_impact", "cost_impact", "effort", "risk", "total"]) {
+    assertNumber(value.score[field], `improvement_candidate.score.${field}`, 0, 100);
+  }
+  assertBoolean(value.product_defining, "improvement_candidate.product_defining");
+  assertStringArray(value.owner_review_topics, "improvement_candidate.owner_review_topics", { maximum: IMPROVEMENT_OWNER_REVIEW_TOPICS.length, unique: true });
+  value.owner_review_topics.forEach((topic, index) => assertEnum(topic, IMPROVEMENT_OWNER_REVIEW_TOPICS, `improvement_candidate.owner_review_topics[${index}]`));
+  assertInteger(value.budget_units, "improvement_candidate.budget_units", 1, 10_000);
+  assertBoolean(value.emergency_repair, "improvement_candidate.emergency_repair");
+  assertStringArray(value.deterministic_tests, "improvement_candidate.deterministic_tests", { unique: true });
+  assertSha256(value.root_cause_fingerprint_sha256, "improvement_candidate.root_cause_fingerprint_sha256");
+  assertSha256(value.evidence_lineage_sha256, "improvement_candidate.evidence_lineage_sha256");
+  assertSha256(value.deduplication_key_sha256, "improvement_candidate.deduplication_key_sha256");
+  assertEnum(value.status, IMPROVEMENT_STATUSES, "improvement_candidate.status");
+  assertNullableString(value.rationale, "improvement_candidate.rationale");
+  assertNullableString(value.reevaluation_trigger, "improvement_candidate.reevaluation_trigger");
+  assertInteger(value.proposed_phase, "improvement_candidate.proposed_phase", 1);
+  assertRecord(value.outcome_target, "improvement_candidate.outcome_target");
+  assertString(value.outcome_target.metric, "improvement_candidate.outcome_target.metric", 1, 200);
+  assertEnum(value.outcome_target.direction, ["INCREASE", "DECREASE", "MAINTAIN"], "improvement_candidate.outcome_target.direction");
+  if (value.outcome_target.baseline_value !== null) assertNumber(value.outcome_target.baseline_value, "improvement_candidate.outcome_target.baseline_value", -1_000_000_000, 1_000_000_000);
+  assertNumber(value.outcome_target.expected_delta, "improvement_candidate.outcome_target.expected_delta", -1_000_000_000, 1_000_000_000);
+  assertString(value.outcome_target.unit, "improvement_candidate.outcome_target.unit", 1, 100);
+  validateImprovementAmendmentDetails(value.amendment_details, "improvement_candidate.amendment_details");
+  const material = value.product_defining
+    || value.owner_review_topics.length > 0
+    || ["PRODUCT_ENHANCEMENT", "COMMERCIAL_CHANGE", "RESEARCH_HYPOTHESIS"].includes(value.category)
+    || value.risk !== "LOW"
+    || value.reversibility !== "FULL"
+    || value.affected_scope.some((entry) => entry.replaceAll("\\", "/").startsWith(".entral/governor/"));
+  if (material && value.amendment_details === null) fail("MATERIAL_AMENDMENT_REQUIRED", "Material ImprovementCandidates require complete amendment details");
+  for (const field of ["created_at", "updated_at"]) assertIso(value[field], `improvement_candidate.${field}`);
+  assertSha40(value.release_version, "improvement_candidate.release_version");
+  assertSafeTextTree(value, "improvement_candidate");
+  return value;
+}
+
+export function validatePhaseAmendment(value) {
+  assertVersion(value, "phase_amendment");
+  assertId(value.amendment_id, "phase_amendment.amendment_id");
+  assertId(value.candidate_id, "phase_amendment.candidate_id");
+  for (const field of ["tenant_id", "organization_id", "business_id"]) assertNullableString(value[field], `phase_amendment.${field}`, 200);
+  assertExecutionActor(value.actor);
+  assertSha256(value.request_idempotency_key, "phase_amendment.request_idempotency_key");
+  assertInteger(value.phase, "phase_amendment.phase", 1);
+  assertInteger(value.version, "phase_amendment.version", 1);
+  assertInteger(value.candidate_version, "phase_amendment.candidate_version", 1);
+  assertString(value.reason, "phase_amendment.reason", 3, 2_000);
+  assertRecord(value.scope_delta, "phase_amendment.scope_delta");
+  assertStringArray(value.scope_delta.added_requirements, "phase_amendment.scope_delta.added_requirements", { minimum: 1, unique: true });
+  assertStringArray(value.scope_delta.removed_requirements, "phase_amendment.scope_delta.removed_requirements", { unique: true });
+  assertStringArray(value.scope_delta.affected_paths, "phase_amendment.scope_delta.affected_paths", { minimum: 1, unique: true });
+  assertArray(value.evidence, "phase_amendment.evidence", { minimum: 1 });
+  value.evidence.forEach((entry, index) => validateImprovementEvidence(entry, `phase_amendment.evidence[${index}]`));
+  assertStringArray(value.affected_contracts, "phase_amendment.affected_contracts", { minimum: 1, unique: true });
+  assertStringArray(value.acceptance_criteria, "phase_amendment.acceptance_criteria", { minimum: 1, unique: true });
+  assertString(value.commercial_unlock, "phase_amendment.commercial_unlock", 3, 2_000);
+  assertRecord(value.dag_update, "phase_amendment.dag_update");
+  assertInteger(value.dag_update.target_phase, "phase_amendment.dag_update.target_phase", 1);
+  assertArray(value.dag_update.dependencies, "phase_amendment.dag_update.dependencies", { minimum: 1, unique: true });
+  value.dag_update.dependencies.forEach((phase, index) => assertInteger(phase, `phase_amendment.dag_update.dependencies[${index}]`, 1));
+  assertRecord(value.supersession_record, "phase_amendment.supersession_record");
+  assertStringArray(value.supersession_record.supersedes, "phase_amendment.supersession_record.supersedes", { minimum: 1, unique: true });
+  assertString(value.supersession_record.reason, "phase_amendment.supersession_record.reason", 3, 2_000);
+  assertEnum(value.approval_status, ["OWNER_REVIEW_REQUIRED", "ACCEPTED_BY_OWNER", "REJECTED", "DEFERRED"], "phase_amendment.approval_status");
+  assertStringArray(value.owner_review_topics, "phase_amendment.owner_review_topics", { unique: true });
+  value.owner_review_topics.forEach((topic, index) => assertEnum(topic, IMPROVEMENT_OWNER_REVIEW_TOPICS, `phase_amendment.owner_review_topics[${index}]`));
+  if (value.owner_approval !== null) {
+    assertRecord(value.owner_approval, "phase_amendment.owner_approval");
+    assertId(value.owner_approval.decision_id, "phase_amendment.owner_approval.decision_id");
+    if (value.owner_approval.owner_attested !== true) fail("UNATTESTED_OWNER_APPROVAL", "Accepted PhaseAmendments require an owner-attested approval");
+    assertIso(value.owner_approval.approved_at, "phase_amendment.owner_approval.approved_at");
+    assertSha256(value.owner_approval.evidence_sha256, "phase_amendment.owner_approval.evidence_sha256");
+  }
+  if (value.approval_status === "ACCEPTED_BY_OWNER" && value.owner_approval === null) fail("MISSING_OWNER_APPROVAL", "Accepted PhaseAmendments require owner approval evidence");
+  if (value.approval_status !== "ACCEPTED_BY_OWNER" && value.owner_approval !== null) fail("UNBOUND_OWNER_APPROVAL", "Only accepted PhaseAmendments may carry owner approval evidence");
+  assertNullableString(value.rationale, "phase_amendment.rationale");
+  assertNullableString(value.reevaluation_trigger, "phase_amendment.reevaluation_trigger");
+  for (const field of ["created_at", "updated_at"]) assertIso(value[field], `phase_amendment.${field}`);
+  assertSha40(value.release_version, "phase_amendment.release_version");
+  assertSafeTextTree(value, "phase_amendment");
+  return value;
+}
+
+export function validateImprovementOutcome(value) {
+  assertVersion(value, "improvement_outcome");
+  assertId(value.outcome_id, "improvement_outcome.outcome_id");
+  assertId(value.candidate_id, "improvement_outcome.candidate_id");
+  for (const field of ["tenant_id", "organization_id", "business_id"]) assertNullableString(value[field], `improvement_outcome.${field}`, 200);
+  assertExecutionActor(value.actor);
+  assertSha256(value.request_idempotency_key, "improvement_outcome.request_idempotency_key");
+  assertSha40(value.implementation_release_sha, "improvement_outcome.implementation_release_sha");
+  assertString(value.metric, "improvement_outcome.metric", 1, 200);
+  if (value.baseline_value !== null) assertNumber(value.baseline_value, "improvement_outcome.baseline_value", -1_000_000_000, 1_000_000_000);
+  if (value.observed_value !== null) assertNumber(value.observed_value, "improvement_outcome.observed_value", -1_000_000_000, 1_000_000_000);
+  if (value.delta !== null) assertNumber(value.delta, "improvement_outcome.delta", -1_000_000_000, 1_000_000_000);
+  assertEnum(value.result, ["IMPROVED", "UNCHANGED", "REGRESSED", "UNAVAILABLE"], "improvement_outcome.result");
+  if (value.result === "UNAVAILABLE" && (value.observed_value !== null || value.delta !== null)) fail("DISHONEST_OUTCOME", "Unavailable outcomes cannot invent an observed value or delta");
+  if (value.result !== "UNAVAILABLE" && (value.observed_value === null || value.delta === null)) fail("MISSING_OUTCOME_MEASUREMENT", "Measured outcomes require observed value and delta");
+  assertArray(value.evidence, "improvement_outcome.evidence", { minimum: 1 });
+  value.evidence.forEach((entry, index) => validateImprovementEvidence(entry, `improvement_outcome.evidence[${index}]`));
+  assertIso(value.measured_at, "improvement_outcome.measured_at");
+  assertSha40(value.release_version, "improvement_outcome.release_version");
+  assertSafeTextTree(value, "improvement_outcome");
+  return value;
+}
+
 function validateSimpleRecord(value, name, required) {
   assertVersion(value, name);
   for (const field of required) {
@@ -735,8 +953,9 @@ export function validateNamedContract(name, value, context = {}) {
     case "GovernorEvent": return validateGovernorEvent(value);
     case "ReviewRecord": return validateSimpleRecord(value, "review_record", ["checkpoint_id", "phase", "policy", "status", "request_commit_sha", "verdict", "updated_at"]);
     case "IncidentRecord": return validateSimpleRecord(value, "incident_record", ["incident_id", "phase", "severity", "summary", "evidence", "status", "created_at"]);
-    case "ImprovementCandidate": return validateSimpleRecord(value, "improvement_candidate", ["candidate_id", "source", "evidence", "proposed_phase", "status", "created_at"]);
-    case "PhaseAmendment": return validateSimpleRecord(value, "phase_amendment", ["amendment_id", "phase", "reason", "scope_delta", "evidence", "approval_status", "created_at"]);
+    case "ImprovementCandidate": return validateImprovementCandidate(value);
+    case "PhaseAmendment": return validatePhaseAmendment(value);
+    case "ImprovementOutcome": return validateImprovementOutcome(value);
     default: fail("UNKNOWN_CONTRACT", `Unsupported contract ${name}`);
   }
 }

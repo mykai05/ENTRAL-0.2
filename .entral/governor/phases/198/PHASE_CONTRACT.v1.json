@@ -1,0 +1,69 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 198,
+  "title": "Evidence-Based Improvement Queue and Controlled Phase Amendment",
+  "review_policy": "CONDITIONAL",
+  "objective": "Extend the repository-owned Governor with a small, durable evidence queue that ranks real improvement signals, authorizes only bounded low-risk work, and converts every material change into an owner-reviewed PhaseAmendment.",
+  "feature_ids": [
+    "P198-F001", "P198-F002", "P198-F003", "P198-F004", "P198-F005", "P198-F006",
+    "P198-F007", "P198-F008", "P198-F009", "P198-F010", "P198-F011", "P198-F012",
+    "P198-F013", "P198-F014", "P198-F015", "P198-F016", "P198-F017", "P198-F018",
+    "P198-F019"
+  ],
+  "acceptance_gate_ids": [
+    "P198-F001-A", "P198-F002-A", "P198-F003-A", "P198-F004-A", "P198-F005-A", "P198-F006-A",
+    "P198-F007-A", "P198-F008-A", "P198-F009-A", "P198-F010-A", "P198-F011-A", "P198-F012-A",
+    "P198-F013-A", "P198-F014-A", "P198-F015-A", "P198-F016-A", "P198-F017-A", "P198-F018-A",
+    "P198-F019-A"
+  ],
+  "source_contract": [
+    "TEST", "INCIDENT", "TELEMETRY", "SUPPORT", "ONBOARDING", "SALES_OBJECTION",
+    "LOST_DEAL", "FEATURE_USAGE", "CONNECTOR_HEALTH", "COST", "VERIFIED_MARKET_EVIDENCE"
+  ],
+  "category_contract": [
+    "DEFECT_REPAIR", "RELIABILITY_IMPROVEMENT", "PRODUCT_ENHANCEMENT",
+    "TECHNICAL_DEBT", "COMMERCIAL_CHANGE", "RESEARCH_HYPOTHESIS"
+  ],
+  "automatic_execution_contract": {
+    "risk": "LOW",
+    "reversibility": "FULL",
+    "within_active_budget": true,
+    "emergency_reserve_preserved": true,
+    "deterministic_tests_required": true,
+    "product_defining": false,
+    "owner_review_topics": [],
+    "governor_self_modification": false
+  },
+  "owner_review_topics": [
+    "PRICING", "PACKAGING", "LEGAL", "CUSTOMER_DATA_RIGHTS", "PUBLIC_COMMITMENT",
+    "ARCHITECTURE_REPLACEMENT", "MATERIAL_SPENDING"
+  ],
+  "amendment_application_contract": [
+    "OWNER_ATTESTED_ACCEPTANCE",
+    "PHASE_DAG_UPDATED",
+    "AFFECTED_CONTRACTS_RECORDED",
+    "ACCEPTANCE_CRITERIA_RECORDED",
+    "COMMERCIAL_UNLOCK_RECORDED",
+    "SUPERSESSION_RECORDED",
+    "MATERIAL_PHASE_AMENDMENT_REVIEW_TRIGGERED"
+  ],
+  "release_requirements": [
+    "RECONCILED_WITH_CURRENT_MAIN",
+    "PROTECTED_MAIN_CHECKS_PASS",
+    "EXACT_MAIN_SHA_DEPLOYED",
+    "MIGRATIONS_VERIFIED",
+    "AUTHENTICATED_PRODUCTION_SMOKE_AND_READBACK",
+    "PRODUCTION_HEALTH_THRESHOLDS_PASS",
+    "HASHED_RELEASE_EVIDENCE_BUNDLE",
+    "BOUNDED_ROLLBACK_POINT_RECORDED"
+  ],
+  "out_of_scope": [
+    "PROJECT_MANAGEMENT_SUITE",
+    "AUTONOMOUS_PRODUCT_REDEFINITION",
+    "GOVERNOR_SELF_MODIFICATION",
+    "UNVERIFIED_MARKET_CLAIMS",
+    "FUTURE_PHASE_IMPLEMENTATION",
+    "PRODUCT_RUNTIME_OR_UI_FEATURES"
+  ]
+}

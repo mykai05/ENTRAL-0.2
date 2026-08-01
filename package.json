@@ -30,6 +30,7 @@
     "governor": "node .entral/governor/bin/governor.mjs",
     "test:phase196": "node --test .entral/governor/tests/governor.test.mjs scripts/phase196-release-gates.test.mjs",
     "test:phase197": "node --test .entral/governor/tests/release-controller.test.mjs scripts/phase197-release-gates.test.mjs",
+    "test:phase198": "node --test .entral/governor/tests/improvement-queue.test.mjs scripts/phase198-improvement-gates.test.mjs",
     "benchmark:phase180": "node scripts/phase180-benchmark.mjs",
     "test:release-positioning": "node --test scripts/release-positioning.test.mjs",
     "release:check": "node scripts/release-readiness.mjs",
