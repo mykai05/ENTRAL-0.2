@@ -1,0 +1,68 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P196-IMPLEMENT-GOVERNOR-001-local-ffb43fcb",
+  "task_packet_id": "P196-IMPLEMENT-GOVERNOR-001",
+  "phase": 196,
+  "outcome": "PASSED",
+  "commit_sha": "ffb43fcb29a03922694d7a5a95813748977e454b",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/README.md",
+    ".entral/governor/bin/governor.mjs",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/lib/contracts.mjs",
+    ".entral/governor/lib/governor.mjs",
+    ".entral/governor/lib/store.mjs",
+    ".entral/governor/migrations/001_initialize_v1.mjs",
+    ".entral/governor/phases/196/PHASE_CONTRACT.v1.json",
+    ".entral/governor/pro-review/README.md",
+    ".entral/governor/program/PHASE_DAG.v1.json",
+    ".entral/governor/releases/phase-195.json",
+    ".entral/governor/schemas/v1/governor.schema.json",
+    ".entral/governor/tasks/P196-IMPLEMENT-GOVERNOR-001.json",
+    ".entral/governor/tests/governor.test.mjs",
+    ".github/workflows/ci-cd.yml",
+    ".gitignore",
+    "docs/PHASE_196_VERIFICATION.md",
+    "package.json",
+    "scripts/phase196-release-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "corepack pnpm@9.12.3 test:phase196",
+      "status": "PASSED"
+    },
+    {
+      "command": "corepack pnpm@9.12.3 test:phase195",
+      "status": "PASSED"
+    },
+    {
+      "command": "corepack pnpm@9.12.3 contracts:verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "corepack pnpm@9.12.3 lint",
+      "status": "PASSED"
+    },
+    {
+      "command": "corepack pnpm@9.12.3 test",
+      "status": "PASSED"
+    },
+    {
+      "command": "corepack pnpm@9.12.3 build",
+      "status": "PASSED"
+    },
+    {
+      "command": "corepack pnpm@9.12.3 release:check",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Deployment follows protected-main integration and exact-main-SHA CI."
+  },
+  "result_fingerprint": "86ec71326f033993db16a7b0e97ed6ac7d29a88554c7bde6e0a10a42b42f9fb9",
+  "completed_at": "2026-08-01T12:31:08.786Z"
+}
