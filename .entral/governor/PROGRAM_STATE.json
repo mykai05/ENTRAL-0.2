@@ -9,45 +9,43 @@
     195,
     196
   ],
-  "current_task_packet_id": "P197-REPAIR-E2E-ESCAPE-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P197-RELEASE-CONTROLLER-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P197-REPAIR-E2E-ESCAPE-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P197-RELEASE-CONTROLLER-001-08e0976d",
-    "task_packet_id": "P197-RELEASE-CONTROLLER-001",
+    "execution_result_id": "P197-REPAIR-E2E-ESCAPE-001-980fde77",
+    "task_packet_id": "P197-REPAIR-E2E-ESCAPE-001",
     "phase": 197,
     "outcome": "PASSED",
-    "commit_sha": "08e0976d32d3c68fdc88e2ba7392a772f6b7dca0",
+    "commit_sha": "980fde778b87e16f49248e2111e0fff79e77e473",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
-      ".entral/governor/README.md",
-      ".entral/governor/bin/governor.mjs",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/lib/contracts.mjs",
-      ".entral/governor/lib/release-controller.mjs",
-      ".entral/governor/phases/197/PHASE_CONTRACT.v1.json",
-      ".entral/governor/releases/phase-196.json",
-      ".entral/governor/schemas/v1/governor.schema.json",
-      ".entral/governor/tasks/P197-RELEASE-CONTROLLER-001.json",
-      ".entral/governor/tests/release-controller.test.mjs",
-      ".github/workflows/ci-cd.yml",
-      "docs/PHASE_197_VERIFICATION.md",
-      "package.json",
-      "scripts/phase197-release-gates.test.mjs"
+      ".entral/governor/tasks/P197-REPAIR-E2E-ESCAPE-001.json",
+      "frontend/components/CanonicalGraphWorkspace.tsx",
+      "frontend/tests/Phase195GraphWorkspace.test.tsx"
     ],
     "tests": [
       {
-        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase197",
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm --filter @entral/frontend test -- Phase195GraphWorkspace.test.tsx (17 tests)",
         "status": "PASSED"
       },
       {
-        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase196",
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:e2e",
         "status": "PASSED"
       },
       {
-        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase195",
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase197 (25 tests)",
+        "status": "PASSED"
+      },
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase196 (27 tests)",
+        "status": "PASSED"
+      },
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase195 (24 tests)",
         "status": "PASSED"
       },
       {
@@ -59,7 +57,7 @@
         "status": "PASSED"
       },
       {
-        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test",
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test (418 frontend tests plus contracts and backend suites)",
         "status": "PASSED"
       },
       {
@@ -75,17 +73,17 @@
         "status": "PASSED"
       },
       {
-        "command": "Governor verify at state version 16 and event count 16",
+        "command": "Governor verify at state version 20 and event count 20",
         "status": "PASSED"
       }
     ],
     "unresolved_failures": [],
     "deployment_state": {
       "status": "NOT_ATTEMPTED",
-      "reason": "Exact-main-SHA deployment follows protected-main integration."
+      "reason": "Exact-main-SHA deployment follows protected-main integration of the repair commit."
     },
-    "result_fingerprint": "26fd6204fdbdea8bc12770172faeb128d037069e15c315e1aaf1c7388d087cc6",
-    "completed_at": "2026-08-01T13:50:57.066Z"
+    "result_fingerprint": "b9853928a454146209ef7328a41407bee21abe0ca1ff774da22d5c2ae0dc8748",
+    "completed_at": "2026-08-01T14:31:38.842Z"
   },
   "latest_verified_main_sha": "02c2084ef250ad152043c0bc02be56cb5aa6d6be",
   "latest_production_release": {
@@ -150,33 +148,19 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P197-REPAIR-E2E-ESCAPE-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "cac03dd1-86e5-429a-b6ca-80c8617802a2",
-    "task_packet_id": "P197-REPAIR-E2E-ESCAPE-001",
-    "owner": "codex-phase197-repair-20260801-xhigh",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      "frontend/components/CanonicalGraphWorkspace.tsx",
-      "frontend/tests/Phase195GraphWorkspace.test.tsx",
-      "e2e/entral.e2e.mjs",
-      ".entral/governor/**"
-    ],
-    "acquired_at": "2026-08-01T14:18:28.451Z",
-    "heartbeat_at": "2026-08-01T14:20:12.954Z",
-    "expires_at": "2026-08-01T16:20:12.954Z"
-  },
+  "next_action": "Reconcile Phase 197 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 20,
-  "updated_at": "2026-08-01T14:20:12.954Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "b9853928a454146209ef7328a41407bee21abe0ca1ff774da22d5c2ae0dc8748"
+  ],
+  "version": 21,
+  "updated_at": "2026-08-01T14:31:58.027Z",
   "task_deadline_at": "2026-08-01T17:18:28.367Z",
   "pending_release_manifest": null,
-  "event_count": 20,
-  "event_head_hash": "bb38091b3568df3258846a8b9c16e5b1722903cbb61a3a982ed8e8f479f208ef"
+  "event_count": 21,
+  "event_head_hash": "c9ca291d179f778df438f2412a66efc97c20fcf2ce0ead678c8fc70a60cd89cc"
 }
