@@ -9,49 +9,83 @@
     195,
     196
   ],
-  "current_task_packet_id": "P197-RELEASE-CONTROLLER-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P196-DOC-CLEAN-BUILD-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P197-RELEASE-CONTROLLER-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P196-DOC-CLEAN-BUILD-001-6269cd61",
-    "task_packet_id": "P196-DOC-CLEAN-BUILD-001",
-    "phase": 196,
+    "execution_result_id": "P197-RELEASE-CONTROLLER-001-08e0976d",
+    "task_packet_id": "P197-RELEASE-CONTROLLER-001",
+    "phase": 197,
     "outcome": "PASSED",
-    "commit_sha": "6269cd6161f01caa6839510ccc71cf817ea250a5",
+    "commit_sha": "08e0976d32d3c68fdc88e2ba7392a772f6b7dca0",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
+      ".entral/governor/README.md",
+      ".entral/governor/bin/governor.mjs",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/tasks/P196-DOC-CLEAN-BUILD-001.json",
-      "docs/PHASE_196_VERIFICATION.md",
-      "scripts/phase196-release-gates.test.mjs"
+      ".entral/governor/lib/contracts.mjs",
+      ".entral/governor/lib/release-controller.mjs",
+      ".entral/governor/phases/197/PHASE_CONTRACT.v1.json",
+      ".entral/governor/releases/phase-196.json",
+      ".entral/governor/schemas/v1/governor.schema.json",
+      ".entral/governor/tasks/P197-RELEASE-CONTROLLER-001.json",
+      ".entral/governor/tests/release-controller.test.mjs",
+      ".github/workflows/ci-cd.yml",
+      "docs/PHASE_197_VERIFICATION.md",
+      "package.json",
+      "scripts/phase197-release-gates.test.mjs"
     ],
     "tests": [
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase197",
+        "status": "PASSED"
+      },
       {
         "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase196",
         "status": "PASSED"
       },
       {
-        "command": "Clean checkout: pnpm install --frozen-lockfile; pnpm prisma:generate; pnpm test:phase196; pnpm build",
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase195",
         "status": "PASSED"
       },
       {
-        "command": "Clean checkout tracked-file readback",
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm contracts:verify",
+        "status": "PASSED"
+      },
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm lint",
+        "status": "PASSED"
+      },
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test",
+        "status": "PASSED"
+      },
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm build",
+        "status": "PASSED"
+      },
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm release:check",
         "status": "PASSED"
       },
       {
         "command": "git diff --check",
+        "status": "PASSED"
+      },
+      {
+        "command": "Governor verify at state version 16 and event count 16",
         "status": "PASSED"
       }
     ],
     "unresolved_failures": [],
     "deployment_state": {
       "status": "NOT_ATTEMPTED",
-      "reason": "Deployment follows protected-main integration and exact-main-SHA CI."
+      "reason": "Exact-main-SHA deployment follows protected-main integration."
     },
-    "result_fingerprint": "b6bb95c3e5ba92326fe294177ebdfcb64087e2123e3256212c437d96419ba693",
-    "completed_at": "2026-08-01T12:41:00.955Z"
+    "result_fingerprint": "26fd6204fdbdea8bc12770172faeb128d037069e15c315e1aaf1c7388d087cc6",
+    "completed_at": "2026-08-01T13:50:57.066Z"
   },
   "latest_verified_main_sha": "02c2084ef250ad152043c0bc02be56cb5aa6d6be",
   "latest_production_release": {
@@ -116,34 +150,19 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P197-RELEASE-CONTROLLER-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "c76424c9-47a1-4246-94f4-bf4d8044d01f",
-    "task_packet_id": "P197-RELEASE-CONTROLLER-001",
-    "owner": "codex-phase197-20260801-xhigh",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      ".entral/governor/**",
-      "scripts/phase197-*.mjs",
-      "package.json",
-      ".github/workflows/ci-cd.yml",
-      "docs/PHASE_197_VERIFICATION.md"
-    ],
-    "acquired_at": "2026-08-01T13:33:57.497Z",
-    "heartbeat_at": "2026-08-01T13:33:57.497Z",
-    "expires_at": "2026-08-01T17:33:57.497Z"
-  },
+  "next_action": "Reconcile Phase 197 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 16,
-  "updated_at": "2026-08-01T13:33:57.497Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "26fd6204fdbdea8bc12770172faeb128d037069e15c315e1aaf1c7388d087cc6"
+  ],
+  "version": 17,
+  "updated_at": "2026-08-01T13:51:15.746Z",
   "task_deadline_at": "2026-08-02T01:33:57.117Z",
   "pending_release_manifest": null,
-  "event_count": 16,
-  "event_head_hash": "c07cecf69f71c25ff9537952ec8a2eedfdc48b224a0612c2ec216a29c4d13919"
+  "event_count": 17,
+  "event_head_hash": "4b4fb8a20cb354b547a55f430ef10fec8d47853f7964df7908de721abffe28b7"
 }
