@@ -1,0 +1,37 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P196-FIX-NODE20-001-b9038535",
+  "task_packet_id": "P196-FIX-NODE20-001",
+  "phase": 196,
+  "outcome": "PASSED",
+  "commit_sha": "b90385358aec74477e48a830bc741a6d9f710e2d",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/tasks/P196-FIX-NODE20-001.json",
+    "package.json",
+    "scripts/phase196-release-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase196",
+      "status": "PASSED"
+    },
+    {
+      "command": "corepack pnpm@9.12.3 test:phase196",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Deployment follows protected-main integration and exact-main-SHA CI."
+  },
+  "result_fingerprint": "40a01ce64b07a97105793236f0d81cf3bb7f36bb68ba883f7957402efd887d72",
+  "completed_at": "2026-08-01T12:34:10.999Z"
+}

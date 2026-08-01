@@ -8,66 +8,35 @@
   "certified_phases": [
     195
   ],
-  "current_task_packet_id": "P196-FIX-NODE20-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P196-IMPLEMENT-GOVERNOR-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P196-FIX-NODE20-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P196-IMPLEMENT-GOVERNOR-001-local-ffb43fcb",
-    "task_packet_id": "P196-IMPLEMENT-GOVERNOR-001",
+    "execution_result_id": "P196-FIX-NODE20-001-b9038535",
+    "task_packet_id": "P196-FIX-NODE20-001",
     "phase": 196,
     "outcome": "PASSED",
-    "commit_sha": "ffb43fcb29a03922694d7a5a95813748977e454b",
+    "commit_sha": "b90385358aec74477e48a830bc741a6d9f710e2d",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
-      ".entral/governor/README.md",
-      ".entral/governor/bin/governor.mjs",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/lib/contracts.mjs",
-      ".entral/governor/lib/governor.mjs",
-      ".entral/governor/lib/store.mjs",
-      ".entral/governor/migrations/001_initialize_v1.mjs",
-      ".entral/governor/phases/196/PHASE_CONTRACT.v1.json",
-      ".entral/governor/pro-review/README.md",
-      ".entral/governor/program/PHASE_DAG.v1.json",
-      ".entral/governor/releases/phase-195.json",
-      ".entral/governor/schemas/v1/governor.schema.json",
-      ".entral/governor/tasks/P196-IMPLEMENT-GOVERNOR-001.json",
-      ".entral/governor/tests/governor.test.mjs",
-      ".github/workflows/ci-cd.yml",
-      ".gitignore",
-      "docs/PHASE_196_VERIFICATION.md",
+      ".entral/governor/tasks/P196-FIX-NODE20-001.json",
       "package.json",
       "scripts/phase196-release-gates.test.mjs"
     ],
     "tests": [
       {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase196",
+        "status": "PASSED"
+      },
+      {
         "command": "corepack pnpm@9.12.3 test:phase196",
         "status": "PASSED"
       },
       {
-        "command": "corepack pnpm@9.12.3 test:phase195",
-        "status": "PASSED"
-      },
-      {
-        "command": "corepack pnpm@9.12.3 contracts:verify",
-        "status": "PASSED"
-      },
-      {
-        "command": "corepack pnpm@9.12.3 lint",
-        "status": "PASSED"
-      },
-      {
-        "command": "corepack pnpm@9.12.3 test",
-        "status": "PASSED"
-      },
-      {
-        "command": "corepack pnpm@9.12.3 build",
-        "status": "PASSED"
-      },
-      {
-        "command": "corepack pnpm@9.12.3 release:check",
+        "command": "git diff --check",
         "status": "PASSED"
       }
     ],
@@ -76,8 +45,8 @@
       "status": "NOT_ATTEMPTED",
       "reason": "Deployment follows protected-main integration and exact-main-SHA CI."
     },
-    "result_fingerprint": "86ec71326f033993db16a7b0e97ed6ac7d29a88554c7bde6e0a10a42b42f9fb9",
-    "completed_at": "2026-08-01T12:31:08.786Z"
+    "result_fingerprint": "40a01ce64b07a97105793236f0d81cf3bb7f36bb68ba883f7957402efd887d72",
+    "completed_at": "2026-08-01T12:34:10.999Z"
   },
   "latest_verified_main_sha": "11058bffef238c1c7f917b2ea5bb3ff93800d35e",
   "latest_production_release": {
@@ -101,31 +70,18 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P196-FIX-NODE20-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "3f8528e2-9c09-49cc-b12b-7e61890ac665",
-    "task_packet_id": "P196-FIX-NODE20-001",
-    "owner": "codex-phase196-20260801-xhigh",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      "package.json",
-      ".entral/governor/tasks/P196-FIX-NODE20-001.json",
-      ".entral/governor/results/P196-FIX-NODE20-001-*.json"
-    ],
-    "acquired_at": "2026-08-01T12:32:58.390Z",
-    "heartbeat_at": "2026-08-01T12:32:58.390Z",
-    "expires_at": "2026-08-01T14:32:58.390Z"
-  },
+  "next_action": "Reconcile Phase 196 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 7,
-  "updated_at": "2026-08-01T12:32:58.390Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "40a01ce64b07a97105793236f0d81cf3bb7f36bb68ba883f7957402efd887d72"
+  ],
+  "version": 8,
+  "updated_at": "2026-08-01T12:34:26.137Z",
   "task_deadline_at": "2026-08-01T14:32:58.064Z",
-  "event_count": 7,
-  "event_head_hash": "98930b672acec4153eb70e8aabd60d1f39186747f462ee6b4a74b3476805577f"
+  "event_count": 8,
+  "event_head_hash": "1d3f039ceb032c10ee20584297523b3d4bbc8aa13cf85f06004c3b89afa1aeaa"
 }
