@@ -1,0 +1,27 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+  "phase": 199,
+  "reviewed_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+  "verdict_commit_sha": "9331b6e37d5e8db114ffc5fc211df04482cfcb67",
+  "verdict": "PASS_WITH_BINDING_CORRECTIONS",
+  "binding_corrections": [
+    "Treat IMPLEMENTED_UNVERIFIED and PARTIAL as certification-blocking requirement states and add negative tests for both.",
+    "Commit the complete source-backed secure JSON column inventory and credential-bearing subset; after deployment run APPLY and a separate fresh AUDIT, retain both receipt hashes, and require zero plaintext and invalid rows in every protected credential target.",
+    "Replace machine-local evidence paths with repository-at-commit path references; name the original Phase 100 through 190 completion gates and record all specified known limitations.",
+    "Use certified Phase 198 main 5c2f9d58c25dec82d4c3102f3b48a76797801594 as the immediate rollback target and bind final main, three deployments, reconciliation, migration, authenticated smoke, state readback, release tag, and rollback evidence before certification."
+  ],
+  "rationale": "The candidate is acceptable only after the four owner-attested corrections close certification-state semantics, complete and narrow credential evidence, make references portable and historically specific, and bind the final release to the immediate certified rollback target.",
+  "evidence_reviewed": [
+    ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_REQUEST.json",
+    ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/EVIDENCE_INDEX.json",
+    ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_BRIEF.md",
+    "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+    "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+    "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+    "docs/evidence/phase199/TEST_RECEIPTS.json"
+  ],
+  "owner_attested": true,
+  "reviewed_at": "2026-08-01T16:50:00.000Z"
+}

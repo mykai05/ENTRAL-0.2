@@ -3,7 +3,7 @@
   "schema_version": 1,
   "program_version": "ENTRAL-V9-CODEX-XHIGH-GPT-PRO-REVIEW",
   "execution_model": "CODEX_5_6_SOL_XHIGH",
-  "status": "WAITING_FOR_GPT_PRO_REVIEW",
+  "status": "ACTIVE",
   "current_phase": 199,
   "certified_phases": [
     195,
@@ -209,7 +209,7 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Owner requests GPT-5.6 Pro review for P199-BASELINE-RECERTIFICATION-REVIEW at f9bba0b275798664374b96630cc2c34a8d8ffe33.",
+  "next_action": "Create one bounded correction TaskPacket and rerun every affected deterministic gate.",
   "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": {
@@ -218,22 +218,48 @@
     "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
     "phase": 199,
     "policy": "MANDATORY",
-    "status": "WAITING_FOR_GPT_PRO_REVIEW",
+    "status": "PASS_WITH_BINDING_CORRECTIONS",
     "request_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
     "request_path": "pro-review/P199-BASELINE-RECERTIFICATION-REVIEW",
-    "verdict": null,
+    "verdict": {
+      "contract_version": "1.0.0",
+      "schema_version": 1,
+      "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+      "phase": 199,
+      "reviewed_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+      "verdict_commit_sha": "9331b6e37d5e8db114ffc5fc211df04482cfcb67",
+      "verdict": "PASS_WITH_BINDING_CORRECTIONS",
+      "binding_corrections": [
+        "Treat IMPLEMENTED_UNVERIFIED and PARTIAL as certification-blocking requirement states and add negative tests for both.",
+        "Commit the complete source-backed secure JSON column inventory and credential-bearing subset; after deployment run APPLY and a separate fresh AUDIT, retain both receipt hashes, and require zero plaintext and invalid rows in every protected credential target.",
+        "Replace machine-local evidence paths with repository-at-commit path references; name the original Phase 100 through 190 completion gates and record all specified known limitations.",
+        "Use certified Phase 198 main 5c2f9d58c25dec82d4c3102f3b48a76797801594 as the immediate rollback target and bind final main, three deployments, reconciliation, migration, authenticated smoke, state readback, release tag, and rollback evidence before certification."
+      ],
+      "rationale": "The candidate is acceptable only after the four owner-attested corrections close certification-state semantics, complete and narrow credential evidence, make references portable and historically specific, and bind the final release to the immediate certified rollback target.",
+      "evidence_reviewed": [
+        ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_REQUEST.json",
+        ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/EVIDENCE_INDEX.json",
+        ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_BRIEF.md",
+        "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+        "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+        "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+        "docs/evidence/phase199/TEST_RECEIPTS.json"
+      ],
+      "owner_attested": true,
+      "reviewed_at": "2026-08-01T16:50:00.000Z"
+    },
     "binding_corrections_completed": false,
-    "updated_at": "2026-08-01T16:41:55.546Z"
+    "updated_at": "2026-08-01T23:41:26.367Z"
   },
   "conditional_review_triggers": [],
   "task_attempts": 1,
   "result_fingerprints": [
     "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
   ],
-  "version": 35,
-  "updated_at": "2026-08-01T16:41:55.546Z",
+  "version": 36,
+  "updated_at": "2026-08-01T23:41:26.367Z",
   "task_deadline_at": "2026-08-02T04:20:47.109Z",
   "pending_release_manifest": null,
-  "event_count": 35,
-  "event_head_hash": "dda321b0955791c19fcabbdbc2a48de7e9ee00350166f2a8e804b5d6d844a550"
+  "event_count": 36,
+  "event_head_hash": "8ad476c28ee45979a984c190959424cdae86658dafab1f3141d156971960050b"
 }
