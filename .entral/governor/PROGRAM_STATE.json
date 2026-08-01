@@ -8,22 +8,22 @@
   "certified_phases": [
     195
   ],
-  "current_task_packet_id": "P196-DOC-CLEAN-BUILD-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P196-FIX-NODE20-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P196-DOC-CLEAN-BUILD-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P196-FIX-NODE20-001-b9038535",
-    "task_packet_id": "P196-FIX-NODE20-001",
+    "execution_result_id": "P196-DOC-CLEAN-BUILD-001-6269cd61",
+    "task_packet_id": "P196-DOC-CLEAN-BUILD-001",
     "phase": 196,
     "outcome": "PASSED",
-    "commit_sha": "b90385358aec74477e48a830bc741a6d9f710e2d",
+    "commit_sha": "6269cd6161f01caa6839510ccc71cf817ea250a5",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/tasks/P196-FIX-NODE20-001.json",
-      "package.json",
+      ".entral/governor/tasks/P196-DOC-CLEAN-BUILD-001.json",
+      "docs/PHASE_196_VERIFICATION.md",
       "scripts/phase196-release-gates.test.mjs"
     ],
     "tests": [
@@ -32,7 +32,11 @@
         "status": "PASSED"
       },
       {
-        "command": "corepack pnpm@9.12.3 test:phase196",
+        "command": "Clean checkout: pnpm install --frozen-lockfile; pnpm prisma:generate; pnpm test:phase196; pnpm build",
+        "status": "PASSED"
+      },
+      {
+        "command": "Clean checkout tracked-file readback",
         "status": "PASSED"
       },
       {
@@ -45,8 +49,8 @@
       "status": "NOT_ATTEMPTED",
       "reason": "Deployment follows protected-main integration and exact-main-SHA CI."
     },
-    "result_fingerprint": "40a01ce64b07a97105793236f0d81cf3bb7f36bb68ba883f7957402efd887d72",
-    "completed_at": "2026-08-01T12:34:10.999Z"
+    "result_fingerprint": "b6bb95c3e5ba92326fe294177ebdfcb64087e2123e3256212c437d96419ba693",
+    "completed_at": "2026-08-01T12:41:00.955Z"
   },
   "latest_verified_main_sha": "11058bffef238c1c7f917b2ea5bb3ff93800d35e",
   "latest_production_release": {
@@ -70,32 +74,18 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P196-DOC-CLEAN-BUILD-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "c85b34e2-27d6-4a04-b8fb-54a58435625a",
-    "task_packet_id": "P196-DOC-CLEAN-BUILD-001",
-    "owner": "codex-phase196-20260801-xhigh",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      "docs/PHASE_196_VERIFICATION.md",
-      "scripts/phase196-release-gates.test.mjs",
-      ".entral/governor/tasks/P196-DOC-CLEAN-BUILD-001.json",
-      ".entral/governor/results/P196-DOC-CLEAN-BUILD-001-*.json"
-    ],
-    "acquired_at": "2026-08-01T12:38:50.515Z",
-    "heartbeat_at": "2026-08-01T12:38:50.515Z",
-    "expires_at": "2026-08-01T14:38:50.515Z"
-  },
+  "next_action": "Reconcile Phase 196 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 10,
-  "updated_at": "2026-08-01T12:38:50.515Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "b6bb95c3e5ba92326fe294177ebdfcb64087e2123e3256212c437d96419ba693"
+  ],
+  "version": 11,
+  "updated_at": "2026-08-01T12:41:15.426Z",
   "task_deadline_at": "2026-08-01T14:38:50.149Z",
-  "event_count": 10,
-  "event_head_hash": "827ad95c9bfee54e5e5a2d28ebb738d1c81cd1edeb401638997ad0897b19cd60"
+  "event_count": 11,
+  "event_head_hash": "aaa2fbf39f8731560b7f95116365f50c7d2098b8d04fa78986f16856f9b39e77"
 }
