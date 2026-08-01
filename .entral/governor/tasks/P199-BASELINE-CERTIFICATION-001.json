@@ -1,0 +1,105 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "task_packet_id": "P199-BASELINE-CERTIFICATION-001",
+  "phase": 199,
+  "objective": "Audit and deterministically re-certify Phases 100-195, implement the typed BaselineCertificationManifest and evidence inventories, close the proven production encryption and development-memory isolation defects, and prepare the mandatory Phase 199 GPT-5.6 Pro review checkpoint without certifying or releasing Phase 199.",
+  "scope": [
+    ".entral/governor/**",
+    "packages/contracts/**",
+    "backend/src/env.ts",
+    "backend/src/dev-memory-server.ts",
+    "backend/src/services/secureJson.ts",
+    "backend/src/services/secureJsonReconciliation.ts",
+    "backend/src/cli/reconcileSecureJson.ts",
+    "backend/tests/phase199*.test.ts",
+    "frontend/components/NeuronsCommandCenter.tsx",
+    "frontend/tests/Phase199*.test.ts",
+    "scripts/phase199-*.mjs",
+    "docs/PHASE_199_*.md",
+    "docs/evidence/phase199/**",
+    "package.json",
+    "backend/package.json",
+    ".github/workflows/ci-cd.yml"
+  ],
+  "likely_modules": [
+    "packages/contracts/src/baseline.ts",
+    "backend/src/services/secureJsonReconciliation.ts",
+    "scripts/phase199-baseline-gates.mjs",
+    ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW"
+  ],
+  "preserved_behavior": [
+    "Protected-main Phase 198 release at 5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "Canonical PostgreSQL and RLS ownership, exact Phase 160 taxonomy, Phase 190 lifecycle actions, and Phase 195 synchronized dual graph",
+    "Authenticated member/internal audience separation and truthful unavailable states",
+    "User-owned worktrees, branches, screenshots, dirty files, and the Sovereign Protocol AGENTS.md change",
+    "Existing provider, migration, rollback, and canonical release evidence"
+  ],
+  "exclusions": [
+    "No Phase 200 or later implementation",
+    "No security-scan plugin or repository security-scan workflow",
+    "No subagent, agent team, alternate coding model, or automated GPT consumer-chat interaction",
+    "No production deployment, migration application, certification, or main merge before the mandatory GPT-5.6 Pro verdict",
+    "No speculative refactor or rebuild of evidence-verified behavior"
+  ],
+  "acceptance_tests": [
+    "pnpm test:phase199",
+    "pnpm test:phase198",
+    "pnpm test:phase197",
+    "pnpm test:phase196",
+    "pnpm test:phase195",
+    "pnpm contracts:verify",
+    "pnpm lint",
+    "pnpm test",
+    "pnpm build",
+    "pnpm release:check"
+  ],
+  "release_requirements": [
+    "All twenty-one Phase 199 acceptance gates have typed candidate evidence",
+    "Production secure JSON writes fail closed and plaintext rows have an auditable re-encryption procedure",
+    "Development memory, mock, sample, placeholder, and local fallback behavior is isolated from production and canonical customer truth",
+    "Exact pre-change branch, worktree, repository, provider, migration, runtime, website, Microsoft, authentication, tenant, Tutorial, and legacy evidence is retained",
+    "Mandatory review packet is committed and Governor enters WAITING_FOR_GPT_PRO_REVIEW",
+    "Phase 199 remains uncertified and Phase 200 remains blocked until a commit-bound owner-attested verdict and the full release cycle pass"
+  ],
+  "usage_budget": {
+    "maximum_wall_time_minutes": 720,
+    "maximum_attempts": 4,
+    "maximum_retries": 3,
+    "stagnation_limit": 2,
+    "checkpoint_at_tokens_remaining": 40000,
+    "release_repair_reserve_tokens": 20000
+  },
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "policy": {
+    "future_phase_compatibility_required": false,
+    "work_created_to_stay_active": false,
+    "speculative_refactors": [],
+    "duplicate_systems": []
+  },
+  "relevant_adrs": [
+    "docs/entral/101_architecture_lock.md"
+  ],
+  "relevant_source_paths": [
+    "docs/entral/100_repository_baseline.md",
+    "docs/PHASE_195_FEATURE_MATRIX.md",
+    "docs/PHASE_195_VERIFICATION.md",
+    ".entral/governor/releases/phase-198.json",
+    "packages/contracts/src/release.ts",
+    "backend/src/auth.ts",
+    "backend/src/env.ts",
+    "backend/src/services/secureJson.ts",
+    "frontend/components/CanonicalMemberShell.tsx",
+    "frontend/components/CanonicalGraphWorkspace.tsx",
+    "frontend/components/CanonicalUniverse3DGraph.tsx"
+  ],
+  "created_at": "2026-08-01T16:20:00.000Z"
+}

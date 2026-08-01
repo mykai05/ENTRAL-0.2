@@ -1,0 +1,108 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "plan_id": "P198-RELEASE-PLAN-001",
+  "phase": 198,
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "repository": "mykai05/ENTRAL-0.2",
+      "local_path": "C:/Temp/entral-phase198-deploy-5c2f9d58",
+      "origin_url": "https://github.com/mykai05/ENTRAL-0.2.git",
+      "default_branch": "main",
+      "latest_verified_main_sha": "fdabaea99400ed1e1dfcada2cd41a336ed0a193b",
+      "branch_prefix": "codex/",
+      "compatibility_contract_version": "release-control-v1"
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "local_path": "C:/Users/malac/Documents/Sovereign Protocol",
+      "origin_url": "https://github.com/SovereignProtocol/sovereign-protocol-agent.git",
+      "default_branch": "main",
+      "latest_verified_main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "branch_prefix": "codex/",
+      "compatibility_contract_version": "release-control-v1"
+    }
+  ],
+  "task": {
+    "task_packet_id": "P198-IMPROVEMENT-QUEUE-001",
+    "commit_sha": "209c9640d5e02b5b456b8a2b548e5aea7f6201ab",
+    "changed_files": [
+      ".entral/governor/PROGRAM_STATE.json",
+      ".entral/governor/README.md",
+      ".entral/governor/bin/governor.mjs",
+      ".entral/governor/events/EVENTS.jsonl",
+      ".entral/governor/improvements/POLICY.v1.json",
+      ".entral/governor/lib/contracts.mjs",
+      ".entral/governor/lib/governor.mjs",
+      ".entral/governor/lib/improvement-queue.mjs",
+      ".entral/governor/lib/store.mjs",
+      ".entral/governor/phases/198/PHASE_CONTRACT.v1.json",
+      ".entral/governor/release-control/phase-197/EVIDENCE_BUNDLE.json",
+      ".entral/governor/releases/phase-197.json",
+      ".entral/governor/results/P198-IMPROVEMENT-QUEUE-001-f5549b3c.json",
+      ".entral/governor/schemas/v1/governor.schema.json",
+      ".entral/governor/tasks/P198-IMPROVEMENT-QUEUE-001.json",
+      ".entral/governor/tests/improvement-queue.test.mjs",
+      ".github/workflows/ci-cd.yml",
+      "docs/PHASE_198_VERIFICATION.md",
+      "package.json",
+      "scripts/phase198-improvement-gates.test.mjs"
+    ],
+    "mandatory_phase_suites": [
+      "pnpm test:phase198",
+      "pnpm test:phase197",
+      "pnpm test:phase196",
+      "pnpm test:phase195",
+      "pnpm contracts:verify",
+      "pnpm prisma:generate",
+      "pnpm lint",
+      "pnpm test",
+      "pnpm build",
+      "pnpm release:check",
+      "git diff --check",
+      "Governor verify"
+    ]
+  },
+  "risk_profile": {
+    "data_migration": "NONE",
+    "customer_data_risk": "NONE",
+    "rollback_complexity": "SIMPLE",
+    "public_contract_change": false,
+    "provider_configuration_change": false,
+    "identity_or_tenancy_change": false,
+    "billing_or_economic_change": false
+  },
+  "changed_surfaces": ["FRONTEND", "API", "WORKER"],
+  "migrations": [
+    {
+      "order": 0,
+      "name": "phase-198-no-schema-change",
+      "kind": "NO_SCHEMA_CHANGE",
+      "fingerprint_sha256": "3e7e60de453b2110852f708c21a5c8841dd15434d2294c7bd2c93d42746e5f37",
+      "compatibility": "COMPATIBLE",
+      "recovery_strategy": "NONE_REQUIRED"
+    }
+  ],
+  "health_thresholds": {
+    "minimum_availability": 0.99,
+    "maximum_error_rate": 0.01,
+    "maximum_p95_ms": 2000,
+    "maximum_failed_jobs": 0,
+    "maximum_dead_letter_jobs": 0
+  },
+  "rollback_point": {
+    "status": "VERIFIED",
+    "main_sha": "fdabaea99400ed1e1dfcada2cd41a336ed0a193b",
+    "release_tag": "phase-197",
+    "integrity_status": "CERTAIN",
+    "receipt_sha256": "7ad1c91fb7dcf4e69591567d9d3b539f27eb3772799e320a0fde9d9ba76e7d1c",
+    "deployments": [
+      {"role": "FRONTEND", "provider": "VERCEL", "deployment_id": "dpl_EMcYY8WBCyVjMFdzvsTFzrJygWW1"},
+      {"role": "API", "provider": "RAILWAY", "deployment_id": "c81e2024-66fe-4cd4-be5e-85c2187e998c", "service_id": "2bdeff1a-74fc-4484-8316-6f10d974aaae"},
+      {"role": "WORKER", "provider": "RAILWAY", "deployment_id": "4771ed69-712d-47e4-9ea8-d5ee96f1983a", "service_id": "e531972e-5c0a-4885-9f19-f44f6bc6a366"}
+    ]
+  },
+  "created_at": "2026-08-01T15:40:07.705Z"
+}

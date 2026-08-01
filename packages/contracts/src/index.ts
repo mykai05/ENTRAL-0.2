@@ -1,4 +1,5 @@
 export * from "./assistant.js";
+export * from "./baseline.js";
 export * from "./domain.js";
 export * from "./graph.js";
 export * from "./integration.js";

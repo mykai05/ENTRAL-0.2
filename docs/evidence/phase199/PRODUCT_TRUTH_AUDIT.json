@@ -1,0 +1,212 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "audited_at": "2026-08-01T16:17:00.000Z",
+  "gates": [
+    {
+      "gate_id": "P199-F001-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json"
+      ]
+    },
+    {
+      "gate_id": "P199-F002-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        ".entral/governor/releases/phase-198.json"
+      ]
+    },
+    {
+      "gate_id": "P199-F003-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json"
+      ]
+    },
+    {
+      "gate_id": "P199-F004-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json"
+      ]
+    },
+    {
+      "gate_id": "P199-F005-A",
+      "state": "IMPLEMENTED_PENDING_PRODUCTION_RECONCILIATION",
+      "evidence": [
+        "backend/src/env.ts",
+        "backend/src/services/secureJson.ts",
+        "backend/src/services/secureJsonReconciliation.ts"
+      ]
+    },
+    {
+      "gate_id": "P199-F006-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "backend/src/dev-memory-server.ts",
+        "backend/src/routes/connections.ts"
+      ]
+    },
+    {
+      "gate_id": "P199-F007-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "frontend/components/CanonicalMemberShell.tsx"
+      ]
+    },
+    {
+      "gate_id": "P199-F008-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "frontend/components/CanonicalGraphWorkspace.tsx",
+        "frontend/components/CanonicalUniverse3DGraph.tsx"
+      ]
+    },
+    {
+      "gate_id": "P199-F009-A",
+      "state": "MIGRATION_BOUNDARY_DOCUMENTED",
+      "evidence": [
+        "frontend/components/CanonicalUniverse3DGraph.tsx",
+        "frontend/components/NeuronsCommandCenter.tsx"
+      ]
+    },
+    {
+      "gate_id": "P199-F010-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "frontend/components/CanonicalGraphWorkspace.tsx",
+        "frontend/components/NeuronsCommandCenter.tsx"
+      ]
+    },
+    {
+      "gate_id": "P199-F011-A",
+      "state": "CERTIFIED_PRODUCTION_BASELINE",
+      "evidence": [
+        ".entral/governor/releases/phase-198.json",
+        "backend/tests/phase190EntityLifecyclePostgres.integration.test.ts"
+      ]
+    },
+    {
+      "gate_id": "P199-F012-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "backend/src/auth.ts",
+        "backend/src/env.ts",
+        "backend/src/routes/auth.ts"
+      ]
+    },
+    {
+      "gate_id": "P199-F013-A",
+      "state": "INVENTORIED_PHASE_202_BOUNDARY",
+      "evidence": [
+        "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json"
+      ]
+    },
+    {
+      "gate_id": "P199-F014-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "backend/src/env.ts",
+        "backend/src/services/secureJson.ts"
+      ]
+    },
+    {
+      "gate_id": "P199-F015-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "frontend/components/OnboardingTour.tsx",
+        "frontend/app/globals.css"
+      ]
+    },
+    {
+      "gate_id": "P199-F016-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        "C:/Users/malac/Documents/Sovereign Protocol/apps/website",
+        ".entral/governor/releases/phase-198.json"
+      ]
+    },
+    {
+      "gate_id": "P199-F017-A",
+      "state": "CANDIDATE_VERIFIED_OPTIONAL_ONLY",
+      "evidence": [
+        "backend/src/services/integrationRegistry.ts",
+        "C:/Users/malac/Documents/Sovereign Protocol/apps/website"
+      ]
+    },
+    {
+      "gate_id": "P199-F018-A",
+      "state": "CANDIDATE_VERIFIED",
+      "evidence": [
+        ".entral/governor/PROGRAM_STATE.json",
+        ".entral/governor/tests/governor.test.mjs"
+      ]
+    },
+    {
+      "gate_id": "P199-F019-A",
+      "state": "DETERMINISTIC_SUITE_PASSED_RELEASE_GATES_PENDING",
+      "evidence": [
+        ".entral/governor/tasks/P199-BASELINE-CERTIFICATION-001.json"
+      ]
+    },
+    {
+      "gate_id": "P199-F020-A",
+      "state": "CANDIDATE_REVIEW",
+      "evidence": [
+        "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json"
+      ]
+    },
+    {
+      "gate_id": "P199-F021-A",
+      "state": "BLOCK_ENFORCED",
+      "evidence": [
+        ".entral/governor/PROGRAM_STATE.json",
+        "packages/contracts/src/baseline.ts"
+      ]
+    }
+  ],
+  "canonical_graph": {
+    "customer_data_fallback": false,
+    "projection_authority": "canonical member projection",
+    "shared_view_state": true,
+    "unknown_metrics_visible_as_zero": false,
+    "legacy_3d_boundary": "embeddedGraphOnly drawing engine; canonical projection, layout, settings, selection, and unavailable behavior remain authoritative"
+  },
+  "auth": {
+    "session_revocation": "database sessionVersion checked",
+    "audiences": [
+      "member",
+      "internal"
+    ],
+    "same_origin_mutations": true,
+    "production_admin_step_up_required": true
+  },
+  "tutorial": {
+    "manual_academy_event": "entral:open-academy",
+    "guided_tutorial_event": "entral:open-tutorial",
+    "progress_scope": "user-local",
+    "accessibility_and_mobile_tests": "existing frontend suite"
+  },
+  "microsoft": {
+    "required_runtime_dependencies": [],
+    "optional_retained_paths": [
+      "inactive Outlook provider catalog metadata",
+      "optional public website Teams or Microsoft booking handoff"
+    ],
+    "migration_required": false,
+    "credentials_required_for_current_core": false,
+    "webhooks": [],
+    "scheduled_jobs": [],
+    "core_data_sources": []
+  },
+  "website": {
+    "pricing_default_cents": 29900,
+    "checkout_status": "FAIL_CLOSED_UNAVAILABLE",
+    "sign_in_handoff": "HTTPS and fail closed",
+    "synthetic_preview_label": "reference-only",
+    "active_integration_claims": "No Microsoft core-runtime claim"
+  },
+  "conclusion": "Candidate evidence supports mandatory review. It does not certify or release Phase 199 and does not unblock Phase 200."
+}

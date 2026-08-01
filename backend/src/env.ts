@@ -151,6 +151,22 @@ const envSchema = z.object({
     });
   }
 
+  if (value.NODE_ENV === "production" && !value.DATA_ENCRYPTION_KEY) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["DATA_ENCRYPTION_KEY"],
+      message: "Production requires DATA_ENCRYPTION_KEY; plaintext secure JSON is forbidden."
+    });
+  }
+
+  if (value.NODE_ENV === "production" && !isWorkerProcess && !value.ADMIN_MFA_CODE) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["ADMIN_MFA_CODE"],
+      message: "Production API requires ADMIN_MFA_CODE for administrative step-up."
+    });
+  }
+
   if (value.NODE_ENV === "production" && isWorkerProcess) {
     for (const component of [
       "AUTOMATION_WORKER_ENABLED",

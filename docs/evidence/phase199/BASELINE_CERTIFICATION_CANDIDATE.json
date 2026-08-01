@@ -1,0 +1,1550 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "manifest_id": "9b66d65b-9f5f-4cb7-aa16-19987d20e6c4",
+  "phase": 199,
+  "status": "CANDIDATE_REVIEW",
+  "covered_phases": [
+    100,
+    110,
+    120,
+    130,
+    140,
+    150,
+    160,
+    170,
+    180,
+    190,
+    195
+  ],
+  "repositories": {
+    "product": {
+      "repository": "mykai05/ENTRAL-0.2",
+      "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+    },
+    "control_website": {
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5"
+    }
+  },
+  "deployments": [
+    {
+      "role": "FRONTEND",
+      "provider": "VERCEL",
+      "deployment_id": "dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "production_url": "https://entral-0-2-frontend.vercel.app",
+      "status": "READY"
+    },
+    {
+      "role": "API",
+      "provider": "RAILWAY",
+      "deployment_id": "43f98e05-af77-44f2-826c-5976fc738e4b",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "production_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY"
+    },
+    {
+      "role": "WORKER",
+      "provider": "RAILWAY",
+      "deployment_id": "b477d5c8-2a55-4e74-84b8-168e5f938fd8",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "production_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "phase-198-no-schema-change",
+      "status": "NO_SCHEMA_CHANGE",
+      "checksum_sha256": null,
+      "production_readback_sha256": "3e7e60de453b2110852f708c21a5c8841dd15434d2294c7bd2c93d42746e5f37"
+    }
+  ],
+  "runtime_versions": {
+    "node": "20.19.0",
+    "pnpm": "9.12.3",
+    "postgres": "18.4",
+    "redis": "8.2.8"
+  },
+  "requirements": [
+    {
+      "requirement_id": "P100-BASELINE",
+      "phase": 100,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 100 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "docs/entral/100_repository_baseline.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P110-BASELINE",
+      "phase": 110,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 110 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+        "path_or_id": "docs/entral/ui/110_ui_baseline.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P120-BASELINE",
+      "phase": 120,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 120 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "docs/entral/120_data_intelligence_implementation_map.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P130-BASELINE",
+      "phase": 130,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 130 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+        "path_or_id": "docs/PHASE_130_SHARED_CONTRACTS.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P140-BASELINE",
+      "phase": 140,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 140 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+        "path_or_id": "backend/src/auth.ts",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P150-BASELINE",
+      "phase": 150,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 150 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+        "path_or_id": "docs/PHASE_150_DATABASE_IDENTITY_RUNBOOK.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P160-BASELINE",
+      "phase": 160,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 160 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+        "path_or_id": "docs/PHASE_160_CANONICAL_TAXONOMY_RUNBOOK.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P170-BASELINE",
+      "phase": 170,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 170 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+        "path_or_id": "backend/src/services/canonicalControlPlane.ts",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P180-BASELINE",
+      "phase": 180,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 180 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+        "path_or_id": "docs/PHASE_180_VERIFICATION.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P190-BASELINE",
+      "phase": 190,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 190 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+        "path_or_id": "docs/PHASE_190_VERIFICATION.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F001",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F001 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F002",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F002 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F003",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F003 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F004",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F004 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F005",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F005 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F006",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F006 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F007",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F007 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F008",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F008 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F009",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F009 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F010",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F010 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F011",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F011 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F012",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F012 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F013",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F013 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F014",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F014 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F015",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F015 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F016",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F016 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F017",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F017 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F018",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F018 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F019",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F019 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F020",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F020 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F021",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F021 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F022",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F022 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F023",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F023 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F024",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F024 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F025",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F025 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F026",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F026 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F027",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F027 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F028",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F028 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F029",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F029 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F030",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F030 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F031",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F031 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F032",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F032 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F033",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F033 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F034",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F034 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F035",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F035 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F036",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F036 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F037",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F037 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F038",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F038 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F039",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F039 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F040",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F040 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F041",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F041 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F042",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F042 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F043",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F043 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F044",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F044 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F045",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F045 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F046",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F046 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F047",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F047 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F048",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F048 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F049",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F049 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F050",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F050 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F051",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F051 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F052",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F052 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F053",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F053 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F054",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F054 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F055",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F055 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F056",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F056 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F057",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F057 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F058",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F058 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F059",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F059 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    },
+    {
+      "requirement_id": "P195-F060",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F060 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": ".entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null
+    }
+  ],
+  "legacy_isolation": [
+    {
+      "surface": "backend in-memory development server",
+      "disposition": "DEVELOPMENT_ONLY",
+      "production_reachable": false,
+      "canonical_authority": false,
+      "evidence": [
+        "backend/src/dev-memory-server.ts",
+        "backend/package.json#dev:memory"
+      ]
+    },
+    {
+      "surface": "inactive provider catalog entries and placeholder metadata",
+      "disposition": "CATALOG_ONLY",
+      "production_reachable": true,
+      "canonical_authority": false,
+      "evidence": [
+        "backend/src/routes/connections.ts",
+        "backend/src/services/integrationRegistry.ts"
+      ]
+    },
+    {
+      "surface": "browser-local Command OS recovery state",
+      "disposition": "PRESENTATION_ONLY",
+      "production_reachable": true,
+      "canonical_authority": false,
+      "evidence": [
+        "frontend/components/NeuronsCommandCenter.tsx",
+        "frontend/components/CanonicalMemberShell.tsx"
+      ]
+    },
+    {
+      "surface": "legacy multipurpose 3D drawing engine",
+      "disposition": "MIGRATION_BOUNDARY",
+      "production_reachable": true,
+      "canonical_authority": false,
+      "evidence": [
+        "frontend/components/CanonicalUniverse3DGraph.tsx",
+        "frontend/components/NeuronsCommandCenter.tsx#embeddedGraphOnly"
+      ]
+    },
+    {
+      "surface": "historical divergent branches and stale local main worktree",
+      "disposition": "SUPERSEDED",
+      "production_reachable": false,
+      "canonical_authority": false,
+      "evidence": [
+        "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test:phase198",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test:phase197",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test:phase196",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "governor verify",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    }
+  ],
+  "production_truth": {
+    "release_phase": 198,
+    "canonical_release_id": "29c0e347-6317-427e-b2fe-325833c619f6",
+    "phase_gate_id": "836511d5-248b-4a73-9ed4-d0ef27eac275",
+    "authenticated_smoke_sha256": "f73e366e727ef7846f79f3757ae439c25de7249823c43805b478c2c38069c036",
+    "state_readback_sha256": "0986e544923576128fcd1fc04b9243f3310862a1b71e4fe36d2d76330b13b2d4"
+  },
+  "secure_json_reconciliation": {
+    "status": "PENDING_DEPLOYMENT",
+    "plaintext_rows_found": null,
+    "plaintext_rows_reencrypted": null,
+    "receipt_sha256": null
+  },
+  "known_limitations": [
+    "Shared customer records remain user scoped until the explicit organization and business scope migration in Phase 202; current member routes enforce per-user ownership and admin access requires internal audience and step-up.",
+    "The legacy multipurpose 3D component remains only as an embedded drawing engine behind the canonical projection and shared view-state adapter; it is not a canonical data authority.",
+    "Phase 199 certification, secure JSON production reconciliation, exact-SHA deployment, and authenticated readback remain blocked until the mandatory GPT-5.6 Pro verdict is recorded."
+  ],
+  "rollback_point": {
+    "release_phase": 197,
+    "main_sha": "fdabaea99400ed1e1dfcada2cd41a336ed0a193b",
+    "reference": "release:phase-197:fdabaea99400ed1e1dfcada2cd41a336ed0a193b"
+  },
+  "certification": {
+    "all_mandatory_gates_passed": false,
+    "phase_200_blocked": true,
+    "review_checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+    "review_verdict_commit_sha": null
+  },
+  "generated_at": "2026-08-01T16:35:00.000Z"
+}

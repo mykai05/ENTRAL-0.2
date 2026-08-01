@@ -16,7 +16,8 @@
     "prisma:migrate": "prisma migrate dev --schema ../prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema ../prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema ../prisma/schema.prisma",
-    "release:evidence:record": "tsx src/cli/recordReleaseEvidence.ts"
+    "release:evidence:record": "tsx src/cli/recordReleaseEvidence.ts",
+    "secure-json:reconcile": "tsx src/cli/reconcileSecureJson.ts"
   },
   "dependencies": {
     "@entral/contracts": "workspace:*",

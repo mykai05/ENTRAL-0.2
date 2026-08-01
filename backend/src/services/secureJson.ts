@@ -46,6 +46,9 @@ export function stringifySecureJson(value: unknown) {
   const key = encryptionKey();
 
   if (!key) {
+    if (env.NODE_ENV === "production") {
+      throw new Error("Production secure JSON writes require DATA_ENCRYPTION_KEY.");
+    }
     return plaintext;
   }
 

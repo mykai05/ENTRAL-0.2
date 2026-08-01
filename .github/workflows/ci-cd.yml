@@ -59,6 +59,8 @@ jobs:
         run: pnpm test:phase197
       - name: Verify Phase 198 evidence queue and controlled phase amendments
         run: pnpm test:phase198
+      - name: Verify Phase 199 baseline candidate, fail-closed secrets, and review block
+        run: pnpm test:phase199
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build

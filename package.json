@@ -31,6 +31,7 @@
     "test:phase196": "node --test .entral/governor/tests/governor.test.mjs scripts/phase196-release-gates.test.mjs",
     "test:phase197": "node --test .entral/governor/tests/release-controller.test.mjs scripts/phase197-release-gates.test.mjs",
     "test:phase198": "node --test .entral/governor/tests/improvement-queue.test.mjs scripts/phase198-improvement-gates.test.mjs",
+    "test:phase199": "node scripts/run-pnpm.mjs --filter @entral/contracts build && node --test packages/contracts/tests/baseline.test.mjs scripts/phase199-baseline-gates.test.mjs && node scripts/run-pnpm.mjs --filter @entral/backend exec vitest run tests/phase199BaselineSecurity.test.ts",
     "benchmark:phase180": "node scripts/phase180-benchmark.mjs",
     "test:release-positioning": "node --test scripts/release-positioning.test.mjs",
     "release:check": "node scripts/release-readiness.mjs",
