@@ -1,0 +1,15 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "policy_id": "PHASE-198-DEFAULT",
+  "maximum_active_budget_units": 100,
+  "emergency_repair_reserve_units": 20,
+  "maximum_active_candidates": 3,
+  "minimum_score": 55,
+  "quiet_period_hours": 24,
+  "active_budget_units": 0,
+  "active_candidate_ids": [],
+  "last_cycle_at": null,
+  "stop_conditions": [],
+  "updated_at": "2026-08-01T15:00:00.000Z"
+}

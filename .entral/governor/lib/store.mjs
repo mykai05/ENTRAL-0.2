@@ -48,7 +48,11 @@ export function sha256(value) {
 }
 
 export async function ensureGovernorLayout(repositoryRoot) {
-  for (const relative of ["events", "runtime", "checkpoints", "pro-review", "releases", "tasks"]) {
+  for (const relative of [
+    "events", "runtime", "checkpoints", "pro-review", "releases", "tasks",
+    "improvements/candidates", "improvements/amendments", "improvements/outcomes",
+    "improvements/cycles", "improvements/task-proposals", "improvements/applied"
+  ]) {
     await mkdir(governorPath(repositoryRoot, relative), { recursive: true });
   }
 }

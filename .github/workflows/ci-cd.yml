@@ -57,6 +57,8 @@ jobs:
         run: pnpm test:phase196
       - name: Verify Phase 197 deterministic release controller and rollback containment
         run: pnpm test:phase197
+      - name: Verify Phase 198 evidence queue and controlled phase amendments
+        run: pnpm test:phase198
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
@@ -126,6 +128,18 @@ jobs:
             test-results/phase197/**
             .entral/governor/release-control/phase-197/**
             .entral/governor/releases/phase-197.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain Phase 198 improvement-queue evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-198-improvement-queue-evidence
+          path: |
+            test-results/phase198/**
+            .entral/governor/improvements/cycles/**
+            .entral/governor/improvements/amendments/**
+            .entral/governor/improvements/outcomes/**
           if-no-files-found: warn
           retention-days: 90
       - run: pnpm build

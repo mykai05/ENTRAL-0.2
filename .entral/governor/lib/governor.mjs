@@ -17,6 +17,7 @@ import {
   validateReleaseManifest,
   validateReviewRequest,
   validateReviewVerdict,
+  validatePhaseAmendment,
   validateSessionCheckpoint,
   validateTaskPacket
 } from "./contracts.mjs";
@@ -41,6 +42,24 @@ import {
   writeJsonAtomic,
   writeTextAtomic
 } from "./store.mjs";
+import {
+  applyAcceptedPhaseAmendment,
+  decideImprovementCandidate,
+  improvementEvidenceView,
+  loadImprovementCandidates,
+  loadImprovementPolicy,
+  loadImprovementTaskProposals,
+  mergeImprovementCandidate,
+  normalizeImprovementCandidate,
+  persistImprovementCandidate,
+  persistImprovementCycle,
+  persistImprovementOutcome,
+  planImprovementCycle,
+  rankImprovementBacklog,
+  readImprovementCandidate,
+  recordImprovementOutcome,
+  sameImprovementRootCause
+} from "./improvement-queue.mjs";
 
 const PHASE_DAG_FILE = "program/PHASE_DAG.v1.json";
 const PHASE_CONTRACT = (phase) => `phases/${phase}/PHASE_CONTRACT.v1.json`;
@@ -736,6 +755,246 @@ export async function recordIncident(repositoryRoot, auth, incident, { now = new
       if (incident.phase !== state.current_phase) throw new GovernorError("INCIDENT_PHASE_MISMATCH", "Incident must match the active phase");
       await writeJsonAtomic(governorPath(repositoryRoot, INCIDENT_FILE(incident.incident_id)), incident);
       return { state, payload: { incident }, result: incident };
+    }
+  });
+}
+
+function assertImprovementQueueAvailable(state, auth, now) {
+  if (!state.certified_phases.includes(198) && state.current_phase !== 198) {
+    throw new GovernorError("IMPROVEMENT_QUEUE_NOT_ACTIVE", "The evidence-based improvement queue is available from Phase 198 onward");
+  }
+  if (state.active_write_lease) {
+    if (!isHealthyLease(state.active_write_lease, now)) {
+      throw new GovernorError("EXPIRED_WRITE_LEASE", "Resume the Governor before mutating the improvement queue under an expired write lease");
+    }
+    if (state.active_write_lease.owner !== auth.sessionId) {
+      throw new GovernorError("WRITE_LEASE_HELD", "The active TaskPacket lease belongs to another session", {
+        owner: state.active_write_lease.owner,
+        task_packet_id: state.active_write_lease.task_packet_id,
+        scope: state.active_write_lease.scope,
+        expires_at: state.active_write_lease.expires_at
+      });
+    }
+  }
+}
+
+export async function intakeImprovementCandidate(repositoryRoot, auth, input, { now = new Date() } = {}) {
+  return mutate(repositoryRoot, auth, {
+    eventType: "IMPROVEMENT_CANDIDATE_RECORDED",
+    subjectId: input?.candidate_id ?? "improvement-intake",
+    now,
+    async transform(state) {
+      assertImprovementQueueAvailable(state, auth, now);
+      const incoming = normalizeImprovementCandidate(input, { releaseVersion: state.latest_verified_main_sha, now });
+      const candidates = await loadImprovementCandidates(repositoryRoot);
+      const existing = candidates.find((candidate) => sameImprovementRootCause(candidate, incoming));
+      const candidate = existing ? mergeImprovementCandidate(existing, incoming, { now }) : incoming;
+      await persistImprovementCandidate(repositoryRoot, candidate);
+      return {
+        eventType: existing ? "IMPROVEMENT_CANDIDATE_MERGED" : "IMPROVEMENT_CANDIDATE_RECORDED",
+        subjectId: candidate.candidate_id,
+        state,
+        payload: {
+          candidate_id: candidate.candidate_id,
+          candidate_version: candidate.version,
+          evidence_count: candidate.evidence.length,
+          deduplicated: Boolean(existing),
+          candidate_sha256: sha256(candidate)
+        },
+        result: candidate
+      };
+    }
+  });
+}
+
+function closedImprovementStatus(status) {
+  return ["REJECTED", "IMPLEMENTED", "CLOSED_EVIDENCE_INVALID", "CLOSED_ROOT_CAUSE_REMOVED"].includes(status);
+}
+
+export async function runImprovementCycle(repositoryRoot, auth, { now = new Date() } = {}) {
+  return mutate(repositoryRoot, auth, {
+    eventType: "IMPROVEMENT_CYCLE_COMPLETED",
+    subjectId: "improvement-cycle",
+    now,
+    async transform(state) {
+      assertImprovementQueueAvailable(state, auth, now);
+      const candidates = await loadImprovementCandidates(repositoryRoot);
+      const storedPolicy = await loadImprovementPolicy(repositoryRoot);
+      const taskProposals = await loadImprovementTaskProposals(repositoryRoot);
+      const candidateByIdBeforeCycle = new Map(candidates.map((candidate) => [candidate.candidate_id, candidate]));
+      const recoveredActiveIds = [];
+      for (const proposal of taskProposals) {
+        const candidate = candidateByIdBeforeCycle.get(proposal.candidate_id);
+        if (!candidate) throw new GovernorError("ORPHANED_TASK_PROPOSAL", `Task proposal ${proposal.proposal_id} has no durable ImprovementCandidate`);
+        if (!closedImprovementStatus(candidate.status)) recoveredActiveIds.push(candidate.candidate_id);
+      }
+      const recoveredIds = [...new Set([...storedPolicy.active_candidate_ids, ...recoveredActiveIds])].sort();
+      const recoveredBudget = recoveredIds.reduce((total, candidateId) => {
+        const candidate = candidateByIdBeforeCycle.get(candidateId);
+        if (!candidate) throw new GovernorError("ORPHANED_ACTIVE_IMPROVEMENT", `Active improvement ${candidateId} has no durable candidate`);
+        return total + candidate.budget_units;
+      }, 0);
+      const policy = { ...storedPolicy, active_candidate_ids: recoveredIds, active_budget_units: recoveredBudget };
+      const cycle = planImprovementCycle(candidates, policy, { now });
+      const cycleId = `CYCLE-${cycle.produced_at.replace(/[^0-9]/g, "").slice(0, 17)}-${sha256({ candidates: cycle.candidates.map((candidate) => [candidate.candidate_id, candidate.version]), status: cycle.status, reason: cycle.reason }).slice(0, 12)}`;
+      const candidateById = new Map(cycle.candidates.map((candidate) => [candidate.candidate_id, candidate]));
+      const activeIds = policy.active_candidate_ids
+        .filter((candidateId) => candidateById.has(candidateId) && !closedImprovementStatus(candidateById.get(candidateId).status));
+      for (const proposal of cycle.task_proposals) activeIds.push(proposal.candidate_id);
+      const nextActiveIds = [...new Set(activeIds)].sort();
+      const activeBudget = nextActiveIds.reduce((total, candidateId) => total + candidateById.get(candidateId).budget_units, 0);
+      const nextPolicy = {
+        ...policy,
+        active_candidate_ids: nextActiveIds,
+        active_budget_units: activeBudget,
+        last_cycle_at: cycle.reason === "QUIET_PERIOD" ? policy.last_cycle_at : cycle.produced_at,
+        updated_at: cycle.produced_at
+      };
+      await persistImprovementCycle(repositoryRoot, cycle, cycleId);
+      await writeJsonAtomic(governorPath(repositoryRoot, "improvements/POLICY.v1.json"), nextPolicy);
+      return {
+        subjectId: cycleId,
+        state,
+        payload: {
+          cycle_id: cycleId,
+          status: cycle.status,
+          reason: cycle.reason,
+          task_proposal_ids: cycle.task_proposals.map((proposal) => proposal.proposal_id),
+          amendment_ids: cycle.amendments.map((amendment) => amendment.amendment_id),
+          closure_ids: cycle.closures.map((candidate) => candidate.candidate_id),
+          active_budget_units: activeBudget
+        },
+        result: { cycle_id: cycleId, cycle, policy: nextPolicy }
+      };
+    }
+  });
+}
+
+export async function getImprovementBacklog(repositoryRoot, auth) {
+  requireReadAuth(auth);
+  return rankImprovementBacklog(await loadImprovementCandidates(repositoryRoot));
+}
+
+export async function getImprovementEvidence(repositoryRoot, auth, candidateId) {
+  requireReadAuth(auth);
+  return improvementEvidenceView(await readImprovementCandidate(repositoryRoot, candidateId));
+}
+
+export async function decideImprovement(repositoryRoot, auth, candidateId, decision, { now = new Date() } = {}) {
+  return mutate(repositoryRoot, auth, {
+    eventType: "IMPROVEMENT_CANDIDATE_DECIDED",
+    subjectId: candidateId,
+    now,
+    async transform(state) {
+      assertImprovementQueueAvailable(state, auth, now);
+      const candidate = decideImprovementCandidate(await readImprovementCandidate(repositoryRoot, candidateId), decision, { now });
+      await persistImprovementCandidate(repositoryRoot, candidate);
+      return {
+        state,
+        payload: { candidate_id: candidateId, status: candidate.status, rationale: candidate.rationale, reevaluation_trigger: candidate.reevaluation_trigger },
+        result: candidate
+      };
+    }
+  });
+}
+
+export async function measureImprovement(repositoryRoot, auth, candidateId, measurement, { now = new Date() } = {}) {
+  return mutate(repositoryRoot, auth, {
+    eventType: "IMPROVEMENT_OUTCOME_RECORDED",
+    subjectId: candidateId,
+    now,
+    async transform(state) {
+      assertImprovementQueueAvailable(state, auth, now);
+      const measured = recordImprovementOutcome(await readImprovementCandidate(repositoryRoot, candidateId), measurement, {
+        now,
+        releaseVersion: state.latest_verified_main_sha
+      });
+      await persistImprovementCandidate(repositoryRoot, measured.candidate);
+      await persistImprovementOutcome(repositoryRoot, measured.outcome);
+      return {
+        state,
+        payload: { candidate_id: candidateId, outcome_id: measured.outcome.outcome_id, result: measured.outcome.result, outcome_sha256: sha256(measured.outcome) },
+        result: measured
+      };
+    }
+  });
+}
+
+function amendmentImmutableView(amendment) {
+  return Object.fromEntries([
+    "amendment_id", "candidate_id", "tenant_id", "organization_id", "business_id", "actor",
+    "request_idempotency_key", "phase", "candidate_version", "reason", "scope_delta", "evidence", "affected_contracts",
+    "acceptance_criteria", "commercial_unlock", "dag_update", "supersession_record", "owner_review_topics",
+    "created_at", "release_version"
+  ].map((field) => [field, amendment[field]]));
+}
+
+function assertRepositoryRecordId(value, field) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{2,199}$/.test(value)) {
+    throw new GovernorError("UNSAFE_IMPROVEMENT_ID", `${field} must be safe for repository-local persistence`);
+  }
+}
+
+export async function applyImprovementAmendment(repositoryRoot, auth, amendment, { now = new Date() } = {}) {
+  validatePhaseAmendment(amendment);
+  assertRepositoryRecordId(amendment.amendment_id, "amendment_id");
+  return mutate(repositoryRoot, auth, {
+    eventType: "PHASE_AMENDMENT_APPLIED",
+    subjectId: amendment.amendment_id,
+    now,
+    async transform(state) {
+      assertImprovementQueueAvailable(state, auth, now);
+      const storedPath = governorPath(repositoryRoot, `improvements/amendments/${amendment.amendment_id}.json`);
+      const stored = await readOptionalJson(storedPath);
+      if (!stored) throw new GovernorError("PHASE_AMENDMENT_NOT_FOUND", `PhaseAmendment ${amendment.amendment_id} does not exist`);
+      validatePhaseAmendment(stored);
+      if (canonicalJson(amendmentImmutableView(stored)) !== canonicalJson(amendmentImmutableView(amendment))) {
+        throw new GovernorError("PHASE_AMENDMENT_CONTENT_CHANGED", "Owner acceptance cannot alter the proposed scope, evidence, DAG, contracts, acceptance, commercial, or supersession record");
+      }
+      if (amendment.version !== stored.version + 1) throw new GovernorError("PHASE_AMENDMENT_VERSION_MISMATCH", "Accepted PhaseAmendment must advance the stored proposal by exactly one version");
+      const candidate = await readImprovementCandidate(repositoryRoot, amendment.candidate_id);
+      if (candidate.status !== "AMENDMENT_PROPOSED" || candidate.version !== amendment.candidate_version + 1) {
+        throw new GovernorError("STALE_PHASE_AMENDMENT", "Owner acceptance must bind the unchanged candidate version that produced the pending PhaseAmendment");
+      }
+      const phaseDag = await loadProgram(repositoryRoot);
+      const contractPath = governorPath(repositoryRoot, PHASE_CONTRACT(amendment.dag_update.target_phase));
+      const phaseContract = await readJson(contractPath);
+      const applied = applyAcceptedPhaseAmendment(amendment, phaseDag, phaseContract);
+      validateProgramDefinition(applied.phase_dag);
+      await writeJsonAtomic(governorPath(repositoryRoot, PHASE_DAG_FILE), applied.phase_dag);
+      await writeJsonAtomic(contractPath, applied.phase_contract);
+      await writeJsonAtomic(storedPath, amendment);
+      await writeJsonAtomic(governorPath(repositoryRoot, `improvements/applied/${amendment.amendment_id}.json`), {
+        contract_version: CONTRACT_VERSION,
+        schema_version: SCHEMA_VERSION,
+        amendment,
+        applied_changes: applied.applied_changes,
+        phase_dag_sha256: sha256(applied.phase_dag),
+        phase_contract_sha256: sha256(applied.phase_contract),
+        applied_at: iso(now)
+      });
+      await persistImprovementCandidate(repositoryRoot, {
+        ...candidate,
+        version: candidate.version + 1,
+        status: "AMENDMENT_ACCEPTED",
+        rationale: `Owner accepted ${amendment.amendment_id}; schedule the amended phase through normal TaskPacket and release gates.`,
+        reevaluation_trigger: null,
+        updated_at: iso(now)
+      });
+      return {
+        state: {
+          ...state,
+          conditional_review_triggers: [...new Set([...state.conditional_review_triggers, "MATERIAL_PHASE_AMENDMENT"])],
+          next_action: `Create a commit-bound GPT-5.6 Pro review packet for accepted material amendment ${amendment.amendment_id}.`
+        },
+        payload: {
+          amendment_id: amendment.amendment_id,
+          owner_decision_id: amendment.owner_approval.decision_id,
+          phase_dag_sha256: sha256(applied.phase_dag),
+          phase_contract_sha256: sha256(applied.phase_contract)
+        },
+        result: applied.applied_changes
+      };
     }
   });
 }

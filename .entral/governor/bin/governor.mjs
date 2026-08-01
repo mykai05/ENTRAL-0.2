@@ -11,6 +11,7 @@ import {
 import {
   activatePhase,
   addConditionalReviewTrigger,
+  applyImprovementAmendment,
   blockProgram,
   checkpointSession,
   claimTask,
@@ -19,14 +20,20 @@ import {
   createTask,
   eventLogSummary,
   getStatus,
+  getImprovementBacklog,
+  getImprovementEvidence,
   heartbeatTask,
   ingestReviewVerdict,
   initializeGovernor,
+  intakeImprovementCandidate,
   loadProgram,
   markReviewCorrectionsComplete,
   nextAction,
+  decideImprovement,
+  measureImprovement,
   recordIncident,
   recordResult,
+  runImprovementCycle,
   resumeGovernor,
   certifyPhase,
   unblockProgram,
@@ -128,6 +135,8 @@ function help() {
     `  record-result, fail-task, block, unblock, checkpoint, resume, certify-phase, next,\n` +
     `  context, verify, events, validate-contract, create-review, ingest-review,\n` +
     `  complete-review-corrections, add-review-trigger, record-incident,\n` +
+    `  improvement-intake, improvement-cycle, improvement-backlog, improvement-show,\n` +
+    `  improvement-decide, improvement-measure, improvement-apply-amendment,\n` +
     `  release-inspect, release-create-worktree, release-reconcile, release-evaluate,\n` +
     `  release-bundle, release-merge, release-rollback, release-select-tests\n\n` +
     `Every mutation requires --session-id and is restricted to --actor ${EXECUTION_MODEL}.\n`;
@@ -255,6 +264,27 @@ async function main() {
       return;
     case "record-incident":
       printResult(await recordIncident(repositoryRoot, auth, await readDocument(repositoryRoot, requireArgument(args, "file"))));
+      return;
+    case "improvement-intake":
+      printResult(await intakeImprovementCandidate(repositoryRoot, auth, await readDocument(repositoryRoot, requireArgument(args, "file"))));
+      return;
+    case "improvement-cycle":
+      printResult(await runImprovementCycle(repositoryRoot, auth));
+      return;
+    case "improvement-backlog":
+      printResult(await getImprovementBacklog(repositoryRoot, auth));
+      return;
+    case "improvement-show":
+      printResult(await getImprovementEvidence(repositoryRoot, auth, requireArgument(args, "candidate-id")));
+      return;
+    case "improvement-decide":
+      printResult(await decideImprovement(repositoryRoot, auth, requireArgument(args, "candidate-id"), await readDocument(repositoryRoot, requireArgument(args, "file"))));
+      return;
+    case "improvement-measure":
+      printResult(await measureImprovement(repositoryRoot, auth, requireArgument(args, "candidate-id"), await readDocument(repositoryRoot, requireArgument(args, "file"))));
+      return;
+    case "improvement-apply-amendment":
+      printResult(await applyImprovementAmendment(repositoryRoot, auth, await readDocument(repositoryRoot, requireArgument(args, "file"))));
       return;
     case "release-inspect": {
       const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
