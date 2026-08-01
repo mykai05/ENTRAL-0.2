@@ -1,0 +1,334 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+  "reason": "MANDATORY_PHASE_CHECKPOINT",
+  "phase": 199,
+  "task_packet_id": "P199-BASELINE-CERTIFICATION-001",
+  "repository": "mykai05/ENTRAL-0.2",
+  "source_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+  "production_deployments": [
+    {
+      "provider": "VERCEL",
+      "role": "FRONTEND",
+      "deployment_id": "dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "status": "READY"
+    },
+    {
+      "provider": "RAILWAY",
+      "role": "API",
+      "deployment_id": "43f98e05-af77-44f2-826c-5976fc738e4b",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "status": "READY"
+    },
+    {
+      "provider": "RAILWAY",
+      "role": "WORKER",
+      "deployment_id": "b477d5c8-2a55-4e74-84b8-168e5f938fd8",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "status": "READY"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "phase-198-no-schema-change",
+      "status": "VERIFIED",
+      "applied_migration_count": 42,
+      "pending_migration_count": 0,
+      "readback_sha256": "3e7e60de453b2110852f708c21a5c8841dd15434d2294c7bd2c93d42746e5f37"
+    }
+  ],
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/phases/199/PHASE_CONTRACT.v1.json",
+    ".entral/governor/release-control/phase-198/EVIDENCE_BUNDLE.json",
+    ".entral/governor/release-control/phase-198/RELEASE_CONTROL_EVIDENCE.json",
+    ".entral/governor/release-control/phase-198/RELEASE_CONTROL_PLAN.json",
+    ".entral/governor/releases/phase-198.json",
+    ".entral/governor/tasks/P199-BASELINE-CERTIFICATION-001.json",
+    ".github/workflows/ci-cd.yml",
+    "backend/package.json",
+    "backend/src/cli/reconcileSecureJson.ts",
+    "backend/src/dev-memory-server.ts",
+    "backend/src/env.ts",
+    "backend/src/services/secureJson.ts",
+    "backend/src/services/secureJsonReconciliation.ts",
+    "backend/tests/phase199BaselineSecurity.test.ts",
+    "docs/PHASE_199_VERIFICATION.md",
+    "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+    "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json",
+    "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+    "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+    "docs/evidence/phase199/TEST_RECEIPTS.json",
+    "package.json",
+    "packages/contracts/baseline-certification.schema.json",
+    "packages/contracts/package.json",
+    "packages/contracts/src/baseline.ts",
+    "packages/contracts/src/index.ts",
+    "packages/contracts/tests/baseline.test.mjs",
+    "scripts/phase199-baseline-gates.test.mjs"
+  ],
+  "diffs": [
+    {
+      "path": "packages/contracts/src/baseline.ts",
+      "base_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "head_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+      "diff_reference": "git diff 5c2f9d58c25dec82d4c3102f3b48a76797801594 f9bba0b275798664374b96630cc2c34a8d8ffe33 -- packages/contracts/src/baseline.ts",
+      "content_sha256": "a4dd53dceebeb05c296b85a4389cdefa4f4d8a6ce36600bd88885c4a8e4126b6"
+    },
+    {
+      "path": "backend/src/services/secureJsonReconciliation.ts",
+      "base_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "head_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+      "diff_reference": "git diff 5c2f9d58c25dec82d4c3102f3b48a76797801594 f9bba0b275798664374b96630cc2c34a8d8ffe33 -- backend/src/services/secureJsonReconciliation.ts",
+      "content_sha256": "584139aef025edc74f4ca10d7db5d872ea760f183c850bbf6117be33194efd81"
+    },
+    {
+      "path": "backend/src/env.ts",
+      "base_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "head_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+      "diff_reference": "git diff 5c2f9d58c25dec82d4c3102f3b48a76797801594 f9bba0b275798664374b96630cc2c34a8d8ffe33 -- backend/src/env.ts",
+      "content_sha256": "7c708d7af393e307f3b65e7db29b1273dbd7339c9fc25eb323001aa1acf34d12"
+    },
+    {
+      "path": "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+      "base_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "head_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+      "diff_reference": "git diff 5c2f9d58c25dec82d4c3102f3b48a76797801594 f9bba0b275798664374b96630cc2c34a8d8ffe33 -- docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+      "content_sha256": "21854df28c1d9b079154eae49d2f9034c01272c1b269460108f5f008bfad869e"
+    },
+    {
+      "path": "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+      "base_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "head_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+      "diff_reference": "git diff 5c2f9d58c25dec82d4c3102f3b48a76797801594 f9bba0b275798664374b96630cc2c34a8d8ffe33 -- docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+      "content_sha256": "323839a09bd765a5c0c2947f9b853c608f2e7b4d8b04fb64a5a88683ce4f7e03"
+    },
+    {
+      "path": "scripts/phase199-baseline-gates.test.mjs",
+      "base_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "head_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+      "diff_reference": "git diff 5c2f9d58c25dec82d4c3102f3b48a76797801594 f9bba0b275798664374b96630cc2c34a8d8ffe33 -- scripts/phase199-baseline-gates.test.mjs",
+      "content_sha256": "0ab4af272f28dd13abdcc36ba3a517f0a88df9e18fd721a0b08c84b420b59d12"
+    }
+  ],
+  "acceptance_gates": [
+    {
+      "id": "P199-F001-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F002-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F003-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F004-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F005-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F006-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F007-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F008-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F009-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F010-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F011-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F012-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F013-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F014-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F015-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F016-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F017-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F018-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F019-A",
+      "status": "DETERMINISTIC_PASSED_POST_REVIEW_RELEASE_PENDING"
+    },
+    {
+      "id": "P199-F020-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    },
+    {
+      "id": "P199-F021-A",
+      "status": "PASSED_FOR_CANDIDATE_REVIEW"
+    }
+  ],
+  "test_results": [
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED",
+      "summary": "9 Node gates and 5 backend tests"
+    },
+    {
+      "command": "pnpm test:phase198",
+      "status": "PASSED",
+      "summary": "15 tests"
+    },
+    {
+      "command": "pnpm test:phase197",
+      "status": "PASSED",
+      "summary": "25 tests"
+    },
+    {
+      "command": "pnpm test:phase196",
+      "status": "PASSED",
+      "summary": "27 tests"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED",
+      "summary": "24 tests"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED",
+      "summary": "33 tests and reproducible build"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED",
+      "summary": "all workspaces"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED",
+      "summary": "complete contract, backend, and 418-test frontend suite"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED",
+      "summary": "complete production build"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED",
+      "summary": "local readiness and current live deployment drift"
+    }
+  ],
+  "unresolved_questions": [
+    "Does the evidence support accepting the aggregated Phase 100 through 190 rows plus the row-level sixty-feature Phase 195 re-evaluation as the correct baseline certification granularity?",
+    "Is retaining the legacy multipurpose 3D component solely as the embedded drawing engine behind canonical projection and shared view state an acceptable explicit migration boundary?",
+    "Is the documented current per-user authorization boundary sufficient until the organization and business ownership migration expressly assigned to Phase 202?",
+    "Is the credential reconciliation correctly bounded to ShopifyConnection.credentialJson and ShopifyOAuthContinuation.payloadJson, with production apply and receipt verification deferred until after this review?"
+  ],
+  "alternatives": [
+    {
+      "name": "Accept the bounded candidate and continue the required release cycle",
+      "disposition": "RECOMMENDED",
+      "rationale": "Preserves verified architecture, repairs only proven defects, and keeps every remaining production mutation gated."
+    },
+    {
+      "name": "Rebuild Phases 100 through 195",
+      "disposition": "REJECTED",
+      "rationale": "Duplicates verified work, increases regression risk, and violates the phase preservation requirement."
+    },
+    {
+      "name": "Encrypt every database column ending in Json",
+      "disposition": "REJECTED",
+      "rationale": "Would corrupt legacy columns intentionally consumed by plain JSON readers."
+    },
+    {
+      "name": "Implement organization and business migration now",
+      "disposition": "REJECTED",
+      "rationale": "Moves Phase 202 scope into Phase 199 without evidence of current cross-tenant exposure."
+    }
+  ],
+  "recommendation": "PASS the Phase 199 candidate for continuation to the controlled release cycle, subject to any binding corrections identified by this review. Do not certify Phase 199 from the review alone.",
+  "risks": [
+    {
+      "option": "proceed after PASS",
+      "risk": "Production environment must contain the required encryption and administrative step-up configuration before rollout; reconciliation and authenticated readback remain hard gates."
+    },
+    {
+      "option": "wait",
+      "risk": "Phase 200 remains blocked and the certified Phase 198 production release remains unchanged."
+    },
+    {
+      "option": "broaden reconciliation",
+      "risk": "Encrypting legacy plain JSON fields can make active readers unable to parse persisted state."
+    },
+    {
+      "option": "reject without a specific defect",
+      "risk": "Would reopen verified foundations and delay the remaining sequential program without a bounded repair target."
+    }
+  ],
+  "requested_decision": "Review commit f9bba0b275798664374b96630cc2c34a8d8ffe33 and return PASS, PASS_WITH_BINDING_CORRECTIONS, REJECT_AND_REPAIR, or OWNER_DECISION_REQUIRED for the Phase 199 baseline candidate. Evaluate requirement coverage, legacy isolation, tenant boundary, product truth, and credential reconciliation. Do not treat the review as release certification.",
+  "evidence": [
+    {
+      "reference": "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+      "sha256": "d034f6527f7ec489cd5d19412c05742a9f94fe6ca8bf59c43eb476048a632c2e"
+    },
+    {
+      "reference": "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json",
+      "sha256": "c91e4f4d9b6238643deaa95271873daae595c97c84ad00151a705ae163274030"
+    },
+    {
+      "reference": "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+      "sha256": "8ed138a9085ff8b3c8397117d8977629001397a68c427b447cfce496f3c716af"
+    },
+    {
+      "reference": "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+      "sha256": "01af4c53adbc664dcb8b845d7e7dcbe72a3fa350a156c258a150bb5b61434ff4"
+    },
+    {
+      "reference": "docs/evidence/phase199/TEST_RECEIPTS.json",
+      "sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "reference": ".entral/governor/releases/phase-198.json",
+      "sha256": "bc33350420b4d6b44916f11eeb9873d86ac8c4a68aa48494a6289af373539db0"
+    },
+    {
+      "reference": "docs/PHASE_199_VERIFICATION.md",
+      "sha256": "d7585d604f81b7cf2edb9b5a880eed47a83614ec3bd5373b37f386f1b74d6bad"
+    }
+  ],
+  "created_at": "2026-08-01T16:40:53.730Z"
+}

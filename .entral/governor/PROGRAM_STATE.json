@@ -3,7 +3,7 @@
   "schema_version": 1,
   "program_version": "ENTRAL-V9-CODEX-XHIGH-GPT-PRO-REVIEW",
   "execution_model": "CODEX_5_6_SOL_XHIGH",
-  "status": "ACTIVE",
+  "status": "WAITING_FOR_GPT_PRO_REVIEW",
   "current_phase": 199,
   "certified_phases": [
     195,
@@ -209,19 +209,31 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Reconcile Phase 199 with current origin/main and run the complete phase suite.",
+  "next_action": "Owner requests GPT-5.6 Pro review for P199-BASELINE-RECERTIFICATION-REVIEW at f9bba0b275798664374b96630cc2c34a8d8ffe33.",
   "active_write_lease": null,
   "latest_checkpoint": null,
-  "review_state": null,
+  "review_state": {
+    "contract_version": "1.0.0",
+    "schema_version": 1,
+    "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+    "phase": 199,
+    "policy": "MANDATORY",
+    "status": "WAITING_FOR_GPT_PRO_REVIEW",
+    "request_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+    "request_path": "pro-review/P199-BASELINE-RECERTIFICATION-REVIEW",
+    "verdict": null,
+    "binding_corrections_completed": false,
+    "updated_at": "2026-08-01T16:41:55.546Z"
+  },
   "conditional_review_triggers": [],
   "task_attempts": 1,
   "result_fingerprints": [
     "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
   ],
-  "version": 34,
-  "updated_at": "2026-08-01T16:39:53.653Z",
+  "version": 35,
+  "updated_at": "2026-08-01T16:41:55.546Z",
   "task_deadline_at": "2026-08-02T04:20:47.109Z",
   "pending_release_manifest": null,
-  "event_count": 34,
-  "event_head_hash": "3fee93d56856c7dbdafc3a436ed8eee8414e7a37021b3111a32f7de1a0b35d43"
+  "event_count": 35,
+  "event_head_hash": "dda321b0955791c19fcabbdbc2a48de7e9ee00350166f2a8e804b5d6d844a550"
 }
