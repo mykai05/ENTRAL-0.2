@@ -11,8 +11,8 @@
     197,
     198
   ],
-  "current_task_packet_id": null,
-  "task_status": null,
+  "current_task_packet_id": "P199-BINDING-CORRECTIONS-001",
+  "task_status": "CLAIMED",
   "last_task_packet_id": "P199-BASELINE-CERTIFICATION-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
@@ -209,8 +209,34 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Create one bounded correction TaskPacket and rerun every affected deterministic gate.",
-  "active_write_lease": null,
+  "next_action": "Execute only P199-BINDING-CORRECTIONS-001, then record its exact result.",
+  "active_write_lease": {
+    "contract_version": "1.0.0",
+    "schema_version": 1,
+    "lease_id": "f1fd7416-e4de-4203-82ef-0fc9e9bec72c",
+    "task_packet_id": "P199-BINDING-CORRECTIONS-001",
+    "owner": "phase199-sol-xhigh-20260801",
+    "actor": "CODEX_5_6_SOL_XHIGH",
+    "scope": [
+      ".entral/governor/**",
+      "packages/contracts/src/baseline.ts",
+      "packages/contracts/baseline-certification.schema.json",
+      "packages/contracts/tests/baseline.test.mjs",
+      "backend/src/services/secureJson.ts",
+      "backend/src/services/secureJsonReconciliation.ts",
+      "backend/src/cli/reconcileSecureJson.ts",
+      "backend/tests/phase199*.test.ts",
+      "scripts/phase199-*.mjs",
+      "docs/PHASE_199_*.md",
+      "docs/evidence/phase199/**",
+      "package.json",
+      "backend/package.json",
+      ".github/workflows/ci-cd.yml"
+    ],
+    "acquired_at": "2026-08-01T23:45:22.435Z",
+    "heartbeat_at": "2026-08-01T23:45:22.435Z",
+    "expires_at": "2026-08-02T03:45:22.435Z"
+  },
   "latest_checkpoint": null,
   "review_state": {
     "contract_version": "1.0.0",
@@ -252,14 +278,12 @@
     "updated_at": "2026-08-01T23:41:26.367Z"
   },
   "conditional_review_triggers": [],
-  "task_attempts": 1,
-  "result_fingerprints": [
-    "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
-  ],
-  "version": 36,
-  "updated_at": "2026-08-01T23:41:26.367Z",
-  "task_deadline_at": "2026-08-02T04:20:47.109Z",
+  "task_attempts": 0,
+  "result_fingerprints": [],
+  "version": 38,
+  "updated_at": "2026-08-01T23:45:22.435Z",
+  "task_deadline_at": "2026-08-02T11:45:22.336Z",
   "pending_release_manifest": null,
-  "event_count": 36,
-  "event_head_hash": "8ad476c28ee45979a984c190959424cdae86658dafab1f3141d156971960050b"
+  "event_count": 38,
+  "event_head_hash": "97de149de6b47ba7552b8e55094a3893a9401e86609409b0aaf35debb40464a4"
 }
