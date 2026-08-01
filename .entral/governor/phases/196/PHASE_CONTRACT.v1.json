@@ -1,0 +1,35 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 196,
+  "title": "Lean Codex Development Governor and GPT-5.6 Pro Review Gateway",
+  "review_policy": "CONDITIONAL",
+  "objective": "Implement the smallest deterministic repository-local Governor for one bounded Codex Sol Extra High write task at a time, restart-safe continuity, exact release evidence, and sparse owner-invoked GPT-5.6 Pro review packets.",
+  "feature_ids": [
+    "P196-F001", "P196-F002", "P196-F003", "P196-F004", "P196-F005", "P196-F006", "P196-F007", "P196-F008", "P196-F009",
+    "P196-F010", "P196-F011", "P196-F012", "P196-F013", "P196-F014", "P196-F015", "P196-F016", "P196-F017", "P196-F018",
+    "P196-F019", "P196-F020", "P196-F021", "P196-F022", "P196-F023", "P196-F024", "P196-F025", "P196-F026", "P196-F027"
+  ],
+  "acceptance_gate_ids": [
+    "P196-F001-A", "P196-F002-A", "P196-F003-A", "P196-F004-A", "P196-F005-A", "P196-F006-A", "P196-F007-A", "P196-F008-A",
+    "P196-F009-A", "P196-F010-A", "P196-F011-A", "P196-F012-A", "P196-F013-A", "P196-F014-A", "P196-F015-A", "P196-F016-A",
+    "P196-F017-A", "P196-F018-A", "P196-F019-A", "P196-F020-A", "P196-F021-A", "P196-F022-A", "G196023", "G196024", "G196025", "G196026"
+  ],
+  "release_requirements": [
+    "RECONCILED_WITH_CURRENT_MAIN",
+    "PROTECTED_MAIN_CHECKS_PASS",
+    "EXACT_MAIN_SHA_DEPLOYED",
+    "MIGRATIONS_VERIFIED",
+    "AUTHENTICATED_PRODUCTION_SMOKE_AND_READBACK",
+    "RELEASE_MANIFEST_RECORDED",
+    "ROLLBACK_POINT_RECORDED"
+  ],
+  "out_of_scope": [
+    "EXTERNAL_MODEL_INVOCATION",
+    "CONSUMER_CHAT_AUTOMATION",
+    "MULTI_WRITER_EXECUTION",
+    "DISTRIBUTED_ORCHESTRATION",
+    "FUTURE_PHASE_IMPLEMENTATION",
+    "PRODUCT_RUNTIME_CHANGES_EXCEPT_RELEASE_EVIDENCE_HOOKS"
+  ]
+}
