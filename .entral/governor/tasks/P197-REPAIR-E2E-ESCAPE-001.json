@@ -1,0 +1,74 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "task_packet_id": "P197-REPAIR-E2E-ESCAPE-001",
+  "phase": 197,
+  "objective": "Repair the exact-main Phase 197 CI failure by making Escape deterministically clear the canonical graph selection when the 10,000-entity render displaces canvas focus, without changing graph data, release-controller, or future-phase behavior.",
+  "scope": [
+    "frontend/components/CanonicalGraphWorkspace.tsx",
+    "frontend/tests/Phase195GraphWorkspace.test.tsx",
+    "e2e/entral.e2e.mjs",
+    ".entral/governor/**"
+  ],
+  "likely_modules": [
+    "frontend/components/CanonicalGraphWorkspace.tsx",
+    "frontend/tests/Phase195GraphWorkspace.test.tsx"
+  ],
+  "preserved_behavior": [
+    "Canvas-focused Escape, keyboard traversal, zoom, selection, synchronized 2D and 3D navigation, and authorized graph projection behavior",
+    "Phase 197 release-controller contracts and all Phase 195 and Phase 196 production behavior",
+    "Protected-main requirements and exact-SHA release gates"
+  ],
+  "exclusions": [
+    "No Phase 198 or later implementation",
+    "No graph schema, projection, renderer, styling, provider, migration, or release-controller change",
+    "No broad keyboard-shortcut refactor"
+  ],
+  "acceptance_tests": [
+    "pnpm --filter @entral/frontend test -- Phase195GraphWorkspace.test.tsx",
+    "pnpm test:e2e",
+    "pnpm test:phase197",
+    "pnpm test:phase196",
+    "pnpm test:phase195",
+    "pnpm contracts:verify",
+    "pnpm lint",
+    "pnpm test",
+    "pnpm build",
+    "pnpm release:check"
+  ],
+  "release_requirements": [
+    "Protected-main CI passes at the repaired exact main SHA",
+    "Exact-main-SHA frontend, API, and worker deployment",
+    "Authenticated production smoke, migration verification, state readback, evidence manifest, and rollback point"
+  ],
+  "usage_budget": {
+    "maximum_wall_time_minutes": 180,
+    "maximum_attempts": 3,
+    "maximum_retries": 2,
+    "stagnation_limit": 2,
+    "checkpoint_at_tokens_remaining": 40000,
+    "release_repair_reserve_tokens": 20000
+  },
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "policy": {
+    "future_phase_compatibility_required": false,
+    "work_created_to_stay_active": false,
+    "speculative_refactors": [],
+    "duplicate_systems": []
+  },
+  "relevant_adrs": [],
+  "relevant_source_paths": [
+    ".github/workflows/ci-cd.yml",
+    "frontend/components/CanonicalUniverseGraph.tsx",
+    "frontend/lib/graph-view-state.ts"
+  ],
+  "created_at": "2026-08-01T14:21:00.000Z"
+}
