@@ -33,6 +33,16 @@ import {
   verifyGovernor
 } from "../lib/governor.mjs";
 import { governorPath, loadState, readJson, sha256 } from "../lib/store.mjs";
+import {
+  createIsolatedWorktree,
+  createReleaseEvidenceBundle,
+  evaluateRelease,
+  executeBoundedRollback,
+  inspectRepositories,
+  mergeProtectedMain,
+  reconcileRepository,
+  selectTargetedTests
+} from "../lib/release-controller.mjs";
 
 function parseArguments(argv) {
   const result = { _: [] };
@@ -117,7 +127,9 @@ function help() {
     `  initialize, status, activate-phase, create-task, claim-task, heartbeat,\n` +
     `  record-result, fail-task, block, unblock, checkpoint, resume, certify-phase, next,\n` +
     `  context, verify, events, validate-contract, create-review, ingest-review,\n` +
-    `  complete-review-corrections, add-review-trigger, record-incident\n\n` +
+    `  complete-review-corrections, add-review-trigger, record-incident,\n` +
+    `  release-inspect, release-create-worktree, release-reconcile, release-evaluate,\n` +
+    `  release-bundle, release-merge, release-rollback, release-select-tests\n\n` +
     `Every mutation requires --session-id and is restricted to --actor ${EXECUTION_MODEL}.\n`;
 }
 
@@ -244,6 +256,53 @@ async function main() {
     case "record-incident":
       printResult(await recordIncident(repositoryRoot, auth, await readDocument(repositoryRoot, requireArgument(args, "file"))));
       return;
+    case "release-inspect": {
+      const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
+      printResult(inspectRepositories(plan, auth));
+      return;
+    }
+    case "release-create-worktree": {
+      const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
+      printResult(await createIsolatedWorktree(plan, auth, requireArgument(args, "role")));
+      return;
+    }
+    case "release-reconcile": {
+      const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
+      printResult(reconcileRepository(plan, auth, requireArgument(args, "role")));
+      return;
+    }
+    case "release-evaluate": {
+      const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
+      const evidence = await readDocument(repositoryRoot, requireArgument(args, "evidence"));
+      printResult(evaluateRelease(plan, evidence));
+      return;
+    }
+    case "release-bundle": {
+      const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
+      const evidence = await readDocument(repositoryRoot, requireArgument(args, "evidence"));
+      const output = args.output ?? `release-control/phase-${plan.phase}/EVIDENCE_BUNDLE.json`;
+      printResult(await createReleaseEvidenceBundle(repositoryRoot, plan, evidence, auth, { output }));
+      return;
+    }
+    case "release-merge": {
+      const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
+      const evidence = await readDocument(repositoryRoot, requireArgument(args, "evidence"));
+      printResult(mergeProtectedMain(plan, evidence, auth, integerArgument(args, "pr", { minimum: 1 })));
+      return;
+    }
+    case "release-rollback": {
+      const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
+      const evidence = await readDocument(repositoryRoot, requireArgument(args, "evidence"));
+      const result = await executeBoundedRollback(plan, evidence, auth);
+      const incident = result.incident ? await recordIncident(repositoryRoot, auth, result.incident) : null;
+      printResult({ ...result, incident_recorded: incident?.result ?? null });
+      return;
+    }
+    case "release-select-tests": {
+      const plan = await readDocument(repositoryRoot, requireArgument(args, "plan"));
+      printResult({ selected_tests: selectTargetedTests(plan.task.changed_files) });
+      return;
+    }
     default:
       throw new GovernorError("UNKNOWN_COMMAND", `Unknown Governor command ${command}`);
   }

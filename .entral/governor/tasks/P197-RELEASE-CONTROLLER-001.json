@@ -1,0 +1,85 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "task_packet_id": "P197-RELEASE-CONTROLLER-001",
+  "phase": 197,
+  "objective": "Implement and verify the deterministic repository-local SDLC, protected-main, exact-SHA deployment, migration, production-readback, evidence-bundle, and bounded rollback controller required by Phase 197.",
+  "scope": [
+    ".entral/governor/**",
+    "scripts/phase197-*.mjs",
+    "package.json",
+    ".github/workflows/ci-cd.yml",
+    "docs/PHASE_197_VERIFICATION.md"
+  ],
+  "likely_modules": [
+    ".entral/governor/lib/contracts.mjs",
+    ".entral/governor/lib/release-controller.mjs",
+    ".entral/governor/lib/governor.mjs",
+    ".entral/governor/bin/governor.mjs",
+    ".entral/governor/tests/release-controller.test.mjs"
+  ],
+  "preserved_behavior": [
+    "Phase 196 certified production release and exact-SHA evidence",
+    "Existing single-writer Governor event chain, leases, recovery, and sparse owner-invoked review policy",
+    "Existing application, authentication, graph, worker, database, and deployment behavior",
+    "Protected-main branch rules and provider secret-management boundaries"
+  ],
+  "exclusions": [
+    "No product runtime or user-interface feature",
+    "No Phase 198 or later implementation",
+    "No custom CI platform, distributed scheduler, provider credential store, or consumer-chat automation",
+    "No unconditional staging, canary, backup, or rollback ceremony for low-risk releases"
+  ],
+  "acceptance_tests": [
+    "pnpm test:phase197",
+    "pnpm test:phase196",
+    "pnpm test:phase195",
+    "pnpm contracts:verify",
+    "pnpm lint",
+    "pnpm test",
+    "pnpm build",
+    "pnpm release:check"
+  ],
+  "release_requirements": [
+    "Cross-repository exact-SHA manifest for ENTRAL product and Sovereign control/website repositories",
+    "Risk-tiered migration, staging, backup, failure-injection, health, reconciliation, and rollback gates",
+    "Current origin/main reconciliation and protected-main required checks",
+    "Exact-main-SHA deployment for frontend, API, and worker",
+    "Authenticated production smoke, state readback, and reconciliation",
+    "Hashed release-evidence bundle and verified rollback point"
+  ],
+  "usage_budget": {
+    "maximum_wall_time_minutes": 720,
+    "maximum_attempts": 4,
+    "maximum_retries": 3,
+    "stagnation_limit": 2,
+    "checkpoint_at_tokens_remaining": 40000,
+    "release_repair_reserve_tokens": 20000
+  },
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "policy": {
+    "future_phase_compatibility_required": false,
+    "work_created_to_stay_active": false,
+    "speculative_refactors": [],
+    "duplicate_systems": []
+  },
+  "relevant_adrs": [],
+  "relevant_source_paths": [
+    ".entral/governor/README.md",
+    ".entral/governor/schemas/v1/governor.schema.json",
+    ".github/workflows/ci-cd.yml",
+    "railway.json",
+    "railway.worker.json",
+    "vercel.json",
+    "prisma/migrations"
+  ],
+  "created_at": "2026-08-01T13:33:34.698Z"
+}
