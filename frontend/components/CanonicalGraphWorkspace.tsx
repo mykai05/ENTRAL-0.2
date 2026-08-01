@@ -1139,6 +1139,26 @@ export function CanonicalGraphWorkspace({
   }, []);
 
   useEffect(() => {
+    if (!viewState.selectedEntityId) return undefined;
+
+    function clearDisplacedGraphSelection(event: KeyboardEvent) {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      if (
+        event.target instanceof HTMLElement
+        && ["INPUT", "SELECT", "TEXTAREA"].includes(event.target.tagName)
+      ) return;
+
+      event.preventDefault();
+      setViewState(clearGraphSelection(viewState, rendererProjection));
+      onSelectedEntityChange(null);
+    }
+
+    window.addEventListener("keydown", clearDisplacedGraphSelection);
+    return () => window.removeEventListener("keydown", clearDisplacedGraphSelection);
+  }, [onSelectedEntityChange, rendererProjection, viewState]);
+
+  useEffect(() => {
     if (settingsDirty) return;
     setSettings(preferences.settings);
     setSaveStatus(

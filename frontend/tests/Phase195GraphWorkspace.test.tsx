@@ -406,6 +406,31 @@ describe("Phase 195 canonical Graph workspace acceptance", () => {
     });
   });
 
+  it("clears shared selection on Escape when a large-render update displaces canvas focus", async () => {
+    const { onSelectedEntityChange } = renderWorkspace();
+    const twoD = screen.getByTestId("phase195-renderer-2d");
+    const threeD = screen.getByTestId("phase195-renderer-3d");
+
+    fireEvent.click(screen.getByRole("button", { name: "2D select Soldier B" }));
+    await waitFor(() => {
+      expect(twoD).toHaveAttribute("data-selected-entity", "soldier-b");
+      expect(threeD).toHaveAttribute("data-selected-entity", "soldier-b");
+    });
+
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Search both graphs" }), {
+      key: "Escape"
+    });
+    expect(twoD).toHaveAttribute("data-selected-entity", "soldier-b");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(twoD).toHaveAttribute("data-selected-entity", "");
+      expect(threeD).toHaveAttribute("data-selected-entity", "");
+    });
+    expect(onSelectedEntityChange).toHaveBeenLastCalledWith(null);
+  });
+
   it("feeds both renderers same-event authorized details and canonical relationship child counts", async () => {
     const entities = authorityHierarchy().map((entity) =>
       entity.entity_id === "commander-b"

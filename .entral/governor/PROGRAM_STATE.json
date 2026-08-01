@@ -9,8 +9,8 @@
     195,
     196
   ],
-  "current_task_packet_id": null,
-  "task_status": null,
+  "current_task_packet_id": "P197-REPAIR-E2E-ESCAPE-001",
+  "task_status": "CLAIMED",
   "last_task_packet_id": "P197-RELEASE-CONTROLLER-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
@@ -150,19 +150,33 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Reconcile Phase 197 with current origin/main and run the complete phase suite.",
-  "active_write_lease": null,
+  "next_action": "Execute only P197-REPAIR-E2E-ESCAPE-001, then record its exact result.",
+  "active_write_lease": {
+    "contract_version": "1.0.0",
+    "schema_version": 1,
+    "lease_id": "cac03dd1-86e5-429a-b6ca-80c8617802a2",
+    "task_packet_id": "P197-REPAIR-E2E-ESCAPE-001",
+    "owner": "codex-phase197-repair-20260801-xhigh",
+    "actor": "CODEX_5_6_SOL_XHIGH",
+    "scope": [
+      "frontend/components/CanonicalGraphWorkspace.tsx",
+      "frontend/tests/Phase195GraphWorkspace.test.tsx",
+      "e2e/entral.e2e.mjs",
+      ".entral/governor/**"
+    ],
+    "acquired_at": "2026-08-01T14:18:28.451Z",
+    "heartbeat_at": "2026-08-01T14:20:12.954Z",
+    "expires_at": "2026-08-01T16:20:12.954Z"
+  },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 1,
-  "result_fingerprints": [
-    "26fd6204fdbdea8bc12770172faeb128d037069e15c315e1aaf1c7388d087cc6"
-  ],
-  "version": 17,
-  "updated_at": "2026-08-01T13:51:15.746Z",
-  "task_deadline_at": "2026-08-02T01:33:57.117Z",
+  "task_attempts": 0,
+  "result_fingerprints": [],
+  "version": 20,
+  "updated_at": "2026-08-01T14:20:12.954Z",
+  "task_deadline_at": "2026-08-01T17:18:28.367Z",
   "pending_release_manifest": null,
-  "event_count": 17,
-  "event_head_hash": "4b4fb8a20cb354b547a55f430ef10fec8d47853f7964df7908de721abffe28b7"
+  "event_count": 20,
+  "event_head_hash": "bb38091b3568df3258846a8b9c16e5b1722903cbb61a3a982ed8e8f479f208ef"
 }
