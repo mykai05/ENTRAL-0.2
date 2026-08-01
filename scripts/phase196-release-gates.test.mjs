@@ -139,6 +139,8 @@ test("operator documentation contains the exact restart and live-main sequence",
   const verification = await projectFile("docs/PHASE_196_VERIFICATION.md");
   assert.match(readme, /Run `pnpm governor status` and then `pnpm governor next`/);
   assert.match(readme, /Execute only the emitted `TaskPacket`/);
+  assert.match(verification, /pnpm install --frozen-lockfile/);
+  assert.match(verification, /pnpm prisma:generate/);
   for (const command of ["pnpm test:phase196", "pnpm test:phase195", "pnpm contracts:verify", "pnpm lint", "pnpm test", "pnpm build", "pnpm release:check"]) assert.ok(verification.includes(command));
   assert.match(verification, /Merge through protected main and push immediately/);
   assert.match(verification, /Deploy the exact main SHA/);

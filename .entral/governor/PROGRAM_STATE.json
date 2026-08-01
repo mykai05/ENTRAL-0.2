@@ -8,8 +8,8 @@
   "certified_phases": [
     195
   ],
-  "current_task_packet_id": null,
-  "task_status": null,
+  "current_task_packet_id": "P196-DOC-CLEAN-BUILD-001",
+  "task_status": "CLAIMED",
   "last_task_packet_id": "P196-FIX-NODE20-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
@@ -70,18 +70,32 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Reconcile Phase 196 with current origin/main and run the complete phase suite.",
-  "active_write_lease": null,
+  "next_action": "Execute only P196-DOC-CLEAN-BUILD-001, then record its exact result.",
+  "active_write_lease": {
+    "contract_version": "1.0.0",
+    "schema_version": 1,
+    "lease_id": "c85b34e2-27d6-4a04-b8fb-54a58435625a",
+    "task_packet_id": "P196-DOC-CLEAN-BUILD-001",
+    "owner": "codex-phase196-20260801-xhigh",
+    "actor": "CODEX_5_6_SOL_XHIGH",
+    "scope": [
+      "docs/PHASE_196_VERIFICATION.md",
+      "scripts/phase196-release-gates.test.mjs",
+      ".entral/governor/tasks/P196-DOC-CLEAN-BUILD-001.json",
+      ".entral/governor/results/P196-DOC-CLEAN-BUILD-001-*.json"
+    ],
+    "acquired_at": "2026-08-01T12:38:50.515Z",
+    "heartbeat_at": "2026-08-01T12:38:50.515Z",
+    "expires_at": "2026-08-01T14:38:50.515Z"
+  },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 1,
-  "result_fingerprints": [
-    "40a01ce64b07a97105793236f0d81cf3bb7f36bb68ba883f7957402efd887d72"
-  ],
-  "version": 8,
-  "updated_at": "2026-08-01T12:34:26.137Z",
-  "task_deadline_at": "2026-08-01T14:32:58.064Z",
-  "event_count": 8,
-  "event_head_hash": "1d3f039ceb032c10ee20584297523b3d4bbc8aa13cf85f06004c3b89afa1aeaa"
+  "task_attempts": 0,
+  "result_fingerprints": [],
+  "version": 10,
+  "updated_at": "2026-08-01T12:38:50.515Z",
+  "task_deadline_at": "2026-08-01T14:38:50.149Z",
+  "event_count": 10,
+  "event_head_hash": "827ad95c9bfee54e5e5a2d28ebb738d1c81cd1edeb401638997ad0897b19cd60"
 }

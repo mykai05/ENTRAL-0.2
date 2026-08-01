@@ -20,6 +20,19 @@ pnpm release:check
 
 After reconciling the candidate with current `origin/main`, rerun the complete list. Phase 196 cannot close on a branch, preview, open pull request, or undeployed commit.
 
+## Clean-checkout gate
+
+From a detached clean checkout, use Node `20.19.0` and pnpm `9.12.3`, then run:
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm prisma:generate
+pnpm test:phase196
+pnpm build
+```
+
+Prisma generation is an explicit build prerequisite and is also ordered before lint, tests, and build in protected-main CI. The clean-checkout gate fails if any tracked file changes.
+
 ## Acceptance mapping
 
 - F001–F006: `.entral/governor/` owns schemas, migration, documentation, state, and the deterministic CLI command set.
