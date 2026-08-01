@@ -11,77 +11,95 @@
     197,
     198
   ],
-  "current_task_packet_id": "P199-BASELINE-CERTIFICATION-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P198-IMPROVEMENT-QUEUE-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P199-BASELINE-CERTIFICATION-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P198-IMPROVEMENT-QUEUE-001-f5549b3c",
-    "task_packet_id": "P198-IMPROVEMENT-QUEUE-001",
-    "phase": 198,
+    "execution_result_id": "P199-BASELINE-CERTIFICATION-001-f9bba0b2",
+    "task_packet_id": "P199-BASELINE-CERTIFICATION-001",
+    "phase": 199,
     "outcome": "PASSED",
-    "commit_sha": "f5549b3c27ee595064340db562e6585026c7e95d",
+    "commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
-      ".entral/governor/README.md",
-      ".entral/governor/bin/governor.mjs",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/improvements/POLICY.v1.json",
-      ".entral/governor/lib/contracts.mjs",
-      ".entral/governor/lib/governor.mjs",
-      ".entral/governor/lib/improvement-queue.mjs",
-      ".entral/governor/lib/store.mjs",
-      ".entral/governor/phases/198/PHASE_CONTRACT.v1.json",
-      ".entral/governor/release-control/phase-197/EVIDENCE_BUNDLE.json",
-      ".entral/governor/releases/phase-197.json",
-      ".entral/governor/schemas/v1/governor.schema.json",
-      ".entral/governor/tasks/P198-IMPROVEMENT-QUEUE-001.json",
-      ".entral/governor/tests/improvement-queue.test.mjs",
+      ".entral/governor/phases/199/PHASE_CONTRACT.v1.json",
+      ".entral/governor/release-control/phase-198/EVIDENCE_BUNDLE.json",
+      ".entral/governor/release-control/phase-198/RELEASE_CONTROL_EVIDENCE.json",
+      ".entral/governor/release-control/phase-198/RELEASE_CONTROL_PLAN.json",
+      ".entral/governor/releases/phase-198.json",
+      ".entral/governor/tasks/P199-BASELINE-CERTIFICATION-001.json",
       ".github/workflows/ci-cd.yml",
-      "docs/PHASE_198_VERIFICATION.md",
+      "backend/package.json",
+      "backend/src/cli/reconcileSecureJson.ts",
+      "backend/src/dev-memory-server.ts",
+      "backend/src/env.ts",
+      "backend/src/services/secureJson.ts",
+      "backend/src/services/secureJsonReconciliation.ts",
+      "backend/tests/phase199BaselineSecurity.test.ts",
+      "docs/PHASE_199_VERIFICATION.md",
+      "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+      "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json",
+      "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+      "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+      "docs/evidence/phase199/TEST_RECEIPTS.json",
       "package.json",
-      "scripts/phase198-improvement-gates.test.mjs"
+      "packages/contracts/baseline-certification.schema.json",
+      "packages/contracts/package.json",
+      "packages/contracts/src/baseline.ts",
+      "packages/contracts/src/index.ts",
+      "packages/contracts/tests/baseline.test.mjs",
+      "scripts/phase199-baseline-gates.test.mjs"
     ],
     "tests": [
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test:phase198 (15 tests)",
+        "command": "pnpm test:phase199",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test:phase197 (25 tests)",
+        "command": "pnpm test:phase198",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test:phase196 (27 tests)",
+        "command": "pnpm test:phase197",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test:phase195 (24 tests)",
+        "command": "pnpm test:phase196",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm contracts:verify (30 tests and reproducible build)",
+        "command": "pnpm test:phase195",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm prisma:generate",
+        "command": "pnpm contracts:verify",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm lint",
+        "command": "pnpm prisma:generate",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm test (30 contract, 445 backend, and 418 frontend tests)",
+        "command": "pnpm --filter @entral/backend build",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm build",
+        "command": "pnpm lint",
         "status": "PASSED"
       },
       {
-        "command": "Node 22.20.0 with pnpm 9.12.3: pnpm release:check",
+        "command": "pnpm test",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm build",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm release:check",
         "status": "PASSED"
       },
       {
@@ -89,17 +107,17 @@
         "status": "PASSED"
       },
       {
-        "command": "Governor verify at state version 26 and event count 26",
+        "command": "governor verify",
         "status": "PASSED"
       }
     ],
     "unresolved_failures": [],
     "deployment_state": {
       "status": "NOT_ATTEMPTED",
-      "reason": "Exact-main-SHA production deployment follows protected-main integration of the verified Phase 198 commit."
+      "reason": "Mandatory GPT-5.6 Pro checkpoint precedes Phase 199 certification, protected-main integration, production reconciliation, deployment, and authenticated readback."
     },
-    "result_fingerprint": "aec1c92f319d308690d43a3df39e1b4306489ae700a92412816782249ed4d830",
-    "completed_at": "2026-08-01T15:39:37.157Z"
+    "result_fingerprint": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001",
+    "completed_at": "2026-08-01T16:50:00.000Z"
   },
   "latest_verified_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
   "latest_production_release": {
@@ -191,45 +209,19 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P199-BASELINE-CERTIFICATION-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "8d054345-9ce6-4d1a-ac8f-fabc18f53045",
-    "task_packet_id": "P199-BASELINE-CERTIFICATION-001",
-    "owner": "phase199-sol-xhigh-20260801",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      ".entral/governor/**",
-      "packages/contracts/**",
-      "backend/src/env.ts",
-      "backend/src/dev-memory-server.ts",
-      "backend/src/services/secureJson.ts",
-      "backend/src/services/secureJsonReconciliation.ts",
-      "backend/src/cli/reconcileSecureJson.ts",
-      "backend/tests/phase199*.test.ts",
-      "frontend/components/NeuronsCommandCenter.tsx",
-      "frontend/tests/Phase199*.test.ts",
-      "scripts/phase199-*.mjs",
-      "docs/PHASE_199_*.md",
-      "docs/evidence/phase199/**",
-      "package.json",
-      "backend/package.json",
-      ".github/workflows/ci-cd.yml"
-    ],
-    "acquired_at": "2026-08-01T16:20:51.431Z",
-    "heartbeat_at": "2026-08-01T16:26:52.269Z",
-    "expires_at": "2026-08-01T20:26:52.269Z"
-  },
+  "next_action": "Reconcile Phase 199 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 33,
-  "updated_at": "2026-08-01T16:26:52.269Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+  ],
+  "version": 34,
+  "updated_at": "2026-08-01T16:39:53.653Z",
   "task_deadline_at": "2026-08-02T04:20:47.109Z",
   "pending_release_manifest": null,
-  "event_count": 33,
-  "event_head_hash": "0f256691987bd3824b8fb24180a7195f953c8759c58c024a680d59a82becbc3e"
+  "event_count": 34,
+  "event_head_hash": "3fee93d56856c7dbdafc3a436ed8eee8414e7a37021b3111a32f7de1a0b35d43"
 }

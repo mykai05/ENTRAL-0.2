@@ -1,0 +1,105 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P199-BASELINE-CERTIFICATION-001-f9bba0b2",
+  "task_packet_id": "P199-BASELINE-CERTIFICATION-001",
+  "phase": 199,
+  "outcome": "PASSED",
+  "commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/phases/199/PHASE_CONTRACT.v1.json",
+    ".entral/governor/release-control/phase-198/EVIDENCE_BUNDLE.json",
+    ".entral/governor/release-control/phase-198/RELEASE_CONTROL_EVIDENCE.json",
+    ".entral/governor/release-control/phase-198/RELEASE_CONTROL_PLAN.json",
+    ".entral/governor/releases/phase-198.json",
+    ".entral/governor/tasks/P199-BASELINE-CERTIFICATION-001.json",
+    ".github/workflows/ci-cd.yml",
+    "backend/package.json",
+    "backend/src/cli/reconcileSecureJson.ts",
+    "backend/src/dev-memory-server.ts",
+    "backend/src/env.ts",
+    "backend/src/services/secureJson.ts",
+    "backend/src/services/secureJsonReconciliation.ts",
+    "backend/tests/phase199BaselineSecurity.test.ts",
+    "docs/PHASE_199_VERIFICATION.md",
+    "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+    "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json",
+    "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+    "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+    "docs/evidence/phase199/TEST_RECEIPTS.json",
+    "package.json",
+    "packages/contracts/baseline-certification.schema.json",
+    "packages/contracts/package.json",
+    "packages/contracts/src/baseline.ts",
+    "packages/contracts/src/index.ts",
+    "packages/contracts/tests/baseline.test.mjs",
+    "scripts/phase199-baseline-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase198",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase197",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase196",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm --filter @entral/backend build",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    },
+    {
+      "command": "governor verify",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Mandatory GPT-5.6 Pro checkpoint precedes Phase 199 certification, protected-main integration, production reconciliation, deployment, and authenticated readback."
+  },
+  "result_fingerprint": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001",
+  "completed_at": "2026-08-01T16:50:00.000Z"
+}
