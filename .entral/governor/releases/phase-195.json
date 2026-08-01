@@ -1,0 +1,19 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 195,
+  "status": "DEPLOYED",
+  "repository": "mykai05/ENTRAL-0.2",
+  "main_sha": "11058bffef238c1c7f917b2ea5bb3ff93800d35e",
+  "release_tag": "phase-195",
+  "manifest_sha256": "26a1e81bc99b8f6f1f2edb925e55474d78533f343d7726e07d33d8ba83917138",
+  "production_readback_sha256": "6c1da3bac109218442aef709a1feae897f6619024d84538493ce11bcee9d6c68",
+  "gate_status": "PASSED",
+  "blockers": [],
+  "verified_at": "2026-08-01T11:48:55.074Z",
+  "rollback_point": {
+    "database_backup_sha256": "6812ea294027269451d80e53a4b1e056521912890f3d2c0e2bf8c0f8e556a9ec",
+    "restore_receipt_sha256": "57a669e19822b83598cab81069dc5f54bafe930656f0df384041b0cf4ef1c771",
+    "status": "RESTORE_VERIFIED"
+  }
+}

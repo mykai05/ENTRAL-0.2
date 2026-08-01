@@ -1,0 +1,63 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "task_packet_id": "P196-FIX-NODE20-001",
+  "phase": 196,
+  "objective": "Repair the Phase 196 test command so the exact required Node 20.19 runtime executes the Governor suite.",
+  "scope": [
+    "package.json",
+    ".entral/governor/tasks/P196-FIX-NODE20-001.json",
+    ".entral/governor/results/P196-FIX-NODE20-001-*.json"
+  ],
+  "likely_modules": [
+    "package.json"
+  ],
+  "preserved_behavior": [
+    "All Phase 196 Governor contracts and runtime behavior",
+    "All Phase 195 product and release behavior",
+    "Exact CI Node 20.19 and pnpm 9.12.3 versions"
+  ],
+  "exclusions": [
+    "No Governor behavior changes",
+    "No product runtime changes",
+    "No future-phase implementation"
+  ],
+  "acceptance_tests": [
+    "Node 20.19.0 with pnpm 9.12.3 runs pnpm test:phase196",
+    "corepack pnpm@9.12.3 test:phase196",
+    "git diff --check"
+  ],
+  "release_requirements": [
+    "Include the repair in the reconciled Phase 196 candidate",
+    "Pass protected-main CI on exact Node 20.19.0"
+  ],
+  "usage_budget": {
+    "maximum_wall_time_minutes": 120,
+    "maximum_attempts": 3,
+    "maximum_retries": 2,
+    "stagnation_limit": 2,
+    "checkpoint_at_tokens_remaining": 20000,
+    "release_repair_reserve_tokens": 10000
+  },
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "policy": {
+    "future_phase_compatibility_required": false,
+    "work_created_to_stay_active": false,
+    "speculative_refactors": [],
+    "duplicate_systems": []
+  },
+  "relevant_adrs": [],
+  "relevant_source_paths": [
+    "package.json",
+    ".github/workflows/ci-cd.yml"
+  ],
+  "created_at": "2026-08-01T12:33:00.000Z"
+}

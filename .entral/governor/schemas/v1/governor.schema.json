@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://entral.local/schemas/governor/v1/governor.schema.json",
+  "title": "ENTRAL Development Governor contracts",
+  "type": "object",
+  "required": ["contract_type", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_type": { "type": "string", "enum": ["ProgramState", "TaskPacket", "ExecutionResult", "ReviewRecord", "ReleaseManifest", "IncidentRecord", "OwnerEscalation", "ImprovementCandidate", "PhaseAmendment", "SessionCheckpoint", "GovernorEvent", "GPTProReviewRequest", "ProReviewVerdict"] },
+    "payload": { "type": "object" }
+  },
+  "$defs": {
+    "version": {
+      "type": "object",
+      "required": ["contract_version", "schema_version"],
+      "properties": {
+        "contract_version": { "const": "1.0.0" },
+        "schema_version": { "const": 1 }
+      }
+    },
+    "sha40": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "isoDate": { "type": "string", "format": "date-time" },
+    "ProgramState": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["program_version", "execution_model", "status", "current_phase", "certified_phases", "current_task_packet_id", "latest_verified_main_sha", "latest_production_release", "blocked_reason", "retry_count", "next_action", "active_write_lease", "latest_checkpoint", "review_state", "version", "updated_at"],
+      "properties": {
+        "program_version": { "type": "string", "minLength": 1 },
+        "execution_model": { "const": "CODEX_5_6_SOL_XHIGH" },
+        "status": { "enum": ["ACTIVE", "BLOCKED", "STOPPED", "WAITING_FOR_GPT_PRO_REVIEW", "COMPLETE"] },
+        "current_phase": { "type": ["integer", "null"], "minimum": 1 },
+        "certified_phases": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "uniqueItems": true },
+        "current_task_packet_id": { "type": ["string", "null"] },
+        "latest_verified_main_sha": { "$ref": "#/$defs/sha40" },
+        "latest_production_release": { "type": "object" },
+        "blocked_reason": { "type": ["object", "null"] },
+        "retry_count": { "type": "integer", "minimum": 0 },
+        "next_action": { "type": "string", "minLength": 1 },
+        "active_write_lease": { "type": ["object", "null"] },
+        "latest_checkpoint": { "type": ["object", "null"] },
+        "review_state": { "type": ["object", "null"] },
+        "version": { "type": "integer", "minimum": 1 },
+        "updated_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "TaskPacket": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["task_packet_id", "phase", "objective", "scope", "likely_modules", "preserved_behavior", "exclusions", "acceptance_tests", "release_requirements", "usage_budget", "owner_escalation_conditions", "policy", "relevant_adrs", "relevant_source_paths", "created_at"],
+      "properties": {
+        "task_packet_id": { "type": "string", "pattern": "^P[0-9]+-[A-Z0-9-]+$" },
+        "phase": { "type": "integer", "minimum": 1 },
+        "objective": { "type": "string", "minLength": 12 },
+        "scope": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "likely_modules": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "preserved_behavior": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "exclusions": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "acceptance_tests": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true },
+        "release_requirements": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true },
+        "usage_budget": { "type": "object", "required": ["maximum_wall_time_minutes", "maximum_attempts", "maximum_retries", "stagnation_limit", "checkpoint_at_tokens_remaining", "release_repair_reserve_tokens"] },
+        "owner_escalation_conditions": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "policy": { "type": "object", "required": ["future_phase_compatibility_required", "work_created_to_stay_active", "speculative_refactors", "duplicate_systems"] },
+        "relevant_adrs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "relevant_source_paths": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "created_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "ExecutionResult": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["execution_result_id", "task_packet_id", "phase", "outcome", "commit_sha", "changed_files", "tests", "unresolved_failures", "deployment_state", "result_fingerprint", "completed_at"],
+      "properties": {
+        "execution_result_id": { "type": "string", "minLength": 1 },
+        "task_packet_id": { "type": "string", "minLength": 1 },
+        "phase": { "type": "integer", "minimum": 1 },
+        "outcome": { "enum": ["PASSED", "FAILED", "BLOCKED"] },
+        "commit_sha": { "type": ["string", "null"], "pattern": "^[a-f0-9]{40}$" },
+        "changed_files": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "tests": { "type": "array", "items": { "type": "object" } },
+        "unresolved_failures": { "type": "array", "items": { "type": "string" } },
+        "deployment_state": { "type": "object" },
+        "result_fingerprint": { "$ref": "#/$defs/sha256" },
+        "completed_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "ReleaseManifest": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["phase", "repository", "main_sha", "release_tag", "tests_passed", "protected_main_checks_passed", "migrations_verified", "deployments", "migrations", "authenticated_smoke", "production_readback", "rollback_point", "recorded_at"],
+      "properties": {
+        "phase": { "type": "integer", "minimum": 1 },
+        "repository": { "type": "string", "minLength": 1 },
+        "main_sha": { "$ref": "#/$defs/sha40" },
+        "release_tag": { "type": "string", "minLength": 1 },
+        "tests_passed": { "const": true },
+        "protected_main_checks_passed": { "const": true },
+        "migrations_verified": { "const": true },
+        "deployments": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "migrations": { "type": "array", "items": { "type": "object" } },
+        "authenticated_smoke": { "type": "object", "required": ["status", "receipt_sha256"] },
+        "production_readback": { "type": "object", "required": ["status", "main_sha", "receipt_sha256", "blockers"] },
+        "rollback_point": { "type": "object" },
+        "recorded_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "SessionCheckpoint": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["checkpoint_id", "phase", "task_packet_id", "branch", "worktree", "commit_sha", "changed_files", "tests", "unresolved_failures", "deployment_state", "blockers", "rollback_point", "next_action", "created_at"],
+      "properties": {
+        "checkpoint_id": { "type": "string", "minLength": 1 },
+        "phase": { "type": "integer", "minimum": 1 },
+        "task_packet_id": { "type": ["string", "null"] },
+        "branch": { "type": "string", "minLength": 1 },
+        "worktree": { "type": "string", "minLength": 1 },
+        "commit_sha": { "$ref": "#/$defs/sha40" },
+        "changed_files": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "tests": { "type": "array", "items": { "type": "object" } },
+        "unresolved_failures": { "type": "array", "items": { "type": "string" } },
+        "deployment_state": { "type": "object" },
+        "blockers": { "type": "array", "items": { "type": "string" } },
+        "rollback_point": { "type": "object" },
+        "next_action": { "type": "string", "minLength": 1 },
+        "created_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "OwnerEscalation": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["escalation_id", "category", "reason", "evidence", "requested_action", "created_at"],
+      "properties": {
+        "escalation_id": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["CREDENTIAL_OR_MFA", "DENIED_EXTERNAL_ACCESS", "MATERIAL_SPENDING", "IRREVERSIBLE_EXTERNAL_ACT", "PRICING_LEGAL_OR_DATA_RIGHTS", "PRODUCT_DEFINING_AMBIGUITY", "PROTOCOL_REQUIRED_REVIEW"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "requested_action": { "type": "string", "minLength": 1 },
+        "created_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "ReviewRecord": { "allOf": [{ "$ref": "#/$defs/version" }], "type": "object", "required": ["checkpoint_id", "phase", "policy", "status", "request_commit_sha", "verdict", "updated_at"] },
+    "IncidentRecord": { "allOf": [{ "$ref": "#/$defs/version" }], "type": "object", "required": ["incident_id", "phase", "severity", "summary", "evidence", "status", "created_at"] },
+    "ImprovementCandidate": { "allOf": [{ "$ref": "#/$defs/version" }], "type": "object", "required": ["candidate_id", "source", "evidence", "proposed_phase", "status", "created_at"] },
+    "PhaseAmendment": { "allOf": [{ "$ref": "#/$defs/version" }], "type": "object", "required": ["amendment_id", "phase", "reason", "scope_delta", "evidence", "approval_status", "created_at"] },
+    "GovernorEvent": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["sequence", "event_id", "event_type", "actor", "subject_id", "tenant_id", "organization_id", "business_id", "request_idempotency_key", "prior_version", "resulting_version", "transition_evidence_sha256", "release_version", "payload", "payload_sha256", "previous_hash", "event_hash", "created_at"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "event_id": { "type": "string", "minLength": 1 },
+        "event_type": { "type": "string", "minLength": 1 },
+        "actor": { "const": "CODEX_5_6_SOL_XHIGH" },
+        "subject_id": { "type": "string", "minLength": 1 },
+        "tenant_id": { "type": ["string", "null"] },
+        "organization_id": { "type": ["string", "null"] },
+        "business_id": { "type": ["string", "null"] },
+        "request_idempotency_key": { "$ref": "#/$defs/sha256" },
+        "prior_version": { "type": "integer", "minimum": 0 },
+        "resulting_version": { "type": "integer", "minimum": 1 },
+        "transition_evidence_sha256": { "$ref": "#/$defs/sha256" },
+        "release_version": { "$ref": "#/$defs/sha40" },
+        "payload": { "type": "object" },
+        "payload_sha256": { "$ref": "#/$defs/sha256" },
+        "previous_hash": { "$ref": "#/$defs/sha256" },
+        "event_hash": { "$ref": "#/$defs/sha256" },
+        "created_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "GPTProReviewRequest": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["checkpoint_id", "reason", "phase", "task_packet_id", "repository", "source_commit_sha", "production_deployments", "migrations", "changed_files", "diffs", "acceptance_gates", "test_results", "unresolved_questions", "alternatives", "recommendation", "risks", "requested_decision", "evidence", "created_at"],
+      "properties": {
+        "checkpoint_id": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "phase": { "type": "integer", "minimum": 1 },
+        "task_packet_id": { "type": "string", "minLength": 1 },
+        "repository": { "type": "string", "minLength": 1 },
+        "source_commit_sha": { "$ref": "#/$defs/sha40" },
+        "production_deployments": { "type": "array", "items": { "type": "object" } },
+        "migrations": { "type": "array", "items": { "type": "object" } },
+        "changed_files": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "diffs": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["path", "base_commit_sha", "head_commit_sha", "diff_reference", "content_sha256"] } },
+        "acceptance_gates": { "type": "array", "items": { "type": "object" } },
+        "test_results": { "type": "array", "items": { "type": "object" } },
+        "unresolved_questions": { "type": "array", "items": { "type": "string" } },
+        "alternatives": { "type": "array", "items": { "type": "object" } },
+        "recommendation": { "type": "string", "minLength": 1 },
+        "risks": { "type": "array", "items": { "type": "object" } },
+        "requested_decision": { "type": "string", "minLength": 1 },
+        "evidence": { "type": "array", "items": { "type": "object" } },
+        "created_at": { "$ref": "#/$defs/isoDate" }
+      }
+    },
+    "ProReviewVerdict": {
+      "allOf": [{ "$ref": "#/$defs/version" }],
+      "type": "object",
+      "required": ["checkpoint_id", "phase", "reviewed_commit_sha", "verdict_commit_sha", "verdict", "binding_corrections", "rationale", "evidence_reviewed", "owner_attested", "reviewed_at"],
+      "properties": {
+        "checkpoint_id": { "type": "string", "minLength": 1 },
+        "phase": { "type": "integer", "minimum": 1 },
+        "reviewed_commit_sha": { "$ref": "#/$defs/sha40" },
+        "verdict_commit_sha": { "$ref": "#/$defs/sha40" },
+        "verdict": { "enum": ["PASS", "PASS_WITH_BINDING_CORRECTIONS", "REJECT_AND_REPAIR", "OWNER_DECISION_REQUIRED"] },
+        "binding_corrections": { "type": "array", "items": { "type": "string" } },
+        "rationale": { "type": "string", "minLength": 1 },
+        "evidence_reviewed": { "type": "array", "items": { "type": "string" } },
+        "owner_attested": { "const": true },
+        "reviewed_at": { "$ref": "#/$defs/isoDate" }
+      }
+    }
+  }
+}

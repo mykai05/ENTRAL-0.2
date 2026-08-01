@@ -53,6 +53,8 @@ jobs:
         run: pnpm test:phase180
       - name: Verify Phase 195 contracts, production-only rules, and release gates
         run: pnpm test:phase195
+      - name: Verify Phase 196 single-writer Governor, recovery, and review gateway
+        run: pnpm test:phase196
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
@@ -101,6 +103,16 @@ jobs:
             test-results/e2e/phase195-*.json
             test-results/e2e/phase195-*.png
             test-results/phase195/**
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain Phase 196 Governor evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-196-governor-evidence
+          path: |
+            test-results/phase196/**
+            .entral/governor/releases/phase-196.json
           if-no-files-found: warn
           retention-days: 90
       - run: pnpm build

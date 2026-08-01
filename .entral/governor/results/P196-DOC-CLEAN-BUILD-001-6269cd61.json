@@ -1,0 +1,41 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P196-DOC-CLEAN-BUILD-001-6269cd61",
+  "task_packet_id": "P196-DOC-CLEAN-BUILD-001",
+  "phase": 196,
+  "outcome": "PASSED",
+  "commit_sha": "6269cd6161f01caa6839510ccc71cf817ea250a5",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/tasks/P196-DOC-CLEAN-BUILD-001.json",
+    "docs/PHASE_196_VERIFICATION.md",
+    "scripts/phase196-release-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase196",
+      "status": "PASSED"
+    },
+    {
+      "command": "Clean checkout: pnpm install --frozen-lockfile; pnpm prisma:generate; pnpm test:phase196; pnpm build",
+      "status": "PASSED"
+    },
+    {
+      "command": "Clean checkout tracked-file readback",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Deployment follows protected-main integration and exact-main-SHA CI."
+  },
+  "result_fingerprint": "b6bb95c3e5ba92326fe294177ebdfcb64087e2123e3256212c437d96419ba693",
+  "completed_at": "2026-08-01T12:41:00.955Z"
+}
