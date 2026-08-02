@@ -40,6 +40,7 @@ jobs:
           node-version: 20.19.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:generate
       - name: Audit production dependencies for critical vulnerabilities
         run: pnpm audit --prod --audit-level critical
       - name: Report high dependency audit findings
@@ -65,7 +66,6 @@ jobs:
         run: pnpm test:phase200
       - name: Verify Phase 202 identity, tenancy, session, secret, and support boundaries
         run: pnpm test:phase202
-      - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
       - name: Verify Phase 195 runtime safety and graph observability routes
