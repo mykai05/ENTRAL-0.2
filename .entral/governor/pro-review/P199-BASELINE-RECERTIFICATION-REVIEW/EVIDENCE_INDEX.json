@@ -1,0 +1,46 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+  "source_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+  "request_sha256": "02b4be92f901cf65ff09cca4c93d25e161d0228a73ba9413a8781aa7cd1a0dd9",
+  "section_sha256": {
+    "diffs": "daed4f46bf17252d89bf88d9e3e8d665ee3632d69ec88a440a728e9e37b71597",
+    "deployments": "814c9470f939dbd456d0f5825fe39b05619e2e1470c52638c0cb16b7150897e8",
+    "migrations": "a5d1e1794c007fb20cb4925ddb626600f7b5fd93a006d7453dbbfe84a1f43d7a",
+    "acceptance_gates": "6883d695faa6c75194a4be24785fee2e713891341a014a98c6e0b5358f3709dc",
+    "tests": "c4d13969583f223439546736322a86fed76c5ee20323301a23736d24491c2c8a",
+    "alternatives": "c53be9606822b0121a5bcfde1f3f6fd9aa7d2c302a7fab50d959d2bf37f8241d",
+    "risks": "89a1b689ef9d93bf3bab124d1f80928472f9fc174f743569dede686ceda85502"
+  },
+  "evidence": [
+    {
+      "reference": "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+      "sha256": "d034f6527f7ec489cd5d19412c05742a9f94fe6ca8bf59c43eb476048a632c2e"
+    },
+    {
+      "reference": "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json",
+      "sha256": "c91e4f4d9b6238643deaa95271873daae595c97c84ad00151a705ae163274030"
+    },
+    {
+      "reference": "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+      "sha256": "8ed138a9085ff8b3c8397117d8977629001397a68c427b447cfce496f3c716af"
+    },
+    {
+      "reference": "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+      "sha256": "01af4c53adbc664dcb8b845d7e7dcbe72a3fa350a156c258a150bb5b61434ff4"
+    },
+    {
+      "reference": "docs/evidence/phase199/TEST_RECEIPTS.json",
+      "sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "reference": ".entral/governor/releases/phase-198.json",
+      "sha256": "bc33350420b4d6b44916f11eeb9873d86ac8c4a68aa48494a6289af373539db0"
+    },
+    {
+      "reference": "docs/PHASE_199_VERIFICATION.md",
+      "sha256": "d7585d604f81b7cf2edb9b5a880eed47a83614ec3bd5373b37f386f1b74d6bad"
+    }
+  ]
+}

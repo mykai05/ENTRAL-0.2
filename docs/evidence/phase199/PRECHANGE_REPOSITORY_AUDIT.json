@@ -1,0 +1,73 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "audited_at": "2026-08-01T16:15:00.000Z",
+  "product": {
+    "repository": "mykai05/ENTRAL-0.2",
+    "evidence_reference": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+    "branch": "codex/phase-199-review-checkpoint",
+    "head": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "origin_main": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "ahead": 0,
+    "behind": 0,
+    "worktree_count": 29
+  },
+  "preserved_dirty_state": [
+    {
+      "workspace_identity": "ENTRAL product checkout on agent/remove-sign-in-page",
+      "branch": "agent/remove-sign-in-page",
+      "state": "three untracked screenshots",
+      "disposition": "PRESERVED_OUT_OF_SCOPE"
+    },
+    {
+      "workspace_identity": "ENTRAL Phase 190 preserved worktree",
+      "state": "modified pnpm-lock.yaml and pnpm-workspace.yaml",
+      "disposition": "PRESERVED_OUT_OF_SCOPE"
+    },
+    {
+      "workspace_identity": "ENTRAL Phase 196 preserved worktree",
+      "state": "Governor Phase 197 carryover",
+      "disposition": "PRESERVED_OUT_OF_SCOPE"
+    },
+    {
+      "workspace_identity": "ENTRAL isolated login worktree",
+      "branch": "main",
+      "head": "eac28b",
+      "ahead": 1,
+      "behind": 110,
+      "disposition": "STALE_ISOLATED_NOT_CANONICAL"
+    },
+    {
+      "repository_reference": "SovereignProtocol/sovereign-protocol-agent@8f1923fcec20a11dc0aef304c0e05827fe2cb5c5:AGENTS.md",
+      "branch": "main",
+      "state": "user-owned AGENTS.md modification",
+      "disposition": "PRESERVED_OUT_OF_SCOPE"
+    }
+  ],
+  "certified_release_reference": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+  "release_drift": {
+    "source_vs_provider": "NONE_OBSERVED",
+    "deployed_product_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "migration_state": "42 applied; zero unfinished, rolled back, or pending",
+    "control_website_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5"
+  },
+  "proven_defects": [
+    {
+      "id": "P199-D001",
+      "finding": "Production startup and secure JSON writes did not require DATA_ENCRYPTION_KEY.",
+      "repair": "Fail production startup and write paths closed; provide audited reconciliation."
+    },
+    {
+      "id": "P199-D002",
+      "finding": "Production API administrative step-up could be optional when ADMIN_MFA_CODE was absent.",
+      "repair": "Require ADMIN_MFA_CODE for production API startup."
+    },
+    {
+      "id": "P199-D003",
+      "finding": "The development memory entrypoint had no runtime production guard.",
+      "repair": "Abort the memory server whenever NODE_ENV=production."
+    }
+  ],
+  "audit_conclusion": "No existing valid phase implementation required replacement. Phase 199 repairs are limited to the three evidence-proven fail-closed defects and certification evidence."
+}

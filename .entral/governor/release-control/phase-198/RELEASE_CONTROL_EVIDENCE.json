@@ -1,0 +1,126 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "evidence_id": "P198-PRODUCTION-EVIDENCE-001",
+  "phase": 198,
+  "plan_sha256": "69e63bbd6a3b0739c6c4fb5c8d8a72ac852212a80d34ba3d688df0d3ce18d2a3",
+  "stage": "PRODUCTION",
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "origin_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "observed_contract_version": "release-control-v1",
+      "compatible": true
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "origin_main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "observed_contract_version": "release-control-v1",
+      "compatible": true
+    }
+  ],
+  "task": {
+    "commit_sha": "209c9640d5e02b5b456b8a2b548e5aea7f6201ab",
+    "coherent_commit": true,
+    "worktree_clean": true
+  },
+  "targeted_tests": [
+    {"name": "pnpm release:check", "status": "PASSED"},
+    {"name": "pnpm test:phase196", "status": "PASSED"},
+    {"name": "pnpm test:phase197", "status": "PASSED"}
+  ],
+  "mandatory_suites": [
+    {"name": "pnpm test:phase198", "status": "PASSED"},
+    {"name": "pnpm test:phase197", "status": "PASSED"},
+    {"name": "pnpm test:phase196", "status": "PASSED"},
+    {"name": "pnpm test:phase195", "status": "PASSED"},
+    {"name": "pnpm contracts:verify", "status": "PASSED"},
+    {"name": "pnpm prisma:generate", "status": "PASSED"},
+    {"name": "pnpm lint", "status": "PASSED"},
+    {"name": "pnpm test", "status": "PASSED"},
+    {"name": "pnpm build", "status": "PASSED"},
+    {"name": "pnpm release:check", "status": "PASSED"},
+    {"name": "git diff --check", "status": "PASSED"},
+    {"name": "Governor verify", "status": "PASSED"}
+  ],
+  "status_checks": [
+    {"name": "protected-pr-verify-30706550991", "status": "PASSED"},
+    {"name": "protected-pr-verify-30706557469", "status": "PASSED"},
+    {"name": "main-verify-30706915276", "status": "PASSED"},
+    {"name": "vercel-frontend-exact-main", "status": "PASSED"},
+    {"name": "vercel-backend-exact-main", "status": "PASSED"}
+  ],
+  "reconciliation": {
+    "origin_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "reconciled_commit_sha": "209c9640d5e02b5b456b8a2b548e5aea7f6201ab",
+    "affected_checks_rerun": true,
+    "status": "RECONCILED"
+  },
+  "staging": {"status": "NOT_REQUIRED"},
+  "migration_verification": {
+    "status": "NO_SCHEMA_CHANGE",
+    "ordered": true,
+    "fingerprints_match": true,
+    "compatibility_verified": true,
+    "backup_status": "NOT_REQUIRED",
+    "entries": [
+      {
+        "order": 0,
+        "name": "phase-198-no-schema-change",
+        "fingerprint_sha256": "3e7e60de453b2110852f708c21a5c8841dd15434d2294c7bd2c93d42746e5f37",
+        "status": "NO_SCHEMA_CHANGE"
+      }
+    ]
+  },
+  "deployments": [
+    {
+      "role": "FRONTEND",
+      "provider": "VERCEL",
+      "deployment_id": "dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "status": "READY"
+    },
+    {
+      "role": "API",
+      "provider": "RAILWAY",
+      "deployment_id": "43f98e05-af77-44f2-826c-5976fc738e4b",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "status": "READY"
+    },
+    {
+      "role": "WORKER",
+      "provider": "RAILWAY",
+      "deployment_id": "b477d5c8-2a55-4e74-84b8-168e5f938fd8",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "status": "READY"
+    }
+  ],
+  "authenticated_smokes": [
+    {"surface": "FRONTEND", "live_url": "https://entral-0-2-frontend.vercel.app/member/graph", "authenticated": true, "status": "PASSED", "receipt_sha256": "f73e366e727ef7846f79f3757ae439c25de7249823c43805b478c2c38069c036"},
+    {"surface": "API", "live_url": "https://entral-backend-production.up.railway.app/health", "authenticated": true, "status": "PASSED", "receipt_sha256": "f73e366e727ef7846f79f3757ae439c25de7249823c43805b478c2c38069c036"},
+    {"surface": "WORKER", "live_url": "https://entral-backend-production.up.railway.app/health", "authenticated": true, "status": "PASSED", "receipt_sha256": "f73e366e727ef7846f79f3757ae439c25de7249823c43805b478c2c38069c036"}
+  ],
+  "state_reconciliation": {
+    "status": "PASSED",
+    "side_effects_reconciled": true,
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "receipt_sha256": "0986e544923576128fcd1fc04b9243f3310862a1b71e4fe36d2d76330b13b2d4",
+    "blockers": []
+  },
+  "health": {
+    "availability": 1,
+    "error_rate": 0,
+    "p95_ms": 180.549,
+    "failed_jobs": 0,
+    "dead_letter_jobs": 0,
+    "worker_ready": true,
+    "receipt_sha256": "fe62ad2995e4323f06c2ba1f603f171223de3da4b12b0d5cea54bcbc15f01ade"
+  },
+  "rollback_rehearsal": {"status": "NOT_REQUIRED"},
+  "failure_proof": {"status": "PASSED", "outcome": "REJECTED", "phase_advanced": false},
+  "rollback_point": {"status": "VERIFIED", "receipt_sha256": "7ad1c91fb7dcf4e69591567d9d3b539f27eb3772799e320a0fde9d9ba76e7d1c"},
+  "produced_at": "2026-08-01T16:09:19.378Z"
+}

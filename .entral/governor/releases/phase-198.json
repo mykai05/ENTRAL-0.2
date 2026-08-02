@@ -1,0 +1,87 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 198,
+  "repository": "mykai05/ENTRAL-0.2",
+  "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+  "release_tag": "phase-198",
+  "tests_passed": true,
+  "protected_main_checks_passed": true,
+  "migrations_verified": true,
+  "deployments": [
+    {
+      "provider": "VERCEL",
+      "deployment_id": "dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u",
+      "role": "FRONTEND",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "status": "READY",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "43f98e05-af77-44f2-826c-5976fc738e4b",
+      "role": "API",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "b477d5c8-2a55-4e74-84b8-168e5f938fd8",
+      "role": "WORKER",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY",
+      "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "phase-198-no-schema-change",
+      "status": "NO_SCHEMA_CHANGE",
+      "readback": "Production Prisma migration status is up to date with 42 applied migrations, zero unfinished migrations, zero rolled-back migrations, and no pending migrations.",
+      "production_schema_status": "UP_TO_DATE",
+      "applied_migration_count": 42,
+      "readback_sha256": "3e7e60de453b2110852f708c21a5c8841dd15434d2294c7bd2c93d42746e5f37"
+    }
+  ],
+  "authenticated_smoke": {
+    "status": "PASSED",
+    "receipt_sha256": "f73e366e727ef7846f79f3757ae439c25de7249823c43805b478c2c38069c036"
+  },
+  "production_readback": {
+    "status": "PASSED",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "receipt_sha256": "0986e544923576128fcd1fc04b9243f3310862a1b71e4fe36d2d76330b13b2d4",
+    "blockers": []
+  },
+  "rollback_point": {
+    "status": "RESTORE_VERIFIED",
+    "reference": "release:phase-197:fdabaea99400ed1e1dfcada2cd41a336ed0a193b",
+    "receipt_sha256": "44fc97db7d2a2f185c5362ee60b96cb7a968c324fc5260183057b9c8fb81dd98"
+  },
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "repository": "mykai05/ENTRAL-0.2",
+      "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    }
+  ],
+  "release_controller": {
+    "risk_tier": "LOW",
+    "decision": "PASS",
+    "plan_sha256": "69e63bbd6a3b0739c6c4fb5c8d8a72ac852212a80d34ba3d688df0d3ce18d2a3",
+    "evidence_bundle_sha256": "95c7b5bbfbcec0072bc84ac09114711cf3195ec6796cf352c5046e17b2adbab6",
+    "health_status": "PASSED",
+    "failure_proof_status": "PASSED"
+  },
+  "recorded_at": "2026-08-01T16:10:17.618Z"
+}

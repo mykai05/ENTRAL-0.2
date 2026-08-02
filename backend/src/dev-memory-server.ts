@@ -260,6 +260,10 @@ import {
 import type { AiActionPlan } from "./services/aiBrain.js";
 import { safeCanonicalMemberReturnPath } from "./schemas.js";
 
+if (process.env.NODE_ENV === "production") {
+  throw new Error("The in-memory development server is forbidden in production.");
+}
+
 config({ path: resolve(process.cwd(), ".env") });
 config({ path: resolve(process.cwd(), "../.env") });
 

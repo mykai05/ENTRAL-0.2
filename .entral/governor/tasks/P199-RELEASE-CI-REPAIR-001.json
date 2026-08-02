@@ -1,0 +1,65 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "task_packet_id": "P199-RELEASE-CI-REPAIR-001",
+  "phase": 199,
+  "objective": "Repair the Phase 199 CI gate so it validates the committed post-correction Governor state while continuing to require Phase 199 uncertified, Phase 200 blocked, and any completed binding corrections bound to the exact passed correction commit.",
+  "scope": [
+    ".entral/governor/**",
+    "scripts/phase199-baseline-gates.test.mjs",
+    "docs/evidence/phase199/TEST_RECEIPTS.json"
+  ],
+  "likely_modules": [
+    "scripts/phase199-baseline-gates.test.mjs",
+    ".entral/governor/PROGRAM_STATE.json"
+  ],
+  "preserved_behavior": [
+    "All four completed owner-attested binding corrections at 39000c648844e02fa472b1f4a824cd0114d70ba7",
+    "Phase 199 remains uncertified until exact production evidence passes",
+    "Phase 200 remains blocked"
+  ],
+  "exclusions": [
+    "No product runtime, contract, inventory, reconciliation-target, deployment, or future-phase change",
+    "No security scan",
+    "No weakening of Governor event-chain or correction-commit assertions"
+  ],
+  "acceptance_tests": [
+    "pnpm test:phase199",
+    "pnpm contracts:verify",
+    "git diff --check",
+    "governor verify"
+  ],
+  "release_requirements": [
+    "The protected CI Phase 199 job passes against committed post-correction Governor state",
+    "Phase 199 remains uncertified and Phase 200 remains blocked"
+  ],
+  "usage_budget": {
+    "maximum_wall_time_minutes": 120,
+    "maximum_attempts": 3,
+    "maximum_retries": 2,
+    "stagnation_limit": 2,
+    "checkpoint_at_tokens_remaining": 20000,
+    "release_repair_reserve_tokens": 10000
+  },
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "policy": {
+    "future_phase_compatibility_required": false,
+    "work_created_to_stay_active": false,
+    "speculative_refactors": [],
+    "duplicate_systems": []
+  },
+  "relevant_adrs": [],
+  "relevant_source_paths": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/results/P199-BINDING-CORRECTIONS-001-39000c64.json"
+  ],
+  "created_at": "2026-08-02T00:10:00.000Z"
+}

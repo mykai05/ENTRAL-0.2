@@ -1,0 +1,103 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "task_packet_id": "P199-BINDING-CORRECTIONS-001",
+  "phase": 199,
+  "objective": "Implement only the four owner-attested GPT-5.6 Pro binding corrections for Phase 199: close certification-state semantics, prove and reconcile the complete credential-bearing secure JSON target set, make baseline evidence portable and historically specific with the required limitations, and require a Phase 198 rollback plus complete final-release binding before certification.",
+  "scope": [
+    ".entral/governor/**",
+    "packages/contracts/src/baseline.ts",
+    "packages/contracts/baseline-certification.schema.json",
+    "packages/contracts/tests/baseline.test.mjs",
+    "backend/src/services/secureJson.ts",
+    "backend/src/services/secureJsonReconciliation.ts",
+    "backend/src/cli/reconcileSecureJson.ts",
+    "backend/tests/phase199*.test.ts",
+    "scripts/phase199-*.mjs",
+    "docs/PHASE_199_*.md",
+    "docs/evidence/phase199/**",
+    "package.json",
+    "backend/package.json",
+    ".github/workflows/ci-cd.yml"
+  ],
+  "likely_modules": [
+    "packages/contracts/src/baseline.ts",
+    "packages/contracts/tests/baseline.test.mjs",
+    "backend/src/services/secureJsonReconciliation.ts",
+    "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+    "docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json",
+    "scripts/phase199-baseline-gates.test.mjs"
+  ],
+  "preserved_behavior": [
+    "Certified Phase 198 protected-main release at 5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "Existing source-backed Phase 100 through 195 behavior and exact Phase 195 dual-graph synchronization",
+    "Encrypted production credential payload behavior and fail-closed production plaintext writes",
+    "Unrelated generic JSON columns that do not contain credentials",
+    "Owner-attested review verdict and immutable Phase 199 review packet"
+  ],
+  "exclusions": [
+    "No Phase 200 implementation before Phase 199 certification",
+    "No security scan or security-scan workflow invocation",
+    "No unrelated refactor, mock, placeholder, sample-backed capability, or generic JSON encryption",
+    "No alternate coding model, subagent, agent team, or automated consumer ChatGPT interaction",
+    "No change to the four binding corrections or their owner-attested meaning"
+  ],
+  "acceptance_tests": [
+    "pnpm test:phase199",
+    "pnpm contracts:verify",
+    "pnpm --filter @entral/backend test",
+    "pnpm test:phase198",
+    "pnpm test:phase197",
+    "pnpm test:phase196",
+    "pnpm test:phase195",
+    "pnpm lint",
+    "pnpm test",
+    "pnpm build",
+    "pnpm release:check",
+    "git diff --check",
+    "governor verify"
+  ],
+  "release_requirements": [
+    "CERTIFIED is rejected when any baseline requirement is IMPLEMENTED_UNVERIFIED or PARTIAL, with explicit negative tests",
+    "A committed source-backed inventory accounts for every database column read or written through secure JSON helpers and proves the exact credential-bearing protected target subset",
+    "Production credential reconciliation records a successful APPLY receipt and a separate fresh AUDIT receipt with zero plaintext and zero invalid rows for every protected credential target",
+    "Evidence references use repository-at-commit paths, Phase 100 through 190 records name original completion gates, and all six specified known limitations are recorded",
+    "Certification is impossible until the final Phase 199 main SHA, three exact-SHA deployments, migration state, credential receipts, authenticated smoke, state readback, release tag, immediate Phase 198 rollback point, and rollback evidence are bound"
+  ],
+  "usage_budget": {
+    "maximum_wall_time_minutes": 720,
+    "maximum_attempts": 4,
+    "maximum_retries": 3,
+    "stagnation_limit": 2,
+    "checkpoint_at_tokens_remaining": 40000,
+    "release_repair_reserve_tokens": 20000
+  },
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "policy": {
+    "future_phase_compatibility_required": false,
+    "work_created_to_stay_active": false,
+    "speculative_refactors": [],
+    "duplicate_systems": []
+  },
+  "relevant_adrs": [
+    "docs/entral/101_architecture_lock.md"
+  ],
+  "relevant_source_paths": [
+    ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_VERDICT.json",
+    ".entral/governor/releases/phase-198.json",
+    "packages/contracts/src/baseline.ts",
+    "backend/src/services/secureJson.ts",
+    "backend/src/services/secureJsonReconciliation.ts",
+    "prisma/schema.prisma",
+    "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json"
+  ],
+  "created_at": "2026-08-01T23:44:46.449Z"
+}

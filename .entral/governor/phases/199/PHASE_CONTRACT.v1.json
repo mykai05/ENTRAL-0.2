@@ -1,0 +1,54 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "title": "Baseline Re-Certification, Legacy Isolation, and Production Truth Audit",
+  "review_policy": "MANDATORY",
+  "objective": "Re-certify the Phase 100-195 foundation against exact source and production evidence, close only evidence-proven defects, isolate legacy and non-production behavior, and create one fail-closed baseline certification contract before Phase 200.",
+  "feature_ids": [
+    "P199-F001", "P199-F002", "P199-F003", "P199-F004", "P199-F005", "P199-F006", "P199-F007",
+    "P199-F008", "P199-F009", "P199-F010", "P199-F011", "P199-F012", "P199-F013", "P199-F014",
+    "P199-F015", "P199-F016", "P199-F017", "P199-F018", "P199-F019", "P199-F020", "P199-F021"
+  ],
+  "acceptance_gate_ids": [
+    "P199-F001-A", "P199-F002-A", "P199-F003-A", "P199-F004-A", "P199-F005-A", "P199-F006-A", "P199-F007-A",
+    "P199-F008-A", "P199-F009-A", "P199-F010-A", "P199-F011-A", "P199-F012-A", "P199-F013-A", "P199-F014-A",
+    "P199-F015-A", "P199-F016-A", "P199-F017-A", "P199-F018-A", "P199-F019-A", "P199-F020-A", "P199-F021-A"
+  ],
+  "baseline_contract": {
+    "covered_phases": [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 195],
+    "requirement_states": [
+      "VERIFIED_COMPLETE", "IMPLEMENTED_UNVERIFIED", "PARTIAL", "FAILING", "MISSING",
+      "SUPERSEDED", "CONTRADICTORY", "BLOCKED", "PRODUCTION_UNVERIFIED", "LEGACY_ISOLATED"
+    ],
+    "exact_source_and_provider_truth_required": true,
+    "legacy_isolation_required": true,
+    "production_fallbacks_forbidden": true,
+    "plaintext_secure_json_forbidden": true,
+    "phase_200_blocked_until_certified": true
+  },
+  "review_checkpoint": {
+    "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+    "owner_invoked_external_reviewer": "GPT-5.6 Pro",
+    "writer_and_release_owner": "CODEX_5_6_SOL_XHIGH",
+    "review_before_certification_and_release": true
+  },
+  "release_requirements": [
+    "RECONCILED_WITH_CURRENT_MAIN",
+    "PROTECTED_MAIN_CHECKS_PASS",
+    "EXACT_MAIN_SHA_DEPLOYED",
+    "MIGRATIONS_VERIFIED",
+    "AUTHENTICATED_PRODUCTION_SMOKE_AND_READBACK",
+    "PRODUCTION_HEALTH_THRESHOLDS_PASS",
+    "BASELINE_CERTIFICATION_MANIFEST_RECORDED",
+    "HASHED_RELEASE_EVIDENCE_BUNDLE",
+    "BOUNDED_ROLLBACK_POINT_RECORDED"
+  ],
+  "out_of_scope": [
+    "PHASE_200_OR_LATER_IMPLEMENTATION",
+    "AUTOMATED_CONSUMER_CHAT_REVIEW",
+    "DUPLICATE_GOVERNANCE_SYSTEM",
+    "SPECULATIVE_REBUILD_OF_VERIFIED_WORK",
+    "PRODUCTION_SECURITY_SCAN"
+  ]
+}
