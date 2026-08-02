@@ -12,30 +12,123 @@
     198,
     199
   ],
-  "current_task_packet_id": "P200-INTERACTION-LAYER-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P199-RELEASE-CI-REPAIR-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P200-INTERACTION-LAYER-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P199-RELEASE-CI-REPAIR-001-94d11c29",
-    "task_packet_id": "P199-RELEASE-CI-REPAIR-001",
-    "phase": 199,
+    "execution_result_id": "P200-INTERACTION-LAYER-001-6287a903",
+    "task_packet_id": "P200-INTERACTION-LAYER-001",
+    "phase": 200,
     "outcome": "PASSED",
-    "commit_sha": "94d11c296fe07e664a210d103d92fbb61ae625f4",
+    "commit_sha": "6287a9036cc55239e86e09befef07364b37502ee",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/tasks/P199-RELEASE-CI-REPAIR-001.json",
-      "scripts/phase199-baseline-gates.test.mjs"
+      ".entral/governor/phases/200/PHASE_CONTRACT.v1.json",
+      ".entral/governor/tasks/P200-INTERACTION-LAYER-001.json",
+      "backend/src/routes/interactionLayer.ts",
+      "backend/src/server.ts",
+      "backend/src/services/interactionLayer.ts",
+      "backend/tests/phase200InteractionLayer.test.ts",
+      "backend/tests/phase200TutorialPersistence.test.ts",
+      "docs/PHASE_200_VERIFICATION.md",
+      "docs/evidence/phase200/FEATURE_ACCEPTANCE.json",
+      "e2e/entral.e2e.mjs",
+      "frontend/app/phase180.css",
+      "frontend/components/CanonicalGraphWorkspace.tsx",
+      "frontend/components/CanonicalMemberShell.tsx",
+      "frontend/components/CanonicalUniverse3DGraph.tsx",
+      "frontend/components/CanonicalUniverseGraph.tsx",
+      "frontend/components/OnboardingTour.tsx",
+      "frontend/components/Phase200BusinessHealthPanel.tsx",
+      "frontend/components/Phase200EvidenceDrawer.tsx",
+      "frontend/components/Phase200InteractionNavigation.tsx",
+      "frontend/lib/canonical-refresh.ts",
+      "frontend/lib/canonical-universe.ts",
+      "frontend/lib/graph-view-state.ts",
+      "frontend/lib/interaction-layer.ts",
+      "frontend/tests/MemberCommandCenterClient.test.tsx",
+      "frontend/tests/OnboardingTour.test.tsx",
+      "frontend/tests/Phase180CanonicalUniverse.test.ts",
+      "frontend/tests/Phase180DualGraph.test.tsx",
+      "frontend/tests/Phase195GraphWorkspace.test.tsx",
+      "frontend/tests/Phase200InteractionLayer.test.tsx",
+      "package.json",
+      "packages/contracts/openapi.yaml",
+      "packages/contracts/src/index.ts",
+      "packages/contracts/src/interaction.ts",
+      "packages/contracts/tests/contracts.test.mjs",
+      "packages/contracts/tests/interaction.test.mjs",
+      "prisma/migrations/20260802023000_phase_200_interaction_layer/migration.sql",
+      "prisma/schema.prisma",
+      "scripts/phase199-baseline-gates.test.mjs",
+      "scripts/phase200-interaction-gates.test.mjs"
     ],
     "tests": [
+      {
+        "command": "pnpm test:phase200",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm contracts:verify",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm prisma:generate",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm prisma:validate",
+        "status": "PASSED"
+      },
       {
         "command": "pnpm test:phase199",
         "status": "PASSED"
       },
       {
-        "command": "pnpm contracts:verify",
+        "command": "pnpm test:phase198",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:phase197",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:phase196",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:phase195",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm lint",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm build",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm release:check",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:e2e",
+        "status": "PASSED"
+      },
+      {
+        "command": "browser acceptance at 360, 390, 412, and 430 CSS pixels",
+        "status": "PASSED"
+      },
+      {
+        "command": "desktop side-by-side graph regression acceptance",
         "status": "PASSED"
       },
       {
@@ -50,10 +143,10 @@
     "unresolved_failures": [],
     "deployment_state": {
       "status": "NOT_ATTEMPTED",
-      "reason": "Protected CI must pass this exact repair before merge."
+      "reason": "Protected-main integration and exact-main-SHA production release follow this accepted implementation result."
     },
-    "result_fingerprint": "385a3016d08b24105f7ce0a3d802804364062b600220b5c6054590e32511b2d2",
-    "completed_at": "2026-08-02T00:11:14.732Z"
+    "result_fingerprint": "18224005ccc7521f23878360fbfbbf9f53574223165c51e3b15441bbc7997898",
+    "completed_at": "2026-08-02T05:49:56.302Z"
   },
   "latest_verified_main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
   "latest_production_release": {
@@ -174,60 +267,19 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P200-INTERACTION-LAYER-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "81186139-6771-4cac-8b14-ec1c71ecad45",
-    "task_packet_id": "P200-INTERACTION-LAYER-001",
-    "owner": "phase200-interaction-20260802",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      ".entral/governor/**",
-      "packages/contracts/src/**",
-      "packages/contracts/tests/**",
-      "packages/contracts/openapi.yaml",
-      "packages/contracts/package.json",
-      "prisma/schema.prisma",
-      "prisma/migrations/*phase_200*/**",
-      "backend/src/routes/**",
-      "backend/src/services/**",
-      "backend/src/server.ts",
-      "backend/tests/*phase200*.test.ts",
-      "frontend/app/member/**",
-      "frontend/app/phase180.css",
-      "frontend/components/CanonicalMemberShell.tsx",
-      "frontend/components/CanonicalGraphWorkspace.tsx",
-      "frontend/components/CanonicalUniverseGraph.tsx",
-      "frontend/components/CanonicalUniverse3DGraph.tsx",
-      "frontend/components/CanonicalEntralAssistant.tsx",
-      "frontend/components/OnboardingTour.tsx",
-      "frontend/components/*Interaction*.tsx",
-      "frontend/components/*BusinessHealth*.tsx",
-      "frontend/components/*Evidence*.tsx",
-      "frontend/lib/**",
-      "frontend/tests/*Phase200*.test.*",
-      "frontend/tests/OnboardingTour.test.tsx",
-      "e2e/**",
-      "scripts/phase200-*.mjs",
-      "docs/PHASE_200_*.md",
-      "docs/evidence/phase200/**",
-      "package.json",
-      ".github/workflows/ci-cd.yml"
-    ],
-    "acquired_at": "2026-08-02T04:53:45.771Z",
-    "heartbeat_at": "2026-08-02T05:32:56.875Z",
-    "expires_at": "2026-08-02T09:32:56.875Z"
-  },
+  "next_action": "Reconcile Phase 200 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 68,
-  "updated_at": "2026-08-02T05:32:56.875Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "18224005ccc7521f23878360fbfbbf9f53574223165c51e3b15441bbc7997898"
+  ],
+  "version": 69,
+  "updated_at": "2026-08-02T05:50:29.455Z",
   "task_deadline_at": "2026-08-02T13:58:38.984Z",
   "pending_release_manifest": null,
-  "event_count": 68,
-  "event_head_hash": "19e68b463835c9d66cb18f350385b16816a871afe0f1552561d05f9ceaa7fe00"
+  "event_count": 69,
+  "event_head_hash": "f815554391254043a93ba88cf6a96984487f7d7b8b76c639a65a240edd6ed984"
 }
