@@ -11,51 +11,46 @@
     197,
     198
   ],
-  "current_task_packet_id": "P199-BINDING-CORRECTIONS-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P199-BASELINE-CERTIFICATION-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P199-BINDING-CORRECTIONS-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P199-BASELINE-CERTIFICATION-001-f9bba0b2",
-    "task_packet_id": "P199-BASELINE-CERTIFICATION-001",
+    "execution_result_id": "P199-BINDING-CORRECTIONS-001-39000c64",
+    "task_packet_id": "P199-BINDING-CORRECTIONS-001",
     "phase": 199,
     "outcome": "PASSED",
-    "commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+    "commit_sha": "39000c648844e02fa472b1f4a824cd0114d70ba7",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/phases/199/PHASE_CONTRACT.v1.json",
-      ".entral/governor/release-control/phase-198/EVIDENCE_BUNDLE.json",
-      ".entral/governor/release-control/phase-198/RELEASE_CONTROL_EVIDENCE.json",
-      ".entral/governor/release-control/phase-198/RELEASE_CONTROL_PLAN.json",
-      ".entral/governor/releases/phase-198.json",
-      ".entral/governor/tasks/P199-BASELINE-CERTIFICATION-001.json",
-      ".github/workflows/ci-cd.yml",
-      "backend/package.json",
-      "backend/src/cli/reconcileSecureJson.ts",
-      "backend/src/dev-memory-server.ts",
-      "backend/src/env.ts",
-      "backend/src/services/secureJson.ts",
+      ".entral/governor/tasks/P199-BINDING-CORRECTIONS-001.json",
       "backend/src/services/secureJsonReconciliation.ts",
       "backend/tests/phase199BaselineSecurity.test.ts",
       "docs/PHASE_199_VERIFICATION.md",
       "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
       "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json",
       "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+      "docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json",
       "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
       "docs/evidence/phase199/TEST_RECEIPTS.json",
-      "package.json",
       "packages/contracts/baseline-certification.schema.json",
-      "packages/contracts/package.json",
       "packages/contracts/src/baseline.ts",
-      "packages/contracts/src/index.ts",
       "packages/contracts/tests/baseline.test.mjs",
       "scripts/phase199-baseline-gates.test.mjs"
     ],
     "tests": [
       {
         "command": "pnpm test:phase199",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm contracts:verify",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm --filter @entral/backend test",
         "status": "PASSED"
       },
       {
@@ -72,10 +67,6 @@
       },
       {
         "command": "pnpm test:phase195",
-        "status": "PASSED"
-      },
-      {
-        "command": "pnpm contracts:verify",
         "status": "PASSED"
       },
       {
@@ -114,10 +105,10 @@
     "unresolved_failures": [],
     "deployment_state": {
       "status": "NOT_ATTEMPTED",
-      "reason": "Mandatory GPT-5.6 Pro checkpoint precedes Phase 199 certification, protected-main integration, production reconciliation, deployment, and authenticated readback."
+      "reason": "Protected-main integration and exact-main-SHA production release follow correction completion."
     },
-    "result_fingerprint": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001",
-    "completed_at": "2026-08-01T16:50:00.000Z"
+    "result_fingerprint": "eea88dbb86829aa550e4daf30bea155ff14952b2458b349c2babef5ee8f621e8",
+    "completed_at": "2026-08-02T00:07:39.296Z"
   },
   "latest_verified_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
   "latest_production_release": {
@@ -209,34 +200,8 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P199-BINDING-CORRECTIONS-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "f1fd7416-e4de-4203-82ef-0fc9e9bec72c",
-    "task_packet_id": "P199-BINDING-CORRECTIONS-001",
-    "owner": "phase199-sol-xhigh-20260801",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      ".entral/governor/**",
-      "packages/contracts/src/baseline.ts",
-      "packages/contracts/baseline-certification.schema.json",
-      "packages/contracts/tests/baseline.test.mjs",
-      "backend/src/services/secureJson.ts",
-      "backend/src/services/secureJsonReconciliation.ts",
-      "backend/src/cli/reconcileSecureJson.ts",
-      "backend/tests/phase199*.test.ts",
-      "scripts/phase199-*.mjs",
-      "docs/PHASE_199_*.md",
-      "docs/evidence/phase199/**",
-      "package.json",
-      "backend/package.json",
-      ".github/workflows/ci-cd.yml"
-    ],
-    "acquired_at": "2026-08-01T23:45:22.435Z",
-    "heartbeat_at": "2026-08-01T23:45:22.435Z",
-    "expires_at": "2026-08-02T03:45:22.435Z"
-  },
+  "next_action": "Certify the phase using exact corrected release evidence.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": {
     "contract_version": "1.0.0",
@@ -274,16 +239,19 @@
       "owner_attested": true,
       "reviewed_at": "2026-08-01T16:50:00.000Z"
     },
-    "binding_corrections_completed": false,
-    "updated_at": "2026-08-01T23:41:26.367Z"
+    "binding_corrections_completed": true,
+    "updated_at": "2026-08-02T00:08:08.733Z",
+    "correction_commit_sha": "39000c648844e02fa472b1f4a824cd0114d70ba7"
   },
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 38,
-  "updated_at": "2026-08-01T23:45:22.435Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "eea88dbb86829aa550e4daf30bea155ff14952b2458b349c2babef5ee8f621e8"
+  ],
+  "version": 40,
+  "updated_at": "2026-08-02T00:08:08.733Z",
   "task_deadline_at": "2026-08-02T11:45:22.336Z",
   "pending_release_manifest": null,
-  "event_count": 38,
-  "event_head_hash": "97de149de6b47ba7552b8e55094a3893a9401e86609409b0aaf35debb40464a4"
+  "event_count": 40,
+  "event_head_hash": "73d63face20d897ad3524d791f61f6c23b1618c7ee721fffdf3892ea1d24e25f"
 }

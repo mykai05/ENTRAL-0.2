@@ -1,0 +1,96 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P199-BINDING-CORRECTIONS-001-39000c64",
+  "task_packet_id": "P199-BINDING-CORRECTIONS-001",
+  "phase": 199,
+  "outcome": "PASSED",
+  "commit_sha": "39000c648844e02fa472b1f4a824cd0114d70ba7",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/tasks/P199-BINDING-CORRECTIONS-001.json",
+    "backend/src/services/secureJsonReconciliation.ts",
+    "backend/tests/phase199BaselineSecurity.test.ts",
+    "docs/PHASE_199_VERIFICATION.md",
+    "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+    "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json",
+    "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+    "docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json",
+    "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+    "docs/evidence/phase199/TEST_RECEIPTS.json",
+    "packages/contracts/baseline-certification.schema.json",
+    "packages/contracts/src/baseline.ts",
+    "packages/contracts/tests/baseline.test.mjs",
+    "scripts/phase199-baseline-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm --filter @entral/backend test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase198",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase197",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase196",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm --filter @entral/backend build",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    },
+    {
+      "command": "governor verify",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Protected-main integration and exact-main-SHA production release follow correction completion."
+  },
+  "result_fingerprint": "eea88dbb86829aa550e4daf30bea155ff14952b2458b349c2babef5ee8f621e8",
+  "completed_at": "2026-08-02T00:07:39.296Z"
+}
