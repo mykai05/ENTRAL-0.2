@@ -4,7 +4,13 @@
   "phase": 202,
   "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
   "status": "PRE_INTEGRATION_LOCAL_PASS",
-  "qualification": "These are local deterministic and browser receipts from the post-correction Phase 202 candidate worktree reconciled with current origin/main. Exact-commit clean-checkout verification remains pending. They do not prove protected main or production.",
+  "qualification": "These are local deterministic and browser receipts from the post-correction Phase 202 candidate reconciled with current origin/main. The accepted implementation commit passed an independent exact-commit clean-checkout replay. They do not prove protected main or production.",
+  "accepted_candidate": {
+    "commit_sha": "431bdb5031d0889e6d0314b92c1258dbfa69e6c6",
+    "tree_sha": "612f35f5c0c4e6eee3f54eafd5ca4d5d502ec653",
+    "clean_checkout_status": "PASSED",
+    "working_tree_status_after_replay": "CLEAN"
+  },
   "runtime": {
     "node": "20.19.0",
     "pnpm": "9.12.3"
@@ -96,6 +102,11 @@
       "results": "44 migrations applied from an empty database; zero failed, zero rolled back, zero pending; runtime database roles applied successfully"
     },
     {
+      "command": "exact-commit detached clean checkout: frozen install, prisma generate, pnpm test:phase202, pnpm build, git status --porcelain, and git diff --check",
+      "status": "PASSED",
+      "results": "commit 431bdb5031d0889e6d0314b92c1258dbfa69e6c6 and tree 612f35f5c0c4e6eee3f54eafd5ca4d5d502ec653 reproduced 41 contract/static/reconciliation tests, 272 backend tests, 19 frontend tests, a production build, and a clean tracked worktree; the model-ledger hash remained stable across CRLF checkout normalization"
+    },
+    {
       "command": "git diff --check",
       "status": "PASSED",
       "results": "no whitespace errors in the Phase 202 candidate"
@@ -156,8 +167,6 @@
     }
   ],
   "pending_pre_integration": [
-    "commit the accepted candidate",
-    "run clean-checkout build and acceptance at the exact candidate commit",
     "perform final origin/main reconciliation and rerun any affected gate"
   ]
 }

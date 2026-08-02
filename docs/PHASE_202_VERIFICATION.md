@@ -9,6 +9,8 @@
 - TaskPacket: `P202-IDENTITY-TENANCY-AUTHORITY-001`
 - Candidate branch: `codex/phase-202-identity-tenancy`
 - Starting continuation commit: `26a38df50fb0f19c8079acd40860fc2ae27ad25b`
+- Accepted implementation commit: `431bdb5031d0889e6d0314b92c1258dbfa69e6c6`
+- Accepted implementation tree: `612f35f5c0c4e6eee3f54eafd5ca4d5d502ec653`
 - Final accepted main SHA: pending
 - Review policy: conditional; no protocol-required checkpoint is active
 - Phase 203: blocked and not implemented
@@ -46,25 +48,25 @@ The exact 20 acceptance gates `P202-F001-A` through `P202-F020-A` have `LOCAL_PA
 - Lint, Prisma Client generation, production build, release-readiness checks, `git diff --check`, and Governor verification passed.
 - The complete local Chrome suite passed again after the bounded corrections in 183.7 seconds, including the Phase 202 account-security and invitation surfaces at 360, 390, 412, and 430 CSS pixels.
 - A dropped-and-recreated isolated PostgreSQL database replay applied all 44 migrations from empty state, applied the Phase 202 runtime roles, and reported zero failed, rolled-back, or pending migrations.
+- A detached clean checkout at exact implementation commit `431bdb5031d0889e6d0314b92c1258dbfa69e6c6` completed a frozen install, Prisma Client generation, the complete Phase 202 suite, and the production build. Its tracked worktree remained clean and `git diff --check` passed.
 
 The Phase 202 migration SHA-256 is `b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf`. The Phase 202 roles/grants SQL SHA-256 is `58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302`.
 
-Because bounded tenant- and MFA-boundary corrections followed the first complete-suite pass, every affected focused test, the complete mandatory non-browser suite, and the complete Chrome suite were rerun successfully on the current candidate tree after reconciliation with current `origin/main`. Exact-commit clean-checkout verification remains required after the candidate is committed. The final accepted commit will replace the starting continuation commit in release evidence; this document does not guess it.
+Because bounded tenant- and MFA-boundary corrections followed the first complete-suite pass, every affected focused test, the complete mandatory non-browser suite, and the complete Chrome suite were rerun successfully after reconciliation with current `origin/main`. The first detached replay exposed a checkout-line-ending-dependent ledger-hash assertion; the gate now hashes canonical LF repository text. The complete Phase 202 suite and production build then passed from a fresh detached checkout at exact accepted implementation commit `431bdb5031d0889e6d0314b92c1258dbfa69e6c6`.
 
 ## Pending protected-main and production release gates
 
 The following remain mandatory and pending:
 
-1. Commit the accepted candidate, run the clean-checkout build and acceptance gates at that exact commit, and retain exact candidate evidence.
-2. Perform final reconciliation with current `origin/main` and rerun any gate affected by reconciliation.
-3. Integrate through protected main, push immediately, and wait for required checks on the exact merge SHA.
-4. Deploy that exact protected-main SHA to the Vercel frontend, Railway API, and Railway worker.
-5. Apply migration `20260802090000_phase_202_identity_tenancy_authority`, apply the exact runtime role/grant SQL, and verify the complete production migration state.
-6. Run ownership reconciliation in `APPLY`, then run a separate fresh `AUDIT`; retain both receipt hashes and require zero ambiguous ownership blockers.
-7. Run credential-reference reconciliation in `APPLY`, then run a separate fresh `AUDIT`; retain both receipt hashes and require zero plaintext, invalid, or missing-reference rows in both protected Shopify targets.
-8. Verify `entral.phase202_release_blockers` returns zero rows.
-9. Run authenticated production smoke, state readback, and browser acceptance against the exact production SHA.
-10. Bind deployment IDs, migration and role evidence, reconciliation receipts, authenticated readback, rollback evidence, release-control evidence, tag, and final main SHA in the immutable Phase 202 ReleaseManifest.
-11. Certify Phase 202 and only then activate Phase 203 without beginning Phase 203 implementation.
+1. Perform final reconciliation with current `origin/main` and rerun any gate affected by reconciliation.
+2. Integrate through protected main, push immediately, and wait for required checks on the exact merge SHA.
+3. Deploy that exact protected-main SHA to the Vercel frontend, Railway API, and Railway worker.
+4. Apply migration `20260802090000_phase_202_identity_tenancy_authority`, apply the exact runtime role/grant SQL, and verify the complete production migration state.
+5. Run ownership reconciliation in `APPLY`, then run a separate fresh `AUDIT`; retain both receipt hashes and require zero ambiguous ownership blockers.
+6. Run credential-reference reconciliation in `APPLY`, then run a separate fresh `AUDIT`; retain both receipt hashes and require zero plaintext, invalid, or missing-reference rows in both protected Shopify targets.
+7. Verify `entral.phase202_release_blockers` returns zero rows.
+8. Run authenticated production smoke, state readback, and browser acceptance against the exact production SHA.
+9. Bind deployment IDs, migration and role evidence, reconciliation receipts, authenticated readback, rollback evidence, release-control evidence, tag, and final main SHA in the immutable Phase 202 ReleaseManifest.
+10. Certify Phase 202 and only then activate Phase 203 without beginning Phase 203 implementation.
 
 No protected-main check, Phase 202 deployment ID, production reconciliation receipt, production browser receipt, authenticated production readback, release tag, or Phase 202 ReleaseManifest is recorded here because none exists at this pre-integration boundary.

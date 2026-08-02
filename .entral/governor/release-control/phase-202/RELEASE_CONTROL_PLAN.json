@@ -33,7 +33,7 @@
   },
   "task": {
     "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
-    "commit_sha": "26a38df50fb0f19c8079acd40860fc2ae27ad25b",
+    "commit_sha": "431bdb5031d0889e6d0314b92c1258dbfa69e6c6",
     "changed_files": [
       ".entral/governor/events/EVENTS.jsonl",
       ".entral/governor/lib/governor.mjs",
@@ -211,19 +211,31 @@
     ]
   },
   "candidate_binding": {
-    "status": "PROVISIONAL_WORKING_TREE_PENDING_ACCEPTED_COMMIT",
-    "baseline_head_sha": "26a38df50fb0f19c8079acd40860fc2ae27ad25b",
-    "working_tree_fingerprint_sha256": "3fe827a0764ac09a9c97afb311467d1209b063f7f863426258358aa7272e2781",
-    "fingerprint_algorithm": "SHA256 over sorted path, tab, Git blob SHA-1 records with the ReleaseControlPlan path represented by the SELF sentinel to avoid a circular content hash",
+    "status": "ACCEPTED_EXACT_SHA_CLEAN_CHECKOUT",
+    "accepted_commit_sha": "431bdb5031d0889e6d0314b92c1258dbfa69e6c6",
+    "accepted_tree_sha": "612f35f5c0c4e6eee3f54eafd5ca4d5d502ec653",
+    "worktree_status_at_acceptance": "CLEAN",
+    "working_tree_fingerprint_sha256": "dcda60508e283493279b09a5515f24cf1fd4a2c15aaf3c98c390830fe276a4a8",
+    "fingerprint_algorithm": "SHA256 over sorted origin/main to accepted commit path, tab, accepted Git blob SHA-1 records with the ReleaseControlPlan path represented by the SELF sentinel to avoid a circular content hash",
     "fingerprinted_changed_file_count": 145,
-    "refresh_at_accepted_commit": [
-      "task.commit_sha",
-      "task.changed_files",
-      "candidate_binding.working_tree_fingerprint_sha256",
-      "candidate_binding.fingerprinted_changed_file_count",
-      "candidate_binding.status",
-      "repositories[0].latest_verified_main_sha if origin/main changes before reconciliation",
-      "migrations[0].fingerprint_sha256 if migration content changes"
+    "clean_checkout_acceptance": {
+      "checkout_mode": "DETACHED_EXACT_SHA",
+      "source_commit_sha": "431bdb5031d0889e6d0314b92c1258dbfa69e6c6",
+      "source_tree_sha": "612f35f5c0c4e6eee3f54eafd5ca4d5d502ec653",
+      "frozen_install": "PASSED",
+      "prisma_generation": "PASSED",
+      "complete_phase202_suite": "PASSED",
+      "full_build": "PASSED",
+      "git_status_porcelain": "CLEAN",
+      "git_diff_check": "PASSED"
+    },
+    "pending_release_bindings": [
+      "protected main integration SHA",
+      "exact protected main SHA frontend deployment",
+      "exact protected main SHA API deployment",
+      "exact protected main SHA worker deployment",
+      "production migration and database role evidence",
+      "authenticated production smoke and state readback"
     ]
   },
   "risk_profile": {
