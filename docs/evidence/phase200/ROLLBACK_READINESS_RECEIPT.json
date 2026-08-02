@@ -1,0 +1,32 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P200-ROLLBACK-READINESS-001",
+  "phase": 200,
+  "released_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "rollback_point": {
+    "status": "RESTORE_VERIFIED",
+    "reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "release_tag": "phase-198",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "prior_receipt_sha256": "6d855590ddfeb5937b790511cbbba3918fbd4da6fe371db4f5e71be04cad1e44",
+    "deployments": [
+      {"role":"FRONTEND","provider":"VERCEL","deployment_id":"dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u"},
+      {"role":"API","provider":"RAILWAY","deployment_id":"43f98e05-af77-44f2-826c-5976fc738e4b","service_id":"2bdeff1a-74fc-4484-8316-6f10d974aaae"},
+      {"role":"WORKER","provider":"RAILWAY","deployment_id":"b477d5c8-2a55-4e74-84b8-168e5f938fd8","service_id":"e531972e-5c0a-4885-9f19-f44f6bc6a366"}
+    ]
+  },
+  "phase_200_migration_compatibility": {
+    "kind": "ADDITIVE",
+    "compatibility": "EXPAND_CONTRACT",
+    "rollback_strategy": "Restore Phase 198 frontend, API, and worker while retaining the additive Phase 200 tables; no destructive down migration is authorized.",
+    "customer_data_deletion_required": false,
+    "forward_repair_available": true,
+    "integrity_status": "CERTAIN"
+  },
+  "rollback_executed": false,
+  "rollback_execution_reason": "The Phase 200 release is healthy; the verified rollback point is retained without disrupting production.",
+  "status": "RESTORE_VERIFIED",
+  "checked_at": "2026-08-02T07:17:13.609Z",
+  "receipt_sha256": "f82085ae21f7f7f337be2d8f39d6f6450fc8a80032da91202dfccb03e5ab73dc"
+}

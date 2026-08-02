@@ -1,0 +1,61 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P200-AUTH-SMOKE-7ce6d6a2-f8c8-4f8f-8860-3bc3abf9b60c",
+  "phase": 200,
+  "accepted_git_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "authenticated": true,
+  "member_subject_sha256": "8ca0691af0667fbe14520e94aec89cde84002b79d6329a7bd0ac470562e70a72",
+  "organization_sha256": "28a50d52a7af184618a35736846da9acbdee598121a9e969bf64074d5dbd6ae1",
+  "precondition": {
+    "eligible_member_scope_count": 1,
+    "preexisting_phase_200_tutorial_row": false,
+    "preexisting_progress_overwritten": false
+  },
+  "tutorial_transition": {
+    "initial_revision": 1,
+    "updated_revision": 2,
+    "idempotent_replay": true,
+    "readback_revision": 2,
+    "reset_revision": 3,
+    "final_mode": "beginner",
+    "final_completed_anchor_count": 0,
+    "final_current_anchor_id": null,
+    "final_first_launch_seen": false,
+    "database_revision_readback": 3,
+    "mutation_receipt_count": 2
+  },
+  "requests": [
+    {"surface":"API_HEALTH","method":"GET","url":"https://entral-backend-production.up.railway.app/health","http_status":200,"body_sha256":"fac16c27e421760a0225669c18f8a94ae38a60814f20026a2e59bcd90c8157b6","request_id_present":true},
+    {"surface":"API_MEMBER_ORGANIZATIONS","method":"GET","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations","http_status":200,"body_sha256":"ea272a65fb9665535863ea2f8aa7cc55730734138e332546384629d454091a7f","request_id_present":true},
+    {"surface":"API_TUTORIAL_INITIAL","method":"GET","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress","http_status":200,"body_sha256":"dbca0ed605e5e63dd9f1ce98f112f3153978d800b622b956449bdb3ed6a793ae","request_id_present":true},
+    {"surface":"API_TUTORIAL_UPDATE","method":"PATCH","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress","http_status":200,"body_sha256":"0a4ae2a8eb77dcb6c91dd48ba2d5f9384cdeefbb2c5a406703572023814c0fbf","request_id_present":true},
+    {"surface":"API_TUTORIAL_IDEMPOTENT_REPLAY","method":"PATCH","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress","http_status":200,"body_sha256":"fa0686d895ed3a543e123c19cb798eaeeb5c6497c1229d636315ff7b3b097079","request_id_present":true},
+    {"surface":"API_TUTORIAL_READBACK","method":"GET","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress","http_status":200,"body_sha256":"9d330c562d0a1c718edc57351d93a3b2450974f08a69bebef6c009468be43af6","request_id_present":true},
+    {"surface":"API_TUTORIAL_RESET","method":"DELETE","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress","http_status":200,"body_sha256":"c69381265e14f04cbfb0d4e7651f9b22e7237b4b22556be7618b842ecb31a5ad","request_id_present":true},
+    {"surface":"FRONTEND_TUTORIAL_READBACK","method":"GET","url":"https://entral-0-2-frontend.vercel.app/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress","http_status":200,"body_sha256":"b3bb9a432662845bf7df9d267f21a6717b42d931ac9542657d0b4f1c84cbf41d","request_id_present":true},
+    {"surface":"API_BUSINESS_HEALTH","method":"GET","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/business-health?mode=EXECUTIVE","http_status":200,"body_sha256":"b5a737b2ca601ca0a74a98bea22bca0ee82c10b475024b2add8439639f58a681","request_id_present":true},
+    {"surface":"FRONTEND_BUSINESS_HEALTH","method":"GET","url":"https://entral-0-2-frontend.vercel.app/api/v1/member/organizations/{organizationId}/interaction/business-health?mode=EXECUTIVE","http_status":200,"body_sha256":"467397887b74485fcb1bea5c270e4038a7d766992557fb6fbbcd0de2dac2ecf3","request_id_present":true},
+    {"surface":"API_CANONICAL_GRAPH","method":"GET","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/graph/projection","http_status":200,"body_sha256":"953763247e24e48521321783c8a64c74f6504d1d26df11f83f9330564cff5050","request_id_present":true},
+    {"surface":"FRONTEND_CANONICAL_GRAPH","method":"GET","url":"https://entral-0-2-frontend.vercel.app/api/v1/member/organizations/{organizationId}/graph/projection","http_status":200,"body_sha256":"3e25cd1e6a56b802b3fb560337fdd69300c6d86d35baf2c696fd58e5baeb385c","request_id_present":true},
+    {"surface":"API_INTERACTION_ANALYTICS","method":"POST","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/analytics","http_status":202,"body_sha256":"fa2c51ad9d52e0efde0fb16c989147428395412b18a06ad0ee91169b1e1ef005","request_id_present":true},
+    {"surface":"API_GRAPH_TELEMETRY","method":"POST","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/graph/telemetry","http_status":202,"body_sha256":"d0eaf819318d7ed00326d242447ff3966d70a3be48b33b7731ac6e1bb7ca8e4c","request_id_present":true}
+  ],
+  "canonical_truth": {
+    "identity": "ENTRAL",
+    "provider_independent": true,
+    "release_version": "phase-200",
+    "health_value_status": "UNAVAILABLE",
+    "health_confidence": "UNAVAILABLE",
+    "fake_score_emitted": false,
+    "graph_authority_source": "canonical_hierarchy",
+    "authorized_entities": 132,
+    "authorized_edges": 131,
+    "worker_ready": true,
+    "queue_failed": 0,
+    "queue_dead_letter": 0
+  },
+  "status": "PASSED",
+  "checked_at": "2026-08-02T06:43:44.288Z",
+  "receipt_sha256": "d2e9147b97a68e5420414d2787cb74d25d4b4dcfd4dbf2d7dde201e9e5fd1bd1"
+}

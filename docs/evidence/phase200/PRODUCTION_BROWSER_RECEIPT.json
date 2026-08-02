@@ -1,0 +1,34 @@
+{
+  "contract_version": "1.0.0",
+  "receipt_id": "P200-PROD-BROWSER-2e1b2d7b-d41d-4982-b647-2a528962f4a6",
+  "status": "PASSED",
+  "repository": "mykai05/ENTRAL-0.2",
+  "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "frontend_url": "https://entral-0-2-frontend.vercel.app",
+  "authentication": "real production member JWT cookie; subject and organization retained only as SHA-256",
+  "auth_subject_sha256": "8ca0691af0667fbe14520e94aec89cde84002b79d6329a7bd0ac470562e70a72",
+  "organization_sha256": "28a50d52a7af184618a35736846da9acbdee598121a9e969bf64074d5dbd6ae1",
+  "browser": "Google Chrome via Playwright Core",
+  "network_interception": false,
+  "mobile_profiles": [
+    {"width":360,"portrait_height":820,"label_budget":8,"authorized_entities":132,"initially_visible_entities":9,"selected_branch_entities":24,"collapsed_entities":9,"expanded_entities":24,"default_dimension":"2d","selection_synchronized":true,"lineage_edges":"emphasized","unrelated_edges":"dimmed","inspector":"responsive-bottom-sheet","assistant_collision_avoided":true,"portrait_fullscreen":{"dimension":"2d","fallback":false},"landscape_viewport":"844x390","landscape_fullscreen":{"dimension":"2d","fallback":false},"status":"PASSED"},
+    {"width":390,"portrait_height":820,"label_budget":10,"authorized_entities":132,"initially_visible_entities":9,"selected_branch_entities":24,"collapsed_entities":9,"expanded_entities":24,"default_dimension":"2d","selection_synchronized":true,"lineage_edges":"emphasized","unrelated_edges":"dimmed","inspector":"responsive-bottom-sheet","assistant_collision_avoided":true,"portrait_fullscreen":{"dimension":"2d","fallback":false},"landscape_viewport":"844x390","landscape_fullscreen":{"dimension":"2d","fallback":false},"status":"PASSED"},
+    {"width":412,"portrait_height":820,"label_budget":12,"authorized_entities":132,"initially_visible_entities":9,"selected_branch_entities":24,"collapsed_entities":9,"expanded_entities":24,"default_dimension":"2d","selection_synchronized":true,"lineage_edges":"emphasized","unrelated_edges":"dimmed","inspector":"responsive-bottom-sheet","assistant_collision_avoided":true,"portrait_fullscreen":{"dimension":"2d","fallback":false},"landscape_viewport":"844x390","landscape_fullscreen":{"dimension":"2d","fallback":false},"status":"PASSED"},
+    {"width":430,"portrait_height":820,"label_budget":14,"authorized_entities":132,"initially_visible_entities":9,"selected_branch_entities":24,"collapsed_entities":9,"expanded_entities":24,"default_dimension":"2d","selection_synchronized":true,"lineage_edges":"emphasized","unrelated_edges":"dimmed","inspector":"responsive-bottom-sheet","assistant_collision_avoided":true,"portrait_fullscreen":{"dimension":"2d","fallback":false},"landscape_viewport":"844x390","landscape_fullscreen":{"dimension":"2d","fallback":false},"status":"PASSED"}
+  ],
+  "desktop": {
+    "presentation": "desktop-dual",
+    "original_arrangement": "stacked",
+    "verified_arrangement": "side-by-side",
+    "panel_count": 2,
+    "panel_dimensions": ["2d", "3d"],
+    "side_by_side_geometry": true,
+    "authorized_entities": 132,
+    "visible_entities": 132,
+    "original_preference_restored": true,
+    "status": "PASSED"
+  },
+  "canonical_authority": "server-built canonical_hierarchy projection under production RLS",
+  "checked_at": "2026-08-02T07:12:05.324Z",
+  "receipt_sha256": "84de92b342ff110cba9bf9d9b7ad035a64cf54424667771eef27e8292dc75f2e"
+}
