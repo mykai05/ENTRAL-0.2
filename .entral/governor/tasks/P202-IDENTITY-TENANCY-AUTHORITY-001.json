@@ -98,6 +98,8 @@
     "scripts/phase202-*.mjs",
     "scripts/phase199-baseline-gates.test.mjs",
     "scripts/apply-database-roles.mjs",
+    "scripts/phase195-recovery-gate.mjs",
+    "scripts/phase195-recovery-gate.test.mjs",
     "e2e/**",
     "docs/PHASE_202_*.md",
     "docs/evidence/phase202/**",
@@ -242,7 +244,8 @@
   "phase202_forward_compatibility_corrections": [
     "Bring the Phase 150 isolated-role harness forward to the Phase 202 role/grant boundary without weakening production RLS.",
     "Bring legacy PostgreSQL TeamMember fixtures forward to explicit Phase 202 actor, organization, tenant, creator, and owner provenance.",
-    "Keep the Phase 200 interaction route harness compatible with durable personal-session binding after Governor activation of Phase 202."
+    "Keep the Phase 200 interaction route harness compatible with durable personal-session binding after Governor activation of Phase 202.",
+    "Keep the disposable Phase 195 recovery drill pinned to its historical 046 and 047 grant boundary while the production role applicator continues to require all Phase 202 grants."
   ],
   "relevant_adrs": [
     "docs/entral/101_architecture_lock.md"
