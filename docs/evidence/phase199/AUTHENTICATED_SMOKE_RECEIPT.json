@@ -1,0 +1,44 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P199-AUTH-SMOKE-826f431e-73ee-4d33-97bc-9b60f28a0704",
+  "phase": 199,
+  "accepted_git_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "authenticated": true,
+  "administrator_subject_sha256": "8ca0691af0667fbe14520e94aec89cde84002b79d6329a7bd0ac470562e70a72",
+  "requests": [
+    {
+      "surface": "FRONTEND_PROXY_ADMIN",
+      "url": "https://entral-0-2-frontend.vercel.app/api/v1/admin/overview",
+      "http_status": 200,
+      "duration_ms": 469.463,
+      "cache_control": "public, max-age=0, must-revalidate",
+      "request_id_present": true,
+      "body_sha256": "feb6440c300308c77b10dc840a276dace152180f75d770f10239efc1a1839188",
+      "body_bytes": 4996
+    },
+    {
+      "surface": "FRONTEND_PROXY_CONTROL_PLANE",
+      "url": "https://entral-0-2-frontend.vercel.app/api/v1/control-plane/hierarchy",
+      "http_status": 200,
+      "duration_ms": 355.761,
+      "cache_control": "private, no-store",
+      "request_id_present": true,
+      "body_sha256": "35bed25b332aab3a1029d3c5704e5ce0aa4b905701ece75b36942d43c3d9c848",
+      "body_bytes": 60140
+    },
+    {
+      "surface": "API_ADMIN",
+      "url": "https://entral-backend-production.up.railway.app/api/v1/admin/overview",
+      "http_status": 200,
+      "duration_ms": 145.337,
+      "cache_control": null,
+      "request_id_present": true,
+      "body_sha256": "feb6440c300308c77b10dc840a276dace152180f75d770f10239efc1a1839188",
+      "body_bytes": 4996
+    }
+  ],
+  "status": "PASSED",
+  "checked_at": "2026-08-02T01:11:53.623Z",
+  "receipt_sha256": "4ba47d2270d0d65b95d234e777255ffdbb0015a70d42a5c17dda8b6fce38f6b7"
+}

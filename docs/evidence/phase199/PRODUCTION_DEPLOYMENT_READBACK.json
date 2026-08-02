@@ -1,0 +1,115 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "repository": "mykai05/ENTRAL-0.2",
+  "accepted_git_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "accepted_git_tree_sha": "e767ed5c86f3dedc07c06c33efffa78e300feb50",
+  "source_archive": {
+    "construction": "git archive of the accepted commit, extracted as 729 tracked files, then root-relative tar.gz",
+    "sha256": "f7785563568cfff77f927e5e88129538115d25e5c59bb00298cd46d4f0ec6572",
+    "bytes": 9928344,
+    "railway_json_present_at_root": true,
+    "package_json_present_at_root": true
+  },
+  "deployments": [
+    {
+      "deployment_role": "FRONTEND",
+      "service_name": "entral-0-2-frontend",
+      "provider": "VERCEL",
+      "deployment_id": "dpl_CavKw8FjsQLxpiALtZ5FXWLyjD9t",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "public_url": "https://entral-0-2-frontend.vercel.app",
+      "provider_status_context": "Vercel - entral-0-2-frontend",
+      "provider_status": "success",
+      "provider_status_url": "https://vercel.com/entral/entral-0-2-frontend/CavKw8FjsQLxpiALtZ5FXWLyjD9t",
+      "deployed_at": "2026-08-02T00:32:08.000Z",
+      "checked_at": "2026-08-02T01:14:21.026Z",
+      "source_freshness_seconds": 2533.026,
+      "live_http_status": 200,
+      "live_final_url": "https://entral-0-2-frontend.vercel.app/member/sign-in?returnTo=%2Fmember%2Fdashboard",
+      "live_body_sha256": "7802ecac03bf186296a4b30500771c0f5c5b0e7cea76c79686ce902cd436bd94",
+      "status": "READY"
+    },
+    {
+      "deployment_role": "API",
+      "service_name": "entral-backend",
+      "provider": "RAILWAY",
+      "deployment_id": "04bd83dc-0545-4b13-9a32-83580cec8f75",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "public_url": "https://entral-backend-production.up.railway.app/health",
+      "config_file": "/railway.json",
+      "snapshot_id": "6718011f-f327-4d87-b7cd-29c257292a4d",
+      "image_digest": "sha256:d5483370b9dffed6fc0a18e889c602ce6704d6c7344a92c703f83a1080b26d3c",
+      "deployed_at": "2026-08-02T01:06:31.536Z",
+      "checked_at": "2026-08-02T01:14:21.026Z",
+      "source_freshness_seconds": 469.49,
+      "live_http_status": 200,
+      "live_body_sha256": "1504cc76277fce56f155d015f595cb15c630bf211be5e0fd2fa71e5a32dd8370",
+      "status": "READY"
+    },
+    {
+      "deployment_role": "WORKER",
+      "service_name": "entral-worker",
+      "provider": "RAILWAY",
+      "deployment_id": "3344f2f6-a367-4548-8aab-f5ae6890ee46",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "public_url": "https://entral-backend-production.up.railway.app/health",
+      "config_file": "/railway.worker.json",
+      "snapshot_id": "c9415267-5056-40a4-b527-f2d26d9858fe",
+      "image_digest": "sha256:410f3501c4230d6c4fb3e7f821dec6ce728e04c0b525ab469bf5f6b7063950c1",
+      "deployed_at": "2026-08-02T00:33:59.434Z",
+      "checked_at": "2026-08-02T01:14:21.026Z",
+      "source_freshness_seconds": 2421.592,
+      "worker_ready": true,
+      "worker_status": "READY",
+      "worker_evidence_source": "DURABLE_HEARTBEAT",
+      "queue": {
+        "pending": 0,
+        "publishing": 0,
+        "failed": 0,
+        "dead_letter": 0,
+        "published_last_24h": 169
+      },
+      "status": "READY"
+    }
+  ],
+  "runtime_modes": [
+    {
+      "service_name": "entral-backend",
+      "process_role": "API",
+      "runtime_mode": "PRODUCTION",
+      "observed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "in_memory_canonical_state_reachable": false,
+      "deterministic_fallback_reachable": false,
+      "sample_data_reachable": false,
+      "observed_at": "2026-08-02T01:14:21.026Z"
+    },
+    {
+      "service_name": "entral-worker",
+      "process_role": "WORKER",
+      "runtime_mode": "PRODUCTION",
+      "observed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "in_memory_canonical_state_reachable": false,
+      "deterministic_fallback_reachable": false,
+      "sample_data_reachable": false,
+      "observed_at": "2026-08-02T01:14:21.026Z"
+    }
+  ],
+  "migration_readback": {
+    "applied": 42,
+    "failed": 0,
+    "rolled_back": 0,
+    "pending": 0,
+    "latest_migration": "20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness",
+    "latest_checksum_sha256": "ecf35807e29fc17f9d3d36846dfbb568602569aefe219080ee9cfaa50efac651"
+  },
+  "secure_json_reconciliation": {
+    "apply_receipt_sha256": "5f024fce6668edb356cd41a47c5e5fd4414f2da6a59fa47ea0ca3c7c88849bbe",
+    "audit_receipt_sha256": "69a41dde5b5841d55d13fe199ac389cfa5421e3da1db2cd9242b913084b39c02",
+    "audit_plaintext_rows": 0,
+    "audit_invalid_json_rows": 0
+  },
+  "status": "PASSED",
+  "checked_at": "2026-08-02T01:14:21.026Z"
+}

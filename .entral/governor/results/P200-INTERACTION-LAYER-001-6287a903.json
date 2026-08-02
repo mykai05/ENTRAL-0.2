@@ -1,0 +1,133 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P200-INTERACTION-LAYER-001-6287a903",
+  "task_packet_id": "P200-INTERACTION-LAYER-001",
+  "phase": 200,
+  "outcome": "PASSED",
+  "commit_sha": "6287a9036cc55239e86e09befef07364b37502ee",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/phases/200/PHASE_CONTRACT.v1.json",
+    ".entral/governor/tasks/P200-INTERACTION-LAYER-001.json",
+    "backend/src/routes/interactionLayer.ts",
+    "backend/src/server.ts",
+    "backend/src/services/interactionLayer.ts",
+    "backend/tests/phase200InteractionLayer.test.ts",
+    "backend/tests/phase200TutorialPersistence.test.ts",
+    "docs/PHASE_200_VERIFICATION.md",
+    "docs/evidence/phase200/FEATURE_ACCEPTANCE.json",
+    "e2e/entral.e2e.mjs",
+    "frontend/app/phase180.css",
+    "frontend/components/CanonicalGraphWorkspace.tsx",
+    "frontend/components/CanonicalMemberShell.tsx",
+    "frontend/components/CanonicalUniverse3DGraph.tsx",
+    "frontend/components/CanonicalUniverseGraph.tsx",
+    "frontend/components/OnboardingTour.tsx",
+    "frontend/components/Phase200BusinessHealthPanel.tsx",
+    "frontend/components/Phase200EvidenceDrawer.tsx",
+    "frontend/components/Phase200InteractionNavigation.tsx",
+    "frontend/lib/canonical-refresh.ts",
+    "frontend/lib/canonical-universe.ts",
+    "frontend/lib/graph-view-state.ts",
+    "frontend/lib/interaction-layer.ts",
+    "frontend/tests/MemberCommandCenterClient.test.tsx",
+    "frontend/tests/OnboardingTour.test.tsx",
+    "frontend/tests/Phase180CanonicalUniverse.test.ts",
+    "frontend/tests/Phase180DualGraph.test.tsx",
+    "frontend/tests/Phase195GraphWorkspace.test.tsx",
+    "frontend/tests/Phase200InteractionLayer.test.tsx",
+    "package.json",
+    "packages/contracts/openapi.yaml",
+    "packages/contracts/src/index.ts",
+    "packages/contracts/src/interaction.ts",
+    "packages/contracts/tests/contracts.test.mjs",
+    "packages/contracts/tests/interaction.test.mjs",
+    "prisma/migrations/20260802023000_phase_200_interaction_layer/migration.sql",
+    "prisma/schema.prisma",
+    "scripts/phase199-baseline-gates.test.mjs",
+    "scripts/phase200-interaction-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "pnpm test:phase200",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm prisma:validate",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase198",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase197",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase196",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:e2e",
+      "status": "PASSED"
+    },
+    {
+      "command": "browser acceptance at 360, 390, 412, and 430 CSS pixels",
+      "status": "PASSED"
+    },
+    {
+      "command": "desktop side-by-side graph regression acceptance",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    },
+    {
+      "command": "governor verify",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Protected-main integration and exact-main-SHA production release follow this accepted implementation result."
+  },
+  "result_fingerprint": "18224005ccc7521f23878360fbfbbf9f53574223165c51e3b15441bbc7997898",
+  "completed_at": "2026-08-02T05:49:56.302Z"
+}

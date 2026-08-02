@@ -1,10 +1,17 @@
 "use client";
 
+import type { TutorialProgress } from "@entral/contracts";
 import React, { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, Bot, CheckCircle2, ChevronLeft, ChevronRight, Command, Compass, GraduationCap, Layers3, MonitorUp, Play, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { Button } from "./Button";
 import { useDialogFocus } from "../lib/dialog-focus";
+import {
+  loadTutorialProgress,
+  recordInteractionAnalytics,
+  resetTutorialProgress,
+  saveTutorialProgress
+} from "../lib/interaction-layer";
 import { memberSignInPath } from "../lib/member";
 
 type AcademyMode = "beginner" | "advanced";
@@ -53,241 +60,86 @@ type OnboardingContextValue = {
 };
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
-const legacyCompleteKey = "entral-onboarding-complete";
-const academyStorageKey = "entral-academy-state-v1";
 const authenticatedUserSessionKey = "entral-authenticated-user";
 const academyAuthEvent = "entral:user-authenticated";
+const academyOrganizationEvent = "entral:organization-context";
 const academySignOutEvent = "entral:user-signed-out";
 
 const modules: AcademyModule[] = [
   {
-    description: "The fastest path from a blank command center to first useful action.",
-    id: "quick-start",
-    title: "Quick Start"
-  },
-  {
-    description: "Learn how to speak to ENTRAL and issue operational directives.",
+    description: "Understand the current operational picture before taking action.",
     id: "command-guide",
-    title: "Command Guide"
+    title: "Command"
   },
   {
-    description: "Understand ENTRAL, Marshals, Generals, Commanders, and Soldiers.",
-    id: "hierarchy-guide",
-    title: "Hierarchy Guide"
-  },
-  {
-    description: "Create a one-business Commander and its operational Soldiers from templates without memorizing structure.",
+    description: "Review only the businesses visible to the signed-in identity.",
     id: "business-guide",
-    title: "Business Creation"
+    title: "Businesses"
   },
   {
-    description: "Operate ENTRAL from a phone or tablet without desktop sidebars.",
-    id: "mobile-guide",
-    title: "Mobile Guide"
+    description: "Navigate the synchronized 2D and 3D views of one canonical hierarchy.",
+    id: "hierarchy-guide",
+    title: "Universe"
   },
   {
-    description: "Use push-to-talk, reports-only voice, and spoken command feedback.",
-    id: "voice-guide",
-    title: "Voice Guide"
-  },
-  {
-    description: "Learn the Merch/POD launch structure and approval-gated workflow.",
-    id: "merch-guide",
-    title: "Merch/POD Guide"
-  },
-  {
-    description: "Advanced operators can review recovery, settings, shortcuts, and screen sharing.",
-    id: "advanced-tools",
-    title: "Advanced Tools"
+    description: "Inspect authorized records and use ENTRAL help without simulated controls.",
+    id: "operations-guide",
+    title: "Records and help"
   }
 ];
 
 const academySteps: AcademyStep[] = [
   {
-    description: "Dashboard is the default post-login surface. It summarizes only current records and never invents businesses, financial totals, or activity.",
-    guidedTask: "Review the portfolio totals, source status, current work, and honest empty states.",
-    id: "welcome",
+    description: "Command is the default post-login surface. Executive and operational views keep the same facts, evidence, freshness, assumptions, confidence, and next action.",
+    guidedTask: "Review the business-health explanation and open its evidence source before choosing an action.",
+    id: "command-overview",
     mode: "both",
-    moduleId: "quick-start",
+    moduleId: "command-guide",
     route: "/dashboard",
     target: "portfolio-dashboard",
-    title: "Start from Dashboard"
+    title: "Start from Command"
   },
   {
-    description: "ENTRAL conversation lives inside Dashboard, separate from the Universe Graph.",
-    guidedTask: "Open the ENTRAL Dashboard section and review its real conversation and screen-sharing controls.",
-    id: "command-console",
+    description: "Businesses lists only canonical records inherited from the signed-in identity and database grants. Empty states never create samples.",
+    guidedTask: "Open Businesses and select a real visible business, or read the honest empty state when none is available.",
+    id: "businesses-overview",
     mode: "both",
-    moduleId: "command-guide",
-    route: "/dashboard?section=entral",
-    target: "entral-workspace",
-    title: "Work with ENTRAL"
+    moduleId: "business-guide",
+    route: "/dashboard?destination=businesses",
+    target: "portfolio-dashboard",
+    title: "Review canonical businesses"
   },
   {
-    description: "The member shell has exactly three top-level destinations: Dashboard, OPEN UNIVERSE GRAPH, and Infrastructure.",
-    guidedTask: "Use each destination once and confirm the current scope remains visible.",
-    id: "command-menu",
-    mode: "both",
-    moduleId: "command-guide",
-    route: "/dashboard",
-    target: "member-destinations",
-    title: "Use the three destinations"
-  },
-  {
-    description: "The 3D graph is the live command view. ENTRAL sits at the center. Marshals, Generals, Commanders, and Soldiers appear only when you create them.",
-    guidedTask: "Read the graph as a chain of command: ENTRAL -> Marshal -> General -> Commander -> Soldier.",
-    id: "graph",
+    description: "Universe uses one server-built projection. Mobile switches between synchronized 2D and 3D; desktop keeps both side by side.",
+    guidedTask: "Select an entity, switch renderers, and confirm its lineage, focus, and RLS-visible record remain synchronized.",
+    id: "universe-navigation",
     mode: "both",
     moduleId: "hierarchy-guide",
     route: "/graph",
     target: "command-graph",
-    title: "Read the graph"
+    title: "Navigate Universe"
   },
   {
-    description: "Marshals are broad operating domains. Infrastructure shows their exact position and descendants without creating sample records.",
-    guidedTask: "Open Infrastructure and select a Marshal record if one exists.",
-    id: "navigation",
+    description: "Infrastructure exposes the full authorized records behind the compact Universe inspector and keeps unsupported actions hidden.",
+    guidedTask: "Open a visible record and verify its source, state, health, hierarchy, and version.",
+    id: "infrastructure-records",
     mode: "both",
-    moduleId: "hierarchy-guide",
+    moduleId: "operations-guide",
     route: "/infrastructure",
     target: "infrastructure-hierarchy",
-    title: "Understand Marshals"
+    title: "Inspect source records"
   },
   {
-    description: "The Graph drawer is intentionally minimal: identity, state, health, parent, children, current objective, and latest material result.",
-    guidedTask: "Select a graph entity, review the minimal drawer, then open its full Infrastructure record.",
-    id: "inspector",
+    description: "The ENTRAL assistant shares the current RLS scope, selection, and canonical event sequence. It does not expose a future runtime or invent provider results.",
+    guidedTask: "Open the assistant and ask about the selected canonical context; inspect its evidence references before acting.",
+    id: "entral-assistant",
     mode: "both",
-    moduleId: "hierarchy-guide",
-    route: "/graph",
-    target: "graph-inspector",
-    title: "Inspect the hierarchy"
-  },
-  {
-    description: "Infrastructure preserves the official order: Marshals under ENTRAL, Generals under Marshals, Commanders under Generals, and Soldiers under Commanders.",
-    guidedTask: "Review a full record. Phase 110 keeps unsupported stateful actions hidden instead of simulating them.",
-    id: "create-entities",
-    mode: "both",
-    moduleId: "hierarchy-guide",
-    route: "/infrastructure",
-    target: "infrastructure-record",
-    title: "Review the chain of command"
-  },
-  {
-    description: "Dashboard business rows represent existing Commander records only. No setup wizard can create shadow business state in the Graph.",
-    guidedTask: "Review the current portfolio or its honest empty state.",
-    id: "first-business",
-    mode: "both",
-    moduleId: "business-guide",
-    route: "/dashboard",
-    target: "portfolio-dashboard",
-    title: "Understand business records"
-  },
-  {
-    description: "Backend-connected business tools are grouped under Infrastructure rather than mixed into the Graph.",
-    guidedTask: "Open Business operations and review only the controls backed by current API paths.",
-    id: "templates",
-    mode: "both",
-    moduleId: "business-guide",
-    route: "/infrastructure?section=operations",
-    target: "business-operations",
-    title: "Find business operations"
-  },
-  {
-    description: "Dashboard summarizes current task records and exceptions without claiming execution that did not occur.",
-    guidedTask: "Review Active work and open any exception through its Infrastructure record.",
-    id: "tasks-reports",
-    mode: "both",
-    moduleId: "command-guide",
-    route: "/dashboard",
-    target: "portfolio-dashboard",
-    title: "Review work and exceptions"
-  },
-  {
-    description: "On mobile, the same three member destinations remain persistent at the bottom of the screen.",
-    guidedTask: "Use Dashboard, OPEN UNIVERSE GRAPH, and Infrastructure at phone width and verify there is no horizontal overflow.",
-    id: "mobile",
-    mode: "both",
-    moduleId: "mobile-guide",
-    route: "/dashboard",
-    target: "member-destinations",
-    title: "Operate from mobile"
-  },
-  {
-    description: "Voice and screen input belong to the ENTRAL conversation, not the Universe Graph.",
-    guidedTask: "Open ENTRAL in Dashboard and review consent and voice controls before enabling either.",
-    id: "voice",
-    mode: "both",
-    moduleId: "voice-guide",
+    moduleId: "operations-guide",
     route: "/dashboard?section=entral",
     target: "entral-workspace",
-    title: "Use voice commands"
-  },
-  {
-    description: "Merch and product operations are subordinate Infrastructure modules with backend-connected request paths.",
-    guidedTask: "Open Business operations and verify provider-dependent actions disclose their actual availability.",
-    id: "merch-pod",
-    mode: "both",
-    moduleId: "merch-guide",
-    route: "/infrastructure?section=operations",
-    target: "business-operations",
-    title: "Review Merch/POD operations"
-  },
-  {
-    description: "The shell identifies whether hierarchy data came from the authoritative backend snapshot or browser recovery state.",
-    guidedTask: "Review the source badge and record logs after reconnecting or refreshing.",
-    id: "recovery",
-    mode: "advanced",
-    moduleId: "advanced-tools",
-    route: "/infrastructure",
-    target: "infrastructure-record",
-    title: "Understand source and recovery"
-  },
-  {
-    description: "Share Screen is optional and consent-based. ENTRAL should only see your screen when you explicitly allow it.",
-    guidedTask: "Open ENTRAL in Dashboard, find Share Screen, read the privacy notice, then stop before granting permission unless you need it.",
-    id: "screen-sharing",
-    mode: "both",
-    moduleId: "advanced-tools",
-    route: "/dashboard?section=entral",
-    target: "entral-workspace",
-    title: "Use screen view safely"
-  },
-  {
-    description: "Settings contain appearance, real account privacy controls, voice, and Academy controls including replay and mode selection.",
-    guidedTask: "Open Settings, switch to Academy, and replay the tutorial library whenever you need a refresher.",
-    id: "settings",
-    mode: "both",
-    moduleId: "advanced-tools",
-    route: "/dashboard",
-    target: "settings",
-    title: "Replay and customize"
-  },
-  {
-    description: "Beginner mode keeps the Academy focused. Advanced mode adds system recovery, screen sharing, task state, and governance details.",
-    guidedTask: "Switch modes here or in Settings whenever you want a lighter or deeper training path.",
-    id: "modes",
-    mode: "both",
-    moduleId: "advanced-tools",
-    route: "/dashboard",
-    target: "settings",
-    title: "Choose your training depth"
-  },
-  {
-    description: "Advanced operators can reach governance, automation, agent, and business-operation modules inside Infrastructure.",
-    guidedTask: "Open Infrastructure and switch between its subordinate sections without leaving the three-destination shell.",
-    id: "advanced-flow",
-    mode: "advanced",
-    moduleId: "advanced-tools",
-    route: "/infrastructure",
-    target: "member-destinations",
-    title: "Operate like a power user"
+    title: "Use contextual ENTRAL help"
   }
 ];
-
-function academyStorageKeyFor(userKey: string) {
-  return `${academyStorageKey}:${encodeURIComponent(userKey)}`;
-}
 
 function academyUserKey(detail: unknown) {
   if (!detail || typeof detail !== "object") return null;
@@ -301,19 +153,27 @@ function academyUserKey(detail: unknown) {
   return value;
 }
 
+function academyOrganizationId(detail: unknown) {
+  if (!detail || typeof detail !== "object") return null;
+  const candidate = detail as { organizationId?: unknown };
+  return typeof candidate.organizationId === "string" && candidate.organizationId.trim()
+    ? candidate.organizationId
+    : null;
+}
+
+function academyStateFromProgress(progress: TutorialProgress): AcademyState {
+  return {
+    completedSteps: [...progress.completed_anchor_ids],
+    firstLaunchSeen: progress.first_launch_seen,
+    mode: progress.mode
+  };
+}
+
 function readLocalValue(storage: Storage, key: string) {
   try {
     return storage.getItem(key);
   } catch {
     return null;
-  }
-}
-
-function writeLocalValue(storage: Storage, key: string, value: string) {
-  try {
-    storage.setItem(key, value);
-  } catch {
-    // Academy progress should never block access to the Command Center.
   }
 }
 
@@ -325,30 +185,11 @@ function removeLocalValue(storage: Storage, key: string) {
   }
 }
 
-function readAcademyState(userKey: string | null): AcademyState {
-  if (!userKey) {
-    return { completedSteps: [], firstLaunchSeen: true, mode: "beginner" };
-  }
-
-  if (typeof window === "undefined") {
-    return { completedSteps: [], firstLaunchSeen: false, mode: "beginner" };
-  }
-
-  try {
-    const parsed = JSON.parse(readLocalValue(window.localStorage, academyStorageKeyFor(userKey)) ?? "{}") as Partial<AcademyState>;
-    return {
-      completedSteps: Array.isArray(parsed.completedSteps) ? parsed.completedSteps.filter((step): step is string => typeof step === "string") : [],
-      firstLaunchSeen: Boolean(parsed.firstLaunchSeen),
-      mode: parsed.mode === "advanced" ? "advanced" : "beginner"
-    };
-  } catch {
-    return {
-      completedSteps: [],
-      firstLaunchSeen: false,
-      mode: "beginner"
-    };
-  }
-}
+const signedOutAcademyState: AcademyState = {
+  completedSteps: [],
+  firstLaunchSeen: true,
+  mode: "beginner"
+};
 
 function visibleStepsFor(mode: AcademyMode) {
   return academySteps.filter((step) => step.mode === "both" || step.mode === mode);
@@ -420,7 +261,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [signedInUserKey, setSignedInUserKey] = useState<string | null>(null);
-  const [academyState, setAcademyState] = useState<AcademyState>(() => readAcademyState(null));
+  const [academyState, setAcademyState] = useState<AcademyState>(signedOutAcademyState);
+  const [academySyncStatus, setAcademySyncStatus] = useState<"idle" | "loading" | "synced" | "error">("idle");
+  const [academySyncMessage, setAcademySyncMessage] = useState("Sign in to sync Tutorial progress.");
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<"tour" | "library">("tour");
   const [stepIndex, setStepIndex] = useState(0);
@@ -433,6 +276,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const academyStateRef = useRef(academyState);
   const isOpenRef = useRef(isOpen);
   const signedInUserKeyRef = useRef<string | null>(null);
+  const organizationIdRef = useRef<string | null>(null);
+  const tutorialRevisionRef = useRef(0);
+  const tutorialCurrentAnchorRef = useRef<TutorialProgress["current_anchor_id"]>("command-overview");
+  const tutorialLoadGenerationRef = useRef(0);
+  const tutorialPersistenceRequestedRef = useRef(false);
+  const tutorialPersistenceActiveRef = useRef(false);
   const spotlightStepIdRef = useRef<string | null>(spotlightStepId);
   const visibleSteps = useMemo(() => visibleStepsFor(academyState.mode), [academyState.mode]);
   const safeStepIndex = Math.min(stepIndex, Math.max(visibleSteps.length - 1, 0));
@@ -457,18 +306,84 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     spotlightStepIdRef.current = spotlightStepId;
   }, [spotlightStepId]);
 
-  function updateAcademyState(updater: (current: AcademyState) => AcademyState) {
-    setAcademyState((current) => {
-      const next = updater(current);
-      academyStateRef.current = next;
-      const userKey = signedInUserKeyRef.current ?? signedInUserKey;
+  async function loadServerProgress(organizationId: string, generation: number) {
+    setAcademySyncStatus("loading");
+    setAcademySyncMessage("Loading server Tutorial progress...");
+    try {
+      const progress = await loadTutorialProgress(organizationId);
+      if (generation !== tutorialLoadGenerationRef.current || organizationId !== organizationIdRef.current) return;
+      tutorialRevisionRef.current = progress.revision;
+      tutorialCurrentAnchorRef.current = progress.current_anchor_id;
+      const nextState = academyStateFromProgress(progress);
+      setAcademyState(nextState);
+      academyStateRef.current = nextState;
+      const resumedStepIndex = progress.current_anchor_id
+        ? visibleStepsFor(progress.mode).findIndex((step) => step.id === progress.current_anchor_id)
+        : -1;
+      if (resumedStepIndex >= 0) setStepIndex(resumedStepIndex);
+      setAcademySyncStatus("synced");
+      setAcademySyncMessage(`Server progress synced · revision ${progress.revision}`);
+    } catch {
+      if (generation !== tutorialLoadGenerationRef.current || organizationId !== organizationIdRef.current) return;
+      setAcademySyncStatus("error");
+      setAcademySyncMessage("Tutorial progress is unavailable. Changes are not being reported as saved.");
+      void recordInteractionAnalytics({
+        eventType: "ROUTE_FAILURE",
+        organizationId,
+        reasonCode: "TUTORIAL_PROGRESS_LOAD_FAILED",
+        route: pathname
+      }).catch(() => undefined);
+    }
+  }
 
-      if (userKey) {
-        writeLocalValue(window.localStorage, academyStorageKeyFor(userKey), JSON.stringify(next));
-        writeLocalValue(window.localStorage, legacyCompleteKey, next.firstLaunchSeen ? "true" : "false");
+  async function flushAcademyPersistence() {
+    if (tutorialPersistenceActiveRef.current) return;
+    tutorialPersistenceActiveRef.current = true;
+    try {
+      while (tutorialPersistenceRequestedRef.current) {
+        tutorialPersistenceRequestedRef.current = false;
+        const organizationId = organizationIdRef.current;
+        if (!organizationId || tutorialRevisionRef.current < 1) continue;
+        const snapshot = academyStateRef.current;
+        const progress = await saveTutorialProgress(organizationId, {
+          contract_version: "1.0.0",
+          completed_anchor_ids: snapshot.completedSteps as TutorialProgress["completed_anchor_ids"],
+          current_anchor_id: tutorialCurrentAnchorRef.current,
+          expected_revision: tutorialRevisionRef.current,
+          first_launch_seen: snapshot.firstLaunchSeen,
+          idempotency_key: `phase200:tutorial:update:${crypto.randomUUID()}`,
+          mode: snapshot.mode,
+          schema_version: 1
+        });
+        tutorialRevisionRef.current = progress.revision;
+        if (!tutorialPersistenceRequestedRef.current) {
+          const confirmed = academyStateFromProgress(progress);
+          setAcademyState(confirmed);
+          academyStateRef.current = confirmed;
+        }
+        setAcademySyncStatus("synced");
+        setAcademySyncMessage(`Server progress synced · revision ${progress.revision}`);
       }
-      return next;
-    });
+    } catch {
+      const organizationId = organizationIdRef.current;
+      setAcademySyncStatus("error");
+      setAcademySyncMessage("Tutorial progress changed or could not be saved. Reloading the server record.");
+      if (organizationId) {
+        const generation = ++tutorialLoadGenerationRef.current;
+        await loadServerProgress(organizationId, generation);
+      }
+    } finally {
+      tutorialPersistenceActiveRef.current = false;
+      if (tutorialPersistenceRequestedRef.current) void flushAcademyPersistence();
+    }
+  }
+
+  function updateAcademyState(updater: (current: AcademyState) => AcademyState) {
+    const next = updater(academyStateRef.current);
+    academyStateRef.current = next;
+    setAcademyState(next);
+    tutorialPersistenceRequestedRef.current = true;
+    void flushAcademyPersistence();
   }
 
   function requireSignedInForAcademy() {
@@ -490,46 +405,65 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   function openAt(stepId?: string, nextView: "tour" | "library" = "tour") {
     if (!requireSignedInForAcademy()) return;
     const nextSteps = visibleStepsFor(academyState.mode);
-    const index = stepId ? nextSteps.findIndex((step) => step.id === stepId) : 0;
+    const requestedAnchor = stepId ?? (nextView === "tour" ? tutorialCurrentAnchorRef.current : null);
+    const index = requestedAnchor ? nextSteps.findIndex((step) => step.id === requestedAnchor) : safeStepIndex;
+    tutorialCurrentAnchorRef.current = (nextSteps[index >= 0 ? index : 0]?.id ?? null) as TutorialProgress["current_anchor_id"];
     closeSettingsWindow();
     setStepIndex(index >= 0 ? index : 0);
     setView(nextView);
     setIsOpen(true);
+    const organizationId = organizationIdRef.current;
+    if (organizationId) {
+      void recordInteractionAnalytics({
+        controlId: nextView === "library" ? "tutorial-library" : "tutorial-tour",
+        eventType: "HELP_USED",
+        organizationId,
+        route: pathname
+      }).catch(() => undefined);
+    }
   }
 
   useEffect(() => {
     function handleAuthenticated(event: Event) {
       const detail = event instanceof CustomEvent ? event.detail : null;
       const userKey = academyUserKey(detail);
-      const storedState = readAcademyState(userKey);
-      const nextState = dismissedInCurrentSessionRef.current
-        ? { ...storedState, firstLaunchSeen: true }
-        : storedState;
 
       if (!userKey) return;
       signedInUserKeyRef.current = userKey;
       setSignedInUserKey(userKey);
-      setAcademyState(nextState);
-      academyStateRef.current = nextState;
-      if (dismissedInCurrentSessionRef.current) {
-        writeLocalValue(window.localStorage, academyStorageKeyFor(userKey), JSON.stringify(nextState));
-        writeLocalValue(window.localStorage, legacyCompleteKey, "true");
-      }
+    }
+
+    function handleOrganizationContext(event: Event) {
+      const detail = event instanceof CustomEvent ? event.detail : null;
+      const userKey = academyUserKey(detail);
+      const organizationId = academyOrganizationId(detail);
+      if (!userKey || !organizationId) return;
+      signedInUserKeyRef.current = userKey;
+      organizationIdRef.current = organizationId;
+      setSignedInUserKey(userKey);
+      const generation = ++tutorialLoadGenerationRef.current;
+      void loadServerProgress(organizationId, generation);
     }
 
     function handleSignedOut() {
       dismissedInCurrentSessionRef.current = false;
       signedInUserKeyRef.current = null;
+      organizationIdRef.current = null;
+      tutorialRevisionRef.current = 0;
+      tutorialCurrentAnchorRef.current = "command-overview";
+      tutorialLoadGenerationRef.current += 1;
       setSignedInUserKey(null);
-      const signedOutState = readAcademyState(null);
-      setAcademyState(signedOutState);
-      academyStateRef.current = signedOutState;
+      setAcademyState(signedOutAcademyState);
+      academyStateRef.current = signedOutAcademyState;
+      setAcademySyncStatus("idle");
+      setAcademySyncMessage("Sign in to sync Tutorial progress.");
       setIsOpen(false);
       setSpotlightStepId(null);
       setHighlightRect(null);
     }
 
     window.addEventListener(academyAuthEvent, handleAuthenticated);
+    window.addEventListener(academyOrganizationEvent, handleOrganizationContext);
     window.addEventListener(academySignOutEvent, handleSignedOut);
 
     try {
@@ -543,6 +477,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     return () => {
       window.removeEventListener(academyAuthEvent, handleAuthenticated);
+      window.removeEventListener(academyOrganizationEvent, handleOrganizationContext);
       window.removeEventListener(academySignOutEvent, handleSignedOut);
     };
   }, []);
@@ -558,6 +493,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       closeSettingsWindow();
       setView("library");
       setIsOpen(true);
+      const organizationId = organizationIdRef.current;
+      if (organizationId) {
+        void recordInteractionAnalytics({
+          controlId: "tutorial-library",
+          eventType: "HELP_USED",
+          organizationId,
+          route: pathname
+        }).catch(() => undefined);
+      }
     }
 
     window.addEventListener("entral:open-tutorial", openFromShortcut);
@@ -567,7 +511,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("entral:open-tutorial", openFromShortcut);
       window.removeEventListener("entral:open-academy", openLibrary);
     };
-  }, [academyState.mode, signedInUserKey]);
+  }, [academyState.mode, pathname, signedInUserKey]);
 
   useEffect(() => {
     const target = spotlightStep?.target;
@@ -680,10 +624,54 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     updateAcademyState((current) => ({ ...current, firstLaunchSeen: true }));
     setIsOpen(false);
     setView("tour");
+    const organizationId = organizationIdRef.current;
+    if (organizationId && completedVisibleCount < visibleSteps.length) {
+      void recordInteractionAnalytics({
+        controlId: "academy-close",
+        eventType: "TUTORIAL_ABANDONED",
+        organizationId,
+        reasonCode: "USER_CLOSED",
+        route: pathname
+      }).catch(() => undefined);
+    }
+  }
+
+  async function resetAcademyProgress() {
+    const organizationId = organizationIdRef.current;
+    if (!organizationId || tutorialRevisionRef.current < 1) return;
+    setAcademySyncStatus("loading");
+    setAcademySyncMessage("Resetting server Tutorial progress...");
+    try {
+      const progress = await resetTutorialProgress(organizationId, {
+        contract_version: "1.0.0",
+        expected_revision: tutorialRevisionRef.current,
+        idempotency_key: `phase200:tutorial:reset:${crypto.randomUUID()}`,
+        schema_version: 1
+      });
+      tutorialRevisionRef.current = progress.revision;
+      const resetState = academyStateFromProgress(progress);
+      tutorialCurrentAnchorRef.current = progress.current_anchor_id;
+      setAcademyState(resetState);
+      academyStateRef.current = resetState;
+      setStepIndex(0);
+      setAcademySyncStatus("synced");
+      setAcademySyncMessage(`Tutorial reset on the server · revision ${progress.revision}`);
+    } catch {
+      setAcademySyncStatus("error");
+      setAcademySyncMessage("Tutorial reset was not applied. Reload the server progress and try again.");
+      void recordInteractionAnalytics({
+        controlId: "tutorial-reset",
+        eventType: "CONTROL_FAILED",
+        organizationId,
+        reasonCode: "TUTORIAL_RESET_FAILED",
+        route: pathname
+      }).catch(() => undefined);
+    }
   }
 
   function finishTour() {
     dismissedInCurrentSessionRef.current = true;
+    tutorialCurrentAnchorRef.current = "command-overview";
     updateAcademyState((current) => ({
       ...current,
       completedSteps: Array.from(new Set([...current.completedSteps, ...visibleSteps.map((step) => step.id)])),
@@ -695,6 +683,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }
 
   function nextStep() {
+    const nextIndex = safeStepIndex < visibleSteps.length - 1 ? safeStepIndex + 1 : 0;
+    tutorialCurrentAnchorRef.current = (visibleSteps[nextIndex]?.id ?? null) as TutorialProgress["current_anchor_id"];
     markStepComplete();
     if (safeStepIndex < visibleSteps.length - 1) {
       setStepIndex(safeStepIndex + 1);
@@ -704,16 +694,22 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }
 
   function previousStep() {
-    setStepIndex(Math.max(safeStepIndex - 1, 0));
+    const previousIndex = Math.max(safeStepIndex - 1, 0);
+    tutorialCurrentAnchorRef.current = (visibleSteps[previousIndex]?.id ?? null) as TutorialProgress["current_anchor_id"];
+    setStepIndex(previousIndex);
+    updateAcademyState((current) => current);
   }
 
   function setMode(mode: AcademyMode) {
+    tutorialCurrentAnchorRef.current = "command-overview";
     updateAcademyState((current) => ({ ...current, mode }));
     setStepIndex(0);
   }
 
   function startWalkthrough(step = currentStep) {
     if (!step) return;
+
+    tutorialCurrentAnchorRef.current = step.id as TutorialProgress["current_anchor_id"];
 
     setIsOpen(false);
     setView("tour");
@@ -755,19 +751,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<OnboardingContextValue>(() => ({
     mode: academyState.mode,
-    openLibrary: () => {
-      if (!requireSignedInForAcademy()) return;
-      closeSettingsWindow();
-      setView("library");
-      setIsOpen(true);
-    },
+    openLibrary: () => openAt(undefined, "library"),
     openTour: (stepId?: string) => openAt(stepId),
     progress: {
       completed: completedVisibleCount,
       total: visibleSteps.length
     },
     setMode
-  }), [academyState.mode, completedVisibleCount, signedInUserKey, visibleSteps.length]);
+  }), [academyState.mode, completedVisibleCount, pathname, signedInUserKey, visibleSteps.length]);
 
   const moduleProgress = modules.map((module) => {
     const moduleSteps = visibleSteps.filter((step) => step.moduleId === module.id);
@@ -838,6 +829,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 <p>{view === "library" ? "Jump into any section, replay lessons, and track what you have completed." : currentStep?.description}</p>
               </div>
             </header>
+
+            <p
+              className="academy-sync-status"
+              data-state={academySyncStatus}
+              role={academySyncStatus === "error" ? "alert" : "status"}
+            >
+              <MonitorUp aria-hidden="true" size={15} /> {academySyncMessage}
+            </p>
 
             <div className="academy-mode-switch" role="group" aria-label="Academy mode">
               <button className={academyState.mode === "beginner" ? "active" : ""} type="button" onClick={() => setMode("beginner")}>
@@ -954,8 +953,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
             <footer className="academy-footer">
               <span><Command aria-hidden="true" size={14} /> Replay from Command Palette</span>
-              <span><SlidersHorizontal aria-hidden="true" size={14} /> Mode saved locally</span>
-              <span><MonitorUp aria-hidden="true" size={14} /> No external docs required</span>
+              <span><SlidersHorizontal aria-hidden="true" size={14} /> Mode and completion are server-backed</span>
+              <button disabled={academySyncStatus === "loading" || tutorialRevisionRef.current < 1} onClick={() => void resetAcademyProgress()} type="button">
+                Reset Tutorial progress
+              </button>
             </footer>
           </section>
         </div>

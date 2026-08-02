@@ -1,0 +1,46 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "authenticated": true,
+  "accepted_git_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "canonical_release_id": "286d106d-8583-428c-9d3f-589e176d5f71",
+  "release_tag": "phase-199",
+  "release_status": "DEPLOYED",
+  "phase_gate_id": "b9aebfe5-0ae7-4fc4-ad3d-abb921406cad",
+  "gate_status": "PASSED",
+  "observations": [
+    {
+      "surface": "FRONTEND_PROXY",
+      "url": "https://entral-0-2-frontend.vercel.app/api/v1/control-plane/releases/phases/199/evidence",
+      "http_status": 200,
+      "duration_ms": 370.199,
+      "cache_control": "private, no-store",
+      "body_sha256": "fc8b12cc8c1995a859f7d011bbe31c8cb015c8c319340b5e0a68429f39ed0833",
+      "body_bytes": 15690,
+      "complete": true,
+      "deployment_count": 3,
+      "migration_count": 1,
+      "pull_request_count": 1,
+      "runtime_mode_count": 2,
+      "blockers": []
+    },
+    {
+      "surface": "API_DIRECT",
+      "url": "https://entral-backend-production.up.railway.app/api/v1/control-plane/releases/phases/199/evidence",
+      "http_status": 200,
+      "duration_ms": 178.878,
+      "cache_control": "private, no-store",
+      "body_sha256": "72f944efb4a62ca287408d2452eea4598b9e8490cafa70d633640ff8e48d0abb",
+      "body_bytes": 15690,
+      "complete": true,
+      "deployment_count": 3,
+      "migration_count": 1,
+      "pull_request_count": 1,
+      "runtime_mode_count": 2,
+      "blockers": []
+    }
+  ],
+  "status": "PASSED",
+  "checked_at": "2026-08-02T01:23:17.448Z"
+}

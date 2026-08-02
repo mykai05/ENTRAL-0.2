@@ -1,0 +1,1702 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "manifest_id": "3b74fd33-aba5-433b-98ba-3452473f5f0e",
+  "phase": 199,
+  "status": "CERTIFIED",
+  "covered_phases": [
+    100,
+    110,
+    120,
+    130,
+    140,
+    150,
+    160,
+    170,
+    180,
+    190,
+    195
+  ],
+  "repositories": {
+    "product": {
+      "repository": "mykai05/ENTRAL-0.2",
+      "main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb"
+    },
+    "control_website": {
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5"
+    }
+  },
+  "deployments": [
+    {
+      "role": "FRONTEND",
+      "provider": "VERCEL",
+      "deployment_id": "dpl_CavKw8FjsQLxpiALtZ5FXWLyjD9t",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "production_url": "https://entral-0-2-frontend.vercel.app",
+      "status": "READY"
+    },
+    {
+      "role": "API",
+      "provider": "RAILWAY",
+      "deployment_id": "04bd83dc-0545-4b13-9a32-83580cec8f75",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "production_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY"
+    },
+    {
+      "role": "WORKER",
+      "provider": "RAILWAY",
+      "deployment_id": "3344f2f6-a367-4548-8aab-f5ae6890ee46",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "production_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness",
+      "status": "APPLIED",
+      "checksum_sha256": "ecf35807e29fc17f9d3d36846dfbb568602569aefe219080ee9cfaa50efac651",
+      "production_readback_sha256": "cfeb76852b68dee2d877eab0202fa628f5e6b3cad7bc159928b90c10ba403c86"
+    }
+  ],
+  "runtime_versions": {
+    "node": "20.19.0",
+    "pnpm": "9.12.3",
+    "postgres": "18.4",
+    "redis": "8.2.8"
+  },
+  "requirements": [
+    {
+      "requirement_id": "P100-BASELINE",
+      "phase": 100,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 100 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@73d34f0f2ad74c29c1481dcc47cf4f30f950e467:docs/entral/100_repository_baseline.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@73d34f0f2ad74c29c1481dcc47cf4f30f950e467:scripts/release-positioning.test.mjs",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Gate 100 - Repository Baseline Completion Record"
+    },
+    {
+      "requirement_id": "P110-BASELINE",
+      "phase": 110,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 110 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@73d34f0f2ad74c29c1481dcc47cf4f30f950e467:docs/entral/ui/110_ui_baseline.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@73d34f0f2ad74c29c1481dcc47cf4f30f950e467:frontend/tests/UICleanup.test.tsx",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Gate 110 - UI Baseline Consolidation"
+    },
+    {
+      "requirement_id": "P120-BASELINE",
+      "phase": 120,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 120 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@73d34f0f2ad74c29c1481dcc47cf4f30f950e467:docs/entral/120_data_intelligence_implementation_map.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@73d34f0f2ad74c29c1481dcc47cf4f30f950e467:scripts/release-positioning.test.mjs",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Gate 120 - Data, Memory, and Intelligence Implementation Map Acceptance"
+    },
+    {
+      "requirement_id": "P130-BASELINE",
+      "phase": 130,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 130 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@5c4eb1ca78ba72a90ddb065b60aeb4804b79b517:docs/PHASE_130_SHARED_CONTRACTS.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@5c4eb1ca78ba72a90ddb065b60aeb4804b79b517:packages/contracts/tests/contracts.test.mjs",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 130 Shared Contracts Boundary Gate"
+    },
+    {
+      "requirement_id": "P140-BASELINE",
+      "phase": 140,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 140 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@3b4bda8eee6a8a88968a67c7503a49aff8114265:docs/phase-140-database-foundation.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@3b4bda8eee6a8a88968a67c7503a49aff8114265:backend/tests/canonicalControlPlanePostgres.integration.test.ts",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 140 Canonical Database Foundation Gate"
+    },
+    {
+      "requirement_id": "P150-BASELINE",
+      "phase": 150,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 150 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@47c8ecc6c66c35e316840fa206a6f307db3f3c57:docs/PHASE_150_DATABASE_IDENTITY_RUNBOOK.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@47c8ecc6c66c35e316840fa206a6f307db3f3c57:backend/tests/phase150DatabaseAccess.integration.test.ts",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 150 PostgreSQL Identity, Integrity, and Access Gate"
+    },
+    {
+      "requirement_id": "P160-BASELINE",
+      "phase": 160,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 160 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@62f4cc4167583e6e0a87cd209a6f63dd5ca0e891:docs/PHASE_160_CANONICAL_TAXONOMY_RUNBOOK.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@62f4cc4167583e6e0a87cd209a6f63dd5ca0e891:backend/tests/phase160CanonicalTaxonomyPostgres.integration.test.ts",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 160 Canonical Taxonomy PostgreSQL Gate"
+    },
+    {
+      "requirement_id": "P170-BASELINE",
+      "phase": 170,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 170 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@b75752381377781092314d5bf37a65b412b8aa4c:backend/src/services/canonicalControlPlane.ts",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@b75752381377781092314d5bf37a65b412b8aa4c:backend/tests/phase170CanonicalPortfolioPostgres.integration.test.ts",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 170 Canonical Portfolio PostgreSQL Gate"
+    },
+    {
+      "requirement_id": "P180-BASELINE",
+      "phase": 180,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 180 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@20e4aef725645b195706f801e3523bb586253418:docs/PHASE_180_VERIFICATION.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@20e4aef725645b195706f801e3523bb586253418:frontend/tests/Phase180DualGraph.test.tsx",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Gate 180 - Canonical Dual Universe Graph Release Gate"
+    },
+    {
+      "requirement_id": "P190-BASELINE",
+      "phase": 190,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "Phase 190 accepted architecture and repository behavior were re-evaluated against current origin/main and the certified Phase 198 production baseline.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@646863d2b2a30491d35c786028166561aceededf:docs/PHASE_190_VERIFICATION.md",
+          "content_sha256": null,
+          "evidence_type": "SOURCE"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@646863d2b2a30491d35c786028166561aceededf:backend/tests/phase190EntityLifecyclePostgres.integration.test.ts",
+          "content_sha256": null,
+          "evidence_type": "TEST"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Gate 190 - Entity Pause and Resume PostgreSQL Gate"
+    },
+    {
+      "requirement_id": "P195-F001",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F001 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F002",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F002 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F003",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F003 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F004",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F004 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F005",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F005 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F006",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F006 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F007",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F007 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F008",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F008 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F009",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F009 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F010",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F010 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F011",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F011 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F012",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F012 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F013",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F013 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F014",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F014 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F015",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F015 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F016",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F016 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F017",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F017 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F018",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F018 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F019",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F019 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F020",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F020 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F021",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F021 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F022",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F022 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F023",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F023 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F024",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F024 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F025",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F025 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F026",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F026 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F027",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F027 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F028",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F028 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F029",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F029 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F030",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F030 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F031",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F031 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F032",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F032 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F033",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F033 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F034",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F034 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F035",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F035 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F036",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F036 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F037",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F037 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F038",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F038 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F039",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F039 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F040",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F040 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F041",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F041 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F042",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F042 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F043",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F043 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F044",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F044 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F045",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F045 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F046",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F046 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F047",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F047 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F048",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F048 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F049",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F049 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F050",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F050 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F051",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F051 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F052",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F052 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F053",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F053 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F054",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F054 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F055",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F055 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F056",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F056 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F057",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F057 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F058",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F058 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F059",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F059 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    },
+    {
+      "requirement_id": "P195-F060",
+      "phase": 195,
+      "state": "VERIFIED_COMPLETE",
+      "summary": "P195-F060 historical feature row was re-evaluated after merge against the exact Phase 198 production baseline; release-dependent closure is provided by the recorded deployment, migration, authenticated smoke, state readback, and rollback evidence.",
+      "evidence": [
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@11058bffef238c1c7f917b2ea5bb3ff93800d35e:docs/PHASE_195_FEATURE_MATRIX.md",
+          "content_sha256": null,
+          "evidence_type": "AUDIT"
+        },
+        {
+          "path_or_id": "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+          "content_sha256": null,
+          "evidence_type": "PRODUCTION_READBACK"
+        }
+      ],
+      "limitation": null,
+      "completion_gate": "Phase 195 60-Feature Immutable Release Gate"
+    }
+  ],
+  "legacy_isolation": [
+    {
+      "surface": "backend in-memory development server",
+      "disposition": "DEVELOPMENT_ONLY",
+      "production_reachable": false,
+      "canonical_authority": false,
+      "evidence": [
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/dev-memory-server.ts",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/package.json"
+      ]
+    },
+    {
+      "surface": "inactive provider catalog entries and placeholder metadata",
+      "disposition": "CATALOG_ONLY",
+      "production_reachable": true,
+      "canonical_authority": false,
+      "evidence": [
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/routes/connections.ts",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/services/integrationRegistry.ts"
+      ]
+    },
+    {
+      "surface": "browser-local Command OS recovery state",
+      "disposition": "PRESENTATION_ONLY",
+      "production_reachable": true,
+      "canonical_authority": false,
+      "evidence": [
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/NeuronsCommandCenter.tsx",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/CanonicalMemberShell.tsx"
+      ]
+    },
+    {
+      "surface": "legacy multipurpose 3D drawing engine",
+      "disposition": "MIGRATION_BOUNDARY",
+      "production_reachable": true,
+      "canonical_authority": false,
+      "evidence": [
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/CanonicalUniverse3DGraph.tsx",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/NeuronsCommandCenter.tsx"
+      ]
+    },
+    {
+      "surface": "historical divergent branches and stale local main worktree",
+      "disposition": "SUPERSEDED",
+      "production_reachable": false,
+      "canonical_authority": false,
+      "evidence": [
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test:phase198",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test:phase197",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test:phase196",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    },
+    {
+      "command": "governor verify",
+      "status": "PASSED",
+      "receipt_sha256": "62fa864229b86cf9db01413073b05d902877c398be10c75745b9de68691c8001"
+    }
+  ],
+  "production_truth": {
+    "release_phase": 199,
+    "canonical_release_id": "286d106d-8583-428c-9d3f-589e176d5f71",
+    "phase_gate_id": "b9aebfe5-0ae7-4fc4-ad3d-abb921406cad",
+    "authenticated_smoke_sha256": "641376f3c5e077bc176809060f270d339d79e4115ce06edc974da12f2b1ac4bd",
+    "state_readback_sha256": "d6f38006b1fe9e9b3bb1bd7c951e443184e93c9d4313b6665b8302395a0b3347",
+    "release_tag": "phase-199"
+  },
+  "secure_json_reconciliation": {
+    "status": "VERIFIED",
+    "inventory_reference": "mykai05/ENTRAL-0.2@225c6ddff2bb738b478880dbd87f4239db924d2d:docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json",
+    "protected_targets": [
+      {
+        "table": "ShopifyConnection",
+        "column": "credentialJson"
+      },
+      {
+        "table": "ShopifyOAuthContinuation",
+        "column": "payloadJson"
+      }
+    ],
+    "apply_plaintext_rows_found": 0,
+    "apply_plaintext_rows_reencrypted": 0,
+    "apply_invalid_json_rows": 0,
+    "apply_receipt_sha256": "5f024fce6668edb356cd41a47c5e5fd4414f2da6a59fa47ea0ca3c7c88849bbe",
+    "audit_receipt_sha256": "69a41dde5b5841d55d13fe199ac389cfa5421e3da1db2cd9242b913084b39c02",
+    "audit_target_results": [
+      {
+        "table": "ShopifyConnection",
+        "column": "credentialJson",
+        "plaintext_rows": 0,
+        "invalid_json_rows": 0
+      },
+      {
+        "table": "ShopifyOAuthContinuation",
+        "column": "payloadJson",
+        "plaintext_rows": 0,
+        "invalid_json_rows": 0
+      }
+    ]
+  },
+  "known_limitations": [
+    "Customer data remains user scoped until the explicit organization and business ownership migration assigned to Phase 202.",
+    "Tutorial and Academy progress remains user-local browser state and is not portable server-side customer state.",
+    "The legacy multipurpose 3D renderer remains an embedded drawing-engine migration boundary behind canonical projection and shared view state.",
+    "Mobile Universe Graph refinement remains explicit Phase 200 UX debt; Phase 199 does not implement that future-phase work.",
+    "Administrative step-up temporarily uses the static production ADMIN_MFA_CODE control rather than per-user dynamic MFA.",
+    "Checkout remains fail-closed and unavailable until separately authorized provider, pricing, legal, and launch gates pass."
+  ],
+  "rollback_point": {
+    "release_phase": 198,
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "receipt_sha256": "6d855590ddfeb5937b790511cbbba3918fbd4da6fe371db4f5e71be04cad1e44"
+  },
+  "certification": {
+    "all_mandatory_gates_passed": true,
+    "phase_200_blocked": false,
+    "review_checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+    "review_verdict_commit_sha": "9331b6e37d5e8db114ffc5fc211df04482cfcb67"
+  },
+  "generated_at": "2026-08-02T01:24:10.254Z"
+}

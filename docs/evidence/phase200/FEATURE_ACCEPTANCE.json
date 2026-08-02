@@ -1,0 +1,48 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 200,
+  "status": "LOCAL_PASS_PRODUCTION_PENDING",
+  "task_packet_id": "P200-INTERACTION-LAYER-001",
+  "prerequisite_release_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "rollback_release_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+  "gates": [
+    {"gate_id":"P200-F001-A","status":"LOCAL_PASS","source":["packages/contracts/src/interaction.ts"],"tests":["packages/contracts/tests/interaction.test.mjs","scripts/phase200-interaction-gates.test.mjs"]},
+    {"gate_id":"P200-F002-A","status":"LOCAL_PASS","source":["packages/contracts/src/interaction.ts","frontend/components/Phase200BusinessHealthPanel.tsx"],"tests":["frontend/tests/Phase200InteractionLayer.test.tsx"]},
+    {"gate_id":"P200-F003-A","status":"LOCAL_PASS","source":["packages/contracts/src/interaction.ts","backend/src/services/interactionLayer.ts"],"tests":["packages/contracts/tests/interaction.test.mjs","backend/tests/phase200InteractionLayer.test.ts"]},
+    {"gate_id":"P200-F004-A","status":"LOCAL_PASS","source":["backend/src/services/interactionLayer.ts","frontend/components/Phase200BusinessHealthPanel.tsx"],"tests":["backend/tests/phase200InteractionLayer.test.ts","frontend/tests/Phase200InteractionLayer.test.tsx"]},
+    {"gate_id":"P200-F005-A","status":"LOCAL_PASS","source":["frontend/components/Phase200InteractionNavigation.tsx","frontend/components/Phase200BusinessHealthPanel.tsx"],"tests":["scripts/phase200-interaction-gates.test.mjs","frontend/tests/Phase200InteractionLayer.test.tsx"]},
+    {"gate_id":"P200-F006-A","status":"LOCAL_PASS","source":["frontend/components/Phase200InteractionNavigation.tsx","frontend/components/CanonicalMemberShell.tsx"],"tests":["scripts/phase200-interaction-gates.test.mjs","frontend/tests/Phase200InteractionLayer.test.tsx"]},
+    {"gate_id":"P200-F007-A","status":"LOCAL_PASS","source":["frontend/components/Phase200BusinessHealthPanel.tsx","frontend/components/CanonicalGraphWorkspace.tsx"],"tests":["frontend/tests/Phase200InteractionLayer.test.tsx","e2e/entral.e2e.mjs"]},
+    {"gate_id":"P200-F008-A","status":"LOCAL_PASS","source":["frontend/components/Phase200InteractionNavigation.tsx","frontend/app/member/dashboard/page.tsx"],"tests":["scripts/phase200-interaction-gates.test.mjs","e2e/entral.e2e.mjs"]},
+    {"gate_id":"P200-F009-A","status":"LOCAL_PASS","source":["prisma/schema.prisma","prisma/migrations/20260802023000_phase_200_interaction_layer/migration.sql","backend/src/services/interactionLayer.ts"],"tests":["backend/tests/phase200TutorialPersistence.test.ts"]},
+    {"gate_id":"P200-F010-A","status":"LOCAL_PASS","source":["packages/contracts/src/interaction.ts","frontend/components/OnboardingTour.tsx"],"tests":["frontend/tests/OnboardingTour.test.tsx","scripts/phase200-interaction-gates.test.mjs"]},
+    {"gate_id":"P200-F011-A","status":"LOCAL_PASS","source":["backend/src/routes/interactionLayer.ts","frontend/components/OnboardingTour.tsx"],"tests":["backend/tests/phase200TutorialPersistence.test.ts","frontend/tests/OnboardingTour.test.tsx"]},
+    {"gate_id":"P200-F012-A","status":"LOCAL_PASS","source":["frontend/components/OnboardingTour.tsx","frontend/app/phase180.css"],"tests":["frontend/tests/OnboardingTour.test.tsx","e2e/entral.e2e.mjs"]},
+    {"gate_id":"P200-F013-A","status":"LOCAL_PASS","source":["frontend/components/Phase200BusinessHealthPanel.tsx"],"tests":["frontend/tests/Phase200InteractionLayer.test.tsx"]},
+    {"gate_id":"P200-F014-A","status":"LOCAL_PASS","source":["frontend/components/Phase200EvidenceDrawer.tsx","frontend/components/Phase200BusinessHealthPanel.tsx"],"tests":["frontend/tests/Phase200InteractionLayer.test.tsx"]},
+    {"gate_id":"P200-F015-A","status":"LOCAL_PASS","source":["frontend/components/OnboardingTour.tsx","backend/src/services/interactionLayer.ts","frontend/lib/graph-view-state.ts"],"tests":["backend/tests/phase200TutorialPersistence.test.ts","frontend/tests/OnboardingTour.test.tsx"]},
+    {"gate_id":"P200-F016-A","status":"LOCAL_PASS","source":["packages/contracts/src/interaction.ts","backend/src/services/interactionLayer.ts"],"tests":["scripts/phase200-interaction-gates.test.mjs"]},
+    {"gate_id":"P200-F017-A","status":"LOCAL_PASS","source":["packages/contracts/src/interaction.ts","backend/src/routes/interactionLayer.ts","frontend/lib/interaction-layer.ts"],"tests":["packages/contracts/tests/interaction.test.mjs","backend/tests/phase200InteractionLayer.test.ts"]},
+    {"gate_id":"P200-F018-A","status":"LOCAL_PASS_PRODUCTION_READBACK_PENDING","source":["backend/src/routes/interactionLayer.ts","frontend/components/CanonicalMemberShell.tsx","frontend/components/CanonicalGraphWorkspace.tsx"],"tests":["backend/tests/phase200InteractionLayer.test.ts","e2e/entral.e2e.mjs"]}
+  ],
+  "mobile_universe_acceptance": {
+    "status": "LOCAL_BROWSER_PASS",
+    "widths_css_px": [360,390,412,430],
+    "portrait": "PASS",
+    "landscape": "PASS",
+    "desktop_side_by_side": "PASS",
+    "authorized_projection_10000_entities": "PASS",
+    "browser_fixture": "test-results/e2e/phase200-interaction-browser-fixture.json",
+    "production_evidence": false
+  },
+  "release_gates": {
+    "reconciled_with_current_main": "PENDING",
+    "protected_main_checks_pass": "PENDING",
+    "exact_main_sha_deployed": "PENDING",
+    "migrations_verified": "PENDING",
+    "authenticated_production_smoke_and_readback": "PENDING",
+    "release_manifest_recorded": "PENDING"
+  },
+  "security_scan": "NOT_RUN_OWNER_PROHIBITED"
+}

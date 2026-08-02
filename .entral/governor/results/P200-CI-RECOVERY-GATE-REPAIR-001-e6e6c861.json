@@ -1,0 +1,55 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P200-CI-RECOVERY-GATE-REPAIR-001-e6e6c861",
+  "task_packet_id": "P200-CI-RECOVERY-GATE-REPAIR-001",
+  "phase": 200,
+  "outcome": "PASSED",
+  "commit_sha": "e6e6c8612b551064d1e8d8a22aaf20495e29338b",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/results/failure-1785650762496.json",
+    ".entral/governor/tasks/P200-CI-RECOVERY-GATE-REPAIR-001.json",
+    "scripts/phase195-recovery-gate.mjs",
+    "scripts/phase195-recovery-gate.test.mjs",
+    "scripts/phase199-baseline-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "node --test scripts/phase195-recovery-gate.test.mjs",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED"
+    },
+    {
+      "command": "PHASE195_RECOVERY_GATE_CONFIRM=DISPOSABLE_ONLY pnpm test:phase195:recovery",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase200",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    },
+    {
+      "command": "governor verify",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Protected-main checks and the exact-main-SHA Phase 200 production release follow this bounded CI recovery repair."
+  },
+  "result_fingerprint": "4dfdcc436a8c23b18fa66c475b23679dc6e5f046df48b3cc474e07519d0f79b0",
+  "completed_at": "2026-08-02T06:09:57.132Z"
+}

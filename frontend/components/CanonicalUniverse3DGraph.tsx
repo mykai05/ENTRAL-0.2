@@ -47,9 +47,11 @@ export function CanonicalUniverse3DGraph({
   onMovementToggle,
   onFrameDiagnostics,
   onSelectedEntityChange,
+  onTouchInteractionChange,
   onWebGlStateChange,
   selectedEntityId,
   settings,
+  touchInteractionActive: controlledTouchInteractionActive,
   onRendererFailure,
   viewFitSignal = 0,
   viewFocusSignal = 0
@@ -69,13 +71,22 @@ export function CanonicalUniverse3DGraph({
   onFrameDiagnostics?: (diagnostics: CanonicalRendererFrameDiagnostics) => void;
   onRendererFailure?: (diagnosticClass: string) => void;
   onSelectedEntityChange: (entityId: string | null) => void;
+  onTouchInteractionChange?: (active: boolean) => void;
   onWebGlStateChange?: (event: CanonicalWebGlRendererEvent) => void;
   selectedEntityId: string | null;
   settings: GraphPreferenceSettings;
+  touchInteractionActive?: boolean;
   viewFitSignal?: number;
   viewFocusSignal?: number;
 }) {
-  const [touchInteractionActive, setTouchInteractionActive] = useState(false);
+  const [uncontrolledTouchInteractionActive, setUncontrolledTouchInteractionActive] = useState(false);
+  const touchInteractionActive = controlledTouchInteractionActive ?? uncontrolledTouchInteractionActive;
+  const setTouchInteractionActive = (active: boolean) => {
+    if (controlledTouchInteractionActive === undefined) {
+      setUncontrolledTouchInteractionActive(active);
+    }
+    onTouchInteractionChange?.(active);
+  };
   const selectedEntity = useMemo(
     () => selectedEntityId
       ? entities.find((entity) => entity.entity_id === selectedEntityId) ?? null
@@ -84,8 +95,10 @@ export function CanonicalUniverse3DGraph({
   );
 
   useEffect(() => {
-    if (!fullscreenActive) setTouchInteractionActive(false);
-  }, [fullscreenActive]);
+    if (!fullscreenActive && controlledTouchInteractionActive === undefined) {
+      setUncontrolledTouchInteractionActive(false);
+    }
+  }, [controlledTouchInteractionActive, fullscreenActive]);
 
   const handleWebGlStateChange = useCallback((event: CanonicalWebGlRendererEvent) => {
     onWebGlStateChange?.(event);
@@ -146,7 +159,7 @@ export function CanonicalUniverse3DGraph({
             <button
               aria-pressed={touchInteractionActive}
               className="phase180-surface-action phase180-touch-interaction-toggle"
-              onClick={() => setTouchInteractionActive((active) => !active)}
+              onClick={() => setTouchInteractionActive(!touchInteractionActive)}
               type="button"
             >
               <Hand aria-hidden="true" size={17} />

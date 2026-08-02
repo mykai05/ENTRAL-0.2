@@ -22,6 +22,7 @@ import { memberRoutes } from "./routes/member.js";
 import { memberTaskVisibilityRoutes } from "./routes/memberTaskVisibility.js";
 import { controlPlaneRoutes } from "./routes/controlPlane.js";
 import { graphPreferenceRoutes } from "./routes/graphPreferences.js";
+import { interactionLayerRoutes } from "./routes/interactionLayer.js";
 import { releaseEvidenceRoutes } from "./routes/releaseEvidence.js";
 import { env } from "./env.js";
 import { enforceSessionBoundary, requireTrustedOrigin } from "./auth.js";
@@ -133,6 +134,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(memberTaskVisibilityRoutes, { prefix: "/api/v1" });
   await app.register(controlPlaneRoutes, { prefix: "/api/v1" });
   await app.register(graphPreferenceRoutes, { prefix: "/api/v1" });
+  await app.register(interactionLayerRoutes, { prefix: "/api/v1" });
   await app.register(releaseEvidenceRoutes, { prefix: "/api/v1" });
   await app.register(accountRoutes, { prefix: "/api/v1" });
   await app.register(dashboardRoutes, { prefix: "/api/v1" });

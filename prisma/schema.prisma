@@ -54,6 +54,8 @@ model User {
   policiesCreated Policy[]      @relation("PolicyCreatedBy")
   auditLogs   AuditLog[]
   memberWorkspacesPublished MemberWorkspaceSnapshot[] @relation("MemberWorkspacePublishedBy")
+  memberTutorialProgress MemberTutorialProgress[]
+  memberTutorialMutationReceipts MemberTutorialMutationReceipt[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
   growthApprovalPackets GrowthApprovalPacket[] @relation("GrowthApprovalOwner")
@@ -1168,6 +1170,53 @@ model Team {
   members   TeamMember[]
   tasks     Task[]
   memberWorkspace MemberWorkspaceSnapshot?
+  tutorialProgress MemberTutorialProgress[]
+  tutorialMutationReceipts MemberTutorialMutationReceipt[]
+}
+
+model MemberTutorialProgress {
+  id                       String   @id @default(cuid())
+  userId                   String
+  organizationId           String
+  releaseVersion           String   @default("phase-200")
+  roleContext              String
+  planContext              String?
+  businessModelContext     String?
+  commanderPackContext     String?
+  mode                     String   @default("beginner")
+  completedAnchorIds       String[] @default([])
+  currentAnchorId          String?
+  firstLaunchSeen          Boolean  @default(false)
+  revision                 Int      @default(1)
+  startedAt                DateTime @default(now())
+  completedAt              DateTime?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization             Team     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId, releaseVersion])
+  @@index([organizationId, updatedAt])
+  @@index([userId, updatedAt])
+}
+
+model MemberTutorialMutationReceipt {
+  id                       String   @id @default(uuid())
+  userId                   String
+  organizationId           String
+  releaseVersion           String   @default("phase-200")
+  idempotencyKey           String
+  action                   String
+  priorRevision            Int
+  resultingRevision        Int
+  progressSnapshot         Json
+  createdAt                DateTime @default(now())
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization             Team     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId, releaseVersion, idempotencyKey])
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model MemberWorkspaceSnapshot {

@@ -1,0 +1,73 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "task_packet_id": "P200-CI-RECOVERY-GATE-REPAIR-001",
+  "phase": 200,
+  "objective": "Repair the Phase 195 recovery harness migration boundary so it verifies the historical Phase 195 anchor while ignoring explicitly later governed migrations, and make the retained Phase 199 boundary validate any Governor-bounded Phase 200 repair while rejecting future-phase work.",
+  "scope": [
+    ".entral/governor/**",
+    "scripts/phase195-recovery-gate.mjs",
+    "scripts/phase195-recovery-gate.test.mjs",
+    "scripts/phase199-baseline-gates.test.mjs"
+  ],
+  "likely_modules": [
+    "scripts/phase195-recovery-gate.mjs",
+    "scripts/phase195-recovery-gate.test.mjs",
+    "scripts/phase199-baseline-gates.test.mjs"
+  ],
+  "preserved_behavior": [
+    "Phase 195 recovery still builds only the exact pre-Phase-195 baseline tree and applies the Phase 195 migration separately",
+    "Phase 195 recovery still fails closed when the Phase 195 anchor migration is absent",
+    "Accepted Phase 200 implementation commit 6287a9036cc55239e86e09befef07364b37502ee and migration remain unchanged",
+    "Phase 202 remains blocked"
+  ],
+  "exclusions": [
+    "No runtime, schema, migration, deployment, Phase 199 evidence, or future-phase change",
+    "No security scan",
+    "No weakening of disposable-container, backup, restore, restart, or receipt verification"
+  ],
+  "acceptance_tests": [
+    "node --test scripts/phase195-recovery-gate.test.mjs",
+    "pnpm test:phase195",
+    "pnpm test:phase195:recovery",
+    "pnpm test:phase199",
+    "pnpm test:phase200",
+    "git diff --check",
+    "governor verify"
+  ],
+  "release_requirements": [
+    "The recovery boundary counts only migrations strictly before the Phase 195 anchor",
+    "Later governed migrations do not enter the historical recovery tree",
+    "Protected CI passes the exact PR head"
+  ],
+  "usage_budget": {
+    "maximum_wall_time_minutes": 180,
+    "maximum_attempts": 3,
+    "maximum_retries": 2,
+    "stagnation_limit": 2,
+    "checkpoint_at_tokens_remaining": 20000,
+    "release_repair_reserve_tokens": 10000
+  },
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "policy": {
+    "future_phase_compatibility_required": false,
+    "work_created_to_stay_active": false,
+    "speculative_refactors": [],
+    "duplicate_systems": []
+  },
+  "relevant_adrs": [],
+  "relevant_source_paths": [
+    "prisma/migrations/20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness/migration.sql",
+    "prisma/migrations/20260802023000_phase_200_interaction_layer/migration.sql",
+    "scripts/phase195-recovery-gate.mjs"
+  ],
+  "created_at": "2026-08-02T06:03:00.000Z"
+}

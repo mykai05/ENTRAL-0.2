@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EntityRole, EntitySummary } from "@entral/contracts";
 import {
+  availableUniverseNavigationPoints,
   canonicalLineageAndSubtree,
   entitiesForBusinessScope,
   fitUniverseCamera,
@@ -49,6 +50,15 @@ const hierarchy = [
 ];
 
 describe("Phase 180 canonical Universe invariants", () => {
+  it("uses the authorized layout while the animated render frame is not ready", () => {
+    const authorizedPoints = [
+      { entity: entity("entral", "ENTRAL", null), x: 0, y: 0 }
+    ];
+
+    expect(availableUniverseNavigationPoints([], authorizedPoints)).toBe(authorizedPoints);
+    expect(availableUniverseNavigationPoints(authorizedPoints, [])).toBe(authorizedPoints);
+  });
+
   it("never hides a selected entity's ancestors or descendants", () => {
     expect([...canonicalLineageAndSubtree(hierarchy, "commander-a")].sort()).toEqual([
       "commander-a",

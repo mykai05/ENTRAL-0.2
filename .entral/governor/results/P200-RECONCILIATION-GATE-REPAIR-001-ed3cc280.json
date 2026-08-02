@@ -1,0 +1,44 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P200-RECONCILIATION-GATE-REPAIR-001-ed3cc280",
+  "task_packet_id": "P200-RECONCILIATION-GATE-REPAIR-001",
+  "phase": 200,
+  "outcome": "PASSED",
+  "commit_sha": "ed3cc280a630b874466d660031c88ebb2f6df0c2",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/tasks/P200-RECONCILIATION-GATE-REPAIR-001.json",
+    "scripts/phase199-baseline-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase200",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    },
+    {
+      "command": "governor verify",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED",
+    "reason": "Protected-main checks and exact-main-SHA production release follow this test-only reconciliation repair."
+  },
+  "result_fingerprint": "55adca60a8fdaacaa14edf467f15bc0142a20342f18890b58023b10addaa93cf",
+  "completed_at": "2026-08-02T05:52:49.982Z"
+}

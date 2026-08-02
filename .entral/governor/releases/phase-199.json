@@ -1,0 +1,116 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "repository": "mykai05/ENTRAL-0.2",
+  "main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "release_tag": "phase-199",
+  "tests_passed": true,
+  "protected_main_checks_passed": true,
+  "migrations_verified": true,
+  "deployments": [
+    {
+      "provider": "VERCEL",
+      "deployment_id": "dpl_CavKw8FjsQLxpiALtZ5FXWLyjD9t",
+      "role": "FRONTEND",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "status": "READY",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "04bd83dc-0545-4b13-9a32-83580cec8f75",
+      "role": "API",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "3344f2f6-a367-4548-8aab-f5ae6890ee46",
+      "role": "WORKER",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness",
+      "status": "VERIFIED",
+      "readback": "Production Prisma migration status is up to date with 42 applied migrations, zero failed migrations, zero rolled-back migrations, and no pending migrations.",
+      "production_schema_status": "UP_TO_DATE",
+      "applied_migration_count": 42,
+      "checksum_sha256": "ecf35807e29fc17f9d3d36846dfbb568602569aefe219080ee9cfaa50efac651",
+      "readback_sha256": "cfeb76852b68dee2d877eab0202fa628f5e6b3cad7bc159928b90c10ba403c86"
+    }
+  ],
+  "authenticated_smoke": {
+    "status": "PASSED",
+    "receipt_id": "P199-AUTH-SMOKE-826f431e-73ee-4d33-97bc-9b60f28a0704",
+    "receipt_sha256": "641376f3c5e077bc176809060f270d339d79e4115ce06edc974da12f2b1ac4bd"
+  },
+  "production_readback": {
+    "status": "PASSED",
+    "main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+    "canonical_release_id": "286d106d-8583-428c-9d3f-589e176d5f71",
+    "phase_gate_id": "b9aebfe5-0ae7-4fc4-ad3d-abb921406cad",
+    "receipt_sha256": "d6f38006b1fe9e9b3bb1bd7c951e443184e93c9d4313b6665b8302395a0b3347",
+    "deployment_readback_sha256": "33570705d8cd62afae13292644dec017e5fd70ca8fcfbbfdafcfafcfbf339754",
+    "blockers": []
+  },
+  "secure_json_reconciliation": {
+    "status": "VERIFIED",
+    "protected_targets": [
+      "ShopifyConnection.credentialJson",
+      "ShopifyOAuthContinuation.payloadJson"
+    ],
+    "apply_plaintext_rows_found": 0,
+    "apply_plaintext_rows_reencrypted": 0,
+    "apply_invalid_json_rows": 0,
+    "apply_receipt_sha256": "5f024fce6668edb356cd41a47c5e5fd4414f2da6a59fa47ea0ca3c7c88849bbe",
+    "audit_plaintext_rows": 0,
+    "audit_invalid_json_rows": 0,
+    "audit_receipt_sha256": "69a41dde5b5841d55d13fe199ac389cfa5421e3da1db2cd9242b913084b39c02"
+  },
+  "rollback_point": {
+    "status": "RESTORE_VERIFIED",
+    "reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "release_tag": "phase-198",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "receipt_sha256": "6d855590ddfeb5937b790511cbbba3918fbd4da6fe371db4f5e71be04cad1e44"
+  },
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "repository": "mykai05/ENTRAL-0.2",
+      "main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    }
+  ],
+  "release_controller": {
+    "risk_tier": "MEDIUM",
+    "decision": "PASS",
+    "plan_sha256": "6f4b454422283b99f46be9d85eb81c43ccf814acc49f51b57209709c17f5acf3",
+    "evidence_bundle_sha256": "cc8b91d99f5cd106bc7c9861b05183cfd7bb7fe0c15f5d927a4730794cae1304",
+    "health_status": "PASSED",
+    "failure_proof_status": "PASSED"
+  },
+  "baseline_certification": {
+    "status": "CERTIFIED",
+    "manifest_sha256": "8d6360ac149ae3ea2b850cc1118155ea268beeeb401ee6c998ab516a0e9aed05",
+    "release_evidence_recording_manifest_sha256": "5f45a40e38cdcaf3ef9b62e4228ad719997a7d30d674672aa3510a620a981499",
+    "review_checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+    "review_packet_commit_sha": "9331b6e37d5e8db114ffc5fc211df04482cfcb67",
+    "binding_correction_commit_sha": "39000c648844e02fa472b1f4a824cd0114d70ba7"
+  },
+  "recorded_at": "2026-08-02T01:29:03.418Z"
+}

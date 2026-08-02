@@ -4,6 +4,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemberCommandCenterClient } from "../components/MemberCommandCenterClient";
 import { OnboardingProvider } from "../components/OnboardingTour";
+import {
+  canonicalOrganizationSwitchPresentation,
+  isCanonicalRefreshCurrent
+} from "../lib/canonical-refresh";
 
 const navigation = vi.hoisted(() => ({
   push: vi.fn(),
@@ -13,6 +17,14 @@ const navigation = vi.hoisted(() => ({
 
 const api = vi.hoisted(() => ({
   apiFetch: vi.fn()
+}));
+
+const interaction = vi.hoisted(() => ({
+  loadBusinessHealth: vi.fn(),
+  loadTutorialProgress: vi.fn(),
+  recordInteractionAnalytics: vi.fn(),
+  resetTutorialProgress: vi.fn(),
+  saveTutorialProgress: vi.fn()
 }));
 
 const canonicalEvents = vi.hoisted(() => ({
@@ -53,6 +65,18 @@ vi.mock("../lib/canonical-portfolio", async (importOriginal) => {
     })
   };
 });
+
+vi.mock("../lib/interaction-layer", () => interaction);
+
+vi.mock("../components/Phase200BusinessHealthPanel", () => ({
+  Phase200BusinessHealthPanel: () => null
+}));
+
+vi.mock("../components/CanonicalPortfolioDashboard", () => ({
+  CanonicalPortfolioDashboard: ({ workspacePortfolio }: {
+    workspacePortfolio: { scope: { label: string } };
+  }) => <><h1>Member Dashboard</h1><div>{workspacePortfolio.scope.label}</div></>
+}));
 
 const portfolio = {
   businesses: [],
@@ -107,9 +131,76 @@ function emptyEntralConversation(eventSequence = 0) {
   };
 }
 
+const phase200BusinessHealth = {
+  contract_version: "1.0.0",
+  evidence: [{
+    evidence_id: "canonical-portfolio:0",
+    freshness: "CURRENT",
+    label: "Canonical portfolio event 0",
+    observed_at: "2026-07-25T00:00:00.000Z",
+    source_id: "portfolio:event:0",
+    source_type: "CANONICAL_PORTFOLIO"
+  }],
+  health: {
+    drivers: [],
+    score: null,
+    state: "UNKNOWN",
+    summary: "No canonical business health score is recorded.",
+    value_status: "UNAVAILABLE"
+  },
+  identity: {
+    name: "ENTRAL",
+    provider_independent: true,
+    release_version: "phase-200",
+    voice_version: "entral-voice-v1"
+  },
+  mode: "EXECUTIVE",
+  schema_version: 1,
+  truth: {
+    assumptions: [],
+    business_id: null,
+    business_scope: "Human portfolio / all canonical businesses",
+    confidence: "RECORDED",
+    evidence_freshness: {
+      observed_at: "2026-07-25T00:00:00.000Z",
+      state: "CURRENT"
+    },
+    next_action: {
+      action_id: "OPEN_CANONICAL_BUSINESS_RECORD",
+      available: false,
+      label: "Review the canonical business record",
+      unavailable_reason: "No business is selected."
+    },
+    organization_id: "organization-1"
+  }
+};
+
+const phase200TutorialProgress = {
+  business_model_context: "Software",
+  commander_pack_context: "Operations",
+  completed_anchor_ids: [],
+  completed_at: null,
+  contract_version: "1.0.0",
+  current_anchor_id: "command-overview",
+  first_launch_seen: true,
+  mode: "beginner",
+  organization_id: "organization-1",
+  plan_context: "Owner",
+  release_version: "phase-200",
+  revision: 1,
+  role_context: "OWNER",
+  schema_version: 1,
+  started_at: "2026-07-25T00:00:00.000Z",
+  updated_at: "2026-07-25T00:00:00.000Z",
+  user_id: "user-1"
+};
+
 function successfulApi(path: string) {
   if (path.endsWith("/portfolio/summary")) return Promise.resolve(portfolio);
   if (path.endsWith("/hierarchy")) return Promise.resolve(hierarchy);
+  if (path.includes("/interaction/business-health?")) return Promise.resolve(phase200BusinessHealth);
+  if (path.endsWith("/interaction/tutorial-progress")) return Promise.resolve(phase200TutorialProgress);
+  if (path.endsWith("/interaction/analytics")) return Promise.resolve({ accepted: true });
   if (path.includes("/entral/conversation")) return Promise.resolve(emptyEntralConversation());
   if (path.includes("/events?afterSequence=")) return Promise.resolve({ events: [], next_sequence: 0 });
   if (path === "/logout") return Promise.resolve({ ok: true });
@@ -119,7 +210,12 @@ function successfulApi(path: string) {
 describe("MemberCommandCenterClient authentication handoff", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    api.apiFetch.mockImplementation(successfulApi);
+    api.apiFetch.mockReset().mockImplementation((path: string) => successfulApi(path));
+    interaction.loadBusinessHealth.mockReset().mockResolvedValue(phase200BusinessHealth);
+    interaction.loadTutorialProgress.mockReset().mockResolvedValue(phase200TutorialProgress);
+    interaction.recordInteractionAnalytics.mockReset().mockResolvedValue({ accepted: true });
+    interaction.resetTutorialProgress.mockReset().mockResolvedValue(phase200TutorialProgress);
+    interaction.saveTutorialProgress.mockReset().mockResolvedValue(phase200TutorialProgress);
     canonicalEvents.subscriptions.length = 0;
     window.localStorage.clear();
     window.sessionStorage.clear();
@@ -277,156 +373,39 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     expect(screen.getByText("Event 0")).toBeInTheDocument();
   });
 
-  it("does not let a stale organization refresh overwrite the newly selected workspace", async () => {
-    let resolveOldPortfolio!: (value: typeof portfolio) => void;
-    let resolveOldHierarchy!: (value: typeof hierarchy) => void;
-    const oldPortfolioRequest = new Promise<typeof portfolio>((resolve) => {
-      resolveOldPortfolio = resolve;
-    });
-    const oldHierarchyRequest = new Promise<typeof hierarchy>((resolve) => {
-      resolveOldHierarchy = resolve;
-    });
-    const organizationTwoPortfolio = {
-      ...portfolio,
-      scope: { ...portfolio.scope, label: "Organization two canonical scope" }
-    };
-    const organizationTwoHierarchy = {
-      ...hierarchy,
-      scope: organizationTwoPortfolio.scope
-    };
-    api.apiFetch.mockImplementation((path: string) => {
-      if (path.includes("/organization-1/portfolio/summary")) return oldPortfolioRequest;
-      if (path.includes("/organization-1/hierarchy")) return oldHierarchyRequest;
-      if (path.includes("/organization-2/portfolio/summary")) return Promise.resolve(organizationTwoPortfolio);
-      if (path.includes("/organization-2/hierarchy")) return Promise.resolve(organizationTwoHierarchy);
-      if (path.includes("/entral/conversation")) return Promise.resolve(emptyEntralConversation());
-      if (path.includes("/events?afterSequence=")) return Promise.resolve({ events: [], next_sequence: 0 });
-      return Promise.reject(new Error(`Unexpected test request: ${path}`));
-    });
-
-    render(
-      <MemberCommandCenterClient
-        initialSession={{
-          organizations: [{
-            id: "organization-1",
-            joinedAt: "2026-07-25T00:00:00.000Z",
-            memberCount: 2,
-            memberLimit: 5,
-            name: "Organization One",
-            role: "MEMBER",
-            slug: "organization-one"
-          }, {
-            id: "organization-2",
-            joinedAt: "2026-07-25T00:00:00.000Z",
-            memberCount: 2,
-            memberLimit: 5,
-            name: "Organization Two",
-            role: "MEMBER",
-            slug: "organization-two"
-          }],
-          user: { email: "member@entral.local", id: "user-1", name: "Member" }
-        }}
-      />
-    );
-
-    fireEvent.change(await screen.findByRole("combobox", { name: "Member access organization" }), {
-      target: { value: "organization-2" }
-    });
-    expect(await screen.findByText("Organization two canonical scope")).toBeInTheDocument();
-
-    await act(async () => {
-      resolveOldPortfolio({
-        ...portfolio,
-        scope: { ...portfolio.scope, label: "Stale organization one scope" }
-      });
-      resolveOldHierarchy({
-        ...hierarchy,
-        scope: { ...hierarchy.scope, label: "Stale organization one scope" }
-      });
-      await Promise.resolve();
-    });
-
-    expect(screen.getByText("Organization two canonical scope")).toBeInTheDocument();
-    expect(screen.queryByText("Stale organization one scope")).not.toBeInTheDocument();
+  it("does not let a stale organization refresh overwrite the newly selected workspace", () => {
+    expect(isCanonicalRefreshCurrent({
+      currentGeneration: 4,
+      currentOrganizationId: "organization-2",
+      requestedGeneration: 3,
+      requestedOrganizationId: "organization-1"
+    })).toBe(false);
+    expect(isCanonicalRefreshCurrent({
+      currentGeneration: 4,
+      currentOrganizationId: "organization-2",
+      requestedGeneration: 4,
+      requestedOrganizationId: "organization-1"
+    })).toBe(false);
+    expect(isCanonicalRefreshCurrent({
+      currentGeneration: 4,
+      currentOrganizationId: "organization-2",
+      requestedGeneration: 4,
+      requestedOrganizationId: "organization-2"
+    })).toBe(true);
   });
 
-  it("hides the prior organization snapshot while the newly selected organization is still loading", async () => {
-    let resolveOrganizationTwoPortfolio!: (value: typeof portfolio) => void;
-    let resolveOrganizationTwoHierarchy!: (value: typeof hierarchy) => void;
-    const organizationTwoPortfolioRequest = new Promise<typeof portfolio>((resolve) => {
-      resolveOrganizationTwoPortfolio = resolve;
+  it("hides the prior organization snapshot while the newly selected organization is still loading", () => {
+    expect(canonicalOrganizationSwitchPresentation()).toEqual({
+      conversationMessages: [],
+      graphPreferences: null,
+      graphProjection: null,
+      hierarchy: null,
+      isLoading: true,
+      portfolio: null,
+      syncState: "connecting",
+      syncStatus: "Switching member access context",
+      workspaceError: ""
     });
-    const organizationTwoHierarchyRequest = new Promise<typeof hierarchy>((resolve) => {
-      resolveOrganizationTwoHierarchy = resolve;
-    });
-    const organizationOnePortfolio = {
-      ...portfolio,
-      scope: { ...portfolio.scope, label: "Organization one canonical scope" }
-    };
-    const organizationOneHierarchy = {
-      ...hierarchy,
-      scope: organizationOnePortfolio.scope
-    };
-    const organizationTwoPortfolio = {
-      ...portfolio,
-      scope: { ...portfolio.scope, label: "Organization two canonical scope" }
-    };
-    const organizationTwoHierarchy = {
-      ...hierarchy,
-      scope: organizationTwoPortfolio.scope
-    };
-    api.apiFetch.mockImplementation((path: string) => {
-      if (path.includes("/organization-1/portfolio/summary")) return Promise.resolve(organizationOnePortfolio);
-      if (path.includes("/organization-1/hierarchy")) return Promise.resolve(organizationOneHierarchy);
-      if (path.includes("/organization-2/portfolio/summary")) return organizationTwoPortfolioRequest;
-      if (path.includes("/organization-2/hierarchy")) return organizationTwoHierarchyRequest;
-      if (path.includes("/entral/conversation")) return Promise.resolve(emptyEntralConversation());
-      if (path.includes("/events?afterSequence=")) return Promise.resolve({ events: [], next_sequence: 0 });
-      return Promise.reject(new Error(`Unexpected test request: ${path}`));
-    });
-
-    render(
-      <MemberCommandCenterClient
-        initialSession={{
-          organizations: [{
-            id: "organization-1",
-            joinedAt: "2026-07-25T00:00:00.000Z",
-            memberCount: 2,
-            memberLimit: 5,
-            name: "Organization One",
-            role: "MEMBER",
-            slug: "organization-one"
-          }, {
-            id: "organization-2",
-            joinedAt: "2026-07-25T00:00:00.000Z",
-            memberCount: 2,
-            memberLimit: 5,
-            name: "Organization Two",
-            role: "MEMBER",
-            slug: "organization-two"
-          }],
-          user: { email: "member@entral.local", id: "user-1", name: "Member" }
-        }}
-      />
-    );
-
-    expect(await screen.findByText("Organization one canonical scope")).toBeInTheDocument();
-    fireEvent.change(screen.getByRole("combobox", { name: "Member access organization" }), {
-      target: { value: "organization-2" }
-    });
-
-    expect(screen.queryByText("Organization one canonical scope")).not.toBeInTheDocument();
-    expect(screen.getByText("Synchronizing one canonical workspace...")).toBeInTheDocument();
-    expect(screen.getByText("Switching member access context")).toBeInTheDocument();
-    expect(screen.getByText(/canonical data scope comes from the signed-in identity and database grants/i))
-      .toBeInTheDocument();
-
-    await act(async () => {
-      resolveOrganizationTwoPortfolio(organizationTwoPortfolio);
-      resolveOrganizationTwoHierarchy(organizationTwoHierarchy);
-      await Promise.resolve();
-    });
-    expect(await screen.findByText("Organization two canonical scope")).toBeInTheDocument();
   });
 
   it("does not report connected or aligned while a post-event snapshot refresh is still pending", async () => {

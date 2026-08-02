@@ -4,10 +4,26 @@ import {
   assertDisposableDatabaseName,
   assertSafeContainerIdentity,
   normalizeGlobalsForPortableRestore,
+  phase195BaselineMigrationNames,
   receiptContainsSecretMaterial,
   recoveryTargets,
   validateRecoveryRunId
 } from "./phase195-recovery-gate.mjs";
+
+test("Phase 195 recovery keeps its historical migration boundary when later governed migrations exist", () => {
+  const before = "20260725000000_phase_190_baseline";
+  const phase195 = "20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness";
+  const phase200 = "20260802023000_phase_200_interaction_layer";
+
+  assert.deepEqual(
+    phase195BaselineMigrationNames([phase200, phase195, before]),
+    [before]
+  );
+  assert.throws(
+    () => phase195BaselineMigrationNames([before, phase200]),
+    /PHASE195_MIGRATION_MISSING/
+  );
+});
 
 test("recovery targets are unique, explicit, and disposable", () => {
   const runId = validateRecoveryRunId("abcdef123456");

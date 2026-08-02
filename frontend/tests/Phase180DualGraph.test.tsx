@@ -273,11 +273,11 @@ describe("Phase 180 dual canonical Graph views", () => {
   });
 
   it("reports device reduced-motion as an effective graph pause without implying agent inactivity", () => {
-    vi.stubGlobal("matchMedia", vi.fn(() => ({
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
       addEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
-      matches: true,
-      media: "(prefers-reduced-motion: reduce)",
+      matches: query.includes("prefers-reduced-motion"),
+      media: query,
       onchange: null,
       removeEventListener: vi.fn()
     })));

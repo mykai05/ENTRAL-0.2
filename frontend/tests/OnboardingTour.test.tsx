@@ -1,12 +1,15 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingProvider } from "../components/OnboardingTour";
 
-const navigationMocks = vi.hoisted(() => ({
-  pathname: "/dashboard",
-  push: vi.fn()
+const navigationMocks = vi.hoisted(() => ({ pathname: "/dashboard", push: vi.fn() }));
+const interactionMocks = vi.hoisted(() => ({
+  loadTutorialProgress: vi.fn(),
+  recordInteractionAnalytics: vi.fn(),
+  resetTutorialProgress: vi.fn(),
+  saveTutorialProgress: vi.fn()
 }));
 
 vi.mock("next/navigation", () => ({
@@ -14,287 +17,156 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: navigationMocks.push })
 }));
 
-const userId = "user-1";
-const userAcademyKey = `entral-academy-state-v1:${encodeURIComponent(userId)}`;
+vi.mock("../lib/interaction-layer", () => interactionMocks);
+
+const organizationId = "organization-phase-200";
+const userId = "user-phase-200";
+
+function progress(overrides: Record<string, unknown> = {}) {
+  return {
+    business_model_context: null,
+    commander_pack_context: null,
+    completed_anchor_ids: [],
+    completed_at: null,
+    contract_version: "1.0.0",
+    current_anchor_id: "command-overview",
+    first_launch_seen: false,
+    mode: "beginner",
+    organization_id: organizationId,
+    plan_context: null,
+    release_version: "phase-200",
+    revision: 1,
+    role_context: "MEMBER",
+    schema_version: 1,
+    started_at: "2026-08-02T00:00:00.000Z",
+    updated_at: "2026-08-02T00:00:00.000Z",
+    user_id: userId,
+    ...overrides
+  };
+}
 
 function authenticateUser() {
   act(() => {
-    window.dispatchEvent(new CustomEvent("entral:user-authenticated", {
-      detail: {
-        email: "operator@entral.local",
-        userId
-      }
+    window.dispatchEvent(new CustomEvent("entral:user-authenticated", { detail: { userId } }));
+    window.dispatchEvent(new CustomEvent("entral:organization-context", {
+      detail: { organizationId, userId }
     }));
   });
 }
 
-describe("OnboardingProvider", () => {
+function renderProvider() {
+  return render(
+    <OnboardingProvider>
+      <button data-academy="portfolio-dashboard" type="button">Command facts</button>
+    </OnboardingProvider>
+  );
+}
+
+describe("Phase 200 OnboardingProvider", () => {
   beforeEach(() => {
     navigationMocks.pathname = "/dashboard";
-    navigationMocks.push.mockClear();
-    window.localStorage.clear();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
+    navigationMocks.push.mockReset();
+    interactionMocks.loadTutorialProgress.mockReset().mockResolvedValue(progress());
+    interactionMocks.saveTutorialProgress.mockReset().mockImplementation(async (_organizationId, update) => progress({
+      completed_anchor_ids: update.completed_anchor_ids,
+      current_anchor_id: update.current_anchor_id,
+      first_launch_seen: update.first_launch_seen,
+      mode: update.mode,
+      revision: update.expected_revision + 1
+    }));
+    interactionMocks.resetTutorialProgress.mockReset().mockResolvedValue(progress({ revision: 3 }));
+    interactionMocks.recordInteractionAnalytics.mockReset().mockResolvedValue({ accepted: true });
     window.localStorage.clear();
     window.sessionStorage.clear();
   });
 
-  it("never opens the Academy automatically after authentication", () => {
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
+  it("never opens automatically and loads progress only after authenticated organization context", async () => {
+    renderProvider();
     authenticateUser();
-
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-
+    await waitFor(() => expect(interactionMocks.loadTutorialProgress).toHaveBeenCalledWith(organizationId));
     expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
   });
 
-  it("redirects an unauthenticated manual Academy request without opening a modal", () => {
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-academy"));
-    });
-
+  it("redirects an unauthenticated manual Tutorial request", () => {
+    renderProvider();
+    act(() => window.dispatchEvent(new Event("entral:open-academy")));
     expect(navigationMocks.push).toHaveBeenCalledWith("/member/sign-in?returnTo=%2Fmember%2Fdashboard");
     expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
   });
 
-  it("opens the tutorial library from the global event", () => {
-    window.localStorage.setItem(userAcademyKey, JSON.stringify({ firstLaunchSeen: true, completedSteps: [], mode: "beginner" }));
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    authenticateUser();
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-academy"));
-    });
-
-    expect(screen.getByText("Tutorial library")).toBeInTheDocument();
-    expect(screen.getByText("Quick Start")).toBeInTheDocument();
-    expect(screen.getByText("Business Creation")).toBeInTheDocument();
-  });
-
-  it("persists advanced mode selection", async () => {
-    window.localStorage.setItem(userAcademyKey, JSON.stringify({ firstLaunchSeen: true, completedSteps: [], mode: "beginner" }));
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    authenticateUser();
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-academy"));
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
-
-    expect(JSON.parse(window.localStorage.getItem(userAcademyKey) ?? "{}")).toMatchObject({ mode: "advanced" });
-  });
-
-  it("lets an operator close the manually opened Academy without completing the tutorial", () => {
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    authenticateUser();
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-tutorial"));
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Enter Command Center" }));
-
-    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-    expect(JSON.parse(window.localStorage.getItem(userAcademyKey) ?? "{}")).toMatchObject({ firstLaunchSeen: true });
-  });
-
-  it("keeps Academy dismissed if a late auth handoff repeats after the user enters Command Center", () => {
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    authenticateUser();
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-tutorial"));
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Enter Command Center" }));
-    authenticateUser();
-
-    act(() => {
-      vi.advanceTimersByTime(700);
-    });
-
-    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-    expect(JSON.parse(window.localStorage.getItem(userAcademyKey) ?? "{}")).toMatchObject({ firstLaunchSeen: true });
-  });
-
-  it("does not reopen from a stale first-launch timer after dismissal", () => {
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    authenticateUser();
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-tutorial"));
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Enter Command Center" }));
-
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-
-    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-    expect(JSON.parse(window.localStorage.getItem(userAcademyKey) ?? "{}")).toMatchObject({ firstLaunchSeen: true });
-  });
-
-  it("does not interrupt if the operator acts after internal auth", () => {
-    render(
-      <OnboardingProvider>
-        <main className="command-center-page">
-          <input aria-label="Command input" />
-        </main>
-      </OnboardingProvider>
-    );
-
-    authenticateUser();
-
-    fireEvent.input(screen.getByLabelText("Command input"), { target: { value: "Add Merch Marshal" } });
-
-    act(() => {
-      vi.advanceTimersByTime(700);
-    });
-
-    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-  });
-
-  it("closes the Academy during a live walkthrough and returns to the same lesson", () => {
-    window.localStorage.setItem(userAcademyKey, JSON.stringify({ firstLaunchSeen: true, completedSteps: [], mode: "beginner" }));
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    authenticateUser();
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-tutorial"));
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Show me" }));
-
-    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: "Start from Dashboard walkthrough" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Return to Academy" }));
-
-    expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Start from Dashboard", level: 2 })).toBeInTheDocument();
-  });
-
-  it("restores a stored authenticated session but still waits for a manual Academy request", () => {
-    window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({
-      email: "operator@entral.local",
-      userId
+  it("resumes released anchors from server state and exposes the four outcome-first modules", async () => {
+    interactionMocks.loadTutorialProgress.mockResolvedValue(progress({
+      completed_anchor_ids: ["command-overview", "businesses-overview"],
+      current_anchor_id: "universe-navigation",
+      first_launch_seen: true,
+      revision: 7
     }));
-
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-
-    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-academy"));
-    });
-
-    expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
-    expect(screen.getByText("Tutorial library")).toBeInTheDocument();
-  });
-
-  it("restores a minimal server-validated member identity for a manual Academy request", () => {
-    window.sessionStorage.setItem("entral-authenticated-user", JSON.stringify({ userId }));
-
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-academy"));
-    });
-
-    expect(navigationMocks.push).not.toHaveBeenCalled();
-    expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
-    expect(screen.getByText("Tutorial library")).toBeInTheDocument();
-  });
-
-  it("does not trap users when browser storage is blocked", () => {
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("storage unavailable");
-    });
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new Error("storage unavailable");
-    });
-    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
-      throw new Error("storage unavailable");
-    });
-
-    render(
-      <OnboardingProvider>
-        <button data-academy="command-brand" type="button">ENTRAL</button>
-      </OnboardingProvider>
-    );
-
+    renderProvider();
     authenticateUser();
+    await waitFor(() => expect(interactionMocks.loadTutorialProgress).toHaveBeenCalledWith(organizationId));
+    act(() => window.dispatchEvent(new Event("entral:open-academy")));
+    expect(await screen.findByText("Server progress synced · revision 7")).toBeInTheDocument();
+    expect(screen.getByText("Tutorial library")).toBeInTheDocument();
+    expect(screen.getByText("Command")).toBeInTheDocument();
+    expect(screen.getByText("Businesses")).toBeInTheDocument();
+    expect(screen.getByText("Universe")).toBeInTheDocument();
+    expect(screen.getByText("Records and help")).toBeInTheDocument();
+    expect(screen.getByLabelText("2 of 5 Academy lessons completed")).toBeInTheDocument();
+    act(() => window.dispatchEvent(new Event("entral:open-tutorial")));
+    expect(screen.getByRole("heading", { level: 2, name: "Navigate Universe" })).toBeInTheDocument();
+  });
 
-    act(() => {
-      window.dispatchEvent(new Event("entral:open-tutorial"));
-    });
+  it("persists mode through the versioned server transition without local progress state", async () => {
+    renderProvider();
+    authenticateUser();
+    await waitFor(() => expect(interactionMocks.loadTutorialProgress).toHaveBeenCalledWith(organizationId));
+    act(() => window.dispatchEvent(new Event("entral:open-academy")));
+    expect(await screen.findByText("Server progress synced · revision 1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
+    await waitFor(() => expect(interactionMocks.saveTutorialProgress).toHaveBeenCalledWith(
+      organizationId,
+      expect.objectContaining({
+        contract_version: "1.0.0",
+        expected_revision: 1,
+        idempotency_key: expect.stringContaining("phase200:tutorial:update:"),
+        mode: "advanced",
+        schema_version: 1
+      })
+    ));
+    expect(window.localStorage.length).toBe(0);
+  });
 
-    expect(screen.getByRole("dialog", { name: "ENTRAL Academy" })).toBeInTheDocument();
+  it("performs an honest server reset and reads back the new revision", async () => {
+    interactionMocks.loadTutorialProgress.mockResolvedValue(progress({ revision: 2 }));
+    renderProvider();
+    authenticateUser();
+    await waitFor(() => expect(interactionMocks.loadTutorialProgress).toHaveBeenCalledWith(organizationId));
+    act(() => window.dispatchEvent(new Event("entral:open-academy")));
+    expect(await screen.findByText("Server progress synced · revision 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reset Tutorial progress" }));
+    await waitFor(() => expect(interactionMocks.resetTutorialProgress).toHaveBeenCalledWith(
+      organizationId,
+      expect.objectContaining({ expected_revision: 2, schema_version: 1 })
+    ));
+    expect(await screen.findByText("Tutorial reset on the server · revision 3")).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "Enter Command Center" }));
-
-    expect(screen.queryByRole("dialog", { name: "ENTRAL Academy" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "ENTRAL" })).toBeInTheDocument();
+  it("reports a failed reset as a failed control without claiming success", async () => {
+    interactionMocks.resetTutorialProgress.mockRejectedValue(new Error("unavailable"));
+    renderProvider();
+    authenticateUser();
+    await waitFor(() => expect(interactionMocks.loadTutorialProgress).toHaveBeenCalledWith(organizationId));
+    act(() => window.dispatchEvent(new Event("entral:open-academy")));
+    expect(await screen.findByText("Server progress synced · revision 1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reset Tutorial progress" }));
+    expect(await screen.findByText("Tutorial reset was not applied. Reload the server progress and try again.")).toBeInTheDocument();
+    expect(interactionMocks.recordInteractionAnalytics).toHaveBeenCalledWith(expect.objectContaining({
+      controlId: "tutorial-reset",
+      eventType: "CONTROL_FAILED"
+    }));
   });
 });

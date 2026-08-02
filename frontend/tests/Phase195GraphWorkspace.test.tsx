@@ -556,7 +556,7 @@ describe("Phase 195 canonical Graph workspace acceptance", () => {
     expect(isolatedEntitySignature).not.toContain("marshal-b");
   });
 
-  it("supports all five arrangements, restores a saved arrangement, and safely stacks narrow viewports", () => {
+  it("supports all five desktop arrangements and preserves a saved arrangement behind the mobile single-renderer view", () => {
     const first = renderWorkspace();
     const workspace = first.container.querySelector(".phase195-graph-workspace");
     const arrangement = screen.getByRole("combobox", { name: "Graph arrangement" });
@@ -592,9 +592,12 @@ describe("Phase 195 canonical Graph workspace acceptance", () => {
     });
     const narrowWorkspace = narrow.container.querySelector(".phase195-graph-workspace");
     expect(narrowWorkspace).toHaveAttribute("data-graph-layout", "side-by-side");
-    expect(narrowWorkspace).toHaveAttribute("data-effective-arrangement", "stacked");
-    expect(screen.getByText(/Stack is active as a safe narrow-screen override/i)).toHaveTextContent(
-      /Side by side remains saved/i
+    expect(narrowWorkspace).toHaveAttribute("data-effective-arrangement", "2d-only");
+    expect(narrowWorkspace).toHaveAttribute("data-mobile-presentation", "single-renderer");
+    expect(screen.getByTestId("phase195-renderer-2d")).toBeVisible();
+    expect(screen.queryByTestId("phase195-renderer-3d")).not.toBeInTheDocument();
+    expect(screen.getByText(/2D is active in the mobile single-graph view/i)).toHaveTextContent(
+      /remain synchronized when switching/i
     );
 
     narrow.unmount();
