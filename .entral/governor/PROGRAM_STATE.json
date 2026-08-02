@@ -13,33 +13,108 @@
     199,
     200
   ],
-  "current_task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P200-PRODUCTION-RELEASE-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "failure-1785673864808",
+    "execution_result_id": "P202-IDENTITY-TENANCY-AUTHORITY-001-f78d4bfc",
     "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
     "phase": 202,
-    "outcome": "FAILED",
-    "commit_sha": null,
-    "changed_files": [],
+    "outcome": "PASSED",
+    "commit_sha": "f78d4bfcfa69ad515510c3e42397a97739bb3810",
+    "changed_files": [
+      ".entral/governor/PROGRAM_STATE.json",
+      ".entral/governor/events/EVENTS.jsonl",
+      ".entral/governor/release-control/phase-202/EVIDENCE_BUNDLE.json",
+      ".entral/governor/release-control/phase-202/RELEASE_CONTROL_EVIDENCE.json",
+      ".entral/governor/release-control/phase-202/RELEASE_CONTROL_PLAN.json",
+      ".entral/governor/releases/phase-202.json",
+      "docs/PHASE_202_VERIFICATION.md",
+      "docs/evidence/phase202/AUTHENTICATED_SMOKE_RECEIPT.json",
+      "docs/evidence/phase202/CREDENTIAL_REFERENCE_APPLY_RECEIPT.json",
+      "docs/evidence/phase202/CREDENTIAL_REFERENCE_AUDIT_RECEIPT.json",
+      "docs/evidence/phase202/FEATURE_ACCEPTANCE.json",
+      "docs/evidence/phase202/MIGRATION_RECEIPT.json",
+      "docs/evidence/phase202/OWNERSHIP_APPLY_RECEIPT.json",
+      "docs/evidence/phase202/OWNERSHIP_AUDIT_RECEIPT.json",
+      "docs/evidence/phase202/PRODUCTION_BROWSER_RECEIPT.json",
+      "docs/evidence/phase202/PRODUCTION_DEPLOYMENT_READBACK.json",
+      "docs/evidence/phase202/PRODUCTION_STATE_READBACK.json",
+      "docs/evidence/phase202/PROTECTED_MAIN_RECEIPT.json",
+      "docs/evidence/phase202/RELEASE_BLOCKER_READBACK.json",
+      "docs/evidence/phase202/ROLLBACK_READINESS_RECEIPT.json",
+      "docs/evidence/phase202/TEST_RECEIPTS.json"
+    ],
     "tests": [
       {
-        "command": "P202-F019 member route harness scope reconciliation",
-        "status": "FAILED",
-        "reason": "The P202-F019 tenant-bound member-assistant repair changes the legacy member route harness, so backend/tests/memberRoutes.test.ts must be brought forward to durable tenant principals and transaction-bound mocks within the same Phase 202 packet."
+        "command": "Phase 202 feature gates P202-F001-A through P202-F020-A",
+        "status": "PASSED"
+      },
+      {
+        "command": "complete Phase 202 deterministic, PostgreSQL, browser, prior-phase, recovery, build, and release suites",
+        "status": "PASSED"
+      },
+      {
+        "command": "protected pull requests #44 through #48 and exact-main CI run 30769935889",
+        "status": "PASSED"
+      },
+      {
+        "command": "exact-main Vercel frontend, Railway API, and Railway worker deployment readback",
+        "status": "PASSED"
+      },
+      {
+        "command": "production migration 20260802090000, database roles, and fresh status audit",
+        "status": "PASSED"
+      },
+      {
+        "command": "production ownership APPLY followed by independent fresh AUDIT",
+        "status": "PASSED"
+      },
+      {
+        "command": "production credential-reference APPLY followed by independent fresh AUDIT",
+        "status": "PASSED"
+      },
+      {
+        "command": "zero-row Phase 202 release-blocker readback",
+        "status": "PASSED"
+      },
+      {
+        "command": "authenticated production identity, session, membership, support-access, browser, revocation, and state readback",
+        "status": "PASSED"
+      },
+      {
+        "command": "Governor ReleaseControlPlan, ReleaseControlEvidence, ReleaseEvidenceBundle, ReleaseManifest, evaluation, and integrity validation",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:phase202 after final evidence construction",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:phase196 after final evidence construction",
+        "status": "PASSED"
+      },
+      {
+        "command": "git diff --check",
+        "status": "PASSED"
       }
     ],
-    "unresolved_failures": [
-      "The P202-F019 tenant-bound member-assistant repair changes the legacy member route harness, so backend/tests/memberRoutes.test.ts must be brought forward to durable tenant principals and transaction-bound mocks within the same Phase 202 packet."
-    ],
+    "unresolved_failures": [],
     "deployment_state": {
-      "status": "NOT_ATTEMPTED"
+      "status": "DEPLOYED",
+      "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      "release_tag": "phase-202",
+      "frontend_deployment_id": "5718266943",
+      "api_deployment_id": "0cc752c9-1599-49e8-b0d2-c7eb15f0c900",
+      "worker_deployment_id": "e3c342e6-efcd-430e-a49d-195e51670b54",
+      "release_manifest_sha256": "646d3b4a2b610b0aaab4d95a69319b65d60492d2eb5fea1196ec1f2b71b3b7b9",
+      "release_evidence_bundle_sha256": "42ca49c9c20f65f40c60ec1ddef970da9a548183808466185800a998e441e683",
+      "rollback_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
     },
-    "result_fingerprint": "9d831ff50a323e5ac17e7fa6219f2f581b33b0cfeef7ed0b496c1ae67b0d7445",
-    "completed_at": "2026-08-02T12:31:04.808Z"
+    "result_fingerprint": "96b4d88230ad3b0549416eecb6f02ed9ceede74e26f10484885c72e29ee800dc",
+    "completed_at": "2026-08-02T23:05:00.000Z"
   },
   "latest_verified_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
   "latest_production_release": {
@@ -153,132 +228,22 @@
   },
   "blocked_reason": null,
   "retry_count": 3,
-  "next_action": "Execute only P202-IDENTITY-TENANCY-AUTHORITY-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "a33c0bd7-fc93-4d50-b887-7d0ec37f3894",
-    "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
-    "owner": "phase202-identity-20260802",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      ".entral/governor/**",
-      ".github/workflows/ci-cd.yml",
-      ".env.example",
-      "DEPLOYMENT.md",
-      "packages/contracts/src/**",
-      "packages/contracts/tests/**",
-      "packages/contracts/openapi.yaml",
-      "packages/contracts/package.json",
-      "prisma/schema.prisma",
-      "prisma/migrations/*phase_202*/**",
-      "prisma/security/048_phase_202_roles_and_grants.sql",
-      "backend/src/auth.ts",
-      "backend/src/db.ts",
-      "backend/src/env.ts",
-      "backend/src/schemas.ts",
-      "backend/src/server.ts",
-      "backend/src/worker.ts",
-      "backend/src/cli/phase195RecoveryProbe.ts",
-      "backend/src/cli/reconcileSecureJson.ts",
-      "backend/src/routes/auth.ts",
-      "backend/src/routes/account.ts",
-      "backend/src/routes/dashboard.ts",
-      "backend/src/routes/member.ts",
-      "backend/src/routes/memberTaskVisibility.ts",
-      "backend/src/routes/graphPreferences.ts",
-      "backend/src/routes/interactionLayer.ts",
-      "backend/src/routes/merchStores.ts",
-      "backend/src/routes/revenueEngine.ts",
-      "backend/src/routes/**phase202**",
-      "backend/src/services/audit.ts",
-      "backend/src/services/aiUsage.ts",
-      "backend/src/services/auth*.ts",
-      "backend/src/services/secureJson.ts",
-      "backend/src/services/secureJsonReconciliation.ts",
-      "backend/src/services/shopifyConnections.ts",
-      "backend/src/services/shopifyOAuth.ts",
-      "backend/src/services/shopifyOAuthContinuations.ts",
-      "backend/src/services/shopifyAutonomyJobs.ts",
-      "backend/src/services/shopifyStoreCreationCapture.ts",
-      "backend/src/services/shopifyStoreCreationBrowserTask.ts",
-      "backend/src/services/shopifyStoreCreationHandoffJobs.ts",
-      "backend/src/services/privacy.ts",
-      "backend/src/services/users.ts",
-      "backend/src/services/canonicalControlPlane.ts",
-      "backend/src/services/interactionLayer.ts",
-      "backend/src/services/automationQueue.ts",
-      "backend/src/services/agentOrchestrator.ts",
-      "backend/src/services/autonomyScheduler.ts",
-      "backend/src/services/**phase202**",
-      "backend/src/services/workerReadiness.ts",
-      "backend/src/services/durableAuthorization.ts",
-      "backend/tests/*phase202*.test.ts",
-      "backend/tests/*tenant*.test.ts",
-      "backend/tests/*auth*.test.ts",
-      "backend/tests/aiUsage.test.ts",
-      "backend/tests/memberRoutes.test.ts",
-      "backend/tests/memberTaskVisibility.test.ts",
-      "backend/tests/memberSeatPostgres.integration.test.ts",
-      "backend/tests/durableAuthorization.test.ts",
-      "backend/tests/phase200InteractionLayer.test.ts",
-      "backend/tests/phase199BaselineSecurity.test.ts",
-      "backend/tests/controlPlaneRoutes.test.ts",
-      "backend/tests/phase195GraphTelemetryRoutes.test.ts",
-      "backend/tests/privacy.test.ts",
-      "backend/tests/shopifyConnections.test.ts",
-      "backend/tests/shopifyOAuth.test.ts",
-      "backend/tests/shopifyAutonomyJobs.test.ts",
-      "backend/tests/shopifyStoreCreationBrowserTask.test.ts",
-      "backend/tests/shopifyStoreCreationHandoffJobs.test.ts",
-      "backend/tests/revenueEngine.test.ts",
-      "backend/tests/phase195RuntimeSafety.test.ts",
-      "backend/tests/phase195CanonicalPersistencePostgres.integration.test.ts",
-      "backend/tests/phase150DatabaseAccess.integration.test.ts",
-      "backend/tests/workerReadinessLifecycle.test.ts",
-      "frontend/app/phase180.css",
-      "frontend/app/member/**",
-      "frontend/app/api/member/invitations/**",
-      "frontend/components/*Account*.tsx",
-      "frontend/components/*Session*.tsx",
-      "frontend/components/*Security*.tsx",
-      "frontend/components/*Support*.tsx",
-      "frontend/components/AccountPrivacyControls.tsx",
-      "frontend/components/CanonicalMemberShell.tsx",
-      "frontend/components/SettingsPanel.tsx",
-      "frontend/lib/auth-session.ts",
-      "frontend/lib/member-session.server.ts",
-      "frontend/tests/*Phase202*.test.*",
-      "frontend/tests/*Account*.test.*",
-      "frontend/tests/AccountPrivacyControls.test.tsx",
-      "frontend/tests/Phase195MemberShellRegression.test.ts",
-      "scripts/phase202-*.mjs",
-      "scripts/phase199-baseline-gates.test.mjs",
-      "scripts/apply-database-roles.mjs",
-      "scripts/phase195-recovery-gate.mjs",
-      "scripts/phase195-recovery-gate.test.mjs",
-      "e2e/**",
-      "docs/PHASE_202_*.md",
-      "docs/evidence/phase202/**",
-      "package.json"
-    ],
-    "acquired_at": "2026-08-02T22:46:21.153Z",
-    "heartbeat_at": "2026-08-02T22:59:49.929Z",
-    "expires_at": "2026-08-02T23:29:49.929Z"
-  },
+  "next_action": "Reconcile Phase 202 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 3,
+  "task_attempts": 4,
   "result_fingerprints": [
     "42282ce223c8befdd582a00a71855e65a20610b5798abe72b30ad1dd7f6fc282",
     "f65916017597fe0faa47788e8a6daedee5a35195aa7536b82bfbc8477be4804e",
-    "9d831ff50a323e5ac17e7fa6219f2f581b33b0cfeef7ed0b496c1ae67b0d7445"
+    "9d831ff50a323e5ac17e7fa6219f2f581b33b0cfeef7ed0b496c1ae67b0d7445",
+    "96b4d88230ad3b0549416eecb6f02ed9ceede74e26f10484885c72e29ee800dc"
   ],
-  "version": 127,
-  "updated_at": "2026-08-02T22:59:49.929Z",
+  "version": 128,
+  "updated_at": "2026-08-02T23:05:39.306Z",
   "task_deadline_at": "2026-08-02T23:54:58.890Z",
   "pending_release_manifest": null,
-  "event_count": 127,
-  "event_head_hash": "2a539e141cdab65cfc64a34a99b2529cae98a25d2ffb5f113645810fb6115d35"
+  "event_count": 128,
+  "event_head_hash": "7afca90201db53e288fd07f31f8894aaa5ec1e49d24c140c4f9db09945b897f5"
 }
