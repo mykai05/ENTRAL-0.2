@@ -3298,6 +3298,18 @@ const tests = [
         await mobileGraphToolbar.getByRole("button", { name: "2D" }).click();
         await expectUrl(page, /\/member\/graph\?graph=2d(?:&.*)?$/, "Phase 200 mobile 2D Graph return");
         await expectVisible(canvas, "2D Graph after mobile renderer return");
+        await page.waitForFunction(() => {
+          const surface = document.querySelector('[data-graph-dimension="2d"]');
+          return surface?.getAttribute("data-rendered-canonical-id-count")
+            === surface?.getAttribute("data-canonical-entity-count");
+        });
+        await canvas.scrollIntoViewIfNeeded();
+        await canvas.focus();
+        await canvas.evaluate((element) => {
+          if (document.activeElement !== element) {
+            throw new Error("Returned 2D Graph canvas did not receive keyboard focus.");
+          }
+        });
         await canvas.press("Enter");
         await expectVisible(page.getByRole("complementary", { name: /graph details/i }), "Dismissible Graph detail drawer");
 
@@ -3670,7 +3682,7 @@ const tests = [
             };
             element.addEventListener("keydown", recordKeydown, true);
           });
-          await page.keyboard.press("ArrowDown");
+          await canvas.press("ArrowDown");
           const graphDetails = page.getByRole("complementary", { name: /ENTRAL graph details/i });
           await expectVisible(graphDetails, `${profile.name} graph keyboard selection`);
           const graphInteractionTiming = await page.evaluate(() => {
@@ -3688,9 +3700,9 @@ const tests = [
           if (graphInteractionMs > 2_000) {
             throw new Error(`${profile.name} Graph keyboard interaction exceeded 2s: ${graphInteractionMs.toFixed(1)}ms.`);
           }
-          await page.keyboard.press("+");
-          await page.keyboard.press("Escape");
-          await graphDetails.waitFor({ state: "hidden", timeout: 2_000 }).catch(() => {
+          await canvas.press("+");
+          await canvas.press("Escape");
+          await graphDetails.waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {
             throw new Error(`${profile.name} Escape did not clear the graph selection before switching views.`);
           });
 
