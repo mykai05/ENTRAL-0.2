@@ -12,63 +12,86 @@
     198,
     199
   ],
-  "current_task_packet_id": "P200-PRODUCTION-RELEASE-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P200-CI-RECOVERY-GATE-REPAIR-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P200-PRODUCTION-RELEASE-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P200-CI-RECOVERY-GATE-REPAIR-001-e6e6c861",
-    "task_packet_id": "P200-CI-RECOVERY-GATE-REPAIR-001",
+    "execution_result_id": "P200-PRODUCTION-RELEASE-001-c2637b09",
+    "task_packet_id": "P200-PRODUCTION-RELEASE-001",
     "phase": 200,
     "outcome": "PASSED",
-    "commit_sha": "e6e6c8612b551064d1e8d8a22aaf20495e29338b",
+    "commit_sha": "c2637b09ca86c8d84922d4422fe7b91ec7164621",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/results/failure-1785650762496.json",
-      ".entral/governor/tasks/P200-CI-RECOVERY-GATE-REPAIR-001.json",
-      "scripts/phase195-recovery-gate.mjs",
-      "scripts/phase195-recovery-gate.test.mjs",
-      "scripts/phase199-baseline-gates.test.mjs"
+      ".entral/governor/release-control/phase-200/EVIDENCE_BUNDLE.json",
+      ".entral/governor/release-control/phase-200/RELEASE_CONTROL_EVIDENCE.json",
+      ".entral/governor/release-control/phase-200/RELEASE_CONTROL_PLAN.json",
+      ".entral/governor/releases/phase-200.json",
+      "docs/PHASE_200_VERIFICATION.md",
+      "docs/evidence/phase200/AUTHENTICATED_SMOKE_RECEIPT.json",
+      "docs/evidence/phase200/FEATURE_ACCEPTANCE.json",
+      "docs/evidence/phase200/MIGRATION_RECEIPT.json",
+      "docs/evidence/phase200/PRODUCTION_BROWSER_RECEIPT.json",
+      "docs/evidence/phase200/PRODUCTION_DEPLOYMENT_READBACK.json",
+      "docs/evidence/phase200/PRODUCTION_STATE_READBACK.json",
+      "docs/evidence/phase200/PROTECTED_MAIN_RECEIPT.json",
+      "docs/evidence/phase200/ROLLBACK_READINESS_RECEIPT.json"
     ],
     "tests": [
       {
-        "command": "node --test scripts/phase195-recovery-gate.test.mjs",
+        "command": "GitHub protected-main CI run 30735748951 for 22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
         "status": "PASSED"
       },
       {
-        "command": "pnpm test:phase195",
+        "command": "Exact-main-SHA Vercel frontend, Railway API, and Railway worker deployment readback",
         "status": "PASSED"
       },
       {
-        "command": "PHASE195_RECOVERY_GATE_CONFIRM=DISPOSABLE_ONLY pnpm test:phase195:recovery",
+        "command": "Production migration APPLY and independent fresh AUDIT: 43 applied, 0 failed, 0 rolled back, 0 pending",
         "status": "PASSED"
       },
       {
-        "command": "pnpm test:phase199",
+        "command": "Authenticated production Tutorial mutation, idempotency, reset, business-health, graph, telemetry, and worker state readback",
         "status": "PASSED"
       },
       {
-        "command": "pnpm test:phase200",
+        "command": "Authenticated production Chrome matrix at 360, 390, 412, and 430 CSS pixels plus landscape and desktop side-by-side",
+        "status": "PASSED"
+      },
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase200",
+        "status": "PASSED"
+      },
+      {
+        "command": "Node 20.19.0 with pnpm 9.12.3: pnpm test:phase199",
+        "status": "PASSED"
+      },
+      {
+        "command": "Governor ReleaseManifest, ReleaseEvidenceBundle, release evaluation, and integrity validation",
         "status": "PASSED"
       },
       {
         "command": "git diff --check",
         "status": "PASSED"
-      },
-      {
-        "command": "governor verify",
-        "status": "PASSED"
       }
     ],
     "unresolved_failures": [],
     "deployment_state": {
-      "status": "NOT_ATTEMPTED",
-      "reason": "Protected-main checks and the exact-main-SHA Phase 200 production release follow this bounded CI recovery repair."
+      "status": "DEPLOYED",
+      "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "release_tag": "phase-200",
+      "frontend_deployment_id": "dpl_7CEgfksQ1nZ6NJPnRWq8NbcUNjqx",
+      "api_deployment_id": "905e88d5-6e40-4905-af15-67ac94507feb",
+      "worker_deployment_id": "979c2604-e704-4eb4-8959-2b5893de6d9f",
+      "release_manifest_sha256": "e7712fc6f93464f6778917869863af672dd62b44a5f2b3d42269ec44dca77308",
+      "release_evidence_bundle_sha256": "9228248965da21708b90d6853bd8bdcd5d14aec00e75509e8b171b5cefdd285b",
+      "rollback_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
     },
-    "result_fingerprint": "4dfdcc436a8c23b18fa66c475b23679dc6e5f046df48b3cc474e07519d0f79b0",
-    "completed_at": "2026-08-02T06:09:57.132Z"
+    "result_fingerprint": "f5efc8e4eabe1a59712895efc48b51df27c4655c45190907302dde9f4310deb9",
+    "completed_at": "2026-08-02T07:31:22.360Z"
   },
   "latest_verified_main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
   "latest_production_release": {
@@ -189,32 +212,19 @@
   },
   "blocked_reason": null,
   "retry_count": 1,
-  "next_action": "Execute only P200-PRODUCTION-RELEASE-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "7c933696-14b8-45b9-a6bb-0b0461995c69",
-    "task_packet_id": "P200-PRODUCTION-RELEASE-001",
-    "owner": "phase200-release-20260802",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      ".entral/governor/**",
-      "docs/PHASE_200_VERIFICATION.md",
-      "docs/evidence/phase200/**"
-    ],
-    "acquired_at": "2026-08-02T06:22:40.988Z",
-    "heartbeat_at": "2026-08-02T06:49:58.957Z",
-    "expires_at": "2026-08-02T10:49:58.957Z"
-  },
+  "next_action": "Reconcile Phase 200 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 81,
-  "updated_at": "2026-08-02T06:49:58.957Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "f5efc8e4eabe1a59712895efc48b51df27c4655c45190907302dde9f4310deb9"
+  ],
+  "version": 82,
+  "updated_at": "2026-08-02T07:32:03.461Z",
   "task_deadline_at": "2026-08-02T12:22:33.817Z",
   "pending_release_manifest": null,
-  "event_count": 81,
-  "event_head_hash": "ea972ac93934b730c134571f608ec4bbba481c81fee6e57111ba24a01fe08c4a"
+  "event_count": 82,
+  "event_head_hash": "5f3435dd83376d26e8defb6fde512943c69d16ca331362742fb16f0c792a7e9a"
 }
