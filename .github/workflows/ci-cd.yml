@@ -88,7 +88,10 @@ jobs:
           tests/phase195CanonicalPersistencePostgres.integration.test.ts
       - name: Verify Phase 202 PostgreSQL tenant and worker boundaries
         env:
+          DATA_ENCRYPTION_KEY: phase202-ci-integration-encryption-key
+          DATA_ENCRYPTION_KEY_VERSION: phase202-ci
           RUN_POSTGRES_INTEGRATION: "1"
+          SECRET_BROKER_ENVIRONMENT: DEVELOPMENT
           TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
         run: >-
           pnpm --filter @entral/backend exec vitest run
