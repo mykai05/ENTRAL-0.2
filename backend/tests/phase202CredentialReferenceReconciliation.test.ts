@@ -96,6 +96,9 @@ describe("Phase 202 credential-reference reconciliation", () => {
     const insertCall = database.$queryRawUnsafe.mock.calls.find(([sql]) => String(sql).includes("CredentialReferenceReconciliationRun"));
     expect(insertCall).toBeDefined();
     expect(insertCall).toContain(applyHash);
+    const insertSql = String(insertCall?.[0]);
+    expect(insertSql.match(/\$[5-9]::integer/gu)).toHaveLength(5);
+    expect(insertSql).toContain("$11::text");
   });
 
   it("keeps APPLY and AUDIT as distinct invocations", async () => {

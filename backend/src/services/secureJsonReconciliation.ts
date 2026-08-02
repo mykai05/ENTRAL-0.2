@@ -336,7 +336,10 @@ async function persistRun(database: Pick<PrismaClient, "$queryRawUnsafe">, input
       "legacyRows","missingReferenceRows","invalidReferenceRows","rowIdentityHash","priorApplyReceiptHash",
       "repairPlanReference","rollbackReference","receiptHash","completedAt"
     ) VALUES ($1,$2,$3,2,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
-      entral.phase202_credential_reconciliation_hash($1,$2,$3,2,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::timestamptz),$14::timestamptz)
+      entral.phase202_credential_reconciliation_hash(
+        $1,$2,$3,2,$4,$5::integer,$6::integer,$7::integer,$8::integer,$9::integer,
+        $10,$11::text,$12,$13,$14::timestamptz
+      ),$14::timestamptz)
     RETURNING "receiptHash"
   `, input.mode, inventoryId, input.inventoryHash, input.sourceStateHash, input.sourceRows, input.referencedRows,
   input.legacyRows, input.missingReferenceRows, input.invalidReferenceRows, input.rowIdentityHash,
