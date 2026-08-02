@@ -1,0 +1,90 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "task_packet_id": "P200-PRODUCTION-RELEASE-001",
+  "phase": 200,
+  "objective": "Release the protected-main Phase 200 merge commit 22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516 to the exact production frontend, API, and worker targets; apply and verify the Phase 200 migration; complete authenticated production smoke and state readback; record the immutable Phase 200 ReleaseManifest and rollback evidence; certify Phase 200; and activate Phase 202 without beginning Phase 202 implementation.",
+  "scope": [
+    ".entral/governor/**",
+    "docs/PHASE_200_VERIFICATION.md",
+    "docs/evidence/phase200/**"
+  ],
+  "likely_modules": [
+    ".entral/governor/releases/phase-200.json",
+    ".entral/governor/PROGRAM_STATE.json",
+    "docs/evidence/phase200/PRODUCTION_DEPLOYMENT_READBACK.json",
+    "docs/evidence/phase200/MIGRATION_RECEIPT.json",
+    "docs/evidence/phase200/AUTHENTICATED_SMOKE_RECEIPT.json",
+    "docs/evidence/phase200/PRODUCTION_STATE_READBACK.json"
+  ],
+  "preserved_behavior": [
+    "Certified Phase 199 production release f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+    "Immediate rollback release 5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "Accepted protected-main Phase 200 merge commit 22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "Canonical graph authority, RLS, telemetry, lifecycle, mobile single-renderer behavior, and desktop side-by-side behavior",
+    "Phase 202 remains implementation-blocked"
+  ],
+  "exclusions": [
+    "No product runtime, contract, schema, migration, UI, workflow, or dependency change",
+    "No Phase 202 implementation",
+    "No security scan",
+    "No mock, static graph, placeholder, fake metric, no-op, or production fallback",
+    "No deployment of a SHA other than the exact accepted protected-main Phase 200 SHA"
+  ],
+  "acceptance_tests": [
+    "protected-main checks for 22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "Vercel frontend deployment exact-SHA readback",
+    "Railway API deployment exact-SHA readback",
+    "Railway worker deployment exact-SHA readback",
+    "pnpm prisma migrate deploy against production",
+    "pnpm prisma migrate status against production",
+    "authenticated production Tutorial mutation and readback",
+    "authenticated production business-health and canonical graph readback",
+    "production member-action and mobile graph smoke",
+    "pnpm test:phase200",
+    "pnpm test:phase199",
+    "git diff --check",
+    "governor verify"
+  ],
+  "release_requirements": [
+    "Frontend, API, and worker are READY at exact main SHA 22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "Migration 20260802023000_phase_200_interaction_layer is applied with zero failed, rolled-back, or pending migrations",
+    "Authenticated Tutorial save, read, reset, business-health truth, canonical graph, member action, and production state readbacks pass",
+    "ReleaseManifest records phase-200, protected checks, exact deployments, migration, authenticated smoke, production readback, and rollback release 5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "Phase 200 is certified before Phase 202 is activated",
+    "Phase 202 activation changes Governor state only and does not begin implementation"
+  ],
+  "usage_budget": {
+    "maximum_wall_time_minutes": 360,
+    "maximum_attempts": 3,
+    "maximum_retries": 2,
+    "stagnation_limit": 2,
+    "checkpoint_at_tokens_remaining": 16000,
+    "release_repair_reserve_tokens": 8000
+  },
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "policy": {
+    "future_phase_compatibility_required": false,
+    "work_created_to_stay_active": false,
+    "speculative_refactors": [],
+    "duplicate_systems": []
+  },
+  "relevant_adrs": [],
+  "relevant_source_paths": [
+    ".entral/governor/phases/200/PHASE_CONTRACT.v1.json",
+    ".entral/governor/releases/phase-199.json",
+    "docs/PHASE_200_VERIFICATION.md",
+    "prisma/migrations/20260802023000_phase_200_interaction_layer/migration.sql",
+    "backend/src/routes/interactionLayer.ts",
+    "frontend/components/CanonicalGraphWorkspace.tsx"
+  ],
+  "created_at": "2026-08-02T06:23:00.000Z"
+}

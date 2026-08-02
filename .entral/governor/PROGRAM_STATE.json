@@ -12,8 +12,8 @@
     198,
     199
   ],
-  "current_task_packet_id": null,
-  "task_status": null,
+  "current_task_packet_id": "P200-PRODUCTION-RELEASE-001",
+  "task_status": "CLAIMED",
   "last_task_packet_id": "P200-CI-RECOVERY-GATE-REPAIR-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
@@ -189,20 +189,32 @@
   },
   "blocked_reason": null,
   "retry_count": 1,
-  "next_action": "Reconcile Phase 200 with current origin/main and run the complete phase suite.",
-  "active_write_lease": null,
+  "next_action": "Execute only P200-PRODUCTION-RELEASE-001, then record its exact result.",
+  "active_write_lease": {
+    "contract_version": "1.0.0",
+    "schema_version": 1,
+    "lease_id": "7c933696-14b8-45b9-a6bb-0b0461995c69",
+    "task_packet_id": "P200-PRODUCTION-RELEASE-001",
+    "owner": "phase200-release-20260802",
+    "actor": "CODEX_5_6_SOL_XHIGH",
+    "scope": [
+      ".entral/governor/**",
+      "docs/PHASE_200_VERIFICATION.md",
+      "docs/evidence/phase200/**"
+    ],
+    "acquired_at": "2026-08-02T06:22:40.988Z",
+    "heartbeat_at": "2026-08-02T06:22:40.988Z",
+    "expires_at": "2026-08-02T10:22:40.988Z"
+  },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 2,
-  "result_fingerprints": [
-    "5b98467d9505d5d00344c9a5298140e0f4d09591d0a498914f1b3dcf00567e30",
-    "4dfdcc436a8c23b18fa66c475b23679dc6e5f046df48b3cc474e07519d0f79b0"
-  ],
-  "version": 78,
-  "updated_at": "2026-08-02T06:10:18.444Z",
-  "task_deadline_at": "2026-08-02T09:02:46.515Z",
+  "task_attempts": 0,
+  "result_fingerprints": [],
+  "version": 80,
+  "updated_at": "2026-08-02T06:22:40.988Z",
+  "task_deadline_at": "2026-08-02T12:22:33.817Z",
   "pending_release_manifest": null,
-  "event_count": 78,
-  "event_head_hash": "83e3be0c3736e621ffa58899f86aa8f55222ebc1a063499147e9a2abbbeb4f7c"
+  "event_count": 80,
+  "event_head_hash": "bd13d45610a23f9bf865d3b5f417ac6daf10cf90f9c12b663796af90d0aa8054"
 }
