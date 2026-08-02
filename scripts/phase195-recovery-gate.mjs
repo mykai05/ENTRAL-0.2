@@ -24,6 +24,10 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const phaseMigration =
   "20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness";
+export const phase195RecoveryGrantFiles = Object.freeze([
+  "prisma/security/046_roles_and_grants.sql",
+  "prisma/security/047_phase_195_roles_and_grants.sql"
+]);
 const gateLabel = "com.entral.phase195.recovery";
 const runLabel = "com.entral.phase195.recovery-run";
 const postgresImage = "postgres:18-alpine";
@@ -759,11 +763,16 @@ async function runRecoveryGate() {
       "--schema",
       baseline.schemaPath
     ], "FORWARD_MIGRATION_FAILED");
-    runRepositoryScript(
-      restoreOwnerUrl,
-      "scripts/apply-database-roles.mjs",
-      "RESTORED_ROLE_GRANTS_FAILED"
-    );
+    for (const grantFile of phase195RecoveryGrantFiles) {
+      runPrisma(restoreOwnerUrl, [
+        "db",
+        "execute",
+        "--file",
+        grantFile,
+        "--schema",
+        baseline.schemaPath
+      ], "RESTORED_ROLE_GRANTS_FAILED");
+    }
     const seedReceipts = [
       parseLastJson(
         runRepositoryScript(

@@ -1,0 +1,109 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 200,
+  "repository": "mykai05/ENTRAL-0.2",
+  "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "release_tag": "phase-200",
+  "tests_passed": true,
+  "protected_main_checks_passed": true,
+  "migrations_verified": true,
+  "deployments": [
+    {
+      "provider": "VERCEL",
+      "deployment_id": "dpl_7CEgfksQ1nZ6NJPnRWq8NbcUNjqx",
+      "role": "FRONTEND",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "status": "READY",
+      "deployed_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "905e88d5-6e40-4905-af15-67ac94507feb",
+      "role": "API",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY",
+      "deployed_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "979c2604-e704-4eb4-8959-2b5893de6d9f",
+      "role": "WORKER",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY",
+      "deployed_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "20260802023000_phase_200_interaction_layer",
+      "status": "VERIFIED",
+      "readback": "Production Prisma migration status is up to date with 43 applied migrations, zero failed migrations, zero rolled-back migrations, and no pending migrations.",
+      "production_schema_status": "UP_TO_DATE",
+      "applied_migration_count": 43,
+      "checksum_sha256": "54078b37683128429c88e69e7f0570c263eeb9bd48de2257ea801bb54eeac8cc",
+      "readback_sha256": "4a799598b1d3f28ef5a941d6ff72d4eeae81bd042328cbccf2bc1bcbb35a01b9"
+    }
+  ],
+  "authenticated_smoke": {
+    "status": "PASSED",
+    "receipt_id": "P200-AUTH-SMOKE-7ce6d6a2-f8c8-4f8f-8860-3bc3abf9b60c",
+    "receipt_sha256": "d2e9147b97a68e5420414d2787cb74d25d4b4dcfd4dbf2d7dde201e9e5fd1bd1"
+  },
+  "production_readback": {
+    "status": "PASSED",
+    "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "receipt_id": "P200-PROD-READBACK-e980c3df-9095-4664-8467-088116ead613",
+    "receipt_sha256": "853e11f1646f917f72a0ac44f5e26f1546dba5d1a4ed9edaaf006fd9711f30cf",
+    "deployment_readback_sha256": "4ce3683ba244f5501abeca929538f501c4691d772d5eced2b31beb9ce641a5fc",
+    "production_browser_receipt_sha256": "84de92b342ff110cba9bf9d9b7ad035a64cf54424667771eef27e8292dc75f2e",
+    "blockers": []
+  },
+  "rollback_point": {
+    "status": "RESTORE_VERIFIED",
+    "reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "release_tag": "phase-198",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "receipt_sha256": "f82085ae21f7f7f337be2d8f39d6f6450fc8a80032da91202dfccb03e5ab73dc"
+  },
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "repository": "mykai05/ENTRAL-0.2",
+      "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    }
+  ],
+  "release_controller": {
+    "risk_tier": "HIGH",
+    "decision": "PASS",
+    "plan_sha256": "9952def7e00e001c0f26641c8d10edb87ebad6ff3c1f9e7e2f96aed1fed18e3c",
+    "evidence_bundle_sha256": "9228248965da21708b90d6853bd8bdcd5d14aec00e75509e8b171b5cefdd285b",
+    "health_status": "PASSED",
+    "failure_proof_status": "PASSED"
+  },
+  "phase_200_acceptance": {
+    "protected_main_receipt_sha256": "f5ca0aacb0ae72852200a39aec0ffb98a6cfc98659d03dcbd6645a40b95b77c2",
+    "migration_receipt_sha256": "c5ea800bcdecc3e5fadd90fad69fcb63167baee4ba8d0c3d07e6f3d591d26f76",
+    "production_browser_receipt_sha256": "84de92b342ff110cba9bf9d9b7ad035a64cf54424667771eef27e8292dc75f2e",
+    "mobile_widths_css_px": [
+      360,
+      390,
+      412,
+      430
+    ],
+    "portrait": "PASSED",
+    "landscape": "PASSED",
+    "desktop_side_by_side": "PASSED"
+  },
+  "security_scan": "NOT_RUN_OWNER_PROHIBITED",
+  "recorded_at": "2026-08-02T07:28:26.767Z"
+}

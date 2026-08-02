@@ -42,7 +42,7 @@ import { buildProviderHandoffBundle, buildProviderPayloadApprovalPacket, buildPr
 import { formatComplianceNotes } from "../services/complianceGuardrails.js";
 import { generateProductBatch } from "../services/productBatchGenerator.js";
 import { parseSecureJson, stringifySecureJson } from "../services/secureJson.js";
-import { credentialsFromShopifyConnection, getShopifyConnectionCredentials, listShopifyConnections, publicShopifyConnection, upsertShopifyConnection, verifyShopifyConnection } from "../services/shopifyConnections.js";
+import { getShopifyConnectionCredentials, listShopifyConnections, publicShopifyConnection, upsertShopifyConnection, verifyShopifyConnection } from "../services/shopifyConnections.js";
 import { executeShopifyAutonomyRun } from "../services/shopifyAutonomyRun.js";
 import { buildShopifyAutonomyReviewContinuation, createShopifyAutonomyResumeJob } from "../services/shopifyAutonomyJobs.js";
 import { captureShopifyStoreCreationForStore, ShopifyStoreCreationCaptureError } from "../services/shopifyStoreCreationCapture.js";
@@ -50,6 +50,7 @@ import { createShopifyStoreCreationHandoffJob } from "../services/shopifyStoreCr
 import { enqueueAutomationJob } from "../services/automationQueue.js";
 import { appendShopifyOAuthResultToReturnUrl, buildShopifyOAuthStart, exchangeShopifyOAuthCode, normalizeShopifyOAuthScopes, normalizeShopifyOAuthShopDomain, validateShopifyOAuthHmac, verifyShopifyOAuthState } from "../services/shopifyOAuth.js";
 import { attachShopifyOAuthContinuationAudit, createShopifyOAuthContinuation, getPendingShopifyOAuthContinuation, markShopifyOAuthContinuationConsumed, markShopifyOAuthContinuationFailed } from "../services/shopifyOAuthContinuations.js";
+import { recordPhase202ShopifyOAuthCallbackAudit, resolvePhase202ShopifyOAuthCallbackStore } from "../services/phase202ShopifyOAuthCallback.js";
 import { assertDurableAuthorization } from "../services/durableAuthorization.js";
 import { buildShopifyStoreProvisioningPlan } from "../services/shopifyStoreProvisioning.js";
 import { executeShopifyStorefrontDraft } from "../services/shopifyStorefrontExecutor.js";
@@ -183,6 +184,8 @@ type ClientMerchStoreRecord = {
   commandGeneralName: string | null;
   createdAt: Date;
   updatedAt: Date;
+  businessId: string | null;
+  tenantId: string | null;
 };
 
 type PodProductSnapshotRecord = {
@@ -402,6 +405,17 @@ function sendMerchRouteError(reply: FastifyReply, error: unknown, fallbackMessag
 
 function firstQueryValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function shopifyHumanPrincipal(userId: string, store: { tenantId: string | null }, requestId: string) {
+  if (!store.tenantId) throw new MerchRouteError(409, "Shopify operations require a canonical tenant-bound store.");
+  return { authSubject: userId, requestId, tenantId: store.tenantId } as const;
+}
+
+function shopifyIdempotencyKey(request: FastifyRequest, operation: string) {
+  const header = request.headers["idempotency-key"];
+  const supplied = Array.isArray(header) ? header[0] : header;
+  return `${supplied?.trim() || request.id}:${operation}`;
 }
 
 type GrowthApprovalPacketRecord = {
@@ -737,7 +751,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     const params = clientMerchStoreIdParamsSchema.parse(request.params);
     const store = await prisma.clientMerchStore.findFirst({
-      select: { id: true },
+      select: { businessId: true, id: true, tenantId: true },
       where: {
         id: params.storeId,
         userId: currentUser.sub
@@ -749,7 +763,11 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     }
 
     return reply.send({
-      connections: await listShopifyConnections(currentUser.sub, store.id)
+      connections: await listShopifyConnections({
+        ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
+        storeId: store.id,
+        userId: currentUser.sub
+      })
     });
   });
 
@@ -777,6 +795,10 @@ export async function merchStoreRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: "Bad Request", message: "Shopify OAuth can only be started for Shopify merch stores." });
     }
 
+    if (!store.tenantId) {
+      return reply.code(409).send({ error: "Conflict", message: "Shopify OAuth requires a canonical tenant-bound store." });
+    }
+
     let start: ReturnType<typeof buildShopifyOAuthStart>;
 
     try {
@@ -786,6 +808,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
         scopes: input.scopes,
         shopDomain: input.shopDomain,
         storeId: store.id,
+        tenantId: store.tenantId,
         userId: currentUser.sub
       });
     } catch (error) {
@@ -805,8 +828,11 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     const continuation = input.continueAfterApproval
       ? await createShopifyOAuthContinuation({
+        ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
         authorizationVersion: currentUser.sessionVersion,
+        businessId: store.businessId,
         expiresAt: new Date(start.stateExpiresAt),
+        idempotencyKey: shopifyIdempotencyKey(request, `shopify-oauth:${start.stateNonce}:continuation`),
         payload: {
           connectorApproval: input.connectorApproval,
           countryCode: input.countryCode,
@@ -852,6 +878,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     if (continuation) {
       await attachShopifyOAuthContinuationAudit({
+        ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
         auditLogId: auditLog.id,
         continuationId: continuation.id
       });
@@ -914,16 +941,15 @@ export async function merchStoreRoutes(app: FastifyInstance) {
       });
     }
 
-    const store = await prisma.clientMerchStore.findFirst({
-      include: {
-        products: {
-          orderBy: { updatedAt: "desc" }
-        }
-      },
-      where: {
-        id: state.storeId,
-        userId: state.userId
-      }
+    const callbackPrincipal = {
+      authSubject: state.userId,
+      requestId: request.id,
+      tenantId: state.tenantId,
+      userId: state.userId
+    } as const;
+    const store = await resolvePhase202ShopifyOAuthCallbackStore({
+      ...callbackPrincipal,
+      storeId: state.storeId
     });
 
     if (!store) {
@@ -947,13 +973,14 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
     if (verification.status !== "verified") {
       const continuation = await getPendingShopifyOAuthContinuation({
+        ...shopifyHumanPrincipal(state.userId, store, request.id),
         shopDomain,
         stateNonce: state.nonce,
         storeId: store.id,
         userId: state.userId
       });
       const message = verification.errors[0] ?? "Shopify OAuth token could not be verified.";
-      const auditLog = await recordAuditLog({
+      const auditLog = await recordPhase202ShopifyOAuthCallbackAudit(callbackPrincipal, {
         action: "shopify.oauth.verification_failed",
         actorUserId: state.userId,
         metadata: {
@@ -983,7 +1010,9 @@ export async function merchStoreRoutes(app: FastifyInstance) {
 
       if (continuation) {
         await markShopifyOAuthContinuationFailed({
+          ...shopifyHumanPrincipal(state.userId, store, request.id),
           continuationId: continuation.id,
+          idempotencyKey: `shopify-oauth:${state.nonce}:verification-failed`,
           resultAuditLogId: auditLog.id,
           resultSummary: message
         });
@@ -1005,14 +1034,17 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     }
 
     const connection = await upsertShopifyConnection({
+      ...shopifyHumanPrincipal(state.userId, store, request.id),
       adminToken: token.accessToken,
       apiVersion: undefined,
+      businessId: store.businessId,
+      idempotencyKey: `shopify-oauth:${state.nonce}:connection`,
       scopes: verification.grantedScopes.length > 0 ? verification.grantedScopes : scopes,
       shopDomain: verification.shopDomain ?? shopDomain,
       storeId: store.id,
       userId: state.userId
     });
-    const auditLog = await recordAuditLog({
+    const auditLog = await recordPhase202ShopifyOAuthCallbackAudit(callbackPrincipal, {
       action: "shopify.oauth.connected",
       actorUserId: state.userId,
       metadata: {
@@ -1039,6 +1071,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
       targetType: "shopify_connection"
     });
     const continuation = await getPendingShopifyOAuthContinuation({
+      ...shopifyHumanPrincipal(state.userId, store, request.id),
       shopDomain: connection.shopDomain,
       stateNonce: state.nonce,
       storeId: store.id,
@@ -1058,7 +1091,11 @@ export async function merchStoreRoutes(app: FastifyInstance) {
           connectorApproval: continuation.payload.connectorApproval,
           connections: [publicShopifyConnection(connection)],
           countryCode: continuation.payload.countryCode,
-          credentials: credentialsFromShopifyConnection(connection),
+          credentials: await getShopifyConnectionCredentials({
+            ...shopifyHumanPrincipal(state.userId, store, request.id),
+            storeId: store.id,
+            userId: state.userId
+          }),
           dryRun: continuation.payload.dryRun,
           liveUnlockPhrase: continuation.payload.liveUnlockPhrase,
           options: {
@@ -1074,7 +1111,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
           storeId: store.id,
           storeType: continuation.payload.storeType
         });
-        const continuationAuditLog = await recordAuditLog({
+        const continuationAuditLog = await recordPhase202ShopifyOAuthCallbackAudit(callbackPrincipal, {
           action: continuationPlan.providerContacted
             ? "shopify.oauth.continuation.executed_draft_storefront"
             : "shopify.oauth.continuation.completed",
@@ -1097,7 +1134,9 @@ export async function merchStoreRoutes(app: FastifyInstance) {
         });
 
         await markShopifyOAuthContinuationConsumed({
+          ...shopifyHumanPrincipal(state.userId, store, request.id),
           continuationId: continuation.id,
+          idempotencyKey: `shopify-oauth:${state.nonce}:continuation:consumed`,
           resultAuditLogId: continuationAuditLog.id,
           resultSummary: continuationPlan.summary
         });
@@ -1106,7 +1145,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
         continuationRunStatus = continuationPlan.status;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Shopify OAuth continuation failed.";
-        const continuationAuditLog = await recordAuditLog({
+        const continuationAuditLog = await recordPhase202ShopifyOAuthCallbackAudit(callbackPrincipal, {
           action: "shopify.oauth.continuation.failed",
           actorUserId: state.userId,
           metadata: {
@@ -1122,7 +1161,9 @@ export async function merchStoreRoutes(app: FastifyInstance) {
         });
 
         await markShopifyOAuthContinuationFailed({
+          ...shopifyHumanPrincipal(state.userId, store, request.id),
           continuationId: continuation.id,
+          idempotencyKey: `shopify-oauth:${state.nonce}:continuation:failed`,
           resultAuditLogId: continuationAuditLog.id,
           resultSummary: message
         });
@@ -1185,8 +1226,11 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     }
 
     const connection = await upsertShopifyConnection({
+      ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
       adminToken: input.adminToken,
       apiVersion: input.apiVersion,
+      businessId: store.businessId,
+      idempotencyKey: shopifyIdempotencyKey(request, "shopify-connection"),
       scopes: verification.grantedScopes.length > 0 ? verification.grantedScopes : input.scopes,
       shopDomain: verification.shopDomain ?? input.shopDomain,
       storeId: store.id,
@@ -1245,7 +1289,11 @@ export async function merchStoreRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
     }
 
-    const connections = await listShopifyConnections(currentUser.sub, store.id);
+    const connections = await listShopifyConnections({
+      ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
+      storeId: store.id,
+      userId: currentUser.sub
+    });
     const plan = buildShopifyStoreProvisioningPlan({
       connections,
       countryCode: input.countryCode,
@@ -1310,7 +1358,11 @@ export async function merchStoreRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: "Bad Request", message: "Shopify store creation handoff jobs can only be queued for Shopify merch stores." });
     }
 
-    const connections = await listShopifyConnections(currentUser.sub, store.id);
+    const connections = await listShopifyConnections({
+      ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
+      storeId: store.id,
+      userId: currentUser.sub
+    });
     const plan = buildShopifyStoreProvisioningPlan({
       connections,
       countryCode: input.countryCode,
@@ -1414,6 +1466,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     try {
       const result = await captureShopifyStoreCreationForStore({
         authorizationVersion: currentUser.sessionVersion,
+        principal: shopifyHumanPrincipal(currentUser.sub, store, request.id),
         store,
         userId: currentUser.sub,
         value: input
@@ -1450,8 +1503,16 @@ export async function merchStoreRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not Found", message: "Merch store was not found." });
     }
 
-    const connections = await listShopifyConnections(currentUser.sub, store.id);
-    const credentials = await getShopifyConnectionCredentials(currentUser.sub, store.id);
+    const connections = await listShopifyConnections({
+      ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
+      storeId: store.id,
+      userId: currentUser.sub
+    });
+    const credentials = await getShopifyConnectionCredentials({
+      ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
+      storeId: store.id,
+      userId: currentUser.sub
+    });
     const plan = await executeShopifyAutonomyRun({
       connectorApproval: input.connectorApproval,
       connections,
@@ -1564,7 +1625,11 @@ export async function merchStoreRoutes(app: FastifyInstance) {
       ...createdProducts,
       ...store.products
     ].map((product) => firstLiveRevenueLoopProductSnapshot(product));
-    const credentials = await getShopifyConnectionCredentials(currentUser.sub, store.id);
+    const credentials = await getShopifyConnectionCredentials({
+      ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
+      storeId: store.id,
+      userId: currentUser.sub
+    });
     const plan = await executeShopifyFirstLiveRevenueLoop({
       connectorApproval: input.connectorApproval,
       createdInternalProducts: createdProducts.length,
@@ -1743,7 +1808,11 @@ export async function merchStoreRoutes(app: FastifyInstance) {
     }
 
     const products = store.products.map((product) => merchProductSnapshot(product));
-    const credentials = await getShopifyConnectionCredentials(currentUser.sub, store.id);
+    const credentials = await getShopifyConnectionCredentials({
+      ...shopifyHumanPrincipal(currentUser.sub, store, request.id),
+      storeId: store.id,
+      userId: currentUser.sub
+    });
     const plan = await executeShopifyStorefrontDraft({
       connectorApproval: input.connectorApproval,
       credentials: credentials ?? undefined,
@@ -2014,6 +2083,7 @@ export async function merchStoreRoutes(app: FastifyInstance) {
         shopifyStoreCreationCapture = await captureShopifyStoreCreationForStore({
           authorizationVersion: currentUser.sessionVersion,
           approvalPacketId: existing.id,
+          principal: shopifyHumanPrincipal(currentUser.sub, store, request.id),
           reviewStatus: status,
           store,
           userId: currentUser.sub,

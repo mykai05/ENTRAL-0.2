@@ -1,0 +1,25 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "failure-1785669916264",
+  "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
+  "phase": 202,
+  "outcome": "FAILED",
+  "commit_sha": null,
+  "changed_files": [],
+  "tests": [
+    {
+      "command": "Governor TaskPacket-to-lease scope reconciliation",
+      "status": "FAILED",
+      "reason": "The TaskPacket was validly broadened for discovered Phase 202 privacy, worker, and role-boundary work, but the active lease retained the earlier narrower scope; release the stale scope and reclaim the same packet without discarding accepted work."
+    }
+  ],
+  "unresolved_failures": [
+    "The TaskPacket was validly broadened for discovered Phase 202 privacy, worker, and role-boundary work, but the active lease retained the earlier narrower scope; release the stale scope and reclaim the same packet without discarding accepted work."
+  ],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED"
+  },
+  "result_fingerprint": "42282ce223c8befdd582a00a71855e65a20610b5798abe72b30ad1dd7f6fc282",
+  "completed_at": "2026-08-02T11:25:16.265Z"
+}

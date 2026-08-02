@@ -9,7 +9,12 @@ vi.mock("../src/db.js", () => ({
     user: {
       findUnique: mocks.userFindUnique
     }
-  }
+  },
+  withPersonalSession: vi.fn(async (database, _context, operation) => operation(database, {
+    actorId: "123e4567-e89b-42d3-a456-426614174200",
+    appUserId: "223e4567-e89b-42d3-a456-426614174200",
+    authSubject: "user-1"
+  }))
 }));
 
 describe("durable deferred-operation authorization", () => {

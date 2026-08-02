@@ -5,10 +5,22 @@ import {
   assertSafeContainerIdentity,
   normalizeGlobalsForPortableRestore,
   phase195BaselineMigrationNames,
+  phase195RecoveryGrantFiles,
   receiptContainsSecretMaterial,
   recoveryTargets,
   validateRecoveryRunId
 } from "./phase195-recovery-gate.mjs";
+
+test("Phase 195 recovery keeps its historical grant boundary when later grants exist", () => {
+  assert.deepEqual(phase195RecoveryGrantFiles, [
+    "prisma/security/046_roles_and_grants.sql",
+    "prisma/security/047_phase_195_roles_and_grants.sql"
+  ]);
+  assert.equal(
+    phase195RecoveryGrantFiles.includes("prisma/security/048_phase_202_roles_and_grants.sql"),
+    false
+  );
+});
 
 test("Phase 195 recovery keeps its historical migration boundary when later governed migrations exist", () => {
   const before = "20260725000000_phase_190_baseline";

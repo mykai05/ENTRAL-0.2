@@ -97,34 +97,26 @@ describe.skipIf(!integrationEnabled)("Phase 195 canonical PostgreSQL persistence
         ["migrate", "deploy", "--schema", "prisma/schema.prisma"],
         "Phase 195 disposable PostgreSQL migration"
       );
-      runPrisma(
-        prismaCli,
-        repositoryRoot,
-        databaseUrl.toString(),
-        [
-          "db",
-          "execute",
-          "--file",
-          "prisma/security/046_roles_and_grants.sql",
-          "--schema",
-          "prisma/schema.prisma"
-        ],
-        "Phase 195 base role and grant deployment"
-      );
-      runPrisma(
-        prismaCli,
-        repositoryRoot,
-        databaseUrl.toString(),
-        [
-          "db",
-          "execute",
-          "--file",
-          "prisma/security/047_phase_195_roles_and_grants.sql",
-          "--schema",
-          "prisma/schema.prisma"
-        ],
-        "Phase 195 least-privilege role and grant deployment"
-      );
+      for (const roleFile of [
+        "prisma/security/046_roles_and_grants.sql",
+        "prisma/security/047_phase_195_roles_and_grants.sql",
+        "prisma/security/048_phase_202_roles_and_grants.sql"
+      ]) {
+        runPrisma(
+          prismaCli,
+          repositoryRoot,
+          databaseUrl.toString(),
+          [
+            "db",
+            "execute",
+            "--file",
+            roleFile,
+            "--schema",
+            "prisma/schema.prisma"
+          ],
+          `Phase 195 current role and grant deployment: ${roleFile}`
+        );
+      }
 
       for (const [role, password, inheritedRole] of [
         [apiRole, apiPassword, "entral_api"],
@@ -158,6 +150,7 @@ describe.skipIf(!integrationEnabled)("Phase 195 canonical PostgreSQL persistence
       });
 
       const humanAppUserId = randomUUID();
+      const humanActorId = randomUUID();
       const workerAppUserId = randomUUID();
       const verifierAppUserId = randomUUID();
       const humanSubject = `phase195-human-${suffix}`;
@@ -172,7 +165,7 @@ describe.skipIf(!integrationEnabled)("Phase 195 canonical PostgreSQL persistence
           role: "ADMIN"
         }
       });
-      await owner.team.create({
+      const organization = await owner.team.create({
         data: {
           id: organizationId,
           memberAccessEnabled: true,
@@ -180,8 +173,30 @@ describe.skipIf(!integrationEnabled)("Phase 195 canonical PostgreSQL persistence
           slug: `phase195-${suffix}`
         }
       });
+      await owner.identityActor.create({
+        data: { actorType: "HUMAN", humanUserId: humanSubject, id: humanActorId }
+      });
+      await owner.tenantBoundary.create({
+        data: {
+          dataResidency: organization.dataResidency,
+          environment: organization.environment,
+          id: organization.tenantId,
+          legacyTeamId: organization.id,
+          organizationId: organization.organizationId
+        }
+      });
+      await owner.tenantActorAssignment.create({
+        data: {
+          actorId: humanActorId,
+          authorityDomains: ["IDENTITY", "TENANCY", "OPERATIONS"],
+          organizationId: organization.organizationId,
+          role: "OWNER",
+          tenantId: organization.tenantId
+        }
+      });
       await owner.teamMember.create({
         data: {
+          role: "OWNER",
           teamId: organizationId,
           userId: humanSubject
         }
@@ -235,6 +250,9 @@ describe.skipIf(!integrationEnabled)("Phase 195 canonical PostgreSQL persistence
 
       const entralId = randomUUID();
       const marshalId = randomUUID();
+      const generalId = randomUUID();
+      const commanderId = randomUUID();
+      const businessId = randomUUID();
       await owner.$executeRaw`
         INSERT INTO entral.entities (
           id, stable_code, role, name, status
@@ -249,13 +267,63 @@ describe.skipIf(!integrationEnabled)("Phase 195 canonical PostgreSQL persistence
       await owner.$executeRaw`
         INSERT INTO entral.entities (
           id, stable_code, role, name, parent_id, status
+        ) VALUES
+          (
+            ${marshalId}::uuid,
+            'M-P195',
+            'MARSHAL',
+            'Phase 195 Marshal',
+            ${entralId}::uuid,
+            'ACTIVE'
+          ),
+          (
+            ${generalId}::uuid,
+            'G-P195',
+            'GENERAL',
+            'Phase 195 General',
+            ${marshalId}::uuid,
+            'ACTIVE'
+          ),
+          (
+            ${commanderId}::uuid,
+            'C-P195',
+            'COMMANDER',
+            'Phase 195 Commander',
+            ${generalId}::uuid,
+            'ACTIVE'
+          )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.businesses (
+          id, stable_code, name, commander_id, general_id, marshal_id, status
         ) VALUES (
+          ${businessId}::uuid,
+          'B-P195',
+          'Phase 195 Business',
+          ${commanderId}::uuid,
+          ${generalId}::uuid,
           ${marshalId}::uuid,
-          'M-P195',
-          'MARSHAL',
-          'Phase 195 Marshal',
-          ${entralId}::uuid,
-          'ACTIVE'
+          'OPERATING'
+        )
+      `;
+      await owner.businessBoundary.create({
+        data: {
+          canonicalBusinessId: businessId,
+          dataResidency: organization.dataResidency,
+          environment: organization.environment,
+          organizationId: organization.organizationId,
+          stableCode: `phase195-business-${suffix}`,
+          tenantId: organization.tenantId
+        }
+      });
+      await owner.$executeRaw`
+        INSERT INTO entral.scope_grants (
+          user_id, scope_type, scope_id, permissions
+        ) VALUES (
+          ${humanAppUserId}::uuid,
+          'BUSINESS',
+          ${businessId}::uuid,
+          ARRAY['read', 'manage', 'read_events']::text[]
         )
       `;
 
@@ -263,7 +331,9 @@ describe.skipIf(!integrationEnabled)("Phase 195 canonical PostgreSQL persistence
       const session = {
         actionReason: "Verify Phase 195 graph preference persistence.",
         authSubject: humanSubject,
-        correlationId: randomUUID()
+        correlationId: randomUUID(),
+        organizationId: organization.organizationId,
+        tenantId: organization.tenantId
       } as const;
       const defaults = await preferencesService.get(organizationId, session);
       expect(defaults).toMatchObject({
@@ -538,6 +608,7 @@ describe.skipIf(!integrationEnabled)("Phase 195 canonical PostgreSQL persistence
           automation_worker: true,
           autonomy_scheduler: true,
           canonical_outbox_dispatcher: true,
+          membership_notification_dispatcher: true,
           process: true
         },
         database: worker,

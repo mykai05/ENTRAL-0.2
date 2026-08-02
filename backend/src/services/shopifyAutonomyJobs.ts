@@ -1,6 +1,7 @@
 import type { AutomationJob } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
+import { env } from "../env.js";
 import { assertDurableAuthorization } from "./durableAuthorization.js";
 import { recordAuditLog } from "./audit.js";
 import type { GrowthApprovalAction, GrowthApprovalPacket } from "./growthPlans.js";
@@ -526,6 +527,7 @@ type ClientMerchStoreWithProducts = {
   audience: string;
   brandStyle: string;
   businessName: string;
+  businessId: string | null;
   clientName: string;
   email: string;
   estimatedProfit: { toString(): string };
@@ -554,6 +556,7 @@ type ClientMerchStoreWithProducts = {
   }>;
   revenue: { toString(): string };
   storePlatform: keyof typeof storePlatformFromDb;
+  tenantId: string | null;
 };
 
 function decimalToNumber(value: { toString(): string }) {
@@ -677,8 +680,25 @@ export async function runShopifyAutonomyResumeJob(
     throw new Error("Shopify autonomy resume store was not found.");
   }
 
-  const connections = await listShopifyConnections(job.userId, store.id);
-  const credentials = await getShopifyConnectionCredentials(job.userId, store.id);
+  if (!store.tenantId || !env.CANONICAL_OUTBOX_SERVICE_APP_USER_ID) {
+    throw new Error("Shopify autonomy worker requires a canonical tenant and configured service principal.");
+  }
+  const workerPrincipal = {
+    requestId: `shopify-autonomy-job:${job.id}`,
+    serviceAppUserId: env.CANONICAL_OUTBOX_SERVICE_APP_USER_ID,
+    tenantId: store.tenantId
+  } as const;
+
+  const connections = await listShopifyConnections({
+    ...workerPrincipal,
+    storeId: store.id,
+    userId: job.userId
+  });
+  const credentials = await getShopifyConnectionCredentials({
+    ...workerPrincipal,
+    storeId: store.id,
+    userId: job.userId
+  });
   await logStep(credentials ? "Shopify connection available; running autonomy plan." : "No Shopify credentials found; building blocked autonomy plan.", credentials ? "info" : "warn");
 
   const plan = await executeShopifyAutonomyRun({

@@ -17,6 +17,7 @@ export type WorkerReadinessComponents = {
   agent_orchestrator: boolean;
   autonomy_scheduler: boolean;
   canonical_outbox_dispatcher: boolean;
+  membership_notification_dispatcher: boolean;
 };
 
 const requiredWorkerReadinessComponents = [
@@ -24,7 +25,8 @@ const requiredWorkerReadinessComponents = [
   "automation_worker",
   "agent_orchestrator",
   "autonomy_scheduler",
-  "canonical_outbox_dispatcher"
+  "canonical_outbox_dispatcher",
+  "membership_notification_dispatcher"
 ] as const satisfies readonly (keyof WorkerReadinessComponents)[];
 
 type StartWorkerReadinessOptions = {
@@ -63,7 +65,8 @@ function sanitizeComponents(value: unknown): WorkerReadinessComponents {
     automation_worker: candidate.automation_worker === true,
     agent_orchestrator: candidate.agent_orchestrator === true,
     autonomy_scheduler: candidate.autonomy_scheduler === true,
-    canonical_outbox_dispatcher: candidate.canonical_outbox_dispatcher === true
+    canonical_outbox_dispatcher: candidate.canonical_outbox_dispatcher === true,
+    membership_notification_dispatcher: candidate.membership_notification_dispatcher === true
   };
 }
 

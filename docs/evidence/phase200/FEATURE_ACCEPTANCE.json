@@ -2,7 +2,7 @@
   "contract_version": "1.0.0",
   "schema_version": 1,
   "phase": 200,
-  "status": "LOCAL_PASS_PRODUCTION_PENDING",
+  "status": "PRODUCTION_PASS",
   "task_packet_id": "P200-INTERACTION-LAYER-001",
   "prerequisite_release_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
   "rollback_release_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
@@ -24,25 +24,27 @@
     {"gate_id":"P200-F015-A","status":"LOCAL_PASS","source":["frontend/components/OnboardingTour.tsx","backend/src/services/interactionLayer.ts","frontend/lib/graph-view-state.ts"],"tests":["backend/tests/phase200TutorialPersistence.test.ts","frontend/tests/OnboardingTour.test.tsx"]},
     {"gate_id":"P200-F016-A","status":"LOCAL_PASS","source":["packages/contracts/src/interaction.ts","backend/src/services/interactionLayer.ts"],"tests":["scripts/phase200-interaction-gates.test.mjs"]},
     {"gate_id":"P200-F017-A","status":"LOCAL_PASS","source":["packages/contracts/src/interaction.ts","backend/src/routes/interactionLayer.ts","frontend/lib/interaction-layer.ts"],"tests":["packages/contracts/tests/interaction.test.mjs","backend/tests/phase200InteractionLayer.test.ts"]},
-    {"gate_id":"P200-F018-A","status":"LOCAL_PASS_PRODUCTION_READBACK_PENDING","source":["backend/src/routes/interactionLayer.ts","frontend/components/CanonicalMemberShell.tsx","frontend/components/CanonicalGraphWorkspace.tsx"],"tests":["backend/tests/phase200InteractionLayer.test.ts","e2e/entral.e2e.mjs"]}
+    {"gate_id":"P200-F018-A","status":"PRODUCTION_PASS","source":["backend/src/routes/interactionLayer.ts","frontend/components/CanonicalMemberShell.tsx","frontend/components/CanonicalGraphWorkspace.tsx"],"tests":["backend/tests/phase200InteractionLayer.test.ts","e2e/entral.e2e.mjs"]}
   ],
   "mobile_universe_acceptance": {
-    "status": "LOCAL_BROWSER_PASS",
+    "status": "PRODUCTION_BROWSER_PASS",
     "widths_css_px": [360,390,412,430],
     "portrait": "PASS",
     "landscape": "PASS",
     "desktop_side_by_side": "PASS",
     "authorized_projection_10000_entities": "PASS",
     "browser_fixture": "test-results/e2e/phase200-interaction-browser-fixture.json",
-    "production_evidence": false
+    "production_evidence": true,
+    "production_browser_receipt": "docs/evidence/phase200/PRODUCTION_BROWSER_RECEIPT.json",
+    "production_browser_receipt_sha256": "84de92b342ff110cba9bf9d9b7ad035a64cf54424667771eef27e8292dc75f2e"
   },
   "release_gates": {
-    "reconciled_with_current_main": "PENDING",
-    "protected_main_checks_pass": "PENDING",
-    "exact_main_sha_deployed": "PENDING",
-    "migrations_verified": "PENDING",
-    "authenticated_production_smoke_and_readback": "PENDING",
-    "release_manifest_recorded": "PENDING"
+    "reconciled_with_current_main": "PASSED",
+    "protected_main_checks_pass": "PASSED",
+    "exact_main_sha_deployed": "PASSED",
+    "migrations_verified": "PASSED",
+    "authenticated_production_smoke_and_readback": "PASSED",
+    "release_manifest_recorded": "PASSED"
   },
   "security_scan": "NOT_RUN_OWNER_PROHIBITED"
 }

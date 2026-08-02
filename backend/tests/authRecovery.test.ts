@@ -1,6 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hashAuthToken } from "../src/services/authTokens.js";
 
+function preAuthBinding(userId: string | null) {
+  return async (database: object, context: { email: string }, operation: (transaction: object, identity: { email: string; userId: string | null }) => unknown) => (
+    operation(database, { email: context.email.trim().toLowerCase(), userId })
+  );
+}
+
+async function recoveryBinding(
+  database: { $transaction?: (operation: (transaction: object) => unknown) => unknown },
+  _context: unknown,
+  operation: (transaction: object) => unknown
+) {
+  return database.$transaction ? database.$transaction(operation) : operation(database);
+}
+
 beforeEach(() => {
   vi.resetModules();
   process.env.NODE_ENV = "test";
@@ -35,7 +49,9 @@ describe("auth recovery workflows", () => {
         user: {
           findUnique: vi.fn(async () => user)
         }
-      }
+      },
+      withPreAuthEmailSession: vi.fn(preAuthBinding(user.id)),
+      withRecoveryTokenSession: vi.fn(recoveryBinding)
     }));
     vi.doMock("../src/services/audit.js", () => ({
       recordAuditLog: vi.fn(async () => undefined)
@@ -58,6 +74,65 @@ describe("auth recovery workflows", () => {
       to: user.email,
       token: expect.any(String)
     }));
+  });
+
+  it("allows only one concurrent claimant to verify an email token", async () => {
+    const rawToken = "concurrent-verification-token-that-is-long-enough-123";
+    const user = {
+      deletedAt: null,
+      email: "ada@example.com",
+      emailVerifiedAt: null,
+      id: "user_123",
+      name: "Ada Lovelace"
+    };
+    const verificationRecord = {
+      consumedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      flow: "member",
+      id: "verification_concurrent",
+      tokenHash: hashAuthToken(rawToken),
+      user,
+      userId: user.id
+    };
+    let claimed = false;
+    let transactionTail = Promise.resolve<unknown>(undefined);
+    const updateUser = vi.fn(async ({ data }) => ({ ...user, ...data }));
+    const tx = {
+      $executeRaw: vi.fn(async () => 1),
+      emailVerificationToken: {
+        findUnique: vi.fn(async () => verificationRecord),
+        updateMany: vi.fn(async () => {
+          if (claimed) return { count: 0 };
+          claimed = true;
+          return { count: 1 };
+        })
+      },
+      user: { update: updateUser }
+    };
+
+    vi.doMock("../src/db.js", () => ({
+      prisma: {
+        $transaction: (callback: (client: typeof tx) => unknown) => {
+          const result = transactionTail.then(() => callback(tx));
+          transactionTail = result.then(() => undefined, () => undefined);
+          return result;
+        },
+        emailVerificationToken: { findUnique: vi.fn(async () => verificationRecord) }
+      },
+      withPreAuthEmailSession: vi.fn(preAuthBinding(user.id)),
+      withRecoveryTokenSession: vi.fn(recoveryBinding)
+    }));
+    vi.doMock("../src/services/audit.js", () => ({ recordAuditLog: vi.fn(async () => undefined) }));
+
+    const { confirmEmailVerification } = await import("../src/services/authRecovery.js");
+    const results = await Promise.all([
+      confirmEmailVerification(rawToken),
+      confirmEmailVerification(rawToken)
+    ]);
+
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    expect(updateUser).toHaveBeenCalledTimes(1);
   });
 
   it("confirms password reset with a hashed single-use token", async () => {
@@ -91,11 +166,14 @@ describe("auth recovery workflows", () => {
       prisma: {
         $transaction: (callback: (tx: unknown) => unknown) => callback({
           $executeRaw: executeRaw,
-          passwordResetToken: { updateMany },
+          $queryRaw: vi.fn(async () => [{ revokedCount: 0 }]),
+          passwordResetToken: { findUnique, updateMany },
           user: { update: updateUser }
         }),
         passwordResetToken: { findUnique }
-      }
+      },
+      withPreAuthEmailSession: vi.fn(preAuthBinding(user.id)),
+      withRecoveryTokenSession: vi.fn(recoveryBinding)
     }));
     vi.doMock("../src/services/audit.js", () => ({
       recordAuditLog: vi.fn(async () => undefined)
@@ -141,7 +219,9 @@ describe("auth recovery workflows", () => {
             userId: "user_123"
           }))
         }
-      }
+      },
+      withPreAuthEmailSession: vi.fn(preAuthBinding("user_123")),
+      withRecoveryTokenSession: vi.fn(recoveryBinding)
     }));
     vi.doMock("../src/services/audit.js", () => ({
       recordAuditLog: vi.fn(async () => undefined)
@@ -176,7 +256,9 @@ describe("auth recovery workflows", () => {
     const updateUser = vi.fn(async () => ({ ...user, sessionVersion: user.sessionVersion + 1 }));
     const tx = {
       $executeRaw: vi.fn(async () => 1),
+      $queryRaw: vi.fn(async () => [{ revokedCount: 0 }]),
       passwordResetToken: {
+        findUnique: vi.fn(async () => resetRecord),
         updateMany: vi.fn(async ({ where }: { where: { id?: string } }) => {
           if (!where.id) return { count: 0 };
           if (claimed) return { count: 0 };
@@ -195,7 +277,9 @@ describe("auth recovery workflows", () => {
           return result;
         },
         passwordResetToken: { findUnique: vi.fn(async () => resetRecord) }
-      }
+      },
+      withPreAuthEmailSession: vi.fn(preAuthBinding(user.id)),
+      withRecoveryTokenSession: vi.fn(recoveryBinding)
     }));
     vi.doMock("../src/services/audit.js", () => ({ recordAuditLog: vi.fn(async () => undefined) }));
 

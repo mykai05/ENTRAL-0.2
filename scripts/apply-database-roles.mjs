@@ -8,7 +8,8 @@ const prismaCli = resolve(repoRoot, "node_modules/prisma/build/index.js");
 const schemaPath = resolve(repoRoot, "prisma/schema.prisma");
 const grantFiles = [
   "prisma/security/046_roles_and_grants.sql",
-  "prisma/security/047_phase_195_roles_and_grants.sql"
+  "prisma/security/047_phase_195_roles_and_grants.sql",
+  "prisma/security/048_phase_202_roles_and_grants.sql"
 ];
 
 const dollarQuotePattern = /^\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$/;

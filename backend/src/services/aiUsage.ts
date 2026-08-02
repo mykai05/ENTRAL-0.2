@@ -78,6 +78,8 @@ type RecordAiUsageInput = {
   userId: string;
 };
 
+type AiUsageDatabase = Prisma.TransactionClient | typeof prisma;
+
 export class AiUsageLimitError extends Error {
   statusCode = 429;
   summary: AiUsageSummary;
@@ -203,8 +205,8 @@ export function resolveAiUsageRequestId(fallbackRequestId: string, headerValue: 
   return candidate;
 }
 
-export async function getAiUsageSummary(userId: string, now = new Date()): Promise<AiUsageSummary> {
-  const { dailyUsedCents, monthlyUsedCents } = await usageSums(userId, now, prisma);
+export async function getAiUsageSummary(userId: string, now = new Date(), database: AiUsageDatabase = prisma): Promise<AiUsageSummary> {
+  const { dailyUsedCents, monthlyUsedCents } = await usageSums(userId, now, database);
   return usageSummary(dailyUsedCents, monthlyUsedCents);
 }
 
@@ -229,15 +231,21 @@ export async function assertAiUsageAllowed(userId: string, requestKind: AiUsageR
 }
 
 export async function reserveAiUsage(input: ReserveAiUsageInput): Promise<AiUsageReservation> {
+  return prisma.$transaction((transaction) => reserveAiUsageInTransaction(input, transaction));
+}
+
+export async function reserveAiUsageInTransaction(
+  input: ReserveAiUsageInput,
+  transaction: Prisma.TransactionClient
+): Promise<AiUsageReservation> {
   const requestId = input.requestId.trim();
   if (!requestId) {
     throw new AiUsageIdempotencyError("AI requests require a non-empty idempotency key.");
   }
 
-  return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))`;
+  await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))`;
 
-    const existing = await tx.aiUsageEvent.findUnique({
+    const existing = await transaction.aiUsageEvent.findUnique({
       where: {
         userId_requestId: {
           requestId,
@@ -253,7 +261,7 @@ export async function reserveAiUsage(input: ReserveAiUsageInput): Promise<AiUsag
     const provider = providerState();
     const estimatedCostCents = estimateAiCostCents(input.requestKind, provider.status === "Connected");
     const now = new Date();
-    const { dailyUsedCents, monthlyUsedCents } = await usageSums(input.userId, now, tx);
+    const { dailyUsedCents, monthlyUsedCents } = await usageSums(input.userId, now, transaction);
     const summary = usageSummary(dailyUsedCents, monthlyUsedCents, provider);
 
     if (
@@ -266,7 +274,7 @@ export async function reserveAiUsage(input: ReserveAiUsageInput): Promise<AiUsag
       throw new AiUsageLimitError(summary);
     }
 
-    const reservation = await tx.aiUsageEvent.create({
+    const reservation = await transaction.aiUsageEvent.create({
       data: {
         estimatedCostCents,
         metadataJson: input.metadata ? stringifySecureJson(input.metadata) : undefined,
@@ -280,7 +288,7 @@ export async function reserveAiUsage(input: ReserveAiUsageInput): Promise<AiUsag
       }
     });
 
-    return {
+  return {
       estimatedCostCents,
       id: reservation.id,
       provider,
@@ -289,13 +297,12 @@ export async function reserveAiUsage(input: ReserveAiUsageInput): Promise<AiUsag
       status: "reserved",
       summary,
       userId: input.userId
-    };
-  });
+  };
 }
 
-export async function settleAiUsageReservation(input: SettleAiUsageInput) {
+export async function settleAiUsageReservation(input: SettleAiUsageInput, database: AiUsageDatabase = prisma) {
   const now = new Date();
-  const update = await prisma.aiUsageEvent.updateMany({
+  const update = await database.aiUsageEvent.updateMany({
     data: {
       failedAt: null,
       metadataJson: input.metadata ? stringifySecureJson(input.metadata) : undefined,
@@ -314,7 +321,7 @@ export async function settleAiUsageReservation(input: SettleAiUsageInput) {
     }
   });
 
-  const event = await prisma.aiUsageEvent.findUnique({ where: { id: input.reservationId } });
+  const event = await database.aiUsageEvent.findUnique({ where: { id: input.reservationId } });
   if (update.count === 1 || (event?.status === "settled" && event.requestId === input.requestId && event.userId === input.userId)) {
     return event;
   }
@@ -322,9 +329,9 @@ export async function settleAiUsageReservation(input: SettleAiUsageInput) {
   throw new AiUsageReservationStateError();
 }
 
-export async function failAiUsageReservation(input: FailAiUsageInput) {
+export async function failAiUsageReservation(input: FailAiUsageInput, database: AiUsageDatabase = prisma) {
   const errorName = input.error instanceof Error ? input.error.name : "UnknownError";
-  await prisma.aiUsageEvent.updateMany({
+  await database.aiUsageEvent.updateMany({
     data: {
       failedAt: new Date(),
       metadataJson: stringifySecureJson({

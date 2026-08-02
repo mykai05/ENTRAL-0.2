@@ -1,0 +1,29 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P200-PROD-READBACK-e980c3df-9095-4664-8467-088116ead613",
+  "phase": 200,
+  "status": "PASSED",
+  "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "authenticated": true,
+  "auth_subject_sha256": "8ca0691af0667fbe14520e94aec89cde84002b79d6329a7bd0ac470562e70a72",
+  "organization_sha256": "28a50d52a7af184618a35736846da9acbdee598121a9e969bf64074d5dbd6ae1",
+  "observations": [
+    {"surface":"API_HEALTH","url":"https://entral-backend-production.up.railway.app/health","http_status":200,"duration_ms":160.889,"cache_control":null,"request_id_present":true,"body_sha256":"538b0c5552b3bdc3c4ba4236b519d5d98825617d6df3048d44a51b316c161a49","body_bytes":690},
+    {"surface":"API_TUTORIAL","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress","http_status":200,"duration_ms":125.742,"cache_control":"private, no-store","request_id_present":true,"body_sha256":"587e04d97d5eea7b048a3619df4965d4d2765f4ed925913fae571a3e78a173f5","body_bytes":472},
+    {"surface":"FRONTEND_TUTORIAL","url":"https://entral-0-2-frontend.vercel.app/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress","http_status":200,"duration_ms":204.299,"cache_control":"private, no-store","request_id_present":true,"body_sha256":"1fb401c30754f5e3964d8378c2a0bd81f9e80a058fa1ae5f492d6ce3d87cd87f","body_bytes":472},
+    {"surface":"API_BUSINESS_HEALTH","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/interaction/business-health?mode=EXECUTIVE","http_status":200,"duration_ms":136.244,"cache_control":"private, no-store","request_id_present":true,"body_sha256":"030c22cbf30caaff4705efae4808fcce9cd5cb501f38363e480e74c9148a2ce7","body_bytes":1151},
+    {"surface":"FRONTEND_BUSINESS_HEALTH","url":"https://entral-0-2-frontend.vercel.app/api/v1/member/organizations/{organizationId}/interaction/business-health?mode=EXECUTIVE","http_status":200,"duration_ms":230.466,"cache_control":"private, no-store","request_id_present":true,"body_sha256":"7cc28955c536d0dd661333df497cff84fc27ea642ade315717debb646631bc41","body_bytes":1151},
+    {"surface":"API_GRAPH","url":"https://entral-backend-production.up.railway.app/api/v1/member/organizations/{organizationId}/graph/projection","http_status":200,"duration_ms":218.31,"cache_control":"private, no-store","request_id_present":true,"body_sha256":"eaf22d81d368401a0bcbb8664b9d01c3ceb86eeca0c9754cf43e7e84b0e92132","body_bytes":117149},
+    {"surface":"FRONTEND_GRAPH","url":"https://entral-0-2-frontend.vercel.app/api/v1/member/organizations/{organizationId}/graph/projection","http_status":200,"duration_ms":272.747,"cache_control":"private, no-store","request_id_present":true,"body_sha256":"a69c5e124e28cc46839d14c2980c08974ffff50bd6dab130203e0ea3fcf3391c","body_bytes":117149},
+    {"surface":"FRONTEND_GRAPH_PAGE","url":"https://entral-0-2-frontend.vercel.app/member/graph","http_status":200,"duration_ms":372.99,"cache_control":"private, no-cache, no-store, max-age=0, must-revalidate","request_id_present":false,"body_sha256":"f0e22748c38b8e3c371b689583db070dcb5485207007396086fe4212f86b7b7c","body_bytes":23216}
+  ],
+  "tutorial": {"release_version":"phase-200","revision":3,"first_launch_seen":false,"completed_anchor_count":0,"current_anchor_id":null,"mode":"beginner","role_context":"OWNER","api_frontend_semantic_parity":true,"database_row_present":true,"database_revision":3,"mutation_receipt_count":2},
+  "business_health": {"identity":"ENTRAL","provider_independent":true,"release_version":"phase-200","mode":"EXECUTIVE","health_state":"UNKNOWN","health_score":null,"value_status":"UNAVAILABLE","confidence":"UNAVAILABLE","freshness":"CURRENT","evidence_count":1,"next_action_available":false,"api_frontend_semantic_parity":true},
+  "graph": {"authority_source":"canonical_hierarchy","projection_version":398,"authorized_entities":132,"authorized_edges":131,"event_sequence":398,"api_frontend_semantic_parity":true},
+  "worker": {"ready":true,"status":"READY","evidence_source":"DURABLE_HEARTBEAT","queue_failed":0,"queue_dead_letter":0,"published_last_24h":178},
+  "migration": {"name":"20260802023000_phase_200_interaction_layer","status":"VERIFIED","production_schema_status":"UP_TO_DATE","directory_count":43,"applied":43,"failed":0,"rolled_back":0,"pending":0,"checksum_sha256":"54078b37683128429c88e69e7f0570c263eeb9bd48de2257ea801bb54eeac8cc","finished_at":"2026-08-02T06:37:27.480Z","applied_steps":1,"readback":"Production Prisma migration status and an independent direct _prisma_migrations query both report 43 applied migrations, zero failed, zero rolled back, and zero pending migrations.","readback_sha256":"4a799598b1d3f28ef5a941d6ff72d4eeae81bd042328cbccf2bc1bcbb35a01b9"},
+  "blockers": [],
+  "checked_at": "2026-08-02T07:17:13.609Z",
+  "receipt_sha256": "853e11f1646f917f72a0ac44f5e26f1546dba5d1a4ed9edaaf006fd9711f30cf"
+}

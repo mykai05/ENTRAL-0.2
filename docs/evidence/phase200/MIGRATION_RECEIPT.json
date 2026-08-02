@@ -1,0 +1,41 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P200-MIGRATION-20260802",
+  "phase": 200,
+  "accepted_git_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "migration": "20260802023000_phase_200_interaction_layer",
+  "migration_sql_sha256": "54078b37683128429c88e69e7f0570c263eeb9bd48de2257ea801bb54eeac8cc",
+  "preflight": {
+    "private_database_route": "FAILED_CLOSED_BEFORE_DATABASE_WRITE",
+    "reason": "The one-off runner could not resolve the Railway private hostname outside the service network.",
+    "production_change_from_failed_attempt": false
+  },
+  "apply": {
+    "command": "pnpm prisma:deploy against Railway production DATABASE_PUBLIC_URL supplied only in-process",
+    "status": "PASSED",
+    "migrations_found": 43,
+    "migration_applied": "20260802023000_phase_200_interaction_layer",
+    "finished_at": "2026-08-02T06:37:27.480Z",
+    "applied_steps": 1
+  },
+  "independent_fresh_audit": {
+    "commands": [
+      "pnpm prisma migrate status against a fresh production connection",
+      "direct read-only query of production _prisma_migrations"
+    ],
+    "status": "PASSED",
+    "migration_directories": 43,
+    "applied": 43,
+    "failed": 0,
+    "rolled_back": 0,
+    "pending": 0,
+    "latest_migration": "20260802023000_phase_200_interaction_layer",
+    "database_checksum_sha256": "54078b37683128429c88e69e7f0570c263eeb9bd48de2257ea801bb54eeac8cc",
+    "checked_at": "2026-08-02T07:17:13.609Z"
+  },
+  "production_schema_status": "UP_TO_DATE",
+  "status": "VERIFIED",
+  "readback_sha256": "4a799598b1d3f28ef5a941d6ff72d4eeae81bd042328cbccf2bc1bcbb35a01b9",
+  "receipt_sha256": "c5ea800bcdecc3e5fadd90fad69fcb63167baee4ba8d0c3d07e6f3d591d26f76"
+}

@@ -1,0 +1,25 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "failure-1785673620243",
+  "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
+  "phase": 202,
+  "outcome": "FAILED",
+  "commit_sha": null,
+  "changed_files": [],
+  "tests": [
+    {
+      "command": "P202-F019 model-tool context scope reconciliation",
+      "status": "FAILED",
+      "reason": "P202-F019 revealed that tenant-bound model/tool context must persist and reconcile AI usage through backend/src/services/aiUsage.ts, which was outside the previously claimed path list; amend the same bounded Phase 202 TaskPacket and reclaim it without discarding accepted work."
+    }
+  ],
+  "unresolved_failures": [
+    "P202-F019 revealed that tenant-bound model/tool context must persist and reconcile AI usage through backend/src/services/aiUsage.ts, which was outside the previously claimed path list; amend the same bounded Phase 202 TaskPacket and reclaim it without discarding accepted work."
+  ],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED"
+  },
+  "result_fingerprint": "f65916017597fe0faa47788e8a6daedee5a35195aa7536b82bfbc8477be4804e",
+  "completed_at": "2026-08-02T12:27:00.244Z"
+}

@@ -1,0 +1,54 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 202,
+  "title": "Identity, Tenancy, Sessions, Authority, Secret Broker, and Support Access",
+  "review_policy": "CONDITIONAL",
+  "objective": "Make organization, tenant, business, Human/service/agent identity, authority, sessions, and secrets first-class before broad autonomy or customer expansion.",
+  "feature_ids": [
+    "P202-F001", "P202-F002", "P202-F003", "P202-F004", "P202-F005",
+    "P202-F006", "P202-F007", "P202-F008", "P202-F009", "P202-F010",
+    "P202-F011", "P202-F012", "P202-F013", "P202-F014", "P202-F015",
+    "P202-F016", "P202-F017", "P202-F018", "P202-F019", "P202-F020"
+  ],
+  "acceptance_gate_ids": [
+    "P202-F001-A", "P202-F002-A", "P202-F003-A", "P202-F004-A", "P202-F005-A",
+    "P202-F006-A", "P202-F007-A", "P202-F008-A", "P202-F009-A", "P202-F010-A",
+    "P202-F011-A", "P202-F012-A", "P202-F013-A", "P202-F014-A", "P202-F015-A",
+    "P202-F016-A", "P202-F017-A", "P202-F018-A", "P202-F019-A", "P202-F020-A"
+  ],
+  "ownership_authority_contract": {
+    "stable_organization_tenant_business_environment_residency_boundaries": true,
+    "human_service_agent_identity_types_non_confusable": true,
+    "customer_record_provenance_required_or_classified_not_applicable": true,
+    "rbac_abac_and_versioned_autonomy_envelope": true,
+    "durable_rotating_server_side_sessions": true,
+    "mfa_recovery_and_step_up": true,
+    "idempotent_membership_lifecycle_with_notification_evidence": true,
+    "fail_closed_envelope_encrypted_secret_broker": true,
+    "expiring_scoped_visible_support_access": true,
+    "tenant_database_isolation_and_cross_surface_denial": true,
+    "legacy_ownership_apply_then_independent_audit": true,
+    "later_customer_release_blocked_on_ambiguous_ownership_or_plaintext_credentials": true
+  },
+  "release_requirements": [
+    "RECONCILED_WITH_CURRENT_MAIN",
+    "PROTECTED_MAIN_CHECKS_PASS",
+    "EXACT_MAIN_SHA_DEPLOYED_TO_FRONTEND_API_AND_WORKER",
+    "MIGRATIONS_AND_DATABASE_ROLES_VERIFIED",
+    "OWNERSHIP_APPLY_AND_INDEPENDENT_AUDIT_RECEIPTS_RECORDED",
+    "CREDENTIAL_APPLY_AND_INDEPENDENT_AUDIT_RECEIPTS_RECORDED",
+    "AUTHENTICATED_PRODUCTION_SMOKE_AND_STATE_READBACK",
+    "PHASE_202_RELEASE_MANIFEST_RECORDED",
+    "BOUNDED_ROLLBACK_POINT_RECORDED"
+  ],
+  "out_of_scope": [
+    "PHASE_203_OR_LATER_IMPLEMENTATION",
+    "CUSTOM_IDENTITY_PROVIDER",
+    "PHASE_250_FULL_CUSTOMER_ORGANIZATION_ADMINISTRATION",
+    "PHASE_480_ENTERPRISE_SSO_OR_SCIM",
+    "MOCK_SAMPLE_PLACEHOLDER_FAKE_METRIC_NO_OP_OR_PRODUCTION_FALLBACK",
+    "UNRELATED_REFACTOR",
+    "PRODUCTION_SECURITY_SCAN"
+  ]
+}

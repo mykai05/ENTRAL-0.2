@@ -4,6 +4,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountPrivacyControls } from "../components/AccountPrivacyControls";
+import { ApiError } from "../lib/api";
 
 const mocks = vi.hoisted(() => ({
   apiFetch: vi.fn()
@@ -30,6 +31,7 @@ describe("AccountPrivacyControls", () => {
       value: vi.fn()
     });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("123e4567-e89b-42d3-a456-426614174202");
   });
 
   afterEach(() => {
@@ -73,6 +75,7 @@ describe("AccountPrivacyControls", () => {
     await waitFor(() => {
       expect(mocks.apiFetch).toHaveBeenCalledWith("/account", {
         method: "DELETE",
+        headers: { "idempotency-key": "123e4567-e89b-42d3-a456-426614174202" },
         json: {
           confirmation: "DELETE MY ACCOUNT",
           password: "secure-password"
@@ -80,5 +83,19 @@ describe("AccountPrivacyControls", () => {
       });
     });
     expect(onDeleted).toHaveBeenCalled();
+  });
+
+  it("explains retained tenant evidence and renders the ownership-transfer blocker", async () => {
+    mocks.apiFetch.mockRejectedValueOnce(new ApiError(409, "Transfer ownership.", {
+      reason_code: "LAST_ACTIVE_OWNER_REQUIRED"
+    }));
+    render(<AccountPrivacyControls />);
+    expect(screen.getByText(/Tenant records, creator provenance, and required security evidence are retained/i)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/current password/i), "secure-password");
+    await userEvent.type(screen.getByLabelText(/confirmation phrase/i), "DELETE MY ACCOUNT");
+    await userEvent.click(screen.getByRole("button", { name: /^delete account$/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Transfer ownership to another active owner before deidentifying this account."
+    );
   });
 });

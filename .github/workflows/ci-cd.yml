@@ -40,6 +40,7 @@ jobs:
           node-version: 20.19.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:generate
       - name: Audit production dependencies for critical vulnerabilities
         run: pnpm audit --prod --audit-level critical
       - name: Report high dependency audit findings
@@ -61,7 +62,10 @@ jobs:
         run: pnpm test:phase198
       - name: Verify Phase 199 baseline candidate, fail-closed secrets, and review block
         run: pnpm test:phase199
-      - run: pnpm prisma:generate
+      - name: Verify Phase 200 canonical interaction layer
+        run: pnpm test:phase200
+      - name: Verify Phase 202 identity, tenancy, session, secret, and support boundaries
+        run: pnpm test:phase202
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
       - name: Verify Phase 195 runtime safety and graph observability routes
@@ -82,6 +86,17 @@ jobs:
           tests/phase170CanonicalPortfolioPostgres.integration.test.ts
           tests/phase190EntityLifecyclePostgres.integration.test.ts
           tests/phase195CanonicalPersistencePostgres.integration.test.ts
+      - name: Verify Phase 202 PostgreSQL tenant and worker boundaries
+        env:
+          DATA_ENCRYPTION_KEY: phase202-ci-integration-encryption-key
+          DATA_ENCRYPTION_KEY_VERSION: phase202-ci
+          RUN_POSTGRES_INTEGRATION: "1"
+          SECRET_BROKER_ENVIRONMENT: DEVELOPMENT
+          TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
+        run: >-
+          pnpm --filter @entral/backend exec vitest run
+          tests/phase202IdentityTenancyPostgres.integration.test.ts
+          tests/phase202TenantWorker.integration.test.ts
       - name: Verify Phase 195 backup, restore, forward recovery, and restart
         env:
           PHASE195_RECOVERY_GATE_CONFIRM: DISPOSABLE_ONLY
@@ -142,6 +157,16 @@ jobs:
             .entral/governor/improvements/cycles/**
             .entral/governor/improvements/amendments/**
             .entral/governor/improvements/outcomes/**
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain Phase 202 identity and tenancy evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-202-identity-tenancy-evidence
+          path: |
+            test-results/phase202/**
+            docs/evidence/phase202/**
           if-no-files-found: warn
           retention-days: 90
       - run: pnpm build

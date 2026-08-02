@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const emailSchema = z.string().trim().email().transform((value) => value.toLowerCase());
 const authFlowSchema = z.enum(["internal", "member"]).default("internal");
+const loginFlowSchema = z.enum(["internal", "member", "support"]).default("internal");
 
 const canonicalMemberPathnames = new Set([
   "/dashboard",
@@ -54,13 +55,38 @@ export const signupSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: emailSchema,
   password: z.string().min(8).max(128),
+  invitationToken: z.string().trim().min(32).max(256).optional(),
   next: memberReturnPathSchema.optional()
 });
 
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1).max(128),
-  flow: authFlowSchema
+  flow: loginFlowSchema,
+  tenantId: z.string().uuid().optional(),
+  supportGrantId: z.string().uuid().optional()
+}).strict().superRefine((value, context) => {
+  if (value.flow === "support" && !value.supportGrantId) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["supportGrantId"],
+      message: "supportGrantId is required for support sessions."
+    });
+  }
+  if (value.flow !== "support" && value.supportGrantId !== undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["supportGrantId"],
+      message: "supportGrantId is accepted only for support sessions."
+    });
+  }
+  if (value.flow === "support" && value.tenantId !== undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["tenantId"],
+      message: "Support tenant scope is derived from the exact grant."
+    });
+  }
 });
 
 const authTokenSchema = z.string().trim().min(32).max(256);
@@ -90,7 +116,7 @@ export const accountDeletionConfirmation = "DELETE MY ACCOUNT";
 export const deleteAccountSchema = z.object({
   confirmation: z.literal(accountDeletionConfirmation),
   password: z.string().min(1).max(128)
-});
+}).strict();
 
 const optionalTrimmedString = (maxLength: number) => z.preprocess(
   (value) => typeof value === "string" && value.trim() === "" ? undefined : value,

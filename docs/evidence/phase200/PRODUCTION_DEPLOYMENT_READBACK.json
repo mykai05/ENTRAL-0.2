@@ -1,0 +1,90 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 200,
+  "repository": "mykai05/ENTRAL-0.2",
+  "accepted_git_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "accepted_git_tree_sha": "05529587e34b883fc85e89beedd2272ce37d1b93",
+  "source_archive": {
+    "tracked_files": 766,
+    "bytes": 21319680,
+    "sha256": "5de91aebe3355367097e33cf94cf8390b12343a280d3450413e5401208b30513",
+    "inventory_match": true
+  },
+  "deployments": [
+    {
+      "deployment_role": "FRONTEND",
+      "service_name": "entral-0-2-frontend",
+      "provider": "VERCEL",
+      "deployment_id": "dpl_7CEgfksQ1nZ6NJPnRWq8NbcUNjqx",
+      "provider_deployment_record_id": 5711425932,
+      "provider_status_record_id": 16242339486,
+      "deployed_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "public_url": "https://entral-0-2-frontend.vercel.app",
+      "immutable_url": "https://entral-0-2-frontend-nbcuvgu0l-entral.vercel.app",
+      "provider_status_url": "https://vercel.com/entral/entral-0-2-frontend/7CEgfksQ1nZ6NJPnRWq8NbcUNjqx",
+      "deployed_at": "2026-08-02T06:22:07.000Z",
+      "live_http_status": 200,
+      "authenticated_graph_page_body_sha256": "f0e22748c38b8e3c371b689583db070dcb5485207007396086fe4212f86b7b7c",
+      "status": "READY"
+    },
+    {
+      "deployment_role": "API",
+      "service_name": "entral-backend",
+      "provider": "RAILWAY",
+      "deployment_id": "905e88d5-6e40-4905-af15-67ac94507feb",
+      "service_id": "2bdeff1a-74fc-4484-8316-6f10d974aaae",
+      "deployed_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "public_url": "https://entral-backend-production.up.railway.app/health",
+      "config_file": "/railway.json",
+      "image_digest": "sha256:3405c6ebc7cf4b7f80b8e59ac78305c91f3cfa5ba6831c8ff76e006429dd01ac",
+      "source_binding": "exact protected-main root archive with full commit SHA in deployment message",
+      "created_at": "2026-08-02T06:33:49.196Z",
+      "live_http_status": 200,
+      "live_body_sha256": "538b0c5552b3bdc3c4ba4236b519d5d98825617d6df3048d44a51b316c161a49",
+      "status": "READY"
+    },
+    {
+      "deployment_role": "WORKER",
+      "service_name": "entral-worker",
+      "provider": "RAILWAY",
+      "deployment_id": "979c2604-e704-4eb4-8959-2b5893de6d9f",
+      "service_id": "e531972e-5c0a-4885-9f19-f44f6bc6a366",
+      "deployed_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "public_url": "https://entral-backend-production.up.railway.app/health",
+      "config_file": "/railway.worker.json",
+      "image_digest": "sha256:c4f59244b2a51aed88ef42a3d2b9699979e436d9d1698318756873739c9b343f",
+      "source_binding": "exact protected-main root archive with full commit SHA in deployment message",
+      "created_at": "2026-08-02T06:34:22.015Z",
+      "worker_ready": true,
+      "worker_status": "READY",
+      "worker_evidence_source": "DURABLE_HEARTBEAT",
+      "queue_failed": 0,
+      "queue_dead_letter": 0,
+      "status": "READY"
+    }
+  ],
+  "runtime_modes": [
+    {
+      "service_name": "entral-backend",
+      "process_role": "API",
+      "runtime_mode": "PRODUCTION",
+      "observed_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "in_memory_canonical_state_reachable": false,
+      "deterministic_fallback_reachable": false,
+      "sample_data_reachable": false
+    },
+    {
+      "service_name": "entral-worker",
+      "process_role": "WORKER",
+      "runtime_mode": "PRODUCTION",
+      "observed_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "in_memory_canonical_state_reachable": false,
+      "deterministic_fallback_reachable": false,
+      "sample_data_reachable": false
+    }
+  ],
+  "status": "PASSED",
+  "checked_at": "2026-08-02T07:17:13.609Z",
+  "receipt_sha256": "4ce3683ba244f5501abeca929538f501c4691d772d5eced2b31beb9ce641a5fc"
+}

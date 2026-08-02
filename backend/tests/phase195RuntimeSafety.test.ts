@@ -75,6 +75,7 @@ function baseTestEnvironment() {
 function productionWorkerEnvironment() {
   process.env.NODE_ENV = "production";
   process.env.PROCESS_ROLE = "worker";
+  process.env.APP_PUBLIC_URL = "https://app.entral.test";
   process.env.AUTOMATION_WORKER_ENABLED = "true";
   process.env.AGENT_ORCHESTRATOR_ENABLED = "true";
   process.env.AUTONOMY_SCHEDULER_ENABLED = "true";
@@ -114,6 +115,19 @@ describe("Phase 195 production runtime safety", () => {
     process.env[key] = "true";
 
     await expect(import("../src/env.js")).rejects.toThrow(message);
+  });
+
+  it.each([
+    "http://app.entral.test",
+    "https://localhost:3000",
+    "https://127.0.0.1:3000"
+  ])("rejects a production email link origin at %s", async (appPublicUrl) => {
+    productionWorkerEnvironment();
+    process.env.APP_PUBLIC_URL = appPublicUrl;
+
+    await expect(import("../src/env.js")).rejects.toThrow(
+      "Production APP_PUBLIC_URL must be a non-local HTTPS origin."
+    );
   });
 
   it.each([
@@ -239,6 +253,7 @@ describe("Phase 195 production runtime safety", () => {
         automation_worker: false,
         autonomy_scheduler: false,
         canonical_outbox_dispatcher: false,
+        membership_notification_dispatcher: false,
         process: false
       },
       contract_version: "1.0.0",
@@ -261,6 +276,7 @@ describe("Phase 195 production runtime safety", () => {
           automation_worker: true,
           autonomy_scheduler: true,
           canonical_outbox_dispatcher: true,
+          membership_notification_dispatcher: true,
           process: true,
           secret_instance_id: "must-not-escape"
         },
@@ -284,6 +300,7 @@ describe("Phase 195 production runtime safety", () => {
         automation_worker: true,
         autonomy_scheduler: true,
         canonical_outbox_dispatcher: true,
+        membership_notification_dispatcher: true,
         process: true
       },
       contract_version: "1.0.0",
@@ -313,6 +330,7 @@ describe("Phase 195 production runtime safety", () => {
           automation_worker: true,
           autonomy_scheduler: true,
           canonical_outbox_dispatcher: false,
+          membership_notification_dispatcher: true,
           process: true
         },
         observedAt,
@@ -346,6 +364,7 @@ describe("Phase 195 production runtime safety", () => {
         automation_worker: true,
         autonomy_scheduler: true,
         canonical_outbox_dispatcher: true,
+        membership_notification_dispatcher: true,
         process: true
       },
       production: true
@@ -356,6 +375,7 @@ describe("Phase 195 production runtime safety", () => {
         automation_worker: true,
         autonomy_scheduler: true,
         canonical_outbox_dispatcher: true,
+        membership_notification_dispatcher: true,
         process: true
       },
       production: true
@@ -367,6 +387,7 @@ describe("Phase 195 production runtime safety", () => {
     "agent_orchestrator",
     "autonomy_scheduler",
     "canonical_outbox_dispatcher",
+    "membership_notification_dispatcher",
     "process"
   ] as const)("rejects production readiness when %s is disabled", async (component) => {
     const {
@@ -378,6 +399,7 @@ describe("Phase 195 production runtime safety", () => {
       automation_worker: true,
       autonomy_scheduler: true,
       canonical_outbox_dispatcher: true,
+      membership_notification_dispatcher: true,
       process: true
     };
     components[component] = false;

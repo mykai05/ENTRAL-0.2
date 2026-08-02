@@ -1,12 +1,13 @@
 openapi: 3.1.0
 info:
   title: ENTRAL implemented API
-  version: 1.7.0
+  version: 1.8.0
   description: >
-    Phase 200 interaction contract surface. Only paths with complete backend behavior are
-    included. Canonical control-plane paths require internal Admin
-    authentication. Member portfolio paths require organization membership;
-    PostgreSQL row-level security resolves Human portfolio or assigned scope.
+    Phase 202 identity, tenancy, session, authority, and support-access contract surface.
+    Only paths with complete backend behavior are included. Canonical control-plane paths
+    require internal Admin authentication. Member and identity paths require a verified,
+    durable session; PostgreSQL row-level security resolves Human, service, support, and
+    assigned business scope.
 paths:
   /api/v1/member/organizations:
     get:
@@ -616,6 +617,367 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+  /api/v1/identity/sessions:
+    get:
+      operationId: listIdentitySessions
+      summary: List the authenticated Human's durable sessions.
+      responses:
+        "200":
+          description: Durable session inventory.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SessionInventory" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+    delete:
+      operationId: revokeAllIdentitySessions
+      summary: Revoke every durable session for the authenticated Human.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Revoke-all receipt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SessionTransitionReceipt" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+  /api/v1/identity/sessions/{sessionId}:
+    delete:
+      operationId: revokeIdentitySession
+      summary: Revoke one session owned by the authenticated Human.
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Revoke-one receipt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SessionTransitionReceipt" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/identity/support-session:
+    get:
+      operationId: readIdentitySupportSession
+      summary: Read the exact active support session and its owner-visible grant.
+      responses:
+        "200":
+          description: Exact session-to-grant readback without credential material.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SupportSessionReadback" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+  /api/v1/identity/support-session/tasks:
+    get:
+      operationId: listIdentitySupportTasks
+      summary: Read an allowlisted task projection through the exact support grant.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Tenant-scoped tasks authorized by table:Task:read.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SupportTaskInventory" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/identity/support-session/tasks/{taskId}:
+    patch:
+      operationId: updateIdentitySupportTaskStatus
+      summary: Set one scoped task status during an explicit support write elevation.
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 255 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202SupportTaskMutationRequest" }
+      responses:
+        "200":
+          description: Idempotent status-set result authorized by table:Task:write.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SupportTaskMutationResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/identity/mfa/factors:
+    get:
+      operationId: listIdentityMfaFactors
+      summary: List the authenticated Human's MFA factors without secret material.
+      responses:
+        "200":
+          description: MFA factor inventory.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MfaFactorInventory" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/identity/mfa/totp/enroll:
+    post:
+      operationId: beginIdentityTotpEnrollment
+      summary: Begin a new encrypted TOTP enrollment.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201":
+          description: One-time TOTP enrollment material.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MfaMutationResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+  /api/v1/identity/mfa/totp/confirm:
+    post:
+      operationId: confirmIdentityTotpEnrollment
+      summary: Confirm a pending TOTP factor and issue one-time recovery codes.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202TotpConfirmationRequest" }
+      responses:
+        "200":
+          description: TOTP confirmation receipt and one-time recovery codes.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MfaMutationResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/identity/mfa/step-up:
+    post:
+      operationId: stepUpIdentitySession
+      summary: Step up the current durable session with TOTP or a recovery code.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202MfaCodeRequest" }
+      responses:
+        "200":
+          description: Server-recorded step-up receipt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MfaMutationResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/identity/mfa/recovery/regenerate:
+    post:
+      operationId: regenerateIdentityRecoveryCodes
+      summary: Replace recovery codes after a recent server-verified MFA step-up.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: New one-time recovery codes.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MfaMutationResult" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/identity/mfa/{factorId}:
+    delete:
+      operationId: removeIdentityMfaFactor
+      summary: Revoke an MFA factor after a recent server-verified step-up.
+      parameters:
+        - $ref: "#/components/parameters/FactorId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Factor revocation receipt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MfaMutationResult" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/identity/memberships:
+    get:
+      operationId: listIdentityMemberships
+      summary: List memberships in the current verified tenant.
+      responses:
+        "200":
+          description: Tenant membership inventory.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MembershipInventory" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /api/v1/identity/memberships/invitations:
+    post:
+      operationId: inviteIdentityMember
+      summary: Invite a member using owner or tenant-administrator authority.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202MembershipInvitationRequest" }
+      responses:
+        "201":
+          description: Idempotent membership invitation receipt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MembershipTransitionReceipt" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /api/v1/identity/memberships/invitations/accept:
+    post:
+      operationId: acceptIdentityMembershipInvitation
+      summary: Accept an exact invitation token for the authenticated Human.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202MembershipAcceptanceRequest" }
+      responses:
+        "200":
+          description: Idempotent invitation acceptance receipt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MembershipTransitionReceipt" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/identity/memberships/{subjectUserId}:
+    patch:
+      operationId: transitionIdentityMembership
+      summary: Change role, suspend, or remove a tenant member.
+      parameters:
+        - $ref: "#/components/parameters/SubjectUserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202MembershipTransitionRequest" }
+      responses:
+        "200":
+          description: Idempotent membership lifecycle receipt.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202MembershipTransitionReceipt" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /api/v1/identity/support-access:
+    get:
+      operationId: listIdentitySupportAccess
+      summary: List customer-visible support grants in the current tenant.
+      responses:
+        "200":
+          description: Owner-visible support grant inventory.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SupportGrantInventory" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    post:
+      operationId: issueIdentitySupportAccess
+      summary: Issue expiring, scoped, read-only support access as tenant owner.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202SupportGrantRequest" }
+      responses:
+        "201":
+          description: Read-only support grant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SupportMutationResult" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /api/v1/identity/support-access/{grantId}/elevate:
+    post:
+      operationId: elevateIdentitySupportAccess
+      summary: Explicitly elevate an active support grant for allowlisted writes.
+      parameters:
+        - $ref: "#/components/parameters/GrantId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202SupportElevationRequest" }
+      responses:
+        "200":
+          description: Explicit audited write elevation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SupportMutationResult" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /api/v1/identity/support-access/{grantId}:
+    delete:
+      operationId: revokeIdentitySupportAccess
+      summary: Revoke an owner-visible support grant.
+      parameters:
+        - $ref: "#/components/parameters/GrantId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Revoked support grant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202SupportMutationResult" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/account/export:
+    get:
+      operationId: exportPhase202AccountData
+      summary: Export an allowlisted personal or single-session-bound tenant projection without secret material.
+      responses:
+        "200":
+          description: Tenant-bound or personal-only safe export.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202AccountExport" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /api/v1/account:
+    delete:
+      operationId: deidentifyPhase202Account
+      summary: Revoke account access and deidentify login fields while retaining tenant records and required evidence.
+      parameters:
+        - name: idempotency-key
+          in: header
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Phase202AccountDeidentificationRequest" }
+      responses:
+        "200":
+          description: Atomic account deidentification receipt and retained-record disclosure.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Phase202AccountDeidentificationResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
 components:
   parameters:
     OrganizationId:
@@ -643,6 +1005,32 @@ components:
       in: path
       required: true
       schema: { type: integer, minimum: 1, maximum: 10000 }
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    FactorId:
+      name: factorId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    GrantId:
+      name: grantId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    SubjectUserId:
+      name: subjectUserId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 255 }
+    IdempotencyKey:
+      name: idempotency-key
+      in: header
+      required: true
+      description: Stable per-intent key; reuse only to reconcile the exact same transition.
+      schema: { type: string, minLength: 12, maxLength: 255 }
   responses:
     Unauthorized:
       description: Authentication is missing or invalid.
@@ -674,7 +1062,656 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorEnvelope"
+    TooManyRequests:
+      description: The authenticated tenant rate limit was exceeded.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Phase202RateLimitBlocked"
+    DependencyUnavailable:
+      description: A required durable Phase 202 dependency is unavailable and the operation failed closed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DependencyUnavailableResult"
   schemas:
+    Phase202AccountDeidentificationRequest:
+      type: object
+      additionalProperties: false
+      required: [confirmation, password]
+      properties:
+        confirmation: { type: string, const: DELETE MY ACCOUNT }
+        password: { type: string, minLength: 1, maxLength: 128, writeOnly: true }
+    Phase202AccountDeidentificationResult:
+      type: object
+      additionalProperties: false
+      required: [ok, message, contract_version, schema_version, outcome, tenant_records, actor_provenance, retry_semantics, receipt_id, receipt_hash, membership_receipt_ids, retained_evidence_classes, occurred_at]
+      properties:
+        ok: { type: boolean, const: true }
+        message: { type: string }
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        outcome: { type: string, const: ACCOUNT_DEIDENTIFIED }
+        tenant_records: { type: string, const: RETAINED }
+        actor_provenance: { type: string, const: RETAINED_REVOKED }
+        retry_semantics: { type: string, const: TERMINAL_SESSION_REVOCATION }
+        receipt_id: { type: string, format: uuid }
+        receipt_hash: { type: string, pattern: '^[a-f0-9]{64}$' }
+        membership_receipt_ids:
+          type: array
+          items: { type: string, format: uuid }
+        retained_evidence_classes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 160 }
+        occurred_at: { type: string, format: date-time }
+    Phase202AccountExport:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, formatVersion, exportedAt, scope, summary, user]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        formatVersion: { type: integer, const: 2 }
+        exportedAt: { type: string, format: date-time }
+        scope:
+          type: object
+          additionalProperties: false
+          required: [kind, organization_id, tenant_id, external_providers_contacted, secret_material_included]
+          properties:
+            kind: { type: string, enum: [PERSONAL, TENANT] }
+            organization_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+            tenant_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+            external_providers_contacted: { type: boolean, const: false }
+            secret_material_included: { type: boolean, const: false }
+        summary:
+          type: object
+          additionalProperties: { type: integer, minimum: 0 }
+        user:
+          type: object
+          additionalProperties: false
+          required: [id, name, email, role, created_at, updated_at, email_verified_at]
+          properties:
+            id: { type: string }
+            name: { type: string }
+            email: { type: string, format: email }
+            role: { type: string }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+            email_verified_at: { oneOf: [{ type: "null" }, { type: string, format: date-time }] }
+        tenant: { type: object }
+        tasks: { type: array, items: { type: object } }
+        sessions: { type: array, items: { type: object } }
+        mfa_factors: { type: array, items: { type: object } }
+    DependencyUnavailableResult:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, status, dependency, reason_code, retryable, occurred_at]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        status: { type: string, const: BLOCKED }
+        dependency:
+          type: string
+          enum: [AUTHORITY_STORE, SESSION_STORE, SECRET_BROKER, SUPPORT_ACCESS_STORE, TENANT_STORE]
+        reason_code: { type: string, minLength: 1, maxLength: 160 }
+        retryable: { type: boolean }
+        occurred_at: { type: string, format: date-time }
+    Phase202MutationReceipt:
+      type: object
+      additionalProperties: false
+      required: [ok, session_id]
+      properties:
+        ok: { type: boolean, const: true }
+        session_id: { type: string, format: uuid }
+    Phase202FactorMutationReceipt:
+      type: object
+      additionalProperties: false
+      required: [ok, factor_id]
+      properties:
+        ok: { type: boolean, const: true }
+        factor_id: { type: string, format: uuid }
+    Phase202RevokeAllReceipt:
+      type: object
+      additionalProperties: false
+      required: [ok, revoked_count]
+      properties:
+        ok: { type: boolean, const: true }
+        revoked_count: { type: integer, minimum: 0 }
+    Phase202Session:
+      type: object
+      additionalProperties: false
+      required: [session_id, actor_id, organization_id, tenant_id, session_type, support_grant_id, device_label, issued_at, last_used_at, expires_at, revoked_at, current]
+      allOf:
+        - if:
+            properties: { session_type: { const: INTERNAL } }
+          then:
+            properties:
+              organization_id: { type: "null" }
+              tenant_id: { type: "null" }
+              support_grant_id: { type: "null" }
+        - if:
+            properties: { session_type: { const: MEMBER } }
+          then:
+            properties:
+              organization_id: { type: string, format: uuid }
+              tenant_id: { type: string, format: uuid }
+              support_grant_id: { type: "null" }
+        - if:
+            properties: { session_type: { const: SUPPORT } }
+          then:
+            properties:
+              organization_id: { type: string, format: uuid }
+              tenant_id: { type: string, format: uuid }
+              support_grant_id: { type: string, format: uuid }
+      properties:
+        session_id: { type: string, format: uuid }
+        actor_id: { type: string, format: uuid }
+        organization_id: { type: [string, "null"], format: uuid }
+        tenant_id: { type: [string, "null"], format: uuid }
+        session_type: { type: string, enum: [INTERNAL, MEMBER, SUPPORT] }
+        support_grant_id: { type: [string, "null"], format: uuid }
+        device_label: { type: string, minLength: 1, maxLength: 200 }
+        issued_at: { type: string, format: date-time }
+        last_used_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        revoked_at: { type: [string, "null"], format: date-time }
+        current: { type: boolean }
+    Phase202SessionInventory:
+      type: object
+      additionalProperties: false
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/Phase202Session" }
+    Phase202SessionTransitionReceipt:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, transition_id, transition, ownership, actor, request_id, idempotency_key, prior_version, resulting_version, revoked_count, subject_session_id, budget, reversible, verification, reconciliation, failure_behavior, evidence, occurred_at, release_version]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        transition_id: { type: string, format: uuid }
+        transition: { type: string, enum: [REVOKE_ONE, REVOKE_ALL] }
+        ownership: { $ref: "#/components/schemas/Phase202TransitionOwnership" }
+        actor: { $ref: "#/components/schemas/Phase202Actor" }
+        request_id: { type: string, minLength: 1, maxLength: 255 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        prior_version: { type: integer, minimum: 0 }
+        resulting_version: { type: integer, minimum: 1 }
+        revoked_count: { type: integer, minimum: 0 }
+        subject_session_id: { type: [string, "null"], format: uuid }
+        budget:
+          type: object
+          additionalProperties: false
+          required: [kind, amount_minor_units]
+          properties:
+            kind: { type: string, const: NO_EXTERNAL_SPEND }
+            amount_minor_units: { type: integer, const: 0 }
+        reversible: { type: boolean, const: false }
+        verification: { type: string, const: TRANSACTIONAL_READBACK }
+        reconciliation: { type: string, const: IDEMPOTENT_RECEIPT }
+        failure_behavior: { type: string, const: NO_PARTIAL_WRITE }
+        evidence:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        occurred_at: { type: string, format: date-time }
+        release_version: { type: string, const: phase-202 }
+    Phase202SecretReferenceDescriptor:
+      type: object
+      additionalProperties: false
+      x-entral-internal: true
+      description: Internal secret-broker descriptor. Raw or encrypted secret material is never included.
+      required: [secret_reference_id, tenant_id, organization_id, business_id, provider, purpose, environment, key_version, version, last_four, rotated_at, revoked_at, created_at, updated_at]
+      properties:
+        secret_reference_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        organization_id: { type: string, format: uuid }
+        business_id: { type: [string, "null"], format: uuid }
+        provider: { type: string, minLength: 1, maxLength: 160 }
+        purpose: { type: string, minLength: 1, maxLength: 500 }
+        environment: { type: string, enum: [DEVELOPMENT, STAGING, PRODUCTION] }
+        key_version: { type: string, minLength: 1, maxLength: 160 }
+        version: { type: integer, minimum: 1 }
+        last_four: { type: [string, "null"], minLength: 4, maxLength: 4 }
+        rotated_at: { type: [string, "null"], format: date-time }
+        revoked_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Phase202SecretTransitionReceipt:
+      type: object
+      additionalProperties: false
+      x-entral-internal: true
+      description: Internal idempotent secret-broker transition receipt without secret material.
+      required: [contract_version, schema_version, transition_id, transition, ownership, actor, request_id, idempotency_key, prior_version, resulting_version, descriptor, budget, reversible, verification, reconciliation, failure_behavior, evidence, occurred_at, release_version]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        transition_id: { type: string, format: uuid }
+        transition: { type: string, enum: [CREATE, ROTATE, REVOKE] }
+        ownership: { $ref: "#/components/schemas/Phase202TransitionOwnership" }
+        actor: { $ref: "#/components/schemas/Phase202Actor" }
+        request_id: { type: string, minLength: 1, maxLength: 255 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        prior_version: { type: integer, minimum: 0 }
+        resulting_version: { type: integer, minimum: 1 }
+        descriptor: { $ref: "#/components/schemas/Phase202SecretReferenceDescriptor" }
+        budget:
+          type: object
+          additionalProperties: false
+          required: [kind, amount_minor_units]
+          properties:
+            kind: { type: string, const: NO_EXTERNAL_SPEND }
+            amount_minor_units: { type: integer, const: 0 }
+        reversible: { type: boolean }
+        verification: { type: string, const: TRANSACTIONAL_READBACK }
+        reconciliation: { type: string, const: IDEMPOTENT_RECEIPT }
+        failure_behavior: { type: string, const: NO_PARTIAL_WRITE }
+        evidence:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        occurred_at: { type: string, format: date-time }
+        release_version: { type: string, const: phase-202 }
+    Phase202MfaFactor:
+      type: object
+      additionalProperties: false
+      required: [factor_id, factor_type, status, verified_at, created_at]
+      properties:
+        factor_id: { type: string, format: uuid }
+        factor_type: { type: string, const: TOTP }
+        status: { type: string, enum: [PENDING, ACTIVE, REVOKED] }
+        verified_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+    Phase202MfaFactorInventory:
+      type: object
+      additionalProperties: false
+      required: [factors]
+      properties:
+        factors:
+          type: array
+          items: { $ref: "#/components/schemas/Phase202MfaFactor" }
+    Phase202TotpEnrollment:
+      type: object
+      additionalProperties: false
+      required: [factor_id, secret, otpauth_uri]
+      properties:
+        factor_id: { type: string, format: uuid }
+        secret: { type: string, pattern: "^[A-Z2-7]+$" }
+        otpauth_uri: { type: string, pattern: "^otpauth://totp/" }
+    Phase202TotpConfirmationRequest:
+      type: object
+      additionalProperties: false
+      required: [factor_id, code]
+      properties:
+        factor_id: { type: string, format: uuid }
+        code: { type: string, minLength: 6, maxLength: 32 }
+    Phase202MfaCodeRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, minLength: 6, maxLength: 32 }
+    Phase202RecoveryCodeReceipt:
+      type: object
+      additionalProperties: false
+      required: [ok, recovery_codes]
+      properties:
+        ok: { type: boolean, const: true }
+        recovery_codes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 8, maxLength: 32 }
+    Phase202StepUpReceipt:
+      type: object
+      additionalProperties: false
+      required: [ok, step_up_at]
+      properties:
+        ok: { type: boolean, const: true }
+        step_up_at: { type: string, format: date-time }
+    Phase202TransitionOwnership:
+      type: object
+      additionalProperties: false
+      required: [scope_kind, organization_id, tenant_id, business_id, environment, data_residency]
+      properties:
+        scope_kind: { type: string, enum: [PERSONAL, TENANT] }
+        organization_id: { type: [string, "null"], format: uuid }
+        tenant_id: { type: [string, "null"], format: uuid }
+        business_id: { type: [string, "null"], format: uuid }
+        environment: { type: string, enum: [DEVELOPMENT, STAGING, PRODUCTION] }
+        data_residency: { type: [string, "null"], minLength: 1, maxLength: 80 }
+    Phase202MfaTransitionReceipt:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, transition_id, transition, ownership, actor, session_id, factor_id, request_id, idempotency_key, prior_version, resulting_version, authorization, factor_status, session_step_up_at, one_time_material_policy, recovery_action, budget, reversible, verification, reconciliation, failure_behavior, evidence, occurred_at, release_version]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        transition_id: { type: string, format: uuid }
+        transition: { type: string, enum: [TOTP_ENROLL, TOTP_CONFIRM, STEP_UP, RECOVERY_REGENERATE, FACTOR_REVOKE] }
+        ownership: { $ref: "#/components/schemas/Phase202TransitionOwnership" }
+        actor: { $ref: "#/components/schemas/Phase202Actor" }
+        session_id: { type: string, format: uuid }
+        factor_id: { type: string, format: uuid }
+        request_id: { type: string, minLength: 1, maxLength: 255 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        prior_version: { type: integer, minimum: 0 }
+        resulting_version: { type: integer, minimum: 1 }
+        authorization: { type: string, enum: [DURABLE_SESSION, TOTP, RECOVERY_CODE, RECENT_MFA_STEP_UP] }
+        factor_status: { type: string, enum: [PENDING, ACTIVE, REVOKED] }
+        session_step_up_at: { type: [string, "null"], format: date-time }
+        one_time_material_policy: { type: string, enum: [TOTP_SECRET_RETURNED_ONCE, RECOVERY_CODES_RETURNED_ONCE, NONE] }
+        recovery_action: { type: [string, "null"], enum: [BEGIN_NEW_ENROLLMENT, REGENERATE_RECOVERY_CODES, null] }
+        budget:
+          type: object
+          additionalProperties: false
+          required: [kind, amount_minor_units]
+          properties:
+            kind: { type: string, const: NO_EXTERNAL_SPEND }
+            amount_minor_units: { type: integer, const: 0 }
+        reversible: { type: boolean }
+        verification: { type: string, const: TRANSACTIONAL_READBACK }
+        reconciliation: { type: string, const: IDEMPOTENT_RECEIPT }
+        failure_behavior: { type: string, const: NO_PARTIAL_WRITE }
+        evidence:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        occurred_at: { type: string, format: date-time }
+        release_version: { type: string, const: phase-202 }
+    Phase202RecoveryCodeMaterial:
+      type: object
+      additionalProperties: false
+      required: [recovery_codes]
+      properties:
+        recovery_codes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 8, maxLength: 32 }
+    Phase202MfaMutationResult:
+      type: object
+      additionalProperties: false
+      required: [replayed, receipt, one_time_material]
+      properties:
+        replayed: { type: boolean }
+        receipt: { $ref: "#/components/schemas/Phase202MfaTransitionReceipt" }
+        one_time_material:
+          oneOf:
+            - $ref: "#/components/schemas/Phase202TotpEnrollment"
+            - $ref: "#/components/schemas/Phase202RecoveryCodeMaterial"
+            - type: "null"
+    Phase202Membership:
+      type: object
+      additionalProperties: false
+      required: [user_id, email, name, role, status, version, joined_at, suspended_at, removed_at]
+      properties:
+        user_id: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        name: { type: string, minLength: 1 }
+        role: { type: string, enum: [OWNER, TENANT_ADMIN, MEMBER] }
+        status: { type: string, enum: [ACTIVE, SUSPENDED, REMOVED] }
+        version: { type: integer, minimum: 1 }
+        joined_at: { type: string, format: date-time }
+        suspended_at: { type: [string, "null"], format: date-time }
+        removed_at: { type: [string, "null"], format: date-time }
+    Phase202MembershipInventory:
+      type: object
+      additionalProperties: false
+      required: [memberships]
+      properties:
+        memberships:
+          type: array
+          items: { $ref: "#/components/schemas/Phase202Membership" }
+    Phase202MembershipInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [email, role, idempotency_key]
+      properties:
+        email: { type: string, format: email, maxLength: 320 }
+        role: { type: string, enum: [OWNER, TENANT_ADMIN, MEMBER] }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+    Phase202MembershipAcceptanceRequest:
+      type: object
+      additionalProperties: false
+      required: [token, idempotency_key]
+      properties:
+        token: { type: string, minLength: 32, maxLength: 512 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+    Phase202MembershipTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, idempotency_key]
+      properties:
+        action: { type: string, enum: [ROLE_CHANGE, SUSPEND, REMOVE] }
+        role: { type: string, enum: [OWNER, TENANT_ADMIN, MEMBER] }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+    Phase202MembershipTransitionReceipt:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, transition_id, transition, ownership, actor, subject_user_id, subject_email_hash, request_id, idempotency_key, prior_version, resulting_version, authorization, budget, reversible, verification, reconciliation, failure_behavior, evidence, notification_evidence_id, occurred_at, release_version]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        transition_id: { type: string, format: uuid }
+        transition: { type: string, enum: [INVITE, ACCEPT, ROLE_CHANGE, SUSPEND, REMOVE] }
+        ownership: { $ref: "#/components/schemas/Phase202Ownership" }
+        actor: { $ref: "#/components/schemas/Phase202Actor" }
+        subject_user_id: { type: [string, "null"] }
+        subject_email_hash: { type: [string, "null"], pattern: "^[a-f0-9]{64}$" }
+        request_id: { type: string, minLength: 1 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        prior_version: { type: integer, minimum: 0 }
+        resulting_version: { type: integer, minimum: 1 }
+        authorization: { type: string, enum: [INVITATION_TOKEN, OWNER, TENANT_ADMIN, ACCOUNT_DEIDENTIFICATION] }
+        budget:
+          type: object
+          additionalProperties: false
+          required: [kind, amount_minor_units]
+          properties:
+            kind: { type: string, const: NO_EXTERNAL_SPEND }
+            amount_minor_units: { type: integer, const: 0 }
+        reversible: { type: boolean }
+        verification: { type: string, const: TRANSACTIONAL_READBACK }
+        reconciliation: { type: string, const: IDEMPOTENT_RECEIPT }
+        failure_behavior: { type: string, const: NO_PARTIAL_WRITE }
+        evidence:
+          type: array
+          minItems: 2
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        notification_evidence_id: { type: string, format: uuid }
+        occurred_at: { type: string, format: date-time }
+        release_version: { type: string, const: phase-202 }
+    Phase202Ownership:
+      type: object
+      additionalProperties: false
+      required: [organization_id, tenant_id, business_id, environment, data_residency]
+      properties:
+        organization_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        business_id: { type: [string, "null"], format: uuid }
+        environment: { type: string, enum: [DEVELOPMENT, STAGING, PRODUCTION] }
+        data_residency: { type: string, minLength: 1, maxLength: 80 }
+    Phase202Actor:
+      type: object
+      additionalProperties: false
+      required: [actor_id, actor_type, human_user_id, service_subject, agent_id]
+      properties:
+        actor_id: { type: string, format: uuid }
+        actor_type: { type: string, enum: [HUMAN, SERVICE, AGENT] }
+        human_user_id: { type: [string, "null"] }
+        service_subject: { type: [string, "null"] }
+        agent_id: { type: [string, "null"] }
+    Phase202SupportGrantRequest:
+      type: object
+      additionalProperties: false
+      required: [support_actor_id, purpose, read_scopes, expires_at]
+      properties:
+        support_actor_id: { type: string, format: uuid }
+        purpose: { type: string, minLength: 1, maxLength: 500 }
+        read_scopes:
+          type: array
+          minItems: 1
+          maxItems: 50
+          uniqueItems: true
+          items: { type: string, pattern: "^table:[A-Za-z][A-Za-z0-9]*:read$" }
+        expires_at: { type: string, format: date-time }
+    Phase202SupportElevationRequest:
+      type: object
+      additionalProperties: false
+      required: [purpose, write_scopes, expires_at]
+      properties:
+        purpose: { type: string, minLength: 1, maxLength: 500 }
+        write_scopes:
+          type: array
+          minItems: 1
+          maxItems: 50
+          uniqueItems: true
+          items: { type: string, pattern: "^table:[A-Za-z][A-Za-z0-9]*:write$" }
+        expires_at: { type: string, format: date-time }
+    Phase202SupportGrant:
+      type: object
+      additionalProperties: false
+      required: [grant_id, tenant_id, organization_id, support_actor_id, purpose, scopes, access_mode, write_elevation_purpose, write_elevation_expires_at, owner_visible, approved_by_actor_id, issued_at, expires_at, revoked_at]
+      properties:
+        grant_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        organization_id: { type: string, format: uuid }
+        support_actor_id: { type: string, format: uuid }
+        purpose: { type: string, minLength: 1, maxLength: 500 }
+        scopes:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 160 }
+        access_mode: { type: string, enum: [READ_ONLY, WRITE_ELEVATED] }
+        write_elevation_purpose: { type: [string, "null"], minLength: 1, maxLength: 500 }
+        write_elevation_expires_at: { type: [string, "null"], format: date-time }
+        owner_visible: { type: boolean, const: true }
+        approved_by_actor_id: { type: string, format: uuid }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        revoked_at: { type: [string, "null"], format: date-time }
+    Phase202SupportSessionReadback:
+      type: object
+      additionalProperties: false
+      required: [session, support_grant]
+      properties:
+        session: { $ref: "#/components/schemas/Phase202Session" }
+        support_grant: { $ref: "#/components/schemas/Phase202SupportGrant" }
+    Phase202SupportTask:
+      type: object
+      additionalProperties: false
+      required: [task_id, title, status, updated_at]
+      properties:
+        task_id: { type: string, minLength: 1, maxLength: 255 }
+        title: { type: string, minLength: 1, maxLength: 500 }
+        status: { type: string, enum: [TODO, IN_PROGRESS, DONE, ARCHIVED] }
+        updated_at: { type: string, format: date-time }
+    Phase202SupportTaskInventory:
+      type: object
+      additionalProperties: false
+      required: [tasks]
+      properties:
+        tasks:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/Phase202SupportTask" }
+    Phase202SupportTaskMutationRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { type: string, enum: [TODO, IN_PROGRESS, DONE, ARCHIVED] }
+    Phase202SupportTaskMutationResult:
+      type: object
+      additionalProperties: false
+      required: [changed, task]
+      properties:
+        changed: { type: boolean }
+        task: { $ref: "#/components/schemas/Phase202SupportTask" }
+    Phase202SupportGrantInventory:
+      type: object
+      additionalProperties: false
+      required: [grants]
+      properties:
+        grants:
+          type: array
+          items: { $ref: "#/components/schemas/Phase202SupportGrant" }
+    Phase202SupportTransitionReceipt:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, transition_id, transition, ownership, actor, grant_id, support_actor_id, request_id, idempotency_key, prior_version, resulting_version, authorization, grant, budget, reversible, verification, reconciliation, failure_behavior, evidence, occurred_at, release_version]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        transition_id: { type: string, format: uuid }
+        transition: { type: string, enum: [ISSUE_READ_ONLY, ELEVATE_WRITE, REVOKE] }
+        ownership: { $ref: "#/components/schemas/Phase202TransitionOwnership" }
+        actor: { $ref: "#/components/schemas/Phase202Actor" }
+        grant_id: { type: string, format: uuid }
+        support_actor_id: { type: string, format: uuid }
+        request_id: { type: string, minLength: 1, maxLength: 255 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        prior_version: { type: integer, minimum: 0 }
+        resulting_version: { type: integer, minimum: 1 }
+        authorization: { type: string, enum: [OWNER, OWNER_RECENT_MFA_STEP_UP] }
+        grant: { $ref: "#/components/schemas/Phase202SupportGrant" }
+        budget:
+          type: object
+          additionalProperties: false
+          required: [kind, amount_minor_units]
+          properties:
+            kind: { type: string, const: NO_EXTERNAL_SPEND }
+            amount_minor_units: { type: integer, const: 0 }
+        reversible: { type: boolean }
+        verification: { type: string, const: TRANSACTIONAL_READBACK }
+        reconciliation: { type: string, const: IDEMPOTENT_RECEIPT }
+        failure_behavior: { type: string, const: NO_PARTIAL_WRITE }
+        evidence:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        occurred_at: { type: string, format: date-time }
+        release_version: { type: string, const: phase-202 }
+    Phase202SupportMutationResult:
+      type: object
+      additionalProperties: false
+      required: [replayed, receipt]
+      properties:
+        replayed: { type: boolean }
+        receipt: { $ref: "#/components/schemas/Phase202SupportTransitionReceipt" }
+    Phase202RateLimitReceipt:
+      type: object
+      additionalProperties: false
+      required: [blocked, limit, request_count, window_started_at]
+      properties:
+        blocked: { type: boolean, const: false }
+        limit: { type: integer, minimum: 1 }
+        request_count: { type: integer, minimum: 1 }
+        window_started_at: { type: string, format: date-time }
+    Phase202RateLimitBlocked:
+      type: object
+      additionalProperties: false
+      required: [blocked, limit, request_count, window_started_at, error, message, reason_code]
+      properties:
+        blocked: { type: boolean, const: true }
+        limit: { type: integer, minimum: 1 }
+        request_count: { type: integer, minimum: 1 }
+        window_started_at: { type: string, format: date-time }
+        error: { type: string, const: Too Many Requests }
+        message: { type: string, minLength: 1 }
+        reason_code: { type: string, const: TENANT_RATE_LIMIT_EXCEEDED }
     EntityRole:
       type: string
       enum: [ENTRAL, MARSHAL, GENERAL, COMMANDER, SOLDIER]

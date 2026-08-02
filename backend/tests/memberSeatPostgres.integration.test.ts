@@ -50,23 +50,73 @@ describe.skipIf(!integrationEnabled)("Entral Base PostgreSQL seat enforcement", 
           passwordHash: "not-a-real-password-hash"
         }
       })));
+      const actors = await Promise.all(users.map((user) => client!.identityActor.create({
+        data: { actorType: "HUMAN", humanUserId: user.id }
+      })));
+      const createScopedTeam = async (data: {
+        memberAccessEnabled: boolean;
+        memberSeatLimit: number;
+        name: string;
+        slug: string;
+      }, ownerIndex: number) => {
+        const team = await client!.team.create({ data });
+        await client!.tenantBoundary.create({
+          data: {
+            dataResidency: team.dataResidency,
+            environment: team.environment,
+            id: team.tenantId,
+            legacyTeamId: team.id,
+            organizationId: team.organizationId
+          }
+        });
+        await client!.tenantActorAssignment.create({
+          data: {
+            actorId: actors[ownerIndex]!.id,
+            authorityDomains: ["IDENTITY", "TENANCY", "OPERATIONS"],
+            organizationId: team.organizationId,
+            role: "OWNER",
+            tenantId: team.tenantId
+          }
+        });
+        await client!.teamMember.create({
+          data: { role: "OWNER", teamId: team.id, userId: users[ownerIndex]!.id }
+        });
+        return team;
+      };
+      const assignMember = (team: Awaited<ReturnType<typeof createScopedTeam>>, userIndex: number) => (
+        client!.tenantActorAssignment.create({
+          data: {
+            actorId: actors[userIndex]!.id,
+            authorityDomains: ["OPERATIONS"],
+            organizationId: team.organizationId,
+            role: "MEMBER",
+            tenantId: team.tenantId
+          }
+        })
+      );
+      const createMember = (team: Awaited<ReturnType<typeof createScopedTeam>>, userIndex: number) => (
+        client!.teamMember.create({ data: { teamId: team.id, userId: users[userIndex]!.id } })
+      );
 
-      const directTeam = await client.team.create({
-        data: { memberAccessEnabled: true, memberSeatLimit: 5, name: "Direct Seat Test", slug: `direct-${databaseName}` }
-      });
-      for (const user of users.slice(0, 5)) {
-        await client.teamMember.create({ data: { teamId: directTeam.id, userId: user.id } });
+      const directTeam = await createScopedTeam(
+        { memberAccessEnabled: true, memberSeatLimit: 5, name: "Direct Seat Test", slug: `direct-${databaseName}` },
+        0
+      );
+      for (const userIndex of [1, 2, 3, 4]) {
+        await assignMember(directTeam, userIndex);
+        await createMember(directTeam, userIndex);
       }
-      await expect(client.teamMember.create({
-        data: { teamId: directTeam.id, userId: users[5].id }
-      })).rejects.toThrow();
+      await assignMember(directTeam, 5);
+      await expect(createMember(directTeam, 5)).rejects.toThrow();
       await expect(client.teamMember.count({ where: { teamId: directTeam.id } })).resolves.toBe(5);
 
-      const disabledOverLimitTeam = await client.team.create({
-        data: { memberAccessEnabled: false, memberSeatLimit: 5, name: "Disabled Over-limit Test", slug: `disabled-${databaseName}` }
-      });
-      for (const user of users.slice(0, 6)) {
-        await client.teamMember.create({ data: { teamId: disabledOverLimitTeam.id, userId: user.id } });
+      const disabledOverLimitTeam = await createScopedTeam(
+        { memberAccessEnabled: false, memberSeatLimit: 5, name: "Disabled Over-limit Test", slug: `disabled-${databaseName}` },
+        0
+      );
+      for (const userIndex of [1, 2, 3, 4, 5]) {
+        await assignMember(disabledOverLimitTeam, userIndex);
+        await createMember(disabledOverLimitTeam, userIndex);
       }
       await expect(client.team.update({
         data: { memberAccessEnabled: true },
@@ -77,15 +127,18 @@ describe.skipIf(!integrationEnabled)("Entral Base PostgreSQL seat enforcement", 
         where: { id: disabledOverLimitTeam.id }
       })).resolves.toEqual({ memberAccessEnabled: false });
 
-      const concurrentTeam = await client.team.create({
-        data: { memberAccessEnabled: true, memberSeatLimit: 5, name: "Concurrent Seat Test", slug: `concurrent-${databaseName}` }
-      });
-      for (const user of users.slice(6, 10)) {
-        await client.teamMember.create({ data: { teamId: concurrentTeam.id, userId: user.id } });
+      const concurrentTeam = await createScopedTeam(
+        { memberAccessEnabled: true, memberSeatLimit: 5, name: "Concurrent Seat Test", slug: `concurrent-${databaseName}` },
+        6
+      );
+      for (const userIndex of [7, 8, 9]) {
+        await assignMember(concurrentTeam, userIndex);
+        await createMember(concurrentTeam, userIndex);
       }
+      await Promise.all([assignMember(concurrentTeam, 10), assignMember(concurrentTeam, 11)]);
       const competingSeats = await Promise.allSettled([
-        client.teamMember.create({ data: { teamId: concurrentTeam.id, userId: users[10].id } }),
-        client.teamMember.create({ data: { teamId: concurrentTeam.id, userId: users[11].id } })
+        createMember(concurrentTeam, 10),
+        createMember(concurrentTeam, 11)
       ]);
 
       expect(competingSeats.filter((result) => result.status === "fulfilled")).toHaveLength(1);

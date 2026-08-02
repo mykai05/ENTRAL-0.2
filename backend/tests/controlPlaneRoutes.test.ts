@@ -13,7 +13,12 @@ const mocks = vi.hoisted(() => ({
   listPortfolioEvents: vi.fn(),
   listBusinesses: vi.fn(),
   listHierarchy: vi.fn(),
-  userFindUnique: vi.fn()
+  authSessionFindUnique: vi.fn(),
+  authSessionUpdate: vi.fn(),
+  mfaFactorCount: vi.fn(),
+  personalUserFindUnique: vi.fn(),
+  userFindUnique: vi.fn(),
+  withPersonalSession: vi.fn()
 }));
 
 vi.mock("../src/services/canonicalEntityLifecycle.js", () => ({
@@ -27,7 +32,8 @@ vi.mock("../src/db.js", () => ({
     user: {
       findUnique: mocks.userFindUnique
     }
-  }
+  },
+  withPersonalSession: mocks.withPersonalSession
 }));
 
 vi.mock("../src/services/canonicalControlPlane.js", async (importOriginal) => {
@@ -51,6 +57,10 @@ vi.mock("../src/services/canonicalControlPlane.js", async (importOriginal) => {
 const actionId = "123e4567-e89b-42d3-a456-426614174000";
 const actorId = "223e4567-e89b-42d3-a456-426614174000";
 const targetId = "323e4567-e89b-42d3-a456-426614174000";
+const adminActorId = "423e4567-e89b-42d3-a456-426614174000";
+const adminAppUserId = "523e4567-e89b-42d3-a456-426614174000";
+const adminSessionId = "623e4567-e89b-42d3-a456-426614174000";
+const adminAccessTokenId = "723e4567-e89b-42d3-a456-426614174000";
 
 function requestBody() {
   return {
@@ -111,7 +121,10 @@ async function buildControlPlaneTestServer() {
     email: "authority@example.test",
     role: "ADMIN",
     session: "internal",
-    sub: "internal-user"
+    sub: "internal-user",
+    actorId: adminActorId,
+    sessionId: adminSessionId,
+    tokenId: adminAccessTokenId
   })}`;
   return { app, authorization };
 }
@@ -125,7 +138,38 @@ beforeEach(() => {
   process.env.COOKIE_NAME = "entral_token";
   process.env.CORS_ORIGIN = "http://localhost:3000";
   process.env.APP_PUBLIC_URL = "http://localhost:3000";
-  mocks.userFindUnique.mockResolvedValue({ role: "ADMIN", sessionVersion: 0 });
+  mocks.userFindUnique.mockResolvedValue({ deletedAt: null, role: "ADMIN", sessionVersion: 0 });
+  mocks.personalUserFindUnique.mockResolvedValue({ deletedAt: null, role: "ADMIN", sessionVersion: 0 });
+  mocks.authSessionFindUnique.mockResolvedValue({
+    accessTokenId: adminAccessTokenId,
+    actorId: adminActorId,
+    expiresAt: new Date(Date.now() + 60_000),
+    id: adminSessionId,
+    organizationId: null,
+    revokedAt: null,
+    sessionType: "INTERNAL",
+    stepUpAt: new Date(),
+    tenantId: null,
+    userId: "internal-user"
+  });
+  mocks.authSessionUpdate.mockResolvedValue({ id: adminSessionId });
+  mocks.mfaFactorCount.mockResolvedValue(1);
+  mocks.withPersonalSession.mockImplementation(async (_database, _context, operation) => operation({
+    authSession: {
+      findUnique: mocks.authSessionFindUnique,
+      update: mocks.authSessionUpdate
+    },
+    mfaFactor: {
+      count: mocks.mfaFactorCount
+    },
+    user: {
+      findUnique: mocks.personalUserFindUnique
+    }
+  }, {
+    actorId: adminActorId,
+    appUserId: adminAppUserId,
+    authSubject: "internal-user"
+  }));
 });
 
 describe("canonical control-plane routes", () => {

@@ -37,11 +37,11 @@ The current Fastify backend is a persistent Node service with background workers
 | `API_HOST` | Host-specific | Usually `0.0.0.0` for containers. |
 | `API_PORT` | Host-specific | Use the port provided by the host when required. |
 | `COOKIE_NAME` | Recommended | Defaults to `entral_token`; must match frontend middleware. |
-| `APP_PUBLIC_URL` | Yes on API | Public HTTPS URL of the frontend. Auth verification and password reset emails use this for secure links. |
+| `APP_PUBLIC_URL` | Yes on API and worker | Non-local public HTTPS URL of the frontend. Auth verification, password reset, and membership invitation emails use this for secure links; production startup rejects local or non-HTTPS values. |
 | `API_PUBLIC_URL` | Yes on API when Shopify OAuth is enabled | Public HTTPS URL of the API, used to build the Shopify OAuth callback. |
-| `AUTH_EMAIL_PROVIDER` | Yes on API | Use `resend` in production. The API refuses production startup with console-only auth email delivery. |
-| `AUTH_EMAIL_FROM` | Yes on API | Verified sender address for account verification and password reset email. |
-| `RESEND_API_KEY` | Yes on API | Resend API key for real auth email delivery. |
+| `AUTH_EMAIL_PROVIDER` | Yes on API and worker | Use `resend` in production. Both runtimes refuse production startup with console-only delivery. |
+| `AUTH_EMAIL_FROM` | Yes on API and worker | Verified sender address for account verification, password reset, and membership invitation email. |
+| `RESEND_API_KEY` | Yes on API and worker | Resend API key for real auth and membership notification delivery. |
 | `OPENAI_API_KEY` | Required when AI is enabled | Without it, real AI requests must report unavailable; production may not substitute a local fallback. |
 | `OPENAI_MODEL` | Recommended | Defaults to `gpt-4o`. |
 | `AI_DAILY_COST_LIMIT_CENTS` | Recommended | Per-user daily AI estimate cap before provider calls. Defaults to `250`. |
@@ -67,8 +67,14 @@ The current Fastify backend is a persistent Node service with background workers
 | `AUTONOMY_SCHEDULER_ENABLED` | Optional | Internal flag for background-agent scheduling. Defaults to `true`. |
 | `AUTONOMY_SCHEDULER_INTERVAL_MS` | Optional | Background-agent scheduler polling interval. Defaults to `5000`. |
 | `AUTONOMY_MIN_INTERVAL_MINUTES` | Optional | Defaults to `15`. |
-| `DATA_ENCRYPTION_KEY` | Recommended | Enables app-level encryption for sensitive payloads. |
-| `ADMIN_MFA_CODE` | Recommended | Requires admin MFA header when set. |
+| `DATA_ENCRYPTION_KEY` | Yes | Production-required root key for secure JSON and the Phase 202 envelope-encrypted secret broker; startup and secret writes fail closed when unavailable. |
+| `DATA_ENCRYPTION_KEY_VERSION` | Yes | Active bounded key-version label used by encrypted payloads and secret references. |
+| `DATA_ENCRYPTION_KEYRING_JSON` | Required during rotation | Prior version-to-key map retained only while decrypting and rotating older envelopes. |
+| `SECRET_BROKER_ENVIRONMENT` | Yes | Must match the deployment boundary (`PRODUCTION` in production). Cross-environment secret use is rejected. |
+| `ENTRAL_SECURE_JSON_RECONCILE` | Operator reconciliation only | Set to `apply` for the bounded production credential-reference APPLY; omit or use `audit` for the separately invoked fresh AUDIT. |
+| `ENTRAL_SECURE_JSON_PRIOR_APPLY_RECEIPT_SHA256` | Required for AUDIT | Exact retained APPLY receipt hash. AUDIT fails closed without it. |
+| `ENTRAL_SECURE_JSON_REPAIR_PLAN_REFERENCE` | Reconciliation only | Immutable `repository@commit:path` reference for the repair evidence. |
+| `ENTRAL_SECURE_JSON_ROLLBACK_REFERENCE` | Reconciliation only | Immutable `repository@commit:path` reference for the rollback evidence. |
 | `ALERT_WEBHOOK_URL` | Optional | Webhook target for policy-block and operational error alerts. |
 
 ### GitHub Actions Secrets

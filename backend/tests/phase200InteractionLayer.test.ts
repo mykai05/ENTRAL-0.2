@@ -7,16 +7,20 @@ const mocks = vi.hoisted(() => ({
   getTutorialProgress: vi.fn(),
   recordAuditLog: vi.fn(),
   resetTutorialProgress: vi.fn(),
+  resolveVerifiedMemberTeamAccess: vi.fn(),
   teamMemberFindUnique: vi.fn(),
   updateTutorialProgress: vi.fn(),
-  userFindUnique: vi.fn()
+  userFindUnique: vi.fn(),
+  withPersonalSession: vi.fn()
 }));
 
 vi.mock("../src/db.js", () => ({
   prisma: {
     teamMember: { findUnique: mocks.teamMemberFindUnique },
     user: { findUnique: mocks.userFindUnique }
-  }
+  },
+  resolveVerifiedMemberTeamAccess: mocks.resolveVerifiedMemberTeamAccess,
+  withPersonalSession: mocks.withPersonalSession
 }));
 
 vi.mock("../src/services/canonicalControlPlane.js", () => ({
@@ -42,6 +46,8 @@ vi.mock("../src/services/interactionLayer.js", async (importOriginal) => {
 const organizationId = "ck1234567890123456789012";
 const userId = "member-phase-200";
 const businessId = "123e4567-e89b-42d3-a456-426614174000";
+const tenantOrganizationId = "423e4567-e89b-42d3-a456-426614174000";
+const tenantId = "523e4567-e89b-42d3-a456-426614174000";
 
 const tutorialProgress = {
   business_model_context: null,
@@ -128,7 +134,9 @@ async function testServer() {
       email: "member@example.test",
       role: "USER",
       session: "member",
-      sub: userId
+      sub: userId,
+      organizationId: tenantOrganizationId,
+      tenantId
     })}`
   };
 }
@@ -143,10 +151,16 @@ beforeEach(() => {
   process.env.CORS_ORIGIN = "http://localhost:3000";
   process.env.APP_PUBLIC_URL = "http://localhost:3000";
   mocks.userFindUnique.mockResolvedValue({ sessionVersion: 0 });
+  mocks.withPersonalSession.mockImplementation(async (database, context, operation) => operation(database, {
+    actorId: "623e4567-e89b-42d3-a456-426614174000",
+    appUserId: "723e4567-e89b-42d3-a456-426614174000",
+    authSubject: context.authSubject
+  }));
   mocks.teamMemberFindUnique.mockResolvedValue({
     role: "MEMBER",
     team: { memberAccessEnabled: true }
   });
+  mocks.resolveVerifiedMemberTeamAccess.mockResolvedValue({ role: "MEMBER" });
   mocks.getPortfolio.mockResolvedValue(portfolio);
   mocks.getTutorialProgress.mockResolvedValue(tutorialProgress);
   mocks.updateTutorialProgress.mockResolvedValue({ ...tutorialProgress, revision: 2 });
@@ -204,7 +218,7 @@ describe("Phase 200 interaction routes", () => {
   });
 
   it("does not reveal a disabled or unavailable organization", async () => {
-    mocks.teamMemberFindUnique.mockResolvedValue(null);
+    mocks.resolveVerifiedMemberTeamAccess.mockResolvedValue(null);
     const { app, authorization } = await testServer();
     const response = await app.inject({
       headers: { authorization },

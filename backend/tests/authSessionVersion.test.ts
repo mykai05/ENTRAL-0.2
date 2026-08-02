@@ -7,7 +7,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../src/db.js", () => ({
   prisma: {
     user: { findUnique: mocks.userFindUnique }
-  }
+  },
+  withPersonalSession: vi.fn(async (database, context, operation) => operation(database, {
+    actorId: "123e4567-e89b-42d3-a456-426614174210",
+    appUserId: "223e4567-e89b-42d3-a456-426614174210",
+    authSubject: context.authSubject
+  }))
 }));
 
 beforeEach(() => {
@@ -51,7 +56,7 @@ describe("session-version revocation", () => {
     expect(reply.send).not.toHaveBeenCalled();
     expect((request as { user?: { sessionVersion: number } }).user?.sessionVersion).toBe(4);
     expect(mocks.userFindUnique).toHaveBeenCalledWith({
-      select: { sessionVersion: true },
+      select: { deletedAt: true, sessionVersion: true },
       where: { id: "user-1" }
     });
   });

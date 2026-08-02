@@ -2626,6 +2626,10 @@ body:has(.phase180-embedded-3d) {
   }
 
   .phase180-shell-header {
+    /* Keep the fixed mobile destination bar viewport-bound. A backdrop filter
+       creates a containing block for fixed descendants and would pin the bar
+       over the header actions instead of the bottom of the screen. */
+    backdrop-filter: none;
     grid-template-columns: minmax(0, 1fr) auto;
     min-height: 62px;
     padding: 0.52rem 0.72rem;

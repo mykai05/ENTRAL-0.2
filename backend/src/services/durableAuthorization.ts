@@ -1,4 +1,4 @@
-import { prisma } from "../db.js";
+import { prisma, withPersonalSession } from "../db.js";
 
 type DurableAuthorization = {
   authorizationVersion: number;
@@ -6,14 +6,17 @@ type DurableAuthorization = {
 };
 
 export async function currentDurableAuthorization(userId: string): Promise<DurableAuthorization> {
-  const user = await prisma.user.findUnique({
+  const user = await withPersonalSession(prisma, {
+    actionReason: "authorization.deferred.validate",
+    authSubject: userId
+  }, (transaction) => transaction.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
       internalAccess: true,
       sessionVersion: true
     }
-  });
+  }));
 
   if (!user || !user.internalAccess) {
     throw new Error("Internal authorization is no longer active for this deferred operation.");

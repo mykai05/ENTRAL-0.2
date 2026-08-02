@@ -1,0 +1,52 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 200,
+  "repository": "mykai05/ENTRAL-0.2",
+  "accepted_git_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "accepted_git_tree_sha": "05529587e34b883fc85e89beedd2272ce37d1b93",
+  "pull_request": {
+    "number": 43,
+    "url": "https://github.com/mykai05/ENTRAL-0.2/pull/43",
+    "state": "MERGED",
+    "base_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+    "accepted_head_sha": "52d02fd44ce64fc787b292e6bf567a115a1ce1f3",
+    "merge_commit_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "merged_at": "2026-08-02T06:20:55.000Z"
+  },
+  "protected_main_checks": {
+    "workflow": "CI/CD",
+    "run_id": 30735748951,
+    "run_url": "https://github.com/mykai05/ENTRAL-0.2/actions/runs/30735748951",
+    "head_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2026-08-02T06:20:57.000Z",
+    "completed_at": "2026-08-02T06:30:45.000Z",
+    "complete_phase_suite": true
+  },
+  "source_archive": {
+    "construction": "git archive of the exact protected-main commit, extracted from repository root with tracked-file inventory parity",
+    "tracked_files": 766,
+    "bytes": 21319680,
+    "sha256": "5de91aebe3355367097e33cf94cf8390b12343a280d3450413e5401208b30513",
+    "railway_json_present_at_root": true,
+    "railway_worker_json_present_at_root": true,
+    "package_json_present_at_root": true
+  },
+  "release_tag": {
+    "name": "phase-200",
+    "target_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "pushed": true
+  },
+  "reconciliation": {
+    "prerequisite_main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+    "reconciled_head_sha": "52d02fd44ce64fc787b292e6bf567a115a1ce1f3",
+    "protected_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "status": "RECONCILED"
+  },
+  "status": "PASSED",
+  "checked_at": "2026-08-02T06:30:45.000Z",
+  "receipt_sha256": "f5ca0aacb0ae72852200a39aec0ffb98a6cfc98659d03dcbd6645a40b95b77c2"
+}

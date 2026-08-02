@@ -15,7 +15,7 @@ function testEnvironment() {
   process.env.JWT_SECRET = "phase199-test-secret-that-is-long-enough";
   process.env.COOKIE_NAME = "entral_token";
   process.env.CORS_ORIGIN = "http://localhost:3000";
-  process.env.APP_PUBLIC_URL = "http://localhost:3000";
+  process.env.APP_PUBLIC_URL = "https://phase202-baseline.example.test";
   process.env.API_PUBLIC_URL = "http://localhost:4000";
   process.env.AUTH_EMAIL_PROVIDER = "console";
   delete process.env.AUTH_EMAIL_FROM;
@@ -94,93 +94,106 @@ describe("Phase 199 production truth and secure JSON reconciliation", () => {
     );
   });
 
-  it("rejects production API startup without administrative step-up", async () => {
+  it("preserves the historical static step-up gate until Phase 202 replaces it with durable authority", async () => {
     productionApiEnvironment();
     process.env.DATA_ENCRYPTION_KEY = "phase199-production-encryption-key";
     delete process.env.ADMIN_MFA_CODE;
+    const state = JSON.parse(await readFile(new URL("../../.entral/governor/PROGRAM_STATE.json", import.meta.url), "utf8")) as { current_phase: number };
 
-    await expect(import("../src/env.js")).rejects.toThrow(
-      "Production API requires ADMIN_MFA_CODE for administrative step-up."
-    );
+    if (state.current_phase < 202) {
+      await expect(import("../src/env.js")).rejects.toThrow(
+        "Production API requires ADMIN_MFA_CODE for administrative step-up."
+      );
+    } else {
+      const phase202Environment = await import("../src/env.js");
+      expect(phase202Environment.isProduction).toBe(true);
+      expect("ADMIN_MFA_CODE" in phase202Environment.env).toBe(false);
+    }
   });
 
-  it("audits plaintext secure JSON without exposing values or row identifiers", async () => {
-    const query = vi.fn()
-      .mockResolvedValueOnce([
-        { tableName: "ShopifyConnection", columnName: "credentialJson" },
-        { tableName: "ShopifyOAuthContinuation", columnName: "payloadJson" }
-      ])
-      .mockResolvedValueOnce([{ rowId: "customer-record-42", value: JSON.stringify({ accessToken: "must-not-escape" }) }])
-      .mockResolvedValueOnce([]);
+  it("requires a retained APPLY hash before a fresh credential-reference AUDIT", async () => {
     const database = {
-      $queryRawUnsafe: query,
+      $queryRawUnsafe: vi.fn(),
       $executeRawUnsafe: vi.fn(),
       $transaction: vi.fn()
     };
     const { reconcileSecureJson } = await import("../src/services/secureJsonReconciliation.js");
 
-    const receipt = await reconcileSecureJson(database as never, "AUDIT", () => new Date("2026-08-01T16:30:00.000Z"));
-    const serialized = JSON.stringify(receipt);
-
-    expect(receipt).toMatchObject({
-      status: "REQUIRES_REENCRYPTION",
-      plaintext_rows_found: 1,
-      plaintext_rows_reencrypted: 0,
-      invalid_json_rows: 0
-    });
-    expect(receipt.targets[0]?.plaintext_row_id_sha256[0]).toMatch(/^[a-f0-9]{64}$/);
-    expect(serialized).not.toContain("customer-record-42");
-    expect(serialized).not.toContain("must-not-escape");
+    await expect(reconcileSecureJson(database as never, "AUDIT", {
+      repairPlanReference: `mykai05/ENTRAL-0.2@${"d".repeat(40)}:docs/evidence/phase202/credential-apply.json`,
+      rollbackReference: `mykai05/ENTRAL-0.2@${"e".repeat(40)}:.entral/governor/releases/phase-200.json`
+    })).rejects.toThrow(/requires ENTRAL_SECURE_JSON_PRIOR_APPLY_RECEIPT_SHA256/u);
+    expect(database.$queryRawUnsafe).not.toHaveBeenCalled();
   });
 
-  it("re-encrypts discovered plaintext rows atomically with an optimistic match", async () => {
-    const plaintext = JSON.stringify({ accessToken: "provider-secret" });
-    const query = vi.fn()
-      .mockResolvedValueOnce([
-        { tableName: "ShopifyConnection", columnName: "credentialJson" },
-        { tableName: "ShopifyOAuthContinuation", columnName: "payloadJson" }
-      ])
-      .mockResolvedValueOnce([{ rowId: "row-1", value: plaintext }])
-      .mockResolvedValueOnce([]);
-    const execute = vi.fn().mockResolvedValue(1);
-    const database = {
-      $queryRawUnsafe: query,
-      $executeRawUnsafe: vi.fn(),
-      $transaction: vi.fn(async (operation: (transaction: { $executeRawUnsafe: typeof execute }) => Promise<void>) => operation({ $executeRawUnsafe: execute }))
-    };
-    const { isEncryptedSecureJson } = await import("../src/services/secureJson.js");
+  it("refuses to migrate plaintext legacy credential rows", async () => {
+    const database = credentialReconciliationDatabase(JSON.stringify({ adminToken: "must-not-escape" }));
     const { reconcileSecureJson } = await import("../src/services/secureJsonReconciliation.js");
 
-    const receipt = await reconcileSecureJson(database as never, "APPLY", () => new Date("2026-08-01T16:31:00.000Z"));
-
-    expect(receipt.status).toBe("VERIFIED");
-    expect(receipt.plaintext_rows_found).toBe(1);
-    expect(receipt.plaintext_rows_reencrypted).toBe(1);
-    expect(execute).toHaveBeenCalledOnce();
-    const [, encrypted, rowId, previous] = execute.mock.calls[0] as [string, string, string, string];
-    expect(isEncryptedSecureJson(encrypted)).toBe(true);
-    expect(rowId).toBe("row-1");
-    expect(previous).toBe(plaintext);
+    await expect(reconcileSecureJson(database as never, "APPLY", {
+      repairPlanReference: `mykai05/ENTRAL-0.2@${"d".repeat(40)}:docs/evidence/phase202/credential-apply.json`,
+      rollbackReference: `mykai05/ENTRAL-0.2@${"e".repeat(40)}:.entral/governor/releases/phase-200.json`
+    })).rejects.toThrow("Credential reconciliation will not migrate plaintext or invalid legacy rows.");
+    expect(database.$transaction).not.toHaveBeenCalled();
+    expect(JSON.stringify(database.$queryRawUnsafe.mock.calls)).not.toContain("must-not-escape");
   });
 
-  it("blocks mutation when invalid legacy JSON requires operator review", async () => {
-    const database = {
-      $queryRawUnsafe: vi.fn()
-        .mockResolvedValueOnce([
-          { tableName: "ShopifyConnection", columnName: "credentialJson" },
-          { tableName: "ShopifyOAuthContinuation", columnName: "payloadJson" }
-        ])
-        .mockResolvedValueOnce([{ rowId: "row-invalid", value: "{not-json" }])
-        .mockResolvedValueOnce([]),
-      $executeRawUnsafe: vi.fn(),
-      $transaction: vi.fn()
-    };
+  it("blocks mutation when encrypted legacy JSON is structurally invalid", async () => {
+    const { stringifySecureJson } = await import("../src/services/secureJson.js");
+    const database = credentialReconciliationDatabase(stringifySecureJson({ unexpected: true }));
     const { reconcileSecureJson } = await import("../src/services/secureJsonReconciliation.js");
 
-    const receipt = await reconcileSecureJson(database as never, "APPLY");
-
-    expect(receipt.status).toBe("BLOCKED");
-    expect(receipt.invalid_json_rows).toBe(1);
+    await expect(reconcileSecureJson(database as never, "APPLY", {
+      repairPlanReference: `mykai05/ENTRAL-0.2@${"d".repeat(40)}:docs/evidence/phase202/credential-apply.json`,
+      rollbackReference: `mykai05/ENTRAL-0.2@${"e".repeat(40)}:.entral/governor/releases/phase-200.json`
+    })).rejects.toThrow("Credential reconciliation will not migrate plaintext or invalid legacy rows.");
     expect(database.$transaction).not.toHaveBeenCalled();
   });
 });
+
+function credentialReconciliationDatabase(legacyValue: string) {
+  const query = vi.fn(async (sql: string) => {
+    if (sql.includes("information_schema.columns")) {
+      return [
+        { tableName: "ShopifyConnection", columnName: "credentialJson" },
+        { tableName: "ShopifyConnection", columnName: "credentialSecretReferenceId" },
+        { tableName: "ShopifyOAuthContinuation", columnName: "payloadJson" },
+        { tableName: "ShopifyOAuthContinuation", columnName: "payloadSecretReferenceId" }
+      ];
+    }
+    if (sql.includes("phase202_credential_inventory_hash")) return [{ inventoryHash: "a".repeat(64) }];
+    if (sql.includes('FROM "ShopifyConnection" source')) {
+      return [{
+        rowId: "customer-record-42",
+        tenantId: "11111111-1111-4111-8111-111111111111",
+        organizationId: "22222222-2222-4222-8222-222222222222",
+        businessId: null,
+        actorId: "33333333-3333-4333-8333-333333333333",
+        status: "active",
+        legacyValue,
+        referenceId: null,
+        tenantEnvironment: "PRODUCTION",
+        referenceOrganizationId: null,
+        referenceTenantId: null,
+        referenceBusinessId: null,
+        referenceProvider: null,
+        referencePurpose: null,
+        referenceEnvironment: null,
+        referenceKeyVersion: null,
+        referenceEncryptedValue: null,
+        referenceLastFour: null,
+        referenceVersion: null,
+        referenceRotatedAt: null,
+        referenceRevokedAt: null,
+        referenceCreatedByActorId: null
+      }];
+    }
+    if (sql.includes('FROM "ShopifyOAuthContinuation" source')) return [];
+    throw new Error(`Unexpected SQL: ${sql}`);
+  });
+  return {
+    $queryRawUnsafe: query,
+    $executeRawUnsafe: vi.fn(),
+    $transaction: vi.fn()
+  };
+}

@@ -14,7 +14,7 @@ No consumer chat transcript or hidden model memory is needed. `PROGRAM_STATE.jso
 
 ## Mutation authorization
 
-All mutating commands require `--session-id <stable-session-id>`. The only accepted actor is `CODEX_5_6_SOL_XHIGH`. Supplying any other `--actor` fails closed. Local filesystem and Git permissions remain the outer authorization boundary; production credentials are never stored here.
+All mutating commands require `--session-id <stable-session-id>`. The only accepted execution model and reasoning level is Codex 5.6 Sol Extra High (`CODEX_5_6_SOL_XHIGH`). Supplying any other `--actor` fails closed. Native Codex subagents may be used when materially useful, but the single-writer boundary applies to each mutable file, module, schema, contract, or central runtime scope. Delegated writers must own bounded, non-overlapping scopes; the phase lead alone integrates, commits, merges, deploys, repairs production, verifies, and certifies. The durable rules are in `program/EXECUTION_POLICY.v1.json`. Local filesystem and Git permissions remain the outer authorization boundary; production credentials are never stored here.
 
 ## Commands
 

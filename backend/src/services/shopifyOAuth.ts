@@ -25,6 +25,7 @@ export type ShopifyOAuthStatePayload = {
   scopes: string[];
   shopDomain: string;
   storeId: string;
+  tenantId: string;
   userId: string;
 };
 
@@ -141,6 +142,7 @@ export function buildShopifyOAuthState(input: {
   scopes: string[];
   shopDomain: string;
   storeId: string;
+  tenantId: string;
   userId: string;
 }, options: StateOptions = {}) {
   const now = options.now ?? new Date();
@@ -156,6 +158,7 @@ export function buildShopifyOAuthState(input: {
     scopes: normalizeShopifyOAuthScopes(input.scopes),
     shopDomain: input.shopDomain,
     storeId: input.storeId,
+    tenantId: input.tenantId,
     userId: input.userId
   };
   const encoded = encodeJson(payload);
@@ -186,8 +189,9 @@ export function verifyShopifyOAuthState(token: string, options: StateOptions = {
     || payload.exp < nowSeconds
     || !Number.isSafeInteger(payload.authorizationVersion)
     || payload.authorizationVersion < 0
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.tenantId)
   ) {
-    throw new Error("Shopify OAuth state has expired.");
+    throw new Error("Shopify OAuth state has expired or lacks a valid tenant binding.");
   }
 
   const shopDomain = normalizeShopifyOAuthShopDomain(payload.shopDomain);
@@ -233,6 +237,7 @@ export function buildShopifyOAuthStart(input: {
   scopes?: string[];
   shopDomain: string;
   storeId: string;
+  tenantId: string;
   userId: string;
 }, options: ShopifyOAuthStartOptions = {}): ShopifyOAuthStart {
   const shopDomain = normalizeShopifyOAuthShopDomain(input.shopDomain);
@@ -249,6 +254,7 @@ export function buildShopifyOAuthStart(input: {
     scopes,
     shopDomain,
     storeId: input.storeId,
+    tenantId: input.tenantId,
     userId: input.userId
   }, options);
   const params = new URLSearchParams({

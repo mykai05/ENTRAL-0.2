@@ -35,6 +35,22 @@ const optionalTrimmedString = z.preprocess((value) => {
 
 const isWorkerProcess = process.env.PROCESS_ROLE?.trim().toLowerCase() === "worker";
 
+function isNonLocalHttpsUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase();
+    return url.protocol === "https:"
+      && url.username === ""
+      && url.password === ""
+      && hostname !== "localhost"
+      && !hostname.endsWith(".localhost")
+      && hostname !== "::1"
+      && !/^127(?:\.\d{1,3}){3}$/.test(hostname);
+  } catch {
+    return false;
+  }
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_HOST: z.string().min(1).default("localhost"),
@@ -42,6 +58,10 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   COOKIE_NAME: z.string().min(1).default("entral_token"),
+  REFRESH_COOKIE_NAME: z.string().min(1).default("entral_refresh"),
+  ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(300).max(3600).default(900),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+  MFA_STEP_UP_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(600),
   CORS_ORIGIN: z.string().url().default("http://localhost:3000"),
   APP_PUBLIC_URL: z.string().url().default("http://localhost:3000"),
   API_PUBLIC_URL: z.string().url().default("http://localhost:4000"),
@@ -62,7 +82,7 @@ const envSchema = z.object({
   CANONICAL_OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(1000).default(12),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   AUTH_EMAIL_PROVIDER: z.enum(["resend", "console"]).default(
-    process.env.NODE_ENV === "production" && !isWorkerProcess ? "resend" : "console"
+    process.env.NODE_ENV === "production" ? "resend" : "console"
   ),
   AUTH_EMAIL_FROM: optionalTrimmedString,
   RESEND_API_KEY: optionalTrimmedString,
@@ -102,12 +122,15 @@ const envSchema = z.object({
   AUTONOMY_SCHEDULER_INTERVAL_MS: z.coerce.number().int().min(1000).max(300000).default(5000),
   AUTONOMY_MIN_INTERVAL_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
   DATA_ENCRYPTION_KEY: optionalTrimmedString,
-  ADMIN_MFA_CODE: optionalTrimmedString,
+  DATA_ENCRYPTION_KEY_VERSION: z.string().trim().regex(/^[A-Za-z0-9._-]{1,40}$/).default("v1"),
+  DATA_ENCRYPTION_KEYRING_JSON: optionalTrimmedString,
+  SECRET_BROKER_ENVIRONMENT: z.enum(["DEVELOPMENT", "STAGING", "PRODUCTION"]).default(
+    process.env.NODE_ENV === "production" ? "PRODUCTION" : process.env.NODE_ENV === "test" ? "DEVELOPMENT" : "DEVELOPMENT"
+  ),
   ALERT_WEBHOOK_URL: optionalTrimmedString
 }).superRefine((value, context) => {
   if (
     value.NODE_ENV === "production"
-    && !isWorkerProcess
     && value.AUTH_EMAIL_PROVIDER === "console"
   ) {
     context.addIssue({
@@ -117,7 +140,15 @@ const envSchema = z.object({
     });
   }
 
-  if (!isWorkerProcess && value.AUTH_EMAIL_PROVIDER === "resend") {
+  if (value.NODE_ENV === "production" && !isNonLocalHttpsUrl(value.APP_PUBLIC_URL)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["APP_PUBLIC_URL"],
+      message: "Production APP_PUBLIC_URL must be a non-local HTTPS origin."
+    });
+  }
+
+  if (value.AUTH_EMAIL_PROVIDER === "resend") {
     if (!value.RESEND_API_KEY) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -156,14 +187,6 @@ const envSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["DATA_ENCRYPTION_KEY"],
       message: "Production requires DATA_ENCRYPTION_KEY; plaintext secure JSON is forbidden."
-    });
-  }
-
-  if (value.NODE_ENV === "production" && !isWorkerProcess && !value.ADMIN_MFA_CODE) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["ADMIN_MFA_CODE"],
-      message: "Production API requires ADMIN_MFA_CODE for administrative step-up."
     });
   }
 
@@ -208,6 +231,10 @@ export const env = envSchema.parse({
   DATABASE_URL: process.env.DATABASE_URL,
   JWT_SECRET: process.env.JWT_SECRET,
   COOKIE_NAME: process.env.COOKIE_NAME,
+  REFRESH_COOKIE_NAME: process.env.REFRESH_COOKIE_NAME,
+  ACCESS_TOKEN_TTL_SECONDS: process.env.ACCESS_TOKEN_TTL_SECONDS,
+  REFRESH_TOKEN_TTL_DAYS: process.env.REFRESH_TOKEN_TTL_DAYS,
+  MFA_STEP_UP_TTL_SECONDS: process.env.MFA_STEP_UP_TTL_SECONDS,
   CORS_ORIGIN: process.env.CORS_ORIGIN,
   APP_PUBLIC_URL: process.env.APP_PUBLIC_URL,
   API_PUBLIC_URL: process.env.API_PUBLIC_URL,
@@ -260,7 +287,9 @@ export const env = envSchema.parse({
   AUTONOMY_SCHEDULER_INTERVAL_MS: process.env.AUTONOMY_SCHEDULER_INTERVAL_MS,
   AUTONOMY_MIN_INTERVAL_MINUTES: process.env.AUTONOMY_MIN_INTERVAL_MINUTES,
   DATA_ENCRYPTION_KEY: process.env.DATA_ENCRYPTION_KEY,
-  ADMIN_MFA_CODE: process.env.ADMIN_MFA_CODE,
+  DATA_ENCRYPTION_KEY_VERSION: process.env.DATA_ENCRYPTION_KEY_VERSION,
+  DATA_ENCRYPTION_KEYRING_JSON: process.env.DATA_ENCRYPTION_KEYRING_JSON,
+  SECRET_BROKER_ENVIRONMENT: process.env.SECRET_BROKER_ENVIRONMENT,
   ALERT_WEBHOOK_URL: process.env.ALERT_WEBHOOK_URL
 });
 

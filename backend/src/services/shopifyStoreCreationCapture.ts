@@ -4,6 +4,7 @@ import { recordAuditLog } from "./audit.js";
 import { createShopifyAutonomyResumeJob } from "./shopifyAutonomyJobs.js";
 import { buildShopifyOAuthStart, normalizeShopifyOAuthShopDomain } from "./shopifyOAuth.js";
 import { attachShopifyOAuthContinuationAudit, createShopifyOAuthContinuation } from "./shopifyOAuthContinuations.js";
+import type { SecretBrokerTenantPrincipal } from "./phase202SecretBroker.js";
 import { assertDurableAuthorization } from "./durableAuthorization.js";
 
 export class ShopifyStoreCreationCaptureError extends Error {
@@ -18,10 +19,12 @@ export class ShopifyStoreCreationCaptureError extends Error {
 }
 
 export type ShopifyStoreCreationCaptureStore = {
+  businessId: string | null;
   businessName: string;
   email: string;
   id: string;
   storePlatform: string;
+  tenantId: string | null;
 };
 
 export type ShopifyStoreCreationCaptureResult = Awaited<ReturnType<typeof captureShopifyStoreCreationForStore>>;
@@ -30,12 +33,26 @@ export async function captureShopifyStoreCreationForStore(input: {
   approvalPacketId?: string | null;
   authorizationVersion: number;
   operationKey?: string;
+  principal: SecretBrokerTenantPrincipal;
   reviewStatus?: "approved" | "rejected" | null;
   store: ShopifyStoreCreationCaptureStore;
   userId: string;
   value: ShopifyStoreCreationCaptureInput;
 }) {
   await assertDurableAuthorization(input);
+  if (!input.store.tenantId || input.principal.tenantId !== input.store.tenantId) {
+    throw new ShopifyStoreCreationCaptureError(409, "Shopify store creation capture requires the exact canonical store tenant.");
+  }
+  if (!(typeof input.principal.authSubject === "string" && input.principal.authSubject.trim())
+    && !(typeof input.principal.serviceAppUserId === "string" && input.principal.serviceAppUserId.trim())) {
+    throw new ShopifyStoreCreationCaptureError(503, "Shopify store creation capture requires an authenticated human or configured worker principal.");
+  }
+  if (typeof input.principal.authSubject === "string" && input.principal.authSubject !== input.userId) {
+    throw new ShopifyStoreCreationCaptureError(403, "Shopify store creation capture user does not match the authenticated principal.");
+  }
+  if (typeof input.principal.serviceAppUserId === "string" && input.value.startOAuth && input.value.continueAfterApproval) {
+    throw new ShopifyStoreCreationCaptureError(403, "A human principal must approve creation of a credential-bearing Shopify OAuth continuation.");
+  }
   if (input.store.storePlatform !== "SHOPIFY") {
     throw new ShopifyStoreCreationCaptureError(400, "Shopify store creation capture can only be recorded for Shopify merch stores.");
   }
@@ -72,6 +89,7 @@ export async function captureShopifyStoreCreationForStore(input: {
         scopes: input.value.scopes,
         shopDomain,
         storeId: input.store.id,
+        tenantId: input.principal.tenantId,
         userId: input.userId
       }, {
         nonce: input.operationKey
@@ -93,8 +111,11 @@ export async function captureShopifyStoreCreationForStore(input: {
   const ownerEmail = input.value.ownerEmail ?? input.store.email;
   const continuation = oauthStart && input.value.continueAfterApproval
     ? await createShopifyOAuthContinuation({
+      ...input.principal,
       authorizationVersion: input.authorizationVersion,
+      businessId: input.store.businessId,
       expiresAt: new Date(oauthStart.stateExpiresAt),
+      idempotencyKey: `${input.operationKey ?? input.principal.requestId}:shopify-oauth-continuation`,
       payload: {
         connectorApproval: input.value.connectorApproval,
         countryCode: input.value.countryCode,
@@ -206,6 +227,7 @@ export async function captureShopifyStoreCreationForStore(input: {
 
   if (continuation) {
     await attachShopifyOAuthContinuationAudit({
+      ...input.principal,
       auditLogId: auditLog.id,
       continuationId: continuation.id
     });

@@ -1,0 +1,178 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 202,
+  "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
+  "status": "PRE_INTEGRATION_LOCAL_PASS",
+  "qualification": "These are local deterministic and browser receipts from the post-correction Phase 202 candidate reconciled with current origin/main. The accepted implementation commit passed an independent exact-commit clean-checkout replay. They do not prove protected main or production.",
+  "accepted_candidate": {
+    "commit_sha": "8eb3399485eb7a36bade3d2e19bc3b21a7675d17",
+    "tree_sha": "f3ade9f5fb9ea844eeb5000856ef1bfd74564cda",
+    "clean_checkout_status": "PASSED",
+    "working_tree_status_after_replay": "CLEAN",
+    "ci_prerequisite_order": "FROZEN_INSTALL_THEN_PRISMA_GENERATE_THEN_PHASE202"
+  },
+  "runtime": {
+    "node": "20.19.0",
+    "pnpm": "9.12.3"
+  },
+  "commands": [
+    {
+      "command": "pnpm test:phase202",
+      "status": "PASSED",
+      "results": "41 contract/static/reconciliation tests, 272 backend tests, and 19 frontend tests; all 20 PostgreSQL identity/tenancy cases and the tenant-worker integration case ran with zero environment skips"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED",
+      "results": "51 contract tests and reproducible contract build"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED",
+      "results": "Prisma Client generated under the pinned Node 20 runtime"
+    },
+    {
+      "command": "pnpm --filter @entral/backend test",
+      "status": "PASSED",
+      "results": "complete backend Vitest workspace suite; final recursive run passed 602 tests"
+    },
+    {
+      "command": "pnpm --filter @entral/frontend test",
+      "status": "PASSED",
+      "results": "complete frontend Vitest workspace suite; final recursive run passed 439 tests"
+    },
+    {
+      "command": "pnpm test:phase200",
+      "status": "PASSED",
+      "results": "complete Phase 200 deterministic regression suite under activated Phase 202 Governor state"
+    },
+    {
+      "command": "pnpm test:phase199",
+      "status": "PASSED",
+      "results": "complete Phase 199 deterministic regression suite with the state-bound Phase 200 assertion brought forward for activated Phase 202"
+    },
+    {
+      "command": "pnpm test:phase198",
+      "status": "PASSED",
+      "results": "complete Phase 198 deterministic regression suite"
+    },
+    {
+      "command": "pnpm test:phase197",
+      "status": "PASSED",
+      "results": "complete Phase 197 deterministic regression suite"
+    },
+    {
+      "command": "pnpm test:phase196",
+      "status": "PASSED",
+      "results": "complete Phase 196 deterministic regression suite"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED",
+      "results": "26 Phase 195 deterministic regression tests passed from the exact accepted detached checkout"
+    },
+    {
+      "command": "pnpm test:phase195:recovery",
+      "status": "PASSED",
+      "results": "disposable PostgreSQL and Redis backup, restore, forward migration, historical role grants 046 and 047, restart, and readiness passed from the exact accepted detached checkout; receipt phase195-recovery-6cc4a6dcb1ff.json; Phase 202 production grant file 048 remains required by the unchanged live role installer and is intentionally excluded from the Phase 195-capped recovery schema"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED",
+      "results": "contracts, backend, and frontend type/lint checks"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED",
+      "results": "complete recursive contracts, backend, and frontend workspace suite"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED",
+      "results": "contracts and backend TypeScript builds plus Next.js production build"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED",
+      "results": "local release readiness and certified live-release drift checks"
+    },
+    {
+      "command": "pnpm test:e2e",
+      "status": "PASSED",
+      "results": "complete local Chrome acceptance suite rerun after the bounded corrections, including Phase 202 account-security and invitation flows at 360, 390, 412, and 430 CSS pixels; wall time 183.7 seconds"
+    },
+    {
+      "command": "prisma deploy against a dropped-and-recreated isolated Phase 202 database, then pnpm prisma:roles and prisma migrate status",
+      "status": "PASSED",
+      "results": "44 migrations applied from an empty database; zero failed, zero rolled back, zero pending; runtime database roles applied successfully"
+    },
+    {
+      "command": "exact-commit detached clean checkout: frozen install, prisma generate, pnpm test:phase202, pnpm test:phase195, pnpm test:phase195:recovery, pnpm build, git status --porcelain, and git diff --check",
+      "status": "PASSED",
+      "results": "commit 8eb3399485eb7a36bade3d2e19bc3b21a7675d17 and tree f3ade9f5fb9ea844eeb5000856ef1bfd74564cda reproduced the CI prerequisite and development-only broker environment, 41 contract/static/reconciliation tests, 272 backend tests, 19 frontend tests, 26 Phase 195 tests, the complete Phase 195 recovery drill with receipt phase195-recovery-6cc4a6dcb1ff.json, a production build, and a clean tracked worktree; the model-ledger hash remained stable across CRLF checkout normalization"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED",
+      "results": "no whitespace errors in the Phase 202 candidate"
+    },
+    {
+      "command": "governor verify",
+      "status": "PASSED",
+      "results": "Governor event chain, active Phase 202 TaskPacket, and claimed write lease verified"
+    }
+  ],
+  "focused_boundary_suites": {
+    "cross_tenant_postgresql": "PASSED_WITHOUT_SKIPS",
+    "worker_tenant_authority": "PASSED",
+    "session_rotation_replay_and_revocation": "PASSED",
+    "mfa_recovery_and_step_up": "PASSED",
+    "membership_idempotency_and_notification_evidence": "PASSED",
+    "secret_broker_unavailable_and_plaintext_fallback_rejection": "PASSED",
+    "support_access_expiry_read_only_elevation_and_visibility": "PASSED",
+    "ownership_reconciliation_and_release_blockers": "PASSED",
+    "credential_reference_inventory_and_reconciliation": "PASSED",
+    "browser_accessibility_and_responsive_matrix": "PASSED"
+  },
+  "local_migration_receipt": {
+    "status": "PASSED",
+    "phase_202_migration": "20260802090000_phase_202_identity_tenancy_authority",
+    "phase_202_migration_sha256": "b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf",
+    "roles_sql": "prisma/security/048_phase_202_roles_and_grants.sql",
+    "roles_sql_sha256": "58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302",
+    "applied_migration_count": 44,
+    "failed_migration_count": 0,
+    "rolled_back_migration_count": 0,
+    "pending_migration_count": 0
+  },
+  "intentionally_not_run": [
+    {
+      "command": "security scan",
+      "reason": "Owner explicitly prohibited a new security scan."
+    },
+    {
+      "command": "protected-main Phase 202 checks",
+      "reason": "Pre-integration evidence cannot claim protected-main checks before the accepted candidate is integrated."
+    },
+    {
+      "command": "exact-main-SHA Phase 202 production deployment and production migrations",
+      "reason": "These must run only after protected-main integration identifies the exact accepted release SHA."
+    },
+    {
+      "command": "production ownership APPLY and independent fresh AUDIT",
+      "reason": "The committed runner must execute APPLY after exact-SHA deployment and AUDIT in a separate fresh invocation retaining both receipt hashes."
+    },
+    {
+      "command": "production credential-reference APPLY and independent fresh AUDIT",
+      "reason": "The committed runner must execute APPLY after exact-SHA deployment and AUDIT in a separate fresh invocation for the two protected Shopify credential targets."
+    },
+    {
+      "command": "authenticated Phase 202 production smoke, browser acceptance, and state readback",
+      "reason": "These require the exact accepted main SHA to be live in frontend, API, worker, and database."
+    }
+  ],
+  "pending_pre_integration": [
+    "perform final origin/main reconciliation and rerun any affected gate"
+  ]
+}

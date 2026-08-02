@@ -9,6 +9,7 @@ export const resendSendOperationCode = "email.send";
 
 type AuthEmailInput = {
   html: string;
+  idempotencyKey?: string;
   subject: string;
   text: string;
   to: string;
@@ -39,6 +40,10 @@ function authUrl(pathname: string, token: string) {
   return url.toString();
 }
 
+export function buildMembershipInvitationUrl(token: string) {
+  return authUrl("/member/invitations/accept", token);
+}
+
 function shellHtml(title: string, body: string, buttonLabel: string, url: string) {
   return `
     <div style="font-family:Arial,sans-serif;line-height:1.55;color:#101820">
@@ -55,6 +60,10 @@ function shellHtml(title: string, body: string, buttonLabel: string, url: string
 }
 
 async function deliverAuthEmail(input: AuthEmailInput) {
+  if (input.idempotencyKey !== undefined
+    && (input.idempotencyKey.length === 0 || input.idempotencyKey.length > 256)) {
+    throw new Error("AUTH_EMAIL_IDEMPOTENCY_KEY_INVALID");
+  }
   if (env.AUTH_EMAIL_PROVIDER === "console") {
     return {
       provider: "console" as const,
@@ -73,6 +82,12 @@ async function deliverAuthEmail(input: AuthEmailInput) {
     );
   }
 
+  const headers: Record<string, string> = {
+    authorization: `Bearer ${env.RESEND_API_KEY}`,
+    "content-type": "application/json"
+  };
+  if (input.idempotencyKey) headers["idempotency-key"] = input.idempotencyKey;
+
   const response = await fetch("https://api.resend.com/emails", {
     body: JSON.stringify({
       from: env.AUTH_EMAIL_FROM,
@@ -81,10 +96,7 @@ async function deliverAuthEmail(input: AuthEmailInput) {
       html: input.html,
       text: input.text
     }),
-    headers: {
-      authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "content-type": "application/json"
-    },
+    headers,
     method: "POST"
   });
 
@@ -163,5 +175,47 @@ export async function sendPasswordResetEmail(input: UserEmailInput) {
   return deliverAuthEmail({
     to: input.to,
     ...passwordResetEmailContent(input)
+  });
+}
+
+export async function sendMembershipInvitationEmail(input: {
+  idempotencyKey: string;
+  organizationName: string;
+  role: string;
+  to: string;
+  token: string;
+}) {
+  const url = buildMembershipInvitationUrl(input.token);
+  return deliverAuthEmail({
+    idempotencyKey: input.idempotencyKey,
+    to: input.to,
+    subject: `You're invited to ${input.organizationName} in ENTRAL`,
+    text: `You were invited to ${input.organizationName} in ENTRAL with the ${input.role} role. Accept the invitation: ${url}\n\nThis invitation is scoped to that organization and expires automatically.`,
+    html: shellHtml(
+      `Join ${input.organizationName} in ENTRAL`,
+      `You were invited with the ${escapeHtml(input.role)} role. The invitation is scoped to this organization and expires automatically.`,
+      "Accept invitation",
+      url
+    )
+  });
+}
+
+export async function sendMembershipChangeEmail(input: {
+  action: string;
+  idempotencyKey: string;
+  organizationName: string;
+  to: string;
+}) {
+  return deliverAuthEmail({
+    idempotencyKey: input.idempotencyKey,
+    to: input.to,
+    subject: `Your ${input.organizationName} membership changed`,
+    text: `Your membership in ${input.organizationName} was changed: ${input.action}. Sign in to ENTRAL to review the current status.`,
+    html: shellHtml(
+      "Your ENTRAL membership changed",
+      `Your membership in ${escapeHtml(input.organizationName)} was changed: ${escapeHtml(input.action)}. Sign in to review the current status.`,
+      "Review account",
+      new URL("/member/account/security", env.APP_PUBLIC_URL).toString()
+    )
   });
 }

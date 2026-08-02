@@ -45,6 +45,7 @@ function readyComponents(): WorkerReadinessComponents {
     automation_worker: true,
     autonomy_scheduler: true,
     canonical_outbox_dispatcher: true,
+    membership_notification_dispatcher: true,
     process: true
   };
 }

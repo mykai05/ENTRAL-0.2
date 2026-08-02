@@ -282,6 +282,11 @@ async function withAutomaticStoreCreationCapture(input: {
     const result = await captureShopifyStoreCreationForStore({
       authorizationVersion: input.authorizationVersion,
       operationKey: input.operationKey,
+      principal: {
+        requestId: `shopify-browser-task:${input.operationKey}`,
+        serviceAppUserId: env.CANONICAL_OUTBOX_SERVICE_APP_USER_ID ?? "",
+        tenantId: store.tenantId ?? ""
+      },
       store,
       userId: input.userId,
       value: captureInput
