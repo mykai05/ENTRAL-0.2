@@ -215,8 +215,8 @@ async function claimDeliveries(input: {
     SELECT *
     FROM entral.phase202_claim_notification_deliveries(
       ${input.workerId},
-      ${input.batchSize},
-      ${input.lockDurationMs}
+      ${input.batchSize}::integer,
+      ${input.lockDurationMs}::integer
     )
   `));
 }
@@ -262,8 +262,8 @@ async function failDelivery(input: {
       ${input.deliveryId}::uuid,
       ${input.workerId},
       ${input.errorCode},
-      ${input.maxAttempts},
-      ${input.retryDelayMs}
+      ${input.maxAttempts}::integer,
+      ${input.retryDelayMs}::integer
     ) AS "status"
   `));
   const status = rows[0]?.status;
