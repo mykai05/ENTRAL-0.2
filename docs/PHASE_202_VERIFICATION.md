@@ -9,8 +9,8 @@
 - TaskPacket: `P202-IDENTITY-TENANCY-AUTHORITY-001`
 - Candidate branch: `codex/phase-202-identity-tenancy`
 - Starting continuation commit: `26a38df50fb0f19c8079acd40860fc2ae27ad25b`
-- Accepted implementation commit: `05f8580732e12203dc456fca5bf13a19ba268bf6`
-- Accepted implementation tree: `6abf378170c45f5d50a4862915169d74821a094b`
+- Accepted implementation commit: `8eb3399485eb7a36bade3d2e19bc3b21a7675d17`
+- Accepted implementation tree: `f3ade9f5fb9ea844eeb5000856ef1bfd74564cda`
 - Final accepted main SHA: pending
 - Review policy: conditional; no protocol-required checkpoint is active
 - Phase 203: blocked and not implemented
@@ -48,11 +48,11 @@ The exact 20 acceptance gates `P202-F001-A` through `P202-F020-A` have `LOCAL_PA
 - Lint, Prisma Client generation, production build, release-readiness checks, `git diff --check`, and Governor verification passed.
 - The complete local Chrome suite passed again after the bounded corrections in 183.7 seconds, including the Phase 202 account-security and invitation surfaces at 360, 390, 412, and 430 CSS pixels.
 - A dropped-and-recreated isolated PostgreSQL database replay applied all 44 migrations from empty state, applied the Phase 202 runtime roles, and reported zero failed, rolled-back, or pending migrations.
-- A detached clean checkout at exact implementation commit `05f8580732e12203dc456fca5bf13a19ba268bf6` completed a frozen install, Prisma Client generation, the complete Phase 202 suite with real PostgreSQL and the development-only CI broker environment, and the production build. Its tracked worktree remained clean and `git diff --check` passed.
+- A detached clean checkout at exact implementation commit `8eb3399485eb7a36bade3d2e19bc3b21a7675d17` completed a frozen install, Prisma Client generation, the complete Phase 202 suite with real PostgreSQL and the development-only CI broker environment, the complete Phase 195 deterministic suite, the disposable backup/restore recovery drill, and the production build. Recovery receipt `phase195-recovery-6cc4a6dcb1ff.json` passed, the tracked worktree remained clean, and `git diff --check` passed.
 
 The Phase 202 migration SHA-256 is `b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf`. The Phase 202 roles/grants SQL SHA-256 is `58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302`.
 
-Because bounded tenant- and MFA-boundary corrections followed the first complete-suite pass, every affected focused test, the complete mandatory non-browser suite, and the complete Chrome suite were rerun successfully after reconciliation with current `origin/main`. The first detached replay exposed a checkout-line-ending-dependent ledger-hash assertion; the gate now hashes canonical LF repository text. GitHub then exposed two clean-CI prerequisites: Prisma Client generation was ordered after Phase 202, and the dedicated PostgreSQL step omitted its development-only secret-broker context. Generation now follows the frozen install, and the PostgreSQL test step supplies an explicit non-production key version and development environment. The exact CI order, all 21 dedicated PostgreSQL cases, complete Phase 202 suite, and production build passed from a detached checkout at accepted implementation commit `05f8580732e12203dc456fca5bf13a19ba268bf6`.
+Because bounded tenant- and MFA-boundary corrections followed the first complete-suite pass, every affected focused test, the complete mandatory non-browser suite, and the complete Chrome suite were rerun successfully after reconciliation with current `origin/main`. The first detached replay exposed a checkout-line-ending-dependent ledger-hash assertion; the gate now hashes canonical LF repository text. GitHub then exposed two clean-CI prerequisites: Prisma Client generation was ordered after Phase 202, and the dedicated PostgreSQL step omitted its development-only secret-broker context. Generation now follows the frozen install, and the PostgreSQL test step supplies an explicit non-production key version and development environment. GitHub's Phase 195 recovery job then exposed that the historical recovery schema was incorrectly receiving the new Phase 202 grant file. The recovery gate now explicitly preserves its Phase 195 grant boundary at files 046 and 047, while the unchanged production role installer continues to require 046, 047, and the Phase 202 file 048. The exact CI order, all 21 dedicated PostgreSQL cases, complete Phase 202 suite, Phase 195 deterministic suite, Phase 195 recovery drill, and production build passed from a detached checkout at accepted implementation commit `8eb3399485eb7a36bade3d2e19bc3b21a7675d17`.
 
 ## Pending protected-main and production release gates
 

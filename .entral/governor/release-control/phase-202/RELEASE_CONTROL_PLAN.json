@@ -33,7 +33,7 @@
   },
   "task": {
     "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
-    "commit_sha": "05f8580732e12203dc456fca5bf13a19ba268bf6",
+    "commit_sha": "8eb3399485eb7a36bade3d2e19bc3b21a7675d17",
     "changed_files": [
       ".entral/governor/events/EVENTS.jsonl",
       ".entral/governor/lib/governor.mjs",
@@ -176,6 +176,8 @@
       "prisma/schema.prisma",
       "prisma/security/048_phase_202_roles_and_grants.sql",
       "scripts/apply-database-roles.mjs",
+      "scripts/phase195-recovery-gate.mjs",
+      "scripts/phase195-recovery-gate.test.mjs",
       "scripts/phase199-baseline-gates.test.mjs",
       "scripts/phase202-identity-gates.test.mjs",
       "scripts/phase202-ownership-reconcile.mjs",
@@ -193,6 +195,7 @@
       "pnpm test:phase197",
       "pnpm test:phase196",
       "pnpm test:phase195",
+      "pnpm test:phase195:recovery",
       "pnpm lint",
       "pnpm test",
       "pnpm build",
@@ -212,21 +215,34 @@
   },
   "candidate_binding": {
     "status": "ACCEPTED_EXACT_SHA_CLEAN_CHECKOUT",
-    "accepted_commit_sha": "05f8580732e12203dc456fca5bf13a19ba268bf6",
-    "accepted_tree_sha": "6abf378170c45f5d50a4862915169d74821a094b",
+    "accepted_commit_sha": "8eb3399485eb7a36bade3d2e19bc3b21a7675d17",
+    "accepted_tree_sha": "f3ade9f5fb9ea844eeb5000856ef1bfd74564cda",
     "worktree_status_at_acceptance": "CLEAN",
-    "working_tree_fingerprint_sha256": "a95edd3dcdb3316e88c79a07249206b52e1f7dba4e6f10fc57e52366b590402c",
+    "working_tree_fingerprint_sha256": "469630b5fdf0432bec8d2dd8162e400852a2a6c788c8a3a04d10bb1be363d1ed",
     "fingerprint_algorithm": "SHA256 over sorted origin/main to accepted commit path, tab, accepted Git blob SHA-1 records with the ReleaseControlPlan path represented by the SELF sentinel to avoid a circular content hash",
-    "fingerprinted_changed_file_count": 145,
+    "fingerprinted_changed_file_count": 147,
+    "candidate_rationale": "The accepted Phase 202 candidate includes the bounded Phase 195 historical recovery-grant correction required to keep the certified recovery probe compatible with the current additive database role chain without reopening Phase 195.",
+    "bounded_historical_correction": {
+      "scope": [
+        "scripts/phase195-recovery-gate.mjs",
+        "scripts/phase195-recovery-gate.test.mjs"
+      ],
+      "classification": "PHASE_202_PREREQUISITE_COMPATIBILITY_CORRECTION",
+      "phase195_reopened": false,
+      "phase195_recertification_required": false
+    },
     "clean_checkout_acceptance": {
       "checkout_mode": "DETACHED_EXACT_SHA",
-      "source_commit_sha": "05f8580732e12203dc456fca5bf13a19ba268bf6",
-      "source_tree_sha": "6abf378170c45f5d50a4862915169d74821a094b",
+      "source_commit_sha": "8eb3399485eb7a36bade3d2e19bc3b21a7675d17",
+      "source_tree_sha": "f3ade9f5fb9ea844eeb5000856ef1bfd74564cda",
       "frozen_install": "PASSED",
       "prisma_generation": "PASSED",
-      "complete_phase202_suite": "PASSED",
+      "complete_phase202_suite": "PASSED_41_CONTRACT_RECONCILIATION_272_BACKEND_19_FRONTEND",
       "phase202_postgresql_execution": "PASSED_REAL_POSTGRESQL",
       "phase202_broker_environment": "PASSED_CI_ONLY_BROKER_ENV",
+      "complete_phase195_suite": "PASSED_26_TESTS",
+      "phase195_recovery_suite": "PASSED",
+      "phase195_recovery_receipt": "phase195-recovery-6cc4a6dcb1ff.json",
       "full_build": "PASSED",
       "git_status_porcelain": "CLEAN",
       "git_diff_check": "PASSED"
