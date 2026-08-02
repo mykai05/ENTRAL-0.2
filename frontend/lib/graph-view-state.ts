@@ -403,6 +403,36 @@ export function resetGraphNavigation(
   });
 }
 
+export function collapseGraphToTopLevel(
+  state: GraphViewState,
+  projection: GraphProjection
+) {
+  return withHistory(state, projection, {
+    selectedEntityId: state.selectedEntityId,
+    focusedEntityId: state.focusedEntityId,
+    isolatedEntityId: state.isolatedEntityId,
+    expandedEntityIds: []
+  });
+}
+
+export function phase200GraphLabelBudget(
+  viewportWidth: number,
+  configuredMaximum: number
+) {
+  const viewportBudget = viewportWidth <= 360
+    ? 8
+    : viewportWidth <= 390
+      ? 10
+      : viewportWidth <= 412
+        ? 12
+        : viewportWidth <= 430
+          ? 14
+          : viewportWidth <= 767
+            ? 20
+            : configuredMaximum;
+  return Math.max(1, Math.min(configuredMaximum, viewportBudget));
+}
+
 export function navigateGraphParent(
   state: GraphViewState,
   projection: GraphProjection

@@ -178,7 +178,7 @@
   "active_write_lease": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "lease_id": "98166a12-c59a-48ec-9c99-98a460bd4dca",
+    "lease_id": "81186139-6771-4cac-8b14-ec1c71ecad45",
     "task_packet_id": "P200-INTERACTION-LAYER-001",
     "owner": "phase200-interaction-20260802",
     "actor": "CODEX_5_6_SOL_XHIGH",
@@ -215,19 +215,19 @@
       "package.json",
       ".github/workflows/ci-cd.yml"
     ],
-    "acquired_at": "2026-08-02T01:58:39.506Z",
-    "heartbeat_at": "2026-08-02T01:58:39.506Z",
-    "expires_at": "2026-08-02T02:28:39.506Z"
+    "acquired_at": "2026-08-02T04:53:45.771Z",
+    "heartbeat_at": "2026-08-02T05:32:56.875Z",
+    "expires_at": "2026-08-02T09:32:56.875Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 48,
-  "updated_at": "2026-08-02T01:58:39.506Z",
+  "version": 68,
+  "updated_at": "2026-08-02T05:32:56.875Z",
   "task_deadline_at": "2026-08-02T13:58:38.984Z",
   "pending_release_manifest": null,
-  "event_count": 48,
-  "event_head_hash": "d3853feb30b75b80d39ea9c47b54f8d2c8fed7452ce4530b4f348eec94a3489a"
+  "event_count": 68,
+  "event_head_hash": "19e68b463835c9d66cb18f350385b16816a871afe0f1552561d05f9ceaa7fe00"
 }

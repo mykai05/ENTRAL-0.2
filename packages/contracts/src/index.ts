@@ -3,6 +3,7 @@ export * from "./baseline.js";
 export * from "./domain.js";
 export * from "./graph.js";
 export * from "./integration.js";
+export * from "./interaction.js";
 export * from "./member.js";
 export * from "./personality.js";
 export * from "./portfolio.js";

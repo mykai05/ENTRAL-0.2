@@ -1,0 +1,50 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 200,
+  "title": "ENTRAL Interaction Layer, Business Health, App Shell, and Tutorial Foundation",
+  "review_policy": "CONDITIONAL",
+  "objective": "Deliver the stable ENTRAL interaction shell, evidence-grounded business-health explanation, role-aware navigation, server-backed Tutorial foundation, and owner-binding mobile Universe remediation using only production capabilities that exist after Phase 199.",
+  "feature_ids": [
+    "P200-F001", "P200-F002", "P200-F003", "P200-F004", "P200-F005", "P200-F006",
+    "P200-F007", "P200-F008", "P200-F009", "P200-F010", "P200-F011", "P200-F012",
+    "P200-F013", "P200-F014", "P200-F015", "P200-F016", "P200-F017", "P200-F018"
+  ],
+  "acceptance_gate_ids": [
+    "P200-F001-A", "P200-F002-A", "P200-F003-A", "P200-F004-A", "P200-F005-A", "P200-F006-A",
+    "P200-F007-A", "P200-F008-A", "P200-F009-A", "P200-F010-A", "P200-F011-A", "P200-F012-A",
+    "P200-F013-A", "P200-F014-A", "P200-F015-A", "P200-F016-A", "P200-F017-A", "P200-F018-A"
+  ],
+  "mobile_universe_contract": {
+    "mobile_widths_css_px": [360, 390, 412, 430],
+    "one_renderer_visible_by_default": true,
+    "synchronized_2d_3d_switching": true,
+    "compact_toolbar": true,
+    "single_expandable_legend": true,
+    "progressive_hierarchy_expansion": true,
+    "viewport_label_budget_and_collision_avoidance": true,
+    "selected_lineage_emphasis_and_unrelated_edge_dimming": true,
+    "responsive_inspector_bottom_sheet": true,
+    "floating_assistant_collision_avoidance": true,
+    "portrait_and_landscape_fullscreen": true,
+    "desktop_side_by_side_preserved": true,
+    "canonical_graph_authority_rls_telemetry_and_lifecycle_preserved": true
+  },
+  "release_requirements": [
+    "RECONCILED_WITH_CURRENT_MAIN",
+    "PROTECTED_MAIN_CHECKS_PASS",
+    "EXACT_MAIN_SHA_DEPLOYED",
+    "MIGRATIONS_VERIFIED",
+    "AUTHENTICATED_PRODUCTION_SMOKE_AND_READBACK",
+    "PHASE_200_RELEASE_MANIFEST_RECORDED",
+    "BOUNDED_ROLLBACK_POINT_RECORDED"
+  ],
+  "out_of_scope": [
+    "PHASE_202_OR_LATER_IMPLEMENTATION",
+    "FUTURE_AGENT_OR_MODEL_FABRIC_CONTROLS",
+    "ALTERNATE_GRAPH_AUTHORITY_OR_STATIC_GRAPH",
+    "MOCK_SAMPLE_PLACEHOLDER_FAKE_METRIC_NO_OP_OR_PRODUCTION_FALLBACK",
+    "UNRELATED_REFACTOR",
+    "PRODUCTION_SECURITY_SCAN"
+  ]
+}

@@ -811,6 +811,171 @@ async function installPhase195GraphRoutes(page, hierarchy = phase195MemoryHierar
   };
 }
 
+async function installPhase200InteractionRoutes(page, {
+  currentAnchorId = "universe-navigation"
+} = {}) {
+  const analyticsRequests = [];
+  const mutationRequests = [];
+  const mutationReceipts = new Map();
+  let revision = 1;
+  let progressState = {
+    business_model_context: "Software",
+    commander_pack_context: "Operations",
+    completed_anchor_ids: ["command-overview"],
+    completed_at: null,
+    contract_version: "1.0.0",
+    current_anchor_id: currentAnchorId,
+    first_launch_seen: true,
+    mode: "beginner",
+    organization_id: "pending",
+    plan_context: "Owner",
+    release_version: "phase-200",
+    revision,
+    role_context: "OWNER",
+    schema_version: 1,
+    started_at: "2026-08-02T00:00:00.000Z",
+    updated_at: "2026-08-02T00:00:00.000Z",
+    user_id: phase170Ids.user
+  };
+
+  function organizationId(requestUrl) {
+    const segments = new URL(requestUrl).pathname.split("/");
+    const organizationsIndex = segments.lastIndexOf("organizations");
+    return decodeURIComponent(segments[organizationsIndex + 1] ?? "");
+  }
+
+  function progress(requestUrl) {
+    return { ...progressState, organization_id: organizationId(requestUrl) };
+  }
+
+  function mutationResponse(requestUrl, action, body, priorRevision, idempotentReplay = false) {
+    const progressSnapshot = progress(requestUrl);
+    return {
+      idempotent_replay: idempotentReplay,
+      progress: progressSnapshot,
+      transition: {
+        action,
+        actor_user_id: progressSnapshot.user_id,
+        authorization: "AUTHENTICATED_OWNER",
+        budget: { amount_cents: 0, kind: "NO_EXTERNAL_SPEND" },
+        business_id: null,
+        evidence: [{ source_id: `tutorial-progress:${progressSnapshot.organization_id}:${progressSnapshot.revision}`, source_type: "TUTORIAL_PROGRESS" }],
+        failure_behavior: "CONFLICT_NO_WRITE",
+        idempotency_key: body.idempotency_key,
+        occurred_at: progressSnapshot.updated_at,
+        organization_id: progressSnapshot.organization_id,
+        prior_revision: priorRevision,
+        reconciliation: "OPTIMISTIC_REVISION_AND_READBACK",
+        release_version: "phase-200",
+        resulting_revision: progressSnapshot.revision,
+        reversible: true,
+        tenant_id: progressSnapshot.organization_id,
+        verification: "TRANSACTIONAL_READ_AFTER_WRITE"
+      }
+    };
+  }
+
+  await page.route("**/member/api/v1/member/organizations/*/interaction/business-health?*", async (route) => {
+    const requestUrl = route.request().url();
+    const mode = new URL(requestUrl).searchParams.get("mode") === "OPERATIONAL" ? "OPERATIONAL" : "EXECUTIVE";
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        contract_version: "1.0.0",
+        evidence: [{
+          evidence_id: "canonical-portfolio:9",
+          freshness: "CURRENT",
+          label: "Canonical portfolio event 9",
+          observed_at: "2026-08-02T00:00:00.000Z",
+          source_id: "portfolio:event:9",
+          source_type: "CANONICAL_PORTFOLIO"
+        }],
+        health: {
+          drivers: mode === "OPERATIONAL" ? phase170Business().health_drivers : [],
+          score: 91,
+          state: "HEALTHY",
+          summary: "Recorded canonical health is healthy at portfolio event 9.",
+          value_status: "RECORDED"
+        },
+        identity: {
+          name: "ENTRAL",
+          provider_independent: true,
+          release_version: "phase-200",
+          voice_version: "entral-voice-v1"
+        },
+        mode,
+        schema_version: 1,
+        truth: {
+          assumptions: [],
+          business_id: null,
+          business_scope: "Human portfolio / all canonical businesses",
+          confidence: "RECORDED",
+          evidence_freshness: { observed_at: "2026-08-02T00:00:00.000Z", state: "CURRENT" },
+          next_action: {
+            action_id: "OPEN_CANONICAL_BUSINESS_RECORD",
+            available: true,
+            label: "Review the canonical business record",
+            unavailable_reason: null
+          },
+          organization_id: organizationId(requestUrl)
+        }
+      },
+      status: 200
+    });
+  });
+
+  await page.route("**/member/api/v1/member/organizations/*/interaction/tutorial-progress", async (route) => {
+    const request = route.request();
+    if (request.method() === "GET") {
+      await route.fulfill({ contentType: "application/json", json: progress(request.url()), status: 200 });
+      return;
+    }
+
+    const body = request.postDataJSON();
+    mutationRequests.push({ body, method: request.method() });
+    const replay = mutationReceipts.get(body.idempotency_key);
+    if (replay) {
+      await route.fulfill({ contentType: "application/json", json: { ...replay, idempotent_replay: true }, status: 200 });
+      return;
+    }
+    if (body.expected_revision !== revision) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: { error: "Conflict", message: "Tutorial progress changed in another session." },
+        status: 409
+      });
+      return;
+    }
+
+    const priorRevision = revision;
+    revision += 1;
+    const reset = request.method() === "DELETE";
+    progressState = {
+      ...progressState,
+      completed_anchor_ids: reset ? [] : body.completed_anchor_ids,
+      current_anchor_id: reset ? "command-overview" : body.current_anchor_id,
+      first_launch_seen: reset ? true : body.first_launch_seen,
+      mode: reset ? "beginner" : body.mode,
+      revision,
+      updated_at: new Date(Date.parse(progressState.updated_at) + 1_000).toISOString()
+    };
+    const response = mutationResponse(request.url(), reset ? "RESET" : "UPDATE", body, priorRevision);
+    mutationReceipts.set(body.idempotency_key, response);
+    await route.fulfill({ contentType: "application/json", json: response, status: 200 });
+  });
+
+  await page.route("**/member/api/v1/member/organizations/*/interaction/analytics", async (route) => {
+    analyticsRequests.push(route.request().postDataJSON());
+    await route.fulfill({ contentType: "application/json", json: { accepted: true }, status: 202 });
+  });
+
+  return {
+    analyticsRequests,
+    mutationRequests,
+    progress: () => ({ ...progressState })
+  };
+}
+
 async function installPhase180ScaleRoutes(page, responses) {
   await page.route("**/member/api/v1/member/organizations/*/portfolio/summary", async (route) => {
     await route.fulfill({ contentType: "application/json", json: responses.portfolio, status: 200 });
@@ -1093,6 +1258,7 @@ const tests = [
       const { context, page } = await newPage();
       try {
         await installPhase170Routes(page, { emitEvent: true });
+        await installPhase200InteractionRoutes(page);
         await enterWorkspace(page, uniqueEmail("dashboard"));
         await expectVisible(page.getByRole("heading", { name: "E2E Operator's Dashboard" }), "Canonical Dashboard");
         await expectVisible(page.getByText("Human portfolio / all canonical businesses"), "Human portfolio scope");
@@ -1118,6 +1284,7 @@ const tests = [
       });
       try {
         await installPhase195GraphRoutes(page);
+        await installPhase200InteractionRoutes(page);
         await enterWorkspace(page, uniqueEmail("phase180-wheel-scroll"));
         await page.goto(`${frontendUrl}/member/graph`);
         await closeAcademyIfOpen(page);
@@ -1164,8 +1331,7 @@ const tests = [
       const browserEvidence = [];
       for (const profile of [
         { name: "desktop", viewport: { width: 1440, height: 1000 }, isMobile: false, deviceScaleFactor: 1 },
-        { name: "tablet", viewport: { width: 900, height: 1100 }, isMobile: false, deviceScaleFactor: 1 },
-        { name: "mobile", viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 }
+        { name: "tablet", viewport: { width: 900, height: 1100 }, isMobile: false, deviceScaleFactor: 1 }
       ]) {
         const { context, page } = await newPage(profile);
         const runtimeErrors = [];
@@ -1174,6 +1340,7 @@ const tests = [
             await route.fulfill({ contentType: "application/json", json: hierarchy, status: 200 });
           });
           const graphRoutes = await installPhase195GraphRoutes(page, hierarchy);
+          await installPhase200InteractionRoutes(page);
           await enterWorkspace(page, uniqueEmail(`phase195-${profile.name}`));
           page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
           page.on("console", (message) => {
@@ -1769,6 +1936,7 @@ const tests = [
           }
         );
         await installPhase195GraphRoutes(page, hierarchy);
+        await installPhase200InteractionRoutes(page);
         page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
         page.on("console", (message) => {
           const text = message.text();
@@ -1899,6 +2067,7 @@ const tests = [
       const { context, page } = await newPage({ viewport: { width: 1440, height: 1000 } });
       const runtimeErrors = [];
       try {
+        await installPhase200InteractionRoutes(page);
         await enterWorkspace(page, uniqueEmail("phase190-lifecycle"));
         await page.waitForLoadState("networkidle");
         const lifecycle = await installPhase190LifecycleRoute(page);
@@ -2071,6 +2240,299 @@ const tests = [
     }
   },
   {
+    name: "Phase 200 interaction layer preserves canonical truth, server Tutorial progress, and mobile Universe presentation",
+    run: async () => {
+      const desktop = await newPage({ viewport: { width: 1440, height: 1000 } });
+      try {
+        const interactionRoutes = await installPhase200InteractionRoutes(desktop.page);
+        await installPhase195GraphRoutes(desktop.page);
+        await enterWorkspace(desktop.page, uniqueEmail("phase200-interaction"));
+        await desktop.page.goto(`${frontendUrl}/member/dashboard`);
+
+        const primaryNavigation = desktop.page.getByRole("navigation", { name: "Owner primary destinations" });
+        await expectVisible(primaryNavigation, "Phase 200 role-aware primary navigation");
+        const destinationLabels = await primaryNavigation.getByRole("link").allTextContents();
+        if (JSON.stringify(destinationLabels.map((label) => label.trim())) !== JSON.stringify([
+          "Command",
+          "Businesses",
+          "Universe",
+          "Infrastructure",
+          "Tutorial"
+        ])) {
+          throw new Error(`Phase 200 primary destinations drifted: ${JSON.stringify(destinationLabels)}`);
+        }
+
+        const health = desktop.page.locator(".phase200-business-health");
+        await expectVisible(health, "Phase 200 canonical business health");
+        await expectVisible(health.getByText("91/100", { exact: true }), "Phase 200 recorded health score");
+        await expectVisible(
+          health.getByText("Recorded canonical health is healthy at portfolio event 9.", { exact: true }),
+          "Phase 200 canonical health summary"
+        );
+        await health.getByRole("button", { name: "Operational" }).click();
+        await expectVisible(health.getByRole("list", { name: "Canonical health drivers" }), "Phase 200 operational drivers");
+        await health.getByText("Evidence and freshness").click();
+        await expectVisible(health.getByText("portfolio:event:9", { exact: true }), "Phase 200 evidence source readback");
+
+        await primaryNavigation.getByRole("link", { name: "Tutorial" }).click();
+        await expectUrl(desktop.page, /\/member\/dashboard\?destination=tutorial$/, "Phase 200 Tutorial destination");
+        const academy = desktop.page.getByRole("dialog", { name: "ENTRAL Academy" });
+        await expectVisible(academy, "Phase 200 server-backed Tutorial");
+        await expectVisible(academy.getByText("Server progress synced · revision 1"), "Phase 200 initial server Tutorial readback");
+        await academy.getByRole("button", { name: "Navigate Universe" }).click();
+        await expectVisible(academy.getByRole("heading", { level: 2, name: "Navigate Universe" }), "Phase 200 cross-device Tutorial resume anchor");
+        await academy.getByRole("button", { name: "Advanced" }).click();
+        await expectVisible(academy.getByText("Server progress synced · revision 2"), "Phase 200 Tutorial mode persistence");
+        await expectVisible(academy.getByRole("heading", { level: 2, name: "Start from Command" }), "Phase 200 mode-change anchor reset");
+        await academy.getByRole("button", { name: "Next lesson" }).click();
+        await expectVisible(academy.getByText("Server progress synced · revision 3"), "Phase 200 Tutorial second anchor persistence");
+        await academy.getByRole("button", { name: "Next lesson" }).click();
+        await expectVisible(academy.getByText("Server progress synced · revision 4"), "Phase 200 Tutorial Universe anchor persistence");
+        await Promise.all([
+          desktop.page.waitForResponse((response) => response.request().method() === "PATCH"
+            && response.url().includes("/interaction/tutorial-progress")),
+          academy.getByRole("button", { name: "Close ENTRAL Academy" }).click()
+        ]);
+        const persistedTutorialRevision = interactionRoutes.progress().revision;
+        if (interactionRoutes.progress().current_anchor_id !== "universe-navigation") {
+          throw new Error(`Phase 200 Tutorial did not persist its active anchor: ${JSON.stringify(interactionRoutes.progress())}`);
+        }
+
+        await desktop.page.reload();
+        const resumedAcademy = desktop.page.getByRole("dialog", { name: "ENTRAL Academy" });
+        await expectVisible(resumedAcademy, "Phase 200 Tutorial after cross-device-style reload");
+        await desktop.page.waitForTimeout(1_000);
+        const resumedSyncStatus = await resumedAcademy.locator(".academy-sync-status").innerText();
+        if (!resumedSyncStatus.includes(`Server progress synced · revision ${persistedTutorialRevision}`)) {
+          throw new Error(`Phase 200 persisted Tutorial revision was not restored: ${resumedSyncStatus}`);
+        }
+        await desktop.page.evaluate(() => window.dispatchEvent(new Event("entral:open-tutorial")));
+        await expectVisible(resumedAcademy.getByRole("heading", { level: 2, name: "Navigate Universe" }), "Phase 200 retained Tutorial anchor");
+        if (!await resumedAcademy.getByRole("button", { name: "Advanced" }).evaluate((element) => element.classList.contains("active"))) {
+          throw new Error("Phase 200 Tutorial did not restore its server-backed mode.");
+        }
+        await resumedAcademy.getByRole("button", { name: "Reset Tutorial progress" }).click();
+        await expectVisible(
+          resumedAcademy.getByText(`Tutorial reset on the server · revision ${persistedTutorialRevision + 1}`),
+          "Phase 200 Tutorial reset readback"
+        );
+        if (
+          interactionRoutes.progress().revision !== persistedTutorialRevision + 1
+          || interactionRoutes.progress().current_anchor_id !== "command-overview"
+          || interactionRoutes.progress().mode !== "beginner"
+        ) {
+          throw new Error(`Phase 200 Tutorial reset did not persist canonical defaults: ${JSON.stringify(interactionRoutes.progress())}`);
+        }
+        if (!interactionRoutes.analyticsRequests.some((event) => event.event_type === "HELP_USED")) {
+          throw new Error("Phase 200 Tutorial did not record its bounded help-use analytics event.");
+        }
+        const localTutorialKeys = await desktop.page.evaluate(() => Object.keys(window.localStorage)
+          .filter((key) => /academy|tutorial/i.test(key)));
+        if (localTutorialKeys.length) {
+          throw new Error(`Phase 200 stored server Tutorial progress locally: ${JSON.stringify(localTutorialKeys)}`);
+        }
+      } finally {
+        await desktop.context.close();
+      }
+
+      const labelBudgets = new Map([[360, "8"], [390, "10"], [412, "12"], [430, "14"]]);
+      const mobileEvidence = [];
+      for (const width of [360, 390, 412, 430]) {
+        const { context, page } = await newPage({
+          viewport: { width, height: 844 },
+          isMobile: true,
+          deviceScaleFactor: 2
+        });
+        try {
+          const hierarchy = phase195MemoryHierarchy();
+          await page.route("**/member/api/v1/member/organizations/*/hierarchy", async (route) => {
+            await route.fulfill({ contentType: "application/json", json: hierarchy, status: 200 });
+          });
+          await installPhase195GraphRoutes(page, hierarchy);
+          await installPhase200InteractionRoutes(page);
+          await enterWorkspace(page, uniqueEmail(`phase200-mobile-${width}`));
+          await page.goto(`${frontendUrl}/member/graph`);
+          await closeAcademyIfOpen(page);
+
+          const workspace = page.locator(".phase195-graph-workspace");
+          await expectVisible(workspace, `Phase 200 ${width}px mobile Universe`);
+          await page.waitForFunction(() => document.querySelector(".phase195-graph-workspace")
+            ?.getAttribute("data-mobile-presentation") === "single-renderer");
+          const initialState = await workspace.evaluate((element) => ({
+            arrangement: element.getAttribute("data-effective-arrangement"),
+            dimension: element.getAttribute("data-mobile-dimension"),
+            documentWidth: document.documentElement.scrollWidth,
+            labelBudget: element.getAttribute("data-viewport-label-budget"),
+            panelCount: element.querySelectorAll(".phase180-graph-panel").length,
+            viewportWidth: window.innerWidth
+          }));
+          if (
+            initialState.arrangement !== "2d-only"
+            || initialState.dimension !== "2d"
+            || initialState.labelBudget !== labelBudgets.get(width)
+            || initialState.panelCount !== 1
+            || initialState.documentWidth > initialState.viewportWidth + 2
+          ) {
+            throw new Error(`Phase 200 ${width}px single-graph contract failed: ${JSON.stringify(initialState)}`);
+          }
+
+          const toolbar = page.getByRole("toolbar", { name: "Compact mobile Universe controls" });
+          await expectVisible(toolbar, `Phase 200 ${width}px compact graph toolbar`);
+          const legend = workspace.locator(".phase200-graph-legend");
+          if (await legend.count() !== 1) throw new Error(`Phase 200 ${width}px rendered more than one graph legend.`);
+          await expectVisible(legend.getByText("Universe legend"), `Phase 200 ${width}px compact legend`);
+          const tierBadgeSizes = await workspace.locator(".phase195-authority-rings > li > span").evaluateAll((elements) => elements.map((element) => {
+            const rect = element.getBoundingClientRect();
+            return { height: rect.height, width: rect.width };
+          }));
+          if (tierBadgeSizes.some((rect) => rect.height > 2 || rect.width > 2)) {
+            throw new Error(`Phase 200 ${width}px left stacked tier badges on the canvas: ${JSON.stringify(tierBadgeSizes)}`);
+          }
+
+          const twoDimensionalCanvas = page.getByLabel(/Canonical Universe Graph with \d+ entities/i);
+          await expectVisible(twoDimensionalCanvas, `Phase 200 ${width}px 2D renderer`);
+          const collapsedEntityCount = Number(await page.locator('[data-graph-dimension="2d"]').getAttribute("data-canonical-entity-count"));
+          if (!(collapsedEntityCount > 0 && collapsedEntityCount < hierarchy.entities.length)) {
+            throw new Error(`Phase 200 ${width}px did not start from a progressively collapsed hierarchy: ${collapsedEntityCount}.`);
+          }
+          await twoDimensionalCanvas.focus();
+          await page.keyboard.press("ArrowDown");
+          await page.waitForFunction((rootId) => document.querySelector('[data-graph-dimension="2d"]')
+            ?.getAttribute("data-canonical-selected-entity-id") === rootId, phase195MemoryIds.entral);
+          await page.keyboard.press("ArrowDown");
+          await page.waitForFunction((marshalId) => document.querySelector('[data-graph-dimension="2d"]')
+            ?.getAttribute("data-canonical-selected-entity-id") === marshalId, phase195MemoryIds.marshal);
+          const detailSheet = page.getByRole("complementary", { name: /graph details/i });
+          await expectVisible(detailSheet, `Phase 200 ${width}px responsive entity inspector`);
+          const selectedEntityId = await page.locator('[data-graph-dimension="2d"]').getAttribute("data-canonical-selected-entity-id");
+          if (!selectedEntityId) throw new Error(`Phase 200 ${width}px did not select a canonical entity.`);
+          await page.waitForFunction(() => {
+            const element = document.querySelector(".phase195-graph-workspace");
+            return element?.getAttribute("data-selected-lineage-emphasis") === "emphasized"
+              && element?.getAttribute("data-unrelated-edge-treatment") === "dimmed";
+          });
+          const collisionGeometry = await page.evaluate(() => {
+            const sheet = document.querySelector(".phase180-graph-drawer");
+            const assistant = document.querySelector(".phase180-entral-emblem");
+            if (!(sheet instanceof HTMLElement) || !(assistant instanceof HTMLElement)) return null;
+            const sheetRect = sheet.getBoundingClientRect();
+            const assistantRect = assistant.getBoundingClientRect();
+            return {
+              assistantBottom: assistantRect.bottom,
+              sheetPosition: getComputedStyle(sheet).position,
+              sheetTop: sheetRect.top
+            };
+          });
+          if (!collisionGeometry || collisionGeometry.sheetPosition !== "fixed" || collisionGeometry.assistantBottom > collisionGeometry.sheetTop + 2) {
+            throw new Error(`Phase 200 ${width}px inspector and assistant collided: ${JSON.stringify(collisionGeometry)}`);
+          }
+
+          await toolbar.getByRole("button", { name: "Expand" }).click();
+          await page.waitForFunction((priorCount) => Number(document.querySelector('[data-graph-dimension="2d"]')
+            ?.getAttribute("data-canonical-entity-count")) > priorCount, collapsedEntityCount);
+          await toolbar.getByRole("button", { name: "3D" }).click();
+          await expectUrl(page, /\/member\/graph\?graph=3d(?:&.*)?$/, `Phase 200 ${width}px 3D preference`);
+          const threeDimensionalRenderer = workspace.locator(
+            '.phase180-graph-panel > [data-graph-dimension="3d"]'
+          );
+          await expectVisible(threeDimensionalRenderer, `Phase 200 ${width}px synchronized 3D renderer`, 30_000);
+          const synchronized3DState = {
+            arrangement: await workspace.getAttribute("data-effective-arrangement"),
+            panelCount: await workspace.locator(".phase180-graph-panel").count(),
+            selectedEntityId: await threeDimensionalRenderer.getAttribute("data-canonical-selected-entity-id"),
+            urlDimension: new URL(page.url()).searchParams.get("graph")
+          };
+          if (
+            synchronized3DState.arrangement !== "3d-only"
+            || synchronized3DState.panelCount !== 1
+            || synchronized3DState.selectedEntityId !== selectedEntityId
+            || synchronized3DState.urlDimension !== "3d"
+          ) {
+            throw new Error(`Phase 200 ${width}px 2D/3D synchronization failed: ${JSON.stringify(synchronized3DState)}.`);
+          }
+          await toolbar.getByRole("button", { name: "2D" }).click();
+          await expectVisible(page.locator('[data-graph-dimension="2d"]'), `Phase 200 ${width}px return to 2D`);
+          if (await page.locator('[data-graph-dimension="2d"]').getAttribute("data-canonical-selected-entity-id") !== selectedEntityId) {
+            throw new Error(`Phase 200 ${width}px lost selection when returning to 2D.`);
+          }
+
+          await toolbar.evaluate((element) => element.scrollIntoView({ block: "center", inline: "nearest" }));
+          await toolbar.getByRole("button", { name: "Full screen" }).click();
+          await page.waitForFunction(() => document.querySelector(".phase195-graph-workspace")
+            ?.getAttribute("data-fullscreen-dimension") === "2d");
+          const portraitFullscreen = await workspace.evaluate((element) => ({
+            fallback: element.getAttribute("data-fullscreen-fallback") === "true",
+            native: document.fullscreenElement !== null
+          }));
+          if (!portraitFullscreen.native && !portraitFullscreen.fallback) {
+            throw new Error(`Phase 200 ${width}px portrait full screen was not active.`);
+          }
+          await toolbar.getByRole("button", { name: "Full screen" }).click();
+          await page.waitForFunction(() => !document.querySelector(".phase195-graph-workspace")
+            ?.getAttribute("data-fullscreen-dimension"));
+
+          await page.setViewportSize({ width: 844, height: 390 });
+          await page.waitForFunction(() => document.querySelector(".phase195-graph-workspace")
+            ?.getAttribute("data-mobile-presentation") === "single-renderer");
+          await expectVisible(toolbar, `Phase 200 ${width}px landscape compact graph toolbar`);
+          if (await workspace.locator(".phase180-graph-panel").count() !== 1) {
+            throw new Error(`Phase 200 ${width}px landscape mounted multiple graph renderers.`);
+          }
+          await toolbar.getByRole("button", { name: "Full screen" }).click();
+          await page.waitForFunction(() => document.querySelector(".phase195-graph-workspace")
+            ?.getAttribute("data-fullscreen-dimension") === "2d");
+          await toolbar.getByRole("button", { name: "Full screen" }).click();
+          await page.waitForFunction(() => !document.querySelector(".phase195-graph-workspace")
+            ?.getAttribute("data-fullscreen-dimension"));
+
+          mobileEvidence.push({
+            label_budget: Number(initialState.labelBudget),
+            landscape_single_renderer: true,
+            portrait_fullscreen: true,
+            selected_entity_id: selectedEntityId,
+            viewport_width: width
+          });
+        } finally {
+          await context.close();
+        }
+      }
+
+      const desktopGraph = await newPage({ viewport: { width: 1440, height: 1000 } });
+      try {
+        await installPhase195GraphRoutes(desktopGraph.page);
+        await installPhase200InteractionRoutes(desktopGraph.page);
+        await enterWorkspace(desktopGraph.page, uniqueEmail("phase200-desktop-graph"));
+        await desktopGraph.page.goto(`${frontendUrl}/member/graph`);
+        const workspace = desktopGraph.page.locator(".phase195-graph-workspace");
+        await expectVisible(workspace, "Phase 200 preserved desktop Universe");
+        await desktopGraph.page.waitForFunction(() => document.querySelector(".phase195-graph-workspace")
+          ?.getAttribute("data-mobile-presentation") === "desktop-dual");
+        if (
+          await workspace.getAttribute("data-effective-arrangement") !== "side-by-side"
+          || await workspace.locator(".phase180-graph-panel").count() !== 2
+        ) {
+          throw new Error("Phase 200 did not preserve desktop side-by-side graph behavior.");
+        }
+      } finally {
+        await desktopGraph.context.close();
+      }
+
+      await writeFile(
+        join(repoRoot, "test-results", "e2e", "phase200-interaction-browser-fixture.json"),
+        `${JSON.stringify({
+          accepted_production_evidence: false,
+          browser_session: "LOCAL_MEMORY_AUTHENTICATED",
+          evidence_class: "INTERCEPTED_BROWSER_FIXTURE",
+          generated_at: new Date().toISOString(),
+          mobile_profiles: mobileEvidence,
+          route_interception: true,
+          status: "passed"
+        }, null, 2)}\n`,
+        "utf8"
+      );
+    }
+  },
+  {
     name: "member Phase 180 shell synchronizes Dashboard, Graph, Infrastructure, mobile rotation, and reconnect",
     run: async () => {
       const { context, page } = await newPage({
@@ -2081,6 +2543,7 @@ const tests = [
       const runtimeErrors = [];
       try {
         await installPhase195GraphRoutes(page);
+        await installPhase200InteractionRoutes(page);
         await enterWorkspace(page, uniqueEmail("phase180-member"));
         await page.goto(`${frontendUrl}/member/dashboard`);
         await expectUrl(page, /\/member\/dashboard$/, "Phase 180 member Dashboard");
@@ -2092,9 +2555,9 @@ const tests = [
           if (message.type() === "error" && !expectedOfflineFailure) runtimeErrors.push(`console: ${text}`);
         });
         await expectVisible(page.getByRole("heading", { name: "E2E Operator's Dashboard" }), "Phase 180 canonical Dashboard");
-        const destinationNav = page.getByRole("navigation", { name: "Member destinations" });
-        if (await destinationNav.getByRole("link").count() !== 3) {
-          throw new Error("Phase 180 member shell does not expose exactly three destinations.");
+        const destinationNav = page.getByRole("navigation", { name: "Owner primary destinations" });
+        if (await destinationNav.getByRole("link").count() !== 5) {
+          throw new Error("Phase 200 member shell does not expose exactly five primary destinations.");
         }
         await expectVisible(page.getByLabel("Inherited canonical scope"), "Inherited canonical scope");
         const entralEmblem = page.getByRole("button", { name: "Open ENTRAL assistant" });
@@ -2110,53 +2573,45 @@ const tests = [
         await expectVisible(entralAssistant.getByLabel("Message ENTRAL"), "ENTRAL assistant message input");
         await entralAssistant.getByRole("button", { name: "Close ENTRAL assistant" }).click();
 
-        await destinationNav.getByRole("link", { name: /universe graph/i }).click();
+        await destinationNav.getByRole("link", { name: "Universe" }).click();
         await expectUrl(page, /\/member\/graph$/, "Phase 180 Universe Graph");
-        await expectVisible(page.getByRole("heading", { name: "2D Graph" }), "2D Graph heading");
-        await expectVisible(page.getByRole("heading", { name: "3D Graph" }), "3D Graph heading");
-        const canvas = page.getByLabel(/Canonical Universe Graph with 5 entities/i);
+        const canvas = page.getByLabel(/Canonical Universe Graph with \d+ entities/i);
         await expectVisible(canvas, "Canonical 2D Graph canvas");
-        const original3DCanvas = page.getByRole("application", {
-          name: /Canonical 3D Universe Graph with 5 entities/i
-        });
-        await expectVisible(original3DCanvas, "Original full 3D Universe Graph canvas", 30_000);
         const touchScroll = await context.newCDPSession(page);
         try {
-          for (const [label, graphCanvas] of [["2D", canvas], ["3D", original3DCanvas]]) {
-            await graphCanvas.scrollIntoViewIfNeeded();
-            if (await graphCanvas.getAttribute("data-touch-interaction") !== "page") {
-              throw new Error(`${label} embedded graph did not default to page-touch scrolling.`);
-            }
-            const bounds = await graphCanvas.boundingBox();
-            if (!bounds) throw new Error(`${label} graph did not expose touch-scroll geometry.`);
-            const before = await page.evaluate(() => ({
-              max: Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
-              y: window.scrollY
-            }));
-            const scrollDown = before.y < before.max - 120;
-            const centerX = bounds.x + bounds.width / 2;
-            const startY = bounds.y + bounds.height / 2;
-            const endY = startY + (scrollDown ? -150 : 150);
+          await canvas.scrollIntoViewIfNeeded();
+          if (await canvas.getAttribute("data-touch-interaction") !== "page") {
+            throw new Error("2D embedded graph did not default to page-touch scrolling.");
+          }
+          const bounds = await canvas.boundingBox();
+          if (!bounds) throw new Error("2D graph did not expose touch-scroll geometry.");
+          const before = await page.evaluate(() => ({
+            max: Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
+            y: window.scrollY
+          }));
+          const scrollDown = before.y < before.max - 120;
+          const centerX = bounds.x + bounds.width / 2;
+          const startY = bounds.y + bounds.height / 2;
+          const endY = startY + (scrollDown ? -150 : 150);
+          await touchScroll.send("Input.dispatchTouchEvent", {
+            type: "touchStart",
+            touchPoints: [{ x: centerX, y: startY }]
+          });
+          for (const progress of [0.25, 0.5, 0.75, 1]) {
             await touchScroll.send("Input.dispatchTouchEvent", {
-              type: "touchStart",
-              touchPoints: [{ x: centerX, y: startY }]
+              type: "touchMove",
+              touchPoints: [{ x: centerX, y: startY + (endY - startY) * progress }]
             });
-            for (const progress of [0.25, 0.5, 0.75, 1]) {
-              await touchScroll.send("Input.dispatchTouchEvent", {
-                type: "touchMove",
-                touchPoints: [{ x: centerX, y: startY + (endY - startY) * progress }]
-              });
-              await page.waitForTimeout(20);
-            }
-            await touchScroll.send("Input.dispatchTouchEvent", {
-              type: "touchEnd",
-              touchPoints: []
-            });
-            await page.waitForTimeout(200);
-            const after = await page.evaluate(() => window.scrollY);
-            if ((scrollDown && after <= before.y) || (!scrollDown && after >= before.y)) {
-              throw new Error(`${label} embedded graph trapped vertical page touch scrolling.`);
-            }
+            await page.waitForTimeout(20);
+          }
+          await touchScroll.send("Input.dispatchTouchEvent", {
+            type: "touchEnd",
+            touchPoints: []
+          });
+          await page.waitForTimeout(200);
+          const after = await page.evaluate(() => window.scrollY);
+          if ((scrollDown && after <= before.y) || (!scrollDown && after >= before.y)) {
+            throw new Error("2D embedded graph trapped vertical page touch scrolling.");
           }
         } finally {
           await touchScroll.detach();
@@ -2165,7 +2620,7 @@ const tests = [
           entities: element.getAttribute("data-canonical-entity-count"),
           event: element.getAttribute("data-canonical-event-sequence")
         }));
-        if (twoDimensionalSnapshot.entities !== "5" || twoDimensionalSnapshot.event !== "9") {
+        if (twoDimensionalSnapshot.event !== "9") {
           throw new Error(`2D Graph did not expose the accepted canonical snapshot: ${JSON.stringify(twoDimensionalSnapshot)}`);
         }
         const graphEntralEmblem = page.getByRole("button", { name: "Open ENTRAL assistant" });
@@ -2177,11 +2632,11 @@ const tests = [
         await graphEntralAssistant.getByRole("button", { name: "Close ENTRAL assistant" }).click();
 
         const graphWorkspace = page.locator(".phase180-graph-workspace");
-        const enter2DFullscreen = page.getByRole("button", { name: "Enter 2D Graph full screen" });
-        const enter3DFullscreen = page.getByRole("button", { name: "Enter 3D Graph full screen" });
+        const mobileGraphToolbar = page.getByRole("toolbar", { name: "Compact mobile Universe controls" });
+        const enter2DFullscreen = mobileGraphToolbar.getByRole("button", { name: "Full screen" });
         await expectVisible(enter2DFullscreen, "2D Graph full-screen control");
-        await expectVisible(enter3DFullscreen, "3D Graph full-screen control");
 
+        await mobileGraphToolbar.evaluate((element) => element.scrollIntoView({ block: "center" }));
         await enter2DFullscreen.click();
         await page.waitForFunction(() => (
           document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension") === "2d"
@@ -2189,7 +2644,7 @@ const tests = [
         const twoDimensionalFullscreenState = await graphWorkspace.evaluate((element) => ({
           fallback: element.getAttribute("data-fullscreen-fallback") === "true",
           native: document.fullscreenElement !== null,
-          otherPanelHidden: getComputedStyle(element.querySelector('[data-panel="3d"]')).display === "none"
+          otherPanelHidden: element.querySelector('[data-panel="3d"]') === null
         }));
         if (
           (!twoDimensionalFullscreenState.native && !twoDimensionalFullscreenState.fallback)
@@ -2205,19 +2660,25 @@ const tests = [
         const twoDimensionalEntralAssistant = page.getByRole("region", { name: "ENTRAL assistant" });
         await expectVisible(twoDimensionalEntralAssistant, "ENTRAL assistant in 2D full screen");
         await twoDimensionalEntralAssistant.getByRole("button", { name: "Close ENTRAL assistant" }).click();
-        await page.getByRole("button", { name: "Exit 2D Graph full screen" }).click();
+        await enter2DFullscreen.click();
         await page.waitForFunction(() => (
           !document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension")
         ));
 
-        await page.getByRole("button", { name: "Enter 3D Graph full screen" }).click();
+        await mobileGraphToolbar.getByRole("button", { name: "3D" }).click();
+        await expectUrl(page, /\/member\/graph\?graph=3d(?:&.*)?$/, "Phase 200 mobile 3D Graph");
+        const original3DCanvas = page.getByRole("application", {
+          name: /Canonical 3D Universe Graph with \d+ entities/i
+        });
+        await expectVisible(original3DCanvas, "Original full 3D Universe Graph canvas", 30_000);
+        await mobileGraphToolbar.getByRole("button", { name: "Full screen" }).click();
         await page.waitForFunction(() => (
           document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension") === "3d"
         ));
         const threeDimensionalFullscreenState = await graphWorkspace.evaluate((element) => ({
           fallback: element.getAttribute("data-fullscreen-fallback") === "true",
           native: document.fullscreenElement !== null,
-          otherPanelHidden: getComputedStyle(element.querySelector('[data-panel="2d"]')).display === "none"
+          otherPanelHidden: element.querySelector('[data-panel="2d"]') === null
         }));
         if (
           (!threeDimensionalFullscreenState.native && !threeDimensionalFullscreenState.fallback)
@@ -2230,24 +2691,28 @@ const tests = [
           "Persistent ENTRAL emblem in 3D full screen"
         );
         await expectVisible(page.getByRole("button", { name: "Stop movement" }), "Full-screen 3D movement control");
-        await page.getByRole("button", { name: "Exit 3D Graph full screen" }).click();
+        await mobileGraphToolbar.getByRole("button", { name: "Full screen" }).click();
         await page.waitForFunction(() => (
           !document.querySelector(".phase180-graph-workspace")?.getAttribute("data-fullscreen-dimension")
         ));
 
-        await canvas.focus();
-        await page.keyboard.press("Enter");
-        await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Dismissible Graph detail drawer");
+        await mobileGraphToolbar.getByRole("button", { name: "2D" }).click();
+        await expectUrl(page, /\/member\/graph\?graph=2d(?:&.*)?$/, "Phase 200 mobile 2D Graph return");
+        await expectVisible(canvas, "2D Graph after mobile renderer return");
+        await canvas.press("Enter");
+        await expectVisible(page.getByRole("complementary", { name: /graph details/i }), "Dismissible Graph detail drawer");
 
         await page.setViewportSize({ width: 844, height: 390 });
-        await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Graph selection after landscape rotation");
+        await expectVisible(page.getByRole("complementary", { name: /graph details/i }), "Graph selection after landscape rotation");
         await page.setViewportSize({ width: 390, height: 844 });
-        await expectVisible(page.getByRole("complementary", { name: /ENTRAL graph details/i }), "Graph selection after portrait recovery");
+        await expectVisible(page.getByRole("complementary", { name: /graph details/i }), "Graph selection after portrait recovery");
 
+        await mobileGraphToolbar.getByRole("button", { name: "3D" }).click();
+        await expectUrl(page, /\/member\/graph\?graph=3d(?:&.*)?$/, "Phase 200 retained 3D Graph focus");
+        await expectVisible(original3DCanvas, "3D Graph after mobile renderer switch");
         await original3DCanvas.scrollIntoViewIfNeeded();
         await original3DCanvas.focus();
         await expectUrl(page, /\/member\/graph(?:\?.*)?$/, "Original 3D Universe Graph focus");
-        await expectVisible(page.getByRole("heading", { name: "2D Graph" }), "2D Graph remains mounted beside 3D");
         const threeDimensionalSnapshot = await page.locator(".phase180-graph-3d").evaluate((element) => ({
           entities: element.getAttribute("data-canonical-entity-count"),
           event: element.getAttribute("data-canonical-event-sequence")
@@ -2260,12 +2725,10 @@ const tests = [
             `2D and 3D Graphs did not share one canonical snapshot: ${JSON.stringify({ threeDimensionalSnapshot, twoDimensionalSnapshot })}`
           );
         }
-        const sharedGraphControls = page.getByRole("region", {
-          name: "Shared graph navigation and filters"
-        });
-        await expectVisible(sharedGraphControls, "Shared canonical Graph controls");
+        const sharedGraphControls = mobileGraphToolbar;
+        await expectVisible(sharedGraphControls, "Compact shared canonical Graph controls");
         await expectVisible(
-          sharedGraphControls.getByRole("button", { name: "Fit visible" }),
+          sharedGraphControls.getByRole("button", { name: "Fit" }),
           "Shared canonical fit control"
         );
         if (
@@ -2296,34 +2759,19 @@ const tests = [
           throw new Error("Original 3D Graph selected-entity drawer did not return to its compact state.");
         }
 
-        const stopMovement = page.getByRole("button", { name: "Stop movement" });
-        await expectVisible(stopMovement, "Visible graph-only movement control");
-        await stopMovement.click();
-        await expectVisible(page.getByText(/Graph movement is paused\. Agent activity and live canonical updates continue\./i), "Truthful visual-pause boundary");
-        const pausedWorkspaceState = await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion");
-        if (pausedWorkspaceState !== "paused") {
-          throw new Error(`Stop movement did not pause the graph workspace: ${pausedWorkspaceState}`);
-        }
-        const pausedFrame = await expectStableScreenshot(
-          original3DCanvas,
-          "The original 3D Graph after Stop movement"
-        );
-        await original3DCanvas.focus();
-        await page.keyboard.press("+");
-        await expectScreenshotChange(
-          original3DCanvas,
-          pausedFrame,
-          "The original 3D Graph camera while visual movement was paused"
-        );
-        await page.getByRole("button", { name: "Resume movement" }).click();
         if (await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion") !== "running") {
-          throw new Error("Resume movement did not restart graph animation.");
+          throw new Error("The compact mobile Graph changed lifecycle behavior while switching renderers.");
         }
 
+        await mobileGraphToolbar.getByRole("button", { name: "2D" }).click();
+        await expectUrl(page, /\/member\/graph\?graph=2d(?:&.*)?$/, "Phase 200 retained 2D Graph focus");
+        await expectVisible(canvas, "2D Graph after synchronized renderer return");
         await canvas.scrollIntoViewIfNeeded();
         await canvas.focus();
         await expectUrl(page, /\/member\/graph(?:\?.*)?$/, "Retained 2D Graph focus");
-        await expectVisible(original3DCanvas, "3D Graph remains mounted beside 2D");
+        if (await graphWorkspace.locator(".phase180-graph-panel").count() !== 1) {
+          throw new Error("Mobile Graph mounted more than one renderer after returning to 2D.");
+        }
 
         await context.setOffline(true);
         await page.waitForTimeout(5_500);
@@ -2374,6 +2822,7 @@ const tests = [
     run: async () => {
       const { context, page } = await newPage();
       try {
+        await installPhase200InteractionRoutes(page);
         await enterWorkspace(page, uniqueEmail("chat"));
         await page.goto(`${frontendUrl}/chat`);
         await expectUrl(page, /\/dashboard\?section=entral$/, "ENTRAL workspace");
@@ -2401,6 +2850,7 @@ const tests = [
       });
       try {
         await installPhase170Routes(page);
+        await installPhase200InteractionRoutes(page);
         await enterWorkspace(page, uniqueEmail("mobile"));
         await closeAcademyIfOpen(page);
 
@@ -2429,6 +2879,7 @@ const tests = [
         const { context, page } = await newPage(profile);
         const runtimeErrors = [];
         try {
+          await installPhase200InteractionRoutes(page);
           await enterWorkspace(page, uniqueEmail(`phase180-scale-${profile.name}`));
           await closeAcademyIfOpen(page);
           await installPhase180ScaleRoutes(page, responses);
@@ -2439,12 +2890,18 @@ const tests = [
           const graphStart = performance.now();
           await page.goto(`${frontendUrl}/member/graph`);
           await closeAcademyIfOpen(page);
-          const canvas = page.getByRole("application", { name: /Canonical Universe Graph with 10000 entities/i });
+          const canvas = page.getByRole("application", {
+            name: profile.isMobile
+              ? /Canonical Universe Graph with \d+ entities/i
+              : /Canonical Universe Graph with 10000 entities/i
+          });
           await expectVisible(canvas, `${profile.name} 10,000-entity production Graph`, 30_000);
           const original3DCanvas = page.getByRole("application", {
-            name: /Canonical 3D Universe Graph with 10000 entities/i
+            name: /Canonical 3D Universe Graph with \d+ entities/i
           });
-          await expectVisible(original3DCanvas, `${profile.name} 10,000-entity original 3D Graph`, 30_000);
+          if (!profile.isMobile) {
+            await expectVisible(original3DCanvas, `${profile.name} 10,000-entity original 3D Graph`, 30_000);
+          }
           const graphReadyMs = performance.now() - graphStart;
           if (graphReadyMs > 30_000) {
             throw new Error(`${profile.name} simultaneous Graph readiness exceeded 30s: ${graphReadyMs.toFixed(1)}ms.`);
@@ -2452,21 +2909,23 @@ const tests = [
           const panelGeometry = await page.locator(".phase180-graph-panels").evaluate((element) => {
             const twoDimensional = element.querySelector('[data-panel="2d"]')?.getBoundingClientRect();
             const threeDimensional = element.querySelector('[data-panel="3d"]')?.getBoundingClientRect();
-            return twoDimensional && threeDimensional
+            return twoDimensional
               ? {
                   two: { bottom: twoDimensional.bottom, left: twoDimensional.left, top: twoDimensional.top },
-                  three: { left: threeDimensional.left, top: threeDimensional.top }
+                  three: threeDimensional ? { left: threeDimensional.left, top: threeDimensional.top } : null
                 }
               : null;
           });
-          if (!panelGeometry) throw new Error(`${profile.name} simultaneous Graph panels did not expose geometry.`);
-          if (profile.isMobile && panelGeometry.three.top < panelGeometry.two.bottom - 2) {
-            throw new Error("Phone Graph panels did not stack cleanly.");
+          if (!panelGeometry) throw new Error(`${profile.name} Graph panel did not expose geometry.`);
+          if (profile.isMobile && panelGeometry.three !== null) {
+            throw new Error("Phone Graph mounted more than one renderer by default.");
           }
-          if (!profile.isMobile && (Math.abs(panelGeometry.three.top - panelGeometry.two.top) > 2 || panelGeometry.three.left <= panelGeometry.two.left)) {
+          if (!profile.isMobile && (!panelGeometry.three || Math.abs(panelGeometry.three.top - panelGeometry.two.top) > 2 || panelGeometry.three.left <= panelGeometry.two.left)) {
             throw new Error("Desktop Graph panels did not render side by side.");
           }
-          await page.getByRole("button", { name: "Fit visible" }).click();
+          const mobileGraphToolbar = page.getByRole("toolbar", { name: "Compact mobile Universe controls" });
+          if (profile.isMobile) await mobileGraphToolbar.getByRole("button", { name: "Fit" }).click();
+          else await page.getByRole("button", { name: "Fit visible" }).click();
           const twoDGraphSurface = page.locator('[data-graph-dimension="2d"]');
           await page.waitForFunction(() => {
             const surface = document.querySelector('[data-graph-dimension="2d"]');
@@ -2490,11 +2949,16 @@ const tests = [
           const expectedRenderedSignature = phase195RenderedIdSignature(
             renderedCanonicalCoverage.canonical_ids
           );
+          const canonicalProjectionCount = Number(await page.locator(".phase180-graph-workspace")
+            .getAttribute("data-authorized-projection-entity-count"));
           if (
             renderedCanonicalCoverage.algorithm
               !== "fnv1a32:entral-phase-195-2d-render-frame-v1"
-            || renderedCanonicalCoverage.canonical_ids.length !== 10_000
-            || renderedCanonicalCoverage.rendered_count !== 10_000
+            || canonicalProjectionCount !== 10_000
+            || renderedCanonicalCoverage.canonical_ids.length !== renderedCanonicalCoverage.rendered_count
+            || (profile.isMobile
+              ? !(renderedCanonicalCoverage.rendered_count > 0 && renderedCanonicalCoverage.rendered_count < 10_000)
+              : renderedCanonicalCoverage.rendered_count !== 10_000)
             || renderedCanonicalCoverage.rendered_signature
               !== expectedRenderedSignature
           ) {
@@ -2502,6 +2966,7 @@ const tests = [
               `${profile.name} 2D render frame dropped or substituted canonical identities: `
               + JSON.stringify({
                 algorithm: renderedCanonicalCoverage.algorithm,
+                authorized_projection_count: canonicalProjectionCount,
                 canonical_count: renderedCanonicalCoverage.canonical_ids.length,
                 expected_signature: expectedRenderedSignature,
                 rendered_count: renderedCanonicalCoverage.rendered_count,
@@ -2510,16 +2975,11 @@ const tests = [
             );
           }
           if (profile.isMobile) {
-            const touchInteractionControl = page.locator(
-              '[data-panel="2d"] .phase180-touch-interaction-toggle'
-            );
+            const touchInteractionControl = mobileGraphToolbar.getByRole("button", { name: "Interact" });
             await expectVisible(
               touchInteractionControl,
-              "Phone 2D Graph touch-interaction control"
+              "Phone compact Graph touch-interaction control"
             );
-            if ((await touchInteractionControl.textContent())?.trim() !== "Interact with 2D Graph") {
-              throw new Error("Phone 2D Graph touch-interaction control did not expose its accessible activation label.");
-            }
             await touchInteractionControl.click();
             if (await canvas.getAttribute("data-touch-interaction") !== "graph") {
               throw new Error("Phone Graph did not activate explicit touch interaction.");
@@ -2586,10 +3046,9 @@ const tests = [
             } finally {
               await touch.detach();
             }
-            if ((await touchInteractionControl.textContent())?.trim() !== "Release 2D Graph touch controls") {
-              throw new Error("Phone 2D Graph touch-interaction control did not expose its accessible release label.");
-            }
-            await touchInteractionControl.click();
+            const releaseTouchInteractionControl = mobileGraphToolbar.getByRole("button", { name: "Release" });
+            await expectVisible(releaseTouchInteractionControl, "Phone compact Graph touch release control");
+            await releaseTouchInteractionControl.click();
             if (await canvas.getAttribute("data-touch-interaction") !== "page") {
               throw new Error("Phone Graph did not restore page-touch scrolling.");
             }
@@ -2637,6 +3096,11 @@ const tests = [
           });
 
           const graph3DStart = performance.now();
+          if (profile.isMobile) {
+            await mobileGraphToolbar.getByRole("button", { name: "3D" }).click();
+            await expectUrl(page, /\/member\/graph\?graph=3d(?:&.*)?$/, "Phone scale 3D Graph");
+            await expectVisible(original3DCanvas, "Phone scale synchronized 3D Graph", 30_000);
+          }
           await original3DCanvas.scrollIntoViewIfNeeded();
           await original3DCanvas.focus();
           const graph3DReadyMs = performance.now() - graph3DStart;
@@ -2644,17 +3108,29 @@ const tests = [
             entities: element.getAttribute("data-canonical-entity-count"),
             event: element.getAttribute("data-canonical-event-sequence")
           }));
-          if (graph3DSnapshot.entities !== "10000" || graph3DSnapshot.event !== "9") {
+          if (
+            graph3DSnapshot.entities !== String(profile.isMobile ? renderedCanonicalCoverage.rendered_count : 10_000)
+            || graph3DSnapshot.event !== "9"
+          ) {
             throw new Error(`${profile.name} 3D Graph did not retain the 10,000-entity canonical event: ${JSON.stringify(graph3DSnapshot)}`);
           }
-          await page.getByRole("button", { name: "Fit visible" }).click();
-          await page.getByRole("button", { name: "Stop movement" }).click();
-          if (await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion") !== "paused") {
-            throw new Error(`${profile.name} Stop movement did not pause both Graph views.`);
+          if (profile.isMobile) {
+            await mobileGraphToolbar.getByRole("button", { name: "Fit" }).click();
+          } else {
+            await page.getByRole("button", { name: "Fit visible" }).click();
+            await page.getByRole("button", { name: "Stop movement" }).click();
+            if (await page.locator(".phase180-graph-workspace").getAttribute("data-graph-motion") !== "paused") {
+              throw new Error(`${profile.name} Stop movement did not pause both Graph views.`);
+            }
+            await original3DCanvas.focus();
+            await page.keyboard.press("+");
+            await page.getByRole("button", { name: "Resume movement" }).click();
           }
-          await original3DCanvas.focus();
-          await page.keyboard.press("+");
-          await page.getByRole("button", { name: "Resume movement" }).click();
+          if (profile.isMobile) {
+            await mobileGraphToolbar.getByRole("button", { name: "2D" }).click();
+            await expectUrl(page, /\/member\/graph\?graph=2d(?:&.*)?$/, "Phone scale 2D Graph return");
+            await expectVisible(canvas, "Phone scale synchronized 2D Graph return", 30_000);
+          }
           await canvas.scrollIntoViewIfNeeded();
           await canvas.focus();
           await expectVisible(canvas, `${profile.name} 2D Graph after simultaneous 3D parity verification`, 30_000);
@@ -2758,6 +3234,7 @@ const tests = [
 
         try {
           await installPhase170Routes(page);
+          await installPhase200InteractionRoutes(page);
           await enterWorkspace(page, uniqueEmail(`secondary-${viewport.width}`));
           await closeAcademyIfOpen(page);
 

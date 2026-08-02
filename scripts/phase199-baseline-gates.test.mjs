@@ -131,20 +131,28 @@ test("Tenant, Tutorial, website, Microsoft, and pre-change inventories are expli
   assert.match(tutorial, /entral:open-tutorial/);
 });
 
-test("Governor keeps Phase 200 blocked before the exact Phase 199 production release", async () => {
+test("Governor blocks Phase 200 until the exact Phase 199 production release and then permits only its bounded continuation", async () => {
   const [state, contract] = await Promise.all([
     readJson(".entral/governor/PROGRAM_STATE.json"),
     readJson(".entral/governor/phases/199/PHASE_CONTRACT.v1.json")
   ]);
 
-  assert.equal(state.current_phase, 199);
-  assert.equal(state.certified_phases.includes(199), false);
-  assert.equal(state.review_state.status, "PASS_WITH_BINDING_CORRECTIONS");
-  if (state.review_state.binding_corrections_completed) {
-    assert.equal(state.review_state.correction_commit_sha, "39000c648844e02fa472b1f4a824cd0114d70ba7");
-    assert.equal(state.latest_execution_result.outcome, "PASSED");
+  if (state.current_phase === 199) {
+    assert.equal(state.certified_phases.includes(199), false);
+    assert.equal(state.review_state.status, "PASS_WITH_BINDING_CORRECTIONS");
+    if (state.review_state.binding_corrections_completed) {
+      assert.equal(state.review_state.correction_commit_sha, "39000c648844e02fa472b1f4a824cd0114d70ba7");
+      assert.equal(state.latest_execution_result.outcome, "PASSED");
+    } else {
+      assert.equal(state.review_state.correction_commit_sha, undefined);
+    }
   } else {
-    assert.equal(state.review_state.correction_commit_sha, undefined);
+    assert.equal(state.current_phase, 200);
+    assert.equal(state.certified_phases.includes(199), true);
+    assert.equal(state.latest_production_release.phase, 199);
+    assert.equal(state.latest_production_release.main_sha, "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb");
+    assert.equal(state.current_task_packet_id, "P200-INTERACTION-LAYER-001");
+    assert.equal(state.review_state, null);
   }
   assert.equal(contract.review_policy, "MANDATORY");
   assert.equal(contract.review_checkpoint.checkpoint_id, "P199-BASELINE-RECERTIFICATION-REVIEW");

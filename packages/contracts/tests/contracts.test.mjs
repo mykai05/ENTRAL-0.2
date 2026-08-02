@@ -1398,7 +1398,7 @@ test("event and audit consumers reject malformed canonical records", () => {
   assert.throws(() => assertAuditEntry({ ...audit, result: "PENDING" }), ContractError);
 });
 
-test("OpenAPI exposes only implemented member and Phase 195 control-plane paths", async () => {
+test("OpenAPI exposes only implemented member, graph, and Phase 200 interaction paths", async () => {
   const openapi = await readFile(new URL("../openapi.yaml", import.meta.url), "utf8");
   const document = parseYaml(openapi);
   assert.equal(document.openapi, "3.1.0");
@@ -1425,6 +1425,9 @@ test("OpenAPI exposes only implemented member and Phase 195 control-plane paths"
     "/api/v1/member/organizations/{organizationId}/graph/projection",
     "/api/v1/member/organizations/{organizationId}/graph/telemetry",
     "/api/v1/member/organizations/{organizationId}/hierarchy",
+    "/api/v1/member/organizations/{organizationId}/interaction/analytics",
+    "/api/v1/member/organizations/{organizationId}/interaction/business-health",
+    "/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress",
     "/api/v1/member/organizations/{organizationId}/overview",
     "/api/v1/member/organizations/{organizationId}/portfolio/summary"
   ]);
@@ -1450,6 +1453,10 @@ test("OpenAPI exposes only implemented member and Phase 195 control-plane paths"
   assert.equal(document.components.schemas.GraphViewPreferencesMutationResponse.additionalProperties, false);
   assert.equal(document.components.schemas.GraphRendererTelemetryRequest.additionalProperties, false);
   assert.equal(document.components.schemas.GraphRendererTelemetryResponse.additionalProperties, false);
+  assert.equal(document.components.schemas.BusinessHealthResponse.additionalProperties, false);
+  assert.equal(document.components.schemas.TutorialProgress.additionalProperties, false);
+  assert.equal(document.components.schemas.TutorialProgressMutationResponse.additionalProperties, false);
+  assert.equal(document.components.schemas.InteractionAnalyticsEventRequest.additionalProperties, false);
   assert.equal(document.components.schemas.PhaseReleaseEvidenceReadback.additionalProperties, false);
   const phaseGateSchema = document.components.schemas.PhaseGateRecord.allOf[1];
   for (const ciIdentityField of [

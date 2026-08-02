@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  availableUniverseNavigationPoints,
   canonicalGraphMotionProgress,
   canonicalLineageAndSubtree,
   fitUniverseCamera,
@@ -242,6 +243,8 @@ export function CanonicalUniverseGraph({
   onSelectedEntityChange,
   selectedEntityId,
   settings: suppliedSettings,
+  touchInteractionActive: controlledTouchInteractionActive,
+  onTouchInteractionChange,
   viewFitSignal = 0,
   viewFocusSignal = 0
 }: {
@@ -257,8 +260,10 @@ export function CanonicalUniverseGraph({
   onFrameDiagnostics?: (diagnostics: CanonicalRendererFrameDiagnostics) => void;
   onMovementToggle?: () => void;
   onSelectedEntityChange: (entityId: string | null) => void;
+  onTouchInteractionChange?: (active: boolean) => void;
   selectedEntityId: string | null;
   settings?: GraphPreferenceSettings;
+  touchInteractionActive?: boolean;
   viewFitSignal?: number;
   viewFocusSignal?: number;
 }) {
@@ -296,7 +301,14 @@ export function CanonicalUniverseGraph({
   const [showLabels, setShowLabels] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [dimUnrelated, setDimUnrelated] = useState(true);
-  const [touchInteractionActive, setTouchInteractionActive] = useState(false);
+  const [uncontrolledTouchInteractionActive, setUncontrolledTouchInteractionActive] = useState(false);
+  const touchInteractionActive = controlledTouchInteractionActive ?? uncontrolledTouchInteractionActive;
+  const setTouchInteractionActive = (active: boolean) => {
+    if (controlledTouchInteractionActive === undefined) {
+      setUncontrolledTouchInteractionActive(active);
+    }
+    onTouchInteractionChange?.(active);
+  };
   const [rendererFailure, setRendererFailure] = useState<Error | null>(null);
   const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<PointerRecord | null>(null);
@@ -490,8 +502,10 @@ export function CanonicalUniverseGraph({
   }, [fullscreenActive]);
 
   useEffect(() => {
-    if (!fullscreenActive) setTouchInteractionActive(false);
-  }, [fullscreenActive]);
+    if (!fullscreenActive && controlledTouchInteractionActive === undefined) {
+      setUncontrolledTouchInteractionActive(false);
+    }
+  }, [controlledTouchInteractionActive, fullscreenActive]);
 
   const moveCameraToEntity = useCallback((entityId: string) => {
     const point = renderedPointsRef.current.find(
@@ -1037,7 +1051,7 @@ export function CanonicalUniverseGraph({
       if (selectedEntityId) onOpenFullRecord(selectedEntityId);
       else {
         const firstId = nextUniverseEntityId(
-          renderedPointsRef.current,
+          availableUniverseNavigationPoints(renderedPointsRef.current, points),
           null,
           "right"
         );
@@ -1077,7 +1091,7 @@ export function CanonicalUniverseGraph({
       return;
     }
     const nextId = nextUniverseEntityId(
-      renderedPointsRef.current,
+      availableUniverseNavigationPoints(renderedPointsRef.current, points),
       selectedEntityId,
       direction
     );
@@ -1141,7 +1155,7 @@ export function CanonicalUniverseGraph({
             <button
               aria-pressed={touchInteractionActive}
               className="phase180-surface-action phase180-touch-interaction-toggle"
-              onClick={() => setTouchInteractionActive((active) => !active)}
+              onClick={() => setTouchInteractionActive(!touchInteractionActive)}
               type="button"
             >
               <Hand aria-hidden="true" size={17} />

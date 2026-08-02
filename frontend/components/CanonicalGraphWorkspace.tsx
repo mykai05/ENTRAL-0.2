@@ -27,10 +27,12 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  Box,
   ChevronDown,
   Columns2,
   Download,
   Focus,
+  Hand,
   ImageDown,
   PauseCircle,
   Pin,
@@ -89,6 +91,7 @@ import { effectiveGraphRendererSettings } from "../lib/graph-renderer-performanc
 import {
   applyAuthorizedGraphDeepLink,
   clearGraphSelection,
+  collapseGraphToTopLevel,
   createGraphViewState,
   EMPTY_GRAPH_FILTERS,
   focusGraphEntity,
@@ -96,6 +99,7 @@ import {
   navigateGraphHistory,
   navigateGraphParent,
   parseAuthorizedGraphDeepLink,
+  phase200GraphLabelBudget,
   reconcileGraphViewState,
   resetGraphNavigation,
   selectGraphEntity,
@@ -117,6 +121,7 @@ import { CanonicalUniverseGraph } from "./CanonicalUniverseGraph";
 
 export type CanonicalGraphLayout = GraphArrangement;
 export type CanonicalGraphDimension = "2d" | "3d";
+
 export type CanonicalGraphAssistantCommand =
   | { readonly id: number; readonly type: "collapse-inspector"; readonly collapsed: boolean }
   | { readonly id: number; readonly type: "fullscreen"; readonly dimension: CanonicalGraphDimension | null }
@@ -336,6 +341,10 @@ export function CanonicalGraphWorkspace({
   const [movementPaused, setMovementPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [narrowViewport, setNarrowViewport] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(1280);
+  const [mobileDimension, setMobileDimension] = useState<CanonicalGraphDimension>(preferredDimension ?? "2d");
+  const [mobileTouchInteractionActive, setMobileTouchInteractionActive] = useState(false);
   const [fullscreenDimension, setFullscreenDimension] = useState<CanonicalGraphDimension | null>(null);
   const [usesViewportFallback, setUsesViewportFallback] = useState(false);
   const [fullscreenError, setFullscreenError] = useState("");
@@ -356,6 +365,7 @@ export function CanonicalGraphWorkspace({
   const handledAssistantCommandRef = useRef<number | null>(null);
   const deepLinkAppliedProjectionRef = useRef<string | null>(null);
   const enforcedBusinessScopeRef = useRef<string | null>(scopeBusinessId);
+  const mobileProgressiveScopeRef = useRef<string | null>(null);
   const preScopeBusinessFiltersRef = useRef<readonly string[]>([]);
   const settingsRevisionRef = useRef(0);
   const lastTelemetryKeyRef = useRef<Record<GraphRenderer, string>>({
@@ -428,7 +438,24 @@ export function CanonicalGraphWorkspace({
     () => effectiveGraphRendererSettings(settings, activeProjection.entityCount),
     [activeProjection.entityCount, settings]
   );
-  const rendererSettings = effectiveRendererPerformance.settings;
+  const rendererSettings = useMemo<GraphPreferenceSettings>(() => {
+    const effective = effectiveRendererPerformance.settings;
+    if (!mobileViewport) return effective;
+    return {
+      ...effective,
+      simple: {
+        ...effective.simple,
+        connections: viewState.selectedEntityId ? "RELEVANT" : effective.simple.connections
+      },
+      advanced_shared: {
+        ...effective.advanced_shared,
+        maximum_live_labels: phase200GraphLabelBudget(
+          viewportWidth,
+          effective.advanced_shared.maximum_live_labels
+        )
+      }
+    };
+  }, [effectiveRendererPerformance.settings, mobileViewport, viewportWidth, viewState.selectedEntityId]);
   const authorizedDomainIds = useMemo(
     () => [...new Set(
       rendererProjection.entities.flatMap((node) => node.domainId ? [node.domainId] : [])
@@ -684,7 +711,9 @@ export function CanonicalGraphWorkspace({
   const layout3D = layout3DComputation.layout;
   const requestedArrangement = viewState.arrangement;
   const effectiveArrangement: GraphArrangement =
-    narrowViewport && (requestedArrangement === "auto" || requestedArrangement === "side-by-side")
+    mobileViewport
+      ? mobileDimension === "2d" ? "2d-only" : "3d-only"
+      : narrowViewport && (requestedArrangement === "auto" || requestedArrangement === "side-by-side")
       ? "stacked"
       : requestedArrangement === "auto"
         ? "side-by-side"
@@ -1059,6 +1088,15 @@ export function CanonicalGraphWorkspace({
     updateSimple("arrangement", arrangementToContract[arrangement]);
   }
 
+  function changeMobileDimension(dimension: CanonicalGraphDimension) {
+    setMobileDimension(dimension);
+    onPreferredDimensionChange(dimension);
+    window.requestAnimationFrame(() => {
+      const panel = dimension === "2d" ? twoDimensionalPanelRef.current : threeDimensionalPanelRef.current;
+      panel?.focus({ preventScroll: true });
+    });
+  }
+
   function graphScrollBehavior(): ScrollBehavior {
     return reducedMotion ? "auto" : "smooth";
   }
@@ -1125,18 +1163,39 @@ export function CanonicalGraphWorkspace({
     if (typeof window.matchMedia !== "function") return undefined;
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const narrowPreference = window.matchMedia("(max-width: 1180px)");
+    const mobilePreference = window.matchMedia(
+      "(max-width: 767px), (max-height: 500px) and (pointer: coarse)"
+    );
     const synchronize = () => {
       setReducedMotion(motionPreference.matches);
       setNarrowViewport(narrowPreference.matches);
+      setMobileViewport(mobilePreference.matches);
+      setViewportWidth(Math.max(1, window.innerWidth));
     };
     synchronize();
     motionPreference.addEventListener("change", synchronize);
     narrowPreference.addEventListener("change", synchronize);
+    mobilePreference.addEventListener("change", synchronize);
+    window.addEventListener("resize", synchronize);
     return () => {
       motionPreference.removeEventListener("change", synchronize);
       narrowPreference.removeEventListener("change", synchronize);
+      mobilePreference.removeEventListener("change", synchronize);
+      window.removeEventListener("resize", synchronize);
     };
   }, []);
+
+  useEffect(() => {
+    if (preferredDimension) setMobileDimension(preferredDimension);
+  }, [preferredDimension]);
+
+  useEffect(() => {
+    if (!mobileViewport) return;
+    const progressiveScope = `${activeOrganizationId}:${rendererProjection.projectionId}`;
+    if (mobileProgressiveScopeRef.current === progressiveScope) return;
+    mobileProgressiveScopeRef.current = progressiveScope;
+    setViewState((current) => collapseGraphToTopLevel(current, rendererProjection));
+  }, [activeOrganizationId, mobileViewport, rendererProjection]);
 
   useEffect(() => {
     if (!viewState.selectedEntityId) return undefined;
@@ -1617,7 +1676,9 @@ export function CanonicalGraphWorkspace({
       aria-labelledby="phase180-universe-workspace-heading"
       className="phase180-graph-workspace phase195-graph-workspace"
       data-canonical-edge-count={activeProjection.edgeCount}
+      data-academy="command-graph"
       data-canonical-entity-count={activeProjection.entityCount}
+      data-authorized-projection-entity-count={rendererProjection.entityCount}
       data-canonical-event-sequence={eventSequence}
       data-effective-arrangement={effectiveArrangement}
       data-fullscreen-dimension={fullscreenDimension ?? undefined}
@@ -1638,6 +1699,19 @@ export function CanonicalGraphWorkspace({
       data-layout-worker-failure-3d={layout3DComputation.workerFailureCode ?? undefined}
       data-graph-motion={effectiveMovementPaused ? "paused" : "running"}
       data-graph-parity-key={parityKey}
+      data-mobile-dimension={mobileViewport ? mobileDimension : undefined}
+      data-mobile-presentation={mobileViewport ? "single-renderer" : "desktop-dual"}
+      data-selected-lineage-emphasis={
+        viewState.selectedEntityId ? "emphasized" : "default"
+      }
+      data-unrelated-edge-treatment={
+        mobileViewport
+        && viewState.selectedEntityId
+        && rendererSettings.simple.connections === "RELEVANT"
+          ? "dimmed"
+          : "standard"
+      }
+      data-viewport-label-budget={rendererSettings.advanced_shared.maximum_live_labels}
       ref={workspaceRef}
       style={{
         "--phase195-edge-opacity": settings.advanced_shared.edge_opacity,
@@ -1706,6 +1780,42 @@ export function CanonicalGraphWorkspace({
           </div>
         </details>
       </header>
+
+      <div className="phase200-mobile-graph-toolbar" role="toolbar" aria-label="Compact mobile Universe controls">
+        <div role="group" aria-label="Synchronized graph renderer">
+          <button aria-pressed={mobileDimension === "2d"} onClick={() => changeMobileDimension("2d")} type="button">
+            <Columns2 aria-hidden="true" size={16} /> 2D
+          </button>
+          <button aria-pressed={mobileDimension === "3d"} onClick={() => changeMobileDimension("3d")} type="button">
+            <Box aria-hidden="true" size={16} /> 3D
+          </button>
+        </div>
+        <button onClick={() => setViewFitSignal((signal) => signal + 1)} type="button">
+          <Focus aria-hidden="true" size={16} /> Fit
+        </button>
+        <button
+          aria-pressed={mobileTouchInteractionActive}
+          onClick={() => setMobileTouchInteractionActive((active) => !active)}
+          type="button"
+        >
+          <Hand aria-hidden="true" size={16} /> {mobileTouchInteractionActive ? "Release" : "Interact"}
+        </button>
+        <button disabled={!selectedTarget(viewState)} onClick={() => {
+          const target = selectedTarget(viewState);
+          if (target) setSharedView(setGraphExpansion(viewState, rendererProjection, target, "ONE_LEVEL"));
+        }} type="button">
+          Expand
+        </button>
+        <button disabled={!selectedTarget(viewState)} onClick={() => {
+          const target = selectedTarget(viewState);
+          if (target) setSharedView(setGraphExpansion(viewState, rendererProjection, target, "COLLAPSE_DESCENDANTS"));
+        }} type="button">
+          Collapse
+        </button>
+        <button onClick={(event) => void toggleFullscreen(mobileDimension, event.currentTarget)} type="button">
+          Full screen
+        </button>
+      </div>
 
       <section className="phase195-shared-toolbar" aria-label="Shared graph navigation and filters">
         <div className="phase195-navigation-controls" role="group" aria-label="Graph navigation">
@@ -2150,7 +2260,11 @@ export function CanonicalGraphWorkspace({
             ? "Graph movement is paused. Agent activity and live canonical updates continue."
             : "Graph movement is active. Agent activity and live canonical updates continue."}
       </p>
-      {narrowViewport && requestedArrangement === "side-by-side" ? (
+      {mobileViewport ? (
+        <p className="phase195-responsive-note" role="status">
+          {mobileDimension.toUpperCase()} is active in the mobile single-graph view. Selection, lineage, expansion, filters, and canonical version remain synchronized when switching.
+        </p>
+      ) : narrowViewport && requestedArrangement === "side-by-side" ? (
         <p className="phase195-responsive-note" role="status">Stack is active as a safe narrow-screen override; Side by side remains saved.</p>
       ) : null}
       {fullscreenError ? <p className="phase180-fullscreen-status" role="status">{fullscreenError}</p> : null}
@@ -2209,6 +2323,8 @@ export function CanonicalGraphWorkspace({
                   }}
                   selectedEntityId={viewState.selectedEntityId}
                   settings={rendererSettings}
+                  touchInteractionActive={mobileViewport ? mobileTouchInteractionActive : undefined}
+                  onTouchInteractionChange={mobileViewport ? setMobileTouchInteractionActive : undefined}
                   viewFitSignal={viewFitSignal}
                   viewFocusSignal={viewFocusSignal}
                 /> : layout2DComputation.loading ? (
@@ -2266,6 +2382,8 @@ export function CanonicalGraphWorkspace({
                   onWebGlStateChange={submitWebGlTelemetry}
                   selectedEntityId={viewState.selectedEntityId}
                   settings={rendererSettings}
+                  touchInteractionActive={mobileViewport ? mobileTouchInteractionActive : undefined}
+                  onTouchInteractionChange={mobileViewport ? setMobileTouchInteractionActive : undefined}
                   viewFitSignal={viewFitSignal}
                   viewFocusSignal={viewFocusSignal}
                 /> : layout3DComputation.loading ? (
@@ -2278,16 +2396,19 @@ export function CanonicalGraphWorkspace({
       )}
 
       {settings.advanced_shared.legend_visible ? (
-        <aside className="phase195-legend" aria-label="Graph legend">
-          <strong>Authority</strong>
-          <span data-tier="0">ENTRAL · center</span>
-          <span data-tier="1">Marshal · band 1</span>
-          <span data-tier="2">General · band 2</span>
-          <span data-tier="3">Commander · band 3</span>
-          <span data-tier="4">Soldier · band 4</span>
-          <span>Connections · {settings.simple.connections.toLocaleLowerCase()}</span>
-          <span>Health and status use color plus text/tooltips</span>
-        </aside>
+        <details className="phase200-graph-legend">
+          <summary><ChevronDown aria-hidden="true" size={15} /> Universe legend</summary>
+          <div aria-label="Graph legend">
+            <span data-tier="0">ENTRAL · center</span>
+            <span data-tier="1">Marshal · tier 1</span>
+            <span data-tier="2">General · tier 2</span>
+            <span data-tier="3">Commander · tier 3</span>
+            <span data-tier="4">Soldier · tier 4</span>
+            <span>Selected lineage · emphasized teal edges</span>
+            <span>Unrelated edges · dimmed on mobile selection</span>
+            <span>Health and status · color plus tooltip text</span>
+          </div>
+        </details>
       ) : null}
       <CanonicalGraphTextualHierarchy entities={activeEntities} label="Universe Graph" />
       <span className="sr-only" aria-live="polite">

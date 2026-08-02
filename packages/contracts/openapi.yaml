@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: ENTRAL implemented API
-  version: 1.6.0
+  version: 1.7.0
   description: >
-    Gate 195 contract surface. Only paths with complete backend behavior are
+    Phase 200 interaction contract surface. Only paths with complete backend behavior are
     included. Canonical control-plane paths require internal Admin
     authentication. Member portfolio paths require organization membership;
     PostgreSQL row-level security resolves Human portfolio or assigned scope.
@@ -43,6 +43,92 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/member/organizations/{organizationId}/interaction/business-health:
+    get:
+      operationId: getMemberBusinessHealth
+      summary: Explain canonical business health with explicit truth and evidence context.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+        - name: businessId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: mode
+          in: query
+          required: false
+          schema: { type: string, enum: [EXECUTIVE, OPERATIONAL], default: EXECUTIVE }
+      responses:
+        "200":
+          description: Evidence-grounded business-health explanation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BusinessHealthResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/member/organizations/{organizationId}/interaction/tutorial-progress:
+    get:
+      operationId: getMemberTutorialProgress
+      summary: Resume the authenticated member's server-backed Tutorial progress.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      responses:
+        "200":
+          description: Current Tutorial progress.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TutorialProgress" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateMemberTutorialProgress
+      summary: Persist Tutorial progress with optimistic concurrency.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TutorialProgressUpdateRequest" }
+      responses:
+        "200":
+          description: Idempotent Tutorial progress transition and transactional readback.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TutorialProgressMutationResponse" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      operationId: resetMemberTutorialProgress
+      summary: Reset Tutorial completion without deleting identity or organization context.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TutorialProgressResetRequest" }
+      responses:
+        "200":
+          description: Idempotent Tutorial reset transition and transactional readback.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TutorialProgressMutationResponse" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/member/organizations/{organizationId}/interaction/analytics:
+    post:
+      operationId: recordMemberInteractionAnalytics
+      summary: Record a bounded content-free Phase 200 interaction event.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InteractionAnalyticsEventRequest" }
+      responses:
+        "202":
+          description: Event accepted.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/v1/member/organizations/{organizationId}/portfolio/summary:
     get:
       operationId: getMemberCanonicalPortfolio
@@ -2187,6 +2273,186 @@ components:
           oneOf:
             - type: "null"
             - { $ref: "#/components/schemas/MemberWorkspace" }
+    BusinessHealthResponse:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, identity, mode, health, evidence, truth]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        identity:
+          type: object
+          additionalProperties: false
+          required: [name, provider_independent, release_version, voice_version]
+          properties:
+            name: { type: string, const: ENTRAL }
+            provider_independent: { type: boolean, const: true }
+            release_version: { type: string, const: phase-200 }
+            voice_version: { type: string, const: entral-voice-v1 }
+        mode: { type: string, enum: [EXECUTIVE, OPERATIONAL] }
+        health:
+          type: object
+          additionalProperties: false
+          required: [drivers, score, state, summary, value_status]
+          properties:
+            drivers: { type: array, items: {} }
+            score: { oneOf: [{ type: "null" }, { type: number, minimum: 0, maximum: 100 }] }
+            state: { type: string, enum: [HEALTHY, WATCH, DEGRADED, CRITICAL, UNKNOWN] }
+            summary: { type: string, minLength: 1, maxLength: 1000 }
+            value_status: { type: string, enum: [RECORDED, UNAVAILABLE] }
+        evidence:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [evidence_id, freshness, label, observed_at, source_id, source_type]
+            properties:
+              evidence_id: { type: string }
+              freshness: { type: string, enum: [CURRENT, STALE, UNKNOWN] }
+              label: { type: string }
+              observed_at: { type: string, format: date-time }
+              source_id: { type: string }
+              source_type: { type: string, enum: [CANONICAL_PORTFOLIO, MEMBER_WORKSPACE] }
+        truth:
+          type: object
+          additionalProperties: false
+          required: [assumptions, business_id, business_scope, confidence, evidence_freshness, next_action, organization_id]
+          properties:
+            assumptions: { type: array, items: { type: string } }
+            business_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+            business_scope: { type: string }
+            confidence: { type: string, enum: [RECORDED, INFERRED, UNAVAILABLE] }
+            evidence_freshness:
+              type: object
+              additionalProperties: false
+              required: [observed_at, state]
+              properties:
+                observed_at: { type: string, format: date-time }
+                state: { type: string, enum: [CURRENT, STALE, UNKNOWN] }
+            next_action:
+              type: object
+              additionalProperties: false
+              required: [action_id, available, label, unavailable_reason]
+              properties:
+                action_id: { oneOf: [{ type: "null" }, { type: string }] }
+                available: { type: boolean }
+                label: { type: string }
+                unavailable_reason: { oneOf: [{ type: "null" }, { type: string }] }
+            organization_id: { type: string }
+    TutorialProgress:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, release_version, user_id, organization_id, role_context, plan_context, business_model_context, commander_pack_context, mode, completed_anchor_ids, current_anchor_id, first_launch_seen, revision, started_at, completed_at, updated_at]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        release_version: { type: string, const: phase-200 }
+        user_id: { type: string }
+        organization_id: { type: string }
+        role_context: { type: string, enum: [MEMBER, OWNER] }
+        plan_context: { oneOf: [{ type: "null" }, { type: string }] }
+        business_model_context: { oneOf: [{ type: "null" }, { type: string }] }
+        commander_pack_context: { oneOf: [{ type: "null" }, { type: string }] }
+        mode: { type: string, enum: [beginner, advanced] }
+        completed_anchor_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [command-overview, businesses-overview, universe-navigation, infrastructure-records, entral-assistant] }
+        current_anchor_id:
+          oneOf:
+            - { type: "null" }
+            - { type: string, enum: [command-overview, businesses-overview, universe-navigation, infrastructure-records, entral-assistant] }
+        first_launch_seen: { type: boolean }
+        revision: { type: integer, minimum: 1 }
+        started_at: { type: string, format: date-time }
+        completed_at: { oneOf: [{ type: "null" }, { type: string, format: date-time }] }
+        updated_at: { type: string, format: date-time }
+    TutorialProgressUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, idempotency_key, expected_revision, mode, completed_anchor_ids, current_anchor_id, first_launch_seen]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        expected_revision: { type: integer, minimum: 0 }
+        mode: { type: string, enum: [beginner, advanced] }
+        completed_anchor_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [command-overview, businesses-overview, universe-navigation, infrastructure-records, entral-assistant] }
+        current_anchor_id:
+          oneOf:
+            - { type: "null" }
+            - { type: string, enum: [command-overview, businesses-overview, universe-navigation, infrastructure-records, entral-assistant] }
+        first_launch_seen: { type: boolean }
+    TutorialProgressResetRequest:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, idempotency_key, expected_revision]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        expected_revision: { type: integer, minimum: 0 }
+    TutorialProgressMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [progress, idempotent_replay, transition]
+      properties:
+        progress: { $ref: "#/components/schemas/TutorialProgress" }
+        idempotent_replay: { type: boolean }
+        transition:
+          type: object
+          additionalProperties: false
+          required: [action, actor_user_id, authorization, budget, business_id, evidence, failure_behavior, idempotency_key, occurred_at, organization_id, prior_revision, reconciliation, release_version, resulting_revision, reversible, tenant_id, verification]
+          properties:
+            action: { type: string, enum: [UPDATE, RESET] }
+            actor_user_id: { type: string }
+            authorization: { type: string, enum: [AUTHENTICATED_MEMBER, AUTHENTICATED_OWNER] }
+            budget:
+              type: object
+              additionalProperties: false
+              required: [kind, amount_cents]
+              properties:
+                kind: { type: string, const: NO_EXTERNAL_SPEND }
+                amount_cents: { type: integer, const: 0 }
+            business_id: { type: "null" }
+            evidence:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                type: object
+                additionalProperties: false
+                required: [source_id, source_type]
+                properties:
+                  source_id: { type: string }
+                  source_type: { type: string, const: TUTORIAL_PROGRESS }
+            failure_behavior: { type: string, const: CONFLICT_NO_WRITE }
+            idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+            occurred_at: { type: string, format: date-time }
+            organization_id: { type: string }
+            prior_revision: { type: integer, minimum: 1 }
+            reconciliation: { type: string, const: OPTIMISTIC_REVISION_AND_READBACK }
+            release_version: { type: string, const: phase-200 }
+            resulting_revision: { type: integer, minimum: 2 }
+            reversible: { type: boolean, const: true }
+            tenant_id: { type: string }
+            verification: { type: string, const: TRANSACTIONAL_READ_AFTER_WRITE }
+    InteractionAnalyticsEventRequest:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, event_id, event_type, occurred_at, route, control_id, reason_code]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        event_id: { type: string, format: uuid }
+        event_type: { type: string, enum: [ROUTE_FAILURE, TUTORIAL_ABANDONED, HELP_USED, CONTROL_FAILED] }
+        occurred_at: { type: string, format: date-time }
+        route: { type: string, pattern: '^/' }
+        control_id: { oneOf: [{ type: "null" }, { type: string, maxLength: 120 }] }
+        reason_code: { oneOf: [{ type: "null" }, { type: string, maxLength: 120 }] }
     ErrorEnvelope:
       type: object
       additionalProperties: false

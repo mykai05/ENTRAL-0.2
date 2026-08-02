@@ -29,6 +29,10 @@ import {
 } from "../lib/canonical-portfolio";
 import { entitiesForBusinessScope } from "../lib/canonical-universe";
 import {
+  canonicalOrganizationSwitchPresentation,
+  isCanonicalRefreshCurrent
+} from "../lib/canonical-refresh";
+import {
   loadCanonicalGraphPreferences,
   loadCanonicalGraphProjection
 } from "../lib/canonical-graph";
@@ -42,7 +46,12 @@ import {
 } from "./CanonicalGraphWorkspace";
 import { CanonicalInfrastructure } from "./CanonicalInfrastructure";
 import { CanonicalPortfolioDashboard } from "./CanonicalPortfolioDashboard";
-import { type MemberDestination, MemberDestinationNav } from "./MemberDestinationNav";
+import { type MemberDestination } from "./MemberDestinationNav";
+import { Phase200BusinessHealthPanel } from "./Phase200BusinessHealthPanel";
+import {
+  Phase200InteractionNavigation,
+  type Phase200InteractionDestination
+} from "./Phase200InteractionNavigation";
 
 const organizationStorageKey = "entral-phase180-organization";
 const scopeStorageKey = "entral-phase180-business-scope";
@@ -95,6 +104,14 @@ export function CanonicalMemberShell({
     ?? initialSession.organizations[0]
     ?? null;
   const selectedBusiness = portfolio?.businesses.find((business) => business.business_id === businessScopeId) ?? null;
+  const dashboardDestination = searchParams.get("destination");
+  const interactionDestination: Phase200InteractionDestination = initialDestination === "graph"
+    ? "universe"
+    : initialDestination === "infrastructure"
+      ? "infrastructure"
+      : dashboardDestination === "businesses" || dashboardDestination === "tutorial"
+        ? dashboardDestination
+        : "command";
   const isEntralRoom = initialDestination === "dashboard" && searchParams.get("section") === "entral";
   const scopeLabel = selectedBusiness
     ? `Business · ${selectedBusiness.business_name}`
@@ -111,11 +128,13 @@ export function CanonicalMemberShell({
     if (!organizationId) return;
     const requestedOrganizationId = organizationId;
     const refreshGeneration = ++refreshGenerationRef.current;
-    const isCurrentRefresh = () => (
-      !signal?.aborted
-      && refreshGeneration === refreshGenerationRef.current
-      && activeOrganizationRef.current === requestedOrganizationId
-    );
+    const isCurrentRefresh = () => isCanonicalRefreshCurrent({
+      currentGeneration: refreshGenerationRef.current,
+      currentOrganizationId: activeOrganizationRef.current,
+      requestedGeneration: refreshGeneration,
+      requestedOrganizationId,
+      signal
+    });
     setWorkspaceError("");
     setIsLoading(true);
     setSyncState("connecting");
@@ -235,7 +254,13 @@ export function CanonicalMemberShell({
       // Canonical server state remains usable when browser storage is unavailable.
     }
     writeAuthenticatedUserIdentity({ userId: initialSession.user.id });
-  }, [initialDestination, initialSession.organizations, initialSession.user.id, routeBusinessId, routeEntityId]);
+    const organizationContextTimer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("entral:organization-context", {
+        detail: { organizationId, userId: initialSession.user.id }
+      }));
+    }, 0);
+    return () => window.clearTimeout(organizationContextTimer);
+  }, [initialDestination, initialSession.organizations, initialSession.user.id, organizationId, routeBusinessId, routeEntityId]);
 
   useEffect(() => {
     if (initialDestination === "dashboard") setBusinessScopeId(routeBusinessId);
@@ -247,6 +272,14 @@ export function CanonicalMemberShell({
       setSelectedEntityId(routeEntityId);
     }
   }, [initialDestination, routeEntityId]);
+
+  useEffect(() => {
+    if (interactionDestination !== "tutorial") return undefined;
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new Event("entral:open-academy"));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [interactionDestination, organizationId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -332,7 +365,11 @@ export function CanonicalMemberShell({
     setBusinessScopeId(value);
     setSelectedEntityId(null);
     if (initialDestination === "dashboard") {
-      router.replace(value ? `/member/dashboard?business=${encodeURIComponent(value)}` : "/member/dashboard", { scroll: false });
+      const nextSearch = new URLSearchParams(searchParams.toString());
+      if (value) nextSearch.set("business", value);
+      else nextSearch.delete("business");
+      const query = nextSearch.toString();
+      router.replace(query ? `/member/dashboard?${query}` : "/member/dashboard", { scroll: false });
     }
   }
 
@@ -378,7 +415,7 @@ export function CanonicalMemberShell({
     <main className="phase180-shell" id="main-content">
       <header className="phase180-shell-header">
         <BrandMark href="/member/dashboard" label="Entral member dashboard" />
-        <MemberDestinationNav current={initialDestination} surface="member" />
+        <Phase200InteractionNavigation current={interactionDestination} role={selectedOrganization?.role ?? "MEMBER"} />
         <div className="phase180-account-actions">
           <button onClick={() => window.dispatchEvent(new Event("entral:open-academy"))} type="button"><BookOpen size={17} /> Academy</button>
           <button onClick={() => window.dispatchEvent(new Event("entral:open-settings"))} type="button"><Settings size={17} /> Settings</button>
@@ -393,6 +430,7 @@ export function CanonicalMemberShell({
             <select
               aria-label="Member access organization"
               onChange={(event) => {
+                const reset = canonicalOrganizationSwitchPresentation();
                 activeOrganizationRef.current = event.target.value;
                 refreshGenerationRef.current += 1;
                 alignedEventSequenceRef.current = null;
@@ -401,15 +439,15 @@ export function CanonicalMemberShell({
                 setOrganizationId(event.target.value);
                 setBusinessScopeId(null);
                 setSelectedEntityId(null);
-                setConversationMessages([]);
-                setPortfolio(null);
-                setHierarchy(null);
-                setGraphProjection(null);
-                setGraphPreferences(null);
-                setWorkspaceError("");
-                setIsLoading(true);
-                setSyncState("connecting");
-                setSyncStatus("Switching member access context");
+                setConversationMessages(reset.conversationMessages);
+                setPortfolio(reset.portfolio);
+                setHierarchy(reset.hierarchy);
+                setGraphProjection(reset.graphProjection);
+                setGraphPreferences(reset.graphPreferences);
+                setWorkspaceError(reset.workspaceError);
+                setIsLoading(reset.isLoading);
+                setSyncState(reset.syncState);
+                setSyncStatus(reset.syncStatus);
               }}
               value={organizationId}
             >
@@ -466,13 +504,20 @@ export function CanonicalMemberShell({
               selectedEntityId={selectedEntityId}
             />
           ) : initialDestination === "dashboard" ? (
-            <CanonicalPortfolioDashboard
-              organizationId={organizationId}
-              scopeBusinessId={businessScopeId}
-              userName={initialSession.user.name}
-              workspacePortfolio={portfolio}
-              workspaceStatus={syncStatus}
-            />
+            <>
+              <Phase200BusinessHealthPanel
+                businessId={businessScopeId}
+                organizationId={organizationId}
+                route={interactionDestination === "businesses" ? "/member/dashboard?destination=businesses" : interactionDestination === "tutorial" ? "/member/dashboard?destination=tutorial" : "/member/dashboard"}
+              />
+              <CanonicalPortfolioDashboard
+                organizationId={organizationId}
+                scopeBusinessId={businessScopeId}
+                userName={initialSession.user.name}
+                workspacePortfolio={portfolio}
+                workspaceStatus={syncStatus}
+              />
+            </>
           ) : initialDestination === "graph" && graphProjection && graphPreferences ? (
             <CanonicalGraphWorkspace
               assistantCommand={assistantCommand}

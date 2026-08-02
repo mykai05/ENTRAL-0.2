@@ -383,6 +383,13 @@ export function nextUniverseEntityId(
   return candidates[0]?.entity.entity_id ?? current.entity.entity_id;
 }
 
+export function availableUniverseNavigationPoints(
+  renderedPoints: readonly UniversePoint[],
+  authorizedPoints: readonly UniversePoint[]
+): readonly UniversePoint[] {
+  return renderedPoints.length > 0 ? renderedPoints : authorizedPoints;
+}
+
 export function semanticUniverseIds(
   entities: readonly EntitySummary[],
   selectedId: string | null,
