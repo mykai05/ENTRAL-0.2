@@ -94,7 +94,12 @@
     "protected_main_receipt_sha256": "f5ca0aacb0ae72852200a39aec0ffb98a6cfc98659d03dcbd6645a40b95b77c2",
     "migration_receipt_sha256": "c5ea800bcdecc3e5fadd90fad69fcb63167baee4ba8d0c3d07e6f3d591d26f76",
     "production_browser_receipt_sha256": "84de92b342ff110cba9bf9d9b7ad035a64cf54424667771eef27e8292dc75f2e",
-    "mobile_widths_css_px": [360, 390, 412, 430],
+    "mobile_widths_css_px": [
+      360,
+      390,
+      412,
+      430
+    ],
     "portrait": "PASSED",
     "landscape": "PASSED",
     "desktop_side_by_side": "PASSED"
