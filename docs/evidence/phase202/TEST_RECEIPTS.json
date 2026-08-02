@@ -6,8 +6,8 @@
   "status": "PRE_INTEGRATION_LOCAL_PASS",
   "qualification": "These are local deterministic and browser receipts from the post-correction Phase 202 candidate reconciled with current origin/main. The accepted implementation commit passed an independent exact-commit clean-checkout replay. They do not prove protected main or production.",
   "accepted_candidate": {
-    "commit_sha": "2a0289368bc72f739ec064a176e5ce2607aae3dd",
-    "tree_sha": "5e497f582f712c42ba869259d7434ad434f0d336",
+    "commit_sha": "05f8580732e12203dc456fca5bf13a19ba268bf6",
+    "tree_sha": "6abf378170c45f5d50a4862915169d74821a094b",
     "clean_checkout_status": "PASSED",
     "working_tree_status_after_replay": "CLEAN",
     "ci_prerequisite_order": "FROZEN_INSTALL_THEN_PRISMA_GENERATE_THEN_PHASE202"
@@ -105,7 +105,7 @@
     {
       "command": "exact-commit detached clean checkout: frozen install, prisma generate, pnpm test:phase202, pnpm build, git status --porcelain, and git diff --check",
       "status": "PASSED",
-      "results": "commit 2a0289368bc72f739ec064a176e5ce2607aae3dd and tree 5e497f582f712c42ba869259d7434ad434f0d336 reproduced the CI prerequisite order, 41 contract/static/reconciliation tests, 272 backend tests, 19 frontend tests, a production build, and a clean tracked worktree; the model-ledger hash remained stable across CRLF checkout normalization"
+      "results": "commit 05f8580732e12203dc456fca5bf13a19ba268bf6 and tree 6abf378170c45f5d50a4862915169d74821a094b reproduced the CI prerequisite and development-only broker environment, 41 contract/static/reconciliation tests, 272 backend tests, 19 frontend tests, a production build, and a clean tracked worktree; the model-ledger hash remained stable across CRLF checkout normalization"
     },
     {
       "command": "git diff --check",

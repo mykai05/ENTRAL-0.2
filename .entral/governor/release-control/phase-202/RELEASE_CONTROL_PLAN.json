@@ -33,7 +33,7 @@
   },
   "task": {
     "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
-    "commit_sha": "2a0289368bc72f739ec064a176e5ce2607aae3dd",
+    "commit_sha": "05f8580732e12203dc456fca5bf13a19ba268bf6",
     "changed_files": [
       ".entral/governor/events/EVENTS.jsonl",
       ".entral/governor/lib/governor.mjs",
@@ -212,19 +212,21 @@
   },
   "candidate_binding": {
     "status": "ACCEPTED_EXACT_SHA_CLEAN_CHECKOUT",
-    "accepted_commit_sha": "2a0289368bc72f739ec064a176e5ce2607aae3dd",
-    "accepted_tree_sha": "5e497f582f712c42ba869259d7434ad434f0d336",
+    "accepted_commit_sha": "05f8580732e12203dc456fca5bf13a19ba268bf6",
+    "accepted_tree_sha": "6abf378170c45f5d50a4862915169d74821a094b",
     "worktree_status_at_acceptance": "CLEAN",
-    "working_tree_fingerprint_sha256": "40f1da1e560bbe80ce833696527c050bf117201b78d000e913cf0e3ea9e740d8",
+    "working_tree_fingerprint_sha256": "a95edd3dcdb3316e88c79a07249206b52e1f7dba4e6f10fc57e52366b590402c",
     "fingerprint_algorithm": "SHA256 over sorted origin/main to accepted commit path, tab, accepted Git blob SHA-1 records with the ReleaseControlPlan path represented by the SELF sentinel to avoid a circular content hash",
     "fingerprinted_changed_file_count": 145,
     "clean_checkout_acceptance": {
       "checkout_mode": "DETACHED_EXACT_SHA",
-      "source_commit_sha": "2a0289368bc72f739ec064a176e5ce2607aae3dd",
-      "source_tree_sha": "5e497f582f712c42ba869259d7434ad434f0d336",
+      "source_commit_sha": "05f8580732e12203dc456fca5bf13a19ba268bf6",
+      "source_tree_sha": "6abf378170c45f5d50a4862915169d74821a094b",
       "frozen_install": "PASSED",
       "prisma_generation": "PASSED",
       "complete_phase202_suite": "PASSED",
+      "phase202_postgresql_execution": "PASSED_REAL_POSTGRESQL",
+      "phase202_broker_environment": "PASSED_CI_ONLY_BROKER_ENV",
       "full_build": "PASSED",
       "git_status_porcelain": "CLEAN",
       "git_diff_check": "PASSED"
