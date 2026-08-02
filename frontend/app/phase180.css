@@ -3435,3 +3435,30 @@ body:has(.phase180-embedded-3d) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Phase 202 identity readbacks can contain durable authority metadata whose
+   intrinsic width must never expand the authenticated mobile surface. */
+.phase202-account-security-shell,
+.phase202-account-security-card,
+.phase202-account-security-content {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.phase202-account-security-card > *,
+.phase202-account-security-card .privacy-action,
+.phase202-account-security-card ul,
+.phase202-account-security-card li,
+.phase202-account-security-card form,
+.phase202-account-security-card label {
+  min-width: 0;
+}
+
+.phase202-account-security-card :where(.privacy-action, ul, li, form) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.phase202-account-security-card :where(code, .settings-helper, span, strong) {
+  overflow-wrap: anywhere;
+}

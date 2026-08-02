@@ -70,7 +70,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
 
 const surfaceStyle: React.CSSProperties = {
   margin: "0 auto",
-  maxWidth: "72rem",
+  maxWidth: "min(72rem, 100%)",
   width: "100%"
 };
 
@@ -576,8 +576,8 @@ export function AccountSecurityControls({
   }
 
   return (
-    <main className="member-auth-shell" id="main-content">
-      <section className="member-auth-card" style={surfaceStyle} aria-labelledby="account-security-heading">
+    <main className="member-auth-shell phase202-account-security-shell" id="main-content">
+      <section className="member-auth-card phase202-account-security-card" style={surfaceStyle} aria-labelledby="account-security-heading">
         <header className="member-auth-brand">
           <BrandMark href="/member/dashboard" label="Entral member dashboard" />
           <span>Identity authority</span>
@@ -602,7 +602,7 @@ export function AccountSecurityControls({
         {notice ? <p className="member-auth-success" role="status"><CheckCircle2 aria-hidden="true" size={18} /> {notice}</p> : null}
         {actionError ? <p className="member-auth-error" role="alert"><AlertTriangle aria-hidden="true" size={18} /> {actionError}</p> : null}
 
-        <div style={contentStyle}>
+        <div className="phase202-account-security-content" style={contentStyle}>
           <section className="privacy-action" aria-labelledby="active-sessions-heading">
             <div className="section-title-row">
               <MonitorSmartphone aria-hidden="true" size={20} />
