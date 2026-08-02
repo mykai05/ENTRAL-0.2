@@ -69,8 +69,20 @@
     "receipt_sha256": "f82085ae21f7f7f337be2d8f39d6f6450fc8a80032da91202dfccb03e5ab73dc"
   },
   "repositories": [
-    {"role":"PRODUCT","repository":"mykai05/ENTRAL-0.2","main_sha":"c689176234bca8a43f6bb5665f6a8a63d8d653dd","contract_version":"release-control-v1","compatibility_status":"PASSED"},
-    {"role":"CONTROL_WEBSITE","repository":"SovereignProtocol/sovereign-protocol-agent","main_sha":"8f1923fcec20a11dc0aef304c0e05827fe2cb5c5","contract_version":"release-control-v1","compatibility_status":"PASSED"}
+    {
+      "role": "PRODUCT",
+      "repository": "mykai05/ENTRAL-0.2",
+      "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    }
   ],
   "release_controller": {
     "risk_tier": "HIGH",
@@ -89,9 +101,20 @@
     "credential_reference_audit_receipt_sha256": "5726d8869e5a2f1e87d72c6c7a423659572b082cdf11e945a3ef561d8baa3a7b",
     "release_blocker_receipt_sha256": "1e08b3ff7e2336ad347be19f7d7be74e24bf7e90d9b2b410fec4568bc94c90eb",
     "production_browser_receipt_sha256": "dcd3a0f671dd44554d9319ac62e0dbd1f55b37fcd5ccb5eba10529134abf10d7",
-    "integration_pull_requests": [44,45,46,47,48],
+    "integration_pull_requests": [
+      44,
+      45,
+      46,
+      47,
+      48
+    ],
     "release_blockers": 0,
-    "mobile_widths_css_px": [360,390,412,430],
+    "mobile_widths_css_px": [
+      360,
+      390,
+      412,
+      430
+    ],
     "invitation_token_scrub": "PASSED",
     "session_revocation": "PASSED"
   },
