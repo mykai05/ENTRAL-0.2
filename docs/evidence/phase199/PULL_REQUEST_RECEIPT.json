@@ -1,0 +1,16 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "repository": "mykai05/ENTRAL-0.2",
+  "pull_request_number": 42,
+  "url": "https://github.com/mykai05/ENTRAL-0.2/pull/42",
+  "title": "Phase 199: baseline recertification corrections",
+  "state": "MERGED",
+  "base_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+  "pull_request_head_commit_sha": "c68b7a25164759646d9627e603e5b6529e3c88f3",
+  "accepted_merge_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "merged_at": "2026-08-02T00:30:57.000Z",
+  "status": "PASSED",
+  "checked_at": "2026-08-02T01:18:23.206Z"
+}

@@ -1,0 +1,44 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "provider": "GITHUB_ACTIONS",
+  "repository": "mykai05/ENTRAL-0.2",
+  "workflow": ".github/workflows/ci-cd.yml",
+  "run_id": "30725352825",
+  "run_attempt": 2,
+  "git_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "run_url": "https://github.com/mykai05/ENTRAL-0.2/actions/runs/30725352825",
+  "result": "SUCCESS",
+  "created_at": "2026-08-02T00:36:57.000Z",
+  "completed_at": "2026-08-02T00:44:12.000Z",
+  "artifacts": [
+    {
+      "artifact_id": "8826250749",
+      "archive_bytes": 523,
+      "content_sha256": "0ed23cf2f0f01337e8c260888f442aa7de18dbed686bb6ec536584c0b9f55ffb"
+    },
+    {
+      "artifact_id": "8826250609",
+      "archive_bytes": 2683,
+      "content_sha256": "59a31bdde9c88fba95100c920c91114922f0cab1a8f2b1d57a803a997c15f7a7"
+    },
+    {
+      "artifact_id": "8826250489",
+      "archive_bytes": 1104,
+      "content_sha256": "3aa5ef56b1f108af2595b784044e06dd8263bad269579c1375cb6a6305d37555"
+    },
+    {
+      "artifact_id": "8826250359",
+      "archive_bytes": 2371899,
+      "content_sha256": "750c706589f9c2f88520dacc7b1daee083908bed5faef825790a68bc74ee3913"
+    },
+    {
+      "artifact_id": "8826250167",
+      "archive_bytes": 565,
+      "content_sha256": "0d99e04f8d8683831a29c28018a35fa005dcc8c7b1cf86adf7fd97c1b9fa87ea"
+    }
+  ],
+  "status": "PASSED",
+  "checked_at": "2026-08-02T00:44:12.000Z"
+}

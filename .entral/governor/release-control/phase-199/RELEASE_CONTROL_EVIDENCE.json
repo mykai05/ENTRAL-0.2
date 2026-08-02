@@ -1,0 +1,142 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "evidence_id": "P199-PRODUCTION-EVIDENCE-001",
+  "phase": 199,
+  "plan_sha256": "6f4b454422283b99f46be9d85eb81c43ccf814acc49f51b57209709c17f5acf3",
+  "stage": "PRODUCTION",
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "origin_main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "observed_contract_version": "release-control-v1",
+      "compatible": true
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "origin_main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "observed_contract_version": "release-control-v1",
+      "compatible": true
+    }
+  ],
+  "task": {
+    "commit_sha": "c68b7a25164759646d9627e603e5b6529e3c88f3",
+    "coherent_commit": true,
+    "worktree_clean": true
+  },
+  "targeted_tests": [
+    {"name": "pnpm --filter @entral/backend test", "status": "PASSED"},
+    {"name": "pnpm release:check", "status": "PASSED"},
+    {"name": "pnpm test:phase196", "status": "PASSED"},
+    {"name": "pnpm test:phase197", "status": "PASSED"}
+  ],
+  "mandatory_suites": [
+    {"name": "pnpm test:phase199", "status": "PASSED"},
+    {"name": "pnpm test:phase198", "status": "PASSED"},
+    {"name": "pnpm test:phase197", "status": "PASSED"},
+    {"name": "pnpm test:phase196", "status": "PASSED"},
+    {"name": "pnpm test:phase195", "status": "PASSED"},
+    {"name": "pnpm contracts:verify", "status": "PASSED"},
+    {"name": "pnpm prisma:generate", "status": "PASSED"},
+    {"name": "pnpm lint", "status": "PASSED"},
+    {"name": "pnpm test", "status": "PASSED"},
+    {"name": "pnpm build", "status": "PASSED"},
+    {"name": "pnpm release:check", "status": "PASSED"},
+    {"name": "git diff --check", "status": "PASSED"},
+    {"name": "Governor verify", "status": "PASSED"}
+  ],
+  "status_checks": [
+    {"name": "protected-pr-verify-30724768777", "status": "PASSED"},
+    {"name": "protected-pr-verify-30724769764", "status": "PASSED"},
+    {"name": "pr-vercel-frontend", "status": "PASSED"},
+    {"name": "pr-vercel-backend", "status": "PASSED"},
+    {"name": "main-verify-30725352825-attempt-2", "status": "PASSED"},
+    {"name": "vercel-frontend-exact-main", "status": "PASSED"},
+    {"name": "railway-api-exact-main", "status": "PASSED"},
+    {"name": "railway-worker-exact-main", "status": "PASSED"}
+  ],
+  "reconciliation": {
+    "origin_main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+    "reconciled_commit_sha": "c68b7a25164759646d9627e603e5b6529e3c88f3",
+    "affected_checks_rerun": true,
+    "status": "RECONCILED"
+  },
+  "staging": {
+    "status": "PASSED"
+  },
+  "migration_verification": {
+    "status": "NO_SCHEMA_CHANGE",
+    "ordered": true,
+    "fingerprints_match": true,
+    "compatibility_verified": true,
+    "backup_status": "NOT_REQUIRED",
+    "entries": [
+      {
+        "order": 0,
+        "name": "phase-199-no-schema-change",
+        "fingerprint_sha256": "cfeb76852b68dee2d877eab0202fa628f5e6b3cad7bc159928b90c10ba403c86",
+        "status": "NO_SCHEMA_CHANGE"
+      }
+    ]
+  },
+  "deployments": [
+    {
+      "role": "FRONTEND",
+      "provider": "VERCEL",
+      "deployment_id": "dpl_CavKw8FjsQLxpiALtZ5FXWLyjD9t",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "status": "READY"
+    },
+    {
+      "role": "API",
+      "provider": "RAILWAY",
+      "deployment_id": "04bd83dc-0545-4b13-9a32-83580cec8f75",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "status": "READY"
+    },
+    {
+      "role": "WORKER",
+      "provider": "RAILWAY",
+      "deployment_id": "3344f2f6-a367-4548-8aab-f5ae6890ee46",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "status": "READY"
+    }
+  ],
+  "authenticated_smokes": [
+    {"surface": "FRONTEND", "live_url": "https://entral-0-2-frontend.vercel.app/api/v1/admin/overview", "authenticated": true, "status": "PASSED", "receipt_sha256": "641376f3c5e077bc176809060f270d339d79e4115ce06edc974da12f2b1ac4bd"},
+    {"surface": "API", "live_url": "https://entral-backend-production.up.railway.app/api/v1/admin/overview", "authenticated": true, "status": "PASSED", "receipt_sha256": "641376f3c5e077bc176809060f270d339d79e4115ce06edc974da12f2b1ac4bd"},
+    {"surface": "WORKER", "live_url": "https://entral-backend-production.up.railway.app/health", "authenticated": true, "status": "PASSED", "receipt_sha256": "d6f38006b1fe9e9b3bb1bd7c951e443184e93c9d4313b6665b8302395a0b3347"}
+  ],
+  "state_reconciliation": {
+    "status": "PASSED",
+    "side_effects_reconciled": true,
+    "main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+    "receipt_sha256": "d6f38006b1fe9e9b3bb1bd7c951e443184e93c9d4313b6665b8302395a0b3347",
+    "blockers": []
+  },
+  "health": {
+    "availability": 1,
+    "error_rate": 0,
+    "p95_ms": 370.199,
+    "failed_jobs": 0,
+    "dead_letter_jobs": 0,
+    "worker_ready": true,
+    "receipt_sha256": "33570705d8cd62afae13292644dec017e5fd70ca8fcfbbfdafcfafcfbf339754"
+  },
+  "rollback_rehearsal": {
+    "status": "NOT_REQUIRED"
+  },
+  "failure_proof": {
+    "status": "PASSED",
+    "outcome": "REJECTED",
+    "phase_advanced": false
+  },
+  "rollback_point": {
+    "status": "VERIFIED",
+    "receipt_sha256": "6d855590ddfeb5937b790511cbbba3918fbd4da6fe371db4f5e71be04cad1e44"
+  },
+  "produced_at": "2026-08-02T01:27:44.212Z"
+}

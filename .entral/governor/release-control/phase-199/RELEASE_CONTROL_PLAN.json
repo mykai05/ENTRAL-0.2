@@ -1,0 +1,125 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "plan_id": "P199-RELEASE-PLAN-001",
+  "phase": 199,
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "repository": "mykai05/ENTRAL-0.2",
+      "local_path": "C:/Temp/entral-phase199-deploy-f1e4ba62",
+      "origin_url": "https://github.com/mykai05/ENTRAL-0.2.git",
+      "default_branch": "main",
+      "latest_verified_main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "branch_prefix": "codex/",
+      "compatibility_contract_version": "release-control-v1"
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "local_path": "C:/Users/malac/Documents/Sovereign Protocol",
+      "origin_url": "https://github.com/SovereignProtocol/sovereign-protocol-agent.git",
+      "default_branch": "main",
+      "latest_verified_main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "branch_prefix": "codex/",
+      "compatibility_contract_version": "release-control-v1"
+    }
+  ],
+  "task": {
+    "task_packet_id": "P199-BASELINE-CERTIFICATION-001",
+    "commit_sha": "c68b7a25164759646d9627e603e5b6529e3c88f3",
+    "changed_files": [
+      ".entral/governor/PROGRAM_STATE.json",
+      ".entral/governor/events/EVENTS.jsonl",
+      ".entral/governor/phases/199/PHASE_CONTRACT.v1.json",
+      ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/EVIDENCE_INDEX.json",
+      ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_BRIEF.md",
+      ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_REQUEST.json",
+      ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_VERDICT.json",
+      ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_VERDICT.md",
+      ".entral/governor/results/P199-BASELINE-CERTIFICATION-001-f9bba0b2.json",
+      ".entral/governor/results/P199-BINDING-CORRECTIONS-001-39000c64.json",
+      ".entral/governor/results/P199-RELEASE-CI-REPAIR-001-94d11c29.json",
+      ".entral/governor/tasks/P199-BASELINE-CERTIFICATION-001.json",
+      ".entral/governor/tasks/P199-BINDING-CORRECTIONS-001.json",
+      ".entral/governor/tasks/P199-RELEASE-CI-REPAIR-001.json",
+      ".github/workflows/ci-cd.yml",
+      "backend/package.json",
+      "backend/src/cli/reconcileSecureJson.ts",
+      "backend/src/dev-memory-server.ts",
+      "backend/src/env.ts",
+      "backend/src/services/secureJson.ts",
+      "backend/src/services/secureJsonReconciliation.ts",
+      "backend/tests/phase199BaselineSecurity.test.ts",
+      "docs/PHASE_199_VERIFICATION.md",
+      "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
+      "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json",
+      "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
+      "docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json",
+      "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
+      "docs/evidence/phase199/TEST_RECEIPTS.json",
+      "package.json",
+      "packages/contracts/baseline-certification.schema.json",
+      "packages/contracts/package.json",
+      "packages/contracts/src/baseline.ts",
+      "packages/contracts/src/index.ts",
+      "packages/contracts/tests/baseline.test.mjs",
+      "scripts/phase199-baseline-gates.test.mjs"
+    ],
+    "mandatory_phase_suites": [
+      "pnpm test:phase199",
+      "pnpm test:phase198",
+      "pnpm test:phase197",
+      "pnpm test:phase196",
+      "pnpm test:phase195",
+      "pnpm contracts:verify",
+      "pnpm prisma:generate",
+      "pnpm lint",
+      "pnpm test",
+      "pnpm build",
+      "pnpm release:check",
+      "git diff --check",
+      "Governor verify"
+    ]
+  },
+  "risk_profile": {
+    "data_migration": "NONE",
+    "customer_data_risk": "NONE",
+    "rollback_complexity": "SIMPLE",
+    "public_contract_change": false,
+    "provider_configuration_change": true,
+    "identity_or_tenancy_change": false,
+    "billing_or_economic_change": false
+  },
+  "changed_surfaces": ["FRONTEND", "API", "WORKER"],
+  "migrations": [
+    {
+      "order": 0,
+      "name": "phase-199-no-schema-change",
+      "kind": "NO_SCHEMA_CHANGE",
+      "fingerprint_sha256": "cfeb76852b68dee2d877eab0202fa628f5e6b3cad7bc159928b90c10ba403c86",
+      "compatibility": "COMPATIBLE",
+      "recovery_strategy": "NONE_REQUIRED"
+    }
+  ],
+  "health_thresholds": {
+    "minimum_availability": 0.99,
+    "maximum_error_rate": 0.01,
+    "maximum_p95_ms": 2000,
+    "maximum_failed_jobs": 0,
+    "maximum_dead_letter_jobs": 0
+  },
+  "rollback_point": {
+    "status": "VERIFIED",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "release_tag": "phase-198",
+    "integrity_status": "CERTAIN",
+    "receipt_sha256": "6d855590ddfeb5937b790511cbbba3918fbd4da6fe371db4f5e71be04cad1e44",
+    "deployments": [
+      {"role": "FRONTEND", "provider": "VERCEL", "deployment_id": "dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u"},
+      {"role": "API", "provider": "RAILWAY", "deployment_id": "43f98e05-af77-44f2-826c-5976fc738e4b", "service_id": "2bdeff1a-74fc-4484-8316-6f10d974aaae"},
+      {"role": "WORKER", "provider": "RAILWAY", "deployment_id": "b477d5c8-2a55-4e74-84b8-168e5f938fd8", "service_id": "e531972e-5c0a-4885-9f19-f44f6bc6a366"}
+    ]
+  },
+  "created_at": "2026-08-02T01:24:10.254Z"
+}

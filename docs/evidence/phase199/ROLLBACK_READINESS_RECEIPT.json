@@ -1,0 +1,35 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "status": "AVAILABLE",
+  "strategy": "RESTORE",
+  "immediate_rollback": {
+    "release_phase": 198,
+    "release_tag": "phase-198",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "remote_tag_dereferenced_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "recovery_reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "canonical_release_id": "29c0e347-6317-427e-b2fe-325833c619f6",
+    "phase_gate_id": "836511d5-248b-4a73-9ed4-d0ef27eac275"
+  },
+  "deployments": [
+    {
+      "role": "FRONTEND",
+      "provider": "VERCEL",
+      "deployment_id": "dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u"
+    },
+    {
+      "role": "API",
+      "provider": "RAILWAY",
+      "deployment_id": "43f98e05-af77-44f2-826c-5976fc738e4b"
+    },
+    {
+      "role": "WORKER",
+      "provider": "RAILWAY",
+      "deployment_id": "b477d5c8-2a55-4e74-84b8-168e5f938fd8"
+    }
+  ],
+  "blockers": [],
+  "verified_at": "2026-08-02T01:18:23.206Z"
+}

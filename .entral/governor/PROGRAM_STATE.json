@@ -4,12 +4,13 @@
   "program_version": "ENTRAL-V9-CODEX-XHIGH-GPT-PRO-REVIEW",
   "execution_model": "CODEX_5_6_SOL_XHIGH",
   "status": "ACTIVE",
-  "current_phase": 199,
+  "current_phase": 200,
   "certified_phases": [
     195,
     196,
     197,
-    198
+    198,
+    199
   ],
   "current_task_packet_id": null,
   "task_status": null,
@@ -54,73 +55,94 @@
     "result_fingerprint": "385a3016d08b24105f7ce0a3d802804364062b600220b5c6054590e32511b2d2",
     "completed_at": "2026-08-02T00:11:14.732Z"
   },
-  "latest_verified_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+  "latest_verified_main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
   "latest_production_release": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "phase": 198,
+    "phase": 199,
     "repository": "mykai05/ENTRAL-0.2",
-    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
-    "release_tag": "phase-198",
+    "main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+    "release_tag": "phase-199",
     "tests_passed": true,
     "protected_main_checks_passed": true,
     "migrations_verified": true,
     "deployments": [
       {
         "provider": "VERCEL",
-        "deployment_id": "dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u",
+        "deployment_id": "dpl_CavKw8FjsQLxpiALtZ5FXWLyjD9t",
         "role": "FRONTEND",
         "live_url": "https://entral-0-2-frontend.vercel.app",
         "status": "READY",
-        "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+        "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb"
       },
       {
         "provider": "RAILWAY",
-        "deployment_id": "43f98e05-af77-44f2-826c-5976fc738e4b",
+        "deployment_id": "04bd83dc-0545-4b13-9a32-83580cec8f75",
         "role": "API",
         "live_url": "https://entral-backend-production.up.railway.app/health",
         "status": "READY",
-        "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+        "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb"
       },
       {
         "provider": "RAILWAY",
-        "deployment_id": "b477d5c8-2a55-4e74-84b8-168e5f938fd8",
+        "deployment_id": "3344f2f6-a367-4548-8aab-f5ae6890ee46",
         "role": "WORKER",
         "live_url": "https://entral-backend-production.up.railway.app/health",
         "status": "READY",
-        "deployed_commit_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+        "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb"
       }
     ],
     "migrations": [
       {
-        "name": "phase-198-no-schema-change",
-        "status": "NO_SCHEMA_CHANGE",
-        "readback": "Production Prisma migration status is up to date with 42 applied migrations, zero unfinished migrations, zero rolled-back migrations, and no pending migrations.",
+        "name": "20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness",
+        "status": "VERIFIED",
+        "readback": "Production Prisma migration status is up to date with 42 applied migrations, zero failed migrations, zero rolled-back migrations, and no pending migrations.",
         "production_schema_status": "UP_TO_DATE",
         "applied_migration_count": 42,
-        "readback_sha256": "3e7e60de453b2110852f708c21a5c8841dd15434d2294c7bd2c93d42746e5f37"
+        "checksum_sha256": "ecf35807e29fc17f9d3d36846dfbb568602569aefe219080ee9cfaa50efac651",
+        "readback_sha256": "cfeb76852b68dee2d877eab0202fa628f5e6b3cad7bc159928b90c10ba403c86"
       }
     ],
     "authenticated_smoke": {
       "status": "PASSED",
-      "receipt_sha256": "f73e366e727ef7846f79f3757ae439c25de7249823c43805b478c2c38069c036"
+      "receipt_id": "P199-AUTH-SMOKE-826f431e-73ee-4d33-97bc-9b60f28a0704",
+      "receipt_sha256": "641376f3c5e077bc176809060f270d339d79e4115ce06edc974da12f2b1ac4bd"
     },
     "production_readback": {
       "status": "PASSED",
-      "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
-      "receipt_sha256": "0986e544923576128fcd1fc04b9243f3310862a1b71e4fe36d2d76330b13b2d4",
+      "main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "canonical_release_id": "286d106d-8583-428c-9d3f-589e176d5f71",
+      "phase_gate_id": "b9aebfe5-0ae7-4fc4-ad3d-abb921406cad",
+      "receipt_sha256": "d6f38006b1fe9e9b3bb1bd7c951e443184e93c9d4313b6665b8302395a0b3347",
+      "deployment_readback_sha256": "33570705d8cd62afae13292644dec017e5fd70ca8fcfbbfdafcfafcfbf339754",
       "blockers": []
+    },
+    "secure_json_reconciliation": {
+      "status": "VERIFIED",
+      "protected_targets": [
+        "ShopifyConnection.credentialJson",
+        "ShopifyOAuthContinuation.payloadJson"
+      ],
+      "apply_plaintext_rows_found": 0,
+      "apply_plaintext_rows_reencrypted": 0,
+      "apply_invalid_json_rows": 0,
+      "apply_receipt_sha256": "5f024fce6668edb356cd41a47c5e5fd4414f2da6a59fa47ea0ca3c7c88849bbe",
+      "audit_plaintext_rows": 0,
+      "audit_invalid_json_rows": 0,
+      "audit_receipt_sha256": "69a41dde5b5841d55d13fe199ac389cfa5421e3da1db2cd9242b913084b39c02"
     },
     "rollback_point": {
       "status": "RESTORE_VERIFIED",
-      "reference": "release:phase-197:fdabaea99400ed1e1dfcada2cd41a336ed0a193b",
-      "receipt_sha256": "44fc97db7d2a2f185c5362ee60b96cb7a968c324fc5260183057b9c8fb81dd98"
+      "reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "release_tag": "phase-198",
+      "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "receipt_sha256": "6d855590ddfeb5937b790511cbbba3918fbd4da6fe371db4f5e71be04cad1e44"
     },
     "repositories": [
       {
         "role": "PRODUCT",
         "repository": "mykai05/ENTRAL-0.2",
-        "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+        "main_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
         "contract_version": "release-control-v1",
         "compatibility_status": "PASSED"
       },
@@ -133,69 +155,36 @@
       }
     ],
     "release_controller": {
-      "risk_tier": "LOW",
+      "risk_tier": "MEDIUM",
       "decision": "PASS",
-      "plan_sha256": "69e63bbd6a3b0739c6c4fb5c8d8a72ac852212a80d34ba3d688df0d3ce18d2a3",
-      "evidence_bundle_sha256": "95c7b5bbfbcec0072bc84ac09114711cf3195ec6796cf352c5046e17b2adbab6",
+      "plan_sha256": "6f4b454422283b99f46be9d85eb81c43ccf814acc49f51b57209709c17f5acf3",
+      "evidence_bundle_sha256": "cc8b91d99f5cd106bc7c9861b05183cfd7bb7fe0c15f5d927a4730794cae1304",
       "health_status": "PASSED",
       "failure_proof_status": "PASSED"
     },
-    "recorded_at": "2026-08-01T16:10:17.618Z"
+    "baseline_certification": {
+      "status": "CERTIFIED",
+      "manifest_sha256": "8d6360ac149ae3ea2b850cc1118155ea268beeeb401ee6c998ab516a0e9aed05",
+      "release_evidence_recording_manifest_sha256": "5f45a40e38cdcaf3ef9b62e4228ad719997a7d30d674672aa3510a620a981499",
+      "review_checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+      "review_packet_commit_sha": "9331b6e37d5e8db114ffc5fc211df04482cfcb67",
+      "binding_correction_commit_sha": "39000c648844e02fa472b1f4a824cd0114d70ba7"
+    },
+    "recorded_at": "2026-08-02T01:29:03.418Z"
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Reconcile Phase 199 with current origin/main and run the complete phase suite.",
+  "next_action": "Create one bounded Phase 200 TaskPacket.",
   "active_write_lease": null,
   "latest_checkpoint": null,
-  "review_state": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
-    "phase": 199,
-    "policy": "MANDATORY",
-    "status": "PASS_WITH_BINDING_CORRECTIONS",
-    "request_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
-    "request_path": "pro-review/P199-BASELINE-RECERTIFICATION-REVIEW",
-    "verdict": {
-      "contract_version": "1.0.0",
-      "schema_version": 1,
-      "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
-      "phase": 199,
-      "reviewed_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
-      "verdict_commit_sha": "9331b6e37d5e8db114ffc5fc211df04482cfcb67",
-      "verdict": "PASS_WITH_BINDING_CORRECTIONS",
-      "binding_corrections": [
-        "Treat IMPLEMENTED_UNVERIFIED and PARTIAL as certification-blocking requirement states and add negative tests for both.",
-        "Commit the complete source-backed secure JSON column inventory and credential-bearing subset; after deployment run APPLY and a separate fresh AUDIT, retain both receipt hashes, and require zero plaintext and invalid rows in every protected credential target.",
-        "Replace machine-local evidence paths with repository-at-commit path references; name the original Phase 100 through 190 completion gates and record all specified known limitations.",
-        "Use certified Phase 198 main 5c2f9d58c25dec82d4c3102f3b48a76797801594 as the immediate rollback target and bind final main, three deployments, reconciliation, migration, authenticated smoke, state readback, release tag, and rollback evidence before certification."
-      ],
-      "rationale": "The candidate is acceptable only after the four owner-attested corrections close certification-state semantics, complete and narrow credential evidence, make references portable and historically specific, and bind the final release to the immediate certified rollback target.",
-      "evidence_reviewed": [
-        ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_REQUEST.json",
-        ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/EVIDENCE_INDEX.json",
-        ".entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_BRIEF.md",
-        "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json",
-        "docs/evidence/phase199/PRODUCT_TRUTH_AUDIT.json",
-        "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json",
-        "docs/evidence/phase199/TEST_RECEIPTS.json"
-      ],
-      "owner_attested": true,
-      "reviewed_at": "2026-08-01T16:50:00.000Z"
-    },
-    "binding_corrections_completed": true,
-    "updated_at": "2026-08-02T00:08:08.733Z",
-    "correction_commit_sha": "39000c648844e02fa472b1f4a824cd0114d70ba7"
-  },
+  "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 1,
-  "result_fingerprints": [
-    "385a3016d08b24105f7ce0a3d802804364062b600220b5c6054590e32511b2d2"
-  ],
-  "version": 43,
-  "updated_at": "2026-08-02T00:11:34.280Z",
+  "task_attempts": 0,
+  "result_fingerprints": [],
+  "version": 46,
+  "updated_at": "2026-08-02T01:31:44.205Z",
   "task_deadline_at": "2026-08-02T02:10:29.297Z",
   "pending_release_manifest": null,
-  "event_count": 43,
-  "event_head_hash": "023a1ca3cecab4338f3d313c56d09f6c355b42391a83e12044a267c58dcb41df"
+  "event_count": 46,
+  "event_head_hash": "98c687177b351ae8a676a2865ab88012538d8874d161c47e403743d1c47c3622"
 }

@@ -1,0 +1,139 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 199,
+  "idempotency_key": "phase199:production:f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "organization_id": null,
+  "business_id": null,
+  "repository": "mykai05/ENTRAL-0.2",
+  "accepted_git_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+  "release_tag": "phase-199",
+  "accepted_at": "2026-08-02T00:30:57.000Z",
+  "migration": {
+    "migration_name": "20260726190000_phase_195_graph_preferences_release_evidence_and_worker_readiness",
+    "checksum_sha256": "ecf35807e29fc17f9d3d36846dfbb568602569aefe219080ee9cfaa50efac651",
+    "readback_content_sha256": "cfeb76852b68dee2d877eab0202fa628f5e6b3cad7bc159928b90c10ba403c86",
+    "checked_at": "2026-08-02T01:09:38.695Z"
+  },
+  "deployments": [
+    {
+      "deployment_role": "FRONTEND",
+      "service_name": "entral-0-2-frontend",
+      "provider": "VERCEL",
+      "deployment_id": "dpl_CavKw8FjsQLxpiALtZ5FXWLyjD9t",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "public_url": "https://entral-0-2-frontend.vercel.app",
+      "deployed_at": "2026-08-02T00:32:08.000Z",
+      "checked_at": "2026-08-02T01:14:21.026Z",
+      "source_freshness_seconds": 2533.026,
+      "readback_content_sha256": "33570705d8cd62afae13292644dec017e5fd70ca8fcfbbfdafcfafcfbf339754"
+    },
+    {
+      "deployment_role": "API",
+      "service_name": "entral-backend",
+      "provider": "RAILWAY",
+      "deployment_id": "04bd83dc-0545-4b13-9a32-83580cec8f75",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "public_url": "https://entral-backend-production.up.railway.app/health",
+      "deployed_at": "2026-08-02T01:06:31.536Z",
+      "checked_at": "2026-08-02T01:14:21.026Z",
+      "source_freshness_seconds": 469.49,
+      "readback_content_sha256": "33570705d8cd62afae13292644dec017e5fd70ca8fcfbbfdafcfafcfbf339754"
+    },
+    {
+      "deployment_role": "WORKER",
+      "service_name": "entral-worker",
+      "provider": "RAILWAY",
+      "deployment_id": "3344f2f6-a367-4548-8aab-f5ae6890ee46",
+      "deployed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "public_url": "https://entral-backend-production.up.railway.app/health",
+      "deployed_at": "2026-08-02T00:33:59.434Z",
+      "checked_at": "2026-08-02T01:14:21.026Z",
+      "source_freshness_seconds": 2421.592,
+      "readback_content_sha256": "33570705d8cd62afae13292644dec017e5fd70ca8fcfbbfdafcfafcfbf339754"
+    }
+  ],
+  "ci": {
+    "provider": "GITHUB_ACTIONS",
+    "repository": "mykai05/ENTRAL-0.2",
+    "workflow": ".github/workflows/ci-cd.yml",
+    "git_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+    "run_id": "30725352825",
+    "run_url": "https://github.com/mykai05/ENTRAL-0.2/actions/runs/30725352825",
+    "result": "SUCCESS",
+    "checked_at": "2026-08-02T00:44:12.000Z",
+    "run_content_sha256": "70e12feea46b604610e6f83678fe35b8defebbcd95c3787ad131440268fb7b64",
+    "artifacts": [
+      {
+        "artifact_id": "8826250749",
+        "content_sha256": "0ed23cf2f0f01337e8c260888f442aa7de18dbed686bb6ec536584c0b9f55ffb"
+      },
+      {
+        "artifact_id": "8826250609",
+        "content_sha256": "59a31bdde9c88fba95100c920c91114922f0cab1a8f2b1d57a803a997c15f7a7"
+      },
+      {
+        "artifact_id": "8826250489",
+        "content_sha256": "3aa5ef56b1f108af2595b784044e06dd8263bad269579c1375cb6a6305d37555"
+      },
+      {
+        "artifact_id": "8826250359",
+        "content_sha256": "750c706589f9c2f88520dacc7b1daee083908bed5faef825790a68bc74ee3913"
+      },
+      {
+        "artifact_id": "8826250167",
+        "content_sha256": "0d99e04f8d8683831a29c28018a35fa005dcc8c7b1cf86adf7fd97c1b9fa87ea"
+      }
+    ]
+  },
+  "authenticated_smoke": {
+    "receipt_id": "P199-AUTH-SMOKE-826f431e-73ee-4d33-97bc-9b60f28a0704",
+    "target_url": "https://entral-0-2-frontend.vercel.app/api/v1/admin/overview",
+    "status": "PASSED",
+    "checked_at": "2026-08-02T01:11:53.623Z",
+    "content_sha256": "641376f3c5e077bc176809060f270d339d79e4115ce06edc974da12f2b1ac4bd"
+  },
+  "rollback": {
+    "status": "AVAILABLE",
+    "strategy": "RESTORE",
+    "recovery_reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "verified_at": "2026-08-02T01:18:23.206Z",
+    "content_sha256": "6d855590ddfeb5937b790511cbbba3918fbd4da6fe371db4f5e71be04cad1e44"
+  },
+  "pull_requests": [
+    {
+      "repository": "mykai05/ENTRAL-0.2",
+      "pull_request_number": 42,
+      "head_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "disposition": "MERGED",
+      "rationale": "PR 42 was merged through protected main; its GitHub merge commit is the accepted exact production SHA, while the retained receipt separately records the pull-request head SHA.",
+      "decided_at": "2026-08-02T00:30:57.000Z",
+      "receipt_content_sha256": "690a1f5b185febc4037d2d0763cf7212e63442e3486fd030f274e8bd45dcd80e"
+    }
+  ],
+  "runtime_modes": [
+    {
+      "service_name": "entral-backend",
+      "process_role": "API",
+      "observed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "observed_at": "2026-08-02T01:14:21.026Z",
+      "in_memory_canonical_state_reachable": false,
+      "deterministic_fallback_reachable": false,
+      "sample_data_reachable": false,
+      "evidence_content_sha256": "33570705d8cd62afae13292644dec017e5fd70ca8fcfbbfdafcfafcfbf339754"
+    },
+    {
+      "service_name": "entral-worker",
+      "process_role": "WORKER",
+      "observed_commit_sha": "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb",
+      "observed_at": "2026-08-02T01:14:21.026Z",
+      "in_memory_canonical_state_reachable": false,
+      "deterministic_fallback_reachable": false,
+      "sample_data_reachable": false,
+      "evidence_content_sha256": "33570705d8cd62afae13292644dec017e5fd70ca8fcfbbfdafcfafcfbf339754"
+    }
+  ],
+  "gate_id": "P199-BASELINE-RECERTIFICATION-IMMUTABLE-GATE",
+  "closed_at": "2026-08-02T01:18:23.206Z",
+  "remaining_external_boundaries": []
+}
