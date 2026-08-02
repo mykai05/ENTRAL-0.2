@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { requireAuth } from "../auth.js";
-import { prisma } from "../db.js";
+import { prisma, withPersonalSession } from "../db.js";
 import { publicUser } from "../services/users.js";
 import { parseSecureJson } from "../services/secureJson.js";
 
@@ -12,7 +12,11 @@ export async function dashboardRoutes(app: FastifyInstance) {
       return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await withPersonalSession(prisma, {
+      actionReason: "dashboard.account.read",
+      authSubject: currentUser.sub,
+      requestId: request.id
+    }, (transaction) => transaction.user.findUnique({
       where: { id: currentUser.sub },
       include: {
         memberships: {
@@ -22,7 +26,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
           orderBy: { joinedAt: "asc" }
         }
       }
-    });
+    }));
 
     if (!user) {
       return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
@@ -67,10 +71,14 @@ export async function dashboardRoutes(app: FastifyInstance) {
       })
     ]);
 
-    await prisma.user.update({
+    await withPersonalSession(prisma, {
+      actionReason: "dashboard.last-seen.update",
+      authSubject: currentUser.sub,
+      requestId: request.id
+    }, (transaction) => transaction.user.update({
       where: { id: currentUser.sub },
       data: { lastDashboardSeenAt: new Date() }
-    });
+    }));
 
     return reply.send({
       message: `Welcome, ${publicUser(user).name}`,

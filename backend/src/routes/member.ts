@@ -11,7 +11,7 @@ import {
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { requireAuth, setPrivateNoStoreHeaders } from "../auth.js";
-import { prisma } from "../db.js";
+import { hasVerifiedMemberTeamAccess, prisma, withTenantSession } from "../db.js";
 import { canonicalControlPlaneRepository } from "../services/canonicalControlPlane.js";
 import {
   canonicalEntityLifecycleService
@@ -23,6 +23,7 @@ import {
   failAiUsageReservation,
   getAiUsageSummary,
   reserveAiUsage,
+  reserveAiUsageInTransaction,
   resolveAiUsageRequestId,
   settleAiUsageReservation
 } from "../services/aiUsage.js";
@@ -92,30 +93,28 @@ function canonicalDatabaseSession(request: FastifyRequest, actionReason: string)
   if (!currentUser) {
     throw new Error("Authenticated member session is required.");
   }
+  if (currentUser.session !== "member" || !currentUser.tenantId || !currentUser.organizationId) {
+    throw new Error("A tenant-bound member session is required.");
+  }
   return {
     actionReason,
     authSubject: currentUser.sub,
-    correlationId: randomUUID()
+    correlationId: randomUUID(),
+    organizationId: currentUser.organizationId,
+    tenantId: currentUser.tenantId
   } as const;
 }
 
-async function hasOrganizationAccess(userId: string, organizationId: string) {
-  const membership = await prisma.teamMember.findUnique({
-    where: {
-      userId_teamId: {
-        teamId: organizationId,
-        userId
-      }
-    },
-    select: {
-      team: {
-        select: {
-          memberAccessEnabled: true
-        }
-      }
-    }
+async function hasOrganizationAccess(request: FastifyRequest, organizationId: string) {
+  const currentUser = request.user;
+  if (currentUser?.session !== "member" || !currentUser.tenantId || !currentUser.organizationId) return false;
+  return hasVerifiedMemberTeamAccess(prisma, {
+    authSubject: currentUser.sub,
+    organizationId: currentUser.organizationId,
+    requestId: request.id,
+    teamId: organizationId,
+    tenantId: currentUser.tenantId
   });
-  return membership?.team.memberAccessEnabled === true;
 }
 
 function organizationNotFound(reply: FastifyReply) {
@@ -157,37 +156,51 @@ export async function memberRoutes(app: FastifyInstance) {
   app.get("/member/organizations", { preHandler: requireAuth }, async (request, reply) => {
     const currentUser = request.user;
 
-    if (!currentUser) {
+    if (currentUser?.session !== "member" || !currentUser.tenantId || !currentUser.organizationId) {
       return unauthenticated(reply);
     }
 
-    const [user, memberships] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: currentUser.sub },
-        select: { email: true, id: true, name: true }
-      }),
-      prisma.teamMember.findMany({
-        where: {
-          userId: currentUser.sub,
-          team: { memberAccessEnabled: true }
-        },
-        orderBy: { joinedAt: "asc" },
-        select: {
-          joinedAt: true,
-          role: true,
-          team: {
-            select: {
-              _count: { select: { members: true } },
-              id: true,
+    const [user, memberships] = await withTenantSession(prisma, {
+      actionReason: "Read the tenant-bound member organization inventory.",
+      authSubject: currentUser.sub,
+      requestId: request.id,
+      tenantId: currentUser.tenantId
+    }, async (transaction, identity) => {
+      if (identity.organizationId !== currentUser.organizationId || identity.tenantId !== currentUser.tenantId) {
+        throw new Error("TENANT_ACTOR_BINDING_MISMATCH");
+      }
+      return Promise.all([
+        transaction.user.findUnique({
+          where: { id: currentUser.sub },
+          select: { email: true, id: true, name: true }
+        }),
+        transaction.teamMember.findMany({
+          where: {
+            userId: currentUser.sub,
+            team: {
               memberAccessEnabled: true,
-              memberSeatLimit: true,
-              name: true,
-              slug: true
+              organizationId: identity.organizationId,
+              tenantId: identity.tenantId
+            }
+          },
+          orderBy: { joinedAt: "asc" },
+          select: {
+            joinedAt: true,
+            role: true,
+            team: {
+              select: {
+                _count: { select: { members: true } },
+                id: true,
+                memberAccessEnabled: true,
+                memberSeatLimit: true,
+                name: true,
+                slug: true
+              }
             }
           }
-        }
-      })
-    ]);
+        })
+      ]);
+    });
 
     if (!user) {
       return unauthenticated(reply);
@@ -211,83 +224,120 @@ export async function memberRoutes(app: FastifyInstance) {
   app.get("/member/organizations/:organizationId/overview", { preHandler: requireAuth }, async (request, reply) => {
     const currentUser = request.user;
 
-    if (!currentUser) {
+    if (currentUser?.session !== "member" || !currentUser.tenantId || !currentUser.organizationId) {
       return unauthenticated(reply);
     }
 
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    const membership = await prisma.teamMember.findUnique({
-      where: {
-        userId_teamId: {
+    const scopedOverview = await withTenantSession(prisma, {
+      actionReason: `Read the tenant-bound member overview for ${organizationId}.`,
+      authSubject: currentUser.sub,
+      requestId: request.id,
+      tenantId: currentUser.tenantId
+    }, async (transaction, identity) => {
+      if (identity.organizationId !== currentUser.organizationId || identity.tenantId !== currentUser.tenantId) {
+        throw new Error("TENANT_ACTOR_BINDING_MISMATCH");
+      }
+      const membership = await transaction.teamMember.findFirst({
+        where: {
           teamId: organizationId,
-          userId: currentUser.sub
-        }
-      },
-      select: {
-        role: true,
-        team: {
-          select: {
-            _count: { select: { members: true } },
-            id: true,
-            memberAccessEnabled: true,
-            memberSeatLimit: true,
-            name: true,
-            slug: true
+          userId: currentUser.sub,
+          team: {
+            organizationId: identity.organizationId,
+            tenantId: identity.tenantId
+          }
+        },
+        select: {
+          role: true,
+          team: {
+            select: {
+              _count: { select: { members: true } },
+              id: true,
+              memberAccessEnabled: true,
+              memberSeatLimit: true,
+              name: true,
+              slug: true
+            }
           }
         }
+      });
+
+      if (!membership || !membership.team.memberAccessEnabled) return null;
+
+      const now = new Date();
+      const [total, todo, inProgress, done, overdue, recentTasks, members, storedWorkspace] = await Promise.all([
+        transaction.task.count({ where: { memberVisible: true, teamId: organizationId } }),
+        transaction.task.count({ where: { memberVisible: true, status: "TODO", teamId: organizationId } }),
+        transaction.task.count({ where: { memberVisible: true, status: "IN_PROGRESS", teamId: organizationId } }),
+        transaction.task.count({ where: { memberVisible: true, status: "DONE", teamId: organizationId } }),
+        transaction.task.count({
+          where: {
+            dueDate: { lt: now },
+            memberVisible: true,
+            status: { notIn: ["DONE", "ARCHIVED"] },
+            teamId: organizationId
+          }
+        }),
+        transaction.task.findMany({
+          where: { memberVisible: true, teamId: organizationId },
+          orderBy: { updatedAt: "desc" },
+          take: 8,
+          select: {
+            assignedToId: true,
+            dueDate: true,
+            id: true,
+            status: true,
+            title: true,
+            updatedAt: true
+          }
+        }),
+        transaction.teamMember.findMany({
+          where: { teamId: organizationId },
+          orderBy: { joinedAt: "asc" },
+          select: {
+            joinedAt: true,
+            role: true,
+            userId: true
+          }
+        }),
+        transaction.memberWorkspaceSnapshot.findUnique({
+          where: { teamId: organizationId },
+          select: { publishedAt: true, snapshotJson: true, version: true }
+        })
+      ]);
+      const profileIds = new Set<string>();
+      for (const member of members) profileIds.add(member.userId);
+      for (const task of recentTasks) if (task.assignedToId) profileIds.add(task.assignedToId);
+      const profiles = new Map<string, { id: string; name: string }>();
+      for (const userId of profileIds) {
+        const profileRows = await transaction.$queryRaw<Array<{ name: string; userId: string }>>`
+          SELECT "userId","name"
+          FROM entral.phase202_resolve_membership_profile(${userId},${identity.tenantId}::uuid)
+        `;
+        const profile = profileRows[0];
+        if (profile?.userId === userId) profiles.set(userId, { id: userId, name: profile.name });
       }
+      const publicTasks = recentTasks.map(({ assignedToId, ...task }) => ({
+        ...task,
+        assignedTo: assignedToId ? profiles.get(assignedToId) ?? null : null
+      }));
+      const publicMembers = members.flatMap((member) => {
+        const user = profiles.get(member.userId);
+        return user ? [{ joinedAt: member.joinedAt, role: member.role, user }] : [];
+      });
+      return { done, inProgress, membership, members: publicMembers, overdue, recentTasks: publicTasks, storedWorkspace, todo, total };
     });
 
     // Return the same response for missing and inaccessible organizations so an
     // authenticated user cannot use identifiers to discover another tenant.
-    if (!membership || !membership.team.memberAccessEnabled) {
+    if (!scopedOverview) {
       return reply.code(404).send({
         error: "Not Found",
         message: "Organization not found or unavailable."
       });
     }
 
-    const now = new Date();
-    const [total, todo, inProgress, done, overdue, recentTasks, members, storedWorkspace] = await Promise.all([
-      prisma.task.count({ where: { memberVisible: true, teamId: organizationId } }),
-      prisma.task.count({ where: { memberVisible: true, status: "TODO", teamId: organizationId } }),
-      prisma.task.count({ where: { memberVisible: true, status: "IN_PROGRESS", teamId: organizationId } }),
-      prisma.task.count({ where: { memberVisible: true, status: "DONE", teamId: organizationId } }),
-      prisma.task.count({
-        where: {
-          dueDate: { lt: now },
-          memberVisible: true,
-          status: { notIn: ["DONE", "ARCHIVED"] },
-          teamId: organizationId
-        }
-      }),
-      prisma.task.findMany({
-        where: { memberVisible: true, teamId: organizationId },
-        orderBy: { updatedAt: "desc" },
-        take: 8,
-        select: {
-          assignedTo: { select: { id: true, name: true } },
-          dueDate: true,
-          id: true,
-          status: true,
-          title: true,
-          updatedAt: true
-        }
-      }),
-      prisma.teamMember.findMany({
-        where: { teamId: organizationId },
-        orderBy: { joinedAt: "asc" },
-        select: {
-          joinedAt: true,
-          role: true,
-          user: { select: { id: true, name: true } }
-        }
-      }),
-      prisma.memberWorkspaceSnapshot.findUnique({
-        where: { teamId: organizationId },
-        select: { publishedAt: true, snapshotJson: true, version: true }
-      })
-    ]);
+    const { done, inProgress, membership, members, overdue, recentTasks, storedWorkspace, todo, total } = scopedOverview;
 
     const workspace = storedWorkspace
       ? {
@@ -330,7 +380,7 @@ export async function memberRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     // organizationId gates the legacy member-access tenant only. Canonical
@@ -345,7 +395,7 @@ export async function memberRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     return reply.send(await canonicalControlPlaneRepository.getHierarchySnapshot(
@@ -357,7 +407,7 @@ export async function memberRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { businessId, organizationId } = organizationBusinessParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     const business = await canonicalControlPlaneRepository.getBusinessFull(
@@ -376,7 +426,7 @@ export async function memberRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { entityId, organizationId } = organizationEntityParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     const entity = await canonicalControlPlaneRepository.getEntityFull(
@@ -394,7 +444,7 @@ export async function memberRoutes(app: FastifyInstance) {
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
     const { afterSequence } = canonicalEventQuerySchema.parse(request.query);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     return reply.send(await canonicalControlPlaneRepository.listPortfolioEvents(
@@ -408,7 +458,7 @@ export async function memberRoutes(app: FastifyInstance) {
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
     const { businessId } = entralConversationQuerySchema.parse(request.query);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     return reply.send(await canonicalControlPlaneRepository.getEntralConversation(
@@ -433,7 +483,7 @@ export async function memberRoutes(app: FastifyInstance) {
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
     const input = entralAssistantMessageSchema.parse(request.body);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
 
@@ -458,6 +508,30 @@ export async function memberRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Not Found", message: "Business not found." });
     }
 
+    if (input.conversation_id) {
+      const authorizedConversation = await withTenantSession(prisma, {
+        actionReason: "Preflight the exact tenant-bound ENTRAL assistant conversation before reserving provider usage.",
+        authSubject: currentUser.sub,
+        requestId: request.id,
+        tenantId: currentUser.tenantId!
+      }, async (transaction, identity) => {
+        if (identity.organizationId !== currentUser.organizationId) throw new Error("TENANT_ACTOR_BINDING_MISMATCH");
+        return transaction.conversation.findFirst({
+          where: {
+            id: input.conversation_id,
+            userId: currentUser.sub,
+            tenantId: identity.tenantId,
+            organizationId: identity.organizationId,
+            businessId: selectedBusiness?.business_id ?? null
+          },
+          select: { id: true }
+        });
+      });
+      if (!authorizedConversation) {
+        return reply.code(404).send({ error: "Not Found", message: "Conversation not found." });
+      }
+    }
+
     let usageRequestId: string;
     let usageReservation: Awaited<ReturnType<typeof reserveAiUsage>>;
     try {
@@ -465,11 +539,19 @@ export async function memberRoutes(app: FastifyInstance) {
         request.id,
         request.headers["idempotency-key"] ?? request.headers["x-idempotency-key"]
       );
-      usageReservation = await reserveAiUsage({
-        metadata: { organizationId, route: "/member/entral/assistant/messages" },
-        requestId: usageRequestId,
-        requestKind: "chat",
-        userId: currentUser.sub
+      usageReservation = await withTenantSession(prisma, {
+        actionReason: "Reserve tenant-bound AI usage for the member ENTRAL assistant.",
+        authSubject: currentUser.sub,
+        requestId: request.id,
+        tenantId: currentUser.tenantId!
+      }, (transaction, identity) => {
+        if (identity.organizationId !== currentUser.organizationId) throw new Error("TENANT_ACTOR_BINDING_MISMATCH");
+        return reserveAiUsageInTransaction({
+          metadata: { organizationId: identity.organizationId, route: "/member/entral/assistant/messages" },
+          requestId: usageRequestId,
+          requestKind: "chat",
+          userId: currentUser.sub
+        }, transaction);
       });
     } catch (error) {
       if (error instanceof AiUsageLimitError) return assistantUsageLimit(reply, error);
@@ -480,32 +562,68 @@ export async function memberRoutes(app: FastifyInstance) {
     let completedProviderRequestId: string | undefined;
     let providerCallSucceeded = false;
     try {
-    const conversation = input.conversation_id
-      ? await prisma.conversation.findFirst({
-          where: { id: input.conversation_id, userId: currentUser.sub }
-        })
-      : await prisma.conversation.create({
-          data: {
-            title: `ENTRAL workspace · ${selectedEntity?.name ?? selectedBusiness?.business_name ?? input.context.surface}`,
-            userId: currentUser.sub
-          }
-        });
+    const tenantConversation = await withTenantSession(prisma, {
+      actionReason: "Persist tenant-bound ENTRAL assistant conversation context.",
+      authSubject: currentUser.sub,
+      requestId: request.id,
+      tenantId: currentUser.tenantId!
+    }, async (transaction, identity) => {
+      if (identity.organizationId !== currentUser.organizationId) throw new Error("TENANT_ACTOR_BINDING_MISMATCH");
+      const businessId = selectedBusiness?.business_id ?? null;
+      const conversation = input.conversation_id
+        ? await transaction.conversation.findFirst({
+            where: {
+              id: input.conversation_id,
+              userId: currentUser.sub,
+              tenantId: identity.tenantId,
+              organizationId: identity.organizationId,
+              businessId
+            }
+          })
+        : await transaction.conversation.create({
+            data: {
+              title: `ENTRAL workspace · ${selectedEntity?.name ?? selectedBusiness?.business_name ?? input.context.surface}`,
+              userId: currentUser.sub,
+              organizationId: identity.organizationId,
+              tenantId: identity.tenantId,
+              businessId,
+              actorId: identity.actorId,
+              createdBy: identity.actorId,
+              ownedBy: identity.actorId
+            }
+          });
+      if (!conversation) return null;
+      const userMessage = await transaction.message.create({
+        data: {
+          content: input.message,
+          conversationId: conversation.id,
+          role: "user",
+          organizationId: identity.organizationId,
+          tenantId: identity.tenantId,
+          businessId,
+          actorId: identity.actorId,
+          createdBy: identity.actorId,
+          ownedBy: identity.actorId
+        }
+      });
+      const history = await transaction.message.findMany({
+        where: {
+          conversationId: conversation.id,
+          tenantId: identity.tenantId,
+          organizationId: identity.organizationId,
+          businessId
+        },
+        orderBy: { createdAt: "asc" },
+        take: 40
+      });
+      return { conversation, history, userMessage };
+    });
+    const conversation = tenantConversation?.conversation ?? null;
     if (!conversation) {
       return reply.code(404).send({ error: "Not Found", message: "Conversation was not found." });
     }
-
-    const userMessage = await prisma.message.create({
-      data: {
-        content: input.message,
-        conversationId: conversation.id,
-        role: "user"
-      }
-    });
-    const history = await prisma.message.findMany({
-      where: { conversationId: conversation.id },
-      orderBy: { createdAt: "asc" },
-      take: 40
-    });
+    const userMessage = tenantConversation!.userMessage;
+    const history = tenantConversation!.history;
     const resolvedEventSequence = Math.min(portfolio.event_sequence, hierarchy.event_sequence);
     const scopeLabel = selectedBusiness?.business_name ?? portfolio.scope.label;
     const contextEnvelope = [
@@ -532,28 +650,60 @@ export async function memberRoutes(app: FastifyInstance) {
         actionPlan: brainDecision.plan
       });
     } catch (error) {
-      await prisma.message.delete({ where: { id: userMessage.id } }).catch(() => undefined);
+      await withTenantSession(prisma, {
+        actionReason: "Remove an uncompleted tenant-bound ENTRAL assistant request.",
+        authSubject: currentUser.sub,
+        requestId: request.id,
+        tenantId: currentUser.tenantId!
+      }, (transaction, identity) => transaction.message.deleteMany({
+        where: {
+          id: userMessage.id,
+          conversationId: conversation.id,
+          tenantId: identity.tenantId,
+          organizationId: identity.organizationId
+        }
+      })).catch(() => undefined);
       throw error;
     }
     completedProviderRequestId = assistantReply.requestId ?? completedProviderRequestId;
     providerCallSucceeded ||= !assistantReply.usedLocalFallback && Boolean(assistantReply.requestId);
-    const assistantMessage = await prisma.message.create({
-      data: {
-        content: assistantReply.content,
-        conversationId: conversation.id,
-        role: "assistant"
-      }
+    const assistantMessage = await withTenantSession(prisma, {
+      actionReason: "Persist a tenant-bound ENTRAL assistant response.",
+      authSubject: currentUser.sub,
+      requestId: request.id,
+      tenantId: currentUser.tenantId!
+    }, async (transaction, identity) => {
+      if (identity.organizationId !== currentUser.organizationId) throw new Error("TENANT_ACTOR_BINDING_MISMATCH");
+      const message = await transaction.message.create({
+        data: {
+          content: assistantReply.content,
+          conversationId: conversation.id,
+          role: "assistant",
+          organizationId: identity.organizationId,
+          tenantId: identity.tenantId,
+          businessId: selectedBusiness?.business_id ?? null,
+          actorId: identity.actorId,
+          createdBy: identity.actorId,
+          ownedBy: identity.actorId
+        }
+      });
+      await transaction.conversation.update({
+        data: { updatedAt: new Date() },
+        where: { id: conversation.id }
+      });
+      return message;
     });
-    await prisma.conversation.update({
-      data: { updatedAt: new Date() },
-      where: { id: conversation.id }
-    });
-    const usageEvent = await settleAiUsageReservation({
+    const usageEvent = await withTenantSession(prisma, {
+      actionReason: "Settle tenant-bound AI usage for the member ENTRAL assistant.",
+      authSubject: currentUser.sub,
+      requestId: request.id,
+      tenantId: currentUser.tenantId!
+    }, (transaction) => settleAiUsageReservation({
       metadata: {
         canonicalEventSequence: resolvedEventSequence,
         intent: brainDecision.plan.intent,
         memberSurface: input.context.surface,
-        organizationId,
+        organizationId: currentUser.organizationId,
         decisionProviderRequestId: brainDecision.providerRequestId,
         selectedEntityId: selectedEntity?.entity_id ?? null
       },
@@ -564,7 +714,7 @@ export async function memberRoutes(app: FastifyInstance) {
       reservationId: usageReservation.id,
       usedLocalFallback: assistantReply.usedLocalFallback,
       userId: currentUser.sub
-    });
+    }, transaction));
     if (!usageEvent) {
       throw new Error("AI usage reservation settlement did not return an event.");
     }
@@ -575,25 +725,37 @@ export async function memberRoutes(app: FastifyInstance) {
       plan: brainDecision.plan,
       providerName: assistantReply.providerName
     });
-    await recordAuditLog({
-      action: "member.entral.assistant.responded",
-      actorRole: currentUser.role,
-      actorUserId: currentUser.sub,
-      metadata: {
-        auditEntry,
-        canonicalEventSequence: resolvedEventSequence,
-        organizationId,
-        selectedEntityId: selectedEntity?.entity_id ?? null,
-        usageEventId: usageEvent.id
-      },
-      outcome: "success",
+    await withTenantSession(prisma, {
+      actionReason: "Record tenant-bound ENTRAL assistant audit evidence.",
+      authSubject: currentUser.sub,
       requestId: request.id,
-      severity: brainDecision.plan.riskLevel === "High" || brainDecision.plan.riskLevel === "Critical" ? "high" : "info",
-      targetId: conversation.id,
-      targetType: "member_entral_conversation"
-    }).catch((error) => {
+      tenantId: currentUser.tenantId!
+    }, (transaction) => recordAuditLog({
+        action: "member.entral.assistant.responded",
+        actorRole: currentUser.role,
+        actorUserId: currentUser.sub,
+        metadata: {
+          auditEntry,
+          canonicalEventSequence: resolvedEventSequence,
+          organizationId: currentUser.organizationId,
+          selectedEntityId: selectedEntity?.entity_id ?? null,
+          usageEventId: usageEvent.id
+        },
+        outcome: "success",
+        requestId: request.id,
+        severity: brainDecision.plan.riskLevel === "High" || brainDecision.plan.riskLevel === "Critical" ? "high" : "info",
+        targetId: conversation.id,
+        targetType: "member_entral_conversation"
+      }, transaction)).catch((error) => {
       request.log.warn({ err: error, conversationId: conversation.id }, "Member ENTRAL assistant audit write failed");
     });
+
+    const usageSummary = await withTenantSession(prisma, {
+      actionReason: "Read tenant-bound AI usage after the member ENTRAL assistant response.",
+      authSubject: currentUser.sub,
+      requestId: request.id,
+      tenantId: currentUser.tenantId!
+    }, (transaction) => getAiUsageSummary(currentUser.sub, new Date(), transaction));
 
     return reply.send({
       action_plan: brainDecision.plan,
@@ -610,7 +772,7 @@ export async function memberRoutes(app: FastifyInstance) {
       message_id: assistantMessage.id,
       usage: {
         estimated_cost_cents: usageEvent.estimatedCostCents,
-        summary: await getAiUsageSummary(currentUser.sub)
+        summary: usageSummary
       },
       user_message: {
         content: userMessage.content,
@@ -619,14 +781,19 @@ export async function memberRoutes(app: FastifyInstance) {
       }
     });
     } catch (error) {
-      await failAiUsageReservation({
-        error,
-        providerCallSucceeded,
-        providerRequestId: completedProviderRequestId,
-        requestId: usageRequestId,
-        reservationId: usageReservation.id,
-        userId: currentUser.sub
-      }).catch((reservationError) => {
+      await withTenantSession(prisma, {
+        actionReason: "Fail tenant-bound AI usage for the member ENTRAL assistant.",
+        authSubject: currentUser.sub,
+        requestId: request.id,
+        tenantId: currentUser.tenantId!
+      }, (transaction) => failAiUsageReservation({
+          error,
+          providerCallSucceeded,
+          providerRequestId: completedProviderRequestId,
+          requestId: usageRequestId,
+          reservationId: usageReservation.id,
+          userId: currentUser.sub
+        }, transaction)).catch((reservationError) => {
         request.log.error({ err: reservationError, usageReservationId: usageReservation.id }, "Member AI usage reservation failure write failed");
       });
       throw error;
@@ -645,7 +812,7 @@ export async function memberRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { entityId, operation, organizationId } = organizationEntityLifecycleParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
 
@@ -732,7 +899,7 @@ export async function memberRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
 

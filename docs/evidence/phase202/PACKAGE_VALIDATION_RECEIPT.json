@@ -1,0 +1,73 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 202,
+  "status": "PASSED",
+  "package": {
+    "filename": "ENTRAL-XHIGH-PRO.zip",
+    "size_bytes": 13990447,
+    "sha256": "0455050c7c0d4d9383669a46f7a8b6a843fc593e75beebf0b9310ad9f2115075",
+    "package_version": "ENTRAL-V9-CODEX-XHIGH-GPT-PRO-REVIEW",
+    "root_checksum_entries": 73,
+    "root_checksum_failures": 0
+  },
+  "phase_package": {
+    "filename": "PHASE_ZIPS/ENTRAL-PHASE-202-IDENTITY-TENANCY-SESSIONS-AUTHORITY-SECRET-BROKER-AND-SUPPORT-ACCESS.zip",
+    "sha256": "2ad034a9c6b368a3a1352a0295e2b6cf664aa06bf01fe21bc79dda733e552e79",
+    "manifest_sha256": "2ad034a9c6b368a3a1352a0295e2b6cf664aa06bf01fe21bc79dda733e552e79",
+    "nested_checksum_entries": 17,
+    "nested_checksum_failures": 0,
+    "phase_manifest": {
+      "schema_version": "2.0",
+      "phase": 202,
+      "feature_count": 20,
+      "review_policy": "CONDITIONAL",
+      "implementation_model": "Codex 5.6 Sol",
+      "reasoning_effort": "xhigh"
+    }
+  },
+  "prerequisite": {
+    "required_phase": 200,
+    "required_status": "PASS_ON_PROTECTED_MAIN_AND_PRODUCTION",
+    "status": "PASSED",
+    "release_manifest": "mykai05/ENTRAL-0.2@22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516:.entral/governor/releases/phase-200.json",
+    "certified_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "release_tag": "phase-200"
+  },
+  "rollback": {
+    "phase": 198,
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "release_tag": "phase-198",
+    "status": "RESTORE_VERIFIED_BY_CERTIFIED_PHASE_200_MANIFEST"
+  },
+  "execution_policy": {
+    "implementation_model": "CODEX_5_6_SOL_XHIGH",
+    "reasoning_level": "EXTRA_HIGH",
+    "native_subagents": "ALLOWED_WHEN_USEFUL_UNDER_OWNER_AMENDMENT",
+    "single_writer_boundary": "MUTABLE_FILE_MODULE_SCHEMA_CONTRACT_SCOPE",
+    "phase_lead_retains": [
+      "architecture",
+      "integration",
+      "commit",
+      "merge",
+      "deployment",
+      "production_repair",
+      "final_verification",
+      "certification"
+    ],
+    "policy_source": "mykai05/ENTRAL-0.2@26a38df50fb0f19c8079acd40860fc2ae27ad25b:.entral/governor/tasks/P202-IDENTITY-TENANCY-AUTHORITY-001.json"
+  },
+  "security_scan": {
+    "status": "NOT_RUN_OWNER_PROHIBITED",
+    "reason": "The owner explicitly prohibited a new security scan. Phase 202 authorization, tenancy, RLS, secret-fallback, malformed-input, and boundary regressions remain mandatory deterministic gates."
+  },
+  "validation_method": {
+    "archive_reader": "System.IO.Compression",
+    "digest_algorithm": "SHA-256",
+    "root_start_here_read": true,
+    "phase_202_start_here_read": true,
+    "root_sha256sums_verified": true,
+    "phase_202_sha256sums_verified": true
+  },
+  "recorded_at": "2026-08-02T16:31:27.3275598Z"
+}

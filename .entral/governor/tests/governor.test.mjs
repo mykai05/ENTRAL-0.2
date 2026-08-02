@@ -309,6 +309,33 @@ test("heartbeat cannot revive expired ownership or extend a task past its wall-t
   );
 });
 
+test("heartbeat refreshes an owned lease from the current amended TaskPacket scope", async (t) => {
+  const { root } = await setup();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const packet = taskPacket();
+  await createTask(root, authA, packet, { now: at(2) });
+  const claimed = await claimTask(root, authA, {
+    taskId: packet.task_packet_id,
+    owner: authA.sessionId,
+    leaseSeconds: 120,
+    now: at(2, 1)
+  });
+  const amendedScope = [...packet.scope, "backend/src/newly-bounded.ts"];
+  await writeFile(
+    governorPath(root, `tasks/${packet.task_packet_id}.json`),
+    `${JSON.stringify({ ...packet, scope: amendedScope }, null, 2)}\n`
+  );
+
+  const heartbeat = await heartbeatTask(root, authA, {
+    leaseId: claimed.result.lease_id,
+    leaseSeconds: 120,
+    now: at(2, 30)
+  });
+
+  assert.deepEqual(heartbeat.result.scope, amendedScope);
+  assert.equal(heartbeat.event.payload.scope_refreshed, true);
+});
+
 test("routine phase certifies without review only after exact production gates", async (t) => {
   const { root } = await setup();
   t.after(() => rm(root, { recursive: true, force: true }));

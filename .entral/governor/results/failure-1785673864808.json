@@ -1,0 +1,25 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "failure-1785673864808",
+  "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
+  "phase": 202,
+  "outcome": "FAILED",
+  "commit_sha": null,
+  "changed_files": [],
+  "tests": [
+    {
+      "command": "P202-F019 member route harness scope reconciliation",
+      "status": "FAILED",
+      "reason": "The P202-F019 tenant-bound member-assistant repair changes the legacy member route harness, so backend/tests/memberRoutes.test.ts must be brought forward to durable tenant principals and transaction-bound mocks within the same Phase 202 packet."
+    }
+  ],
+  "unresolved_failures": [
+    "The P202-F019 tenant-bound member-assistant repair changes the legacy member route harness, so backend/tests/memberRoutes.test.ts must be brought forward to durable tenant principals and transaction-bound mocks within the same Phase 202 packet."
+  ],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED"
+  },
+  "result_fingerprint": "9d831ff50a323e5ac17e7fa6219f2f581b33b0cfeef7ed0b496c1ae67b0d7445",
+  "completed_at": "2026-08-02T12:31:04.808Z"
+}

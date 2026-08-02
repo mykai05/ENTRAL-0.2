@@ -12,7 +12,7 @@ import {
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { requireAuth, setPrivateNoStoreHeaders } from "../auth.js";
-import { prisma } from "../db.js";
+import { hasVerifiedMemberTeamAccess, prisma } from "../db.js";
 import { canonicalControlPlaneRepository } from "../services/canonicalControlPlane.js";
 import {
   GraphPreferencesError,
@@ -37,32 +37,29 @@ function organizationNotFound(reply: FastifyReply) {
   });
 }
 
-async function hasOrganizationAccess(userId: string, organizationId: string) {
-  const membership = await prisma.teamMember.findUnique({
-    where: {
-      userId_teamId: {
-        teamId: organizationId,
-        userId
-      }
-    },
-    select: {
-      team: {
-        select: {
-          memberAccessEnabled: true
-        }
-      }
-    }
+async function hasOrganizationAccess(request: FastifyRequest, organizationId: string) {
+  const currentUser = request.user;
+  if (currentUser?.session !== "member" || !currentUser.tenantId || !currentUser.organizationId) return false;
+  return hasVerifiedMemberTeamAccess(prisma, {
+    authSubject: currentUser.sub,
+    organizationId: currentUser.organizationId,
+    requestId: request.id,
+    teamId: organizationId,
+    tenantId: currentUser.tenantId
   });
-  return membership?.team.memberAccessEnabled === true;
 }
 
 function databaseSession(request: FastifyRequest, actionReason: string) {
   const currentUser = request.user;
-  if (!currentUser) throw new Error("Authenticated graph preference session is required.");
+  if (currentUser?.session !== "member" || !currentUser.tenantId || !currentUser.organizationId) {
+    throw new Error("A tenant-bound graph preference session is required.");
+  }
   return {
     actionReason,
     authSubject: currentUser.sub,
-    correlationId: randomUUID()
+    correlationId: randomUUID(),
+    organizationId: currentUser.organizationId,
+    tenantId: currentUser.tenantId
   } as const;
 }
 
@@ -98,7 +95,7 @@ export async function graphPreferenceRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     const retrievalStartedAt = performance.now();
@@ -166,7 +163,7 @@ export async function graphPreferenceRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     let input;
@@ -218,7 +215,7 @@ export async function graphPreferenceRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     return reply.send(await graphPreferencesService.get(
@@ -239,7 +236,7 @@ export async function graphPreferenceRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     let input;
@@ -273,7 +270,7 @@ export async function graphPreferenceRoutes(app: FastifyInstance) {
     const currentUser = request.user;
     if (!currentUser) return unauthenticated(reply);
     const { organizationId } = organizationParamsSchema.parse(request.params);
-    if (!await hasOrganizationAccess(currentUser.sub, organizationId)) {
+    if (!await hasOrganizationAccess(request, organizationId)) {
       return organizationNotFound(reply);
     }
     let input;

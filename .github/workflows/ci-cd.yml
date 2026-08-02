@@ -61,6 +61,10 @@ jobs:
         run: pnpm test:phase198
       - name: Verify Phase 199 baseline candidate, fail-closed secrets, and review block
         run: pnpm test:phase199
+      - name: Verify Phase 200 canonical interaction layer
+        run: pnpm test:phase200
+      - name: Verify Phase 202 identity, tenancy, session, secret, and support boundaries
+        run: pnpm test:phase202
       - run: pnpm prisma:generate
       - name: Build shared contracts for runtime imports
         run: pnpm --filter @entral/contracts build
@@ -82,6 +86,14 @@ jobs:
           tests/phase170CanonicalPortfolioPostgres.integration.test.ts
           tests/phase190EntityLifecyclePostgres.integration.test.ts
           tests/phase195CanonicalPersistencePostgres.integration.test.ts
+      - name: Verify Phase 202 PostgreSQL tenant and worker boundaries
+        env:
+          RUN_POSTGRES_INTEGRATION: "1"
+          TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
+        run: >-
+          pnpm --filter @entral/backend exec vitest run
+          tests/phase202IdentityTenancyPostgres.integration.test.ts
+          tests/phase202TenantWorker.integration.test.ts
       - name: Verify Phase 195 backup, restore, forward recovery, and restart
         env:
           PHASE195_RECOVERY_GATE_CONFIRM: DISPOSABLE_ONLY
@@ -142,6 +154,16 @@ jobs:
             .entral/governor/improvements/cycles/**
             .entral/governor/improvements/amendments/**
             .entral/governor/improvements/outcomes/**
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain Phase 202 identity and tenancy evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-202-identity-tenancy-evidence
+          path: |
+            test-results/phase202/**
+            docs/evidence/phase202/**
           if-no-files-found: warn
           retention-days: 90
       - run: pnpm build

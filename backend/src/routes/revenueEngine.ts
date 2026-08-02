@@ -4709,7 +4709,11 @@ async function applyRevenueFirstBusinessAutonomousLaunch(userId: string, input: 
   };
 }
 
-async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: ApplyRevenueFirstBusinessLiveExecutorInput) {
+async function applyRevenueFirstBusinessLiveExecutor(
+  userId: string,
+  input: ApplyRevenueFirstBusinessLiveExecutorInput,
+  principal: { authSubject: string; requestId: string; tenantId: string | null }
+) {
   const { package: launchPackage, sourceBatch } = await buildRevenueFirstBusinessLaunchPackageForUser(userId, input);
   const preparation = launchPackage && launchPackage.status !== "blocked"
     ? buildRevenueFirstStorePreparationPlan({
@@ -4746,11 +4750,28 @@ async function applyRevenueFirstBusinessLiveExecutor(userId: string, input: Appl
       publicLaunchApproval: input.publicLaunchApproval
     })
     : null;
-  const shopifyConnectionCredentials = autonomousLaunch
-    ? await getShopifyConnectionCredentials(
-      userId,
-      autonomousLaunch.executionPacket.finalExecutionPacket.store.sourceStoreId
-    )
+  const shopifyCredentialStoreId = autonomousLaunch?.executionPacket.finalExecutionPacket.store.sourceStoreId ?? null;
+  const shopifyCredentialStore = shopifyCredentialStoreId
+    ? await prisma.clientMerchStore.findFirst({
+      select: { tenantId: true },
+      where: { id: shopifyCredentialStoreId, userId }
+    })
+    : null;
+  if (principal.tenantId && shopifyCredentialStore?.tenantId && principal.tenantId !== shopifyCredentialStore.tenantId) {
+    throw new Error("Shopify live execution tenant does not match the source store tenant.");
+  }
+  const credentialTenantId = shopifyCredentialStore?.tenantId ?? principal.tenantId ?? null;
+  if (shopifyCredentialStoreId && !credentialTenantId) {
+    throw new Error("Shopify live execution requires a canonical tenant-bound store.");
+  }
+  const shopifyConnectionCredentials = autonomousLaunch && shopifyCredentialStoreId && credentialTenantId
+    ? await getShopifyConnectionCredentials({
+      authSubject: principal.authSubject,
+      requestId: principal.requestId,
+      storeId: shopifyCredentialStoreId,
+      tenantId: credentialTenantId,
+      userId
+    })
     : null;
   const shopifyAutonomyRun = autonomousLaunch
     ? await executeFirstBusinessShopifyAutonomyRun({
@@ -12709,7 +12730,11 @@ export async function revenueEngineRoutes(app: FastifyInstance) {
     }
 
     const input = applyRevenueFirstBusinessLiveExecutorSchema.parse(request.body);
-    const response = await applyRevenueFirstBusinessLiveExecutor(currentUser.sub, input);
+    const response = await applyRevenueFirstBusinessLiveExecutor(currentUser.sub, input, {
+      authSubject: currentUser.sub,
+      requestId: request.id,
+      tenantId: currentUser.tenantId
+    });
 
     return reply.send(response);
   });

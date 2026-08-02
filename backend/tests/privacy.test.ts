@@ -1,196 +1,171 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  findUnique: vi.fn(),
-  teamMemberFindMany: vi.fn(),
-  transaction: vi.fn()
+const harness = vi.hoisted(() => ({
+  compare: vi.fn(),
+  stringifySecretEnvelope: vi.fn(),
+  withPersonalSession: vi.fn(),
+  withTenantSession: vi.fn()
 }));
 
-vi.mock("../src/db.js", () => ({
-  prisma: {
-    $transaction: mocks.transaction,
-    teamMember: {
-      findMany: mocks.teamMemberFindMany
-    },
-    user: {
-      findUnique: mocks.findUnique
-    }
+vi.mock("bcryptjs", () => ({ default: { compare: harness.compare } }));
+vi.mock("../src/env.js", () => ({
+  env: {
+    DATA_ENCRYPTION_KEY_VERSION: "phase202-v1",
+    JWT_SECRET: "phase202-privacy-test-secret-long-enough",
+    MFA_STEP_UP_TTL_SECONDS: 600
   }
 }));
+vi.mock("../src/db.js", () => ({
+  prisma: {},
+  withPersonalSession: harness.withPersonalSession,
+  withTenantSession: harness.withTenantSession
+}));
+vi.mock("../src/services/secureJson.js", () => ({
+  stringifySecretEnvelope: harness.stringifySecretEnvelope
+}));
 
-function setTestEnv() {
-  process.env.NODE_ENV = "test";
-  process.env.DATABASE_URL = "file:./test.db";
-  process.env.JWT_SECRET = "test-secret-that-is-long-enough-for-jwt";
-  process.env.COOKIE_NAME = "entral_token";
-  process.env.CORS_ORIGIN = "http://localhost:3000";
-  process.env.APP_PUBLIC_URL = "http://localhost:3000";
-  process.env.AUTH_EMAIL_PROVIDER = "console";
-  delete process.env.DATA_ENCRYPTION_KEY;
-}
-
-function fakeUserExportRecord() {
-  const createdAt = new Date("2026-06-01T00:00:00.000Z");
-
-  return {
-    id: "user-1",
-    name: "Ada Lovelace",
-    email: "ada@example.com",
-    passwordHash: "hashed-password",
-    role: "USER",
-    emailVerifiedAt: createdAt,
-    lastDashboardSeenAt: null,
-    createdAt,
-    updatedAt: createdAt,
-    aiUsageEvents: [],
-    agents: [],
-    auditLogs: [],
-    automationJobs: [],
-    commandReports: [],
-    commandSnapshot: null,
-    conversations: [
-      {
-        id: "conversation-1",
-        title: "Planning",
-        userId: "user-1",
-        createdAt,
-        updatedAt: createdAt,
-        messages: [
-          {
-            id: "message-1",
-            conversationId: "conversation-1",
-            role: "user",
-            content: "Prepare a plan.",
-            createdAt
-          }
-        ]
-      }
-    ],
-    growthApprovalPackets: [
-      {
-        id: "growth-approval-1",
-        userId: "user-1",
-        storeId: "store-1",
-        status: "pending",
-        mode: "Mock Mode",
-        packetJson: JSON.stringify({
-          businessName: "Iron House Gym",
-          costGuardrail: "External ad spend is $0.",
-          humanApprovalRequired: true
-        }),
-        scheduledFor: null,
-        requestAuditLogId: "audit-1",
-        reviewAuditLogId: null,
-        reviewedAt: null,
-        reviewedById: null,
-        reviewNote: null,
-        createdAt,
-        updatedAt: createdAt
-      }
-    ],
-    memberships: [
-      {
-        userId: "user-1",
-        teamId: "team-1",
-        role: "OWNER",
-        joinedAt: createdAt,
-        team: {
-          id: "team-1",
-          name: "Ada's Team",
-          slug: "ada-team",
-          createdAt,
-          updatedAt: createdAt
-        }
-      }
-    ],
-    merchStores: [],
-    policiesCreated: [],
-    tasksAssigned: [],
-    tasksCreated: [
-      {
-        id: "task-1",
-        title: "Review privacy export",
-        description: null,
-        status: "TODO",
-        dueDate: null,
-        createdAt,
-        updatedAt: createdAt,
-        teamId: "team-1",
-        createdById: "user-1",
-        assignedToId: null,
-        team: {
-          id: "team-1",
-          name: "Ada's Team",
-          slug: "ada-team",
-          createdAt,
-          updatedAt: createdAt
-        }
-      }
-    ]
-  };
-}
+const userId = "phase202-user";
+const actorId = "123e4567-e89b-42d3-a456-426614174201";
+const tenantId = "123e4567-e89b-42d3-a456-426614174202";
+const organizationId = "123e4567-e89b-42d3-a456-426614174203";
+const sessionId = "123e4567-e89b-42d3-a456-426614174204";
+const now = new Date("2026-08-02T12:00:00.000Z");
 
 beforeEach(() => {
-  vi.resetModules();
-  mocks.findUnique.mockReset();
-  mocks.teamMemberFindMany.mockReset();
-  mocks.transaction.mockReset();
-  setTestEnv();
+  harness.compare.mockReset().mockResolvedValue(true);
+  harness.stringifySecretEnvelope.mockReset().mockReturnValue("v2.phase202-encrypted-command");
+  harness.withPersonalSession.mockReset();
+  harness.withTenantSession.mockReset();
 });
 
-describe("privacy export and account deletion", () => {
-  it("exports account data without password or recovery token material", async () => {
-    mocks.findUnique.mockResolvedValueOnce(fakeUserExportRecord());
+describe("Phase 202 privacy boundaries", () => {
+  it("exports only the authenticated tenant through explicit safe projections", async () => {
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([{ factorReady: true, sessionReady: true }]),
+      user: { findUnique: vi.fn().mockResolvedValue({ id: userId, name: "Ada", email: "ada@example.test", role: "USER", createdAt: now, updatedAt: now, emailVerifiedAt: now }) },
+      team: { findUnique: vi.fn().mockResolvedValue({ id: "team-a", name: "Tenant A", slug: "tenant-a", environment: "PRODUCTION", dataResidency: "US" }) },
+      teamMember: { findFirst: vi.fn().mockResolvedValue({ role: "MEMBER", status: "ACTIVE", version: 2, joinedAt: now, suspendedAt: null, removedAt: null }) },
+      task: { findMany: vi.fn().mockResolvedValue([{ id: "task-a", title: "A only", description: "tenant-a-content", status: "TODO", dueDate: null, createdAt: now, updatedAt: now, createdById: userId, assignedToId: null }]) }
+    };
+    harness.withTenantSession.mockImplementation(async (_db, context, operation) => operation(transaction, {
+      actorId,
+      appUserId: "123e4567-e89b-42d3-a456-426614174205",
+      authSubject: userId,
+      organizationId,
+      role: "MEMBER",
+      tenantId
+    }));
+
     const { buildAccountExport } = await import("../src/services/privacy.js");
-
-    const exportData = await buildAccountExport("user-1");
-    const serialized = JSON.stringify(exportData);
-
-    expect(exportData.summary).toMatchObject({
-      conversations: 1,
-      messages: 1,
-      growthApprovalPackets: 1,
-      tasksCreated: 1,
-      teams: 1
-    });
-    expect(exportData.growthApprovalPackets[0].packet).toMatchObject({
-      businessName: "Iron House Gym",
-      humanApprovalRequired: true
-    });
-    expect(exportData.mode).toMatchObject({
-      accountData: "real",
-      externalProvidersContacted: false
-    });
-    expect(serialized).not.toContain("passwordHash");
-    expect(serialized).not.toContain("hashed-password");
-    expect(serialized).not.toContain("tokenHash");
+    const result = await buildAccountExport({ authSubject: userId, requestId: "export-a", sessionId, sessionType: "member", tenantId });
+    expect(result.scope).toMatchObject({ kind: "TENANT", organization_id: organizationId, tenant_id: tenantId, secret_material_included: false });
+    expect(result.tasks).toEqual([expect.objectContaining({ id: "task-a", description: "tenant-a-content" })]);
+    expect(transaction.task.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { teamId: "team-a" } }));
+    expect(JSON.stringify(result)).not.toMatch(/passwordHash|tokenHash|encryptedValue|secretReference|refreshToken|tenant-b-content/u);
   });
 
-  it("deletes private teams, user-created tasks, and the user in a controlled transaction", async () => {
-    const tx = {
-      auditLog: { updateMany: vi.fn() },
-      policy: { updateMany: vi.fn() },
-      task: { deleteMany: vi.fn() },
-      team: { deleteMany: vi.fn() },
-      user: { delete: vi.fn() }
+  it("limits an internal-session export to personal identity and safe security descriptors", async () => {
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([{ factorReady: true, sessionReady: true }]),
+      user: { findUnique: vi.fn().mockResolvedValue({ id: userId, name: "Ada", email: "ada@example.test", role: "USER", createdAt: now, updatedAt: now, emailVerifiedAt: now }) },
+      authSession: { findMany: vi.fn().mockResolvedValue([{ id: sessionId, sessionType: "INTERNAL", deviceLabel: "Laptop", issuedAt: now, lastUsedAt: now, expiresAt: now, revokedAt: null, revokeReason: null }]) },
+      mfaFactor: { findMany: vi.fn().mockResolvedValue([{ id: "factor-a", factorType: "TOTP", status: "ACTIVE", verifiedAt: now, createdAt: now }]) }
     };
-    mocks.teamMemberFindMany.mockResolvedValueOnce([
-      {
-        teamId: "team-1",
-        team: {
-          _count: {
-            members: 1
-          }
-        }
-      }
-    ]);
-    mocks.transaction.mockImplementationOnce(async (callback) => callback(tx));
-    const { deleteAccountAndWorkspace } = await import("../src/services/privacy.js");
+    harness.withPersonalSession.mockImplementation(async (_db, _context, operation) => operation(transaction, { actorId, appUserId: actorId, authSubject: userId }));
 
-    await deleteAccountAndWorkspace("user-1");
+    const { buildAccountExport } = await import("../src/services/privacy.js");
+    const result = await buildAccountExport({ authSubject: userId, requestId: "export-personal", sessionId, sessionType: "internal", tenantId: null });
+    expect(result.scope).toMatchObject({ kind: "PERSONAL", tenant_id: null, secret_material_included: false });
+    expect(result.summary).toMatchObject({ teams: 0, sessions: 1, mfa_factors: 1 });
+    expect(JSON.stringify(result)).not.toMatch(/tokenHash|codeHash|secretReferenceId|userAgentHash|ipAddressHash/u);
+  });
 
-    expect(tx.team.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ["team-1"] } } });
-    expect(tx.task.deleteMany).toHaveBeenCalledWith({ where: { createdById: "user-1" } });
-    expect(tx.user.delete).toHaveBeenCalledWith({ where: { id: "user-1" } });
+  it("fails a sensitive export closed when the durable MFA factor is no longer active", async () => {
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([{ factorReady: false, sessionReady: true }])
+    };
+    harness.withPersonalSession.mockImplementation(async (_db, _context, operation) => operation(transaction, { actorId, appUserId: actorId, authSubject: userId }));
+    const { buildAccountExport } = await import("../src/services/privacy.js");
+    await expect(buildAccountExport({
+      authSubject: userId,
+      requestId: "export-with-revoked-factor",
+      sessionId,
+      sessionType: "internal",
+      tenantId: null
+    })).rejects.toMatchObject({ code: "MFA_FACTOR_REQUIRED", statusCode: 403 });
+  });
+
+  it("locks password verification and atomically supplies real encrypted membership deliveries", async () => {
+    const queries: string[] = [];
+    const transaction = {
+      $queryRaw: vi.fn(async (query: { strings: readonly string[] }) => {
+        const sql = query.strings.join("?");
+        queries.push(sql);
+        if (sql.includes('account."passwordHash"')) return [{ deletedAt: null, passwordHash: "bcrypt-hash" }];
+        if (sql.includes("phase202_prepare_account_deidentification")) return [{
+          actorId,
+          email: "ada@example.test",
+          environment: "PRODUCTION",
+          organizationId,
+          priorVersion: 3,
+          role: "MEMBER",
+          status: "ACTIVE",
+          teamId: "team-a",
+          teamName: "Tenant A",
+          tenantId,
+          userId
+        }];
+        if (sql.includes("phase202_complete_account_deidentification")) return [{
+          membershipReceiptIds: ["123e4567-e89b-42d3-a456-426614174210"],
+          occurredAt: now,
+          receiptHash: "a".repeat(64),
+          receiptId: "123e4567-e89b-42d3-a456-426614174211"
+        }];
+        throw new Error(`Unexpected query: ${sql}`);
+      })
+    };
+    harness.withPersonalSession.mockImplementation(async (_db, _context, operation) => operation(transaction, { actorId, appUserId: actorId, authSubject: userId }));
+
+    const { deidentifyAccount } = await import("../src/services/privacy.js");
+    const result = await deidentifyAccount({
+      authSubject: userId,
+      idempotencyKey: "deidentify-202",
+      password: "confirmed-password",
+      requestId: "request-202",
+      sessionId
+    });
+    expect(harness.compare).toHaveBeenCalledWith("confirmed-password", "bcrypt-hash");
+    expect(harness.stringifySecretEnvelope).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "removed", kind: "CHANGE", to: "ada@example.test", token: null }),
+      expect.objectContaining({ actorId, organizationId, purpose: "membership-email-delivery", tenantId })
+    );
+    expect(queries).toHaveLength(3);
+    expect(result).toMatchObject({ outcome: "ACCOUNT_DEIDENTIFIED", tenant_records: "RETAINED", receipt_hash: "a".repeat(64) });
+    expect(JSON.stringify(result)).not.toContain("ada@example.test");
+  });
+
+  it("rejects a wrong password before ownership preparation or mutation", async () => {
+    harness.compare.mockResolvedValue(false);
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([{ deletedAt: null, passwordHash: "bcrypt-hash" }])
+    };
+    harness.withPersonalSession.mockImplementation(async (_db, _context, operation) => operation(transaction, { actorId, appUserId: actorId, authSubject: userId }));
+    const { deidentifyAccount, Phase202PrivacyError } = await import("../src/services/privacy.js");
+    await expect(deidentifyAccount({ authSubject: userId, idempotencyKey: "deidentify-202", password: "wrong", requestId: "request-202", sessionId }))
+      .rejects.toEqual(expect.objectContaining({ code: "PASSWORD_CONFIRMATION_FAILED", statusCode: 401 } satisfies Partial<InstanceType<typeof Phase202PrivacyError>>));
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps a last-owner database rejection to a typed 409 without claiming completion", async () => {
+    const transaction = {
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ deletedAt: null, passwordHash: "bcrypt-hash" }])
+        .mockRejectedValueOnce(new Error("LAST_ACTIVE_OWNER_REQUIRED"))
+    };
+    harness.withPersonalSession.mockImplementation(async (_db, _context, operation) => operation(transaction, { actorId, appUserId: actorId, authSubject: userId }));
+    const { deidentifyAccount } = await import("../src/services/privacy.js");
+    await expect(deidentifyAccount({ authSubject: userId, idempotencyKey: "deidentify-202", password: "confirmed-password", requestId: "request-202", sessionId }))
+      .rejects.toMatchObject({ code: "LAST_ACTIVE_OWNER_REQUIRED", statusCode: 409 });
+    expect(harness.stringifySecretEnvelope).not.toHaveBeenCalled();
   });
 });

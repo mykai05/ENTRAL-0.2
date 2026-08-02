@@ -4,19 +4,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getHierarchySnapshot: vi.fn(),
-  teamMemberFindUnique: vi.fn(),
+  hasVerifiedMemberTeamAccess: vi.fn(),
   userFindUnique: vi.fn()
 }));
 
 vi.mock("../src/db.js", () => ({
   prisma: {
-    teamMember: {
-      findUnique: mocks.teamMemberFindUnique
-    },
     user: {
       findUnique: mocks.userFindUnique
     }
-  }
+  },
+  hasVerifiedMemberTeamAccess: mocks.hasVerifiedMemberTeamAccess,
+  withPersonalSession: vi.fn(async (database, context, operation) => operation(database, {
+    actorId: "523e4567-e89b-42d3-a456-426614174000",
+    appUserId: "623e4567-e89b-42d3-a456-426614174000",
+    authSubject: context.authSubject
+  }))
 }));
 
 vi.mock("../src/services/canonicalControlPlane.js", () => ({
@@ -35,6 +38,8 @@ vi.mock("../src/services/graphPreferences.js", () => ({
 }));
 
 const organizationId = "ck1234567890123456789012";
+const tenantOrganizationId = "323e4567-e89b-42d3-a456-426614174000";
+const tenantId = "423e4567-e89b-42d3-a456-426614174000";
 const telemetry = {
   contract_version: "1.0.0",
   dropped_frame_rate_ratio: 0.02,
@@ -69,7 +74,9 @@ async function buildTelemetryServer() {
       email: "member@example.test",
       role: "USER",
       session: "member",
-      sub: "member_phase195"
+      sub: "member_phase195",
+      organizationId: tenantOrganizationId,
+      tenantId
     })}`
   };
 }
@@ -130,12 +137,12 @@ describe("Phase 195 graph renderer telemetry route", () => {
     });
 
     expect(response.statusCode).toBe(401);
-    expect(mocks.teamMemberFindUnique).not.toHaveBeenCalled();
+    expect(mocks.hasVerifiedMemberTeamAccess).not.toHaveBeenCalled();
     await app.close();
   });
 
   it("does not reveal an unavailable or disabled organization", async () => {
-    mocks.teamMemberFindUnique.mockResolvedValue(null);
+    mocks.hasVerifiedMemberTeamAccess.mockResolvedValue(false);
     const { app, authorization } = await buildTelemetryServer();
     const response = await app.inject({
       headers: { authorization },
@@ -149,9 +156,7 @@ describe("Phase 195 graph renderer telemetry route", () => {
   });
 
   it("accepts only bounded measurements in an enabled member organization", async () => {
-    mocks.teamMemberFindUnique.mockResolvedValue({
-      team: { memberAccessEnabled: true }
-    });
+    mocks.hasVerifiedMemberTeamAccess.mockResolvedValue(true);
     const { app, authorization } = await buildTelemetryServer();
     const response = await app.inject({
       headers: { authorization },
@@ -169,6 +174,13 @@ describe("Phase 195 graph renderer telemetry route", () => {
       telemetry_id: telemetry.telemetry_id
     });
     expect(response.headers["cache-control"]).toBe("private, no-store");
+    expect(mocks.hasVerifiedMemberTeamAccess).toHaveBeenCalledWith(expect.any(Object), {
+      authSubject: "member_phase195",
+      organizationId: tenantOrganizationId,
+      requestId: expect.any(String),
+      teamId: organizationId,
+      tenantId
+    });
     await app.close();
   });
 
@@ -186,9 +198,7 @@ describe("Phase 195 graph renderer telemetry route", () => {
       dropped_frame_rate_ratio: 1.01
     }
   ])("rejects unknown, renderer-incompatible, or out-of-range input", async (payload) => {
-    mocks.teamMemberFindUnique.mockResolvedValue({
-      team: { memberAccessEnabled: true }
-    });
+    mocks.hasVerifiedMemberTeamAccess.mockResolvedValue(true);
     const { app, authorization } = await buildTelemetryServer();
     const response = await app.inject({
       headers: { authorization },
@@ -204,9 +214,7 @@ describe("Phase 195 graph renderer telemetry route", () => {
 
 describe("Phase 195 graph projection observability", () => {
   it("records bounded aggregate generation timing without graph payloads", async () => {
-    mocks.teamMemberFindUnique.mockResolvedValue({
-      team: { memberAccessEnabled: true }
-    });
+    mocks.hasVerifiedMemberTeamAccess.mockResolvedValue(true);
     mocks.getHierarchySnapshot.mockResolvedValue(canonicalRootHierarchy());
     const { app, authorization } = await buildTelemetryServer();
     const projectionLog = vi.spyOn(app.log, "info");
@@ -221,6 +229,13 @@ describe("Phase 195 graph projection observability", () => {
       organization_id: organizationId,
       projection_version: 195,
       root_id: rootEntityId
+    });
+    expect(mocks.getHierarchySnapshot).toHaveBeenCalledWith({
+      actionReason: `Build the RLS-filtered canonical graph projection through member access ${organizationId}.`,
+      authSubject: "member_phase195",
+      correlationId: expect.any(String),
+      organizationId: tenantOrganizationId,
+      tenantId
     });
     expect(projectionLog).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -245,9 +260,7 @@ describe("Phase 195 graph projection observability", () => {
   });
 
   it("records a sanitized bounded failure without serializing the rejected hierarchy", async () => {
-    mocks.teamMemberFindUnique.mockResolvedValue({
-      team: { memberAccessEnabled: true }
-    });
+    mocks.hasVerifiedMemberTeamAccess.mockResolvedValue(true);
     mocks.getHierarchySnapshot.mockResolvedValue({
       ...canonicalRootHierarchy(),
       entities: []

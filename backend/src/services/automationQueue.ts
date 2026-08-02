@@ -488,6 +488,11 @@ async function recoverCaptureReadyShopifyStoreCreationBrowserTasks(limit: number
       const captureResult = await captureShopifyStoreCreationForStore({
         authorizationVersion: job.authorizationVersion,
         operationKey: `shopify-browser-auto-capture:${job.id}`,
+        principal: {
+          requestId: `shopify-browser-recovery:${job.id}`,
+          serviceAppUserId: env.CANONICAL_OUTBOX_SERVICE_APP_USER_ID ?? "",
+          tenantId: store.tenantId ?? ""
+        },
         store,
         userId: job.userId,
         value: captureInput

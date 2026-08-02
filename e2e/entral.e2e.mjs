@@ -976,6 +976,295 @@ async function installPhase200InteractionRoutes(page, {
   };
 }
 
+function phase202MfaReceipt(transition, idempotencyKey) {
+  const transitionState = {
+    TOTP_CONFIRM: {
+      authorization: "TOTP",
+      factor_status: "ACTIVE",
+      one_time_material_policy: "RECOVERY_CODES_RETURNED_ONCE",
+      prior_version: 1,
+      recovery_action: "REGENERATE_RECOVERY_CODES",
+      session_step_up_at: "2026-08-02T10:05:00.000Z",
+      transition_id: "123e4567-e89b-42d3-a456-426614174202"
+    },
+    TOTP_ENROLL: {
+      authorization: "DURABLE_SESSION",
+      factor_status: "PENDING",
+      one_time_material_policy: "TOTP_SECRET_RETURNED_ONCE",
+      prior_version: 0,
+      recovery_action: "BEGIN_NEW_ENROLLMENT",
+      session_step_up_at: null,
+      transition_id: "123e4567-e89b-42d3-a456-426614174201"
+    }
+  }[transition];
+  if (!transitionState) throw new Error(`Unsupported Phase 202 MFA transition fixture: ${transition}.`);
+
+  return {
+    actor: {
+      actor_id: "123e4567-e89b-42d3-a456-426614174001",
+      actor_type: "HUMAN",
+      agent_id: null,
+      human_user_id: "phase202-e2e-owner",
+      service_subject: null
+    },
+    authorization: transitionState.authorization,
+    budget: { amount_minor_units: 0, kind: "NO_EXTERNAL_SPEND" },
+    contract_version: "1.0.0",
+    evidence: [`phase202-browser-fixture:${transition.toLowerCase()}`],
+    factor_id: "123e4567-e89b-42d3-a456-426614174020",
+    factor_status: transitionState.factor_status,
+    failure_behavior: "NO_PARTIAL_WRITE",
+    idempotency_key: idempotencyKey,
+    occurred_at: "2026-08-02T10:05:00.000Z",
+    one_time_material_policy: transitionState.one_time_material_policy,
+    ownership: {
+      business_id: null,
+      data_residency: null,
+      environment: "PRODUCTION",
+      organization_id: null,
+      scope_kind: "PERSONAL",
+      tenant_id: null
+    },
+    prior_version: transitionState.prior_version,
+    reconciliation: "IDEMPOTENT_RECEIPT",
+    recovery_action: transitionState.recovery_action,
+    release_version: "phase-202",
+    request_id: `phase202-browser-${transition.toLowerCase()}`,
+    resulting_version: transitionState.prior_version + 1,
+    reversible: true,
+    schema_version: 1,
+    session_id: "123e4567-e89b-42d3-a456-426614174101",
+    session_step_up_at: transitionState.session_step_up_at,
+    transition,
+    transition_id: transitionState.transition_id,
+    verification: "TRANSACTIONAL_READBACK"
+  };
+}
+
+function phase202SessionReceipt(sessionId, idempotencyKey) {
+  return {
+    actor: {
+      actor_id: "123e4567-e89b-42d3-a456-426614174001",
+      actor_type: "HUMAN",
+      agent_id: null,
+      human_user_id: "phase202-e2e-owner",
+      service_subject: null
+    },
+    budget: { amount_minor_units: 0, kind: "NO_EXTERNAL_SPEND" },
+    contract_version: "1.0.0",
+    evidence: ["phase202-browser-fixture:session-revoke-one"],
+    failure_behavior: "NO_PARTIAL_WRITE",
+    idempotency_key: idempotencyKey,
+    occurred_at: "2026-08-02T10:10:00.000Z",
+    ownership: {
+      business_id: null,
+      data_residency: null,
+      environment: "PRODUCTION",
+      organization_id: null,
+      scope_kind: "PERSONAL",
+      tenant_id: null
+    },
+    prior_version: 1,
+    reconciliation: "IDEMPOTENT_RECEIPT",
+    release_version: "phase-202",
+    request_id: "phase202-browser-session-revoke-one",
+    resulting_version: 2,
+    reversible: false,
+    revoked_count: 1,
+    schema_version: 1,
+    subject_session_id: sessionId,
+    transition: "REVOKE_ONE",
+    transition_id: "123e4567-e89b-42d3-a456-426614174099",
+    verification: "TRANSACTIONAL_READBACK"
+  };
+}
+
+async function installPhase202AccountSecurityRoutes(page) {
+  const setupSecret = "PHASE202-ONE-TIME-SETUP-KEY";
+  const recoveryCodes = ["PHASE202-RECOVERY-A", "PHASE202-RECOVERY-B"];
+  const requests = [];
+  const factorId = "123e4567-e89b-42d3-a456-426614174020";
+  let factors = [];
+  let sessions = [
+    {
+      actor_id: "123e4567-e89b-42d3-a456-426614174001",
+      current: true,
+      device_label: "Chrome on Windows",
+      expires_at: "2099-09-01T09:00:00.000Z",
+      issued_at: "2026-08-02T09:00:00.000Z",
+      last_used_at: "2026-08-02T10:00:00.000Z",
+      organization_id: "123e4567-e89b-42d3-a456-426614174002",
+      revoked_at: null,
+      session_id: "123e4567-e89b-42d3-a456-426614174101",
+      session_type: "MEMBER",
+      support_grant_id: null,
+      tenant_id: "123e4567-e89b-42d3-a456-426614174003"
+    },
+    {
+      actor_id: "123e4567-e89b-42d3-a456-426614174001",
+      current: false,
+      device_label: "Safari on iPad",
+      expires_at: "2099-09-01T09:00:00.000Z",
+      issued_at: "2026-08-02T09:00:00.000Z",
+      last_used_at: "2026-08-02T09:30:00.000Z",
+      organization_id: "123e4567-e89b-42d3-a456-426614174002",
+      revoked_at: null,
+      session_id: "123e4567-e89b-42d3-a456-426614174102",
+      session_type: "MEMBER",
+      support_grant_id: null,
+      tenant_id: "123e4567-e89b-42d3-a456-426614174003"
+    }
+  ];
+  const memberships = [{
+    email: "owner@example.com",
+    joined_at: "2026-01-01T00:00:00.000Z",
+    name: "Owner Example",
+    removed_at: null,
+    role: "OWNER",
+    status: "ACTIVE",
+    suspended_at: null,
+    user_id: "user-owner",
+    version: 3
+  }];
+  const grants = [
+    {
+      access_mode: "READ_ONLY",
+      approved_by_actor_id: "123e4567-e89b-42d3-a456-426614174001",
+      expires_at: "2099-08-02T11:00:00.000Z",
+      grant_id: "123e4567-e89b-42d3-a456-426614174010",
+      issued_at: "2026-08-02T09:00:00.000Z",
+      organization_id: "123e4567-e89b-42d3-a456-426614174002",
+      owner_visible: true,
+      purpose: "Production incident readback",
+      revoked_at: null,
+      scopes: ["graph.read", "telemetry.read"],
+      support_actor_id: "123e4567-e89b-42d3-a456-426614174011",
+      tenant_id: "123e4567-e89b-42d3-a456-426614174003",
+      write_elevation_expires_at: null,
+      write_elevation_purpose: null
+    },
+    {
+      access_mode: "WRITE_ELEVATED",
+      approved_by_actor_id: "123e4567-e89b-42d3-a456-426614174004",
+      expires_at: "2020-08-02T11:00:00.000Z",
+      grant_id: "123e4567-e89b-42d3-a456-426614174012",
+      issued_at: "2020-08-02T09:00:00.000Z",
+      organization_id: "123e4567-e89b-42d3-a456-426614174002",
+      owner_visible: true,
+      purpose: "Expired maintenance grant",
+      revoked_at: null,
+      scopes: ["identity.read"],
+      support_actor_id: "123e4567-e89b-42d3-a456-426614174013",
+      tenant_id: "123e4567-e89b-42d3-a456-426614174003",
+      write_elevation_expires_at: "2020-08-02T10:00:00.000Z",
+      write_elevation_purpose: "Historical maintenance"
+    }
+  ];
+
+  await page.route("**/member/api/v1/identity/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+    const body = request.postData() ? request.postDataJSON() : null;
+    const idempotencyKey = request.headers()["idempotency-key"] ?? "phase202-browser-fixture-key";
+    requests.push({ body, idempotency_key: idempotencyKey, method, pathname: url.pathname });
+
+    if (method === "GET" && url.pathname.endsWith("/identity/sessions")) {
+      await route.fulfill({ contentType: "application/json", json: { sessions }, status: 200 });
+      return;
+    }
+    if (method === "DELETE" && url.pathname.includes("/identity/sessions/")) {
+      const sessionId = decodeURIComponent(url.pathname.split("/").at(-1) ?? "");
+      sessions = sessions.map((session) => session.session_id === sessionId
+        ? { ...session, revoked_at: "2026-08-02T10:10:00.000Z" }
+        : session);
+      await route.fulfill({
+        contentType: "application/json",
+        json: phase202SessionReceipt(sessionId, idempotencyKey),
+        status: 200
+      });
+      return;
+    }
+    if (method === "GET" && url.pathname.endsWith("/identity/mfa/factors")) {
+      await route.fulfill({ contentType: "application/json", json: { factors }, status: 200 });
+      return;
+    }
+    if (method === "POST" && url.pathname.endsWith("/identity/mfa/totp/enroll")) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          one_time_material: {
+            factor_id: factorId,
+            otpauth_uri: `otpauth://totp/Entral?secret=${setupSecret}`,
+            secret: setupSecret
+          },
+          receipt: phase202MfaReceipt("TOTP_ENROLL", idempotencyKey),
+          replayed: false
+        },
+        status: 200
+      });
+      return;
+    }
+    if (method === "POST" && url.pathname.endsWith("/identity/mfa/totp/confirm")) {
+      factors = [{
+        created_at: "2026-08-02T10:00:00.000Z",
+        factor_id: factorId,
+        factor_type: "TOTP",
+        status: "ACTIVE",
+        verified_at: "2026-08-02T10:05:00.000Z"
+      }];
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          one_time_material: { recovery_codes: recoveryCodes },
+          receipt: phase202MfaReceipt("TOTP_CONFIRM", idempotencyKey),
+          replayed: false
+        },
+        status: 200
+      });
+      return;
+    }
+    if (method === "POST" && url.pathname.endsWith("/identity/mfa/step-up")) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          contract_version: "1.0.0",
+          dependency: "AUTHORITY_STORE",
+          occurred_at: "2026-08-02T10:15:00.000Z",
+          reason_code: "MFA_FACTOR_STORE_UNAVAILABLE",
+          retryable: true,
+          schema_version: 1,
+          status: "BLOCKED"
+        },
+        status: 503
+      });
+      return;
+    }
+    if (method === "GET" && url.pathname.endsWith("/identity/memberships")) {
+      await route.fulfill({ contentType: "application/json", json: { memberships }, status: 200 });
+      return;
+    }
+    if (method === "GET" && url.pathname.endsWith("/identity/support-access")) {
+      await route.fulfill({ contentType: "application/json", json: { grants }, status: 200 });
+      return;
+    }
+
+    await route.fulfill({
+      contentType: "application/json",
+      json: { message: `Unexpected Phase 202 fixture request: ${method} ${url.pathname}` },
+      status: 500
+    });
+  });
+
+  return {
+    factors: () => factors.map((factor) => ({ ...factor })),
+    recoveryCodes,
+    requests,
+    sessions: () => sessions.map((session) => ({ ...session })),
+    setupSecret
+  };
+}
+
 async function installPhase180ScaleRoutes(page, responses) {
   await page.route("**/member/api/v1/member/organizations/*/portfolio/summary", async (route) => {
     await route.fulfill({ contentType: "application/json", json: responses.portfolio, status: 200 });
@@ -2525,6 +2814,316 @@ const tests = [
           evidence_class: "INTERCEPTED_BROWSER_FIXTURE",
           generated_at: new Date().toISOString(),
           mobile_profiles: mobileEvidence,
+          route_interception: true,
+          status: "passed"
+        }, null, 2)}\n`,
+        "utf8"
+      );
+    }
+  },
+  {
+    name: "Phase 202 account security and invitation surfaces preserve one-time material and responsive authority readbacks",
+    run: async () => {
+      const desktop = await newPage({ viewport: { width: 1440, height: 1000 } });
+      const invitationRequests = [];
+      const consoleMessages = [];
+      const pageErrors = [];
+      const invitationToken = "phase202-invitation-token-abcdefghijklmnopqrstuvwxyz-0123456789";
+      try {
+        desktop.page.on("console", (message) => consoleMessages.push(message.text()));
+        desktop.page.on("pageerror", (error) => pageErrors.push(error.message));
+        const identityRoutes = await installPhase202AccountSecurityRoutes(desktop.page);
+        await installPhase170Routes(desktop.page);
+        await desktop.page.route("**/api/member/invitations/signup", async (route) => {
+          const request = route.request();
+          invitationRequests.push({
+            body: request.postDataJSON(),
+            method: request.method(),
+            referrer: request.headers().referer ?? null
+          });
+          await route.fulfill({
+            contentType: "application/json",
+            json: {
+              invitationAccepted: true,
+              message: "Invitation accepted. Verify your email before signing in to Entral."
+            },
+            status: 200
+          });
+        });
+        await enterWorkspace(desktop.page, uniqueEmail("phase202-security"));
+        await desktop.page.goto(`${frontendUrl}/member/dashboard`);
+        await expectUrl(desktop.page, /\/member\/dashboard$/, "Phase 202 member shell entry");
+        await closeAcademyIfOpen(desktop.page);
+        const accountSecurityEntry = desktop.page.getByRole("button", { name: "Account security", exact: true });
+        await expectVisible(accountSecurityEntry, "Phase 202 member account-security navigation entry");
+        await accountSecurityEntry.click();
+        await expectUrl(desktop.page, /\/member\/account\/security$/, "Phase 202 account-security navigation");
+
+        await expectVisible(desktop.page.getByRole("heading", { level: 1, name: "Account security" }), "Phase 202 account-security surface");
+        const sessionsRegion = desktop.page.locator('section[aria-labelledby="active-sessions-heading"]');
+        const mfaRegion = desktop.page.locator('section[aria-labelledby="mfa-heading"]');
+        const membershipsRegion = desktop.page.locator('section[aria-labelledby="memberships-heading"]');
+        const supportRegion = desktop.page.locator('section[aria-labelledby="support-access-heading"]');
+        for (const [region, label] of [
+          [sessionsRegion, "durable sessions"],
+          [mfaRegion, "authenticator MFA"],
+          [membershipsRegion, "tenant membership"],
+          [supportRegion, "owner-visible support access"]
+        ]) {
+          await expectVisible(region, `Phase 202 ${label} region`);
+        }
+
+        const currentSession = sessionsRegion.locator("li").filter({ hasText: "Chrome on Windows" });
+        const otherSession = sessionsRegion.locator("li").filter({ hasText: "Safari on iPad" });
+        await expectVisible(currentSession.getByText("Current", { exact: true }), "Phase 202 current-session status");
+        await expectVisible(currentSession.getByRole("button", { name: "Revoke current", exact: true }), "Phase 202 current-session control");
+        const revokeOther = otherSession.getByRole("button", { name: "Revoke session", exact: true });
+        await expectVisible(revokeOther, "Phase 202 non-current session control");
+        await revokeOther.focus();
+        if (!await revokeOther.evaluate((element) => document.activeElement === element)) {
+          throw new Error("Phase 202 non-current session control did not accept keyboard focus.");
+        }
+        await desktop.page.keyboard.press("Enter");
+        await expectVisible(
+          desktop.page.getByRole("status").filter({ hasText: "Session revoked and verified by a fresh inventory readback." }),
+          "Phase 202 session-revocation status semantics"
+        );
+        await expectVisible(otherSession.getByText("Revoked", { exact: true }), "Phase 202 revoked session readback");
+        if (await otherSession.getByRole("button", { name: "Revoke session", exact: true }).count()) {
+          throw new Error("Phase 202 retained a revocation control for a revoked session.");
+        }
+        const sessionRequests = identityRoutes.requests.filter((request) => request.pathname.includes("/identity/sessions"));
+        if (
+          !sessionRequests.some((request) => request.method === "DELETE" && request.pathname.endsWith("/123e4567-e89b-42d3-a456-426614174102"))
+          || sessionRequests.filter((request) => request.method === "GET").length < 2
+          || identityRoutes.sessions().find((session) => !session.current)?.revoked_at === null
+        ) {
+          throw new Error(`Phase 202 session revocation did not produce a fresh durable readback: ${JSON.stringify(sessionRequests)}.`);
+        }
+
+        await expectVisible(membershipsRegion.getByText("Owner Example", { exact: true }), "Phase 202 owner membership identity");
+        await expectVisible(membershipsRegion.getByText("OWNER", { exact: true }), "Phase 202 owner membership authority");
+        const activeSupportGrant = supportRegion.locator("li").filter({ hasText: "Production incident readback" });
+        await expectVisible(activeSupportGrant.getByText("read only", { exact: true }), "Phase 202 active support-access mode");
+        await expectVisible(
+          activeSupportGrant.getByText("Support actor 123e4567-e89b-42d3-a456-426614174011", { exact: true }),
+          "Phase 202 support actor readback"
+        );
+        await expectVisible(
+          activeSupportGrant.getByText("Approved by 123e4567-e89b-42d3-a456-426614174001", { exact: true }),
+          "Phase 202 support approver readback"
+        );
+        await expectVisible(activeSupportGrant.getByText(/^Expires /), "Phase 202 support expiry readback");
+        const expiredSupportGrant = supportRegion.locator("li").filter({ hasText: "Expired maintenance grant" });
+        await expectVisible(expiredSupportGrant.getByText("inactive", { exact: true }), "Phase 202 expired support-access state");
+        await expectVisible(
+          expiredSupportGrant.getByText("Support actor 123e4567-e89b-42d3-a456-426614174013", { exact: true }),
+          "Phase 202 expired support actor readback"
+        );
+        await expectVisible(
+          expiredSupportGrant.getByText("Approved by 123e4567-e89b-42d3-a456-426614174004", { exact: true }),
+          "Phase 202 expired support approver readback"
+        );
+        await expectVisible(expiredSupportGrant.getByText(/^Expires /), "Phase 202 expired support expiry readback");
+
+        await expectVisible(mfaRegion.getByText("No authenticator factor is active.", { exact: true }), "Phase 202 initial MFA readback");
+        const enrollButton = mfaRegion.getByRole("button", { name: "Enroll authenticator", exact: true });
+        await enrollButton.focus();
+        if (!await enrollButton.evaluate((element) => document.activeElement === element)) {
+          throw new Error("Phase 202 MFA enrollment control did not accept keyboard focus.");
+        }
+        await desktop.page.keyboard.press("Enter");
+        await expectVisible(mfaRegion.getByText(identityRoutes.setupSecret, { exact: true }), "Phase 202 one-time setup material");
+        if ((await mfaRegion.innerText()).includes("otpauth://")) {
+          throw new Error("Phase 202 rendered the authenticator provisioning URI.");
+        }
+        await mfaRegion.getByLabel("Authenticator enrollment code").fill("123456");
+        const confirmMfa = mfaRegion.getByRole("button", { name: "Confirm MFA", exact: true });
+        await confirmMfa.focus();
+        await desktop.page.keyboard.press("Enter");
+        const recoveryRegion = mfaRegion.getByLabel("One-time recovery codes");
+        await expectVisible(recoveryRegion, "Phase 202 one-time recovery material region");
+        for (const code of identityRoutes.recoveryCodes) {
+          await expectVisible(recoveryRegion.getByText(code, { exact: true }), `Phase 202 recovery material ${code}`);
+        }
+        if (await mfaRegion.getByText(identityRoutes.setupSecret, { exact: true }).count()) {
+          throw new Error("Phase 202 retained setup material after MFA confirmation.");
+        }
+        await expectVisible(mfaRegion.getByText("active", { exact: true }), "Phase 202 active MFA factor readback");
+        const confirmRequest = identityRoutes.requests.find((request) => request.pathname.endsWith("/identity/mfa/totp/confirm"));
+        if (
+          !confirmRequest
+          || confirmRequest.method !== "POST"
+          || confirmRequest.body?.code !== "123456"
+          || confirmRequest.body?.factor_id !== "123e4567-e89b-42d3-a456-426614174020"
+          || confirmRequest.idempotency_key.length < 12
+          || identityRoutes.factors()[0]?.status !== "ACTIVE"
+        ) {
+          throw new Error(`Phase 202 MFA confirmation request or fresh factor readback drifted: ${JSON.stringify(confirmRequest)}.`);
+        }
+        await recoveryRegion.getByRole("button", { name: "I saved them; clear view", exact: true }).click();
+        if (await mfaRegion.getByLabel("One-time recovery codes").count()) {
+          throw new Error("Phase 202 retained one-time recovery material after explicit clearing.");
+        }
+
+        const stepUpInput = mfaRegion.getByLabel("MFA step-up code");
+        await stepUpInput.fill("000000");
+        await stepUpInput.press("Enter");
+        await expectVisible(
+          desktop.page.getByRole("alert").filter({ hasText: "AUTHORITY STORE blocked this action: MFA_FACTOR_STORE_UNAVAILABLE." }),
+          "Phase 202 typed MFA dependency error semantics"
+        );
+
+        const storedSecurityValues = await desktop.page.evaluate(() => JSON.stringify({
+          local: Object.entries(window.localStorage),
+          session: Object.entries(window.sessionStorage)
+        }));
+        for (const sensitive of [identityRoutes.setupSecret, ...identityRoutes.recoveryCodes]) {
+          if (storedSecurityValues.includes(sensitive)) {
+            throw new Error(`Phase 202 persisted one-time MFA material in browser storage: ${sensitive}.`);
+          }
+        }
+
+        await desktop.page.goto(`${frontendUrl}/member/invitations/accept?token=${encodeURIComponent(invitationToken)}`);
+        await expectVisible(desktop.page.getByRole("heading", { level: 1, name: "Accept your Entral invitation" }), "Phase 202 invitation-acceptance surface");
+        await expectUrl(desktop.page, /\/member\/invitations\/accept$/, "Phase 202 invitation-token scrubbing");
+        if ((await desktop.page.locator("body").innerText()).includes(invitationToken)) {
+          throw new Error("Phase 202 rendered the invitation token after URL scrubbing.");
+        }
+        await desktop.page.getByLabel("Full name").fill("Invited Owner");
+        await desktop.page.getByLabel("Email address").fill("invited-owner@example.com");
+        await desktop.page.getByLabel("Create password").fill("phase202-password");
+        const confirmation = desktop.page.getByLabel("Confirm password");
+        await confirmation.fill("phase202-mismatch");
+        const createAccount = desktop.page.getByRole("button", { name: "Create account and accept", exact: true });
+        await createAccount.focus();
+        await desktop.page.keyboard.press("Enter");
+        if (!await confirmation.evaluate((element) => document.activeElement === element)) {
+          throw new Error("Phase 202 password mismatch did not move focus to confirmation.");
+        }
+        const passwordDescription = await confirmation.evaluate((element) => {
+          const descriptionId = element.getAttribute("aria-describedby");
+          return descriptionId ? document.getElementById(descriptionId)?.textContent?.trim() ?? null : null;
+        });
+        if (passwordDescription !== "Passwords must match.") {
+          throw new Error(`Phase 202 password mismatch was not accessibly described: ${passwordDescription}.`);
+        }
+        await confirmation.fill("phase202-password");
+        await createAccount.focus();
+        await desktop.page.keyboard.press("Enter");
+        await expectVisible(desktop.page.getByRole("heading", { level: 1, name: "Your Entral access is ready" }), "Phase 202 invitation success surface");
+        await expectVisible(
+          desktop.page.getByRole("status").filter({ hasText: "Invitation accepted. Verify your email before signing in to Entral." }),
+          "Phase 202 invitation success status semantics"
+        );
+        if (
+          invitationRequests.length !== 1
+          || invitationRequests[0].method !== "POST"
+          || invitationRequests[0].body?.invitation_token !== invitationToken
+          || invitationRequests[0].body?.email !== "invited-owner@example.com"
+          || invitationRequests[0].body?.name !== "Invited Owner"
+          || invitationRequests[0].body?.password !== "phase202-password"
+        ) {
+          throw new Error(`Phase 202 invitation signup request drifted: ${JSON.stringify(invitationRequests)}.`);
+        }
+
+        const storedInvitationValues = await desktop.page.evaluate(() => JSON.stringify({
+          local: Object.entries(window.localStorage),
+          session: Object.entries(window.sessionStorage)
+        }));
+        const renderedInvitationBody = await desktop.page.locator("body").innerText();
+        const loggedBrowserValues = [...consoleMessages, ...pageErrors].join("\n");
+        for (const sensitive of [invitationToken, identityRoutes.setupSecret, ...identityRoutes.recoveryCodes]) {
+          if (storedInvitationValues.includes(sensitive) || renderedInvitationBody.includes(sensitive) || loggedBrowserValues.includes(sensitive)) {
+            throw new Error(`Phase 202 leaked protected browser material outside its one-time view: ${sensitive}.`);
+          }
+        }
+        if (pageErrors.length) {
+          throw new Error(`Unexpected Phase 202 desktop browser errors:\n${pageErrors.join("\n")}`);
+        }
+      } finally {
+        await desktop.context.close();
+      }
+
+      const responsiveEvidence = [];
+      for (const width of [360, 390, 412, 430]) {
+        const { context, page } = await newPage({
+          deviceScaleFactor: 2,
+          isMobile: true,
+          viewport: { height: 844, width }
+        });
+        const runtimeErrors = [];
+        try {
+          page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
+          page.on("console", (message) => {
+            if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
+          });
+          await installPhase202AccountSecurityRoutes(page);
+          await installPhase170Routes(page);
+          await installPhase200InteractionRoutes(page);
+          await enterWorkspace(page, uniqueEmail(`phase202-responsive-${width}`));
+          await page.goto(`${frontendUrl}/member/dashboard`);
+          await expectUrl(page, /\/member\/dashboard$/, `Phase 202 ${width}px member shell entry`);
+          await closeAcademyIfOpen(page);
+          const accountSecurityEntry = page.getByRole("button", { name: "Account security", exact: true });
+          await expectVisible(accountSecurityEntry, `Phase 202 ${width}px account-security navigation entry`);
+          await accountSecurityEntry.click();
+          await expectUrl(page, /\/member\/account\/security$/, `Phase 202 ${width}px account-security navigation`);
+          await expectVisible(page.getByRole("heading", { level: 1, name: "Account security" }), `Phase 202 ${width}px account security`);
+          await expectVisible(page.getByText("Safari on iPad", { exact: true }), `Phase 202 ${width}px session controls`);
+          await expectVisible(page.getByText("Production incident readback", { exact: true }), `Phase 202 ${width}px support readback`);
+          const securityGeometry = await page.evaluate(() => ({
+            documentWidth: document.documentElement.scrollWidth,
+            viewportWidth: window.innerWidth
+          }));
+          if (securityGeometry.documentWidth > securityGeometry.viewportWidth + 2) {
+            throw new Error(`Phase 202 ${width}px account-security surface overflowed horizontally: ${JSON.stringify(securityGeometry)}.`);
+          }
+
+          const mobileInvitationToken = `${invitationToken}-${width}`;
+          await page.goto(`${frontendUrl}/member/invitations/accept?token=${encodeURIComponent(mobileInvitationToken)}`);
+          await expectVisible(page.getByRole("heading", { level: 1, name: "Accept your Entral invitation" }), `Phase 202 ${width}px invitation acceptance`);
+          await expectUrl(page, /\/member\/invitations\/accept$/, `Phase 202 ${width}px invitation-token scrubbing`);
+          const invitationGeometry = await page.evaluate((token) => ({
+            documentWidth: document.documentElement.scrollWidth,
+            stored: JSON.stringify({
+              local: Object.entries(window.localStorage),
+              session: Object.entries(window.sessionStorage)
+            }).includes(token),
+            tokenRendered: document.body.innerText.includes(token),
+            viewportWidth: window.innerWidth
+          }), mobileInvitationToken);
+          if (
+            invitationGeometry.documentWidth > invitationGeometry.viewportWidth + 2
+            || invitationGeometry.stored
+            || invitationGeometry.tokenRendered
+          ) {
+            throw new Error(`Phase 202 ${width}px invitation surface violated its responsive/token boundary: ${JSON.stringify(invitationGeometry)}.`);
+          }
+          if (runtimeErrors.length) {
+            throw new Error(`Unexpected Phase 202 ${width}px browser errors:\n${runtimeErrors.join("\n")}`);
+          }
+          responsiveEvidence.push({
+            account_security_no_horizontal_overflow: true,
+            invitation_no_horizontal_overflow: true,
+            invitation_token_scrubbed: true,
+            viewport_width: width
+          });
+        } finally {
+          await context.close();
+        }
+      }
+
+      await writeFile(
+        join(repoRoot, "test-results", "e2e", "phase202-account-security-browser-fixture.json"),
+        `${JSON.stringify({
+          accepted_production_evidence: false,
+          browser_session: "LOCAL_MEMORY_AUTHENTICATED",
+          evidence_class: "INTERCEPTED_BROWSER_FIXTURE",
+          generated_at: new Date().toISOString(),
+          invitation_token_scrubbed: true,
+          one_time_material_not_stored_or_logged: true,
+          responsive_profiles: responsiveEvidence,
           route_interception: true,
           status: "passed"
         }, null, 2)}\n`,

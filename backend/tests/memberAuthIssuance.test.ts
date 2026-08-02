@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({
   compare: vi.fn(async () => true),
   confirmEmailVerification: vi.fn(),
   confirmPasswordReset: vi.fn(),
-  teamMemberCount: vi.fn(async () => 1),
+  teamFindUnique: vi.fn(),
+  teamMemberFindMany: vi.fn(),
   userFindUnique: vi.fn()
 }));
 
@@ -18,9 +19,28 @@ vi.mock("bcryptjs", () => ({
 
 vi.mock("../src/db.js", () => ({
   prisma: {
-    teamMember: { count: mocks.teamMemberCount },
     user: { findUnique: mocks.userFindUnique }
-  }
+  },
+  withPreAuthEmailSession: vi.fn(async (database, context, operation) => operation(database, {
+    email: context.email,
+    userId: "member-1"
+  })),
+  withPersonalSession: vi.fn(async (_database, _context, operation) => operation({
+    teamMember: { findMany: mocks.teamMemberFindMany }
+  }, {
+    actorId: "323e4567-e89b-42d3-a456-426614174000",
+    appUserId: "member-1",
+    authSubject: "member-1"
+  })),
+  withTenantSession: vi.fn(async (_database, context, operation) => operation({
+    team: { findUnique: mocks.teamFindUnique }
+  }, {
+    actorId: "323e4567-e89b-42d3-a456-426614174000",
+    appUserId: "member-1",
+    organizationId: "423e4567-e89b-42d3-a456-426614174000",
+    role: "OWNER",
+    tenantId: context.tenantId
+  }))
 }));
 
 vi.mock("../src/services/authRecovery.js", () => ({
@@ -40,6 +60,9 @@ const memberUser = {
   passwordHash: "stored-password-hash",
   role: "USER"
 };
+const memberTenantId = "523e4567-e89b-42d3-a456-426614174000";
+const memberOrganizationId = "423e4567-e89b-42d3-a456-426614174000";
+const memberTeamId = "team-member-1";
 
 async function buildAuthServer() {
   const [{ authRoutes }, { enforceSessionBoundary }] = await Promise.all([
@@ -68,7 +91,20 @@ beforeEach(() => {
   process.env.CORS_ORIGIN = "http://localhost:3000";
   process.env.APP_PUBLIC_URL = "http://localhost:3000";
   mocks.compare.mockResolvedValue(true);
-  mocks.teamMemberCount.mockResolvedValue(1);
+  mocks.teamMemberFindMany.mockResolvedValue([{
+    organizationId: memberOrganizationId,
+    role: "OWNER",
+    teamId: memberTeamId,
+    tenantId: memberTenantId
+  }]);
+  mocks.teamFindUnique.mockResolvedValue({
+    id: memberTeamId,
+    memberAccessEnabled: true,
+    name: "Member Team",
+    organizationId: memberOrganizationId,
+    slug: "member-team",
+    tenantId: memberTenantId
+  });
   mocks.userFindUnique.mockResolvedValue(memberUser);
   mocks.confirmEmailVerification.mockResolvedValue({ flow: "member", ok: true, user: memberUser });
   mocks.confirmPasswordReset.mockResolvedValue({ flow: "member", ok: true, user: memberUser });
@@ -143,7 +179,7 @@ describe("member authentication issuance", () => {
   });
 
   it("does not issue a member session without an explicitly provisioned organization", async () => {
-    mocks.teamMemberCount.mockResolvedValueOnce(0);
+    mocks.teamMemberFindMany.mockResolvedValueOnce([]);
     const app = await buildAuthServer();
     const response = await app.inject({
       method: "POST",
@@ -153,17 +189,18 @@ describe("member authentication issuance", () => {
 
     expect(response.statusCode).toBe(403);
     expect(response.headers["set-cookie"]).toBeUndefined();
-    expect(mocks.teamMemberCount).toHaveBeenCalledWith({
+    expect(mocks.teamMemberFindMany).toHaveBeenCalledWith({
       where: {
-        team: { memberAccessEnabled: true },
+        status: "ACTIVE",
         userId: memberUser.id
-      }
+      },
+      select: { organizationId: true, role: true, teamId: true, tenantId: true }
     });
     await app.close();
   });
 
   it("does not issue a recovery session after verification when provisioning is absent", async () => {
-    mocks.teamMemberCount.mockResolvedValueOnce(0);
+    mocks.teamMemberFindMany.mockResolvedValueOnce([]);
     const app = await buildAuthServer();
     const response = await app.inject({
       method: "POST",
@@ -172,7 +209,7 @@ describe("member authentication issuance", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers["set-cookie"]).toContain("entral_token=;");
+    expect(String(response.headers["set-cookie"])).toContain("entral_token=;");
     expect(response.json()).toMatchObject({
       message: "Email verified. Member access has not been provisioned for this account."
     });

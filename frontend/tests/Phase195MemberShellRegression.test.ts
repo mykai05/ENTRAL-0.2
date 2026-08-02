@@ -58,4 +58,11 @@ describe("Phase 195 member Graph release boundaries", () => {
     expect(boundary).toContain("no sample hierarchy is shown");
     expect(boundary).toContain("The authorized graph data is still available below");
   });
+
+  it("keeps the real account-security surface discoverable from the member shell", () => {
+    const shell = frontendFile("components", "CanonicalMemberShell.tsx");
+
+    expect(shell).toContain('router.push("/member/account/security")');
+    expect(shell).toContain("Account security");
+  });
 });

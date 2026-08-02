@@ -166,6 +166,7 @@ export interface WorkerReadinessEvidence {
     readonly agent_orchestrator: boolean;
     readonly autonomy_scheduler: boolean;
     readonly canonical_outbox_dispatcher: boolean;
+    readonly membership_notification_dispatcher: boolean;
   };
   readonly queue: {
     readonly pending: number;
@@ -769,7 +770,7 @@ export function assertWorkerReadinessEvidence(value: unknown): asserts value is 
   assertRecord(value.components, "worker_readiness.components");
   assertExactKeys(value.components, [
     "process", "automation_worker", "agent_orchestrator",
-    "autonomy_scheduler", "canonical_outbox_dispatcher"
+    "autonomy_scheduler", "canonical_outbox_dispatcher", "membership_notification_dispatcher"
   ], "worker_readiness.components");
   for (const component of Object.values(value.components)) {
     if (typeof component !== "boolean") {

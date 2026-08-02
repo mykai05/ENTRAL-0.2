@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   failAiUsageReservation: vi.fn(),
+  hasVerifiedMemberTeamAccess: vi.fn(),
   conversationCreate: vi.fn(),
   conversationFindFirst: vi.fn(),
   conversationUpdate: vi.fn(),
@@ -30,8 +31,10 @@ const mocks = vi.hoisted(() => ({
   taskCount: vi.fn(),
   taskFindMany: vi.fn(),
   teamMemberFindMany: vi.fn(),
+  teamMemberFindFirst: vi.fn(),
   teamMemberFindUnique: vi.fn(),
-  userFindUnique: vi.fn()
+  userFindUnique: vi.fn(),
+  withTenantSession: vi.fn()
 }));
 
 vi.mock("../src/services/canonicalEntityLifecycle.js", () => ({
@@ -53,6 +56,7 @@ vi.mock("../src/services/canonicalControlPlane.js", () => ({
 }));
 
 vi.mock("../src/db.js", () => ({
+  hasVerifiedMemberTeamAccess: mocks.hasVerifiedMemberTeamAccess,
   prisma: {
     conversation: {
       create: mocks.conversationCreate,
@@ -62,6 +66,7 @@ vi.mock("../src/db.js", () => ({
     message: {
       create: mocks.messageCreate,
       delete: mocks.messageDelete,
+      deleteMany: mocks.messageDelete,
       findMany: mocks.messageFindMany
     },
     memberWorkspaceSnapshot: {
@@ -73,12 +78,19 @@ vi.mock("../src/db.js", () => ({
     },
     teamMember: {
       findMany: mocks.teamMemberFindMany,
+      findFirst: mocks.teamMemberFindFirst,
       findUnique: mocks.teamMemberFindUnique
     },
     user: {
       findUnique: mocks.userFindUnique
     }
-  }
+  },
+  withPersonalSession: vi.fn(async (database, context, operation) => operation(database, {
+    actorId: "323e4567-e89b-42d3-a456-426614174000",
+    appUserId: "323e4567-e89b-42d3-a456-426614174000",
+    authSubject: context.authSubject
+  })),
+  withTenantSession: mocks.withTenantSession
 }));
 
 vi.mock("../src/services/aiBrain.js", () => ({
@@ -91,6 +103,7 @@ vi.mock("../src/services/aiUsage.js", () => ({
   failAiUsageReservation: mocks.failAiUsageReservation,
   getAiUsageSummary: mocks.getAiUsageSummary,
   reserveAiUsage: mocks.reserveAiUsage,
+  reserveAiUsageInTransaction: mocks.reserveAiUsage,
   resolveAiUsageRequestId: mocks.resolveAiUsageRequestId,
   settleAiUsageReservation: mocks.settleAiUsageReservation
 }));
@@ -111,6 +124,8 @@ const otherOrganizationId = "ck9876543210987654321098";
 const businessId = "123e4567-e89b-42d3-a456-426614174000";
 const entityId = "223e4567-e89b-42d3-a456-426614174000";
 const humanId = "323e4567-e89b-42d3-a456-426614174000";
+const tenantOrganizationId = "423e4567-e89b-42d3-a456-426614174000";
+const tenantId = "523e4567-e89b-42d3-a456-426614174000";
 
 async function buildMemberTestServer() {
   const [{ memberRoutes }, { signAuthToken }] = await Promise.all([
@@ -123,7 +138,14 @@ async function buildMemberTestServer() {
 
   return {
     app,
-    authorization: `Bearer ${signAuthToken({ sub: "user-1", email: "ada@example.com", role: "USER" })}`
+    authorization: `Bearer ${signAuthToken({
+      sub: "user-1",
+      email: "ada@example.com",
+      role: "USER",
+      session: "member",
+      organizationId: tenantOrganizationId,
+      tenantId
+    })}`
   };
 }
 
@@ -137,6 +159,49 @@ beforeEach(() => {
   process.env.CORS_ORIGIN = "http://localhost:3000";
   process.env.APP_PUBLIC_URL = "http://localhost:3000";
   mocks.userFindUnique.mockResolvedValue({ sessionVersion: 0 });
+  mocks.hasVerifiedMemberTeamAccess.mockImplementation(async (_database, context) => {
+    const membership = await mocks.teamMemberFindUnique({
+      where: { userId_teamId: { teamId: context.teamId, userId: context.authSubject } }
+    });
+    return Boolean(membership?.team?.memberAccessEnabled);
+  });
+  mocks.withTenantSession.mockImplementation(async (_database, _context, operation) => operation({
+    $queryRaw: vi.fn(async (_query: TemplateStringsArray, userId: string) => [{
+      name: userId === "user-1" ? "Ada Lovelace" : "Member",
+      userId
+    }]),
+    conversation: {
+      create: mocks.conversationCreate,
+      findFirst: mocks.conversationFindFirst,
+      update: mocks.conversationUpdate
+    },
+    message: {
+      create: mocks.messageCreate,
+      deleteMany: mocks.messageDelete,
+      findMany: mocks.messageFindMany
+    },
+    memberWorkspaceSnapshot: {
+      findUnique: mocks.memberWorkspaceFindUnique
+    },
+    task: {
+      count: mocks.taskCount,
+      findMany: mocks.taskFindMany
+    },
+    teamMember: {
+      findFirst: mocks.teamMemberFindFirst,
+      findMany: mocks.teamMemberFindMany,
+      findUnique: mocks.teamMemberFindUnique
+    },
+    user: {
+      findUnique: mocks.userFindUnique
+    }
+  }, {
+    actorId: humanId,
+    appUserId: "user-1",
+    organizationId: tenantOrganizationId,
+    role: "OWNER",
+    tenantId
+  }));
   mocks.resolveAiUsageRequestId.mockImplementation((requestId) => requestId);
   mocks.reserveAiUsage.mockResolvedValue({
     estimatedCostCents: 2,
@@ -183,7 +248,11 @@ describe("member organization routes", () => {
     expect(response.headers.vary).toBe("Origin, Cookie, Authorization");
     expect(mocks.teamMemberFindMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {
-        team: { memberAccessEnabled: true },
+        team: {
+          memberAccessEnabled: true,
+          organizationId: tenantOrganizationId,
+          tenantId
+        },
         userId: "user-1"
       }
     }));
@@ -217,7 +286,7 @@ describe("member organization routes", () => {
   });
 
   it("scopes every overview query to the verified organization", async () => {
-    mocks.teamMemberFindUnique.mockResolvedValueOnce({
+    mocks.teamMemberFindFirst.mockResolvedValueOnce({
       role: "OWNER",
       team: { _count: { members: 2 }, id: organizationId, memberAccessEnabled: true, memberSeatLimit: 5, name: "Analytical Works", slug: "analytical-works" }
     });
@@ -229,7 +298,7 @@ describe("member organization routes", () => {
       .mockResolvedValueOnce(1);
     mocks.taskFindMany.mockResolvedValueOnce([
       {
-        assignedTo: { id: "user-1", name: "Ada Lovelace" },
+        assignedToId: "user-1",
         dueDate: null,
         id: "task-1",
         status: "IN_PROGRESS",
@@ -238,7 +307,7 @@ describe("member organization routes", () => {
       }
     ]);
     mocks.teamMemberFindMany.mockResolvedValueOnce([
-      { joinedAt: new Date("2026-07-01T00:00:00.000Z"), role: "OWNER", user: { id: "user-1", name: "Ada Lovelace" } }
+      { joinedAt: new Date("2026-07-01T00:00:00.000Z"), role: "OWNER", userId: "user-1" }
     ]);
     mocks.memberWorkspaceFindUnique.mockResolvedValueOnce({
       publishedAt: new Date("2026-07-18T00:00:00.000Z"),
@@ -263,8 +332,8 @@ describe("member organization routes", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(mocks.teamMemberFindUnique).toHaveBeenCalledWith(expect.objectContaining({
-      where: { userId_teamId: { teamId: organizationId, userId: "user-1" } }
+    expect(mocks.teamMemberFindFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ teamId: organizationId, userId: "user-1" })
     }));
     for (const call of mocks.taskCount.mock.calls) {
       expect(call[0].where.teamId).toBe(organizationId);
@@ -295,7 +364,7 @@ describe("member organization routes", () => {
   });
 
   it("rejects cross-tenant identifiers before any organization data query", async () => {
-    mocks.teamMemberFindUnique.mockResolvedValueOnce(null);
+    mocks.teamMemberFindFirst.mockResolvedValueOnce(null);
     const { app, authorization } = await buildMemberTestServer();
     const response = await app.inject({
       headers: { authorization },
@@ -313,7 +382,7 @@ describe("member organization routes", () => {
   });
 
   it("rejects a membership whose organization has not been explicitly provisioned", async () => {
-    mocks.teamMemberFindUnique.mockResolvedValueOnce({
+    mocks.teamMemberFindFirst.mockResolvedValueOnce({
       role: "OWNER",
       team: {
         _count: { members: 1 },
@@ -530,14 +599,14 @@ describe("member organization routes", () => {
     expect(mocks.reserveAiUsage).toHaveBeenCalledWith(expect.objectContaining({
       requestKind: "chat",
       userId: "user-1"
-    }));
+    }), expect.any(Object));
     expect(mocks.reserveAiUsage.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.createProviderBackedAiDecision.mock.invocationCallOrder[0]
     );
     expect(mocks.settleAiUsageReservation).toHaveBeenCalledWith(expect.objectContaining({
       reservationId: "usage-1",
       userId: "user-1"
-    }));
+    }), expect.any(Object));
     expect(mocks.messageCreate).toHaveBeenNthCalledWith(1, expect.objectContaining({
       data: expect.objectContaining({ content: "What is selected?", role: "user" })
     }));
@@ -572,6 +641,87 @@ describe("member organization routes", () => {
     expect(response.json()).toEqual({ error: "Not Found", message: "Entity not found." });
     expect(mocks.reserveAiUsage).not.toHaveBeenCalled();
     expect(mocks.conversationCreate).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it("rejects a business hint outside the server-resolved portfolio before any billable or durable side effect", async () => {
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getPortfolio.mockResolvedValueOnce({
+      businesses: [],
+      event_sequence: 51,
+      scope: { label: "Human portfolio" }
+    });
+    mocks.getHierarchySnapshot.mockResolvedValueOnce({ entities: [], event_sequence: 51 });
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: {
+        context: {
+          business_id: businessId,
+          observed_event_sequence: 51,
+          selected_entity_id: null,
+          surface: "graph"
+        },
+        message: "Inspect this business."
+      },
+      url: `/api/v1/member/organizations/${organizationId}/entral/assistant/messages`
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: "Not Found", message: "Business not found." });
+    expect(mocks.reserveAiUsage).not.toHaveBeenCalled();
+    expect(mocks.createProviderBackedAiDecision).not.toHaveBeenCalled();
+    expect(mocks.openAiCreateReply).not.toHaveBeenCalled();
+    expect(mocks.messageCreate).not.toHaveBeenCalled();
+    expect(mocks.recordAuditLog).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it("preflights an existing conversation in the exact tenant and business before reserving provider usage", async () => {
+    const foreignConversationId = "ck9234567890123456789012";
+    mocks.teamMemberFindUnique.mockResolvedValueOnce({ team: { memberAccessEnabled: true } });
+    mocks.getPortfolio.mockResolvedValueOnce({
+      businesses: [{ business_id: businessId, business_name: "Interface Operations" }],
+      event_sequence: 51,
+      scope: { label: "Human portfolio" }
+    });
+    mocks.getHierarchySnapshot.mockResolvedValueOnce({ entities: [], event_sequence: 51 });
+    mocks.conversationFindFirst.mockResolvedValueOnce(null);
+    const { app, authorization } = await buildMemberTestServer();
+    const response = await app.inject({
+      headers: { authorization },
+      method: "POST",
+      payload: {
+        context: {
+          business_id: businessId,
+          observed_event_sequence: 51,
+          selected_entity_id: null,
+          surface: "graph"
+        },
+        conversation_id: foreignConversationId,
+        message: "Continue the conversation."
+      },
+      url: `/api/v1/member/organizations/${organizationId}/entral/assistant/messages`
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ error: "Not Found", message: "Conversation not found." });
+    expect(mocks.conversationFindFirst).toHaveBeenCalledWith(expect.objectContaining({
+      select: { id: true },
+      where: expect.objectContaining({
+        businessId,
+        id: foreignConversationId,
+        organizationId: tenantOrganizationId,
+        tenantId,
+        userId: "user-1"
+      })
+    }));
+    expect(mocks.reserveAiUsage).not.toHaveBeenCalled();
+    expect(mocks.createProviderBackedAiDecision).not.toHaveBeenCalled();
+    expect(mocks.openAiCreateReply).not.toHaveBeenCalled();
+    expect(mocks.messageCreate).not.toHaveBeenCalled();
+    expect(mocks.recordAuditLog).not.toHaveBeenCalled();
     await app.close();
   });
 
@@ -723,7 +873,9 @@ describe("member organization routes", () => {
         databaseSession: {
           actionReason: request.reason,
           authSubject: "user-1",
-          correlationId: expect.any(String)
+          correlationId: expect.any(String),
+          organizationId: tenantOrganizationId,
+          tenantId
         }
       }
     );

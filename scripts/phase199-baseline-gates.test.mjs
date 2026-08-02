@@ -79,14 +79,22 @@ test("Phase 199 retains typed candidate evidence for all twenty-one acceptance g
 });
 
 test("Production secure JSON, administrative step-up, and memory runtime fail closed", async () => {
-  const [environment, secureJson, memoryServer] = await Promise.all([
+  const [environment, secureJson, memoryServer, state, supportAccess] = await Promise.all([
     read("backend/src/env.ts"),
     read("backend/src/services/secureJson.ts"),
-    read("backend/src/dev-memory-server.ts")
+    read("backend/src/dev-memory-server.ts"),
+    readJson(".entral/governor/PROGRAM_STATE.json"),
+    read("backend/src/services/phase202SupportAccess.ts")
   ]);
 
   assert.match(environment, /Production requires DATA_ENCRYPTION_KEY/);
-  assert.match(environment, /Production API requires ADMIN_MFA_CODE/);
+  if (state.current_phase < 202) {
+    assert.match(environment, /Production API requires ADMIN_MFA_CODE/);
+  } else {
+    assert.doesNotMatch(environment, /ADMIN_MFA_CODE/);
+    assert.match(supportAccess, /transaction\.authSession\.findFirst/);
+    assert.match(supportAccess, /OWNER_RECENT_MFA_STEP_UP/);
+  }
   assert.match(secureJson, /Production secure JSON writes require DATA_ENCRYPTION_KEY/);
   assert.ok(memoryServer.indexOf('if (process.env.NODE_ENV === "production")') < memoryServer.indexOf("config({ path:"));
   assert.match(memoryServer, /in-memory development server is forbidden in production/);
@@ -132,9 +140,11 @@ test("Tenant, Tutorial, website, Microsoft, and pre-change inventories are expli
 });
 
 test("Governor blocks Phase 200 until the exact Phase 199 production release and then permits only its bounded continuation", async () => {
-  const [state, contract, phase200Result] = await Promise.all([
+  const [state, contract, phase199Release, phase200Task, phase200Result] = await Promise.all([
     readJson(".entral/governor/PROGRAM_STATE.json"),
     readJson(".entral/governor/phases/199/PHASE_CONTRACT.v1.json"),
+    readJson(".entral/governor/releases/phase-199.json"),
+    readJson(".entral/governor/tasks/P200-INTERACTION-LAYER-001.json"),
     readJson(".entral/governor/results/P200-INTERACTION-LAYER-001-6287a903.json")
   ]);
 
@@ -148,28 +158,26 @@ test("Governor blocks Phase 200 until the exact Phase 199 production release and
       assert.equal(state.review_state.correction_commit_sha, undefined);
     }
   } else {
-    assert.equal(state.current_phase, 200);
+    assert.equal([200, 202].includes(state.current_phase), true);
     assert.equal(state.certified_phases.includes(199), true);
-    assert.equal(state.latest_production_release.phase, 199);
-    assert.equal(state.latest_production_release.main_sha, "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb");
+    assert.equal(phase199Release.phase, 199);
+    assert.equal(phase199Release.main_sha, "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb");
     assert.equal(phase200Result.task_packet_id, "P200-INTERACTION-LAYER-001");
     assert.equal(phase200Result.outcome, "PASSED");
     assert.equal(phase200Result.commit_sha, "6287a9036cc55239e86e09befef07364b37502ee");
-    const boundedTaskId = state.current_task_packet_id ?? state.last_task_packet_id;
-    assert.match(boundedTaskId, /^P200-[A-Z0-9-]+$/);
-    const boundedTask = await readJson(`.entral/governor/tasks/${boundedTaskId}.json`);
-    assert.equal(boundedTask.task_packet_id, boundedTaskId);
-    assert.equal(boundedTask.phase, 200);
+    assert.equal(phase200Task.task_packet_id, "P200-INTERACTION-LAYER-001");
+    assert.equal(phase200Task.phase, 200);
     assert.equal(
-      boundedTask.scope.some((entry) => /(?:phase[_-]?202|(?:^|[\\/])202(?:[\\/]|$))/i.test(entry)),
+      phase200Task.scope.some((entry) => /(?:phase[_-]?202|(?:^|[\\/])202(?:[\\/]|$))/i.test(entry)),
       false
     );
-    if (state.current_task_packet_id === null) {
-      assert.equal(state.latest_execution_result.outcome, "PASSED");
-      assert.equal(state.latest_execution_result.task_packet_id, boundedTaskId);
-      assert.equal(state.latest_execution_result.phase, 200);
+    if (state.current_phase === 200) {
+      assert.equal(state.latest_production_release.phase, 199);
+      assert.equal(state.latest_production_release.main_sha, "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb");
     } else {
-      assert.equal(state.current_task_packet_id, boundedTaskId);
+      assert.equal(state.certified_phases.includes(200), true);
+      assert.equal(state.latest_production_release.phase, 200);
+      assert.equal(state.latest_production_release.main_sha, "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516");
     }
     assert.equal(state.review_state, null);
   }

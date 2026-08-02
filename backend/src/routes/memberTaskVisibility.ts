@@ -211,8 +211,10 @@ export async function memberTaskVisibilityRoutes(app: FastifyInstance) {
           return { kind: "seat_limit" as const, memberCount, memberLimit };
         }
 
-        const user = await transaction.user.findUnique({ where: { id: input.userId }, select: { id: true } });
-        if (!user) return { kind: "not_found" as const };
+        const targetRows = await transaction.$queryRaw<Array<{ targetExists: boolean }>>`
+          SELECT entral.phase202_membership_target_exists(${input.userId},${organizationId}) AS "targetExists"
+        `;
+        if (targetRows[0]?.targetExists !== true) return { kind: "not_found" as const };
 
         const membership = await transaction.teamMember.create({
           data: { role: input.role, teamId: organizationId, userId: input.userId },

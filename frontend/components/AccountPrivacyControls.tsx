@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Download, ShieldCheck, Trash2 } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
 import { Button } from "./Button";
@@ -29,6 +29,7 @@ export function AccountPrivacyControls({ onDeleted }: AccountPrivacyControlsProp
   const [error, setError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const deidentificationKey = useRef<string | undefined>(undefined);
 
   async function handleExport() {
     setError("");
@@ -60,14 +61,16 @@ export function AccountPrivacyControls({ onDeleted }: AccountPrivacyControlsProp
     setIsDeleting(true);
 
     try {
+      deidentificationKey.current ??= crypto.randomUUID();
       await apiFetch("/account", {
         method: "DELETE",
+        headers: { "idempotency-key": deidentificationKey.current },
         json: {
           confirmation,
           password
         }
       });
-      setStatus("Account deleted.");
+      setStatus("Account deidentified. Tenant records and required evidence were retained.");
 
       if (onDeleted) {
         onDeleted();
@@ -75,7 +78,10 @@ export function AccountPrivacyControls({ onDeleted }: AccountPrivacyControlsProp
         window.location.assign("/dashboard");
       }
     } catch (deleteError) {
-      if (deleteError instanceof ApiError && deleteError.status === 401) {
+      if (deleteError instanceof ApiError && deleteError.status === 409
+        && (deleteError.details as { reason_code?: string } | null)?.reason_code === "LAST_ACTIVE_OWNER_REQUIRED") {
+        setError("Transfer ownership to another active owner before deidentifying this account.");
+      } else if (deleteError instanceof ApiError && deleteError.status === 401) {
         setError("Password confirmation failed.");
       } else {
         setError(deleteError instanceof Error ? deleteError.message : "Unable to delete account.");
@@ -93,7 +99,7 @@ export function AccountPrivacyControls({ onDeleted }: AccountPrivacyControlsProp
           <h3>Privacy export</h3>
           <ModeBadge mode="real">Real account data</ModeBadge>
         </div>
-        <p className="settings-helper">Download a JSON copy of saved account, command, chat, agent, automation, and merch workspace data. No external provider is contacted.</p>
+        <p className="settings-helper">Download a JSON copy of your account identity, security descriptors, current tenant membership, and tenant-scoped tasks. No secret material is included and no external provider is contacted.</p>
         <div className="settings-actions">
           <Button isLoading={isExporting} onClick={() => void handleExport()} type="button" variant="secondary">
             <Download aria-hidden="true" size={18} />
@@ -108,7 +114,7 @@ export function AccountPrivacyControls({ onDeleted }: AccountPrivacyControlsProp
           <h3>Delete account</h3>
           <ModeBadge mode="read-only">Password gated</ModeBadge>
         </div>
-        <p className="settings-helper">Deletes the real account and personal workspace data from ENTRAL. This does not contact external tools or publish anything.</p>
+        <p className="settings-helper">Revokes account access and deidentifies personal login fields. Tenant records, creator provenance, and required security evidence are retained.</p>
         <label>
           <span>Current password</span>
           <input

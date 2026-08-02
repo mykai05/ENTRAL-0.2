@@ -358,7 +358,8 @@ async function main() {
         automation_worker: true,
         agent_orchestrator: true,
         autonomy_scheduler: true,
-        canonical_outbox_dispatcher: true
+        canonical_outbox_dispatcher: true,
+        membership_notification_dispatcher: true
       },
       database: worker,
       heartbeatIntervalMs: 60_000,

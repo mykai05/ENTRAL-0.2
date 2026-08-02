@@ -1,6 +1,7 @@
 import type { AutomationJob } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
+import { env } from "../env.js";
 import { assertDurableAuthorization } from "./durableAuthorization.js";
 import { recordAuditLog } from "./audit.js";
 import type { GrowthApprovalAction, GrowthApprovalPacket } from "./growthPlans.js";
@@ -75,6 +76,7 @@ type ClientMerchStoreRecord = {
   audience: string;
   brandStyle: string;
   businessName: string;
+  businessId: string | null;
   clientName: string;
   email: string;
   estimatedProfit: { toString(): string };
@@ -85,6 +87,7 @@ type ClientMerchStoreRecord = {
   productTypes: string[];
   revenue: { toString(): string };
   storePlatform: keyof typeof storePlatformFromDb;
+  tenantId: string | null;
 };
 
 export type ShopifyStoreCreationHandoffJobReceipt = {
@@ -311,7 +314,17 @@ export async function runShopifyStoreCreationHandoffJob(
     throw new Error("Shopify store creation handoff store was not found.");
   }
 
-  const connections = await listShopifyConnections(job.userId, input.storeId);
+  if (!store.tenantId || !env.CANONICAL_OUTBOX_SERVICE_APP_USER_ID) {
+    throw new Error("Shopify store creation handoff worker requires a canonical tenant and configured service principal.");
+  }
+
+  const connections = await listShopifyConnections({
+    requestId: `shopify-store-creation-handoff:${job.id}`,
+    serviceAppUserId: env.CANONICAL_OUTBOX_SERVICE_APP_USER_ID,
+    storeId: input.storeId,
+    tenantId: store.tenantId,
+    userId: job.userId
+  });
   const plan = buildShopifyStoreProvisioningPlan({
     connections,
     countryCode: input.countryCode,

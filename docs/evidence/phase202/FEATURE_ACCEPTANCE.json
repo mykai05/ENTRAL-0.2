@@ -1,0 +1,177 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 202,
+  "status": "PRE_INTEGRATION_LOCAL_PASS",
+  "qualification": "Every package feature gate has passed the deterministic local acceptance suite. This receipt is not protected-main, production, migration-production, or certification evidence.",
+  "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
+  "prerequisite_release_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "rollback_release_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+  "gates": [
+    {
+      "gate_id": "P202-F001-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement organization, tenant, business, environment, and data-residency ownership boundaries with stable identifiers.",
+      "source": ["packages/contracts/src/identity-authority.ts", "prisma/schema.prisma", "prisma/migrations/20260802090000_phase_202_identity_tenancy_authority/migration.sql"],
+      "tests": ["packages/contracts/tests/identity-authority.test.mjs", "scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts"]
+    },
+    {
+      "gate_id": "P202-F002-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Represent Human, service, and agent actors separately and prevent identity-type confusion in authorization and audit records.",
+      "source": ["packages/contracts/src/identity-authority.ts", "backend/src/services/phase202IdentityAuthority.ts", "prisma/migrations/20260802090000_phase_202_identity_tenancy_authority/migration.sql"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202IdentityAuthority.test.ts", "backend/tests/phase202AuthorityEvaluation.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts"]
+    },
+    {
+      "gate_id": "P202-F003-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Add organization_id, tenant_id, business_id, actor_id, created_by, and owned_by to every customer-owned canonical record as applicable.",
+      "source": ["prisma/schema.prisma", "docs/PHASE_202_MODEL_SCOPE_LEDGER.json", "prisma/migrations/20260802090000_phase_202_identity_tenancy_authority/migration.sql"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "scripts/phase202-ownership-reconcile.test.mjs", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts"]
+    },
+    {
+      "gate_id": "P202-F004-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement role-based and attribute-based authorization using business scope, authority domain, data classification, environment, and action risk.",
+      "source": ["packages/contracts/src/identity-authority.ts", "backend/src/services/phase202IdentityAuthority.ts", "backend/src/services/phase202WorkerAuthority.ts"],
+      "tests": ["packages/contracts/tests/identity-authority.test.mjs", "scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202AuthorityEvaluation.test.ts", "backend/tests/phase202WorkerAuthority.test.ts"]
+    },
+    {
+      "gate_id": "P202-F005-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement versioned AutonomyEnvelope foundations for allowed action types, tool scope, data scope, budgets, reversibility, verification, expiration, and escalation.",
+      "source": ["packages/contracts/src/identity-authority.ts", "prisma/schema.prisma", "backend/src/services/phase202IdentityAuthority.ts"],
+      "tests": ["packages/contracts/tests/identity-authority.test.mjs", "scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202AuthorityEvaluation.test.ts"]
+    },
+    {
+      "gate_id": "P202-F006-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement server-side session records with token identifiers, device metadata, issued/last-used/revoked timestamps, and audit provenance.",
+      "source": ["packages/contracts/src/identity-authority.ts", "prisma/schema.prisma", "backend/src/services/phase202SessionBroker.ts", "backend/src/auth.ts"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202IdentityAuthority.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts", "frontend/tests/Phase202AccountSecurity.test.tsx"]
+    },
+    {
+      "gate_id": "P202-F007-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Use short-lived access credentials and rotating refresh credentials or an equivalent secure session architecture supported by the current stack.",
+      "source": ["backend/src/auth.ts", "backend/src/env.ts", "backend/src/services/phase202SessionBroker.ts", "prisma/schema.prisma"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/auth.test.ts", "backend/tests/authSessionVersion.test.ts", "backend/tests/phase202IdentityAuthority.test.ts"]
+    },
+    {
+      "gate_id": "P202-F008-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Provide session inventory, revoke one session, and revoke all sessions.",
+      "source": ["backend/src/services/phase202SessionBroker.ts", "backend/src/routes/phase202IdentityAuthority.ts", "frontend/components/AccountSecurityControls.tsx"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202IdentityAuthority.test.ts", "frontend/tests/Phase202AccountSecurity.test.tsx", "e2e/entral.e2e.mjs"]
+    },
+    {
+      "gate_id": "P202-F009-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement strong MFA and recovery foundations appropriate to the product stack, with audited step-up authentication for sensitive operations.",
+      "source": ["backend/src/services/phase202Mfa.ts", "backend/src/services/phase202SecretBroker.ts", "backend/src/routes/phase202IdentityAuthority.ts", "frontend/components/AccountSecurityControls.tsx"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202Mfa.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts", "frontend/tests/Phase202AccountSecurity.test.tsx", "e2e/entral.e2e.mjs"]
+    },
+    {
+      "gate_id": "P202-F010-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement invitation, membership, role-change, suspension, and removal workflows with idempotency and notification evidence.",
+      "source": ["backend/src/services/phase202Membership.ts", "backend/src/services/phase202NotificationDelivery.ts", "backend/src/routes/phase202IdentityAuthority.ts", "frontend/app/member/invitations/accept/page.tsx"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202Membership.test.ts", "backend/tests/phase202NotificationDelivery.test.ts", "frontend/tests/Phase202InvitationAcceptance.test.tsx", "e2e/entral.e2e.mjs"]
+    },
+    {
+      "gate_id": "P202-F011-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement a production secret broker interface; secret writes fail closed when encryption/key management is unavailable.",
+      "source": ["backend/src/services/phase202SecretBroker.ts", "backend/src/env.ts", "prisma/schema.prisma"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202SecretBroker.test.ts"]
+    },
+    {
+      "gate_id": "P202-F012-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Use envelope encryption, key versions, rotation, environment separation, and auditable secret access.",
+      "source": ["backend/src/services/phase202SecretBroker.ts", "prisma/schema.prisma", "prisma/migrations/20260802090000_phase_202_identity_tenancy_authority/migration.sql"],
+      "tests": ["packages/contracts/tests/identity-authority.test.mjs", "scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202SecretBroker.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts"]
+    },
+    {
+      "gate_id": "P202-F013-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Store provider credential references separately from ordinary integration configuration and never place raw secrets in model context, logs, traces, exports, or support views.",
+      "source": ["docs/PHASE_202_CREDENTIAL_REFERENCE_INVENTORY.json", "backend/src/services/phase202SecretBroker.ts", "backend/src/services/shopifyConnections.ts", "backend/src/services/shopifyOAuthContinuations.ts", "backend/src/services/secureJsonReconciliation.ts"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202CredentialReferenceReconciliation.test.ts", "backend/tests/phase202SecretBroker.test.ts", "backend/tests/shopifyConnections.test.ts"]
+    },
+    {
+      "gate_id": "P202-F014-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement a Support Access Broker that creates expiring, scope-limited, read-only-by-default, auditable access without password sharing.",
+      "source": ["backend/src/services/phase202SupportAccess.ts", "backend/src/services/phase202SupportOperations.ts", "backend/src/routes/phase202IdentityAuthority.ts", "frontend/components/AccountSecurityControls.tsx"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202IdentityAuthority.test.ts", "backend/tests/phase202SupportSessionRuntime.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts", "frontend/tests/Phase202AccountSecurity.test.tsx"]
+    },
+    {
+      "gate_id": "P202-F015-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Require explicit elevation, purpose, expiration, and customer/owner visibility for any write-capable support session.",
+      "source": ["backend/src/services/phase202SupportAccess.ts", "backend/src/services/phase202SupportOperations.ts", "backend/src/services/phase202Mfa.ts", "backend/src/routes/phase202IdentityAuthority.ts"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202SupportSessionRuntime.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts", "frontend/tests/Phase202AccountSecurity.test.tsx"]
+    },
+    {
+      "gate_id": "P202-F016-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Implement tenant-aware rate limits, audit context, and export/delete boundaries.",
+      "source": ["backend/src/services/phase202SupportAccess.ts", "backend/src/routes/phase202IdentityAuthority.ts", "backend/src/routes/account.ts", "backend/src/services/privacy.ts", "frontend/components/AccountPrivacyControls.tsx"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202AccountRoutes.test.ts", "backend/tests/privacy.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts", "frontend/tests/AccountPrivacyControls.test.tsx"]
+    },
+    {
+      "gate_id": "P202-F017-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Add database-level isolation controls or equivalent verified enforcement for critical tenant-owned tables.",
+      "source": ["prisma/migrations/20260802090000_phase_202_identity_tenancy_authority/migration.sql", "prisma/security/048_phase_202_roles_and_grants.sql", "backend/src/phase202RequestDatabaseContext.ts"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202RequestDatabaseContext.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts", "backend/tests/phase202TenantWorker.integration.test.ts"]
+    },
+    {
+      "gate_id": "P202-F018-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Migrate legacy user-scoped records with reconciliation counts, source mapping, duplicate handling, and rollback/repair plan.",
+      "source": ["scripts/phase202-ownership-reconcile.mjs", "docs/PHASE_202_OWNERSHIP_RECONCILIATION.md", "docs/PHASE_202_MODEL_SCOPE_LEDGER.json", "prisma/migrations/20260802090000_phase_202_identity_tenancy_authority/migration.sql"],
+      "tests": ["scripts/phase202-ownership-reconcile.test.mjs", "scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts"]
+    },
+    {
+      "gate_id": "P202-F019-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Create automated cross-tenant read/write tests for APIs, background jobs, events, search, exports, and model/tool context assembly.",
+      "source": ["docs/PHASE_202_TENANT_SURFACE_MATRIX.md", "backend/src/phase202RequestDatabaseContext.ts", "backend/src/services/phase202WorkerAuthority.ts", "backend/src/services/phase202ShopifyOAuthCallback.ts"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts", "backend/tests/phase202TenantWorker.integration.test.ts", "backend/tests/phase202WorkerAuthority.test.ts", "backend/tests/memberRoutes.test.ts", "backend/tests/shopifyOAuth.test.ts"]
+    },
+    {
+      "gate_id": "P202-F020-A",
+      "status": "LOCAL_PASS",
+      "requirement": "Block later customer-release phases when any critical record remains ambiguously owned or plaintext credentials are possible.",
+      "source": ["prisma/migrations/20260802090000_phase_202_identity_tenancy_authority/migration.sql", "scripts/phase202-ownership-reconcile.mjs", "backend/src/services/secureJsonReconciliation.ts", "docs/PHASE_202_CREDENTIAL_REFERENCE_INVENTORY.json"],
+      "tests": ["scripts/phase202-identity-gates.test.mjs", "scripts/phase202-ownership-reconcile.test.mjs", "backend/tests/phase202CredentialReferenceReconciliation.test.ts", "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts"]
+    }
+  ],
+  "local_database_replay": {
+    "status": "PASSED",
+    "database": "isolated disposable Phase 202 PostgreSQL database",
+    "applied_migrations": 44,
+    "failed_migrations": 0,
+    "rolled_back_migrations": 0,
+    "pending_migrations": 0,
+    "phase_202_migration_sha256": "b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf",
+    "phase_202_roles_sha256": "58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302"
+  },
+  "release_gates": {
+    "reconciled_with_current_origin_main": "PENDING_FINAL_RECONCILIATION",
+    "protected_main_checks_pass": "PENDING",
+    "exact_main_sha_deployed": "PENDING",
+    "production_migrations_and_roles_verified": "PENDING",
+    "production_ownership_apply_receipt": "PENDING",
+    "production_ownership_fresh_audit_receipt": "PENDING",
+    "production_credential_reference_apply_receipt": "PENDING",
+    "production_credential_reference_fresh_audit_receipt": "PENDING",
+    "authenticated_production_smoke_and_state_readback": "PENDING",
+    "authenticated_production_browser_acceptance": "PENDING",
+    "release_manifest_recorded": "PENDING",
+    "phase_certified": "PENDING"
+  },
+  "security_scan": "NOT_RUN_OWNER_PROHIBITED"
+}

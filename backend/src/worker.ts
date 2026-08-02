@@ -5,6 +5,8 @@ import { startAgentOrchestrator } from "./services/agentOrchestrator.js";
 import { startAutomationWorker } from "./services/automationQueue.js";
 import { startAutonomyScheduler } from "./services/autonomyScheduler.js";
 import { startCanonicalOutboxWorker } from "./services/canonicalOutboxWorker.js";
+import { startPhase202NotificationDeliveryWorker } from "./services/phase202NotificationDelivery.js";
+import { assertPhase202WorkerAuthority } from "./services/phase202WorkerAuthority.js";
 import {
   assertWorkerReadinessConfiguration,
   startWorkerReadinessHeartbeat,
@@ -22,7 +24,8 @@ const enabledWorkerComponents = {
   automation_worker: env.AUTOMATION_WORKER_ENABLED,
   agent_orchestrator: env.AGENT_ORCHESTRATOR_ENABLED,
   autonomy_scheduler: env.AUTONOMY_SCHEDULER_ENABLED,
-  canonical_outbox_dispatcher: env.CANONICAL_OUTBOX_DISPATCHER_ENABLED
+  canonical_outbox_dispatcher: env.CANONICAL_OUTBOX_DISPATCHER_ENABLED,
+  membership_notification_dispatcher: env.CANONICAL_OUTBOX_DISPATCHER_ENABLED
 } satisfies WorkerReadinessComponents;
 assertWorkerReadinessConfiguration({
   components: enabledWorkerComponents,
@@ -35,7 +38,8 @@ const workerReadinessComponents: WorkerReadinessComponents = {
   automation_worker: false,
   agent_orchestrator: false,
   autonomy_scheduler: false,
-  canonical_outbox_dispatcher: false
+  canonical_outbox_dispatcher: false,
+  membership_notification_dispatcher: false
 };
 type ComponentStop = {
   name: string;
@@ -72,10 +76,20 @@ async function stopStartedComponents() {
 
 let stopWorkerReadinessHeartbeat: () => Promise<void> = async () => undefined;
 try {
+  await assertPhase202WorkerAuthority({
+    database: prisma,
+    serviceAppUserId: env.CANONICAL_OUTBOX_SERVICE_APP_USER_ID
+  });
   componentStops.push({
     name: "the canonical outbox dispatcher",
     stop: await startCanonicalOutboxWorker({
       onHealthChange: reportComponentHealth("canonical_outbox_dispatcher")
+    })
+  });
+  componentStops.push({
+    name: "the membership notification dispatcher",
+    stop: await startPhase202NotificationDeliveryWorker({
+      onHealthChange: reportComponentHealth("membership_notification_dispatcher")
     })
   });
   componentStops.push({

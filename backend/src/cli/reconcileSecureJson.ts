@@ -14,14 +14,23 @@ async function main() {
     throw new Error("Secure JSON apply mode is restricted to an explicit production reconciliation run.");
   }
 
-  const receipt = await reconcileSecureJson(prisma, mode);
+  const repairPlanReference = process.env.ENTRAL_SECURE_JSON_REPAIR_PLAN_REFERENCE?.trim();
+  const rollbackReference = process.env.ENTRAL_SECURE_JSON_ROLLBACK_REFERENCE?.trim();
+  if (!repairPlanReference || !rollbackReference) {
+    throw new Error("Repository-bound reconciliation and rollback evidence references are required.");
+  }
+  const receipt = await reconcileSecureJson(prisma, mode, {
+    priorApplyReceiptHash: process.env.ENTRAL_SECURE_JSON_PRIOR_APPLY_RECEIPT_SHA256?.trim() || null,
+    repairPlanReference,
+    rollbackReference
+  });
   const outputArgument = process.argv.find((value) => value.startsWith("--output="));
   if (outputArgument) {
     const output = path.resolve(outputArgument.slice("--output=".length));
     await writeFile(output, `${JSON.stringify(receipt, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   }
   process.stdout.write(`${JSON.stringify(receipt)}\n`);
-  if (receipt.status === "BLOCKED" || receipt.status === "REQUIRES_REENCRYPTION") process.exitCode = 2;
+  if (receipt.status === "BLOCKED") process.exitCode = 2;
 }
 
 try {

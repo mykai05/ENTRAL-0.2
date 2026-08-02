@@ -329,7 +329,7 @@ export async function heartbeatTask(repositoryRoot, auth, {
     eventType: "TASK_LEASE_HEARTBEAT",
     subjectId: leaseId,
     now,
-    transform(state) {
+    async transform(state) {
       const lease = state.active_write_lease;
       if (!lease || lease.lease_id !== leaseId || lease.owner !== auth.sessionId) throw new GovernorError("LEASE_NOT_OWNED", "Session does not own the active write lease");
       const current = new Date(now);
@@ -348,15 +348,21 @@ export async function heartbeatTask(repositoryRoot, auth, {
           result: { status: "STOPPED", reason: "MAXIMUM_WALL_TIME" }
         };
       }
+      const task = await loadTask(repositoryRoot, lease.task_packet_id);
       const requestedExpiry = current.getTime() + leaseSeconds * 1_000;
       const updated = {
         ...lease,
+        scope: task.scope,
         heartbeat_at: current.toISOString(),
         expires_at: new Date(Math.min(requestedExpiry, Date.parse(state.task_deadline_at))).toISOString()
       };
       return {
         state: { ...state, active_write_lease: updated },
-        payload: { lease_id: leaseId, expires_at: updated.expires_at },
+        payload: {
+          lease_id: leaseId,
+          expires_at: updated.expires_at,
+          scope_refreshed: canonicalJson(lease.scope) !== canonicalJson(updated.scope)
+        },
         result: updated
       };
     }

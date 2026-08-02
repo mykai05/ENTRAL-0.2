@@ -14,6 +14,7 @@ import {
   ChevronUp,
   LogOut,
   RefreshCw,
+  ShieldCheck,
   Settings
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -418,6 +419,7 @@ export function CanonicalMemberShell({
         <Phase200InteractionNavigation current={interactionDestination} role={selectedOrganization?.role ?? "MEMBER"} />
         <div className="phase180-account-actions">
           <button onClick={() => window.dispatchEvent(new Event("entral:open-academy"))} type="button"><BookOpen size={17} /> Academy</button>
+          <button onClick={() => router.push("/member/account/security")} type="button"><ShieldCheck size={17} /> Account security</button>
           <button onClick={() => window.dispatchEvent(new Event("entral:open-settings"))} type="button"><Settings size={17} /> Settings</button>
           <button onClick={() => void handleLogout()} type="button"><LogOut size={17} /> Sign out</button>
         </div>

@@ -32,7 +32,13 @@ describe("auth route member return paths", () => {
         user: {
           findUnique: vi.fn()
         }
-      }
+      },
+      withPreAuthEmailSession: vi.fn(async (database, context, operation) => operation(database, {
+        email: context.email,
+        userId: user.id
+      })),
+      withPersonalSession: vi.fn(),
+      withTenantSession: vi.fn()
     }));
     vi.doMock("../src/auth.js", () => ({
       clearAuthCookie: vi.fn(),
@@ -141,15 +147,44 @@ describe("auth route member return paths", () => {
         compare: vi.fn(async () => true)
       }
     }));
+    const tenantId = "523e4567-e89b-42d3-a456-426614174000";
+    const organizationId = "423e4567-e89b-42d3-a456-426614174000";
+    const membership = { organizationId, role: "OWNER", teamId: "team_123", tenantId };
+    const transaction = {
+      team: {
+        findUnique: vi.fn(async () => ({
+          id: membership.teamId,
+          memberAccessEnabled: true,
+          name: "Ada's Team",
+          organizationId,
+          slug: "ada-team",
+          tenantId
+        }))
+      },
+      teamMember: { findMany: vi.fn(async () => [membership]) }
+    };
     vi.doMock("../src/db.js", () => ({
       prisma: {
-        teamMember: {
-          count: vi.fn(async () => 1)
-        },
         user: {
           findUnique: vi.fn(async () => user)
         }
-      }
+      },
+      withPreAuthEmailSession: vi.fn(async (database, context, operation) => operation(database, {
+        email: context.email,
+        userId: user.id
+      })),
+      withPersonalSession: vi.fn(async (_database, _context, operation) => operation(transaction, {
+        actorId: "323e4567-e89b-42d3-a456-426614174000",
+        appUserId: user.id,
+        authSubject: user.id
+      })),
+      withTenantSession: vi.fn(async (_database, context, operation) => operation(transaction, {
+        actorId: "323e4567-e89b-42d3-a456-426614174000",
+        appUserId: user.id,
+        organizationId,
+        role: "OWNER",
+        tenantId: context.tenantId
+      }))
     }));
     vi.doMock("../src/auth.js", () => ({
       clearAuthCookie: vi.fn(),

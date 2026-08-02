@@ -647,6 +647,7 @@ test("Phase 195 release and worker evidence contracts fail closed", () => {
       automation_worker: false,
       autonomy_scheduler: false,
       canonical_outbox_dispatcher: false,
+      membership_notification_dispatcher: false,
       process: false
     },
     contract_version: "1.0.0",
@@ -664,6 +665,7 @@ test("Phase 195 release and worker evidence contracts fail closed", () => {
       automation_worker: false,
       autonomy_scheduler: false,
       canonical_outbox_dispatcher: false,
+      membership_notification_dispatcher: false,
       process: false
     },
     contract_version: "1.0.0",
@@ -1398,11 +1400,13 @@ test("event and audit consumers reject malformed canonical records", () => {
   assert.throws(() => assertAuditEntry({ ...audit, result: "PENDING" }), ContractError);
 });
 
-test("OpenAPI exposes only implemented member, graph, and Phase 200 interaction paths", async () => {
+test("OpenAPI exposes only implemented canonical, member, interaction, and Phase 202 identity paths", async () => {
   const openapi = await readFile(new URL("../openapi.yaml", import.meta.url), "utf8");
   const document = parseYaml(openapi);
   assert.equal(document.openapi, "3.1.0");
   assert.deepEqual(Object.keys(document.paths).sort(), [
+    "/api/v1/account",
+    "/api/v1/account/export",
     "/api/v1/control-plane/businesses",
     "/api/v1/control-plane/businesses/{businessId}",
     "/api/v1/control-plane/businesses/{businessId}/full",
@@ -1413,6 +1417,24 @@ test("OpenAPI exposes only implemented member, graph, and Phase 200 interaction 
     "/api/v1/control-plane/hierarchy",
     "/api/v1/control-plane/portfolio/summary",
     "/api/v1/control-plane/releases/phases/{phase}/evidence",
+    "/api/v1/identity/memberships",
+    "/api/v1/identity/memberships/invitations",
+    "/api/v1/identity/memberships/invitations/accept",
+    "/api/v1/identity/memberships/{subjectUserId}",
+    "/api/v1/identity/mfa/factors",
+    "/api/v1/identity/mfa/recovery/regenerate",
+    "/api/v1/identity/mfa/step-up",
+    "/api/v1/identity/mfa/totp/confirm",
+    "/api/v1/identity/mfa/totp/enroll",
+    "/api/v1/identity/mfa/{factorId}",
+    "/api/v1/identity/sessions",
+    "/api/v1/identity/sessions/{sessionId}",
+    "/api/v1/identity/support-access",
+    "/api/v1/identity/support-access/{grantId}",
+    "/api/v1/identity/support-access/{grantId}/elevate",
+    "/api/v1/identity/support-session",
+    "/api/v1/identity/support-session/tasks",
+    "/api/v1/identity/support-session/tasks/{taskId}",
     "/api/v1/member/organizations",
     "/api/v1/member/organizations/{organizationId}/businesses/{businessId}/full",
     "/api/v1/member/organizations/{organizationId}/entities/{entityId}/actions/{operation}",
@@ -1432,6 +1454,9 @@ test("OpenAPI exposes only implemented member, graph, and Phase 200 interaction 
     "/api/v1/member/organizations/{organizationId}/portfolio/summary"
   ]);
   assert.equal(document.components.schemas.CanonicalEntitySummary.additionalProperties, false);
+  assert.equal(document.components.schemas.Phase202AccountExport.additionalProperties, false);
+  assert.equal(document.components.schemas.Phase202AccountDeidentificationRequest.additionalProperties, false);
+  assert.equal(document.components.schemas.Phase202AccountDeidentificationResult.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalHierarchyResponse.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalEntityFullRecord.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalBusinessSummary.additionalProperties, false);
@@ -1457,6 +1482,68 @@ test("OpenAPI exposes only implemented member, graph, and Phase 200 interaction 
   assert.equal(document.components.schemas.TutorialProgress.additionalProperties, false);
   assert.equal(document.components.schemas.TutorialProgressMutationResponse.additionalProperties, false);
   assert.equal(document.components.schemas.InteractionAnalyticsEventRequest.additionalProperties, false);
+  for (const phase202Schema of [
+    "DependencyUnavailableResult",
+    "Phase202SessionInventory",
+    "Phase202SessionTransitionReceipt",
+    "Phase202SecretReferenceDescriptor",
+    "Phase202SecretTransitionReceipt",
+    "Phase202MfaFactorInventory",
+    "Phase202TotpEnrollment",
+    "Phase202MembershipInventory",
+    "Phase202MembershipInvitationRequest",
+    "Phase202MembershipAcceptanceRequest",
+    "Phase202MembershipTransitionRequest",
+    "Phase202MembershipTransitionReceipt",
+    "Phase202SupportGrantRequest",
+    "Phase202SupportElevationRequest",
+    "Phase202SupportGrant",
+    "Phase202SupportSessionReadback",
+    "Phase202SupportTaskInventory",
+    "Phase202SupportTaskMutationRequest",
+    "Phase202SupportTaskMutationResult",
+    "Phase202RateLimitReceipt"
+  ]) {
+    assert.equal(document.components.schemas[phase202Schema].additionalProperties, false);
+  }
+  const sessionSchema = document.components.schemas.Phase202Session;
+  assert.deepEqual(sessionSchema.properties.session_type.enum, ["INTERNAL", "MEMBER", "SUPPORT"]);
+  assert.ok(sessionSchema.required.includes("support_grant_id"));
+  assert.deepEqual(sessionSchema.properties.support_grant_id.type, ["string", "null"]);
+  assert.equal(sessionSchema.properties.device_label.type, "string");
+  const sessionScopeTypes = Object.fromEntries(sessionSchema.allOf.map((rule) => [
+    rule.if.properties.session_type.const,
+    {
+      organization: rule.then.properties.organization_id.type,
+      supportGrant: rule.then.properties.support_grant_id.type,
+      tenant: rule.then.properties.tenant_id.type
+    }
+  ]));
+  assert.deepEqual(sessionScopeTypes, {
+    INTERNAL: { organization: "null", supportGrant: "null", tenant: "null" },
+    MEMBER: { organization: "string", supportGrant: "null", tenant: "string" },
+    SUPPORT: { organization: "string", supportGrant: "string", tenant: "string" }
+  });
+
+  for (const sessionPath of ["/api/v1/identity/sessions", "/api/v1/identity/sessions/{sessionId}"]) {
+    const operation = document.paths[sessionPath].delete;
+    assert.ok(
+      operation.parameters.some((parameter) => parameter.$ref === "#/components/parameters/IdempotencyKey"),
+      `${sessionPath} DELETE must require Idempotency-Key`
+    );
+    assert.equal(
+      operation.responses["200"].content["application/json"].schema.$ref,
+      "#/components/schemas/Phase202SessionTransitionReceipt"
+    );
+  }
+
+  const secretDescriptor = document.components.schemas.Phase202SecretReferenceDescriptor;
+  for (const descriptorField of ["business_id", "revoked_at", "updated_at"]) {
+    assert.ok(secretDescriptor.required.includes(descriptorField), `${descriptorField} must be part of the complete secret descriptor`);
+  }
+  assert.equal(secretDescriptor["x-entral-internal"], true);
+  assert.equal(document.components.schemas.Phase202SecretTransitionReceipt["x-entral-internal"], true);
+  assert.equal(Object.keys(document.paths).some((path) => path.includes("secret")), false, "secret broker must remain internal-only");
   assert.equal(document.components.schemas.PhaseReleaseEvidenceReadback.additionalProperties, false);
   const phaseGateSchema = document.components.schemas.PhaseGateRecord.allOf[1];
   for (const ciIdentityField of [

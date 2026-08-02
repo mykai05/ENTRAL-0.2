@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../db.js";
+import type { Prisma } from "@prisma/client";
+import { prisma, withPreAuthEmailSession, withRecoveryTokenSession } from "../db.js";
 import { createAuthToken, dateHoursFromNow, hashAuthToken, hashForAudit, hasTokenExpired } from "./authTokens.js";
 import { recordAuditLog } from "./audit.js";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./authEmails.js";
@@ -34,6 +35,17 @@ function emailAuditMetadata(email: string) {
   };
 }
 
+async function bindRecoveryUserMutation(transaction: Prisma.TransactionClient, userId: string) {
+  await transaction.$executeRaw`SELECT entral.bind_authenticated_app_user(${userId})`;
+  await transaction.$executeRaw`
+    SELECT set_config(
+      'app.phase202_actor_id',
+      entral.phase202_resolve_human_actor(${userId})::text,
+      true
+    )
+  `;
+}
+
 export async function issueEmailVerification(user: AuthUserRecord, context: EmailVerificationRouteContext = {}) {
   if (user.emailVerifiedAt) {
     return { alreadyVerified: true };
@@ -42,21 +54,24 @@ export async function issueEmailVerification(user: AuthUserRecord, context: Emai
   const now = new Date();
   const { token, tokenHash } = createAuthToken();
 
-  await prisma.emailVerificationToken.updateMany({
-    data: { consumedAt: now },
-    where: {
-      consumedAt: null,
-      userId: user.id
-    }
-  });
-
-  await prisma.emailVerificationToken.create({
-    data: {
-      expiresAt: dateHoursFromNow(emailVerificationExpiryHours),
-      flow: authFlow(context),
-      tokenHash,
-      userId: user.id
-    }
+  await withPreAuthEmailSession(prisma, {
+    actionReason: "auth.email-verification.issue",
+    email: user.email,
+    requestId: context.requestId
+  }, async (transaction, identity) => {
+    if (identity.userId !== user.id) throw new Error("AUTH_EMAIL_SUBJECT_MISMATCH");
+    await transaction.emailVerificationToken.updateMany({
+      data: { consumedAt: now },
+      where: { consumedAt: null, userId: user.id }
+    });
+    await transaction.emailVerificationToken.create({
+      data: {
+        expiresAt: dateHoursFromNow(emailVerificationExpiryHours),
+        flow: authFlow(context),
+        tokenHash,
+        userId: user.id
+      }
+    });
   });
 
   try {
@@ -102,11 +117,13 @@ export async function issueEmailVerification(user: AuthUserRecord, context: Emai
 }
 
 export async function requestEmailVerification(email: string, context: EmailVerificationRouteContext = {}) {
-  const user = await prisma.user.findUnique({
-    where: { email }
-  });
+  const user = await withPreAuthEmailSession(prisma, {
+    actionReason: "auth.email-verification.request",
+    email,
+    requestId: context.requestId
+  }, (transaction) => transaction.user.findUnique({ where: { email } }));
 
-  if (!user || (authFlow(context) === "internal" && user.internalAccess !== true)) {
+  if (!user || user.deletedAt || (authFlow(context) === "internal" && user.internalAccess !== true)) {
     await recordAuditLog({
       action: "auth.email_verification.requested",
       metadata: emailAuditMetadata(email),
@@ -123,12 +140,18 @@ export async function requestEmailVerification(email: string, context: EmailVeri
 
 export async function confirmEmailVerification(token: string, context: AuthRouteContext = {}) {
   const tokenHash = hashAuthToken(token);
-  const verificationToken = await prisma.emailVerificationToken.findUnique({
+  const verificationToken = await withRecoveryTokenSession(prisma, {
+    actionReason: "auth.email-verification.lookup",
+    requestId: context.requestId,
+    tokenHash,
+    tokenKind: "EMAIL_VERIFICATION"
+  }, (transaction) => transaction.emailVerificationToken.findUnique({
     include: { user: true },
     where: { tokenHash }
-  });
+  }));
 
-  if (!verificationToken || verificationToken.consumedAt || hasTokenExpired(verificationToken.expiresAt)) {
+  if (!verificationToken || verificationToken.user.deletedAt
+    || verificationToken.consumedAt || hasTokenExpired(verificationToken.expiresAt)) {
     await recordAuditLog({
       action: "auth.email_verification.confirm_failed",
       metadata: { tokenHash: hashForAudit(tokenHash) },
@@ -143,11 +166,24 @@ export async function confirmEmailVerification(token: string, context: AuthRoute
 
   const now = new Date();
 
-  const user = await prisma.$transaction(async (tx) => {
-    await tx.emailVerificationToken.update({
+  const user = await withRecoveryTokenSession(prisma, {
+    actionReason: "auth.email-verification.confirm",
+    requestId: context.requestId,
+    tokenHash,
+    tokenKind: "EMAIL_VERIFICATION"
+  }, async (tx) => {
+    const claim = await tx.emailVerificationToken.updateMany({
       data: { consumedAt: now },
-      where: { id: verificationToken.id }
+      where: {
+        consumedAt: null,
+        expiresAt: { gt: now },
+        id: verificationToken.id,
+        tokenHash
+      }
     });
+    if (claim.count !== 1) return null;
+
+    await bindRecoveryUserMutation(tx, verificationToken.userId);
 
     return tx.user.update({
       data: {
@@ -156,6 +192,18 @@ export async function confirmEmailVerification(token: string, context: AuthRoute
       where: { id: verificationToken.userId }
     });
   });
+
+  if (!user) {
+    await recordAuditLog({
+      action: "auth.email_verification.confirm_failed",
+      metadata: { tokenHash: hashForAudit(tokenHash) },
+      outcome: "failure",
+      requestId: context.requestId,
+      severity: "medium",
+      targetType: "EmailVerificationToken"
+    });
+    return { ok: false as const, reason: "invalid" as const };
+  }
 
   await recordAuditLog({
     action: "auth.email_verification.confirmed",
@@ -174,11 +222,13 @@ export async function confirmEmailVerification(token: string, context: AuthRoute
 }
 
 export async function requestPasswordReset(email: string, context: AuthRouteContext = {}) {
-  const user = await prisma.user.findUnique({
-    where: { email }
-  });
+  const user = await withPreAuthEmailSession(prisma, {
+    actionReason: "auth.password-reset.request",
+    email,
+    requestId: context.requestId
+  }, (transaction) => transaction.user.findUnique({ where: { email } }));
 
-  if (!user || (authFlow(context) === "internal" && user.internalAccess !== true)) {
+  if (!user || user.deletedAt || (authFlow(context) === "internal" && user.internalAccess !== true)) {
     await recordAuditLog({
       action: "auth.password_reset.requested",
       metadata: emailAuditMetadata(email),
@@ -192,21 +242,24 @@ export async function requestPasswordReset(email: string, context: AuthRouteCont
   const now = new Date();
   const { token, tokenHash } = createAuthToken();
 
-  await prisma.passwordResetToken.updateMany({
-    data: { consumedAt: now },
-    where: {
-      consumedAt: null,
-      userId: user.id
-    }
-  });
-
-  await prisma.passwordResetToken.create({
-    data: {
-      expiresAt: dateHoursFromNow(passwordResetExpiryHours),
-      flow: authFlow(context),
-      tokenHash,
-      userId: user.id
-    }
+  await withPreAuthEmailSession(prisma, {
+    actionReason: "auth.password-reset.issue",
+    email: user.email,
+    requestId: context.requestId
+  }, async (transaction, identity) => {
+    if (identity.userId !== user.id) throw new Error("AUTH_EMAIL_SUBJECT_MISMATCH");
+    await transaction.passwordResetToken.updateMany({
+      data: { consumedAt: now },
+      where: { consumedAt: null, userId: user.id }
+    });
+    await transaction.passwordResetToken.create({
+      data: {
+        expiresAt: dateHoursFromNow(passwordResetExpiryHours),
+        flow: authFlow(context),
+        tokenHash,
+        userId: user.id
+      }
+    });
   });
 
   try {
@@ -252,12 +305,18 @@ export async function requestPasswordReset(email: string, context: AuthRouteCont
 
 export async function confirmPasswordReset(token: string, password: string, context: AuthRouteContext = {}) {
   const tokenHash = hashAuthToken(token);
-  const passwordResetToken = await prisma.passwordResetToken.findUnique({
+  const passwordResetToken = await withRecoveryTokenSession(prisma, {
+    actionReason: "auth.password-reset.lookup",
+    requestId: context.requestId,
+    tokenHash,
+    tokenKind: "PASSWORD_RESET"
+  }, (transaction) => transaction.passwordResetToken.findUnique({
     include: { user: true },
     where: { tokenHash }
-  });
+  }));
 
-  if (!passwordResetToken || passwordResetToken.consumedAt || hasTokenExpired(passwordResetToken.expiresAt)) {
+  if (!passwordResetToken || passwordResetToken.user.deletedAt
+    || passwordResetToken.consumedAt || hasTokenExpired(passwordResetToken.expiresAt)) {
     await recordAuditLog({
       action: "auth.password_reset.confirm_failed",
       metadata: { tokenHash: hashForAudit(tokenHash) },
@@ -273,7 +332,12 @@ export async function confirmPasswordReset(token: string, password: string, cont
   const now = new Date();
   const passwordHash = await bcrypt.hash(password, 12);
 
-  const user = await prisma.$transaction(async (tx) => {
+  const user = await withRecoveryTokenSession(prisma, {
+    actionReason: "auth.password-reset.confirm",
+    requestId: context.requestId,
+    tokenHash,
+    tokenKind: "PASSWORD_RESET"
+  }, async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${passwordResetToken.userId}, 0))`;
 
     const claim = await tx.passwordResetToken.updateMany({
@@ -290,6 +354,8 @@ export async function confirmPasswordReset(token: string, password: string, cont
       return null;
     }
 
+    await bindRecoveryUserMutation(tx, passwordResetToken.userId);
+
     // A successful claim invalidates every sibling reset link for this user.
     // The per-user transaction lock prevents two different valid links from
     // resetting the account concurrently.
@@ -300,6 +366,12 @@ export async function confirmPasswordReset(token: string, password: string, cont
         userId: passwordResetToken.userId
       }
     });
+
+    await tx.$queryRaw<Array<{ revokedCount: number }>>`
+      SELECT entral.phase202_revoke_password_reset_sessions(
+        ${passwordResetToken.id},${passwordResetToken.userId},${tokenHash}
+      ) AS "revokedCount"
+    `;
 
     return tx.user.update({
       data: {

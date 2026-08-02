@@ -97,6 +97,11 @@ async function buildTestServer() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.queryRaw.mockImplementation(async (query: unknown) => (
+    Array.isArray(query) && query.join(" ").includes("phase202_membership_target_exists")
+      ? [{ targetExists: true }]
+      : []
+  ));
   process.env.NODE_ENV = "test";
   process.env.DATABASE_URL = "file:./test.db";
   process.env.JWT_SECRET = "test-secret-that-is-long-enough-for-jwt";
@@ -194,7 +199,6 @@ describe("Entral Base seat provisioning", () => {
     mocks.teamFindUnique.mockResolvedValueOnce({ id: teamId, memberAccessEnabled: true, memberSeatLimit: 5 });
     mocks.teamMemberFindUnique.mockResolvedValueOnce(null);
     mocks.teamMemberCount.mockResolvedValueOnce(4);
-    mocks.userFindUnique.mockResolvedValueOnce({ id: memberUserId });
     mocks.teamMemberCreate.mockResolvedValueOnce({ joinedAt, role: "MEMBER", teamId, userId: memberUserId });
     const app = await buildTestServer();
     const response = await app.inject({
@@ -239,7 +243,11 @@ describe("Entral Base seat provisioning", () => {
   it("rolls back seat provisioning if its audit record cannot be stored", async () => {
     let membershipExists = false;
     const transactionClient = {
-      $queryRaw: vi.fn(async () => []),
+      $queryRaw: vi.fn(async (query: unknown) => (
+        Array.isArray(query) && query.join(" ").includes("phase202_membership_target_exists")
+          ? [{ targetExists: true }]
+          : []
+      )),
       team: {
         findUnique: vi.fn(async () => ({ id: teamId, memberAccessEnabled: true, memberSeatLimit: 5 })),
         update: vi.fn(async () => ({ id: teamId, memberAccessEnabled: true, memberSeatLimit: 5 }))
@@ -251,8 +259,7 @@ describe("Entral Base seat provisioning", () => {
           return { joinedAt: new Date(), role: "MEMBER", teamId, userId: memberUserId };
         }),
         findUnique: vi.fn(async () => null)
-      },
-      user: { findUnique: vi.fn(async () => ({ id: memberUserId })) }
+      }
     };
     mocks.transaction.mockImplementationOnce(async (callback: (transaction: typeof transactionClient) => Promise<unknown>) => {
       const before = membershipExists;

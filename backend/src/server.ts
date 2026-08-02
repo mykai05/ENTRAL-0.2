@@ -24,6 +24,7 @@ import { controlPlaneRoutes } from "./routes/controlPlane.js";
 import { graphPreferenceRoutes } from "./routes/graphPreferences.js";
 import { interactionLayerRoutes } from "./routes/interactionLayer.js";
 import { releaseEvidenceRoutes } from "./routes/releaseEvidence.js";
+import { phase202IdentityAuthorityRoutes } from "./routes/phase202IdentityAuthority.js";
 import { env } from "./env.js";
 import { enforceSessionBoundary, requireTrustedOrigin } from "./auth.js";
 import type { AiService } from "./services/openaiService.js";
@@ -39,6 +40,7 @@ import {
   resolveProcessRole,
   shouldStartEmbeddedWorkers
 } from "./processRole.js";
+import { installPhase202TenantRequestContext } from "./phase202RequestDatabaseContext.js";
 
 type BuildServerOptions = {
   aiService?: AiService;
@@ -136,17 +138,21 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(graphPreferenceRoutes, { prefix: "/api/v1" });
   await app.register(interactionLayerRoutes, { prefix: "/api/v1" });
   await app.register(releaseEvidenceRoutes, { prefix: "/api/v1" });
+  await app.register(phase202IdentityAuthorityRoutes, { prefix: "/api/v1" });
   await app.register(accountRoutes, { prefix: "/api/v1" });
-  await app.register(dashboardRoutes, { prefix: "/api/v1" });
-  await app.register(taskRoutes, { prefix: "/api/v1" });
-  await app.register(aiRoutes, { prefix: "/api/v1", aiService: options.aiService });
-  await app.register(automationRoutes, { prefix: "/api/v1" });
-  await app.register(commandOSRoutes, { prefix: "/api/v1" });
-  await app.register(connectionRoutes, { prefix: "/api/v1" });
-  await app.register(agentRoutes, { prefix: "/api/v1" });
-  await app.register(revenueEngineRoutes, { prefix: "/api/v1" });
-  await app.register(merchStoreRoutes, { prefix: "/api/v1" });
-  await app.register(podProductRoutes, { prefix: "/api/v1" });
+  await app.register(async (tenantScopedApp) => {
+    installPhase202TenantRequestContext(tenantScopedApp);
+    await tenantScopedApp.register(dashboardRoutes, { prefix: "/api/v1" });
+    await tenantScopedApp.register(taskRoutes, { prefix: "/api/v1" });
+    await tenantScopedApp.register(aiRoutes, { prefix: "/api/v1", aiService: options.aiService });
+    await tenantScopedApp.register(automationRoutes, { prefix: "/api/v1" });
+    await tenantScopedApp.register(commandOSRoutes, { prefix: "/api/v1" });
+    await tenantScopedApp.register(connectionRoutes, { prefix: "/api/v1" });
+    await tenantScopedApp.register(agentRoutes, { prefix: "/api/v1" });
+    await tenantScopedApp.register(revenueEngineRoutes, { prefix: "/api/v1" });
+    await tenantScopedApp.register(merchStoreRoutes, { prefix: "/api/v1" });
+    await tenantScopedApp.register(podProductRoutes, { prefix: "/api/v1" });
+  });
   await app.register(adminRoutes, { prefix: "/api/v1" });
 
   if (shouldStartEmbeddedWorkers(processRole)) {

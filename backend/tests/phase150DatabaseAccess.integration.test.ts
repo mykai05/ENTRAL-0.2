@@ -680,20 +680,19 @@ describe.skipIf(!integrationEnabled)("Phase 150 PostgreSQL identity, integrity, 
         ["migrate", "deploy", "--schema", "prisma/schema.prisma"],
         "Disposable PostgreSQL migration"
       );
-      runPrisma(
-        prismaCli,
-        repositoryRoot,
-        databaseUrl.toString(),
-        [
-          "db",
-          "execute",
-          "--file",
-          "prisma/security/046_roles_and_grants.sql",
-          "--schema",
-          "prisma/schema.prisma"
-        ],
-        "Phase 150 role and grant deployment"
-      );
+      for (const securityFile of [
+        "prisma/security/046_roles_and_grants.sql",
+        "prisma/security/047_phase_195_roles_and_grants.sql",
+        "prisma/security/048_phase_202_roles_and_grants.sql"
+      ]) {
+        runPrisma(
+          prismaCli,
+          repositoryRoot,
+          databaseUrl.toString(),
+          ["db", "execute", "--file", securityFile, "--schema", "prisma/schema.prisma"],
+          `Phase 150 current role and grant deployment (${securityFile})`
+        );
+      }
 
       for (const role of roles) {
         await admin.$executeRawUnsafe(
@@ -828,7 +827,10 @@ describe.skipIf(!integrationEnabled)("Phase 150 PostgreSQL identity, integrity, 
       }
       await expect(api.$queryRaw`
         SELECT id FROM public."User" WHERE id = ${seed.apiSubject}
-      `).resolves.toHaveLength(1);
+      `).resolves.toHaveLength(0);
+      await expect(withApiContext(api, seed.apiSubject, (tx) => tx.$queryRaw`
+        SELECT id FROM public."User" WHERE id = ${seed.apiSubject}
+      `)).resolves.toHaveLength(1);
       await expect(worker.$queryRaw`
         SELECT id FROM public."User" WHERE id = ${seed.apiSubject}
       `).rejects.toThrow();
