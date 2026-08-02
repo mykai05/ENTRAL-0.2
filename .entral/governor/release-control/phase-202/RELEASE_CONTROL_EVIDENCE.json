@@ -1,0 +1,127 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "evidence_id": "P202-PRODUCTION-EVIDENCE-001",
+  "phase": 202,
+  "plan_sha256": "53dab0413d064698f1dedf088cd92899cfbdbae70321fec3dda6d0110b2ac803",
+  "stage": "PRODUCTION",
+  "repositories": [
+    {"role":"PRODUCT","origin_main_sha":"c689176234bca8a43f6bb5665f6a8a63d8d653dd","observed_contract_version":"release-control-v1","compatible":true},
+    {"role":"CONTROL_WEBSITE","origin_main_sha":"8f1923fcec20a11dc0aef304c0e05827fe2cb5c5","observed_contract_version":"release-control-v1","compatible":true}
+  ],
+  "task": {
+    "commit_sha": "013a10da24b414731cab37c301fdf74dfbabcc46",
+    "coherent_commit": true,
+    "worktree_clean": true
+  },
+  "targeted_tests": [
+    {"name":"pnpm --filter @entral/backend test","status":"PASSED"},
+    {"name":"pnpm --filter @entral/frontend test","status":"PASSED"},
+    {"name":"pnpm contracts:verify","status":"PASSED"},
+    {"name":"pnpm prisma:generate","status":"PASSED"},
+    {"name":"pnpm release:check","status":"PASSED"},
+    {"name":"pnpm test:e2e","status":"PASSED"},
+    {"name":"pnpm test:phase196","status":"PASSED"},
+    {"name":"pnpm test:phase197","status":"PASSED"}
+  ],
+  "mandatory_suites": [
+    {"name":"pnpm test:phase202","status":"PASSED"},
+    {"name":"pnpm contracts:verify","status":"PASSED"},
+    {"name":"pnpm prisma:generate","status":"PASSED"},
+    {"name":"pnpm --filter @entral/backend test","status":"PASSED"},
+    {"name":"pnpm --filter @entral/frontend test","status":"PASSED"},
+    {"name":"pnpm test:phase200","status":"PASSED"},
+    {"name":"pnpm test:phase199","status":"PASSED"},
+    {"name":"pnpm test:phase198","status":"PASSED"},
+    {"name":"pnpm test:phase197","status":"PASSED"},
+    {"name":"pnpm test:phase196","status":"PASSED"},
+    {"name":"pnpm test:phase195","status":"PASSED"},
+    {"name":"pnpm test:phase195:recovery","status":"PASSED"},
+    {"name":"pnpm lint","status":"PASSED"},
+    {"name":"pnpm test","status":"PASSED"},
+    {"name":"pnpm build","status":"PASSED"},
+    {"name":"pnpm release:check","status":"PASSED"},
+    {"name":"pnpm test:e2e","status":"PASSED"},
+    {"name":"clean-checkout build","status":"PASSED"},
+    {"name":"restart and idempotency recovery","status":"PASSED"},
+    {"name":"cross-tenant API, job, event, search, export, and model/tool-context denial matrix","status":"PASSED"},
+    {"name":"secret-broker unavailable and plaintext-fallback rejection","status":"PASSED"},
+    {"name":"support-access expiry, read-only default, elevation, and visibility tests","status":"PASSED"},
+    {"name":"session inventory, refresh rotation/replay denial, revoke-one, revoke-all, MFA, and step-up tests","status":"PASSED"},
+    {"name":"legacy ownership migration reconciliation and rollback verification","status":"PASSED"},
+    {"name":"authenticated browser and production readback","status":"PASSED"},
+    {"name":"git diff --check","status":"PASSED"},
+    {"name":"governor verify","status":"PASSED"}
+  ],
+  "status_checks": [
+    {"name":"pull-request-44-required-checks","status":"PASSED"},
+    {"name":"pull-request-45-required-checks","status":"PASSED"},
+    {"name":"pull-request-46-required-checks","status":"PASSED"},
+    {"name":"pull-request-47-required-checks-at-accepted-rerun","status":"PASSED"},
+    {"name":"pull-request-48-required-checks","status":"PASSED"},
+    {"name":"protected-main-ci-30769935889","status":"PASSED"},
+    {"name":"vercel-frontend-exact-main-5718266943","status":"PASSED"},
+    {"name":"railway-api-exact-main-0cc752c9","status":"PASSED"},
+    {"name":"railway-worker-exact-main-e3c342e6","status":"PASSED"}
+  ],
+  "reconciliation": {
+    "origin_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "reconciled_commit_sha": "013a10da24b414731cab37c301fdf74dfbabcc46",
+    "affected_checks_rerun": true,
+    "status": "RECONCILED"
+  },
+  "staging": {
+    "status": "PASSED",
+    "evidence": "Protected pull-request previews and complete real-browser acceptance passed before each accepted merge; the final exact-main CI suite also passed."
+  },
+  "migration_verification": {
+    "status": "PASSED",
+    "ordered": true,
+    "fingerprints_match": true,
+    "compatibility_verified": true,
+    "backup_status": "VERIFIED",
+    "backup_checkpoint": "Certified Phase 198 three-service restore point plus additive expand-contract Phase 202 schema; no destructive down migration or customer-data deletion is required.",
+    "entries": [
+      {"order":0,"name":"20260802090000_phase_202_identity_tenancy_authority","fingerprint_sha256":"b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf","status":"VERIFIED"}
+    ]
+  },
+  "deployments": [
+    {"role":"FRONTEND","provider":"VERCEL","deployment_id":"5718266943","live_url":"https://entral-0-2-frontend.vercel.app","deployed_commit_sha":"c689176234bca8a43f6bb5665f6a8a63d8d653dd","status":"READY"},
+    {"role":"API","provider":"RAILWAY","deployment_id":"0cc752c9-1599-49e8-b0d2-c7eb15f0c900","live_url":"https://entral-backend-production.up.railway.app/health","deployed_commit_sha":"c689176234bca8a43f6bb5665f6a8a63d8d653dd","status":"READY"},
+    {"role":"WORKER","provider":"RAILWAY","deployment_id":"e3c342e6-efcd-430e-a49d-195e51670b54","live_url":"https://entral-backend-production.up.railway.app/health","deployed_commit_sha":"c689176234bca8a43f6bb5665f6a8a63d8d653dd","status":"READY"}
+  ],
+  "authenticated_smokes": [
+    {"surface":"CUSTOMER","live_url":"https://entral-0-2-frontend.vercel.app/member/account/security","authenticated":true,"status":"PASSED","receipt_sha256":"1428a92121d38a6638eebc4d006cb2dd15e315c6e306ad1845cef96a5df9ab13"},
+    {"surface":"FRONTEND","live_url":"https://entral-0-2-frontend.vercel.app/member/account/security","authenticated":true,"status":"PASSED","receipt_sha256":"dcd3a0f671dd44554d9319ac62e0dbd1f55b37fcd5ccb5eba10529134abf10d7"},
+    {"surface":"API","live_url":"https://entral-0-2-frontend.vercel.app/member/api/v1/identity/sessions","authenticated":true,"status":"PASSED","receipt_sha256":"1428a92121d38a6638eebc4d006cb2dd15e315c6e306ad1845cef96a5df9ab13"},
+    {"surface":"WORKER","live_url":"https://entral-backend-production.up.railway.app/health","authenticated":true,"status":"PASSED","receipt_sha256":"67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c"}
+  ],
+  "state_reconciliation": {
+    "status": "PASSED",
+    "side_effects_reconciled": true,
+    "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "receipt_sha256": "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c",
+    "blockers": []
+  },
+  "health": {
+    "availability": 1,
+    "error_rate": 0,
+    "p95_ms": 258.3,
+    "failed_jobs": 0,
+    "dead_letter_jobs": 0,
+    "worker_ready": true,
+    "receipt_sha256": "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c"
+  },
+  "rollback_rehearsal": {"status":"NOT_REQUIRED"},
+  "failure_proof": {
+    "status": "PASSED",
+    "outcome": "REJECTED",
+    "phase_advanced": false,
+    "evidence": "Superseded Railway snapshot attempts that failed before activation were removed; Governor remained on Phase 202 and no broken deployment advanced the phase."
+  },
+  "rollback_point": {
+    "status": "VERIFIED",
+    "receipt_sha256": "f82085ae21f7f7f337be2d8f39d6f6450fc8a80032da91202dfccb03e5ab73dc"
+  },
+  "produced_at": "2026-08-02T22:52:00.000Z"
+}

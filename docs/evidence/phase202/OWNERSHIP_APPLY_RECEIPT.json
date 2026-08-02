@@ -1,0 +1,22 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P202-OWNERSHIP-APPLY-3365c5ef",
+  "phase": 202,
+  "mode": "APPLY",
+  "status": "PASS",
+  "run_id": "3365c5ef-d5cd-4cff-9aee-b931094b7f57",
+  "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "inventory_sha256": "363407db1c16d082fe32b3a6b052e18fea7bd38f08df857f9289ba344122f064",
+  "source_rows": 11,
+  "mapped_rows": 11,
+  "duplicate_rows": 0,
+  "ambiguous_rows": 0,
+  "missing_rows": 0,
+  "integrity_failures": 0,
+  "live_blockers": [],
+  "repair_plan_reference": "mykai05/ENTRAL-0.2@c689176234bca8a43f6bb5665f6a8a63d8d653dd:docs/PHASE_202_OWNERSHIP_RECONCILIATION.md",
+  "rollback_reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+  "completed_at": "2026-08-02T22:39:29.123Z",
+  "receipt_sha256": "6626af83009bf218e78cbc4ff78f3390c40030cbd3244a70fe6995be64a0a1b1"
+}

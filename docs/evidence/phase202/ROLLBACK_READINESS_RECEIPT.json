@@ -1,0 +1,31 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P202-ROLLBACK-READINESS-001",
+  "phase": 202,
+  "released_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "rollback_point": {
+    "status": "RESTORE_VERIFIED",
+    "reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "release_tag": "phase-198",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "deployments": [
+      {"role":"FRONTEND","provider":"VERCEL","deployment_id":"dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u"},
+      {"role":"API","provider":"RAILWAY","deployment_id":"43f98e05-af77-44f2-826c-5976fc738e4b","service_id":"2bdeff1a-74fc-4484-8316-6f10d974aaae"},
+      {"role":"WORKER","provider":"RAILWAY","deployment_id":"b477d5c8-2a55-4e74-84b8-168e5f938fd8","service_id":"e531972e-5c0a-4885-9f19-f44f6bc6a366"}
+    ]
+  },
+  "phase_202_migration_compatibility": {
+    "kind": "ADDITIVE",
+    "compatibility": "EXPAND_CONTRACT",
+    "rollback_strategy": "Restore the certified Phase 198 frontend, API, and worker while retaining the additive Phase 202 schema; no destructive down migration is authorized.",
+    "customer_data_deletion_required": false,
+    "forward_repair_available": true,
+    "integrity_status": "CERTAIN"
+  },
+  "rollback_executed": false,
+  "rollback_execution_reason": "The Phase 202 release is healthy; the verified Phase 198 rollback point is retained without disrupting production.",
+  "status": "RESTORE_VERIFIED",
+  "checked_at": "2026-08-02T22:45:45.000Z",
+  "receipt_sha256": "f82085ae21f7f7f337be2d8f39d6f6450fc8a80032da91202dfccb03e5ab73dc"
+}

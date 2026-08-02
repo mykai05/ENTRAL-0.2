@@ -10,7 +10,7 @@
       "local_path": "C:/Users/malac/Documents/ENTRAL 2-phase-200",
       "origin_url": "https://github.com/mykai05/ENTRAL-0.2.git",
       "default_branch": "main",
-      "latest_verified_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "latest_verified_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
       "branch_prefix": "codex/",
       "compatibility_contract_version": "release-control-v1"
     },
@@ -33,7 +33,7 @@
   },
   "task": {
     "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
-    "commit_sha": "8eb3399485eb7a36bade3d2e19bc3b21a7675d17",
+    "commit_sha": "013a10da24b414731cab37c301fdf74dfbabcc46",
     "changed_files": [
       ".entral/governor/events/EVENTS.jsonl",
       ".entral/governor/lib/governor.mjs",
@@ -164,6 +164,7 @@
       "frontend/tests/AccountPrivacyControls.test.tsx",
       "frontend/tests/Phase195MemberShellRegression.test.ts",
       "frontend/tests/Phase202AccountSecurity.test.tsx",
+      "frontend/tests/Phase202AccountSecurityResponsive.test.ts",
       "frontend/tests/Phase202InvitationAcceptance.test.tsx",
       "package.json",
       "packages/contracts/openapi.yaml",
@@ -214,14 +215,14 @@
     ]
   },
   "candidate_binding": {
-    "status": "ACCEPTED_EXACT_SHA_CLEAN_CHECKOUT",
-    "accepted_commit_sha": "8eb3399485eb7a36bade3d2e19bc3b21a7675d17",
-    "accepted_tree_sha": "f3ade9f5fb9ea844eeb5000856ef1bfd74564cda",
+    "status": "ACCEPTED_EXACT_SHA_PROTECTED_MAIN_CI",
+    "accepted_commit_sha": "013a10da24b414731cab37c301fdf74dfbabcc46",
+    "accepted_tree_sha": "ec3cd83672e3eb7e8c9ce9548c4f5fb73e169073",
     "worktree_status_at_acceptance": "CLEAN",
-    "working_tree_fingerprint_sha256": "469630b5fdf0432bec8d2dd8162e400852a2a6c788c8a3a04d10bb1be363d1ed",
-    "fingerprint_algorithm": "SHA256 over sorted origin/main to accepted commit path, tab, accepted Git blob SHA-1 records with the ReleaseControlPlan path represented by the SELF sentinel to avoid a circular content hash",
-    "fingerprinted_changed_file_count": 147,
-    "candidate_rationale": "The accepted Phase 202 candidate includes the bounded Phase 195 historical recovery-grant correction required to keep the certified recovery probe compatible with the current additive database role chain without reopening Phase 195.",
+    "working_tree_fingerprint_sha256": "7e8accc6a34285ef3ef9070afe65ae0b84e40f897378450f2de5a6ca3e0c34ab",
+    "fingerprint_algorithm": "SHA256 over newline-separated sorted Phase 200 main to accepted commit path, tab, accepted Git blob SHA-1 records with no trailing newline and the ReleaseControlPlan path represented by the SELF sentinel to avoid a circular content hash",
+    "fingerprinted_changed_file_count": 148,
+    "candidate_rationale": "The accepted Phase 202 candidate includes the bounded runtime, mobile account-security, and legacy browser-harness corrections required by production and protected-main verification without reopening an earlier certified phase.",
     "bounded_historical_correction": {
       "scope": [
         "scripts/phase195-recovery-gate.mjs",
@@ -233,11 +234,11 @@
     },
     "clean_checkout_acceptance": {
       "checkout_mode": "DETACHED_EXACT_SHA",
-      "source_commit_sha": "8eb3399485eb7a36bade3d2e19bc3b21a7675d17",
-      "source_tree_sha": "f3ade9f5fb9ea844eeb5000856ef1bfd74564cda",
+      "source_commit_sha": "013a10da24b414731cab37c301fdf74dfbabcc46",
+      "source_tree_sha": "ec3cd83672e3eb7e8c9ce9548c4f5fb73e169073",
       "frozen_install": "PASSED",
       "prisma_generation": "PASSED",
-      "complete_phase202_suite": "PASSED_41_CONTRACT_RECONCILIATION_272_BACKEND_19_FRONTEND",
+      "complete_phase202_suite": "PASSED_41_CONTRACT_RECONCILIATION_272_BACKEND_20_FRONTEND",
       "phase202_postgresql_execution": "PASSED_REAL_POSTGRESQL",
       "phase202_broker_environment": "PASSED_CI_ONLY_BROKER_ENV",
       "complete_phase195_suite": "PASSED_26_TESTS",
@@ -245,15 +246,18 @@
       "phase195_recovery_receipt": "phase195-recovery-6cc4a6dcb1ff.json",
       "full_build": "PASSED",
       "git_status_porcelain": "CLEAN",
-      "git_diff_check": "PASSED"
+      "git_diff_check": "PASSED",
+      "protected_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      "protected_main_ci_run_id": 30769935889,
+      "protected_main_ci_status": "PASSED"
     },
-    "pending_release_bindings": [
-      "protected main integration SHA",
-      "exact protected main SHA frontend deployment",
-      "exact protected main SHA API deployment",
-      "exact protected main SHA worker deployment",
-      "production migration and database role evidence",
-      "authenticated production smoke and state readback"
+    "completed_release_bindings": [
+      "protected main c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      "exact protected main SHA Vercel frontend deployment 5718266943",
+      "exact protected main SHA Railway API deployment 0cc752c9-1599-49e8-b0d2-c7eb15f0c900",
+      "exact protected main SHA Railway worker deployment e3c342e6-efcd-430e-a49d-195e51670b54",
+      "production migration, database role, ownership, credential-reference, and blocker evidence",
+      "authenticated production smoke, browser acceptance, and state readback"
     ]
   },
   "risk_profile": {

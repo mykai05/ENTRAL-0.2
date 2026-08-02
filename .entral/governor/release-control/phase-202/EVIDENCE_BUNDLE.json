@@ -1,0 +1,66 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "bundle_id": "phase-202-P202-PRODUCTION-EVIDENCE-001",
+  "phase": 202,
+  "risk_tier": "HIGH",
+  "decision": "PASS",
+  "plan_sha256": "53dab0413d064698f1dedf088cd92899cfbdbae70321fec3dda6d0110b2ac803",
+  "evidence_sha256": "3123e0aecddaf3e67762b583dbca2009e53139a4b8ab9cb4d87439fb92b6803a",
+  "components": [
+    {
+      "name": "repositories",
+      "content_sha256": "bfb05b51bfe71812f1ca566b6bba589a21c4a2ab131ef2b94f576496dbbb2ea2"
+    },
+    {
+      "name": "task",
+      "content_sha256": "8fac9f3877eedc850d2ea8a5d264607bf35995f1e82fc1f06663ca3ca3ad3ee8"
+    },
+    {
+      "name": "targeted_tests",
+      "content_sha256": "e8e39e949a092ca26235a7b6f32fd707e56e5ee49beb98f2d5155b02906c06dc"
+    },
+    {
+      "name": "mandatory_suites",
+      "content_sha256": "fba3ff42f15a6536ed7905627eba7bcae75f57cb35ab6f8718c89d3af77df185"
+    },
+    {
+      "name": "protected_main_status_checks",
+      "content_sha256": "b07ce63b08da01ad42766a1684aaa5532388dc48deddd1eba5a0afb6cf8cc7d6"
+    },
+    {
+      "name": "reconciliation",
+      "content_sha256": "16eb7b6e1f75478e542a53ba73a26253093545674113970253306c31c1069452"
+    },
+    {
+      "name": "migrations",
+      "content_sha256": "fdbfe92eb1c170aae3b73443f1d1c95d285e35dd6e094768987a1dea8c14c870"
+    },
+    {
+      "name": "deployments",
+      "content_sha256": "9c8a5d319d5f3911b3aab37201eaa7c435c5aa528b13bfa38a700239acc5a0f6"
+    },
+    {
+      "name": "authenticated_smokes",
+      "content_sha256": "f5fd50f558f27a24157f7a238314fec26cd6637499bf819cfe25a9d79c0d98e6"
+    },
+    {
+      "name": "state_reconciliation",
+      "content_sha256": "663d825f82176f6ea845e409fd35116aaa152cd1d0d45a31576a3aef10193a71"
+    },
+    {
+      "name": "health",
+      "content_sha256": "07fac5ef908a6900506858d454f61d1a8ba74f07ac1cec91f0caeef8639bf008"
+    },
+    {
+      "name": "rollback_point",
+      "content_sha256": "6319194f5bd442c53756683a2f5ee8a59eb69bd62349ec90c6a903fc14937506"
+    },
+    {
+      "name": "broken_deployment_proof",
+      "content_sha256": "7acc07b8aaf4d062de6c18b33baab964e4ff35017a64f5a4a37feacc3edb910d"
+    }
+  ],
+  "created_at": "2026-08-02T23:01:53.295Z",
+  "bundle_sha256": "42ca49c9c20f65f40c60ec1ddef970da9a548183808466185800a998e441e683"
+}

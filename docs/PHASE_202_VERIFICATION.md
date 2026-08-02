@@ -1,72 +1,93 @@
 # Phase 202 verification
 
-## Status
+## Certified release result
 
 - Phase: 202 - Identity, Tenancy, Sessions, Authority, Secret Broker, and Support Access
-- Current result: pre-integration local acceptance passed; protected-main integration and every production release gate remain pending
-- Certified prerequisite: Phase 200 at `22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516`, tagged `phase-200`
-- Immediate rollback release: Phase 198 at `5c2f9d58c25dec82d4c3102f3b48a76797801594`, tagged `phase-198`
+- Result: complete protected-main and production acceptance passed
 - TaskPacket: `P202-IDENTITY-TENANCY-AUTHORITY-001`
-- Candidate branch: `codex/phase-202-identity-tenancy`
-- Starting continuation commit: `26a38df50fb0f19c8079acd40860fc2ae27ad25b`
-- Accepted implementation commit: `8eb3399485eb7a36bade3d2e19bc3b21a7675d17`
-- Accepted implementation tree: `f3ade9f5fb9ea844eeb5000856ef1bfd74564cda`
-- Final accepted main SHA: pending
-- Review policy: conditional; no protocol-required checkpoint is active
-- Phase 203: blocked and not implemented
+- Accepted task commit: `013a10da24b414731cab37c301fdf74dfbabcc46`
+- Accepted task tree: `ec3cd83672e3eb7e8c9ce9548c4f5fb73e169073`
+- Final protected main: `c689176234bca8a43f6bb5665f6a8a63d8d653dd`
+- Release tag: `phase-202`
+- Immediate rollback: Phase 198 at `5c2f9d58c25dec82d4c3102f3b48a76797801594`, tagged `phase-198`
+- Security scan: not run because the owner explicitly prohibited a new scan
+- Phase 203: activation only after Phase 202 certification; no Phase 203 implementation is included
 
-This is a pre-integration verification record. It does not certify Phase 202 and makes no claim that the candidate has passed protected-main checks, reached production, applied the production migration, completed production reconciliation, or passed authenticated production readback.
+The final main tree exactly matches the accepted task tree. All runtime repairs, responsive containment, and the final legacy browser-harness stabilization were integrated through protected pull requests without reopening an earlier certified phase.
 
-## Package and execution-policy validation
+## Package and execution policy
 
-`ENTRAL-XHIGH-PRO.zip` has SHA-256 `0455050c7c0d4d9383669a46f7a8b6a843fc593e75beebf0b9310ad9f2115075`. All 73 root `SHA256SUMS.txt` entries match. The nested Phase 202 archive has SHA-256 `2ad034a9c6b368a3a1352a0295e2b6cf664aa06bf01fe21bc79dda733e552e79`, exactly matches the root manifest, and all 17 nested checksums match.
+`ENTRAL-XHIGH-PRO.zip` has SHA-256 `0455050c7c0d4d9383669a46f7a8b6a843fc593e75beebf0b9310ad9f2115075`. All 73 root manifest entries and all 17 nested Phase 202 checksums passed.
 
-The owner-amended execution policy keeps Codex 5.6 Sol Extra High as the only implementation model and reasoning level while permitting native Codex subagents when useful. Single-writer ownership applies per mutable file, module, schema, or shared-contract scope. The phase lead retains architecture, interface reconciliation, integration, commit, merge, deployment, production repair, final verification, and certification authority. This amendment is recorded in the active TaskPacket and supersedes the package's blanket subagent prohibition without changing the sole-model constraint.
+Codex 5.6 Sol Extra High remained the sole implementation, command, integration, migration, deployment, repair, and certification model. Native Codex subagents were used only for bounded read-only analysis and verification. The lead retained architecture, mutable-scope ownership, integration, release, and final-verification authority.
 
-No security scan was run because the owner explicitly prohibited a new scan. The deterministic authorization, tenant-isolation, RLS, secret-fallback, cross-surface denial, malformed-input, and prior-phase security regression gates remain required and passed locally.
+## Implementation acceptance
 
-## Implemented local candidate
+Phase 202 establishes durable tenant, organization, business, environment, actor, creator, and owner authority across the canonical data boundary. It adds typed human, service, and agent actors; versioned RBAC and ABAC decisions; durable server-side sessions; rotating hashed refresh credentials; replay containment; MFA enrollment, recovery, and step-up; idempotent membership lifecycle and notification evidence; tenant-aware worker principals; a fail-closed secret broker; and owner-visible bounded support access.
 
-The Phase 202 candidate adds stable organization, tenant, business, environment, data-residency, actor, creator, and owner authority to the canonical data boundary. Human, service, and agent actors are typed separately. RBAC and ABAC evaluate tenant and business scope, authority domain, data classification, environment, action risk, and versioned autonomy envelopes.
+Legacy ownership migration is governed by the committed source-backed model scope ledger. Credential reconciliation protects exactly the credential-bearing Shopify targets:
 
-Authentication uses durable server-side session inventory, short-lived access credentials, rotating hashed refresh credentials, replay containment, revoke-one, and revoke-all. MFA provides TOTP enrollment and confirmation, one-time recovery material, audited step-up, and fail-closed secret storage. Membership invitation, acceptance, role change, suspension, and removal retain request-fingerprint idempotency and durable notification evidence.
+- `ShopifyConnection.credentialJson` -> `credentialSecretReferenceId`
+- `ShopifyOAuthContinuation.payloadJson` -> `payloadSecretReferenceId`
 
-The secret broker uses environment- and key-version-bound envelope encryption, row-bound authenticated data, rotation, revocation, and immutable access audit. Provider credentials are stored as broker references separately from ordinary integration configuration. The source-backed inventory protects exactly the two Shopify credential-bearing targets and does not blindly encrypt unrelated generic JSON columns.
+Unrelated generic JSON columns are not blindly encrypted. Production release remains fail closed while ownership is ambiguous or a protected credential target contains plaintext, invalid, or missing-reference data.
 
-Support access is passwordless, expiring, scope-limited, read-only by default, owner-visible, and auditable. Write elevation requires explicit purpose, allowlisted scope, unexpired authority, and recent step-up. Tenant-aware rate limits, export boundaries, deidentification receipts, request-scoped database context, PostgreSQL RLS, least-privilege role grants, and worker/service principals preserve tenant authority across APIs, jobs, events, search, exports, OAuth continuation, and model/tool-context assembly.
+## Deterministic and browser suites
 
-Legacy ownership migration is governed by the committed 74-model scope ledger and 41 applicable customer-source tables. The reconciliation runner records source mapping, resolved and unresolved counts, duplicate handling, repair-plan authority, release blockers, server-hashed APPLY receipts, and a separately invoked fresh AUDIT. Later customer release remains blocked while ownership is ambiguous or either protected credential target is plaintext, invalid, or missing its credential reference.
+All feature gates `P202-F001-A` through `P202-F020-A` passed. The required suites passed under Node 20.19.0 and pnpm 9.12.3, including:
 
-## Local verification
+- `pnpm test:phase202`
+- `pnpm contracts:verify`
+- `pnpm prisma:generate`
+- complete backend and frontend suites
+- `pnpm test:phase195` through `pnpm test:phase200`
+- `pnpm test:phase195:recovery`
+- `pnpm lint`, `pnpm test`, `pnpm build`, and `pnpm release:check`
+- complete `pnpm test:e2e`
+- clean-checkout build, restart/idempotency recovery, cross-tenant denial matrix, secret-broker fail-closed tests, support-access tests, session/MFA tests, ownership reconciliation and rollback verification, `git diff --check`, and Governor verification
 
-The exact 20 acceptance gates `P202-F001-A` through `P202-F020-A` have `LOCAL_PASS` evidence in `docs/evidence/phase202/FEATURE_ACCEPTANCE.json`. The full Phase 202 suite passed under Node 20.19.0 and pnpm 9.12.3:
+The final exact-main push was verified by GitHub CI run `30769935889` on attempt 1. It completed successfully at `c689176234bca8a43f6bb5665f6a8a63d8d653dd`.
 
-- `pnpm test:phase202`: 41 contract/static/reconciliation tests, 272 backend tests, and 19 frontend tests passed. All 20 PostgreSQL identity/tenancy cases and the tenant-worker integration case ran with zero environment skips.
-- `pnpm contracts:verify`: 51 tests and reproducible contract build passed.
-- Complete backend, frontend, and recursive workspace test suites passed, including 602 backend and 439 frontend tests in the final recursive run.
-- `test:phase195` through `test:phase200` passed under the activated Phase 202 Governor state.
-- Lint, Prisma Client generation, production build, release-readiness checks, `git diff --check`, and Governor verification passed.
-- The complete local Chrome suite passed again after the bounded corrections in 183.7 seconds, including the Phase 202 account-security and invitation surfaces at 360, 390, 412, and 430 CSS pixels.
-- A dropped-and-recreated isolated PostgreSQL database replay applied all 44 migrations from empty state, applied the Phase 202 runtime roles, and reported zero failed, rolled-back, or pending migrations.
-- A detached clean checkout at exact implementation commit `8eb3399485eb7a36bade3d2e19bc3b21a7675d17` completed a frozen install, Prisma Client generation, the complete Phase 202 suite with real PostgreSQL and the development-only CI broker environment, the complete Phase 195 deterministic suite, the disposable backup/restore recovery drill, and the production build. Recovery receipt `phase195-recovery-6cc4a6dcb1ff.json` passed, the tracked worktree remained clean, and `git diff --check` passed.
+## Protected-main integration
 
-The Phase 202 migration SHA-256 is `b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf`. The Phase 202 roles/grants SQL SHA-256 is `58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302`.
+The accepted release chain was merged through PRs #44 through #48. The final PR head `013a10da24b414731cab37c301fdf74dfbabcc46` merged as `c689176234bca8a43f6bb5665f6a8a63d8d653dd`. The resulting tree is `ec3cd83672e3eb7e8c9ce9548c4f5fb73e169073`.
 
-Because bounded tenant- and MFA-boundary corrections followed the first complete-suite pass, every affected focused test, the complete mandatory non-browser suite, and the complete Chrome suite were rerun successfully after reconciliation with current `origin/main`. The first detached replay exposed a checkout-line-ending-dependent ledger-hash assertion; the gate now hashes canonical LF repository text. GitHub then exposed two clean-CI prerequisites: Prisma Client generation was ordered after Phase 202, and the dedicated PostgreSQL step omitted its development-only secret-broker context. Generation now follows the frozen install, and the PostgreSQL test step supplies an explicit non-production key version and development environment. GitHub's Phase 195 recovery job then exposed that the historical recovery schema was incorrectly receiving the new Phase 202 grant file. The recovery gate now explicitly preserves its Phase 195 grant boundary at files 046 and 047, while the unchanged production role installer continues to require 046, 047, and the Phase 202 file 048. The exact CI order, all 21 dedicated PostgreSQL cases, complete Phase 202 suite, Phase 195 deterministic suite, Phase 195 recovery drill, and production build passed from a detached checkout at accepted implementation commit `8eb3399485eb7a36bade3d2e19bc3b21a7675d17`.
+The exact-source archive contains 835 tracked files, is 23,521,280 bytes, and has SHA-256 `e0e010264248676c1eec9b0f41f38032d4d852edbb82911a7d2e13419bc5fda1`.
 
-## Pending protected-main and production release gates
+## Exact-SHA production deployment
 
-The following remain mandatory and pending:
+- Vercel frontend deployment record `5718266943`; immutable URL `https://entral-0-2-frontend-kwwhgds0s-entral.vercel.app`
+- Railway API deployment `0cc752c9-1599-49e8-b0d2-c7eb15f0c900`; image `sha256:c44c8dcfc45bc774c74145facdca39917e498293763638c410b244340906352b`
+- Railway worker deployment `e3c342e6-efcd-430e-a49d-195e51670b54`; image `sha256:f0973169387f26e067772873b93e89c50810b195e886ac18bf7a6c4fed17588a`
 
-1. Perform final reconciliation with current `origin/main` and rerun any gate affected by reconciliation.
-2. Integrate through protected main, push immediately, and wait for required checks on the exact merge SHA.
-3. Deploy that exact protected-main SHA to the Vercel frontend, Railway API, and Railway worker.
-4. Apply migration `20260802090000_phase_202_identity_tenancy_authority`, apply the exact runtime role/grant SQL, and verify the complete production migration state.
-5. Run ownership reconciliation in `APPLY`, then run a separate fresh `AUDIT`; retain both receipt hashes and require zero ambiguous ownership blockers.
-6. Run credential-reference reconciliation in `APPLY`, then run a separate fresh `AUDIT`; retain both receipt hashes and require zero plaintext, invalid, or missing-reference rows in both protected Shopify targets.
-7. Verify `entral.phase202_release_blockers` returns zero rows.
-8. Run authenticated production smoke, state readback, and browser acceptance against the exact production SHA.
-9. Bind deployment IDs, migration and role evidence, reconciliation receipts, authenticated readback, rollback evidence, release-control evidence, tag, and final main SHA in the immutable Phase 202 ReleaseManifest.
-10. Certify Phase 202 and only then activate Phase 203 without beginning Phase 203 implementation.
+Every deployment is READY and bound to the exact final main SHA. Production health returned HTTP 200. The worker reported READY from durable heartbeat evidence, every required worker component was true, failed and dead-letter queues were zero, and observed p95 latency was 258.3 ms.
 
-No protected-main check, Phase 202 deployment ID, production reconciliation receipt, production browser receipt, authenticated production readback, release tag, or Phase 202 ReleaseManifest is recorded here because none exists at this pre-integration boundary.
+## Production database and reconciliation
+
+Migration `20260802090000_phase_202_identity_tenancy_authority` has SHA-256 `b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf`. Production has 44 applied migrations, zero failed, zero rolled back, and zero pending. Runtime role SQL `prisma/security/048_phase_202_roles_and_grants.sql` has SHA-256 `58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302` and was applied successfully.
+
+Ownership reconciliation passed APPLY run `3365c5ef-d5cd-4cff-9aee-b931094b7f57` and independent AUDIT run `efae3b07-e897-4f9e-98b6-a28b5a90bf77`. All 11 source rows mapped; duplicate, ambiguous, missing, and integrity-failure counts were zero. Receipts:
+
+- APPLY `6626af83009bf218e78cbc4ff78f3390c40030cbd3244a70fe6995be64a0a1b1`
+- AUDIT `9885fb23635357fcf9c4e83fda5ab2b90eea562f9a5dc829e54cb096fbc4156a`
+
+Credential-reference reconciliation passed APPLY and a separate fresh AUDIT across both protected targets. Plaintext, invalid, and missing-reference counts were zero. Receipts:
+
+- APPLY `d4fb2892ff7b3ea83d89f6ef362cb24d6c84d2f7f3ffb519d73368731213e47d`
+- AUDIT `5726d8869e5a2f1e87d72c6c7a423659572b082cdf11e945a3ef561d8baa3a7b`
+
+`entral.phase202_release_blockers` returned zero rows under the verifier role.
+
+## Authenticated production acceptance
+
+A real production member session passed account-security and identity readback. MFA factors returned zero, durable sessions returned the current and stale verification sessions, support access returned zero, and memberships returned one. The security page exposed the required durable-session, MFA, membership, and owner-visible support sections.
+
+Responsive production Chrome acceptance passed at 360, 390, 412, and 430 CSS pixels without horizontal overflow. Account-security content remained contained. The invitation acceptance surface remained visible while its token was absent from both URL and rendered content. Desktop acceptance passed at 1920 CSS pixels.
+
+`Sign out everywhere` revoked every release-verification session. Revisiting account security redirected to sign-in, the production cookie was removed, and the one-time local token artifact was deleted.
+
+## Rollback and evidence
+
+The immediate rollback remains certified Phase 198 at `5c2f9d58c25dec82d4c3102f3b48a76797801594`, with Vercel deployment `dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u`, Railway API deployment `43f98e05-af77-44f2-826c-5976fc738e4b`, and Railway worker deployment `b477d5c8-2a55-4e74-84b8-168e5f938fd8`. Phase 202 is additive; rollback retains the schema and does not authorize destructive customer-data deletion.
+
+Canonical release evidence is under `docs/evidence/phase202/`, `.entral/governor/release-control/phase-202/`, and `.entral/governor/releases/phase-202.json`.

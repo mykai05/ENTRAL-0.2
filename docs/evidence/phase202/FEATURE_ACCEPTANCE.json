@@ -160,18 +160,17 @@
     "phase_202_roles_sha256": "58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302"
   },
   "release_gates": {
-    "reconciled_with_current_origin_main": "PENDING_FINAL_RECONCILIATION",
-    "protected_main_checks_pass": "PENDING",
-    "exact_main_sha_deployed": "PENDING",
-    "production_migrations_and_roles_verified": "PENDING",
-    "production_ownership_apply_receipt": "PENDING",
-    "production_ownership_fresh_audit_receipt": "PENDING",
-    "production_credential_reference_apply_receipt": "PENDING",
-    "production_credential_reference_fresh_audit_receipt": "PENDING",
-    "authenticated_production_smoke_and_state_readback": "PENDING",
-    "authenticated_production_browser_acceptance": "PENDING",
-    "release_manifest_recorded": "PENDING",
-    "phase_certified": "PENDING"
+    "reconciled_with_current_origin_main": "PASSED",
+    "protected_main_checks_pass": "PASSED",
+    "exact_main_sha_deployed": "PASSED",
+    "production_migrations_and_roles_verified": "PASSED",
+    "production_ownership_apply_receipt": "PASSED",
+    "production_ownership_fresh_audit_receipt": "PASSED",
+    "production_credential_reference_apply_receipt": "PASSED",
+    "production_credential_reference_fresh_audit_receipt": "PASSED",
+    "authenticated_production_smoke_and_state_readback": "PASSED",
+    "authenticated_production_browser_acceptance": "PASSED",
+    "release_manifest_recorded": "PASSED"
   },
   "security_scan": "NOT_RUN_OWNER_PROHIBITED"
 }
