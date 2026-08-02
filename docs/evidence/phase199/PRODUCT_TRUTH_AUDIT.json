@@ -8,162 +8,163 @@
       "gate_id": "P199-F001-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json"
       ]
     },
     {
       "gate_id": "P199-F002-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        ".entral/governor/releases/phase-198.json"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json"
       ]
     },
     {
       "gate_id": "P199-F003-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json"
       ]
     },
     {
       "gate_id": "P199-F004-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:docs/evidence/phase199/PRECHANGE_REPOSITORY_AUDIT.json"
       ]
     },
     {
       "gate_id": "P199-F005-A",
-      "state": "IMPLEMENTED_PENDING_PRODUCTION_RECONCILIATION",
+      "state": "IMPLEMENTED_CORRECTIONS_PENDING_PRODUCTION_RECONCILIATION",
       "evidence": [
-        "backend/src/env.ts",
-        "backend/src/services/secureJson.ts",
-        "backend/src/services/secureJsonReconciliation.ts"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/env.ts",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/services/secureJson.ts",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/services/secureJsonReconciliation.ts",
+        "mykai05/ENTRAL-0.2@225c6ddff2bb738b478880dbd87f4239db924d2d:docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json"
       ]
     },
     {
       "gate_id": "P199-F006-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "backend/src/dev-memory-server.ts",
-        "backend/src/routes/connections.ts"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/dev-memory-server.ts",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/routes/connections.ts"
       ]
     },
     {
       "gate_id": "P199-F007-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "frontend/components/CanonicalMemberShell.tsx"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/CanonicalMemberShell.tsx"
       ]
     },
     {
       "gate_id": "P199-F008-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "frontend/components/CanonicalGraphWorkspace.tsx",
-        "frontend/components/CanonicalUniverse3DGraph.tsx"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/CanonicalGraphWorkspace.tsx",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/CanonicalUniverse3DGraph.tsx"
       ]
     },
     {
       "gate_id": "P199-F009-A",
       "state": "MIGRATION_BOUNDARY_DOCUMENTED",
       "evidence": [
-        "frontend/components/CanonicalUniverse3DGraph.tsx",
-        "frontend/components/NeuronsCommandCenter.tsx"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/CanonicalUniverse3DGraph.tsx",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/NeuronsCommandCenter.tsx"
       ]
     },
     {
       "gate_id": "P199-F010-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "frontend/components/CanonicalGraphWorkspace.tsx",
-        "frontend/components/NeuronsCommandCenter.tsx"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/CanonicalGraphWorkspace.tsx",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/NeuronsCommandCenter.tsx"
       ]
     },
     {
       "gate_id": "P199-F011-A",
       "state": "CERTIFIED_PRODUCTION_BASELINE",
       "evidence": [
-        ".entral/governor/releases/phase-198.json",
-        "backend/tests/phase190EntityLifecyclePostgres.integration.test.ts"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/tests/phase190EntityLifecyclePostgres.integration.test.ts"
       ]
     },
     {
       "gate_id": "P199-F012-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "backend/src/auth.ts",
-        "backend/src/env.ts",
-        "backend/src/routes/auth.ts"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/auth.ts",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/env.ts",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/routes/auth.ts"
       ]
     },
     {
       "gate_id": "P199-F013-A",
       "state": "INVENTORIED_PHASE_202_BOUNDARY",
       "evidence": [
-        "docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:docs/evidence/phase199/TENANT_SCOPE_INVENTORY.json"
       ]
     },
     {
       "gate_id": "P199-F014-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "backend/src/env.ts",
-        "backend/src/services/secureJson.ts"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/env.ts",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/services/secureJson.ts"
       ]
     },
     {
       "gate_id": "P199-F015-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "frontend/components/OnboardingTour.tsx",
-        "frontend/app/globals.css"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/components/OnboardingTour.tsx",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:frontend/app/globals.css"
       ]
     },
     {
       "gate_id": "P199-F016-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        "C:/Users/malac/Documents/Sovereign Protocol/apps/website",
-        ".entral/governor/releases/phase-198.json"
+        "SovereignProtocol/sovereign-protocol-agent@8f1923fcec20a11dc0aef304c0e05827fe2cb5c5:apps/website",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/releases/phase-198.json"
       ]
     },
     {
       "gate_id": "P199-F017-A",
       "state": "CANDIDATE_VERIFIED_OPTIONAL_ONLY",
       "evidence": [
-        "backend/src/services/integrationRegistry.ts",
-        "C:/Users/malac/Documents/Sovereign Protocol/apps/website"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/services/integrationRegistry.ts",
+        "SovereignProtocol/sovereign-protocol-agent@8f1923fcec20a11dc0aef304c0e05827fe2cb5c5:apps/website"
       ]
     },
     {
       "gate_id": "P199-F018-A",
       "state": "CANDIDATE_VERIFIED",
       "evidence": [
-        ".entral/governor/PROGRAM_STATE.json",
-        ".entral/governor/tests/governor.test.mjs"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/PROGRAM_STATE.json",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/tests/governor.test.mjs"
       ]
     },
     {
       "gate_id": "P199-F019-A",
-      "state": "DETERMINISTIC_SUITE_PASSED_RELEASE_GATES_PENDING",
+      "state": "BINDING_CORRECTION_TASK_CLAIMED",
       "evidence": [
-        ".entral/governor/tasks/P199-BASELINE-CERTIFICATION-001.json"
+        "mykai05/ENTRAL-0.2@4444332b9a53f5e57ca9b9d5deda82a707e63589:.entral/governor/tasks/P199-BINDING-CORRECTIONS-001.json"
       ]
     },
     {
       "gate_id": "P199-F020-A",
-      "state": "CANDIDATE_REVIEW",
+      "state": "OWNER_ATTESTED_BINDING_CORRECTIONS_IN_PROGRESS",
       "evidence": [
-        "docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json"
+        "mykai05/ENTRAL-0.2@fc1bc37c8619c34b91a172ec37b4296aade85009:.entral/governor/pro-review/P199-BASELINE-RECERTIFICATION-REVIEW/PRO_REVIEW_VERDICT.json"
       ]
     },
     {
       "gate_id": "P199-F021-A",
       "state": "BLOCK_ENFORCED",
       "evidence": [
-        ".entral/governor/PROGRAM_STATE.json",
-        "packages/contracts/src/baseline.ts"
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:.entral/governor/PROGRAM_STATE.json",
+        "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:packages/contracts/src/baseline.ts"
       ]
     }
   ],
@@ -208,5 +209,13 @@
     "synthetic_preview_label": "reference-only",
     "active_integration_claims": "No Microsoft core-runtime claim"
   },
-  "conclusion": "Candidate evidence supports mandatory review. It does not certify or release Phase 199 and does not unblock Phase 200."
+  "conclusion": "The owner-attested review passed with four binding corrections now in progress. This evidence does not certify or release Phase 199 and does not unblock Phase 200 until exact-main deployment, credential APPLY plus fresh AUDIT, authenticated readback, rollback evidence, and the final ReleaseManifest pass.",
+  "known_limitations": [
+    "Phase 202 owns the migration from current user-scoped customer records to explicit organization and business ownership.",
+    "Tutorial and Academy progress is user-local browser state.",
+    "The embedded multipurpose 3D renderer remains a migration boundary behind canonical projection and shared view state.",
+    "Mobile Universe Graph refinement remains Phase 200 UX debt.",
+    "Production administrative step-up temporarily uses static ADMIN_MFA_CODE.",
+    "Checkout remains fail-closed and unavailable."
+  ]
 }

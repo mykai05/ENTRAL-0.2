@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFile } from "node:fs/promises";
 
 const managedEnvironmentKeys = [
   "NODE_ENV", "PROCESS_ROLE", "DATABASE_URL", "JWT_SECRET", "COOKIE_NAME",
@@ -45,6 +46,44 @@ afterEach(() => {
 });
 
 describe("Phase 199 production truth and secure JSON reconciliation", () => {
+  it("binds every Prisma JSON string column and exactly the credential-bearing protected subset", async () => {
+    const [schema, inventory, reconciliation] = await Promise.all([
+      readFile(new URL("../../prisma/schema.prisma", import.meta.url), "utf8"),
+      readFile(new URL("../../docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json", import.meta.url), "utf8").then((value) => JSON.parse(value) as {
+        columns: Array<{ table: string; column: string; credential_bearing: boolean; reconciliation_protected: boolean }>;
+        credential_bearing_subset: Array<{ table: string; column: string }>;
+        proof: { prisma_json_string_columns: number; inventory_rows: number };
+      }),
+      import("../src/services/secureJsonReconciliation.js")
+    ]);
+    const schemaColumns: string[] = [];
+    let model = "";
+    for (const line of schema.split(/\r?\n/)) {
+      const modelMatch = /^model\s+(\w+)/.exec(line);
+      if (modelMatch) model = modelMatch[1]!;
+      const columnMatch = /^\s+(\w*Json)\s+(?:String|Json)\??/.exec(line);
+      if (model && columnMatch) schemaColumns.push(`${model}.${columnMatch[1]}`);
+      if (/^}/.test(line)) model = "";
+    }
+    const inventoryColumns = inventory.columns.map((item) => `${item.table}.${item.column}`);
+    const credentialColumns = inventory.columns.filter((item) => item.credential_bearing).map((item) => `${item.table}.${item.column}`);
+    const protectedColumns = inventory.columns.filter((item) => item.reconciliation_protected).map((item) => `${item.table}.${item.column}`);
+    const declaredCredentialSubset = inventory.credential_bearing_subset.map((item) => `${item.table}.${item.column}`);
+    const runtimeTargets = reconciliation.SECURE_JSON_RECONCILIATION_TARGETS.map((item) => `${item.tableName}.${item.columnName}`);
+
+    expect(inventoryColumns).toHaveLength(new Set(inventoryColumns).size);
+    expect(inventoryColumns.sort()).toEqual(schemaColumns.sort());
+    expect(inventory.proof.prisma_json_string_columns).toBe(schemaColumns.length);
+    expect(inventory.proof.inventory_rows).toBe(inventoryColumns.length);
+    expect(credentialColumns).toEqual([
+      "ShopifyConnection.credentialJson",
+      "ShopifyOAuthContinuation.payloadJson"
+    ]);
+    expect(protectedColumns).toEqual(credentialColumns);
+    expect(declaredCredentialSubset).toEqual(credentialColumns);
+    expect(runtimeTargets).toEqual(credentialColumns);
+  });
+
   it("rejects production startup without an encryption key", async () => {
     productionApiEnvironment();
     delete process.env.DATA_ENCRYPTION_KEY;

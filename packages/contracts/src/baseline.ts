@@ -37,6 +37,7 @@ export interface BaselineEvidenceReference {
 export interface BaselineRequirementRecord {
   readonly requirement_id: string;
   readonly phase: typeof PHASE_199_BASELINE_PHASES[number];
+  readonly completion_gate: string;
   readonly state: BaselineRequirementState;
   readonly summary: string;
   readonly evidence: readonly BaselineEvidenceReference[];
@@ -96,7 +97,8 @@ export interface BaselineCertificationManifest {
   readonly legacy_isolation: readonly LegacyIsolationRecord[];
   readonly tests: readonly BaselineTestRecord[];
   readonly production_truth: {
-    readonly release_phase: 198;
+    readonly release_phase: 198 | 199;
+    readonly release_tag: string;
     readonly canonical_release_id: string;
     readonly phase_gate_id: string;
     readonly authenticated_smoke_sha256: string;
@@ -104,15 +106,29 @@ export interface BaselineCertificationManifest {
   };
   readonly secure_json_reconciliation: {
     readonly status: "PENDING_DEPLOYMENT" | "VERIFIED" | "BLOCKED";
-    readonly plaintext_rows_found: number | null;
-    readonly plaintext_rows_reencrypted: number | null;
-    readonly receipt_sha256: string | null;
+    readonly inventory_reference: string;
+    readonly protected_targets: readonly {
+      readonly table: "ShopifyConnection" | "ShopifyOAuthContinuation";
+      readonly column: "credentialJson" | "payloadJson";
+    }[];
+    readonly apply_plaintext_rows_found: number | null;
+    readonly apply_plaintext_rows_reencrypted: number | null;
+    readonly apply_invalid_json_rows: number | null;
+    readonly apply_receipt_sha256: string | null;
+    readonly audit_receipt_sha256: string | null;
+    readonly audit_target_results: readonly {
+      readonly table: "ShopifyConnection" | "ShopifyOAuthContinuation";
+      readonly column: "credentialJson" | "payloadJson";
+      readonly plaintext_rows: number;
+      readonly invalid_json_rows: number;
+    }[];
   };
   readonly known_limitations: readonly string[];
   readonly rollback_point: {
-    readonly release_phase: 197;
+    readonly release_phase: 198;
     readonly main_sha: string;
     readonly reference: string;
+    readonly receipt_sha256: string | null;
   };
   readonly certification: {
     readonly all_mandatory_gates_passed: boolean;
@@ -125,6 +141,13 @@ export interface BaselineCertificationManifest {
 
 const gitShaPattern = /^[a-f0-9]{40}$/;
 const sha256Pattern = /^[a-f0-9]{64}$/;
+const repositoryReferencePattern = /^[^\s@/]+\/[^\s@/]+@[a-f0-9]{40}:[^\s].+$/;
+const machineLocalPathPattern = /^(?:[a-zA-Z]:[\\/]|\\\\)/;
+const phase198MainSha = "5c2f9d58c25dec82d4c3102f3b48a76797801594";
+const protectedCredentialTargets = [
+  "ShopifyConnection.credentialJson",
+  "ShopifyOAuthContinuation.payloadJson"
+] as const;
 const baselinePhaseSet = new Set<number>(PHASE_199_BASELINE_PHASES);
 const requirementStateSet = new Set<string>(BASELINE_REQUIREMENT_STATES);
 
@@ -149,12 +172,25 @@ function assertStringArray(value: unknown, field: string): asserts value is stri
   for (const [index, item] of value.entries()) assertNonEmptyString(item, `${field}[${index}]`, 500);
 }
 
+function assertRepositoryReference(value: unknown, field: string): asserts value is string {
+  assertNonEmptyString(value, field, 500);
+  if (!repositoryReferencePattern.test(value)) {
+    throw new ContractError("INVALID_BASELINE_REPOSITORY_REFERENCE", `${field} must use repository@commit:path`);
+  }
+}
+
 function assertEvidence(value: unknown, field: string): asserts value is BaselineEvidenceReference {
   assertRecord(value, field);
   assertNonEmptyString(value.path_or_id, `${field}.path_or_id`, 500);
+  if (machineLocalPathPattern.test(value.path_or_id)) {
+    throw new ContractError("MACHINE_LOCAL_BASELINE_EVIDENCE", `${field}.path_or_id must not use a machine-local path`);
+  }
   assertNullableSha256(value.content_sha256, `${field}.content_sha256`);
   if (!["SOURCE", "TEST", "DEPLOYMENT", "DATABASE", "PRODUCTION_READBACK", "AUDIT"].includes(String(value.evidence_type))) {
     throw new ContractError("INVALID_BASELINE_EVIDENCE_TYPE", `${field}.evidence_type is unsupported`);
+  }
+  if (["SOURCE", "TEST", "AUDIT"].includes(String(value.evidence_type))) {
+    assertRepositoryReference(value.path_or_id, `${field}.path_or_id`);
   }
 }
 
@@ -165,6 +201,7 @@ function assertRequirement(value: unknown, index: number): asserts value is Base
   if (!Number.isSafeInteger(value.phase) || !baselinePhaseSet.has(Number(value.phase))) {
     throw new ContractError("INVALID_BASELINE_PHASE", `${field}.phase is outside Phase 100-195 baseline scope`);
   }
+  assertNonEmptyString(value.completion_gate, `${field}.completion_gate`, 300);
   if (!requirementStateSet.has(String(value.state))) {
     throw new ContractError("INVALID_BASELINE_REQUIREMENT_STATE", `${field}.state is unsupported`);
   }
@@ -215,6 +252,7 @@ function assertLegacyIsolation(value: unknown, index: number): asserts value is 
   if (value.canonical_authority) throw new ContractError("LEGACY_CANONICAL_AUTHORITY", `${field} cannot be a canonical authority`);
   assertStringArray(value.evidence, `${field}.evidence`);
   if (value.evidence.length === 0) throw new ContractError("MISSING_LEGACY_EVIDENCE", `${field}.evidence must not be empty`);
+  value.evidence.forEach((reference, evidenceIndex) => assertRepositoryReference(reference, `${field}.evidence[${evidenceIndex}]`));
 }
 
 function assertTest(value: unknown, index: number): asserts value is BaselineTestRecord {
@@ -251,6 +289,10 @@ export function assertBaselineCertificationManifest(value: unknown): asserts val
   if (!Array.isArray(value.deployments) || value.deployments.length !== 3) throw new ContractError("BASELINE_DEPLOYMENTS", "BaselineCertificationManifest requires exactly frontend, API, and worker deployments");
   value.deployments.forEach(assertDeployment);
   if (new Set(value.deployments.map((item) => item.role)).size !== 3) throw new ContractError("BASELINE_DEPLOYMENT_ROLES", "Deployment roles must be unique");
+  const expectedDeploymentProviders = { FRONTEND: "VERCEL", API: "RAILWAY", WORKER: "RAILWAY" } as const;
+  if (value.deployments.some((item: BaselineDeploymentRecord) => item.provider !== expectedDeploymentProviders[item.role])) {
+    throw new ContractError("BASELINE_DEPLOYMENT_PROVIDER", "Frontend must bind Vercel and API/worker must bind Railway");
+  }
   if (!value.deployments.every((item) => item.deployed_commit_sha === productMainSha)) {
     throw new ContractError("BASELINE_DEPLOYMENT_SHA_MISMATCH", "All deployments must bind the exact product main SHA");
   }
@@ -266,6 +308,14 @@ export function assertBaselineCertificationManifest(value: unknown): asserts val
   for (const phase of PHASE_199_BASELINE_PHASES) {
     if (!value.requirements.some((item) => item.phase === phase)) throw new ContractError("MISSING_BASELINE_PHASE_REQUIREMENT", `Requirement matrix has no Phase ${phase} row`);
   }
+  for (const phase of PHASE_199_BASELINE_PHASES.filter((item) => item < 195)) {
+    const aggregate = value.requirements.filter((item) => item.phase === phase);
+    if (aggregate.length !== 1) throw new ContractError("INVALID_AGGREGATE_BASELINE_GATE", `Phase ${phase} requires exactly one aggregate completion-gate record`);
+    const evidenceTypes = new Set(aggregate[0]!.evidence.map((item: BaselineEvidenceReference) => item.evidence_type));
+    if (!evidenceTypes.has("SOURCE") || !evidenceTypes.has("TEST") || !evidenceTypes.has("PRODUCTION_READBACK")) {
+      throw new ContractError("INCOMPLETE_AGGREGATE_BASELINE_EVIDENCE", `Phase ${phase} aggregate must bind source, test, and release evidence`);
+    }
+  }
   for (let feature = 1; feature <= 60; feature += 1) {
     const requirementId = `P195-F${String(feature).padStart(3, "0")}`;
     if (!value.requirements.some((item) => item.requirement_id === requirementId)) throw new ContractError("MISSING_PHASE_195_REQUIREMENT", `Requirement matrix is missing ${requirementId}`);
@@ -277,7 +327,8 @@ export function assertBaselineCertificationManifest(value: unknown): asserts val
   value.tests.forEach(assertTest);
 
   assertRecord(value.production_truth, "baseline.production_truth");
-  if (value.production_truth.release_phase !== 198) throw new ContractError("BASELINE_PRODUCTION_PHASE", "Phase 199 candidate must bind the certified Phase 198 production baseline");
+  if (![198, 199].includes(Number(value.production_truth.release_phase))) throw new ContractError("BASELINE_PRODUCTION_PHASE", "Phase 199 baseline must bind release Phase 198 or 199");
+  assertNonEmptyString(value.production_truth.release_tag, "baseline.production_truth.release_tag", 100);
   assertUuid(value.production_truth.canonical_release_id, "baseline.production_truth.canonical_release_id");
   assertUuid(value.production_truth.phase_gate_id, "baseline.production_truth.phase_gate_id");
   assertSha256(value.production_truth.authenticated_smoke_sha256, "baseline.production_truth.authenticated_smoke_sha256");
@@ -285,17 +336,42 @@ export function assertBaselineCertificationManifest(value: unknown): asserts val
 
   assertRecord(value.secure_json_reconciliation, "baseline.secure_json_reconciliation");
   if (!["PENDING_DEPLOYMENT", "VERIFIED", "BLOCKED"].includes(String(value.secure_json_reconciliation.status))) throw new ContractError("BASELINE_SECURE_JSON_STATUS", "Secure JSON reconciliation status is unsupported");
-  for (const field of ["plaintext_rows_found", "plaintext_rows_reencrypted"] as const) {
+  assertRepositoryReference(value.secure_json_reconciliation.inventory_reference, "baseline.secure_json_reconciliation.inventory_reference");
+  if (!Array.isArray(value.secure_json_reconciliation.protected_targets)) throw new ContractError("BASELINE_SECURE_JSON_TARGETS", "Protected credential targets must be an array");
+  const targetKeys = value.secure_json_reconciliation.protected_targets.map((target, index) => {
+    assertRecord(target, `baseline.secure_json_reconciliation.protected_targets[${index}]`);
+    assertNonEmptyString(target.table, `baseline.secure_json_reconciliation.protected_targets[${index}].table`, 100);
+    assertNonEmptyString(target.column, `baseline.secure_json_reconciliation.protected_targets[${index}].column`, 100);
+    return `${target.table}.${target.column}`;
+  });
+  if (targetKeys.join(",") !== protectedCredentialTargets.join(",")) {
+    throw new ContractError("BASELINE_SECURE_JSON_TARGETS", "Protected credential targets must exactly match the source-backed credential inventory");
+  }
+  for (const field of ["apply_plaintext_rows_found", "apply_plaintext_rows_reencrypted", "apply_invalid_json_rows"] as const) {
     const count = value.secure_json_reconciliation[field];
     if (count !== null) assertSafeNonNegativeInteger(count, `baseline.secure_json_reconciliation.${field}`);
   }
-  assertNullableSha256(value.secure_json_reconciliation.receipt_sha256, "baseline.secure_json_reconciliation.receipt_sha256");
+  assertNullableSha256(value.secure_json_reconciliation.apply_receipt_sha256, "baseline.secure_json_reconciliation.apply_receipt_sha256");
+  assertNullableSha256(value.secure_json_reconciliation.audit_receipt_sha256, "baseline.secure_json_reconciliation.audit_receipt_sha256");
+  if (!Array.isArray(value.secure_json_reconciliation.audit_target_results)) throw new ContractError("BASELINE_SECURE_JSON_AUDIT_TARGETS", "Audit target results must be an array");
+  const auditTargetKeys = value.secure_json_reconciliation.audit_target_results.map((target, index) => {
+    const field = `baseline.secure_json_reconciliation.audit_target_results[${index}]`;
+    assertRecord(target, field);
+    assertNonEmptyString(target.table, `${field}.table`, 100);
+    assertNonEmptyString(target.column, `${field}.column`, 100);
+    assertSafeNonNegativeInteger(target.plaintext_rows, `${field}.plaintext_rows`);
+    assertSafeNonNegativeInteger(target.invalid_json_rows, `${field}.invalid_json_rows`);
+    return `${target.table}.${target.column}`;
+  });
   assertStringArray(value.known_limitations, "baseline.known_limitations");
 
   assertRecord(value.rollback_point, "baseline.rollback_point");
-  if (value.rollback_point.release_phase !== 197) throw new ContractError("BASELINE_ROLLBACK_PHASE", "Rollback point must bind Phase 197");
+  if (value.rollback_point.release_phase !== 198) throw new ContractError("BASELINE_ROLLBACK_PHASE", "Rollback point must bind immediate certified Phase 198");
   assertGitSha(value.rollback_point.main_sha, "baseline.rollback_point.main_sha");
+  if (value.rollback_point.main_sha !== phase198MainSha) throw new ContractError("BASELINE_ROLLBACK_SHA", "Rollback point must bind certified Phase 198 main");
   assertNonEmptyString(value.rollback_point.reference, "baseline.rollback_point.reference", 500);
+  if (value.rollback_point.reference !== `release:phase-198:${phase198MainSha}`) throw new ContractError("BASELINE_ROLLBACK_REFERENCE", "Rollback reference must identify certified Phase 198 main");
+  assertNullableSha256(value.rollback_point.receipt_sha256, "baseline.rollback_point.receipt_sha256");
 
   assertRecord(value.certification, "baseline.certification");
   if (typeof value.certification.all_mandatory_gates_passed !== "boolean" || typeof value.certification.phase_200_blocked !== "boolean") {
@@ -305,16 +381,33 @@ export function assertBaselineCertificationManifest(value: unknown): asserts val
   if (value.certification.review_verdict_commit_sha !== null) assertGitSha(value.certification.review_verdict_commit_sha, "baseline.certification.review_verdict_commit_sha");
   assertIsoDate(value.generated_at, "baseline.generated_at");
 
-  const blockingStates = new Set<BaselineRequirementState>(["FAILING", "MISSING", "CONTRADICTORY", "BLOCKED", "PRODUCTION_UNVERIFIED"]);
+  const blockingStates = new Set<BaselineRequirementState>([
+    "IMPLEMENTED_UNVERIFIED", "PARTIAL", "FAILING", "MISSING", "CONTRADICTORY", "BLOCKED", "PRODUCTION_UNVERIFIED"
+  ]);
   if (value.status === "CERTIFIED") {
     if (!value.certification.all_mandatory_gates_passed || value.certification.phase_200_blocked || !value.certification.review_verdict_commit_sha) {
       throw new ContractError("BASELINE_CERTIFICATION_INCOMPLETE", "Certified baseline requires passed gates, released Phase 200 block, and a commit-bound review verdict");
     }
-    if (value.secure_json_reconciliation.status !== "VERIFIED" || value.secure_json_reconciliation.receipt_sha256 === null) {
-      throw new ContractError("BASELINE_SECURE_JSON_UNVERIFIED", "Certified baseline requires verified secure JSON reconciliation");
+    if (value.production_truth.release_phase !== 199 || value.production_truth.release_tag !== "phase-199") {
+      throw new ContractError("BASELINE_FINAL_RELEASE_UNBOUND", "Certified baseline requires the final Phase 199 release tag and production truth");
     }
+    if (
+      value.secure_json_reconciliation.status !== "VERIFIED"
+      || value.secure_json_reconciliation.apply_receipt_sha256 === null
+      || value.secure_json_reconciliation.audit_receipt_sha256 === null
+      || value.secure_json_reconciliation.apply_plaintext_rows_found === null
+      || value.secure_json_reconciliation.apply_plaintext_rows_reencrypted === null
+      || value.secure_json_reconciliation.apply_plaintext_rows_reencrypted !== value.secure_json_reconciliation.apply_plaintext_rows_found
+      || value.secure_json_reconciliation.apply_invalid_json_rows === null
+      || value.secure_json_reconciliation.apply_invalid_json_rows !== 0
+      || auditTargetKeys.join(",") !== protectedCredentialTargets.join(",")
+      || value.secure_json_reconciliation.audit_target_results.some((item) => item.plaintext_rows !== 0 || item.invalid_json_rows !== 0)
+    ) {
+      throw new ContractError("BASELINE_SECURE_JSON_UNVERIFIED", "Certified baseline requires separate APPLY and fresh zero-row AUDIT receipts for every protected credential target");
+    }
+    if (value.rollback_point.receipt_sha256 === null) throw new ContractError("BASELINE_ROLLBACK_UNVERIFIED", "Certified baseline requires verified Phase 198 rollback evidence");
     if (value.requirements.some((item) => blockingStates.has(item.state))) throw new ContractError("BASELINE_BLOCKING_REQUIREMENT", "Certified baseline contains a blocking requirement state");
-    if (value.tests.some((item) => item.status === "PENDING_REVIEW")) throw new ContractError("BASELINE_PENDING_TEST", "Certified baseline contains pending test evidence");
+    if (value.tests.some((item) => item.status !== "PASSED")) throw new ContractError("BASELINE_PENDING_TEST", "Certified baseline requires every recorded test to pass");
   } else if (!value.certification.phase_200_blocked) {
     throw new ContractError("BASELINE_PHASE_200_FAIL_OPEN", "A non-certified baseline must keep Phase 200 blocked");
   }

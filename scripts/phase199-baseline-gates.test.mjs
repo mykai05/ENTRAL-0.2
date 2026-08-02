@@ -6,7 +6,7 @@ import { parseBaselineCertificationManifest } from "../packages/contracts/dist/i
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 const readJson = async (path) => JSON.parse(await read(path));
 
-test("Phase 199 candidate binds the exact certified Phase 198 production baseline", async () => {
+test("Phase 199 corrected candidate binds the certified Phase 198 baseline and owner-attested verdict", async () => {
   const [candidate, release] = await Promise.all([
     readJson("docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json"),
     readJson(".entral/governor/releases/phase-198.json")
@@ -15,7 +15,7 @@ test("Phase 199 candidate binds the exact certified Phase 198 production baselin
   assert.doesNotThrow(() => parseBaselineCertificationManifest(candidate));
   assert.equal(candidate.status, "CANDIDATE_REVIEW");
   assert.equal(candidate.certification.phase_200_blocked, true);
-  assert.equal(candidate.certification.review_verdict_commit_sha, null);
+  assert.equal(candidate.certification.review_verdict_commit_sha, "9331b6e37d5e8db114ffc5fc211df04482cfcb67");
   assert.equal(candidate.repositories.product.main_sha, release.main_sha);
   assert.deepEqual(
     candidate.deployments.map(({ deployment_id, deployed_commit_sha, role, status }) => ({ deployment_id, deployed_commit_sha, role, status })),
@@ -23,6 +23,50 @@ test("Phase 199 candidate binds the exact certified Phase 198 production baselin
   );
   assert.equal(candidate.production_truth.authenticated_smoke_sha256, release.authenticated_smoke.receipt_sha256);
   assert.equal(candidate.production_truth.state_readback_sha256, release.production_readback.receipt_sha256);
+  assert.equal(candidate.production_truth.release_tag, "phase-198");
+  assert.deepEqual(candidate.rollback_point, {
+    release_phase: 198,
+    main_sha: "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    reference: "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    receipt_sha256: null
+  });
+});
+
+test("Phase 100 through 190 aggregates name original gates and bind portable source, test, and release evidence", async () => {
+  const candidate = await readJson("docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json");
+  const portableReference = /^[^\s@/]+\/[^\s@/]+@[a-f0-9]{40}:[^\s].+$/;
+  for (const phase of [100, 110, 120, 130, 140, 150, 160, 170, 180, 190]) {
+    const records = candidate.requirements.filter((item) => item.phase === phase);
+    assert.equal(records.length, 1, `Phase ${phase} must have one aggregate record`);
+    assert.match(records[0].completion_gate, /Gate/i);
+    assert.deepEqual(new Set(records[0].evidence.map((item) => item.evidence_type)), new Set(["SOURCE", "TEST", "PRODUCTION_READBACK"]));
+    records[0].evidence.forEach((item) => assert.match(item.path_or_id, portableReference));
+  }
+  for (const item of candidate.legacy_isolation) item.evidence.forEach((reference) => assert.match(reference, portableReference));
+});
+
+test("Secure JSON inventory is complete and certification is narrowed to the exact credential subset", async () => {
+  const [candidate, inventory] = await Promise.all([
+    readJson("docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json"),
+    readJson("docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json")
+  ]);
+  const keys = (rows) => rows.map((item) => `${item.table}.${item.column}`);
+  const credentialKeys = keys(inventory.columns.filter((item) => item.credential_bearing));
+  const protectedKeys = keys(inventory.columns.filter((item) => item.reconciliation_protected));
+  assert.equal(inventory.columns.length, 60);
+  assert.equal(new Set(keys(inventory.columns)).size, 60);
+  assert.deepEqual(credentialKeys, ["ShopifyConnection.credentialJson", "ShopifyOAuthContinuation.payloadJson"]);
+  assert.deepEqual(protectedKeys, credentialKeys);
+  assert.deepEqual(keys(candidate.secure_json_reconciliation.protected_targets), credentialKeys);
+  assert.equal(candidate.secure_json_reconciliation.inventory_reference, "mykai05/ENTRAL-0.2@225c6ddff2bb738b478880dbd87f4239db924d2d:docs/evidence/phase199/SECURE_JSON_COLUMN_INVENTORY.json");
+});
+
+test("Phase 199 records every binding known limitation", async () => {
+  const candidate = await readJson("docs/evidence/phase199/BASELINE_CERTIFICATION_CANDIDATE.json");
+  const combined = candidate.known_limitations.join(" ");
+  for (const phrase of ["Phase 202", "user-local", "3D renderer", "Phase 200 UX debt", "static production ADMIN_MFA_CODE", "Checkout remains fail-closed"]) {
+    assert.match(combined, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  }
 });
 
 test("Phase 199 retains typed candidate evidence for all twenty-one acceptance gates", async () => {
@@ -87,7 +131,7 @@ test("Tenant, Tutorial, website, Microsoft, and pre-change inventories are expli
   assert.match(tutorial, /entral:open-tutorial/);
 });
 
-test("Governor keeps the next phase blocked pending mandatory review", async () => {
+test("Governor keeps the next phase blocked while owner-attested corrections are active", async () => {
   const [state, contract] = await Promise.all([
     readJson(".entral/governor/PROGRAM_STATE.json"),
     readJson(".entral/governor/phases/199/PHASE_CONTRACT.v1.json")
@@ -95,6 +139,8 @@ test("Governor keeps the next phase blocked pending mandatory review", async () 
 
   assert.equal(state.current_phase, 199);
   assert.equal(state.certified_phases.includes(199), false);
+  assert.equal(state.review_state.status, "PASS_WITH_BINDING_CORRECTIONS");
+  assert.equal(state.review_state.binding_corrections_completed, false);
   assert.equal(contract.review_policy, "MANDATORY");
   assert.equal(contract.review_checkpoint.checkpoint_id, "P199-BASELINE-RECERTIFICATION-REVIEW");
   assert.equal(contract.baseline_contract.phase_200_blocked_until_certified, true);

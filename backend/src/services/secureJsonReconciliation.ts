@@ -74,13 +74,19 @@ export function classifySecureJsonValue(value: string): "ENCRYPTED" | "PLAINTEXT
 }
 
 async function discoverTargets(database: Pick<PrismaClient, "$queryRawUnsafe">) {
+  const targetPairs = SECURE_JSON_RECONCILIATION_TARGETS
+    .map((target) => {
+      quotedIdentifier(target.tableName);
+      quotedIdentifier(target.columnName);
+      return `('${target.tableName}', '${target.columnName}')`;
+    })
+    .join(",\n        ");
   const rows = await database.$queryRawUnsafe<Array<{ tableName: string; columnName: string }>>(`
     SELECT columns.table_name AS "tableName", columns.column_name AS "columnName"
     FROM information_schema.columns AS columns
     WHERE columns.table_schema = 'public'
       AND (columns.table_name, columns.column_name) IN (
-        ('ShopifyConnection', 'credentialJson'),
-        ('ShopifyOAuthContinuation', 'payloadJson')
+        ${targetPairs}
       )
     ORDER BY columns.table_name, columns.ordinal_position
   `);

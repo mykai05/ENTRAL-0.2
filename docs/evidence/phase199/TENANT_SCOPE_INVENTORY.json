@@ -44,11 +44,11 @@
   "phase_202_target": "Add explicit organization and business ownership to shared customer state, migrate deterministically, enforce RLS and application authorization, and retain user identity only as actor or personal-owner context.",
   "immediate_block_condition": "Any current route or database policy permitting one member-session user to access another user's listed record blocks Phase 199 release.",
   "evidence": [
-    "prisma/schema.prisma",
-    "backend/src/auth.ts",
-    "backend/src/routes/member.ts",
-    "backend/src/routes/memberTaskVisibility.ts",
-    "backend/tests/memberSeatPostgres.integration.test.ts",
-    "backend/tests/phase150DatabaseAccess.integration.test.ts"
+    "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:prisma/schema.prisma",
+    "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/auth.ts",
+    "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/routes/member.ts",
+    "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/src/routes/memberTaskVisibility.ts",
+    "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/tests/memberSeatPostgres.integration.test.ts",
+    "mykai05/ENTRAL-0.2@f9bba0b275798664374b96630cc2c34a8d8ffe33:backend/tests/phase150DatabaseAccess.integration.test.ts"
   ]
 }

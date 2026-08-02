@@ -2,47 +2,53 @@
   "contract_version": "1.0.0",
   "schema_version": 1,
   "phase": 199,
+  "packet": "P199-BINDING-CORRECTIONS-001",
   "runtime": {
     "node": "20.19.0",
     "pnpm": "9.12.3"
   },
-  "source_reconciliation": {
-    "head": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
-    "origin_main": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
-    "ahead": 0,
-    "behind": 0,
-    "status": "PASSED"
+  "review": {
+    "checkpoint_id": "P199-BASELINE-RECERTIFICATION-REVIEW",
+    "reviewed_commit_sha": "f9bba0b275798664374b96630cc2c34a8d8ffe33",
+    "complete_packet_commit_sha": "9331b6e37d5e8db114ffc5fc211df04482cfcb67",
+    "verdict": "PASS_WITH_BINDING_CORRECTIONS",
+    "owner_attested": true
   },
   "commands": [
     {
       "command": "pnpm test:phase199",
       "status": "PASSED",
-      "results": "9 Node contract/static gates and 5 backend secure reconciliation tests"
-    },
-    {
-      "command": "pnpm test:phase198",
-      "status": "PASSED",
-      "results": "15 tests"
-    },
-    {
-      "command": "pnpm test:phase197",
-      "status": "PASSED",
-      "results": "25 tests"
-    },
-    {
-      "command": "pnpm test:phase196",
-      "status": "PASSED",
-      "results": "27 tests"
-    },
-    {
-      "command": "pnpm test:phase195",
-      "status": "PASSED",
-      "results": "24 tests"
+      "results": "15 Node contract/static gates and 6 backend secure reconciliation tests"
     },
     {
       "command": "pnpm contracts:verify",
       "status": "PASSED",
-      "results": "33 tests and reproducible build"
+      "results": "36 tests and reproducible build"
+    },
+    {
+      "command": "pnpm --filter @entral/backend test",
+      "status": "PASSED",
+      "results": "complete backend Vitest suite"
+    },
+    {
+      "command": "pnpm test:phase198",
+      "status": "PASSED",
+      "results": "complete Phase 198 deterministic suite"
+    },
+    {
+      "command": "pnpm test:phase197",
+      "status": "PASSED",
+      "results": "complete Phase 197 deterministic suite"
+    },
+    {
+      "command": "pnpm test:phase196",
+      "status": "PASSED",
+      "results": "complete Phase 196 deterministic suite"
+    },
+    {
+      "command": "pnpm test:phase195",
+      "status": "PASSED",
+      "results": "complete Phase 195 deterministic suite"
     },
     {
       "command": "pnpm prisma:generate",
@@ -52,7 +58,7 @@
     {
       "command": "pnpm --filter @entral/backend build",
       "status": "PASSED",
-      "results": "TypeScript build"
+      "results": "backend TypeScript production build"
     },
     {
       "command": "pnpm lint",
@@ -62,7 +68,7 @@
     {
       "command": "pnpm test",
       "status": "PASSED",
-      "results": "33 contract tests, complete backend suite including Phase 199, and 418 frontend tests"
+      "results": "36 contract tests, complete backend suite, and 418 frontend tests"
     },
     {
       "command": "pnpm build",
@@ -72,7 +78,7 @@
     {
       "command": "pnpm release:check",
       "status": "PASSED",
-      "results": "local readiness and current live deployment drift checks"
+      "results": "local readiness and certified Phase 198 live-deployment drift checks"
     },
     {
       "command": "git diff --check",
@@ -82,18 +88,23 @@
     {
       "command": "governor verify",
       "status": "PASSED",
-      "results": "state version 33, event count 33"
+      "results": "state version 38, event count 38, event-chain head 97de149de6b47ba7552b8e55094a3893a9401e86609409b0aaf35debb40464a4"
     }
   ],
   "intentionally_not_run": [
     {
       "command": "security scan",
-      "reason": "Owner explicitly prohibited a security scan for this task."
+      "reason": "Owner explicitly prohibited a new security scan."
     },
     {
-      "command": "Phase 199 production migration/reconciliation and authenticated post-deploy smoke",
-      "reason": "Mandatory GPT-5.6 Pro review must precede Phase 199 certification, merge, deployment, and production mutation."
+      "command": "Phase 200 implementation",
+      "reason": "Phase 200 remains blocked until Phase 199 is certified."
+    },
+    {
+      "command": "production credential APPLY and fresh AUDIT",
+      "reason": "The owner-required sequence runs both only after exact-main-SHA deployment."
     }
   ],
-  "recorded_at": "2026-08-01T16:45:00.000Z"
+  "suite_wall_time_seconds": 207,
+  "recorded_at": "2026-08-02T00:06:00.000Z"
 }
