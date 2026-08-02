@@ -168,6 +168,7 @@ describe("Phase 202 durable membership notification dispatcher", () => {
       token: invitationCommand.token
     });
     expect(queryText(0)).toContain("phase202_claim_notification_deliveries");
+    expect(queryText(0).match(/\?::integer/gu)).toHaveLength(2);
     expect(queryText(1)).toContain("phase202_complete_notification_delivery");
     expect(harness.queries[1]?.values).toContain("PROVIDER_ACCEPTED");
     expect(harness.queries[1]?.values).toContain("provider-message-202");
@@ -222,6 +223,7 @@ describe("Phase 202 durable membership notification dispatcher", () => {
     expect(harness.sendMembershipInvitationEmail).not.toHaveBeenCalled();
     expect(harness.sendMembershipChangeEmail).not.toHaveBeenCalled();
     expect(queryText(1)).toContain("phase202_fail_notification_delivery");
+    expect(queryText(1).match(/\?::integer/gu)).toHaveLength(2);
     expect(harness.queries[1]?.values).toContain("COMMAND_INVALID");
   });
 
