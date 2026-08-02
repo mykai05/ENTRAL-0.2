@@ -14,8 +14,8 @@
     200,
     202
   ],
-  "current_task_packet_id": null,
-  "task_status": null,
+  "current_task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "task_status": "READY",
   "last_task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
@@ -243,17 +243,17 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Create one bounded Phase 203 TaskPacket.",
+  "next_action": "Claim P203-PRODUCTION-GRAPH-RECOVERY-001 before writing.",
   "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 131,
-  "updated_at": "2026-08-02T23:06:23.096Z",
-  "task_deadline_at": "2026-08-02T23:54:58.890Z",
+  "version": 132,
+  "updated_at": "2026-08-02T23:32:15.211Z",
+  "task_deadline_at": "2026-08-03T15:32:15.211Z",
   "pending_release_manifest": null,
-  "event_count": 131,
-  "event_head_hash": "a6ed4a5f1f03c15a7400c9314dec59abb67de9c7e542f0c037e711e4f99771cd"
+  "event_count": 132,
+  "event_head_hash": "d020aafe167f38f86f49bc81571a58fd64ebbea7518bc49aed5d001a3cecf4a1"
 }
