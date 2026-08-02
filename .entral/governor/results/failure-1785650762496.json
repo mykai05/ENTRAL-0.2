@@ -1,0 +1,25 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "failure-1785650762496",
+  "task_packet_id": "P200-CI-RECOVERY-GATE-REPAIR-001",
+  "phase": 200,
+  "outcome": "FAILED",
+  "commit_sha": null,
+  "changed_files": [],
+  "tests": [
+    {
+      "command": "pnpm test:phase199",
+      "status": "FAILED",
+      "reason": "PHASE199_BOUNDARY_REJECTED_BOUNDED_P200_CI_REPAIR"
+    }
+  ],
+  "unresolved_failures": [
+    "PHASE199_BOUNDARY_REJECTED_BOUNDED_P200_CI_REPAIR"
+  ],
+  "deployment_state": {
+    "status": "NOT_ATTEMPTED"
+  },
+  "result_fingerprint": "5b98467d9505d5d00344c9a5298140e0f4d09591d0a498914f1b3dcf00567e30",
+  "completed_at": "2026-08-02T06:06:02.497Z"
+}

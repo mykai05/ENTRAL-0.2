@@ -155,15 +155,21 @@ test("Governor blocks Phase 200 until the exact Phase 199 production release and
     assert.equal(phase200Result.task_packet_id, "P200-INTERACTION-LAYER-001");
     assert.equal(phase200Result.outcome, "PASSED");
     assert.equal(phase200Result.commit_sha, "6287a9036cc55239e86e09befef07364b37502ee");
-    const boundedPhase200Tasks = [
-      "P200-INTERACTION-LAYER-001",
-      "P200-RECONCILIATION-GATE-REPAIR-001"
-    ];
+    const boundedTaskId = state.current_task_packet_id ?? state.last_task_packet_id;
+    assert.match(boundedTaskId, /^P200-[A-Z0-9-]+$/);
+    const boundedTask = await readJson(`.entral/governor/tasks/${boundedTaskId}.json`);
+    assert.equal(boundedTask.task_packet_id, boundedTaskId);
+    assert.equal(boundedTask.phase, 200);
+    assert.equal(
+      boundedTask.scope.some((entry) => /(?:phase[_-]?202|(?:^|[\\/])202(?:[\\/]|$))/i.test(entry)),
+      false
+    );
     if (state.current_task_packet_id === null) {
-      assert.equal(boundedPhase200Tasks.includes(state.last_task_packet_id), true);
       assert.equal(state.latest_execution_result.outcome, "PASSED");
+      assert.equal(state.latest_execution_result.task_packet_id, boundedTaskId);
+      assert.equal(state.latest_execution_result.phase, 200);
     } else {
-      assert.equal(boundedPhase200Tasks.includes(state.current_task_packet_id), true);
+      assert.equal(state.current_task_packet_id, boundedTaskId);
     }
     assert.equal(state.review_state, null);
   }

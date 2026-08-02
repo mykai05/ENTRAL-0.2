@@ -42,6 +42,14 @@ export function validateRecoveryRunId(runId) {
   return runId;
 }
 
+export function phase195BaselineMigrationNames(migrations) {
+  const ordered = [...migrations].sort();
+  if (!ordered.includes(phaseMigration)) {
+    throw new Error("PHASE195_MIGRATION_MISSING");
+  }
+  return ordered.filter((name) => name < phaseMigration);
+}
+
 export function recoveryTargets(runId) {
   validateRecoveryRunId(runId);
   return {
@@ -422,10 +430,8 @@ async function buildBaselinePrismaTree(temporaryDirectory) {
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
-  if (migrations.at(-1) !== phaseMigration) {
-    throw new Error("PHASE195_MIGRATION_MUST_BE_LATEST");
-  }
-  for (const migration of migrations.filter((name) => name < phaseMigration)) {
+  const baselineMigrations = phase195BaselineMigrationNames(migrations);
+  for (const migration of baselineMigrations) {
     await cp(
       resolve(sourceRoot, "migrations", migration),
       resolve(targetMigrations, migration),
@@ -433,7 +439,8 @@ async function buildBaselinePrismaTree(temporaryDirectory) {
     );
   }
   return {
-    baselineMigrationCount: migrations.length - 1,
+    baselineMigrationCount: baselineMigrations.length,
+    migrationsPath: targetMigrations,
     schemaPath: resolve(targetRoot, "schema.prisma")
   };
 }
@@ -736,6 +743,11 @@ async function runRecoveryGate() {
     }
 
     progress("applying Phase195 forward recovery, both grants files, and two idempotent seeds");
+    await cp(
+      resolve(repoRoot, "prisma/migrations", phaseMigration),
+      resolve(baseline.migrationsPath, phaseMigration),
+      { recursive: true }
+    );
     const restoreOwnerUrl = databaseUrl(
       targets.restoreAdmin,
       restorePort,
@@ -745,7 +757,7 @@ async function runRecoveryGate() {
       "migrate",
       "deploy",
       "--schema",
-      "prisma/schema.prisma"
+      baseline.schemaPath
     ], "FORWARD_MIGRATION_FAILED");
     runRepositoryScript(
       restoreOwnerUrl,
