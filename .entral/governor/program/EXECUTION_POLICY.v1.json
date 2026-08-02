@@ -1,0 +1,52 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_model": "CODEX_5_6_SOL_XHIGH",
+  "reasoning_level": "EXTRA_HIGH",
+  "delegation": {
+    "native_codex_subagents_allowed": true,
+    "use_when_materially_useful": true,
+    "single_writer_scope": "MUTABLE_FILE_MODULE_SCHEMA_CONTRACT_SCOPE",
+    "read_only_delegation_allowed": [
+      "repository exploration",
+      "dependency mapping",
+      "test-log analysis",
+      "tenant-boundary review",
+      "security-boundary review",
+      "browser verification",
+      "accessibility review",
+      "evidence collection"
+    ],
+    "writing_delegation_requirements": [
+      "bounded non-overlapping ownership",
+      "isolated worktree when appropriate",
+      "no simultaneous edits to the same mutable file, migration, schema, contract, or central runtime module"
+    ],
+    "prohibited_models": [
+      "MAX",
+      "ULTRA",
+      "SPARK",
+      "CLAUDE",
+      "GROK",
+      "MICROSOFT_COPILOT"
+    ]
+  },
+  "phase_lead": {
+    "required": true,
+    "sole_authority": [
+      "architecture",
+      "interface reconciliation",
+      "delegated diff inspection",
+      "integration",
+      "commit",
+      "merge",
+      "deployment",
+      "production repair",
+      "final verification",
+      "certification"
+    ]
+  },
+  "custom_orchestration_platform_prohibited": true,
+  "effective_from_phase": 202,
+  "recorded_at": "2026-08-02T08:32:00.000Z"
+}

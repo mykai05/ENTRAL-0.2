@@ -76,7 +76,7 @@
     "No custom identity provider, password-sharing support flow, or consumer ChatGPT automation",
     "No mock, placeholder, sample-backed, fake metric, no-op, plaintext-secret fallback, or unrelated refactor",
     "No security scan",
-    "No alternate coding model, subagent, or agent team"
+    "No alternate coding model or reasoning level; every lead or delegated agent must be Codex 5.6 Sol Extra High"
   ],
   "acceptance_tests": [
     "pnpm test:phase202",
@@ -144,7 +144,40 @@
     "future_phase_compatibility_required": false,
     "work_created_to_stay_active": false,
     "speculative_refactors": [],
-    "duplicate_systems": []
+    "duplicate_systems": [],
+    "delegation": {
+      "allowed": true,
+      "execution_model": "CODEX_5_6_SOL_XHIGH",
+      "reasoning_level": "EXTRA_HIGH",
+      "single_writer_boundary": "MUTABLE_FILE_MODULE_SCHEMA_CONTRACT_SCOPE",
+      "read_only_scopes": [
+        "repository exploration",
+        "dependency mapping",
+        "test-log analysis",
+        "tenant-boundary review",
+        "security-boundary review",
+        "browser verification",
+        "accessibility review",
+        "evidence collection"
+      ],
+      "writing_requirements": [
+        "bounded non-overlapping file or module ownership",
+        "isolated worktree when shared checkout isolation is required",
+        "no simultaneous edits to the same mutable file, migration, schema, contract, or central runtime module"
+      ],
+      "lead_authority": [
+        "architecture",
+        "interface reconciliation",
+        "diff review",
+        "integration",
+        "commit",
+        "merge",
+        "deployment",
+        "production repair",
+        "final verification",
+        "certification"
+      ]
+    }
   },
   "relevant_adrs": [
     "docs/entral/101_architecture_lock.md"
@@ -162,5 +195,7 @@
     "backend/src/routes/auth.ts",
     "backend/src/routes/account.ts"
   ],
-  "created_at": "2026-08-02T07:53:41.645Z"
+  "created_at": "2026-08-02T07:53:41.645Z",
+  "amended_at": "2026-08-02T08:32:00.000Z",
+  "owner_policy_correction": "Native Codex 5.6 Sol Extra High subagents are permitted when useful under per-scope single-writer ownership; the phase lead retains sole integration and release authority."
 }
