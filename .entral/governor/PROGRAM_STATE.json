@@ -267,6 +267,7 @@
       "backend/src/routes/controlPlane.ts",
       "backend/src/routes/member.ts",
       "backend/src/routes/graphPreferences.ts",
+      "backend/src/routes/interactionLayer.ts",
       "backend/src/services/canonicalControlPlane.ts",
       "backend/src/services/graphPreferences.ts",
       "backend/src/services/memberWorkspace.ts",
@@ -274,6 +275,7 @@
       "backend/tests/controlPlaneRoutes.test.ts",
       "backend/tests/memberRoutes.test.ts",
       "backend/tests/phase195GraphTelemetryRoutes.test.ts",
+      "backend/tests/phase200InteractionLayer.test.ts",
       "backend/tests/phase195CanonicalPersistencePostgres.integration.test.ts",
       "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts",
       "backend/tests/phase202RequestDatabaseContext.test.ts",
@@ -304,18 +306,18 @@
       "package.json"
     ],
     "acquired_at": "2026-08-02T23:32:29.485Z",
-    "heartbeat_at": "2026-08-02T23:32:29.485Z",
-    "expires_at": "2026-08-03T03:32:29.485Z"
+    "heartbeat_at": "2026-08-02T23:56:23.674Z",
+    "expires_at": "2026-08-03T03:56:23.674Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 133,
-  "updated_at": "2026-08-02T23:32:29.485Z",
+  "version": 134,
+  "updated_at": "2026-08-02T23:56:23.674Z",
   "task_deadline_at": "2026-08-03T15:32:15.211Z",
   "pending_release_manifest": null,
-  "event_count": 133,
-  "event_head_hash": "b5858eee420938211dba91d548df33786f26ed939e4d7a3acc9865a48e16d516"
+  "event_count": 134,
+  "event_head_hash": "862117d8005289bac6bb2b7bf411eda690cdfb599ce9dbd47b6bb8d1005d3909"
 }
