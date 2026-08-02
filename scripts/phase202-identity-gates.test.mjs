@@ -7,6 +7,9 @@ import test from "node:test";
 const repositoryRoot = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, repositoryRoot), "utf8");
 const readJson = async (path) => JSON.parse(await read(path));
+const repositoryTextSha256 = (value) => createHash("sha256")
+  .update(value.replace(/\r\n?/g, "\n"), "utf8")
+  .digest("hex");
 const contractsRequire = createRequire(new URL("packages/contracts/package.json", repositoryRoot));
 const { parse: parseYaml } = contractsRequire("yaml");
 
@@ -231,7 +234,7 @@ test("P202-F003-A exhaustively inventories customer records and binds applicable
     "actorId", "createdBy", "ownedBy", "mappingStrategy", "version"
   ]);
   assertModelFields(models, "AuditLog", ["scopeKind", "scopeResolution", "organizationId", "tenantId", "businessId", "actorId", "createdBy", "ownedBy"]);
-  const ledgerHash = createHash("sha256").update(await read("docs/PHASE_202_MODEL_SCOPE_LEDGER.json")).digest("hex");
+  const ledgerHash = repositoryTextSha256(await read("docs/PHASE_202_MODEL_SCOPE_LEDGER.json"));
   assert.ok(migration.includes(`phase202-source-inventory-v2|model-ledger-sha256=${ledgerHash}`));
   const migrationInventories = parseSqlTextArray(migration, "source_tables");
   assert.ok(migrationInventories.length >= 2, "migration must retain blocker and live-hash inventories");
