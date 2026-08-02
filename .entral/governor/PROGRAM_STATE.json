@@ -11,8 +11,8 @@
     197,
     198
   ],
-  "current_task_packet_id": null,
-  "task_status": null,
+  "current_task_packet_id": "P199-RELEASE-CI-REPAIR-001",
+  "task_status": "CLAIMED",
   "last_task_packet_id": "P199-BINDING-CORRECTIONS-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
@@ -200,8 +200,23 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Certify the phase using exact corrected release evidence.",
-  "active_write_lease": null,
+  "next_action": "Execute only P199-RELEASE-CI-REPAIR-001, then record its exact result.",
+  "active_write_lease": {
+    "contract_version": "1.0.0",
+    "schema_version": 1,
+    "lease_id": "f5f207bd-7b09-4dd7-a2b9-5e9e2ff73556",
+    "task_packet_id": "P199-RELEASE-CI-REPAIR-001",
+    "owner": "phase199-sol-xhigh-20260801",
+    "actor": "CODEX_5_6_SOL_XHIGH",
+    "scope": [
+      ".entral/governor/**",
+      "scripts/phase199-baseline-gates.test.mjs",
+      "docs/evidence/phase199/TEST_RECEIPTS.json"
+    ],
+    "acquired_at": "2026-08-02T00:10:29.402Z",
+    "heartbeat_at": "2026-08-02T00:10:29.402Z",
+    "expires_at": "2026-08-02T01:10:29.402Z"
+  },
   "latest_checkpoint": null,
   "review_state": {
     "contract_version": "1.0.0",
@@ -244,14 +259,12 @@
     "correction_commit_sha": "39000c648844e02fa472b1f4a824cd0114d70ba7"
   },
   "conditional_review_triggers": [],
-  "task_attempts": 1,
-  "result_fingerprints": [
-    "eea88dbb86829aa550e4daf30bea155ff14952b2458b349c2babef5ee8f621e8"
-  ],
-  "version": 40,
-  "updated_at": "2026-08-02T00:08:08.733Z",
-  "task_deadline_at": "2026-08-02T11:45:22.336Z",
+  "task_attempts": 0,
+  "result_fingerprints": [],
+  "version": 42,
+  "updated_at": "2026-08-02T00:10:29.402Z",
+  "task_deadline_at": "2026-08-02T02:10:29.297Z",
   "pending_release_manifest": null,
-  "event_count": 40,
-  "event_head_hash": "73d63face20d897ad3524d791f61f6c23b1618c7ee721fffdf3892ea1d24e25f"
+  "event_count": 42,
+  "event_head_hash": "018c5be9a582627e71ccd6b4dd5d1c3d99c3c70be7203c1b4f2dcf4a83db70de"
 }
