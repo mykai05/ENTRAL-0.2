@@ -132,9 +132,10 @@ test("Tenant, Tutorial, website, Microsoft, and pre-change inventories are expli
 });
 
 test("Governor blocks Phase 200 until the exact Phase 199 production release and then permits only its bounded continuation", async () => {
-  const [state, contract] = await Promise.all([
+  const [state, contract, phase200Result] = await Promise.all([
     readJson(".entral/governor/PROGRAM_STATE.json"),
-    readJson(".entral/governor/phases/199/PHASE_CONTRACT.v1.json")
+    readJson(".entral/governor/phases/199/PHASE_CONTRACT.v1.json"),
+    readJson(".entral/governor/results/P200-INTERACTION-LAYER-001-6287a903.json")
   ]);
 
   if (state.current_phase === 199) {
@@ -151,7 +152,19 @@ test("Governor blocks Phase 200 until the exact Phase 199 production release and
     assert.equal(state.certified_phases.includes(199), true);
     assert.equal(state.latest_production_release.phase, 199);
     assert.equal(state.latest_production_release.main_sha, "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb");
-    assert.equal(state.current_task_packet_id, "P200-INTERACTION-LAYER-001");
+    assert.equal(phase200Result.task_packet_id, "P200-INTERACTION-LAYER-001");
+    assert.equal(phase200Result.outcome, "PASSED");
+    assert.equal(phase200Result.commit_sha, "6287a9036cc55239e86e09befef07364b37502ee");
+    const boundedPhase200Tasks = [
+      "P200-INTERACTION-LAYER-001",
+      "P200-RECONCILIATION-GATE-REPAIR-001"
+    ];
+    if (state.current_task_packet_id === null) {
+      assert.equal(boundedPhase200Tasks.includes(state.last_task_packet_id), true);
+      assert.equal(state.latest_execution_result.outcome, "PASSED");
+    } else {
+      assert.equal(boundedPhase200Tasks.includes(state.current_task_packet_id), true);
+    }
     assert.equal(state.review_state, null);
   }
   assert.equal(contract.review_policy, "MANDATORY");

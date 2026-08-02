@@ -12,8 +12,8 @@
     198,
     199
   ],
-  "current_task_packet_id": null,
-  "task_status": null,
+  "current_task_packet_id": "P200-RECONCILIATION-GATE-REPAIR-001",
+  "task_status": "CLAIMED",
   "last_task_packet_id": "P200-INTERACTION-LAYER-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
@@ -267,19 +267,31 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Reconcile Phase 200 with current origin/main and run the complete phase suite.",
-  "active_write_lease": null,
+  "next_action": "Execute only P200-RECONCILIATION-GATE-REPAIR-001, then record its exact result.",
+  "active_write_lease": {
+    "contract_version": "1.0.0",
+    "schema_version": 1,
+    "lease_id": "b4cebbeb-536a-4191-b861-6bcc2963c67a",
+    "task_packet_id": "P200-RECONCILIATION-GATE-REPAIR-001",
+    "owner": "phase200-interaction-20260802",
+    "actor": "CODEX_5_6_SOL_XHIGH",
+    "scope": [
+      ".entral/governor/**",
+      "scripts/phase199-baseline-gates.test.mjs"
+    ],
+    "acquired_at": "2026-08-02T05:51:54.794Z",
+    "heartbeat_at": "2026-08-02T05:51:54.794Z",
+    "expires_at": "2026-08-02T07:51:54.794Z"
+  },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 1,
-  "result_fingerprints": [
-    "18224005ccc7521f23878360fbfbbf9f53574223165c51e3b15441bbc7997898"
-  ],
-  "version": 69,
-  "updated_at": "2026-08-02T05:50:29.455Z",
-  "task_deadline_at": "2026-08-02T13:58:38.984Z",
+  "task_attempts": 0,
+  "result_fingerprints": [],
+  "version": 71,
+  "updated_at": "2026-08-02T05:51:54.794Z",
+  "task_deadline_at": "2026-08-02T07:51:54.331Z",
   "pending_release_manifest": null,
-  "event_count": 69,
-  "event_head_hash": "f815554391254043a93ba88cf6a96984487f7d7b8b76c639a65a240edd6ed984"
+  "event_count": 71,
+  "event_head_hash": "2bfb4948853f19126a92a71fce3d08149a8c927c4e91cab6c20463de543239b0"
 }
