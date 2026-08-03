@@ -52,27 +52,90 @@
     "scripts/phase203-capability-truth-gates.test.mjs"
   ],
   "tests": [
-    { "command": "pnpm --filter @entral/backend exec vitest run tests/phase203CapabilityTruthService.test.ts tests/phase203CapabilityTruthRoutes.test.ts", "status": "PASSED" },
-    { "command": "pnpm test:phase203", "status": "PASSED" },
-    { "command": "pnpm test:phase203 with migrated-account PostgreSQL integration", "status": "PASSED" },
-    { "command": "pnpm contracts:verify", "status": "PASSED" },
-    { "command": "pnpm prisma:generate", "status": "PASSED" },
-    { "command": "pnpm test:phase200", "status": "PASSED" },
-    { "command": "pnpm test:phase202", "status": "PASSED" },
-    { "command": "pnpm test:phase203:graph-recovery", "status": "PASSED" },
-    { "command": "pnpm lint", "status": "PASSED" },
-    { "command": "pnpm test", "status": "PASSED" },
-    { "command": "pnpm build", "status": "PASSED" },
-    { "command": "pnpm release:check", "status": "PASSED" },
-    { "command": "protected-main CI/CD run 30804589003 verify job 91656855652", "status": "PASSED" },
-    { "command": "exact-SHA Vercel, Railway API, and Railway worker deployment readback", "status": "PASSED" },
-    { "command": "production Prisma migration APPLY and role APPLY", "status": "PASSED" },
-    { "command": "independent production migration, role, and conservative import AUDIT", "status": "PASSED" },
-    { "command": "authenticated production Product Truth public and member readback for all nine surfaces", "status": "PASSED" },
-    { "command": "authenticated production Product Truth admin readback with temporary MFA cleanup", "status": "PASSED" },
-    { "command": "pnpm test:e2e:production-member", "status": "PASSED" },
-    { "command": "git diff --check", "status": "PASSED" },
-    { "command": "pnpm governor verify", "status": "PASSED" }
+    {
+      "command": "pnpm --filter @entral/backend exec vitest run tests/phase203CapabilityTruthService.test.ts tests/phase203CapabilityTruthRoutes.test.ts",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase203",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase203 with migrated-account PostgreSQL integration",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase200",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase202",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase203:graph-recovery",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED"
+    },
+    {
+      "command": "protected-main CI/CD run 30804589003 verify job 91656855652",
+      "status": "PASSED"
+    },
+    {
+      "command": "exact-SHA Vercel, Railway API, and Railway worker deployment readback",
+      "status": "PASSED"
+    },
+    {
+      "command": "production Prisma migration APPLY and role APPLY",
+      "status": "PASSED"
+    },
+    {
+      "command": "independent production migration, role, and conservative import AUDIT",
+      "status": "PASSED"
+    },
+    {
+      "command": "authenticated production Product Truth public and member readback for all nine surfaces",
+      "status": "PASSED"
+    },
+    {
+      "command": "authenticated production Product Truth admin readback with temporary MFA cleanup",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:e2e:production-member",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm governor verify",
+      "status": "PASSED"
+    }
   ],
   "unresolved_failures": [],
   "deployment_state": {

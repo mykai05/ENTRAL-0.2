@@ -14,64 +14,73 @@
     200,
     202
   ],
-  "current_task_packet_id": "P203-CAPABILITY-TRUTH-REGISTRY-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P203-CAPABILITY-TRUTH-REGISTRY-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P203-PRODUCTION-GRAPH-RECOVERY-001-43d27548",
-    "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+    "execution_result_id": "P203-CAPABILITY-TRUTH-REGISTRY-001-3bb48d19",
+    "task_packet_id": "P203-CAPABILITY-TRUTH-REGISTRY-001",
     "phase": 203,
     "outcome": "PASSED",
-    "commit_sha": "43d2754818b69255b58e3fecaec0ffebf73baa02",
+    "commit_sha": "3bb48d19d95a3fa14dbd02be71b804a6ff9e2d0b",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/incidents/P203-PRODUCTION-GRAPH-RECOVERY-001.json",
-      ".entral/governor/lib/contracts.mjs",
-      ".entral/governor/tasks/P203-PRODUCTION-GRAPH-RECOVERY-001.json",
-      ".entral/governor/tests/governor.test.mjs",
-      ".entral/governor/tests/release-controller.test.mjs",
+      ".entral/governor/tasks/P203-CAPABILITY-TRUTH-REGISTRY-001.json",
       ".github/workflows/ci-cd.yml",
-      "backend/src/routes/interactionLayer.ts",
-      "backend/src/services/interactionLayer.ts",
-      "backend/tests/phase200InteractionLayer.test.ts",
-      "backend/tests/phase203ProductionGraphRecoveryPostgres.integration.test.ts",
-      "docs/PHASE_202_VERIFICATION.md",
-      "docs/PHASE_203_PRODUCTION_GRAPH_RECOVERY_VERIFICATION.md",
-      "docs/evidence/phase202/POST_CERTIFICATION_CORRECTION_P203.json",
-      "docs/evidence/phase203/production-graph-recovery/AUTHENTICATED_ENDPOINT_READBACK.json",
-      "docs/evidence/phase203/production-graph-recovery/INCIDENT_RESOLUTION_RECEIPT.json",
-      "docs/evidence/phase203/production-graph-recovery/MIGRATED_STATE_READBACK.json",
-      "docs/evidence/phase203/production-graph-recovery/MIGRATION_RECEIPT.json",
-      "docs/evidence/phase203/production-graph-recovery/PRODUCTION_DEPLOYMENT_READBACK.json",
-      "docs/evidence/phase203/production-graph-recovery/PRODUCTION_MEMBER_JOURNEY.json",
-      "docs/evidence/phase203/production-graph-recovery/PROTECTED_MAIN_RECEIPT.json",
-      "docs/evidence/phase203/production-graph-recovery/ROLLBACK_READINESS_RECEIPT.json",
-      "docs/evidence/phase203/production-graph-recovery/TEST_RECEIPTS.json",
-      "e2e/production-member-journey.mjs",
+      "backend/src/dev-memory-server.ts",
+      "backend/src/routes/capabilityTruth.ts",
+      "backend/src/routes/connections.ts",
+      "backend/src/server.ts",
+      "backend/src/services/capabilityTruth.ts",
+      "backend/tests/phase203CapabilityTruthPostgres.integration.test.ts",
+      "backend/tests/phase203CapabilityTruthRoutes.test.ts",
+      "backend/tests/phase203CapabilityTruthService.test.ts",
+      "docs/evidence/phase203/capability-truth/CAPABILITY_TRUTH_CORE_CHECKPOINT.json",
+      "docs/evidence/phase203/capability-truth/PRODUCTION_DEPLOYMENT_READBACK.json",
+      "docs/evidence/phase203/capability-truth/PRODUCTION_MEMBER_JOURNEY.json",
+      "docs/evidence/phase203/capability-truth/PUBLICATION_CONSUMER_INVENTORY.json",
+      "docs/evidence/phase203/capability-truth/SOURCE_INVENTORY.json",
+      "e2e/entral.e2e.mjs",
+      "frontend/components/AdminDashboard.tsx",
+      "frontend/components/CapabilityTruthAdmin.tsx",
+      "frontend/components/ConnectionCenter.tsx",
+      "frontend/components/OnboardingTour.tsx",
+      "frontend/lib/capability-truth.ts",
+      "frontend/lib/tool-registry.ts",
+      "frontend/tests/CapabilityTruthAdmin.test.tsx",
+      "frontend/tests/CapabilityTruthIntegrationList.test.tsx",
+      "frontend/tests/CapabilityTruthTutorial.test.tsx",
+      "frontend/tests/OnboardingTour.test.tsx",
       "package.json",
-      "prisma/migrations/20260803000000_phase_203_graph_recovery/migration.sql",
-      "scripts/phase199-baseline-gates.test.mjs",
-      "scripts/phase203-production-graph-recovery-gates.test.mjs",
-      "scripts/release-readiness.mjs"
+      "packages/contracts/capability-truth-publication.schema.json",
+      "packages/contracts/capability-truth-record.schema.json",
+      "packages/contracts/openapi.yaml",
+      "packages/contracts/package.json",
+      "packages/contracts/src/capability-truth.ts",
+      "packages/contracts/src/index.ts",
+      "packages/contracts/tests/capability-truth.test.mjs",
+      "packages/contracts/tests/contracts.test.mjs",
+      "prisma/migrations/20260803010000_phase_203_capability_truth_registry/migration.sql",
+      "prisma/security/049_phase_203_roles_and_grants.sql",
+      "scripts/apply-database-roles.mjs",
+      "scripts/phase195-release-gates.test.mjs",
+      "scripts/phase203-capability-source-inventory.test.mjs",
+      "scripts/phase203-capability-truth-gates.test.mjs"
     ],
     "tests": [
       {
-        "command": "targeted graph projection and tenant-context tests",
+        "command": "pnpm --filter @entral/backend exec vitest run tests/phase203CapabilityTruthService.test.ts tests/phase203CapabilityTruthRoutes.test.ts",
         "status": "PASSED"
       },
       {
-        "command": "migrated-account PostgreSQL integration test",
+        "command": "pnpm test:phase203",
         "status": "PASSED"
       },
       {
-        "command": "pnpm test:phase202",
-        "status": "PASSED"
-      },
-      {
-        "command": "pnpm test:phase200",
+        "command": "pnpm test:phase203 with migrated-account PostgreSQL integration",
         "status": "PASSED"
       },
       {
@@ -83,15 +92,23 @@
         "status": "PASSED"
       },
       {
+        "command": "pnpm test:phase200",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:phase202",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:phase203:graph-recovery",
+        "status": "PASSED"
+      },
+      {
         "command": "pnpm lint",
         "status": "PASSED"
       },
       {
-        "command": "complete affected backend tests",
-        "status": "PASSED"
-      },
-      {
-        "command": "complete affected frontend tests",
+        "command": "pnpm test",
         "status": "PASSED"
       },
       {
@@ -103,53 +120,53 @@
         "status": "PASSED"
       },
       {
-        "command": "protected-main CI run 30782512745 attempt 2",
+        "command": "protected-main CI/CD run 30804589003 verify job 91656855652",
         "status": "PASSED"
       },
       {
-        "command": "authenticated production canonical workspace endpoint readback",
+        "command": "exact-SHA Vercel, Railway API, and Railway worker deployment readback",
         "status": "PASSED"
       },
       {
-        "command": "authenticated production browser graph journey at 360, 390, 412, 430, and 1440 CSS pixels",
+        "command": "production Prisma migration APPLY and role APPLY",
         "status": "PASSED"
       },
       {
-        "command": "exact-SHA Vercel frontend, Railway API, and Railway worker readback",
+        "command": "independent production migration, role, and conservative import AUDIT",
         "status": "PASSED"
       },
       {
-        "command": "production migration APPLY and independent fresh AUDIT",
+        "command": "authenticated production Product Truth public and member readback for all nine surfaces",
         "status": "PASSED"
       },
       {
-        "command": "Governor verification",
+        "command": "authenticated production Product Truth admin readback with temporary MFA cleanup",
+        "status": "PASSED"
+      },
+      {
+        "command": "pnpm test:e2e:production-member",
         "status": "PASSED"
       },
       {
         "command": "git diff --check",
         "status": "PASSED"
+      },
+      {
+        "command": "pnpm governor verify",
+        "status": "PASSED"
       }
     ],
     "unresolved_failures": [],
     "deployment_state": {
-      "status": "DEPLOYED",
-      "main_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
-      "release_kind": "PHASE_203_PREFLIGHT_INCIDENT",
-      "release_tag": null,
-      "release_manifest": null,
-      "frontend_deployment_id": "dpl_BMP1J3Pkz9LB1NBw2sb5f5LNCKmX",
-      "api_deployment_id": "6887706f-1f13-4b3f-8ae9-f812ac7c4321",
-      "worker_deployment_id": "011b8ff5-9814-4ba7-861e-9b298a80cb32",
-      "migration": "20260803000000_phase_203_graph_recovery",
-      "migration_status": "VERIFIED",
-      "authenticated_member_journey_receipt_sha256": "e928e74f847b6232be49bd9bda8913f3de881ede257863bee34839dd074ae2a6",
-      "incident_resolution_receipt_sha256": "902a523e927c931d47de2c5efeb15e9fea16b45825d4e0662d7bdd87aee01d16",
-      "immediate_rollback_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
-      "deep_restore_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+      "status": "DEPLOYED_CORE_CHECKPOINT",
+      "main_sha": "2575fe741935a7c5e1ca9cc6eb9f26ade3fc3458",
+      "frontend_deployment_id": "dpl_9hWP4d4NxST1aZ1NHrqS2ATamK5X",
+      "api_deployment_id": "cebe30e6-0eff-4a43-b65a-270008818a5c",
+      "worker_deployment_id": "3b008c43-9df1-4ba3-aa70-d0b53bedc13a",
+      "certification_status": "BLOCKED_PENDING_P203_MEMBER_UI_TRUTH_CORRECTION_001"
     },
-    "result_fingerprint": "1f0993703d0e136ae938de0e267ecdf7ff6727c5f41f0331f4f1b357dac4609a",
-    "completed_at": "2026-08-03T04:22:53.373Z"
+    "result_fingerprint": "86246dd7e7373730d81059e112fd2c32ec1d3f151e48ed1834aa1c184a47e232",
+    "completed_at": "2026-08-03T10:35:00.000Z"
   },
   "latest_verified_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
   "latest_production_release": {
@@ -277,104 +294,19 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P203-CAPABILITY-TRUTH-REGISTRY-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "f983f9b7-335f-4da5-8423-ea53a479fcf2",
-    "task_packet_id": "P203-CAPABILITY-TRUTH-REGISTRY-001",
-    "owner": "codex-p203-capability-truth-lead",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      ".entral/governor/**",
-      ".github/workflows/ci-cd.yml",
-      "packages/contracts/src/capability-truth.ts",
-      "packages/contracts/src/index.ts",
-      "packages/contracts/capability-truth*.schema.json",
-      "packages/contracts/openapi.yaml",
-      "packages/contracts/package.json",
-      "packages/contracts/tests/contracts.test.mjs",
-      "packages/contracts/tests/capability-truth.test.mjs",
-      "prisma/schema.prisma",
-      "prisma/migrations/*phase_203_capability_truth*/**",
-      "prisma/security/049_phase_203_roles_and_grants.sql",
-      "backend/src/db.ts",
-      "backend/src/server.ts",
-      "backend/src/auth.ts",
-      "backend/src/phase202RequestDatabaseContext.ts",
-      "backend/src/routes/admin.ts",
-      "backend/src/routes/connections.ts",
-      "backend/src/routes/member.ts",
-      "backend/src/routes/capabilityTruth.ts",
-      "backend/src/services/capabilityTruth.ts",
-      "backend/src/services/toolRegistry.ts",
-      "backend/src/dev-memory-server.ts",
-      "backend/tests/adminRoutes.test.ts",
-      "backend/tests/connectionsRoutes.test.ts",
-      "backend/tests/memberRoutes.test.ts",
-      "backend/tests/*phase203*capability*truth*.test.ts",
-      "backend/tests/*phase203*capability*truth*.integration.test.ts",
-      "frontend/app/admin/page.tsx",
-      "frontend/app/page.tsx",
-      "frontend/app/member/**",
-      "frontend/components/AdminDashboard.tsx",
-      "frontend/components/CapabilityTruthAdmin.tsx",
-      "frontend/components/OnboardingTour.tsx",
-      "frontend/components/ToolRegistry.tsx",
-      "frontend/components/ConnectionCenter.tsx",
-      "frontend/lib/api.ts",
-      "frontend/lib/capability-truth.ts",
-      "frontend/lib/tool-registry.ts",
-      "frontend/tests/AdminDashboard*.test.tsx",
-      "frontend/tests/CapabilityTruth*.test.tsx",
-      "frontend/tests/OnboardingTour.test.tsx",
-      "frontend/tests/ToolRegistry*.test.tsx",
-      "e2e/**",
-      "scripts/phase195-release-gates.test.mjs",
-      "scripts/phase203-capability-truth*.mjs",
-      "scripts/phase203-capability-source-inventory.test.mjs",
-      "scripts/apply-database-roles.mjs",
-      "scripts/release-readiness.mjs",
-      "scripts/release-control/**",
-      "docs/PHASE_203_CAPABILITY_TRUTH*.md",
-      "docs/evidence/phase203/capability-truth/**",
-      "docs/tutorial/**",
-      "DEPLOYMENT.md",
-      "package.json",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/entral/**",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/page.tsx",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/contact/**",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/member/sign-in/**",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/privacy/page.tsx",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/site-navigation.tsx",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/site-chrome.tsx",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/services/page.tsx",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/industries/**",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/lib/product-truth.ts",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/worker/concierge.ts",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/worker/inquiries.ts",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/worker/index.ts",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/scripts/check-production.mjs",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/tests/**",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/.env.example",
-      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/README.md",
-      "repository:SovereignProtocol/sovereign-protocol-agent:platform/power-platform/agent-builds/business-discovery-research-v1.0/verification.json",
-      "repository:SovereignProtocol/sovereign-protocol-agent:platform/power-platform/agent-builds/business-discovery-research-v1.0/technical-approval.json",
-      "repository:SovereignProtocol/sovereign-protocol-agent:platform/power-platform/agent-inventory.v1.json"
-    ],
-    "acquired_at": "2026-08-03T04:28:36.905Z",
-    "heartbeat_at": "2026-08-03T09:30:08.977Z",
-    "expires_at": "2026-08-03T12:30:08.977Z"
-  },
+  "next_action": "Reconcile Phase 203 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 169,
-  "updated_at": "2026-08-03T09:30:08.977Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "86246dd7e7373730d81059e112fd2c32ec1d3f151e48ed1834aa1c184a47e232"
+  ],
+  "version": 170,
+  "updated_at": "2026-08-03T10:37:37.465Z",
   "task_deadline_at": "2026-08-03T20:28:21.277Z",
   "pending_release_manifest": null,
-  "event_count": 169,
-  "event_head_hash": "e05d3731ab1e810701546bdc6a9f8dff446bfcf908af79f0d4373b54989aefce"
+  "event_count": 170,
+  "event_head_hash": "6ef5eee3af593b0e662bfaaad7b59cfe9676edb6c4241b9d92a7d834c89d1a76"
 }
