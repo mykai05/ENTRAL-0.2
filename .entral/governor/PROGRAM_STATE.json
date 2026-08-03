@@ -14,87 +14,116 @@
     200,
     202
   ],
-  "current_task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
-  "task_status": "CLAIMED",
-  "last_task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
+  "current_task_packet_id": null,
+  "task_status": null,
+  "last_task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
   "latest_execution_result": {
     "contract_version": "1.0.0",
     "schema_version": 1,
-    "execution_result_id": "P202-IDENTITY-TENANCY-AUTHORITY-001-f78d4bfc",
-    "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
-    "phase": 202,
+    "execution_result_id": "P203-PRODUCTION-GRAPH-RECOVERY-001-43d27548",
+    "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+    "phase": 203,
     "outcome": "PASSED",
-    "commit_sha": "f78d4bfcfa69ad515510c3e42397a97739bb3810",
+    "commit_sha": "43d2754818b69255b58e3fecaec0ffebf73baa02",
     "changed_files": [
       ".entral/governor/PROGRAM_STATE.json",
       ".entral/governor/events/EVENTS.jsonl",
-      ".entral/governor/release-control/phase-202/EVIDENCE_BUNDLE.json",
-      ".entral/governor/release-control/phase-202/RELEASE_CONTROL_EVIDENCE.json",
-      ".entral/governor/release-control/phase-202/RELEASE_CONTROL_PLAN.json",
-      ".entral/governor/releases/phase-202.json",
+      ".entral/governor/incidents/P203-PRODUCTION-GRAPH-RECOVERY-001.json",
+      ".entral/governor/lib/contracts.mjs",
+      ".entral/governor/tasks/P203-PRODUCTION-GRAPH-RECOVERY-001.json",
+      ".entral/governor/tests/governor.test.mjs",
+      ".entral/governor/tests/release-controller.test.mjs",
+      ".github/workflows/ci-cd.yml",
+      "backend/src/routes/interactionLayer.ts",
+      "backend/src/services/interactionLayer.ts",
+      "backend/tests/phase200InteractionLayer.test.ts",
+      "backend/tests/phase203ProductionGraphRecoveryPostgres.integration.test.ts",
       "docs/PHASE_202_VERIFICATION.md",
-      "docs/evidence/phase202/AUTHENTICATED_SMOKE_RECEIPT.json",
-      "docs/evidence/phase202/CREDENTIAL_REFERENCE_APPLY_RECEIPT.json",
-      "docs/evidence/phase202/CREDENTIAL_REFERENCE_AUDIT_RECEIPT.json",
-      "docs/evidence/phase202/FEATURE_ACCEPTANCE.json",
-      "docs/evidence/phase202/MIGRATION_RECEIPT.json",
-      "docs/evidence/phase202/OWNERSHIP_APPLY_RECEIPT.json",
-      "docs/evidence/phase202/OWNERSHIP_AUDIT_RECEIPT.json",
-      "docs/evidence/phase202/PRODUCTION_BROWSER_RECEIPT.json",
-      "docs/evidence/phase202/PRODUCTION_DEPLOYMENT_READBACK.json",
-      "docs/evidence/phase202/PRODUCTION_STATE_READBACK.json",
-      "docs/evidence/phase202/PROTECTED_MAIN_RECEIPT.json",
-      "docs/evidence/phase202/RELEASE_BLOCKER_READBACK.json",
-      "docs/evidence/phase202/ROLLBACK_READINESS_RECEIPT.json",
-      "docs/evidence/phase202/TEST_RECEIPTS.json"
+      "docs/PHASE_203_PRODUCTION_GRAPH_RECOVERY_VERIFICATION.md",
+      "docs/evidence/phase202/POST_CERTIFICATION_CORRECTION_P203.json",
+      "docs/evidence/phase203/production-graph-recovery/AUTHENTICATED_ENDPOINT_READBACK.json",
+      "docs/evidence/phase203/production-graph-recovery/INCIDENT_RESOLUTION_RECEIPT.json",
+      "docs/evidence/phase203/production-graph-recovery/MIGRATED_STATE_READBACK.json",
+      "docs/evidence/phase203/production-graph-recovery/MIGRATION_RECEIPT.json",
+      "docs/evidence/phase203/production-graph-recovery/PRODUCTION_DEPLOYMENT_READBACK.json",
+      "docs/evidence/phase203/production-graph-recovery/PRODUCTION_MEMBER_JOURNEY.json",
+      "docs/evidence/phase203/production-graph-recovery/PROTECTED_MAIN_RECEIPT.json",
+      "docs/evidence/phase203/production-graph-recovery/ROLLBACK_READINESS_RECEIPT.json",
+      "docs/evidence/phase203/production-graph-recovery/TEST_RECEIPTS.json",
+      "e2e/production-member-journey.mjs",
+      "package.json",
+      "prisma/migrations/20260803000000_phase_203_graph_recovery/migration.sql",
+      "scripts/phase199-baseline-gates.test.mjs",
+      "scripts/phase203-production-graph-recovery-gates.test.mjs",
+      "scripts/release-readiness.mjs"
     ],
     "tests": [
       {
-        "command": "Phase 202 feature gates P202-F001-A through P202-F020-A",
+        "command": "targeted graph projection and tenant-context tests",
         "status": "PASSED"
       },
       {
-        "command": "complete Phase 202 deterministic, PostgreSQL, browser, prior-phase, recovery, build, and release suites",
+        "command": "migrated-account PostgreSQL integration test",
         "status": "PASSED"
       },
       {
-        "command": "protected pull requests #44 through #48 and exact-main CI run 30769935889",
+        "command": "pnpm test:phase202",
         "status": "PASSED"
       },
       {
-        "command": "exact-main Vercel frontend, Railway API, and Railway worker deployment readback",
+        "command": "pnpm test:phase200",
         "status": "PASSED"
       },
       {
-        "command": "production migration 20260802090000, database roles, and fresh status audit",
+        "command": "pnpm contracts:verify",
         "status": "PASSED"
       },
       {
-        "command": "production ownership APPLY followed by independent fresh AUDIT",
+        "command": "pnpm prisma:generate",
         "status": "PASSED"
       },
       {
-        "command": "production credential-reference APPLY followed by independent fresh AUDIT",
+        "command": "pnpm lint",
         "status": "PASSED"
       },
       {
-        "command": "zero-row Phase 202 release-blocker readback",
+        "command": "complete affected backend tests",
         "status": "PASSED"
       },
       {
-        "command": "authenticated production identity, session, membership, support-access, browser, revocation, and state readback",
+        "command": "complete affected frontend tests",
         "status": "PASSED"
       },
       {
-        "command": "Governor ReleaseControlPlan, ReleaseControlEvidence, ReleaseEvidenceBundle, ReleaseManifest, evaluation, and integrity validation",
+        "command": "pnpm build",
         "status": "PASSED"
       },
       {
-        "command": "pnpm test:phase202 after final evidence construction",
+        "command": "pnpm release:check",
         "status": "PASSED"
       },
       {
-        "command": "pnpm test:phase196 after final evidence construction",
+        "command": "protected-main CI run 30782512745 attempt 2",
+        "status": "PASSED"
+      },
+      {
+        "command": "authenticated production canonical workspace endpoint readback",
+        "status": "PASSED"
+      },
+      {
+        "command": "authenticated production browser graph journey at 360, 390, 412, 430, and 1440 CSS pixels",
+        "status": "PASSED"
+      },
+      {
+        "command": "exact-SHA Vercel frontend, Railway API, and Railway worker readback",
+        "status": "PASSED"
+      },
+      {
+        "command": "production migration APPLY and independent fresh AUDIT",
+        "status": "PASSED"
+      },
+      {
+        "command": "Governor verification",
         "status": "PASSED"
       },
       {
@@ -105,17 +134,22 @@
     "unresolved_failures": [],
     "deployment_state": {
       "status": "DEPLOYED",
-      "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
-      "release_tag": "phase-202",
-      "frontend_deployment_id": "5718266943",
-      "api_deployment_id": "0cc752c9-1599-49e8-b0d2-c7eb15f0c900",
-      "worker_deployment_id": "e3c342e6-efcd-430e-a49d-195e51670b54",
-      "release_manifest_sha256": "646d3b4a2b610b0aaab4d95a69319b65d60492d2eb5fea1196ec1f2b71b3b7b9",
-      "release_evidence_bundle_sha256": "42ca49c9c20f65f40c60ec1ddef970da9a548183808466185800a998e441e683",
-      "rollback_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+      "main_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+      "release_kind": "PHASE_203_PREFLIGHT_INCIDENT",
+      "release_tag": null,
+      "release_manifest": null,
+      "frontend_deployment_id": "dpl_BMP1J3Pkz9LB1NBw2sb5f5LNCKmX",
+      "api_deployment_id": "6887706f-1f13-4b3f-8ae9-f812ac7c4321",
+      "worker_deployment_id": "011b8ff5-9814-4ba7-861e-9b298a80cb32",
+      "migration": "20260803000000_phase_203_graph_recovery",
+      "migration_status": "VERIFIED",
+      "authenticated_member_journey_receipt_sha256": "e928e74f847b6232be49bd9bda8913f3de881ede257863bee34839dd074ae2a6",
+      "incident_resolution_receipt_sha256": "902a523e927c931d47de2c5efeb15e9fea16b45825d4e0662d7bdd87aee01d16",
+      "immediate_rollback_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "deep_restore_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
     },
-    "result_fingerprint": "96b4d88230ad3b0549416eecb6f02ed9ceede74e26f10484885c72e29ee800dc",
-    "completed_at": "2026-08-02T23:05:00.000Z"
+    "result_fingerprint": "1f0993703d0e136ae938de0e267ecdf7ff6727c5f41f0331f4f1b357dac4609a",
+    "completed_at": "2026-08-03T04:22:53.373Z"
   },
   "latest_verified_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
   "latest_production_release": {
@@ -243,83 +277,19 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Execute only P203-PRODUCTION-GRAPH-RECOVERY-001, then record its exact result.",
-  "active_write_lease": {
-    "contract_version": "1.0.0",
-    "schema_version": 1,
-    "lease_id": "59f4f74d-8d61-4159-ac47-afb667d163ba",
-    "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
-    "owner": "codex-p203-graph-recovery-lead",
-    "actor": "CODEX_5_6_SOL_XHIGH",
-    "scope": [
-      ".entral/governor/**",
-      ".github/workflows/ci-cd.yml",
-      "packages/contracts/src/graph.ts",
-      "packages/contracts/tests/contracts.test.mjs",
-      "packages/contracts/openapi.yaml",
-      "prisma/schema.prisma",
-      "prisma/migrations/*phase_203_graph_recovery*/**",
-      "prisma/security/*phase_203_graph_recovery*.sql",
-      "backend/src/auth.ts",
-      "backend/src/db.ts",
-      "backend/src/phase202RequestDatabaseContext.ts",
-      "backend/src/server.ts",
-      "backend/src/routes/controlPlane.ts",
-      "backend/src/routes/member.ts",
-      "backend/src/routes/graphPreferences.ts",
-      "backend/src/routes/interactionLayer.ts",
-      "backend/src/services/canonicalControlPlane.ts",
-      "backend/src/services/graphPreferences.ts",
-      "backend/src/services/interactionLayer.ts",
-      "backend/src/services/memberWorkspace.ts",
-      "backend/src/services/phase202IdentityAuthority.ts",
-      "backend/tests/controlPlaneRoutes.test.ts",
-      "backend/tests/memberRoutes.test.ts",
-      "backend/tests/phase195GraphTelemetryRoutes.test.ts",
-      "backend/tests/phase200InteractionLayer.test.ts",
-      "backend/tests/phase195CanonicalPersistencePostgres.integration.test.ts",
-      "backend/tests/phase202IdentityTenancyPostgres.integration.test.ts",
-      "backend/tests/phase202RequestDatabaseContext.test.ts",
-      "backend/tests/*phase203*graph*recovery*.test.ts",
-      "frontend/app/member/**",
-      "frontend/components/CanonicalMemberShell.tsx",
-      "frontend/components/CanonicalGraphWorkspace.tsx",
-      "frontend/components/CanonicalUniverseGraph.tsx",
-      "frontend/components/CanonicalUniverse3DGraph.tsx",
-      "frontend/components/MemberCommandCenterClient.tsx",
-      "frontend/components/MemberDestinationNav.tsx",
-      "frontend/lib/canonical-graph.ts",
-      "frontend/lib/canonical-portfolio.ts",
-      "frontend/lib/member-session.server.ts",
-      "frontend/tests/Phase195MemberShellRegression.test.ts",
-      "frontend/tests/Phase195Graph*.test.*",
-      "frontend/tests/Phase200*.test.*",
-      "frontend/tests/*Phase203*Graph*Recovery*.test.*",
-      "e2e/**",
-      "scripts/phase199-baseline-gates.test.mjs",
-      "scripts/phase202-*.mjs",
-      "scripts/phase203-production-graph-recovery*.mjs",
-      "scripts/release-readiness.mjs",
-      "docs/PHASE_202_*.md",
-      "docs/PHASE_203_PRODUCTION_GRAPH_RECOVERY*.md",
-      "docs/evidence/phase202/**",
-      "docs/evidence/phase203/production-graph-recovery/**",
-      "DEPLOYMENT.md",
-      "package.json"
-    ],
-    "acquired_at": "2026-08-02T23:32:29.485Z",
-    "heartbeat_at": "2026-08-03T04:17:13.762Z",
-    "expires_at": "2026-08-03T04:47:13.762Z"
-  },
+  "next_action": "Reconcile Phase 203 with current origin/main and run the complete phase suite.",
+  "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
-  "task_attempts": 0,
-  "result_fingerprints": [],
-  "version": 149,
-  "updated_at": "2026-08-03T04:22:22.073Z",
+  "task_attempts": 1,
+  "result_fingerprints": [
+    "1f0993703d0e136ae938de0e267ecdf7ff6727c5f41f0331f4f1b357dac4609a"
+  ],
+  "version": 150,
+  "updated_at": "2026-08-03T04:23:41.493Z",
   "task_deadline_at": "2026-08-03T15:32:15.211Z",
   "pending_release_manifest": null,
-  "event_count": 149,
-  "event_head_hash": "365fbefbc5d0bb992f5d6d09a4c08581a896fc8546f0bf4fdb8775061e330c3c"
+  "event_count": 150,
+  "event_head_hash": "2fed68ea023594b9763dec8c6ba842d144fc296d59aa659a608ac4f51bba2a0f"
 }
