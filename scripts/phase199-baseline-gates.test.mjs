@@ -114,7 +114,7 @@ test("Canonical member surfaces fail unavailable and share one 2D and 3D authori
   for (const binding of [
     "canonicalEntities={entities}", "canonicalLayout3D={layout}",
     "canonicalGraphSettings={settings}", "canonicalSelectedEntityId={selectedEntityId}",
-    "canonicalViewFitSignal={viewFitSignal}", "canonicalViewFocusSignal={viewFocusSignal}",
+    "canonicalViewFitSignal={viewFitSignal}", "canonicalViewFocusSignal={rendererFocusSignal}",
     "embeddedGraphOnly"
   ]) assert.ok(universe3d.includes(binding), `missing canonical 3D binding: ${binding}`);
   assert.ok(legacyRenderer.includes("{!isMemberSurface ? <section>"));
