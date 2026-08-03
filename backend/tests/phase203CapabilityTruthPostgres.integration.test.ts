@@ -23,6 +23,7 @@ vi.hoisted(() => {
 });
 
 import { withPersonalSession, withTenantSession } from "../src/db.js";
+import { CapabilityTruthService } from "../src/services/capabilityTruth.js";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const integrationEnabled = Boolean(
@@ -1312,6 +1313,25 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       expect(readback.claims).toHaveLength(4);
       expect(readback.transition_audit).toHaveLength(11);
       expect(readback.installation_transition_audit).toHaveLength(1);
+
+      const serviceReadback = await new CapabilityTruthService(api).getAdminReadback({
+        authSubject: migratedUserId,
+        requestId: randomUUID()
+      });
+      expect(serviceReadback.registry_revision).toBe(readback.registry_revision);
+      expect(serviceReadback.records).toHaveLength(65);
+      expect(serviceReadback.claims).toHaveLength(4);
+      expect(serviceReadback.generated_at).toMatch(/\.\d{3}Z$/);
+      expect(serviceReadback.records.every((record) => (
+        record.created_at.endsWith("Z")
+        && record.updated_at.endsWith("Z")
+        && (record.last_verified_at === null || record.last_verified_at.endsWith("Z"))
+      ))).toBe(true);
+      expect(serviceReadback.transition_audit.every((transition) => (
+        transition.requested_at.endsWith("Z")
+        && transition.recorded_at.endsWith("Z")
+        && transition.response_snapshot.created_at.endsWith("Z")
+      ))).toBe(true);
     } finally {
       await Promise.allSettled([
         api?.$disconnect(),

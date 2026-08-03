@@ -363,18 +363,18 @@
       "repository:SovereignProtocol/sovereign-protocol-agent:platform/power-platform/agent-inventory.v1.json"
     ],
     "acquired_at": "2026-08-03T04:28:36.905Z",
-    "heartbeat_at": "2026-08-03T08:31:01.781Z",
-    "expires_at": "2026-08-03T12:31:01.781Z"
+    "heartbeat_at": "2026-08-03T09:30:08.977Z",
+    "expires_at": "2026-08-03T12:30:08.977Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 168,
-  "updated_at": "2026-08-03T08:31:01.781Z",
+  "version": 169,
+  "updated_at": "2026-08-03T09:30:08.977Z",
   "task_deadline_at": "2026-08-03T20:28:21.277Z",
   "pending_release_manifest": null,
-  "event_count": 168,
-  "event_head_hash": "c9f72ea7b321e2ddf2b9f921e0980e8e95ca1fd195ca51cc30f65f763e54e2c5"
+  "event_count": 169,
+  "event_head_hash": "e05d3731ab1e810701546bdc6a9f8dff446bfcf908af79f0d4373b54989aefce"
 }

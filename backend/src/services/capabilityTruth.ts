@@ -71,13 +71,49 @@ function publicationClaims(value: unknown): PublicProductClaim[] {
   return value.map(publicClaim);
 }
 
+const ADMIN_READBACK_TIMESTAMP_FIELDS = new Set([
+  "activated_at",
+  "approved_at",
+  "captured_at",
+  "created_at",
+  "expires_at",
+  "generated_at",
+  "last_verified_at",
+  "observed_at",
+  "recorded_at",
+  "requested_at",
+  "updated_at"
+]);
+const POSTGRES_JSON_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/;
+
+function normalizeAdminReadbackTimestamps(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(normalizeAdminReadbackTimestamps);
+  }
+  if (typeof value !== "object" || value === null) {
+    return value;
+  }
+  return Object.fromEntries(Object.entries(value).map(([field, entry]) => {
+    if (
+      ADMIN_READBACK_TIMESTAMP_FIELDS.has(field)
+      && typeof entry === "string"
+      && POSTGRES_JSON_TIMESTAMP_RE.test(entry)
+    ) {
+      const parsed = Date.parse(entry);
+      return [field, Number.isFinite(parsed) ? new Date(parsed).toISOString() : entry];
+    }
+    return [field, normalizeAdminReadbackTimestamps(entry)];
+  }));
+}
+
 function validateAdminReadback(value: unknown): CapabilityTruthAdminReadback {
+  const normalized = normalizeAdminReadbackTimestamps(value);
   try {
-    assertCapabilityTruthAdminReadback(value);
+    assertCapabilityTruthAdminReadback(normalized);
   } catch {
     throw new CapabilityTruthServiceError("MALFORMED_ADMIN_READBACK", "Capability Truth admin readback is malformed.", 500);
   }
-  return value;
+  return normalized;
 }
 
 function validateCapabilityRecord(value: unknown): CapabilityTruthRecord {
