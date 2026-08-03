@@ -1,0 +1,73 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-PRODUCTION-GRAPH-RECOVERY-RESOLUTION-001",
+  "incident_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "historical_release": {
+    "phase": 202,
+    "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "certification_preserved": true,
+    "incident_recorded_post_certification": true,
+    "historical_tags_rewritten": false
+  },
+  "observation": {
+    "owner_supplied_request_id": "4d3a5983-6d94-45b1-9578-c1729ecb9711",
+    "owner_supplied_request_id_found": false,
+    "matched_production_request_id": "4d5a5983-6d94-45b1-9578-c1729ecb9711",
+    "event": "graph.projection.failed",
+    "bounded_error_code": "INVALID_GRAPH_ROOT",
+    "postgresql_sqlstate": null,
+    "failing_operation": "buildGraphProjection",
+    "preceding_operation": "getHierarchySnapshot",
+    "customer_secrets_or_stack_traces_recorded": false
+  },
+  "root_cause": "The Phase 202 tenant predicate exposed mapped businesses and ancestors only. The existing migrated founder organization had a valid tenant, organization, actor, and shared canonical taxonomy but zero businesses, so RLS returned zero visible roots and buildGraphProjection correctly failed its exactly-one-root invariant.",
+  "repair": {
+    "main_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+    "migration": "20260803000000_phase_203_graph_recovery",
+    "scope": "Read-only access to the unique shared ENTRAL, Marshal, and General taxonomy plus bounded migrated-member Tutorial and analytics corrections.",
+    "exactly_one_root_invariant_preserved": true,
+    "business_scoped_entities_remain_tenant_isolated": true,
+    "mutations_remain_fail_closed": true,
+    "phase_202_authority_and_security_boundaries_preserved": true
+  },
+  "production_verification": {
+    "canonical_root_count": 1,
+    "canonical_node_count": 132,
+    "canonical_edge_count": 131,
+    "hierarchy_event_sequence": 399,
+    "graph_projection_version": 399,
+    "mobile_widths_css_px": [360, 390, 412, 430],
+    "desktop_width_css_px": 1440,
+    "canonical_sync_errors": 0,
+    "authenticated_member_journey": "PASSED",
+    "session_revocation": "PASSED"
+  },
+  "deployments": {
+    "frontend": "dpl_BMP1J3Pkz9LB1NBw2sb5f5LNCKmX",
+    "api": "6887706f-1f13-4b3f-8ae9-f812ac7c4321",
+    "worker": "011b8ff5-9814-4ba7-861e-9b298a80cb32",
+    "exact_sha_parity": true
+  },
+  "rollback_hierarchy": {
+    "immediate": {"phase": 200, "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516"},
+    "deep_restore": {"phase": 198, "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"}
+  },
+  "evidence_receipts": {
+    "protected_main_sha256": "d8d36922ba9687cd144d4d99ceec1307266c003298d77a3b5189b2276d527f8b",
+    "deployment_readback_sha256": "d6c139f1fdb2dfd25c4019d88b63622a5b18e511e10b376ce18e62a16eb6352a",
+    "migration_sha256": "853fe64445f888e5f72b3fa3b83f477056a42ef17f0c23d794e272768f299fb2",
+    "authenticated_endpoints_sha256": "5d82412aa23652c65a3fc676f60d5c37c1372e4b85ff26eb5b1dedfc87afd67e",
+    "migrated_state_sha256": "00b6245e21cad24e009ac44a9c053c9bed78e227c5676167b569c976e0e42983",
+    "production_member_journey_sha256": "e928e74f847b6232be49bd9bda8913f3de881ede257863bee34839dd074ae2a6",
+    "tests_sha256": "6b29d11c6d48094bcb8d2568e3f8240ef640c74b44a0e88e08413e98c50f7f07",
+    "rollback_readiness_sha256": "d8afbdd269b55c1d02e0a4380d2c67aca0aebebdc32255fce57cf17a8e51844c",
+    "phase_202_append_only_correction_sha256": "d33ebf75a41ed615833627944200800563640f2df6b64dc6f9bac26d7ea62ff7"
+  },
+  "release_tag": null,
+  "phase_203_release_manifest": null,
+  "normal_phase_203_implementation_started": false,
+  "status": "RESOLVED_VERIFIED",
+  "receipt_sha256": "902a523e927c931d47de2c5efeb15e9fea16b45825d4e0662d7bdd87aee01d16"
+}

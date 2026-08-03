@@ -30,6 +30,16 @@ export type ToolRegistryEntry = {
   modelName?: string;
   name: string;
   providerName?: string;
+  productTruth?: {
+    capabilityId: string;
+    capabilityKey: string;
+    capabilityVersion: string;
+    claimId: string;
+    claimKey: string;
+    claimRecordVersion: number;
+    evidenceReceiptIds: string[];
+    limitations: string[];
+  };
   requiredCredentials: string[];
   readOnly?: boolean;
   requiresAuthorization: boolean;

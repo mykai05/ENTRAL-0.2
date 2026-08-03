@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.entral.example/capability-truth-record.schema.json",
+  "title": "CapabilityTruthRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "capability_id",
+    "capability_key",
+    "capability_version",
+    "display_name",
+    "purpose",
+    "kind",
+    "owner",
+    "data_classification",
+    "environment",
+    "scope",
+    "supported_scopes",
+    "tenant_id",
+    "organization_id",
+    "lifecycle_state",
+    "audience_status",
+    "production_readiness",
+    "dependencies",
+    "required_evidence",
+    "activation_requirements",
+    "verification_receipts",
+    "last_verified_at",
+    "failure_state",
+    "public_claim_eligible",
+    "pricing_eligibility",
+    "rollback_path",
+    "deactivation_path",
+    "source_reference",
+    "limitations",
+    "record_version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "capability_id": { "type": "string", "format": "uuid" },
+    "capability_key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,159}$" },
+    "capability_version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$" },
+    "display_name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "purpose": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "kind": { "enum": ["CAPABILITY", "INTEGRATION", "AGENT", "WORKFLOW", "COMMANDER_PACK"] },
+    "owner": { "type": "string", "minLength": 1, "maxLength": 320 },
+    "data_classification": { "enum": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"] },
+    "environment": { "$ref": "#/$defs/environment" },
+    "scope": { "enum": ["GLOBAL", "TENANT"] },
+    "supported_scopes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["GLOBAL", "TENANT"] } },
+    "tenant_id": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "uuid" }] },
+    "organization_id": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "uuid" }] },
+    "lifecycle_state": { "$ref": "#/$defs/lifecycle" },
+    "audience_status": { "enum": ["CURRENT", "LIMITED_BETA", "DESIGN_PARTNER", "ROADMAP", "UNSUPPORTED"] },
+    "production_readiness": { "enum": ["REAL", "UNVERIFIED", "SIMULATED", "PLACEHOLDER", "LOCAL_ONLY", "DISABLED"] },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability_id", "capability_version", "minimum_lifecycle_state", "required"],
+        "properties": {
+          "capability_id": { "type": "string", "format": "uuid" },
+          "capability_version": { "type": "string", "minLength": 5, "maxLength": 80 },
+          "minimum_lifecycle_state": { "enum": ["CATALOGUED", "DESIGNED", "IMPLEMENTED", "UNIT_VERIFIED", "INTEGRATION_VERIFIED", "CANARY_VERIFIED", "ACTIVE", "SELLABLE"] },
+          "required": { "type": "boolean" }
+        }
+      }
+    },
+    "required_evidence": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceType" } },
+    "activation_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "allOf": [{
+          "if": {
+            "properties": { "required": { "const": true }, "satisfied": { "const": true } },
+            "required": ["required", "satisfied"]
+          },
+          "then": { "properties": { "evidence_receipt_ids": { "minItems": 1 } } }
+        }],
+        "required": ["requirement_code", "description", "required", "satisfied", "evidence_receipt_ids"],
+        "properties": {
+          "requirement_code": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "description": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "required": { "type": "boolean" },
+          "satisfied": { "type": "boolean" },
+          "evidence_receipt_ids": { "type": "array", "uniqueItems": true, "items": { "type": "string", "format": "uuid" } }
+        }
+      }
+    },
+    "verification_receipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidenceReceipt" }
+    },
+    "last_verified_at": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "date-time" }] },
+    "failure_state": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "summary", "observed_at", "retryable"],
+          "properties": {
+            "code": { "type": "string", "minLength": 1, "maxLength": 160 },
+            "evidence_type": { "$ref": "#/$defs/evidenceType" },
+            "prior_lifecycle_state": { "$ref": "#/$defs/lifecycle" },
+            "receipt_id": { "type": "string", "format": "uuid" },
+            "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+            "observed_at": { "type": "string", "format": "date-time" },
+            "retryable": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "public_claim_eligible": { "type": "boolean" },
+    "pricing_eligibility": { "enum": ["NOT_ELIGIBLE", "INCLUDED", "ADD_ON"] },
+    "rollback_path": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "deactivation_path": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "source_reference": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "limitations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 2000 } },
+    "record_version": { "type": "integer", "minimum": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "environment": { "enum": ["DEVELOPMENT", "TEST", "STAGING", "CANARY", "PRODUCTION"] },
+    "lifecycle": { "enum": ["CATALOGUED", "DESIGNED", "IMPLEMENTED", "UNIT_VERIFIED", "INTEGRATION_VERIFIED", "CANARY_VERIFIED", "ACTIVE", "SELLABLE", "DEPRECATED", "RETIRED"] },
+    "evidenceType": { "enum": ["UNIT_TEST", "INTEGRATION_TEST", "CANARY", "PRODUCTION_READBACK", "AUTHENTICATION", "AUTHORIZATION_SCOPE", "OPERATION", "READBACK", "RECONCILIATION", "REFRESH_OR_WEBHOOK", "FAILURE_HANDLING", "SUPPORT_READINESS", "PRICING_APPROVAL", "TUTORIAL", "DOCUMENTATION", "ROLLBACK"] },
+    "evidenceReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receipt_id", "evidence_type", "environment", "status", "reference", "content_sha256", "captured_at", "expires_at"],
+      "properties": {
+        "receipt_id": { "type": "string", "format": "uuid" },
+        "evidence_type": { "enum": ["UNIT_TEST", "INTEGRATION_TEST", "CANARY", "PRODUCTION_READBACK", "AUTHENTICATION", "AUTHORIZATION_SCOPE", "OPERATION", "READBACK", "RECONCILIATION", "REFRESH_OR_WEBHOOK", "FAILURE_HANDLING", "SUPPORT_READINESS", "PRICING_APPROVAL", "TUTORIAL", "DOCUMENTATION", "ROLLBACK"] },
+        "environment": { "$ref": "#/$defs/environment" },
+        "status": { "enum": ["PASSED", "FAILED"] },
+        "reference": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "content_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "date-time" }] }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "scope": { "const": "GLOBAL" } }, "required": ["scope"] },
+      "then": { "properties": { "supported_scopes": { "contains": { "const": "GLOBAL" } }, "tenant_id": { "type": "null" }, "organization_id": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "scope": { "const": "TENANT" } }, "required": ["scope"] },
+      "then": { "properties": { "supported_scopes": { "contains": { "const": "TENANT" } }, "tenant_id": { "type": "string", "format": "uuid" }, "organization_id": { "type": "string", "format": "uuid" } } }
+    },
+    {
+      "if": { "properties": { "lifecycle_state": { "const": "SELLABLE" } }, "required": ["lifecycle_state"] },
+      "then": {
+        "properties": {
+          "environment": { "const": "PRODUCTION" },
+          "audience_status": { "const": "CURRENT" },
+          "production_readiness": { "const": "REAL" },
+          "public_claim_eligible": { "const": true },
+          "pricing_eligibility": { "enum": ["INCLUDED", "ADD_ON"] },
+          "failure_state": { "type": "null" }
+        }
+      },
+      "else": {
+        "properties": {
+          "public_claim_eligible": { "const": false },
+          "pricing_eligibility": { "const": "NOT_ELIGIBLE" }
+        }
+      }
+    }
+  ]
+}

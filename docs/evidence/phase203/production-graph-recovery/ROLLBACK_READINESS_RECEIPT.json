@@ -1,0 +1,39 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-GRAPH-RECOVERY-ROLLBACK-001",
+  "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "incident_release_main_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+  "immediate_rollback": {
+    "phase": 200,
+    "release_tag": "phase-200",
+    "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "deployments": [
+      {"role": "FRONTEND", "provider": "VERCEL", "deployment_id": "dpl_7CEgfksQ1nZ6NJPnRWq8NbcUNjqx"},
+      {"role": "API", "provider": "RAILWAY", "deployment_id": "905e88d5-6e40-4905-af15-67ac94507feb"},
+      {"role": "WORKER", "provider": "RAILWAY", "deployment_id": "979c2604-e704-4eb4-8959-2b5893de6d9f"}
+    ],
+    "status": "RESTORE_REFERENCE_VERIFIED"
+  },
+  "deep_restore_fallback": {
+    "phase": 198,
+    "release_tag": "phase-198",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "deployments": [
+      {"role": "FRONTEND", "provider": "VERCEL", "deployment_id": "dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u"},
+      {"role": "API", "provider": "RAILWAY", "deployment_id": "43f98e05-af77-44f2-826c-5976fc738e4b"},
+      {"role": "WORKER", "provider": "RAILWAY", "deployment_id": "b477d5c8-2a55-4e74-84b8-168e5f938fd8"}
+    ],
+    "status": "RESTORE_REFERENCE_VERIFIED"
+  },
+  "migration_compatibility": {
+    "migration": "20260803000000_phase_203_graph_recovery",
+    "kind": "ADDITIVE_FORWARD_REPAIR",
+    "rollback_strategy": "Restore the certified Phase 200 release while retaining the additive schema and RLS policy repair; no destructive down migration is authorized.",
+    "customer_data_deletion_required": false,
+    "destructive_down_migration_authorized": false
+  },
+  "rollback_executed": false,
+  "status": "RESTORE_READY",
+  "receipt_sha256": "d8afbdd269b55c1d02e0a4380d2c67aca0aebebdc32255fce57cf17a8e51844c"
+}

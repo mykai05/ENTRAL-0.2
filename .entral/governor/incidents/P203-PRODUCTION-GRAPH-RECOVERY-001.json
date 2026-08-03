@@ -1,0 +1,51 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "incident_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "phase": 203,
+  "severity": "HIGH",
+  "summary": "Post-certification Phase 202 production Universe Graph projection failed for the existing migrated founder organization because the Phase 202 tenant RLS predicate returned zero visible canonical roots when the organization had no mapped businesses. The exact-main forward repair is deployed and the real migrated-member journey is production-verified.",
+  "trigger": {
+    "route": "GET /member/organizations/:organizationId/graph/projection",
+    "owner_supplied_request_id": "4d3a5983-6d94-45b1-9578-c1729ecb9711",
+    "matched_production_request_id": "4d5a5983-6d94-45b1-9578-c1729ecb9711",
+    "event": "graph.projection.failed",
+    "bounded_error_code": "INVALID_GRAPH_ROOT",
+    "postgresql_sqlstate": null,
+    "failing_operation": "buildGraphProjection"
+  },
+  "root_cause": "The Phase 202 tenant predicate exposed mapped businesses and their ancestors only. The migrated founder organization had valid tenant, organization, user, and actor context plus the shared canonical taxonomy, but zero businesses, so RLS returned zero visible roots. The exactly-one-root projection invariant correctly failed closed.",
+  "resolution": {
+    "accepted_main_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+    "migration": "20260803000000_phase_203_graph_recovery",
+    "frontend_deployment_id": "dpl_BMP1J3Pkz9LB1NBw2sb5f5LNCKmX",
+    "api_deployment_id": "6887706f-1f13-4b3f-8ae9-f812ac7c4321",
+    "worker_deployment_id": "011b8ff5-9814-4ba7-861e-9b298a80cb32",
+    "authenticated_member_journey": "PASSED",
+    "canonical_nodes": 132,
+    "canonical_edges": 131,
+    "canonical_roots": 1,
+    "canonical_sync_errors": 0
+  },
+  "evidence": [
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/PHASE_203_PRODUCTION_GRAPH_RECOVERY_VERIFICATION.md",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/INCIDENT_RESOLUTION_RECEIPT.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/PROTECTED_MAIN_RECEIPT.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/PRODUCTION_DEPLOYMENT_READBACK.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/MIGRATION_RECEIPT.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/AUTHENTICATED_ENDPOINT_READBACK.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/PRODUCTION_MEMBER_JOURNEY.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/MIGRATED_STATE_READBACK.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/TEST_RECEIPTS.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase203/production-graph-recovery/ROLLBACK_READINESS_RECEIPT.json",
+    "repository@f8fb51dbfcd9baf7eb2b5994233e03205d4acc28:docs/evidence/phase202/POST_CERTIFICATION_CORRECTION_P203.json"
+  ],
+  "historical_phase_202_certification_preserved": true,
+  "historical_tags_rewritten": false,
+  "normal_phase_203_feature_started": false,
+  "immediate_rollback_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+  "deep_restore_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+  "status": "RESOLVED_VERIFIED",
+  "created_at": "2026-08-03T04:20:00.000Z",
+  "resolved_at": "2026-08-03T04:20:00.000Z"
+}

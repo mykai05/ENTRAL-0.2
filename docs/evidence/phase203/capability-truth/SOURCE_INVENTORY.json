@@ -1,0 +1,1880 @@
+{
+  "schema_version": 1,
+  "inventory_id": "P203-CAPABILITY-SOURCE-INVENTORY-001",
+  "repository": "mykai05/ENTRAL-0.2",
+  "source_commit": "bdceb245ab7d94530f31e4293536497adcad4542",
+  "source_commit_role": "LATEST_VERIFIED_PHASE_203_PREFLIGHT_PRODUCTION_RELEASE",
+  "generated_for_task_packet": "P203-CAPABILITY-TRUTH-REGISTRY-001",
+  "import_policy": {
+    "mode": "CONSERVATIVE_FAIL_CLOSED",
+    "source_presence_is_verification": false,
+    "allowed_initial_lifecycle_states": [
+      "CATALOGUED"
+    ],
+    "forbidden_initial_lifecycle_states": [
+      "ACTIVE",
+      "SELLABLE"
+    ],
+    "public_claim_eligible_default": false,
+    "data_classification_default": "INTERNAL",
+    "supported_scopes_default": [
+      "GLOBAL"
+    ],
+    "required_evidence_default": [
+      "UNIT_TEST",
+      "INTEGRATION_TEST",
+      "CANARY",
+      "PRODUCTION_READBACK",
+      "SUPPORT_READINESS",
+      "PRICING_APPROVAL",
+      "TUTORIAL",
+      "DOCUMENTATION",
+      "ROLLBACK"
+    ],
+    "pricing_eligibility_default": "NOT_ELIGIBLE",
+    "tenant_feature_flags_default": {},
+    "tenant_limits_default": {},
+    "duplicate_authority_rule": "Backend source is canonical where a backend blueprint exists; legacy frontend sources are drift evidence only.",
+    "omitted_source_rule": "Do not invent records for a kind or identifier absent from the enumerated repository sources."
+  },
+  "source_group_counts": {
+    "backend_tool_blueprints": 26,
+    "frontend_legacy_tool_registry": 27,
+    "backend_agent_capability_blueprints": 8,
+    "frontend_business_capability_blueprints": 8,
+    "agent_template_gallery_presets": 8,
+    "commander_pack_like_business_templates": 7,
+    "local_merch_workflows": 1,
+    "local_merch_workflow_steps": 14,
+    "tutorial_steps": 5,
+    "tutorial_contract_anchors": 5
+  },
+  "legacy_registry_authority": {
+    "contract_reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:packages/contracts/src/integration.ts",
+    "loader_reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/integrationRegistry.ts",
+    "record_source": "INTEGRATION_REGISTRY_JSON",
+    "committed_record_count": 0,
+    "import_behavior": "No environment-supplied legacy integration record is copied into committed evidence. Runtime records require independent credential-safe evidence reconciliation before any Phase 203 lifecycle transition.",
+    "authority_boundary": "The legacy contract and fail-closed execution authorization remain valid runtime authority during migration; the Phase 203 source inventory does not infer ACTIVE or SELLABLE from legacy stage names."
+  },
+  "entries": [
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.openai",
+      "capability_key": "integration.tool.openai",
+      "display_name": "OpenAI",
+      "kind": "INTEGRATION",
+      "source_status": "RUNTIME_DERIVED",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "openai",
+          "observed_status": "RUNTIME_DERIVED",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "openai",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "Runtime connection state is intentionally not inferred from source code."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.anthropic",
+      "capability_key": "integration.tool.anthropic",
+      "display_name": "Anthropic",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "anthropic",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "anthropic",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.local-llm",
+      "capability_key": "integration.tool.local-llm",
+      "display_name": "Local LLM placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "local-llm",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "local-llm",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.codex",
+      "capability_key": "integration.tool.codex",
+      "display_name": "Codex",
+      "kind": "INTEGRATION",
+      "source_status": "MOCK_MODE",
+      "production_readiness": "SIMULATED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "codex",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "codex",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source is mock or simulation-backed and cannot be promoted by this import."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.github",
+      "capability_key": "integration.tool.github",
+      "display_name": "GitHub",
+      "kind": "INTEGRATION",
+      "source_status": "RUNTIME_DERIVED_FROM_MOCK_MODE_DEFAULT",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "github",
+          "observed_status": "RUNTIME_DERIVED_FROM_MOCK_MODE_DEFAULT",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "github",
+          "observed_status": "MISSING_CREDENTIALS",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source is mock or simulation-backed and cannot be promoted by this import."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.vercel",
+      "capability_key": "integration.tool.vercel",
+      "display_name": "Vercel",
+      "kind": "INTEGRATION",
+      "source_status": "RUNTIME_DERIVED_FROM_MOCK_MODE_DEFAULT",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "vercel",
+          "observed_status": "RUNTIME_DERIVED_FROM_MOCK_MODE_DEFAULT",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "vercel",
+          "observed_status": "MISSING_CREDENTIALS",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source is mock or simulation-backed and cannot be promoted by this import."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.gmail",
+      "capability_key": "integration.tool.gmail",
+      "display_name": "Gmail",
+      "kind": "INTEGRATION",
+      "source_status": "NOT_CONNECTED_DEFAULT",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "gmail",
+          "observed_status": "NOT_CONNECTED_DEFAULT",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "gmail",
+          "observed_status": "NOT_CONNECTED",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "Runtime connection state is intentionally not inferred from source code."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.outlook-mail",
+      "capability_key": "integration.tool.outlook-mail",
+      "display_name": "Outlook placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "outlook-mail",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "outlook-mail",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.google-calendar",
+      "capability_key": "integration.tool.google-calendar",
+      "display_name": "Google Calendar",
+      "kind": "INTEGRATION",
+      "source_status": "NOT_CONNECTED_DEFAULT",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "google-calendar",
+          "observed_status": "NOT_CONNECTED_DEFAULT",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "google-calendar",
+          "observed_status": "NOT_CONNECTED",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "Runtime connection state is intentionally not inferred from source code."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.printify",
+      "capability_key": "integration.tool.printify",
+      "display_name": "Printify",
+      "kind": "INTEGRATION",
+      "source_status": "MOCK_MODE",
+      "production_readiness": "SIMULATED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "printify",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "printify",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source is mock or simulation-backed and cannot be promoted by this import."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.printful",
+      "capability_key": "integration.tool.printful",
+      "display_name": "Printful",
+      "kind": "INTEGRATION",
+      "source_status": "NOT_CONNECTED_DEFAULT",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "printful",
+          "observed_status": "NOT_CONNECTED_DEFAULT",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "printful",
+          "observed_status": "NOT_CONNECTED",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "Runtime connection state is intentionally not inferred from source code."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.etsy",
+      "capability_key": "integration.tool.etsy",
+      "display_name": "Etsy",
+      "kind": "INTEGRATION",
+      "source_status": "MOCK_MODE",
+      "production_readiness": "SIMULATED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "etsy",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "etsy",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source is mock or simulation-backed and cannot be promoted by this import."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.shopify",
+      "capability_key": "integration.tool.shopify",
+      "display_name": "Shopify",
+      "kind": "INTEGRATION",
+      "source_status": "RUNTIME_DERIVED",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "shopify",
+          "observed_status": "RUNTIME_DERIVED",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "shopify",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "Runtime connection state is intentionally not inferred from source code."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.canva",
+      "capability_key": "integration.tool.canva",
+      "display_name": "Canva placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "canva",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "canva",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.kittl",
+      "capability_key": "integration.tool.kittl",
+      "display_name": "Kittl placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "kittl",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "kittl",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.hostinger",
+      "capability_key": "integration.tool.hostinger",
+      "display_name": "Hostinger placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "hostinger",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "hostinger",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.domain-provider",
+      "capability_key": "integration.tool.domain-provider",
+      "display_name": "Domain provider placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "domain-provider",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "domain-provider",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.web-search",
+      "capability_key": "integration.tool.web-search",
+      "display_name": "Web Search",
+      "kind": "INTEGRATION",
+      "source_status": "MOCK_MODE",
+      "production_readiness": "SIMULATED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "web-search",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "web-search",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source is mock or simulation-backed and cannot be promoted by this import."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.competitor-research",
+      "capability_key": "integration.tool.competitor-research",
+      "display_name": "Competitor Research placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "competitor-research",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "competitor-research",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.google-drive",
+      "capability_key": "integration.tool.google-drive",
+      "display_name": "Google Drive",
+      "kind": "INTEGRATION",
+      "source_status": "NOT_CONNECTED_DEFAULT",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "google-drive",
+          "observed_status": "NOT_CONNECTED_DEFAULT",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "google-drive",
+          "observed_status": "NOT_CONNECTED",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "Runtime connection state is intentionally not inferred from source code."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.local-uploads",
+      "capability_key": "integration.tool.local-uploads",
+      "display_name": "Local Uploads",
+      "kind": "INTEGRATION",
+      "source_status": "MOCK_MODE",
+      "production_readiness": "SIMULATED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "local-uploads",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "local-uploads",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source is mock or simulation-backed and cannot be promoted by this import."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.stripe",
+      "capability_key": "integration.tool.stripe",
+      "display_name": "Stripe placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "stripe",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "stripe",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.paypal",
+      "capability_key": "integration.tool.paypal",
+      "display_name": "PayPal placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "paypal",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "paypal",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.social-publisher",
+      "capability_key": "integration.tool.social-publisher",
+      "display_name": "Social Media Publisher placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "social-publisher",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "social-publisher",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.browser-automation",
+      "capability_key": "integration.tool.browser-automation",
+      "display_name": "Browser Automation",
+      "kind": "INTEGRATION",
+      "source_status": "MOCK_MODE",
+      "production_readiness": "SIMULATED",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "browser-automation",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "browser-automation",
+          "observed_status": "MOCK_MODE",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source is mock or simulation-backed and cannot be promoted by this import."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.analytics",
+      "capability_key": "integration.tool.analytics",
+      "display_name": "Analytics placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "backend_tool_blueprints",
+          "identifier": "analytics",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/toolRegistry.ts"
+        },
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "analytics",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "Source presence is catalogue evidence only; no credential, provider operation, readback, reconciliation, or failure-handling receipt is imported.",
+        "The source explicitly identifies this integration as coming soon or placeholder-backed."
+      ],
+      "rollback_path": "Remove the catalog binding only after a reviewed source-removal receipt; do not mutate provider state.",
+      "deactivation_path": "No activation is imported; preserve the existing governed provider controls and keep publication blocked."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "integration.tool.outlook-calendar",
+      "capability_key": "integration.tool.outlook-calendar",
+      "display_name": "Outlook Calendar placeholder",
+      "kind": "INTEGRATION",
+      "source_status": "LEGACY_FRONTEND_ONLY_COMING_SOON",
+      "production_readiness": "PLACEHOLDER",
+      "source_bindings": [
+        {
+          "group": "frontend_legacy_tool_registry",
+          "identifier": "outlook-calendar",
+          "observed_status": "COMING_SOON",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts"
+        }
+      ],
+      "limitations": [
+        "This identifier exists only in the legacy frontend static registry and has no backend tool blueprint.",
+        "The source explicitly identifies it as coming soon; no provider operation or verification receipt exists."
+      ],
+      "rollback_path": "Remove the legacy catalog binding only after the frontend source is removed and that removal is reviewed.",
+      "deactivation_path": "No activation exists; keep the placeholder excluded from published integration claims."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.agent-blueprint.public-research",
+      "capability_key": "capability.agent-blueprint.public-research",
+      "display_name": "Public web research",
+      "kind": "CAPABILITY",
+      "source_status": "SOURCE_BLUEPRINT_ONLY",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_agent_capability_blueprints",
+          "identifier": "public-research",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/agentCapabilities.ts"
+        },
+        {
+          "group": "frontend_business_capability_blueprints",
+          "identifier": "public-research",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "A matching source blueprint describes intended actions and controls but is not runtime activation or verification evidence.",
+        "The duplicated frontend description is legacy presentation authority only and cannot independently raise lifecycle state."
+      ],
+      "rollback_path": "Remove the catalog binding only after both source blueprints are reconciled through review.",
+      "deactivation_path": "No activation is imported; keep public claims blocked until evidence-backed lifecycle transitions occur."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.agent-blueprint.restricted-network-research",
+      "capability_key": "capability.agent-blueprint.restricted-network-research",
+      "display_name": "Restricted network research",
+      "kind": "CAPABILITY",
+      "source_status": "SOURCE_BLUEPRINT_ONLY",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_agent_capability_blueprints",
+          "identifier": "restricted-network-research",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/agentCapabilities.ts"
+        },
+        {
+          "group": "frontend_business_capability_blueprints",
+          "identifier": "restricted-network-research",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "A matching source blueprint describes intended actions and controls but is not runtime activation or verification evidence.",
+        "The duplicated frontend description is legacy presentation authority only and cannot independently raise lifecycle state."
+      ],
+      "rollback_path": "Remove the catalog binding only after both source blueprints are reconciled through review.",
+      "deactivation_path": "No activation is imported; keep public claims blocked until evidence-backed lifecycle transitions occur."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.agent-blueprint.business-discovery",
+      "capability_key": "capability.agent-blueprint.business-discovery",
+      "display_name": "Business discovery",
+      "kind": "CAPABILITY",
+      "source_status": "SOURCE_BLUEPRINT_ONLY",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_agent_capability_blueprints",
+          "identifier": "business-discovery",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/agentCapabilities.ts"
+        },
+        {
+          "group": "frontend_business_capability_blueprints",
+          "identifier": "business-discovery",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "A matching source blueprint describes intended actions and controls but is not runtime activation or verification evidence.",
+        "The duplicated frontend description is legacy presentation authority only and cannot independently raise lifecycle state."
+      ],
+      "rollback_path": "Remove the catalog binding only after both source blueprints are reconciled through review.",
+      "deactivation_path": "No activation is imported; keep public claims blocked until evidence-backed lifecycle transitions occur."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.agent-blueprint.shopify-operations",
+      "capability_key": "capability.agent-blueprint.shopify-operations",
+      "display_name": "Shopify operations",
+      "kind": "CAPABILITY",
+      "source_status": "SOURCE_BLUEPRINT_ONLY",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_agent_capability_blueprints",
+          "identifier": "shopify-operations",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/agentCapabilities.ts"
+        },
+        {
+          "group": "frontend_business_capability_blueprints",
+          "identifier": "shopify-operations",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "A matching source blueprint describes intended actions and controls but is not runtime activation or verification evidence.",
+        "The duplicated frontend description is legacy presentation authority only and cannot independently raise lifecycle state."
+      ],
+      "rollback_path": "Remove the catalog binding only after both source blueprints are reconciled through review.",
+      "deactivation_path": "No activation is imported; keep public claims blocked until evidence-backed lifecycle transitions occur."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.agent-blueprint.app-builder",
+      "capability_key": "capability.agent-blueprint.app-builder",
+      "display_name": "App builder",
+      "kind": "CAPABILITY",
+      "source_status": "SOURCE_BLUEPRINT_ONLY",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_agent_capability_blueprints",
+          "identifier": "app-builder",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/agentCapabilities.ts"
+        },
+        {
+          "group": "frontend_business_capability_blueprints",
+          "identifier": "app-builder",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "A matching source blueprint describes intended actions and controls but is not runtime activation or verification evidence.",
+        "The duplicated frontend description is legacy presentation authority only and cannot independently raise lifecycle state."
+      ],
+      "rollback_path": "Remove the catalog binding only after both source blueprints are reconciled through review.",
+      "deactivation_path": "No activation is imported; keep public claims blocked until evidence-backed lifecycle transitions occur."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.agent-blueprint.brand-operations",
+      "capability_key": "capability.agent-blueprint.brand-operations",
+      "display_name": "Brand operations",
+      "kind": "CAPABILITY",
+      "source_status": "SOURCE_BLUEPRINT_ONLY",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_agent_capability_blueprints",
+          "identifier": "brand-operations",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/agentCapabilities.ts"
+        },
+        {
+          "group": "frontend_business_capability_blueprints",
+          "identifier": "brand-operations",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "A matching source blueprint describes intended actions and controls but is not runtime activation or verification evidence.",
+        "The duplicated frontend description is legacy presentation authority only and cannot independently raise lifecycle state."
+      ],
+      "rollback_path": "Remove the catalog binding only after both source blueprints are reconciled through review.",
+      "deactivation_path": "No activation is imported; keep public claims blocked until evidence-backed lifecycle transitions occur."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.agent-blueprint.tool-orchestration",
+      "capability_key": "capability.agent-blueprint.tool-orchestration",
+      "display_name": "Tool orchestration",
+      "kind": "CAPABILITY",
+      "source_status": "SOURCE_BLUEPRINT_ONLY",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_agent_capability_blueprints",
+          "identifier": "tool-orchestration",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/agentCapabilities.ts"
+        },
+        {
+          "group": "frontend_business_capability_blueprints",
+          "identifier": "tool-orchestration",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "A matching source blueprint describes intended actions and controls but is not runtime activation or verification evidence.",
+        "The duplicated frontend description is legacy presentation authority only and cannot independently raise lifecycle state."
+      ],
+      "rollback_path": "Remove the catalog binding only after both source blueprints are reconciled through review.",
+      "deactivation_path": "No activation is imported; keep public claims blocked until evidence-backed lifecycle transitions occur."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.agent-blueprint.governance",
+      "capability_key": "capability.agent-blueprint.governance",
+      "display_name": "Governance layer",
+      "kind": "CAPABILITY",
+      "source_status": "SOURCE_BLUEPRINT_ONLY",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "backend_agent_capability_blueprints",
+          "identifier": "governance",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/src/services/agentCapabilities.ts"
+        },
+        {
+          "group": "frontend_business_capability_blueprints",
+          "identifier": "governance",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "A matching source blueprint describes intended actions and controls but is not runtime activation or verification evidence.",
+        "The duplicated frontend description is legacy presentation authority only and cannot independently raise lifecycle state."
+      ],
+      "rollback_path": "Remove the catalog binding only after both source blueprints are reconciled through review.",
+      "deactivation_path": "No activation is imported; keep public claims blocked until evidence-backed lifecycle transitions occur."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "agent.preset.price-scraper",
+      "capability_key": "agent.preset.price-scraper",
+      "display_name": "Price Scraper",
+      "kind": "AGENT",
+      "source_status": "LOCAL_STATIC_PRESET",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "agent_template_gallery_presets",
+          "identifier": "Price Scraper",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/AgentTemplateGallery.tsx"
+        }
+      ],
+      "limitations": [
+        "This is a client-side guided preset, not a durable installed agent or execution verification receipt.",
+        "Preset instructions and labels cannot be published as an active or sellable agent claim."
+      ],
+      "rollback_path": "Remove the catalog binding after the preset source is removed; no server runtime is changed.",
+      "deactivation_path": "No activation is imported; hide the preset from publication surfaces if its source is retired."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "agent.preset.daily-research-brief",
+      "capability_key": "agent.preset.daily-research-brief",
+      "display_name": "Daily Research Brief",
+      "kind": "AGENT",
+      "source_status": "LOCAL_STATIC_PRESET",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "agent_template_gallery_presets",
+          "identifier": "Daily Research Brief",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/AgentTemplateGallery.tsx"
+        }
+      ],
+      "limitations": [
+        "This is a client-side guided preset, not a durable installed agent or execution verification receipt.",
+        "Preset instructions and labels cannot be published as an active or sellable agent claim."
+      ],
+      "rollback_path": "Remove the catalog binding after the preset source is removed; no server runtime is changed.",
+      "deactivation_path": "No activation is imported; hide the preset from publication surfaces if its source is retired."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "agent.preset.linkedin-poster",
+      "capability_key": "agent.preset.linkedin-poster",
+      "display_name": "LinkedIn Poster",
+      "kind": "AGENT",
+      "source_status": "LOCAL_STATIC_PRESET",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "agent_template_gallery_presets",
+          "identifier": "LinkedIn Poster",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/AgentTemplateGallery.tsx"
+        }
+      ],
+      "limitations": [
+        "This is a client-side guided preset, not a durable installed agent or execution verification receipt.",
+        "Preset instructions and labels cannot be published as an active or sellable agent claim."
+      ],
+      "rollback_path": "Remove the catalog binding after the preset source is removed; no server runtime is changed.",
+      "deactivation_path": "No activation is imported; hide the preset from publication surfaces if its source is retired."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "agent.preset.conversation-auditor",
+      "capability_key": "agent.preset.conversation-auditor",
+      "display_name": "Conversation Auditor",
+      "kind": "AGENT",
+      "source_status": "LOCAL_STATIC_PRESET",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "agent_template_gallery_presets",
+          "identifier": "Conversation Auditor",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/AgentTemplateGallery.tsx"
+        }
+      ],
+      "limitations": [
+        "This is a client-side guided preset, not a durable installed agent or execution verification receipt.",
+        "Preset instructions and labels cannot be published as an active or sellable agent claim."
+      ],
+      "rollback_path": "Remove the catalog binding after the preset source is removed; no server runtime is changed.",
+      "deactivation_path": "No activation is imported; hide the preset from publication surfaces if its source is retired."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "agent.preset.account-qualifier",
+      "capability_key": "agent.preset.account-qualifier",
+      "display_name": "Account Qualifier",
+      "kind": "AGENT",
+      "source_status": "LOCAL_STATIC_PRESET",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "agent_template_gallery_presets",
+          "identifier": "Account Qualifier",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/AgentTemplateGallery.tsx"
+        }
+      ],
+      "limitations": [
+        "This is a client-side guided preset, not a durable installed agent or execution verification receipt.",
+        "Preset instructions and labels cannot be published as an active or sellable agent claim."
+      ],
+      "rollback_path": "Remove the catalog binding after the preset source is removed; no server runtime is changed.",
+      "deactivation_path": "No activation is imported; hide the preset from publication surfaces if its source is retired."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "agent.preset.qa-runner",
+      "capability_key": "agent.preset.qa-runner",
+      "display_name": "QA Runner",
+      "kind": "AGENT",
+      "source_status": "LOCAL_STATIC_PRESET",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "agent_template_gallery_presets",
+          "identifier": "QA Runner",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/AgentTemplateGallery.tsx"
+        }
+      ],
+      "limitations": [
+        "This is a client-side guided preset, not a durable installed agent or execution verification receipt.",
+        "Preset instructions and labels cannot be published as an active or sellable agent claim."
+      ],
+      "rollback_path": "Remove the catalog binding after the preset source is removed; no server runtime is changed.",
+      "deactivation_path": "No activation is imported; hide the preset from publication surfaces if its source is retired."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "agent.preset.queue-triage",
+      "capability_key": "agent.preset.queue-triage",
+      "display_name": "Queue Triage",
+      "kind": "AGENT",
+      "source_status": "LOCAL_STATIC_PRESET",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "agent_template_gallery_presets",
+          "identifier": "Queue Triage",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/AgentTemplateGallery.tsx"
+        }
+      ],
+      "limitations": [
+        "This is a client-side guided preset, not a durable installed agent or execution verification receipt.",
+        "Preset instructions and labels cannot be published as an active or sellable agent claim."
+      ],
+      "rollback_path": "Remove the catalog binding after the preset source is removed; no server runtime is changed.",
+      "deactivation_path": "No activation is imported; hide the preset from publication surfaces if its source is retired."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "agent.preset.security-watch",
+      "capability_key": "agent.preset.security-watch",
+      "display_name": "Security Watch",
+      "kind": "AGENT",
+      "source_status": "LOCAL_STATIC_PRESET",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "agent_template_gallery_presets",
+          "identifier": "Security Watch",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/AgentTemplateGallery.tsx"
+        }
+      ],
+      "limitations": [
+        "This is a client-side guided preset, not a durable installed agent or execution verification receipt.",
+        "Preset instructions and labels cannot be published as an active or sellable agent claim."
+      ],
+      "rollback_path": "Remove the catalog binding after the preset source is removed; no server runtime is changed.",
+      "deactivation_path": "No activation is imported; hide the preset from publication surfaces if its source is retired."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "commander-pack.local.pod-merch-store",
+      "capability_key": "commander-pack.local.pod-merch-store",
+      "display_name": "POD / Merch Business",
+      "kind": "COMMANDER_PACK",
+      "source_status": "LOCAL_STATIC_BUSINESS_TEMPLATE",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "commander_pack_like_business_templates",
+          "identifier": "pod-merch-store",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "This source is a client-local business hierarchy template and is not a durable Commander Pack installation.",
+        "No execution, tenant activation, canary, production readback, support, pricing, or rollback receipt is imported."
+      ],
+      "rollback_path": "Remove the catalog binding after the local template source is reviewed and removed.",
+      "deactivation_path": "No activation is imported; exclude the local template from public Commander Pack claims."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "commander-pack.local.website-agency",
+      "capability_key": "commander-pack.local.website-agency",
+      "display_name": "Website Agency",
+      "kind": "COMMANDER_PACK",
+      "source_status": "LOCAL_STATIC_BUSINESS_TEMPLATE",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "commander_pack_like_business_templates",
+          "identifier": "website-agency",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "This source is a client-local business hierarchy template and is not a durable Commander Pack installation.",
+        "No execution, tenant activation, canary, production readback, support, pricing, or rollback receipt is imported."
+      ],
+      "rollback_path": "Remove the catalog binding after the local template source is reviewed and removed.",
+      "deactivation_path": "No activation is imported; exclude the local template from public Commander Pack claims."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "commander-pack.local.content-agency",
+      "capability_key": "commander-pack.local.content-agency",
+      "display_name": "Content Agency",
+      "kind": "COMMANDER_PACK",
+      "source_status": "LOCAL_STATIC_BUSINESS_TEMPLATE",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "commander_pack_like_business_templates",
+          "identifier": "content-agency",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "This source is a client-local business hierarchy template and is not a durable Commander Pack installation.",
+        "No execution, tenant activation, canary, production readback, support, pricing, or rollback receipt is imported."
+      ],
+      "rollback_path": "Remove the catalog binding after the local template source is reviewed and removed.",
+      "deactivation_path": "No activation is imported; exclude the local template from public Commander Pack claims."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "commander-pack.local.ecommerce-brand",
+      "capability_key": "commander-pack.local.ecommerce-brand",
+      "display_name": "E-commerce Brand",
+      "kind": "COMMANDER_PACK",
+      "source_status": "LOCAL_STATIC_BUSINESS_TEMPLATE",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "commander_pack_like_business_templates",
+          "identifier": "ecommerce-brand",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "This source is a client-local business hierarchy template and is not a durable Commander Pack installation.",
+        "No execution, tenant activation, canary, production readback, support, pricing, or rollback receipt is imported."
+      ],
+      "rollback_path": "Remove the catalog binding after the local template source is reviewed and removed.",
+      "deactivation_path": "No activation is imported; exclude the local template from public Commander Pack claims."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "commander-pack.local.saas-startup",
+      "capability_key": "commander-pack.local.saas-startup",
+      "display_name": "SaaS Startup",
+      "kind": "COMMANDER_PACK",
+      "source_status": "LOCAL_STATIC_BUSINESS_TEMPLATE",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "commander_pack_like_business_templates",
+          "identifier": "saas-startup",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "This source is a client-local business hierarchy template and is not a durable Commander Pack installation.",
+        "No execution, tenant activation, canary, production readback, support, pricing, or rollback receipt is imported."
+      ],
+      "rollback_path": "Remove the catalog binding after the local template source is reviewed and removed.",
+      "deactivation_path": "No activation is imported; exclude the local template from public Commander Pack claims."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "commander-pack.local.local-service-business",
+      "capability_key": "commander-pack.local.local-service-business",
+      "display_name": "Local Service Business",
+      "kind": "COMMANDER_PACK",
+      "source_status": "LOCAL_STATIC_BUSINESS_TEMPLATE",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "commander_pack_like_business_templates",
+          "identifier": "local-service-business",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "This source is a client-local business hierarchy template and is not a durable Commander Pack installation.",
+        "No execution, tenant activation, canary, production readback, support, pricing, or rollback receipt is imported."
+      ],
+      "rollback_path": "Remove the catalog binding after the local template source is reviewed and removed.",
+      "deactivation_path": "No activation is imported; exclude the local template from public Commander Pack claims."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "commander-pack.local.custom-blank-structure",
+      "capability_key": "commander-pack.local.custom-blank-structure",
+      "display_name": "Custom Blank Structure",
+      "kind": "COMMANDER_PACK",
+      "source_status": "LOCAL_STATIC_BUSINESS_TEMPLATE",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "commander_pack_like_business_templates",
+          "identifier": "custom-blank-structure",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/NeuronsCommandCenter.tsx"
+        }
+      ],
+      "limitations": [
+        "This source is a client-local business hierarchy template and is not a durable Commander Pack installation.",
+        "No execution, tenant activation, canary, production readback, support, pricing, or rollback receipt is imported."
+      ],
+      "rollback_path": "Remove the catalog binding after the local template source is reviewed and removed.",
+      "deactivation_path": "No activation is imported; exclude the local template from public Commander Pack claims."
+    },
+    {
+      "capability_version": "1.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "workflow.local.client-merch-store-launch",
+      "capability_key": "workflow.local.client-merch-store-launch",
+      "display_name": "Client Merch Store Launch",
+      "kind": "WORKFLOW",
+      "source_status": "LOCAL_PENDING_WORKFLOW_BUILDER",
+      "production_readiness": "LOCAL_ONLY",
+      "source_bindings": [
+        {
+          "group": "local_merch_workflows",
+          "identifier": "merchLaunchWorkflowSteps",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/merch-workflow.ts"
+        }
+      ],
+      "source_members": [
+        {
+          "identifier": "client-intake",
+          "name": "Client Intake"
+        },
+        {
+          "identifier": "brand-analysis",
+          "name": "Brand Analysis"
+        },
+        {
+          "identifier": "audience-research",
+          "name": "Audience Research"
+        },
+        {
+          "identifier": "niche-research",
+          "name": "Niche Research"
+        },
+        {
+          "identifier": "product-planning",
+          "name": "Product Planning"
+        },
+        {
+          "identifier": "design-concept-generation",
+          "name": "Design Concept Generation"
+        },
+        {
+          "identifier": "design-prompt-generation",
+          "name": "Design Prompt Generation"
+        },
+        {
+          "identifier": "listing-draft-generation",
+          "name": "Listing Draft Generation"
+        },
+        {
+          "identifier": "compliance-review",
+          "name": "Compliance Review"
+        },
+        {
+          "identifier": "client-approval",
+          "name": "Client Approval"
+        },
+        {
+          "identifier": "store-build",
+          "name": "Store Build"
+        },
+        {
+          "identifier": "launch",
+          "name": "Launch"
+        },
+        {
+          "identifier": "reporting",
+          "name": "Reporting"
+        },
+        {
+          "identifier": "optimization",
+          "name": "Optimization"
+        }
+      ],
+      "limitations": [
+        "The source creates client-local pending tasks and explicitly states that no backend execution receipt exists.",
+        "The fourteen source steps are catalogued as one local workflow definition, not as completed operations."
+      ],
+      "rollback_path": "Remove the catalog binding after the local workflow builder is reviewed and removed.",
+      "deactivation_path": "No activation is imported; keep the workflow excluded from public claims and provider execution."
+    },
+    {
+      "capability_version": "200.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.tutorial.step.command-overview",
+      "capability_key": "capability.tutorial.step.command-overview",
+      "display_name": "Start from Command",
+      "kind": "CAPABILITY",
+      "source_status": "PHASE_200_TUTORIAL_STEP_AND_CONTRACT_ANCHOR",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "tutorial_steps",
+          "identifier": "command-overview",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
+        },
+        {
+          "group": "tutorial_contract_anchors",
+          "identifier": "command-overview",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:packages/contracts/src/interaction.ts"
+        }
+      ],
+      "limitations": [
+        "The UI step and contract anchor are aligned, but this source inventory does not import production journey or persistence receipts.",
+        "Tutorial step presence does not establish public claim eligibility."
+      ],
+      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after UI and contract source reconciliation.",
+      "deactivation_path": "Keep publication blocked; preserve existing member progress and released anchor compatibility."
+    },
+    {
+      "capability_version": "200.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.tutorial.step.businesses-overview",
+      "capability_key": "capability.tutorial.step.businesses-overview",
+      "display_name": "Review canonical businesses",
+      "kind": "CAPABILITY",
+      "source_status": "PHASE_200_TUTORIAL_STEP_AND_CONTRACT_ANCHOR",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "tutorial_steps",
+          "identifier": "businesses-overview",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
+        },
+        {
+          "group": "tutorial_contract_anchors",
+          "identifier": "businesses-overview",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:packages/contracts/src/interaction.ts"
+        }
+      ],
+      "limitations": [
+        "The UI step and contract anchor are aligned, but this source inventory does not import production journey or persistence receipts.",
+        "Tutorial step presence does not establish public claim eligibility."
+      ],
+      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after UI and contract source reconciliation.",
+      "deactivation_path": "Keep publication blocked; preserve existing member progress and released anchor compatibility."
+    },
+    {
+      "capability_version": "200.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.tutorial.step.universe-navigation",
+      "capability_key": "capability.tutorial.step.universe-navigation",
+      "display_name": "Navigate Universe",
+      "kind": "CAPABILITY",
+      "source_status": "PHASE_200_TUTORIAL_STEP_AND_CONTRACT_ANCHOR",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "tutorial_steps",
+          "identifier": "universe-navigation",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
+        },
+        {
+          "group": "tutorial_contract_anchors",
+          "identifier": "universe-navigation",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:packages/contracts/src/interaction.ts"
+        }
+      ],
+      "limitations": [
+        "The UI step and contract anchor are aligned, but this source inventory does not import production journey or persistence receipts.",
+        "Tutorial step presence does not establish public claim eligibility."
+      ],
+      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after UI and contract source reconciliation.",
+      "deactivation_path": "Keep publication blocked; preserve existing member progress and released anchor compatibility."
+    },
+    {
+      "capability_version": "200.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.tutorial.step.infrastructure-records",
+      "capability_key": "capability.tutorial.step.infrastructure-records",
+      "display_name": "Inspect source records",
+      "kind": "CAPABILITY",
+      "source_status": "PHASE_200_TUTORIAL_STEP_AND_CONTRACT_ANCHOR",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "tutorial_steps",
+          "identifier": "infrastructure-records",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
+        },
+        {
+          "group": "tutorial_contract_anchors",
+          "identifier": "infrastructure-records",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:packages/contracts/src/interaction.ts"
+        }
+      ],
+      "limitations": [
+        "The UI step and contract anchor are aligned, but this source inventory does not import production journey or persistence receipts.",
+        "Tutorial step presence does not establish public claim eligibility."
+      ],
+      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after UI and contract source reconciliation.",
+      "deactivation_path": "Keep publication blocked; preserve existing member progress and released anchor compatibility."
+    },
+    {
+      "capability_version": "200.0.0",
+      "environment": "PRODUCTION",
+      "scope": "GLOBAL",
+      "owner": "UNASSIGNED",
+      "lifecycle_state": "CATALOGUED",
+      "public_claim_eligible": false,
+      "inventory_entry_id": "capability.tutorial.step.entral-assistant",
+      "capability_key": "capability.tutorial.step.entral-assistant",
+      "display_name": "Use contextual ENTRAL help",
+      "kind": "CAPABILITY",
+      "source_status": "PHASE_200_TUTORIAL_STEP_AND_CONTRACT_ANCHOR",
+      "production_readiness": "UNVERIFIED",
+      "source_bindings": [
+        {
+          "group": "tutorial_steps",
+          "identifier": "entral-assistant",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
+        },
+        {
+          "group": "tutorial_contract_anchors",
+          "identifier": "entral-assistant",
+          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:packages/contracts/src/interaction.ts"
+        }
+      ],
+      "limitations": [
+        "The UI step and contract anchor are aligned, but this source inventory does not import production journey or persistence receipts.",
+        "Tutorial step presence does not establish public claim eligibility."
+      ],
+      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after UI and contract source reconciliation.",
+      "deactivation_path": "Keep publication blocked; preserve existing member progress and released anchor compatibility."
+    }
+  ]
+}

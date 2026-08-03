@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, FlaskConical, GitBranch, LockKeyhole, PlugZap, Rocket, ShieldAlert } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle2, FlaskConical, LockKeyhole, PlugZap, ShieldAlert } from "lucide-react";
 import { apiFetch, ApiError } from "../lib/api";
+import { ProductTruthValidationError, validateFreshProductTruthProjection } from "../lib/capability-truth";
 import {
   toolsByCategory,
   type ToolRegistryEntry,
@@ -11,35 +12,12 @@ import {
 import { ModeStatusStrip } from "./ModeStatus";
 
 type ToolsResponse = {
-  items: ToolRegistryEntry[];
+  items: unknown;
+  product_truth: unknown;
 };
 
 type ToolResultResponse<T> = {
   result: T;
-};
-
-type DevelopmentStatusResponse = {
-  github: {
-    defaultBranch: string | null;
-    latestCommit: { message: string; sha: string; url: string | null } | null;
-    missingEnvVars: string[];
-    repository: string | null;
-    status: ToolRegistryEntry["status"];
-    workflowStatus: string | null;
-  };
-  health: {
-    message: string;
-    status: "Green" | "Yellow" | "Red" | "Gray";
-    updatedAt: string;
-  };
-  vercel: {
-    latestDeployment: { status: string; url: string | null; createdAt: string | null } | null;
-    missingEnvVars: string[];
-    productionDeployment: { status: string; url: string | null; createdAt: string | null } | null;
-    productionUrl: string | null;
-    projectName: string | null;
-    status: ToolRegistryEntry["status"];
-  };
 };
 
 type ConnectionCenterProps = {
@@ -62,36 +40,91 @@ function approvalLabel(tool: ToolRegistryEntry) {
   return "Standard approval policy";
 }
 
+export function validatePublishedIntegrationTools(value: ToolsResponse): ToolRegistryEntry[] {
+  const projection = validateFreshProductTruthProjection(value.product_truth, "INTEGRATION_LIST");
+  if (!Array.isArray(value.items)) {
+    throw new ProductTruthValidationError("The integration registry returned malformed items.");
+  }
+  const claims = new Map(projection.claims.map((claim) => [claim.claim_id, claim]));
+  const tools = value.items as ToolRegistryEntry[];
+  if (tools.length !== projection.claims.length) {
+    throw new ProductTruthValidationError("The integration list is not synchronized with Product Truth.");
+  }
+  const seenClaims = new Set<string>();
+  for (const tool of tools) {
+    const binding = tool?.productTruth;
+    if (!binding) {
+      throw new ProductTruthValidationError("The integration list is not synchronized with Product Truth.");
+    }
+    const claim = claims.get(binding.claimId);
+    if (
+      !claim
+      || seenClaims.has(claim.claim_id)
+      || claim.capability_key !== `integration.tool.${tool.id}`
+      || binding.capabilityId !== claim.capability_id
+      || binding.capabilityKey !== claim.capability_key
+      || binding.capabilityVersion !== claim.capability_version
+      || binding.claimKey !== claim.claim_key
+      || binding.claimRecordVersion !== claim.claim_record_version
+      || tool.name !== claim.display_name
+      || tool.description !== claim.approved_language
+      || JSON.stringify(binding.evidenceReceiptIds) !== JSON.stringify(claim.evidence_receipt_ids)
+      || JSON.stringify(binding.limitations) !== JSON.stringify(claim.limitations)
+    ) {
+      throw new ProductTruthValidationError("The integration list is not synchronized with Product Truth.");
+    }
+    seenClaims.add(claim.claim_id);
+  }
+  return tools;
+}
+
 export function ConnectionCenter({ onEvent, onRegistryLoad }: ConnectionCenterProps) {
   const [tools, setTools] = useState<ToolRegistryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeResult, setActiveResult] = useState<ToolTestResult | null>(null);
   const [activeError, setActiveError] = useState("");
   const [busyToolId, setBusyToolId] = useState<string | null>(null);
-  const [developmentStatus, setDevelopmentStatus] = useState<DevelopmentStatusResponse | null>(null);
+  const onEventRef = useRef(onEvent);
+  const onRegistryLoadRef = useRef(onRegistryLoad);
+  onEventRef.current = onEvent;
+  onRegistryLoadRef.current = onRegistryLoad;
 
   useEffect(() => {
     let isCancelled = false;
+    let expiryTimer: ReturnType<typeof setTimeout> | undefined;
 
     async function loadTools() {
       setIsLoading(true);
       try {
         const response = await apiFetch<ToolsResponse>("/connections/tools", { timeoutMs: 8000 });
-        const statusResponse = await apiFetch<DevelopmentStatusResponse>("/connections/development-status", { timeoutMs: 8000 }).catch(() => null);
         if (isCancelled) return;
-        setTools(response.items);
+        const publishedTools = validatePublishedIntegrationTools(response);
+        const projection = validateFreshProductTruthProjection(response.product_truth, "INTEGRATION_LIST");
+        if (expiryTimer) clearTimeout(expiryTimer);
+        expiryTimer = setTimeout(() => {
+          if (isCancelled) return;
+          const message = "Connection Product Truth expired. Refreshing the canonical registry.";
+          setTools([]);
+          setActiveResult(null);
+          setBusyToolId(null);
+          setActiveError(message);
+          onRegistryLoadRef.current?.([]);
+          onEventRef.current?.(message);
+          void loadTools();
+        }, Math.max(0, Date.parse(projection.expires_at) - Date.now()));
+        setTools(publishedTools);
         setActiveError("");
-        setDevelopmentStatus(statusResponse);
-        onRegistryLoad?.(response.items);
+        onRegistryLoadRef.current?.(publishedTools);
       } catch (error) {
         if (isCancelled) return;
+        if (expiryTimer) clearTimeout(expiryTimer);
         const message = error instanceof ApiError
           ? `Connection registry unavailable (${error.status}). No local substitute was selected.`
           : "Connection registry unavailable. No local substitute was selected.";
         setTools([]);
-        setDevelopmentStatus(null);
         setActiveError(message);
-        onEvent?.(message);
+        onRegistryLoadRef.current?.([]);
+        onEventRef.current?.(message);
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -103,13 +136,11 @@ export function ConnectionCenter({ onEvent, onRegistryLoad }: ConnectionCenterPr
 
     return () => {
       isCancelled = true;
+      if (expiryTimer) clearTimeout(expiryTimer);
     };
-  }, [onEvent, onRegistryLoad]);
+  }, []);
 
-  const visibleTools = useMemo(() => tools.filter((tool) => tool.status !== "Coming Soon" && !/placeholder/i.test(tool.name)), [tools]);
-  const hiddenRoadmapCount = tools.length - visibleTools.length;
-  const groupedTools = useMemo(() => toolsByCategory(visibleTools), [visibleTools]);
-  const developmentHealthClass = developmentStatus?.health.status.toLowerCase() ?? "gray";
+  const groupedTools = useMemo(() => toolsByCategory(tools), [tools]);
 
   async function testTool(tool: ToolRegistryEntry) {
     setBusyToolId(tool.id);
@@ -138,12 +169,12 @@ export function ConnectionCenter({ onEvent, onRegistryLoad }: ConnectionCenterPr
       <header>
         <div>
           <p className="eyebrow">Connection Center</p>
-          <h3>External tools</h3>
-          <p>All connected services are listed here. Real external execution remains authorization-gated.</p>
+          <h3>Registry-published integrations</h3>
+          <p>Only receipt-bound integrations published as SELLABLE are listed. Provider execution remains authorization-gated.</p>
         </div>
         <span className={isLoading ? "connection-center-status loading" : "connection-center-status"}>
           <PlugZap aria-hidden="true" size={14} />
-          {isLoading ? "Syncing" : `${visibleTools.length} available`}
+          {isLoading ? "Syncing" : `${tools.length} published`}
         </span>
       </header>
       <ModeStatusStrip
@@ -168,43 +199,8 @@ export function ConnectionCenter({ onEvent, onRegistryLoad }: ConnectionCenterPr
           }
         ]}
       />
-      {hiddenRoadmapCount > 0 ? (
-        <p className="control-hint">{hiddenRoadmapCount} planned integrations are hidden until they have a testable workflow.</p>
-      ) : null}
-
-      {developmentStatus ? (
-        <section className={`development-status-panel health-${developmentHealthClass}`} aria-label="ENTRAL development status">
-          <div className="development-status-header">
-            <div>
-              <p className="eyebrow">Development Status</p>
-              <h4>Pipeline health: {developmentStatus.health.status}</h4>
-              <p>{developmentStatus.health.message}</p>
-            </div>
-            <span className="connection-readonly-badge">Read-only</span>
-          </div>
-          <div className="development-status-grid">
-            <article>
-              <GitBranch aria-hidden="true" size={15} />
-              <div>
-                <strong>GitHub</strong>
-                <span>{developmentStatus.github.status}</span>
-                <small>{developmentStatus.github.repository ?? "Repository not configured"}</small>
-                <small>{developmentStatus.github.defaultBranch ? `Branch: ${developmentStatus.github.defaultBranch}` : "Branch unavailable"}</small>
-                <small>{developmentStatus.github.latestCommit ? `Latest: ${developmentStatus.github.latestCommit.sha} ${developmentStatus.github.latestCommit.message}` : "Latest commit unavailable"}</small>
-              </div>
-            </article>
-            <article>
-              <Rocket aria-hidden="true" size={15} />
-              <div>
-                <strong>Vercel</strong>
-                <span>{developmentStatus.vercel.status}</span>
-                <small>{developmentStatus.vercel.projectName ?? "Project not configured"}</small>
-                <small>{developmentStatus.vercel.productionDeployment ? `Production: ${developmentStatus.vercel.productionDeployment.status}` : "Production deployment unavailable"}</small>
-                <small>{developmentStatus.vercel.productionUrl ?? developmentStatus.vercel.latestDeployment?.url ?? "Deployment URL unavailable"}</small>
-              </div>
-            </article>
-          </div>
-        </section>
+      {!isLoading && !activeError && tools.length === 0 ? (
+        <p className="control-hint" role="status">No integrations are currently published as SELLABLE.</p>
       ) : null}
 
       {Object.entries(groupedTools).map(([category, categoryTools]) => (

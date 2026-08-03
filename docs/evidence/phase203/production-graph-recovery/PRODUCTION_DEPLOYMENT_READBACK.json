@@ -1,0 +1,62 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-GRAPH-RECOVERY-DEPLOYMENT-BDCEB245",
+  "status": "PASSED",
+  "environment": "PRODUCTION",
+  "repository": "mykai05/ENTRAL-0.2",
+  "accepted_git_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+  "protected_main": {
+    "branch": "main",
+    "head_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+    "pull_request": 52,
+    "ci_run_id": 30782512745,
+    "ci_attempt": 2,
+    "ci_status": "PASSED"
+  },
+  "deployments": [
+    {
+      "provider": "VERCEL",
+      "deployment_role": "FRONTEND",
+      "deployment_id": "dpl_BMP1J3Pkz9LB1NBw2sb5f5LNCKmX",
+      "deployed_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+      "status": "READY",
+      "provider_status": "READY",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "source": "GIT_MAIN"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_role": "API",
+      "deployment_id": "6887706f-1f13-4b3f-8ae9-f812ac7c4321",
+      "deployed_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+      "status": "READY",
+      "provider_status": "SUCCESS",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "config_file": "/railway.json",
+      "image_digest": "sha256:8e50ed04bb8e9c7a0c40c9b6fac48941755b121f0983a9cf21064d2669a96627",
+      "source_connection": "DISCONNECTED",
+      "source_tree_sha": "78925f45b09d540b3cacaaa690275c1c99699e23",
+      "source_tracked_files": 858
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_role": "WORKER",
+      "deployment_id": "011b8ff5-9814-4ba7-861e-9b298a80cb32",
+      "deployed_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+      "status": "READY",
+      "provider_status": "SUCCESS",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "config_file": "/railway.worker.json",
+      "image_digest": "sha256:53e7e68170a9963e1108138b6f25e8b4b6b842a095fda9a32217b4cf2a7e5821",
+      "source_connection": "DISCONNECTED",
+      "source_tree_sha": "78925f45b09d540b3cacaaa690275c1c99699e23",
+      "source_tracked_files": 858
+    }
+  ],
+  "exact_sha_parity": true,
+  "health_status": "PASSED",
+  "worker_readiness": "READY",
+  "read_back_at": "2026-08-03T04:10:33.953Z",
+  "receipt_sha256": "d6c139f1fdb2dfd25c4019d88b63622a5b18e511e10b376ce18e62a16eb6352a"
+}

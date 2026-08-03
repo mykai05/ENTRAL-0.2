@@ -1,0 +1,47 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-GRAPH-RECOVERY-MIGRATED-STATE-001",
+  "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "environment": "PRODUCTION",
+  "accepted_git_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+  "account_scope": "EXISTING_MIGRATED_FOUNDER_MEMBER",
+  "provenance": {
+    "phase_202_release_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "phase_202_state_receipt_id": "P202-PROD-READBACK-C6891762",
+    "phase_202_state_receipt_sha256": "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c",
+    "pre_phase_202_provenance_verified": true,
+    "migrated_account_provenance_sha256": "07b30847c787d6b2b10c1fc5ae7c7c59bcbe4ee85c75af0bb1567639cb037e8a",
+    "membership_provenance_sha256": "6bced6d3181a664f65a8a1f4000f07e3b5189bf921cb76967dd5600abc45d404",
+    "tenant_scope_sha256": "bce70acc12401f2ded3936c3bab14132028689a72db8636468dd8f8ab7278a74",
+    "organization_scope_sha256": "0365e262f0d48cbdaea1cbd2b0b8dc8573fbd59478d5b532f3d3dd71ca9b877c"
+  },
+  "incident_release": {
+    "main_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+    "frontend_deployment_id": "dpl_BMP1J3Pkz9LB1NBw2sb5f5LNCKmX",
+    "api_deployment_id": "6887706f-1f13-4b3f-8ae9-f812ac7c4321",
+    "worker_deployment_id": "011b8ff5-9814-4ba7-861e-9b298a80cb32",
+    "migration": "20260803000000_phase_203_graph_recovery",
+    "migration_status": "UP_TO_DATE",
+    "health_status": "PASSED",
+    "worker_readiness": "READY"
+  },
+  "canonical_state": {
+    "business_count": 0,
+    "root_count": 1,
+    "node_count": 132,
+    "edge_count": 131,
+    "hierarchy_event_sequence": 399,
+    "projection_version": 399,
+    "graph_preference_version": 5
+  },
+  "session_revocation": {
+    "revoked": true,
+    "post_revocation_http_status": 401
+  },
+  "contains_credentials_or_tokens": false,
+  "raw_customer_data_committed": false,
+  "state_receipt_sha256": "0f2ff48916b2406d970beaa00cf93cab31a4f8c5532b3f6ed658c50970ebc3da",
+  "status": "PASSED",
+  "receipt_sha256": "00b6245e21cad24e009ac44a9c053c9bed78e227c5676167b569c976e0e42983"
+}

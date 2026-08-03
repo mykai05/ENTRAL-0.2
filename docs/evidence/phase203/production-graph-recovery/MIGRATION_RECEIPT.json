@@ -1,0 +1,45 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-GRAPH-RECOVERY-MIGRATION-20260803",
+  "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "accepted_git_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+  "migration": "20260803000000_phase_203_graph_recovery",
+  "migration_sql_sha256": "faa9a235325d09c7f184381bdab570cbc95ea98d65c708514415f5645330c23e",
+  "apply": {
+    "command": "pnpm prisma:deploy against Railway production",
+    "status": "PASSED",
+    "migrations_found": 45,
+    "applied": 45,
+    "failed": 0,
+    "rolled_back": 0,
+    "pending": 0
+  },
+  "database_roles": {
+    "command": "pnpm prisma:roles against Railway production",
+    "status": "PASSED",
+    "source_hashes": {
+      "046": "c67255de0dbb2a1a514649f796470da8217abfb7f9e2215eb2796b58e66d5414",
+      "047": "eb5c5f6454ca7aef82628997daed19a629011794d521c4fc44d5c7200ec67797",
+      "048": "58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302"
+    }
+  },
+  "independent_fresh_audit": {
+    "commands": [
+      "pnpm prisma migrate status against a fresh production connection",
+      "direct read-only query of production _prisma_migrations"
+    ],
+    "status": "PASSED",
+    "migration_directories": 45,
+    "applied": 45,
+    "failed": 0,
+    "rolled_back": 0,
+    "pending": 0,
+    "latest_migration": "20260803000000_phase_203_graph_recovery"
+  },
+  "production_schema_status": "UP_TO_DATE",
+  "migration_kind": "ADDITIVE_FORWARD_REPAIR",
+  "destructive_down_migration_authorized": false,
+  "status": "VERIFIED",
+  "receipt_sha256": "853fe64445f888e5f72b3fa3b83f477056a42ef17f0c23d794e272768f299fb2"
+}

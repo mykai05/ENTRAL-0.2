@@ -8397,6 +8397,44 @@ app.get("/api/v1/member/organizations/:organizationId/hierarchy", { preHandler: 
   phase180MemorySnapshot().hierarchy
 );
 
+app.get("/api/v1/member/organizations/:organizationId/product-truth", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { organizationId } = request.params as { organizationId: string };
+  if (!teamsForUser(user.id).some((team) => team.id === organizationId)) {
+    return reply.code(404).send({ error: "Not Found", message: "Organization not found." });
+  }
+  const surface = (request.query as { surface?: string }).surface;
+  const allowedSurfaces = [
+    "WEBSITE",
+    "TUTORIAL",
+    "PRICING",
+    "CHECKOUT",
+    "PROPOSAL",
+    "ONBOARDING",
+    "INTEGRATION_LIST",
+    "MEMBER_APPLICATION",
+    "SALES"
+  ];
+  if (!surface || !allowedSurfaces.includes(surface)) {
+    return reply.code(400).send({ error: "Bad Request", message: "A canonical Product Truth surface is required." });
+  }
+  const generatedAt = new Date();
+  const expiresAt = new Date(generatedAt.getTime() + 30_000);
+  return {
+    contract_version: "1.0.0",
+    schema_version: 1,
+    projection_id: crypto.randomUUID(),
+    environment: "PRODUCTION",
+    surface,
+    registry_revision: 1,
+    generated_at: generatedAt.toISOString(),
+    expires_at: expiresAt.toISOString(),
+    // The local-only memory runtime never invents product claims. An empty
+    // projection exercises fail-closed consumers without becoming authority.
+    claims: []
+  };
+});
+
 app.get("/api/v1/member/organizations/:organizationId/events", { preHandler: requireAuth }, async (request) => {
   const afterSequence = Number((request.query as { afterSequence?: string }).afterSequence ?? 0);
   return { events: [], next_sequence: Math.max(9, afterSequence) };
@@ -14060,51 +14098,20 @@ async function chatReply(request: FastifyRequest, reply: FastifyReply) {
 app.post("/api/v1/ai/chat", { preHandler: requireAuth }, chatReply);
 app.post("/api/v1/ai/screen", { preHandler: requireAuth }, chatReply);
 
-app.get("/api/v1/connections/tools", { preHandler: requireAuth }, async () => {
-  const { getToolRegistry } = await import("./services/toolRegistry.js");
-  const items = getToolRegistry();
-  const categories = items.reduce<Record<string, number>>((groups, tool) => {
-    groups[tool.category] = (groups[tool.category] ?? 0) + 1;
-    return groups;
-  }, {});
-
-  return {
-    categories,
-    items
-  };
+app.get("/api/v1/connections/tools", { preHandler: requireAuth }, async (_request, reply) => {
+  return reply.code(503).send({
+    error: "Service Unavailable",
+    code: "PRODUCT_TRUTH_UNAVAILABLE",
+    message: "The canonical integration registry is unavailable in the memory server."
+  });
 });
 
-app.post("/api/v1/connections/tools/:toolId/test", { preHandler: requireAuth }, async (request, reply) => {
-  const { toolId } = request.params as { toolId: string };
-  const { buildToolTestResultWithProvider, getToolById } = await import("./services/toolRegistry.js");
-  const tool = getToolById(toolId);
-
-  if (!tool) {
-    return reply.code(404).send({ error: "Not Found", message: "Tool was not found." });
-  }
-
-  const result = await buildToolTestResultWithProvider(tool);
-
-  if (tool.id === "github" || tool.id === "vercel") {
-    state.auditLogs.unshift({
-      action: tool.id === "github" ? "github.status.read" : "vercel.status.read",
-      createdAt: now(),
-      entry: {
-        readOnly: result.readOnly ?? false,
-        resultStatus: result.status,
-        tool: result.toolName,
-        writeActionsEnabled: result.writeActionsEnabled ?? false
-      },
-      entryHash: id("hash"),
-      id: id("audit"),
-      outcome: result.success ? "success" : result.status === "Error" ? "failure" : "blocked",
-      severity: result.status === "Error" ? "medium" : "low",
-      targetId: tool.id,
-      targetType: "external_tool"
-    });
-  }
-
-  return { result };
+app.post("/api/v1/connections/tools/:toolId/test", { preHandler: requireAuth }, async (_request, reply) => {
+  return reply.code(503).send({
+    error: "Service Unavailable",
+    code: "PRODUCT_TRUTH_UNAVAILABLE",
+    message: "Provider tests require the canonical integration registry."
+  });
 });
 
 app.get("/api/v1/connections/development-status", { preHandler: requireAuth }, async () => {

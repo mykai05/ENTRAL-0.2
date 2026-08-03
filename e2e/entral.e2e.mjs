@@ -2568,35 +2568,45 @@ const tests = [
         const academy = desktop.page.getByRole("dialog", { name: "ENTRAL Academy" });
         await expectVisible(academy, "Phase 200 server-backed Tutorial");
         await expectVisible(academy.getByText("Server progress synced · revision 1"), "Phase 200 initial server Tutorial readback");
-        await academy.getByRole("button", { name: "Navigate Universe" }).click();
-        await expectVisible(academy.getByRole("heading", { level: 2, name: "Navigate Universe" }), "Phase 200 cross-device Tutorial resume anchor");
+        await expectVisible(
+          academy.getByRole("heading", { level: 3, name: "No published Tutorial lessons" }),
+          "Phase 203 fail-closed Tutorial publication state"
+        );
+        if (await academy.getByRole("button", { name: "Navigate Universe" }).count()) {
+          throw new Error("Phase 203 local acceptance exposed a Tutorial lesson without a SELLABLE Product Truth claim.");
+        }
         await academy.getByRole("button", { name: "Advanced" }).click();
         await expectVisible(academy.getByText("Server progress synced · revision 2"), "Phase 200 Tutorial mode persistence");
-        await expectVisible(academy.getByRole("heading", { level: 2, name: "Start from Command" }), "Phase 200 mode-change anchor reset");
-        await academy.getByRole("button", { name: "Next lesson" }).click();
-        await expectVisible(academy.getByText("Server progress synced · revision 3"), "Phase 200 Tutorial second anchor persistence");
-        await academy.getByRole("button", { name: "Next lesson" }).click();
-        await expectVisible(academy.getByText("Server progress synced · revision 4"), "Phase 200 Tutorial Universe anchor persistence");
+        if (!await academy.getByRole("button", { name: "Advanced" }).evaluate((element) => element.classList.contains("active"))) {
+          throw new Error("Phase 200 Tutorial did not persist its server-backed mode while publication remained fail-closed.");
+        }
         await Promise.all([
           desktop.page.waitForResponse((response) => response.request().method() === "PATCH"
             && response.url().includes("/interaction/tutorial-progress")),
           academy.getByRole("button", { name: "Close ENTRAL Academy" }).click()
         ]);
         const persistedTutorialRevision = interactionRoutes.progress().revision;
-        if (interactionRoutes.progress().current_anchor_id !== "universe-navigation") {
-          throw new Error(`Phase 200 Tutorial did not persist its active anchor: ${JSON.stringify(interactionRoutes.progress())}`);
+        if (
+          interactionRoutes.progress().current_anchor_id !== null
+          || interactionRoutes.progress().mode !== "advanced"
+          || !interactionRoutes.progress().first_launch_seen
+        ) {
+          throw new Error(`Phase 200 Tutorial did not persist fail-closed server progress: ${JSON.stringify(interactionRoutes.progress())}`);
         }
 
         await desktop.page.reload();
         const resumedAcademy = desktop.page.getByRole("dialog", { name: "ENTRAL Academy" });
         await expectVisible(resumedAcademy, "Phase 200 Tutorial after cross-device-style reload");
         await desktop.page.waitForTimeout(1_000);
-        const resumedSyncStatus = await resumedAcademy.locator(".academy-sync-status").innerText();
+        const resumedSyncStatus = await resumedAcademy.locator('.academy-sync-status[data-state="synced"]').innerText();
         if (!resumedSyncStatus.includes(`Server progress synced · revision ${persistedTutorialRevision}`)) {
           throw new Error(`Phase 200 persisted Tutorial revision was not restored: ${resumedSyncStatus}`);
         }
         await desktop.page.evaluate(() => window.dispatchEvent(new Event("entral:open-tutorial")));
-        await expectVisible(resumedAcademy.getByRole("heading", { level: 2, name: "Navigate Universe" }), "Phase 200 retained Tutorial anchor");
+        await expectVisible(
+          resumedAcademy.getByRole("heading", { level: 3, name: "No published Tutorial lessons" }),
+          "Phase 203 fail-closed Tutorial state after cross-device-style reload"
+        );
         if (!await resumedAcademy.getByRole("button", { name: "Advanced" }).evaluate((element) => element.classList.contains("active"))) {
           throw new Error("Phase 200 Tutorial did not restore its server-backed mode.");
         }
@@ -2613,7 +2623,7 @@ const tests = [
           throw new Error(`Phase 200 Tutorial reset did not persist canonical defaults: ${JSON.stringify(interactionRoutes.progress())}`);
         }
         if (!interactionRoutes.analyticsRequests.some((event) => event.event_type === "HELP_USED")) {
-          throw new Error("Phase 200 Tutorial did not record its bounded help-use analytics event.");
+          throw new Error("Phase 200 Tutorial did not record its bounded Academy help-use analytics event.");
         }
         const localTutorialKeys = await desktop.page.evaluate(() => Object.keys(window.localStorage)
           .filter((key) => /academy|tutorial/i.test(key)));
