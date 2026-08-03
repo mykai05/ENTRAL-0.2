@@ -353,18 +353,18 @@
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/README.md"
     ],
     "acquired_at": "2026-08-03T04:28:36.905Z",
-    "heartbeat_at": "2026-08-03T05:52:43.521Z",
-    "expires_at": "2026-08-03T06:22:43.521Z"
+    "heartbeat_at": "2026-08-03T06:03:20.523Z",
+    "expires_at": "2026-08-03T06:33:20.523Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 158,
-  "updated_at": "2026-08-03T05:52:43.521Z",
+  "version": 159,
+  "updated_at": "2026-08-03T06:03:20.523Z",
   "task_deadline_at": "2026-08-03T20:28:21.277Z",
   "pending_release_manifest": null,
-  "event_count": 158,
-  "event_head_hash": "877d26ae6fdfff3c6f894dfa6e99bb138eb43edbb9bb0be9640a23ed514f2c76"
+  "event_count": 159,
+  "event_head_hash": "4278328dcb1fdd2e243b8192ca0b898de115870307be7b9d2601605cfb9330c9"
 }
