@@ -17,7 +17,7 @@ No source file authorizes publication. Public use must fail closed until the own
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | RR-LR-001 | Lead Response and Estimate Follow-Up Kit | 1.0.0 | $29 | 8 | 6 | 3 | 7 |
 | RR-CO-001 | Scope and Change-Order Control Pack | 1.0.0 | $49 | 8 | 6 | 4 | 7 |
-| RR-BC-001 | Billing and Collections Accelerator | 1.0.0 | $49 | 8 | 7 | 5 | 7 |
+| RR-BC-001 | Billing and Collections Accelerator | 1.0.0 | $49 | 8 | 7 | 6 | 7 |
 | RR-WD-001 | Weekly Owner Command Dashboard | 1.0.0 | $39 | 8 | 4 | 4 | 7 |
 | RR-BU-001 | Complete Contractor Control Bundle | 1.0.0 | $119 | 5 | Binds component examples | Binds component formulas | 7 |
 

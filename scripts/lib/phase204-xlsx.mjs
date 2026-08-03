@@ -435,6 +435,7 @@ function instructionsWorksheetXml(definition) {
   <sheetFormatPr defaultRowHeight="15"/>
   <cols><col min="1" max="1" width="34" customWidth="1"/><col min="2" max="2" width="22" customWidth="1"/><col min="3" max="3" width="16" customWidth="1"/><col min="4" max="4" width="90" customWidth="1"/></cols>
   <sheetData>${rows.join("")}</sheetData>
+  <mergeCells count="2"><mergeCell ref="A1:D1"/><mergeCell ref="A2:D2"/></mergeCells>
   <pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>
 </worksheet>`;
 }

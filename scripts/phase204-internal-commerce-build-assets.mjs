@@ -244,7 +244,8 @@ function documentHtml(title, sections) {
 .section { page-break-before:always; } h1,h2,h3,h4 { color:var(--ink); line-height:1.15; page-break-after:avoid; }
 h1 { font-size:22pt; margin:0 0 .18in; border-bottom:2px solid var(--accent); padding-bottom:.08in; }
 h2 { font-size:16pt; margin:.28in 0 .1in; } h3 { font-size:12.5pt; margin:.2in 0 .07in; }
-p { margin:.06in 0 .12in; orphans:3; widows:3; } ul,ol { margin:.05in 0 .14in .24in; padding:0; } li { margin:.035in 0; }
+p { margin:.06in 0 .12in; orphans:3; widows:3; } ul,ol { margin:.05in 0 .14in .24in; padding:0; } li { margin:.035in 0; break-inside:avoid; }
+li:nth-last-child(3), li:nth-last-child(2) { break-after:avoid; page-break-after:avoid; }
 table { width:100%; border-collapse:collapse; margin:.12in 0 .2in; font-size:8.7pt; page-break-inside:auto; }
 thead { display:table-header-group; } tr { page-break-inside:avoid; } th,td { border:1px solid var(--line); padding:.06in; text-align:left; vertical-align:top; }
 th { background:var(--soft); } code { font:8.8pt Consolas, monospace; background:var(--soft); padding:.01in .035in; }

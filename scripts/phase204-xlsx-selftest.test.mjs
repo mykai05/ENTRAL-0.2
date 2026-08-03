@@ -122,6 +122,7 @@ test("Phase 204 XLSX binds the table, formulas, validation, styles, and protecti
   assert.match(sheet, /<dataValidation type="list" [^>]+sqref="C2:C1048576"/u);
   assert.match(sheet, /<c r="D2" s="7" t="n"><v>1250<\/v><\/c>/u);
   assert.match(sheet, /<c r="F2" s="15"><f>IF\(Table_Lead_Tracker\[\[#This Row\],\[Follow_Up_Count\]\]=0,&quot;&quot;,1\)<\/f><\/c>/u);
+  assert.match(entries.get("xl/worksheets/sheet1.xml").toString("utf8"), /<mergeCells count="2"><mergeCell ref="A1:D1"\/><mergeCell ref="A2:D2"\/><\/mergeCells>/u);
   assert.match(table, /ref="A1:F2"/u);
   assert.match(table, /<autoFilter ref="A1:F2"\/>/u);
   assert.match(table, /<calculatedColumnFormula>IF\(Table_Lead_Tracker\[\[#This Row\],\[Follow_Up_Count\]\]=0,&quot;&quot;,1\)<\/calculatedColumnFormula>/u);
