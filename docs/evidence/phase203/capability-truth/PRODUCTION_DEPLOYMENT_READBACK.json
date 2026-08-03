@@ -1,0 +1,51 @@
+{
+  "accepted_git_commit_sha": "2575fe741935a7c5e1ca9cc6eb9f26ade3fc3458",
+  "contract_version": "1.0.0",
+  "deployments": [
+    {
+      "deployed_commit_sha": "2575fe741935a7c5e1ca9cc6eb9f26ade3fc3458",
+      "deployment_id": "dpl_9hWP4d4NxST1aZ1NHrqS2ATamK5X",
+      "deployment_role": "FRONTEND",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "provider": "VERCEL",
+      "provider_source_binding": "github:mykai05/ENTRAL-0.2@2575fe741935a7c5e1ca9cc6eb9f26ade3fc3458",
+      "status": "READY"
+    },
+    {
+      "deployed_commit_sha": "2575fe741935a7c5e1ca9cc6eb9f26ade3fc3458",
+      "deployment_id": "cebe30e6-0eff-4a43-b65a-270008818a5c",
+      "deployment_role": "API",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "provider": "RAILWAY",
+      "provider_source_binding": "exact-source-archive:4f2b1d2314ca8c5ff17910b6ca5835609d313b992a5752866fc8adc460cb4855",
+      "status": "READY"
+    },
+    {
+      "deployed_commit_sha": "2575fe741935a7c5e1ca9cc6eb9f26ade3fc3458",
+      "deployment_id": "3b008c43-9df1-4ba3-aa70-d0b53bedc13a",
+      "deployment_role": "WORKER",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "provider": "RAILWAY",
+      "provider_source_binding": "exact-source-archive:4f2b1d2314ca8c5ff17910b6ca5835609d313b992a5752866fc8adc460cb4855",
+      "status": "READY"
+    }
+  ],
+  "exact_source_archive_sha256": "4f2b1d2314ca8c5ff17910b6ca5835609d313b992a5752866fc8adc460cb4855",
+  "exact_source_file_count": 890,
+  "exact_source_tree_sha": "027eae4187d80abe4c88a729d31930123733c014",
+  "health": {
+    "api": "PASSED",
+    "frontend_http_status": 200,
+    "worker_evidence_source": "DURABLE_HEARTBEAT",
+    "worker_queue_dead_letter": 0,
+    "worker_queue_failed": 0,
+    "worker_status": "READY"
+  },
+  "observed_at": "2026-08-03T10:26:18.574Z",
+  "protected_main_ci_job_id": 91656855652,
+  "protected_main_ci_run_id": 30804589003,
+  "receipt_id": "P203-DEPLOYMENT-READBACK-2575FE74",
+  "schema_version": 1,
+  "status": "PASSED",
+  "receipt_sha256": "923ed8df86f95e5b5507defdede583e45efd8d7eab779923d12665622f4bad77"
+}
