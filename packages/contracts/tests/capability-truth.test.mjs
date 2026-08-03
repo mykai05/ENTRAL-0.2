@@ -129,6 +129,7 @@ function evaluation(capability, claim, overrides = {}) {
   return {
     capability,
     claim,
+    dependency_capabilities: [],
     requested_environment: "PRODUCTION",
     requested_tenant_id: null,
     requested_organization_id: null,
@@ -217,6 +218,67 @@ test("claim evidence must stay synchronized with the exact capability version an
   assert.equal(
     evaluateProductClaimPublication(evaluation(capability, missingEvidence)).reason_code,
     "CLAIM_EVIDENCE_MISMATCH"
+  );
+
+  for (const invalidReceipt of [
+    { ...receipt("PRODUCTION_READBACK", 91), status: "FAILED" },
+    { ...receipt("PRODUCTION_READBACK", 92), environment: "STAGING" },
+    {
+      ...receipt("PRODUCTION_READBACK", 93),
+      captured_at: "2026-08-03T04:00:00.000Z",
+      expires_at: "2026-08-03T04:59:59.000Z"
+    }
+  ]) {
+    const candidate = sellableCapability({
+      verification_receipts: [...capability.verification_receipts, invalidReceipt]
+    });
+    const invalidClaim = approvedClaim(candidate, { evidence_receipt_ids: [invalidReceipt.receipt_id] });
+    assert.equal(
+      evaluateProductClaimPublication(evaluation(candidate, invalidClaim)).reason_code,
+      "CLAIM_EVIDENCE_MISMATCH"
+    );
+  }
+});
+
+test("required dependencies and activation requirements fail closed", () => {
+  const dependencyId = "a23e4567-e89b-42d3-a456-426614174000";
+  const capability = sellableCapability({
+    dependencies: [{
+      capability_id: dependencyId,
+      capability_version: "1.0.0",
+      minimum_lifecycle_state: "ACTIVE",
+      required: true
+    }]
+  });
+  const claim = approvedClaim(capability);
+  assert.equal(
+    evaluateProductClaimPublication(evaluation(capability, claim)).reason_code,
+    "DEPENDENCY_UNSATISFIED"
+  );
+  const dependency = sellableCapability({
+    capability_id: dependencyId,
+    capability_key: "entral.required-dependency"
+  });
+  assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
+    dependency_capabilities: [dependency]
+  })).allowed, true);
+
+  const emptyActivationEvidence = sellableCapability({
+    lifecycle_state: "CATALOGUED",
+    production_readiness: "UNVERIFIED",
+    public_claim_eligible: false,
+    last_verified_at: null,
+    activation_requirements: [{
+      requirement_code: "production-readback",
+      description: "Authenticated production readback must pass.",
+      required: true,
+      satisfied: true,
+      evidence_receipt_ids: []
+    }]
+  });
+  assert.throws(
+    () => assertCapabilityTruthRecord(emptyActivationEvidence),
+    (error) => error instanceof ContractError && error.code === "ACTIVATION_EVIDENCE_REQUIRED"
   );
 });
 

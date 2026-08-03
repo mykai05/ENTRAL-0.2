@@ -28,6 +28,7 @@ const organizationId = "organization-phase-200";
 const userId = "user-phase-200";
 
 function publishedTutorialProjection() {
+  const generatedAt = Date.now() - 1_000;
   const stepClaims = [
     ["command-overview", "Start from Command"],
     ["businesses-overview", "Review canonical businesses"],
@@ -42,8 +43,8 @@ function publishedTutorialProjection() {
     environment: "PRODUCTION",
     surface: "TUTORIAL",
     registry_revision: 9,
-    generated_at: new Date(Date.now() - 1_000).toISOString(),
-    expires_at: new Date(Date.now() + 300_000).toISOString(),
+    generated_at: new Date(generatedAt).toISOString(),
+    expires_at: new Date(generatedAt + 300_000).toISOString(),
     claims: stepClaims.map(([stepId, title], index) => ({
       claim_id: `30000000-0000-4000-8000-${String(index + 2).padStart(12, "0")}`,
       claim_key: `tutorial.${stepId}`,

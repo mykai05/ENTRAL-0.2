@@ -51,7 +51,7 @@ test("Capability Truth contract exposes the exact lifecycle and fail-closed publ
 
 test("source import is exhaustive, immutable-source-backed, and conservatively non-public", async () => {
   const inventory = JSON.parse(await read("docs/evidence/phase203/capability-truth/SOURCE_INVENTORY.json"));
-  assert.equal(inventory.entries.length, 60);
+  assert.equal(inventory.entries.length, 56);
   assert.deepEqual([...new Set(inventory.entries.map((entry) => entry.kind))].sort(), [
     "AGENT",
     "CAPABILITY",
@@ -72,7 +72,7 @@ test("source import is exhaustive, immutable-source-backed, and conservatively n
   );
 });
 
-test("migration owns one durable registry, audited transitions, RLS, and a 60-entry conservative seed", async () => {
+test("migration owns one durable registry, audited transitions, RLS, and an exact conservative seed", async () => {
   const migration = await read("prisma/migrations/20260803010000_phase_203_capability_truth_registry/migration.sql");
   for (const table of [
     "capability_records",
@@ -108,9 +108,9 @@ test("migration owns one durable registry, audited transitions, RLS, and a 60-en
   assert.match(migration, /'SUPPORT_READINESS','PRICING_APPROVAL','TUTORIAL','DOCUMENTATION','ROLLBACK'/);
   const seed = migration.match(/WITH seed\([\s\S]*?DO \$phase203_seed_assertion\$/u)?.[0];
   assert.ok(seed, "migration must contain one deterministic source seed");
-  assert.equal([...seed.matchAll(/\('20300000-[0-9-]+'::uuid/gu)].length, 60);
-  assert.equal([...seed.matchAll(/'UNASSIGNED'(?:,'PRODUCTION','GLOBAL')?,'CATALOGUED','UNSUPPORTED'/gu)].length, 60);
-  assert.match(migration, /must seed exactly 60 records/i);
+  assert.equal([...seed.matchAll(/\('20300000-[0-9-]+'::uuid/gu)].length, 56);
+  assert.equal([...seed.matchAll(/'UNASSIGNED'(?:,'PRODUCTION','GLOBAL')?,'CATALOGUED','UNSUPPORTED'/gu)].length, 56);
+  assert.match(migration, /must seed exactly 56 records/i);
   assert.match(migration, /EXISTS \(SELECT 1 FROM entral\.product_claims\)/u);
   assert.match(migration, /EXISTS \(SELECT 1 FROM entral\.tenant_capability_installations\)/u);
 });

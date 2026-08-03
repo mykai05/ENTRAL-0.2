@@ -81,6 +81,8 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
     const apiPassword = randomUUID();
     const migratedUserId = `phase203-truth-owner-${suffix}`;
     const migratedTeamId = `phase203-truth-team-${suffix}`;
+    const otherMigratedUserId = `phase203-truth-other-${suffix}`;
+    const otherMigratedTeamId = `phase203-truth-other-team-${suffix}`;
     const rootId = randomUUID();
     const capabilityId = randomUUID();
     const claimId = randomUUID();
@@ -151,6 +153,26 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       await owner.$executeRaw`
         INSERT INTO public."TeamMember" ("userId","teamId","role","joinedAt")
         VALUES (${migratedUserId},${migratedTeamId},'OWNER',now())
+      `;
+      await owner.$executeRaw`
+        INSERT INTO public."User" (
+          "id","name","email","passwordHash","role","internalAccess",
+          "sessionVersion","createdAt","updatedAt"
+        ) VALUES (
+          ${otherMigratedUserId},'Other Migrated Owner',${`p203-truth-other-${suffix}@example.test`},
+          'integration-password-hash','USER',false,0,now(),now()
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO public."Team" (
+          "id","name","slug","memberAccessEnabled","memberSeatLimit","createdAt","updatedAt"
+        ) VALUES (
+          ${otherMigratedTeamId},'Other Migrated Organization',${`p203-truth-other-${suffix}`},true,5,now(),now()
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO public."TeamMember" ("userId","teamId","role","joinedAt")
+        VALUES (${otherMigratedUserId},${otherMigratedTeamId},'OWNER',now())
       `;
       await owner.$executeRaw`
         INSERT INTO entral.entities (id,stable_code,role,name,parent_id,status)
@@ -249,6 +271,21 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       `;
       expect(migratedScope).toHaveLength(1);
       const migrated = migratedScope[0]!;
+      const otherMigratedScope = await owner.$queryRaw<Array<{
+        actorId: string;
+        organizationId: string;
+        tenantId: string;
+      }>>`
+        SELECT assignment."actorId"::text AS "actorId",
+               assignment."organizationId"::text AS "organizationId",
+               assignment."tenantId"::text AS "tenantId"
+        FROM public."TenantActorAssignment" assignment
+        JOIN public."IdentityActor" actor ON actor."id"=assignment."actorId"
+        WHERE actor."humanUserId"=${otherMigratedUserId}
+          AND assignment."status"='ACTIVE'
+      `;
+      expect(otherMigratedScope).toHaveLength(1);
+      const otherMigrated = otherMigratedScope[0]!;
 
       const conservativeImport = await owner.$queryRaw<Array<{
         activeOrSellable: number;
@@ -268,11 +305,11 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       `;
       expect(conservativeImport).toEqual([{
         activeOrSellable: 0,
-        catalogued: 60,
+        catalogued: 56,
         claims: 0,
         installations: 0,
-        records: 60,
-        unassigned: 60
+        records: 56,
+        unassigned: 56
       }]);
 
       await expect(api.$executeRaw`
@@ -487,6 +524,160 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       });
       expect(memberClaims).toHaveLength(1);
 
+      const tenantCapabilityId = randomUUID();
+      const tenantClaimId = randomUUID();
+      const tenantInstallationId = randomUUID();
+      const tenantReceiptIds = Object.fromEntries(
+        evidenceTypes.map((type) => [type, randomUUID()])
+      ) as Record<(typeof evidenceTypes)[number], string>;
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_records(
+          capability_id,capability_key,capability_version,display_name,purpose,kind,owner,
+          environment,scope,tenant_id,organization_id,lifecycle_state,audience_status,
+          production_readiness,activation_requirements,last_verified_at,public_claim_eligible,
+          rollback_path,deactivation_path,source_reference,limitations
+        ) VALUES (
+          ${tenantCapabilityId}::uuid,${`capability.phase203.tenant.${suffix.replaceAll("_", "-")}`},'1.0.0',
+          'Tenant-scoped Phase 203 verification capability',
+          'Exercises tenant installation and publication isolation in migrated state.',
+          'CAPABILITY','Phase 203 integration test','PRODUCTION','TENANT',
+          ${migrated.tenantId}::uuid,${migrated.organizationId}::uuid,
+          'SELLABLE','CURRENT','REAL','[]'::jsonb,now(),true,
+          'Remove the isolated tenant capability.','Keep the isolated tenant capability unpublished.',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
+          ARRAY['Disposable tenant-isolation fixture only.']::text[]
+        )
+      `;
+      for (const [index, evidenceType] of evidenceTypes.entries()) {
+        await owner.$executeRaw`
+          INSERT INTO entral.capability_verification_receipts(
+            receipt_id,capability_id,capability_version,evidence_type,environment,status,
+            reference,content_sha256,captured_at,expires_at,recorded_by_actor_id
+          ) VALUES (
+            ${tenantReceiptIds[evidenceType]}::uuid,${tenantCapabilityId}::uuid,'1.0.0',
+            ${evidenceType},'PRODUCTION','PASSED',
+            ${`mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/tenant-${evidenceType.toLowerCase()}.json`},
+            ${(index + 1).toString(16).repeat(64)},now(),NULL,${actorId}::uuid
+          )
+        `;
+      }
+      await owner.$executeRaw`
+        UPDATE entral.capability_records
+        SET activation_requirements=${JSON.stringify([{
+          requirement_code: "empty-evidence-negative",
+          description: "A satisfied required requirement cannot omit evidence.",
+          required: true,
+          satisfied: true,
+          evidence_receipt_ids: []
+        }])}::jsonb
+        WHERE capability_id=${tenantCapabilityId}::uuid
+      `;
+      const emptyRequirementHealth = await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_activation_requirements_healthy(
+          ${tenantCapabilityId}::uuid,'1.0.0'
+        ) AS "healthy"
+      `;
+      expect(emptyRequirementHealth).toEqual([{ healthy: false }]);
+      await owner.$executeRaw`
+        UPDATE entral.capability_records SET activation_requirements='[]'::jsonb
+        WHERE capability_id=${tenantCapabilityId}::uuid
+      `;
+      const tenantClaimRegistration = {
+        claim_id: tenantClaimId,
+        claim_key: `phase203.tenant.tutorial.${suffix.replaceAll("_", "-")}`,
+        capability_id: tenantCapabilityId,
+        capability_version: "1.0.0",
+        environment: "PRODUCTION",
+        surface: "TUTORIAL",
+        approved_language: "This tenant-scoped Tutorial claim requires the exact active installation.",
+        limitations: ["Disposable migrated-account verification only."],
+        evidence_receipt_ids: Object.values(tenantReceiptIds),
+        requires_tenant_installation: true
+      };
+      await adminQuery<ProductClaimJson>(Prisma.sql`
+        SELECT entral.phase203_register_product_claim(
+          ${JSON.stringify(tenantClaimRegistration)}::jsonb,
+          ${`phase203-tenant-claim-register-${suffix}`}::text
+        ) AS "value"
+      `);
+      await adminQuery<ProductClaimJson>(Prisma.sql`
+        SELECT entral.phase203_transition_product_claim(${JSON.stringify({
+          transition_id: randomUUID(),
+          claim_id: tenantClaimId,
+          from_status: "DRAFT",
+          to_status: "APPROVED",
+          expected_record_version: 1,
+          evidence_receipt_ids: Object.values(tenantReceiptIds),
+          reason: "Approve the exact tenant-scoped claim for isolation verification.",
+          actor_id: actorId,
+          correlation_id: randomUUID(),
+          idempotency_key: `phase203-tenant-claim-approve-${suffix}`,
+          requested_at: "2026-08-03T05:02:30.000Z"
+        })}::jsonb) AS "value"
+      `);
+
+      const tenantClaimsFor = async (
+        authSubject: string,
+        tenantId: string,
+        expectedOrganizationId: string
+      ) => withTenantSession(api!, {
+        actionReason: "Verify tenant-scoped Product Truth publication.",
+        authSubject,
+        requestId: randomUUID(),
+        tenantId
+      }, async (transaction, identity) => {
+        expect(identity.organizationId).toBe(expectedOrganizationId);
+        return transaction.$queryRaw<Array<{ claim: { claim_id: string } }>>(Prisma.sql`
+          SELECT gate."claim" FROM entral.phase203_publication_gate(
+            'TUTORIAL','PRODUCTION',${identity.tenantId}::uuid,${identity.organizationId}::uuid
+          ) gate
+        `);
+      });
+
+      expect(await tenantClaimsFor(migratedUserId, migrated.tenantId, migrated.organizationId)).toEqual([]);
+      await owner.$executeRaw`
+        INSERT INTO entral.tenant_capability_installations(
+          installation_id,tenant_id,organization_id,capability_id,capability_version,
+          state,plan_eligible,suspension_reason,activated_at,verification_receipt_ids
+        ) VALUES (
+          ${tenantInstallationId}::uuid,${migrated.tenantId}::uuid,${migrated.organizationId}::uuid,
+          ${tenantCapabilityId}::uuid,'1.0.0','ACTIVE',false,NULL,now(),
+          ${Object.values(tenantReceiptIds)}::uuid[]
+        )
+      `;
+      expect(await tenantClaimsFor(migratedUserId, migrated.tenantId, migrated.organizationId)).toEqual([]);
+      await owner.$executeRaw`
+        UPDATE entral.tenant_capability_installations
+        SET plan_eligible=true,record_version=record_version+1,updated_at=now()
+        WHERE installation_id=${tenantInstallationId}::uuid
+      `;
+      expect(await tenantClaimsFor(migratedUserId, migrated.tenantId, migrated.organizationId))
+        .toEqual([{ claim: expect.objectContaining({ claim_id: tenantClaimId }) }]);
+      await owner.$executeRaw`
+        UPDATE entral.tenant_capability_installations
+        SET state='SUSPENDED',suspension_reason='Phase 203 isolation test',
+            record_version=record_version+1,updated_at=now()
+        WHERE installation_id=${tenantInstallationId}::uuid
+      `;
+      expect(await tenantClaimsFor(migratedUserId, migrated.tenantId, migrated.organizationId)).toEqual([]);
+      await owner.$executeRaw`
+        UPDATE entral.tenant_capability_installations
+        SET state='ACTIVE',suspension_reason=NULL,record_version=record_version+1,updated_at=now()
+        WHERE installation_id=${tenantInstallationId}::uuid
+      `;
+      expect(await tenantClaimsFor(migratedUserId, migrated.tenantId, migrated.organizationId))
+        .toEqual([{ claim: expect.objectContaining({ claim_id: tenantClaimId }) }]);
+      expect(await tenantClaimsFor(otherMigratedUserId, otherMigrated.tenantId, otherMigrated.organizationId)).toEqual([]);
+
+      await expect(withTenantSession(api, {
+        actionReason: "Prove members cannot bypass the publication gateway with direct table reads.",
+        authSubject: migratedUserId,
+        requestId: randomUUID(),
+        tenantId: migrated.tenantId
+      }, async (transaction) => transaction.$queryRaw`
+        SELECT capability_id FROM entral.capability_records WHERE capability_id=${tenantCapabilityId}::uuid
+      `)).rejects.toThrow();
+
       const simulatedCapabilityId = "20300000-0001-4000-8000-000000000004";
       const simulatedClaimId = randomUUID();
       const simulatedClaim = await adminQuery<ProductClaimJson>(Prisma.sql`
@@ -536,8 +727,8 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       } }>(Prisma.sql`SELECT entral.phase203_admin_readback() AS "value"`);
       const readback = auditReadback.rows[0]!.value;
       expect(readback.registry_revision).toBeGreaterThan(1);
-      expect(readback.records).toHaveLength(61);
-      expect(readback.claims).toHaveLength(2);
+      expect(readback.records).toHaveLength(58);
+      expect(readback.claims).toHaveLength(3);
       expect(readback.transition_audit).toHaveLength(7);
     } finally {
       await Promise.allSettled([

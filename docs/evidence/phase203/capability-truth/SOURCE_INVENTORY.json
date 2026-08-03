@@ -28,7 +28,6 @@
     "commander_pack_like_business_templates": 7,
     "local_merch_workflows": 1,
     "local_merch_workflow_steps": 14,
-    "tutorial_modules": 4,
     "tutorial_steps": 5,
     "tutorial_contract_anchors": 5
   },
@@ -1698,114 +1697,6 @@
       ],
       "rollback_path": "Remove the catalog binding after the local workflow builder is reviewed and removed.",
       "deactivation_path": "No activation is imported; keep the workflow excluded from public claims and provider execution."
-    },
-    {
-      "capability_version": "200.0.0",
-      "environment": "PRODUCTION",
-      "scope": "GLOBAL",
-      "owner": "UNASSIGNED",
-      "lifecycle_state": "CATALOGUED",
-      "public_claim_eligible": false,
-      "inventory_entry_id": "capability.tutorial.module.command-guide",
-      "capability_key": "capability.tutorial.module.command-guide",
-      "display_name": "Command",
-      "kind": "CAPABILITY",
-      "source_status": "PHASE_200_TUTORIAL_MODULE_SOURCE",
-      "production_readiness": "UNVERIFIED",
-      "source_bindings": [
-        {
-          "group": "tutorial_modules",
-          "identifier": "command-guide",
-          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
-        }
-      ],
-      "limitations": [
-        "This inventory binds source presence only and intentionally does not import Phase 200 release receipts.",
-        "Tutorial module presence does not establish SELLABLE product-claim eligibility."
-      ],
-      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after reviewed source removal.",
-      "deactivation_path": "Keep publication blocked; do not delete persisted member progress through catalog deactivation."
-    },
-    {
-      "capability_version": "200.0.0",
-      "environment": "PRODUCTION",
-      "scope": "GLOBAL",
-      "owner": "UNASSIGNED",
-      "lifecycle_state": "CATALOGUED",
-      "public_claim_eligible": false,
-      "inventory_entry_id": "capability.tutorial.module.business-guide",
-      "capability_key": "capability.tutorial.module.business-guide",
-      "display_name": "Businesses",
-      "kind": "CAPABILITY",
-      "source_status": "PHASE_200_TUTORIAL_MODULE_SOURCE",
-      "production_readiness": "UNVERIFIED",
-      "source_bindings": [
-        {
-          "group": "tutorial_modules",
-          "identifier": "business-guide",
-          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
-        }
-      ],
-      "limitations": [
-        "This inventory binds source presence only and intentionally does not import Phase 200 release receipts.",
-        "Tutorial module presence does not establish SELLABLE product-claim eligibility."
-      ],
-      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after reviewed source removal.",
-      "deactivation_path": "Keep publication blocked; do not delete persisted member progress through catalog deactivation."
-    },
-    {
-      "capability_version": "200.0.0",
-      "environment": "PRODUCTION",
-      "scope": "GLOBAL",
-      "owner": "UNASSIGNED",
-      "lifecycle_state": "CATALOGUED",
-      "public_claim_eligible": false,
-      "inventory_entry_id": "capability.tutorial.module.hierarchy-guide",
-      "capability_key": "capability.tutorial.module.hierarchy-guide",
-      "display_name": "Universe",
-      "kind": "CAPABILITY",
-      "source_status": "PHASE_200_TUTORIAL_MODULE_SOURCE",
-      "production_readiness": "UNVERIFIED",
-      "source_bindings": [
-        {
-          "group": "tutorial_modules",
-          "identifier": "hierarchy-guide",
-          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
-        }
-      ],
-      "limitations": [
-        "This inventory binds source presence only and intentionally does not import Phase 200 release receipts.",
-        "Tutorial module presence does not establish SELLABLE product-claim eligibility."
-      ],
-      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after reviewed source removal.",
-      "deactivation_path": "Keep publication blocked; do not delete persisted member progress through catalog deactivation."
-    },
-    {
-      "capability_version": "200.0.0",
-      "environment": "PRODUCTION",
-      "scope": "GLOBAL",
-      "owner": "UNASSIGNED",
-      "lifecycle_state": "CATALOGUED",
-      "public_claim_eligible": false,
-      "inventory_entry_id": "capability.tutorial.module.operations-guide",
-      "capability_key": "capability.tutorial.module.operations-guide",
-      "display_name": "Records and help",
-      "kind": "CAPABILITY",
-      "source_status": "PHASE_200_TUTORIAL_MODULE_SOURCE",
-      "production_readiness": "UNVERIFIED",
-      "source_bindings": [
-        {
-          "group": "tutorial_modules",
-          "identifier": "operations-guide",
-          "reference": "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx"
-        }
-      ],
-      "limitations": [
-        "This inventory binds source presence only and intentionally does not import Phase 200 release receipts.",
-        "Tutorial module presence does not establish SELLABLE product-claim eligibility."
-      ],
-      "rollback_path": "Retain Phase 200 Tutorial persistence; remove only this catalog binding after reviewed source removal.",
-      "deactivation_path": "Keep publication blocked; do not delete persisted member progress through catalog deactivation."
     },
     {
       "capability_version": "200.0.0",

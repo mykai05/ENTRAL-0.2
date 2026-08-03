@@ -60,7 +60,7 @@ function projection(overrides: Record<string, unknown> = {}, claimOverrides: Rec
     surface: "TUTORIAL",
     registry_revision: 9,
     generated_at: new Date(now - 1_000).toISOString(),
-    expires_at: new Date(now + 300_000).toISOString(),
+    expires_at: new Date(now - 1_000 + 300_000).toISOString(),
     claims: [{
       claim_id: "20000000-0000-4000-8000-000000000002",
       claim_key: "tutorial.command-overview",
@@ -162,6 +162,10 @@ describe("Phase 203 Tutorial Product Truth publication", () => {
     ["stale", () => projection({
       generated_at: new Date(Date.now() - 600_000).toISOString(),
       expires_at: new Date(Date.now() - 300_000).toISOString()
+    })],
+    ["stale with a far-future expiry", () => projection({
+      generated_at: new Date(Date.now() - 86_400_000).toISOString(),
+      expires_at: new Date(Date.now() + 86_400_000).toISOString()
     })],
     ["ACTIVE", () => projection({}, { lifecycle_state: "ACTIVE" })],
     ["non-sellable", () => projection({}, { lifecycle_state: "CATALOGUED" })]

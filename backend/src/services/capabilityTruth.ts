@@ -1,16 +1,12 @@
 import { randomUUID } from "node:crypto";
 import {
   assertCapabilityLifecycleTransitionRequest,
-  assertCapabilityTruthRecord,
-  assertInstalledCapabilityRecord,
-  assertProductClaimRecord,
+  assertCapabilityTruthAdminReadback,
   assertPublicProductTruthProjection,
   type CapabilityEvidenceReceipt,
   type CapabilityEnvironment,
   type CapabilityLifecycleTransitionRequest,
-  type CapabilityTruthRecord,
-  type InstalledCapabilityRecord,
-  type ProductClaimRecord,
+  type CapabilityTruthAdminReadback,
   type ProductClaimSurface,
   type PublicProductClaim,
   type PublicProductTruthProjection
@@ -26,19 +22,6 @@ export type CapabilityEvidenceRegistration = {
   expected_record_version: number;
   receipt: CapabilityEvidenceReceipt;
   idempotency_key: string;
-};
-
-export type CapabilityTruthAdminReadback = {
-  contract_version: "1.0.0";
-  schema_version: 1;
-  registry_revision: number;
-  generated_at: string;
-  records: CapabilityTruthRecord[];
-  claims: ProductClaimRecord[];
-  installations: InstalledCapabilityRecord[];
-  verification_receipts: CapabilityEvidenceReceipt[];
-  dependencies: unknown[];
-  transition_audit: unknown[];
 };
 
 export type CapabilityTruthAdminContext = {
@@ -87,31 +70,12 @@ function publicationClaims(value: unknown): PublicProductClaim[] {
 }
 
 function validateAdminReadback(value: unknown): CapabilityTruthAdminReadback {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  try {
+    assertCapabilityTruthAdminReadback(value);
+  } catch {
     throw new CapabilityTruthServiceError("MALFORMED_ADMIN_READBACK", "Capability Truth admin readback is malformed.", 500);
   }
-  const readback = value as Partial<CapabilityTruthAdminReadback>;
-  if (
-    readback.contract_version !== "1.0.0"
-    || readback.schema_version !== 1
-    || typeof readback.registry_revision !== "number"
-    || !Number.isSafeInteger(readback.registry_revision)
-    || readback.registry_revision < 1
-    || typeof readback.generated_at !== "string"
-    || Number.isNaN(Date.parse(readback.generated_at))
-    || !Array.isArray(readback.records)
-    || !Array.isArray(readback.claims)
-    || !Array.isArray(readback.installations)
-    || !Array.isArray(readback.verification_receipts)
-    || !Array.isArray(readback.dependencies)
-    || !Array.isArray(readback.transition_audit)
-  ) {
-    throw new CapabilityTruthServiceError("MALFORMED_ADMIN_READBACK", "Capability Truth admin readback is malformed.", 500);
-  }
-  readback.records.forEach(assertCapabilityTruthRecord);
-  readback.claims.forEach(assertProductClaimRecord);
-  readback.installations.forEach(assertInstalledCapabilityRecord);
-  return readback as CapabilityTruthAdminReadback;
+  return value;
 }
 
 function databaseFailure(error: unknown): CapabilityTruthServiceError {

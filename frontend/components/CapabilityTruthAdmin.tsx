@@ -175,6 +175,65 @@ export function CapabilityTruthAdmin({ headers }: CapabilityTruthAdminProps) {
               {readback.records.map((record) => <CapabilityRecordDetails key={record.capability_id} record={record} />)}
             </div>
           )}
+          <section aria-label="Product claim truth">
+            <h3>Product claims</h3>
+            {readback.claims.length === 0 ? <p>No product claims are registered.</p> : (
+              <div className="audit-list">
+                {readback.claims.map((claim) => (
+                  <details className="admin-row" key={claim.claim_id}>
+                    <summary><strong>{claim.claim_key}</strong> · {claim.surface} · {claim.status}</summary>
+                    <dl>
+                      <dt>Claim ID</dt><dd><code>{claim.claim_id}</code></dd>
+                      <dt>Capability</dt><dd><code>{claim.capability_id}</code> · {claim.capability_version}</dd>
+                      <dt>Approved language</dt><dd>{claim.approved_language}</dd>
+                      <dt>Evidence receipts</dt><dd>{claim.evidence_receipt_ids.length > 0 ? claim.evidence_receipt_ids.join(", ") : "None"}</dd>
+                      <dt>Tenant installation required</dt><dd>{claim.requires_tenant_installation ? "Yes" : "No"}</dd>
+                    </dl>
+                  </details>
+                ))}
+              </div>
+            )}
+          </section>
+          <section aria-label="Capability installation truth">
+            <h3>Tenant installations</h3>
+            {readback.installations.length === 0 ? <p>No tenant capability installations are recorded.</p> : (
+              <div className="audit-list">
+                {readback.installations.map((installation) => (
+                  <details className="admin-row" key={installation.installation_id}>
+                    <summary><strong>{installation.state}</strong> · capability {installation.capability_id}</summary>
+                    <dl>
+                      <dt>Tenant</dt><dd><code>{installation.tenant_id}</code></dd>
+                      <dt>Organization</dt><dd><code>{installation.organization_id}</code></dd>
+                      <dt>Capability version</dt><dd>{installation.capability_version}</dd>
+                      <dt>Plan eligibility</dt><dd>{installation.plan_eligible ? "Eligible" : "Blocked"}</dd>
+                      <dt>Suspension</dt><dd>{installation.suspension_reason ?? "Not suspended"}</dd>
+                      <dt>Verification receipts</dt><dd>{installation.verification_receipt_ids.length > 0 ? installation.verification_receipt_ids.join(", ") : "None"}</dd>
+                    </dl>
+                  </details>
+                ))}
+              </div>
+            )}
+          </section>
+          <section aria-label="Capability transition audit">
+            <h3>Lifecycle transition audit</h3>
+            {readback.transition_audit.length === 0 ? <p>No lifecycle transitions are recorded.</p> : (
+              <div className="audit-list">
+                {readback.transition_audit.map((transition) => (
+                  <details className="admin-row" key={transition.transition_id}>
+                    <summary><strong>{transition.from_state} → {transition.to_state}</strong> · {formatTimestamp(transition.recorded_at)}</summary>
+                    <dl>
+                      <dt>Capability</dt><dd><code>{transition.capability_id}</code> · {transition.capability_version}</dd>
+                      <dt>Record version</dt><dd>{transition.prior_record_version} → {transition.resulting_record_version}</dd>
+                      <dt>Reason</dt><dd>{transition.reason}</dd>
+                      <dt>Actor</dt><dd><code>{transition.actor_id}</code></dd>
+                      <dt>Correlation</dt><dd><code>{transition.correlation_id}</code></dd>
+                      <dt>Evidence receipts</dt><dd>{transition.evidence_receipt_ids.length > 0 ? transition.evidence_receipt_ids.join(", ") : "None"}</dd>
+                    </dl>
+                  </details>
+                ))}
+              </div>
+            )}
+          </section>
         </>
       ) : null}
     </section>

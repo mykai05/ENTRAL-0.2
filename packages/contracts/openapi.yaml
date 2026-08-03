@@ -1239,6 +1239,91 @@ components:
         correlation_id: { type: string, format: uuid }
         idempotency_key: { type: string, minLength: 12, maxLength: 255 }
         requested_at: { type: string, format: date-time }
+    ProductClaimRecord:
+      type: object
+      additionalProperties: false
+      required: [claim_id, claim_key, capability_id, capability_version, environment, surface, status, approved_language, limitations, evidence_receipt_ids, requires_tenant_installation, approved_by_actor_id, approved_at, record_version, created_at, updated_at]
+      properties:
+        claim_id: { type: string, format: uuid }
+        claim_key: { type: string, minLength: 3, maxLength: 160 }
+        capability_id: { type: string, format: uuid }
+        capability_version: { type: string, minLength: 5, maxLength: 80 }
+        environment: { type: string, enum: [DEVELOPMENT, TEST, STAGING, CANARY, PRODUCTION] }
+        surface: { type: string, enum: [WEBSITE, TUTORIAL, PRICING, CHECKOUT, PROPOSAL, ONBOARDING, INTEGRATION_LIST, MEMBER_APPLICATION, SALES] }
+        status: { type: string, enum: [DRAFT, APPROVED, BLOCKED, RETIRED] }
+        approved_language: { type: string, minLength: 1, maxLength: 4000 }
+        limitations: { type: array, uniqueItems: true, items: { type: string, minLength: 1, maxLength: 2000 } }
+        evidence_receipt_ids: { type: array, uniqueItems: true, items: { type: string, format: uuid } }
+        requires_tenant_installation: { type: boolean }
+        approved_by_actor_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+        approved_at: { oneOf: [{ type: "null" }, { type: string, format: date-time }] }
+        record_version: { type: integer, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    InstalledCapabilityRecord:
+      type: object
+      additionalProperties: false
+      required: [installation_id, tenant_id, organization_id, capability_id, capability_version, state, plan_eligible, suspension_reason, activated_at, verification_receipt_ids, record_version, created_at, updated_at]
+      properties:
+        installation_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        organization_id: { type: string, format: uuid }
+        capability_id: { type: string, format: uuid }
+        capability_version: { type: string, minLength: 5, maxLength: 80 }
+        state: { type: string, enum: [AVAILABLE, ACTIVATING, ACTIVE, SUSPENDED, DEACTIVATED] }
+        plan_eligible: { type: boolean }
+        suspension_reason: { oneOf: [{ type: "null" }, { type: string }] }
+        activated_at: { oneOf: [{ type: "null" }, { type: string, format: date-time }] }
+        verification_receipt_ids: { type: array, uniqueItems: true, items: { type: string, format: uuid } }
+        record_version: { type: integer, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CapabilityVerificationReceiptRecord:
+      type: object
+      additionalProperties: false
+      required: [capability_id, capability_version, receipt_id, evidence_type, environment, status, reference, content_sha256, captured_at, expires_at]
+      properties:
+        capability_id: { type: string, format: uuid }
+        capability_version: { type: string, minLength: 5, maxLength: 80 }
+        receipt_id: { type: string, format: uuid }
+        evidence_type: { type: string, enum: [UNIT_TEST, INTEGRATION_TEST, CANARY, PRODUCTION_READBACK, AUTHENTICATION, AUTHORIZATION_SCOPE, OPERATION, READBACK, RECONCILIATION, REFRESH_OR_WEBHOOK, FAILURE_HANDLING, SUPPORT_READINESS, PRICING_APPROVAL, TUTORIAL, DOCUMENTATION, ROLLBACK] }
+        environment: { type: string, enum: [DEVELOPMENT, TEST, STAGING, CANARY, PRODUCTION] }
+        status: { type: string, enum: [PASSED, FAILED] }
+        reference: { type: string, minLength: 1, maxLength: 2000 }
+        content_sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
+        captured_at: { type: string, format: date-time }
+        expires_at: { oneOf: [{ type: "null" }, { type: string, format: date-time }] }
+    CapabilityDependencyRecord:
+      type: object
+      additionalProperties: false
+      required: [capability_id, capability_version, dependency_capability_id, dependency_capability_version, minimum_lifecycle_state, required]
+      properties:
+        capability_id: { type: string, format: uuid }
+        capability_version: { type: string, minLength: 5, maxLength: 80 }
+        dependency_capability_id: { type: string, format: uuid }
+        dependency_capability_version: { type: string, minLength: 5, maxLength: 80 }
+        minimum_lifecycle_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
+        required: { type: boolean }
+    CapabilityTransitionAuditRecord:
+      type: object
+      additionalProperties: false
+      required: [transition_id, capability_id, capability_version, from_state, to_state, prior_record_version, resulting_record_version, evidence_receipt_ids, reason, actor_id, correlation_id, idempotency_key, request_sha256, requested_at, recorded_at]
+      properties:
+        transition_id: { type: string, format: uuid }
+        capability_id: { type: string, format: uuid }
+        capability_version: { type: string, minLength: 5, maxLength: 80 }
+        from_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
+        to_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
+        prior_record_version: { type: integer, minimum: 1 }
+        resulting_record_version: { type: integer, minimum: 2 }
+        evidence_receipt_ids: { type: array, uniqueItems: true, items: { type: string, format: uuid } }
+        reason: { type: string, minLength: 1, maxLength: 2000 }
+        actor_id: { type: string, format: uuid }
+        correlation_id: { type: string, format: uuid }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        request_sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
+        requested_at: { type: string, format: date-time }
+        recorded_at: { type: string, format: date-time }
     CapabilityTruthAdminReadback:
       type: object
       additionalProperties: false
@@ -1249,11 +1334,11 @@ components:
         registry_revision: { type: integer, minimum: 1 }
         generated_at: { type: string, format: date-time }
         records: { type: array, items: { $ref: "./capability-truth-record.schema.json" } }
-        claims: { type: array, items: { type: object } }
-        installations: { type: array, items: { type: object } }
-        verification_receipts: { type: array, items: { $ref: "#/components/schemas/CapabilityEvidenceReceipt" } }
-        dependencies: { type: array, items: { type: object } }
-        transition_audit: { type: array, items: { type: object } }
+        claims: { type: array, items: { $ref: "#/components/schemas/ProductClaimRecord" } }
+        installations: { type: array, items: { $ref: "#/components/schemas/InstalledCapabilityRecord" } }
+        verification_receipts: { type: array, items: { $ref: "#/components/schemas/CapabilityVerificationReceiptRecord" } }
+        dependencies: { type: array, items: { $ref: "#/components/schemas/CapabilityDependencyRecord" } }
+        transition_audit: { type: array, items: { $ref: "#/components/schemas/CapabilityTransitionAuditRecord" } }
     Phase202AccountDeidentificationRequest:
       type: object
       additionalProperties: false

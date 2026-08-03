@@ -67,6 +67,13 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
+        "allOf": [{
+          "if": {
+            "properties": { "required": { "const": true }, "satisfied": { "const": true } },
+            "required": ["required", "satisfied"]
+          },
+          "then": { "properties": { "evidence_receipt_ids": { "minItems": 1 } } }
+        }],
         "required": ["requirement_code", "description", "required", "satisfied", "evidence_receipt_ids"],
         "properties": {
           "requirement_code": { "type": "string", "minLength": 1, "maxLength": 160 },

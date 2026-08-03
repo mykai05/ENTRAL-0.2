@@ -1,19 +1,33 @@
 import Fastify from "fastify";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  getAdminReadback: vi.fn(),
-  getMemberProjection: vi.fn(),
-  getPublicProjection: vi.fn(),
-  hasVerifiedMemberTeamAccess: vi.fn(),
-  recordEvidence: vi.fn(),
-  transition: vi.fn()
-}));
+const mocks = vi.hoisted(() => {
+  process.env.NODE_ENV ??= "test";
+  process.env.DATABASE_URL ??= "file:./phase203-capability-truth-routes.db";
+  process.env.JWT_SECRET ??= "phase203-capability-truth-routes-test-secret";
+  return {
+    getAdminReadback: vi.fn(),
+    getMemberProjection: vi.fn(),
+    getPublicProjection: vi.fn(),
+    hasVerifiedMemberTeamAccess: vi.fn(),
+    recordEvidence: vi.fn(),
+    transition: vi.fn()
+  };
+});
 
 vi.mock("../src/auth.js", () => ({
   requireAuth: async (request: { headers: Record<string, unknown>; user?: unknown }, reply: { code: (status: number) => { send: (body: unknown) => unknown } }) => {
-    if (request.headers["x-test-session"] !== "member") {
+    if (request.headers["x-test-session"] !== "member" && request.headers["x-test-session"] !== "internal") {
       return reply.code(401).send({ error: "Unauthorized" });
+    }
+    if (request.headers["x-test-session"] === "internal") {
+      request.user = {
+        email: "operator@example.test",
+        role: "ADMIN",
+        session: "internal",
+        sub: "internal-operator"
+      };
+      return;
     }
     request.user = {
       email: "member@example.test",
@@ -74,6 +88,16 @@ async function testServer() {
     } as never
   });
   return { app, CapabilityTruthServiceError };
+}
+
+async function connectionTestServer() {
+  const { connectionRoutes } = await import("../src/routes/connections.js");
+  const app = Fastify();
+  await app.register(connectionRoutes, {
+    prefix: "/api/v1",
+    productTruth: { getPublicProjection: mocks.getPublicProjection } as never
+  });
+  return app;
 }
 
 beforeEach(() => {
@@ -218,6 +242,99 @@ describe("Phase 203 Capability Truth routes", () => {
     });
     expect(transitionResponse.statusCode).toBe(400);
     expect(mocks.transition).not.toHaveBeenCalled();
+    await app.close();
+  });
+});
+
+describe("Phase 203 integration-list publication boundary", () => {
+  const sellableOpenAiClaim = {
+    claim_id: "723e4567-e89b-42d3-a456-426614174000",
+    claim_key: "integration.openai.list",
+    capability_id: "823e4567-e89b-42d3-a456-426614174000",
+    capability_key: "integration.tool.openai",
+    capability_version: "1.0.0",
+    display_name: "Approved OpenAI integration",
+    lifecycle_state: "SELLABLE",
+    approved_language: "Approved receipt-bound AI provider connection.",
+    limitations: ["Provider credentials and authorization remain required."],
+    evidence_receipt_ids: ["923e4567-e89b-42d3-a456-426614174000"],
+    claim_record_version: 2,
+    capability_record_version: 9
+  } as const;
+
+  it("returns only SELLABLE integrations with exact claim language and evidence binding", async () => {
+    mocks.getPublicProjection.mockResolvedValue({
+      ...projection,
+      surface: "INTEGRATION_LIST",
+      claims: [sellableOpenAiClaim]
+    });
+    const app = await connectionTestServer();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/connections/tools",
+      headers: { "x-test-session": "internal" }
+    });
+    expect(response.statusCode).toBe(200);
+    const payload = response.json();
+    expect(payload.items).toHaveLength(1);
+    expect(payload.items[0]).toMatchObject({
+      id: "openai",
+      name: sellableOpenAiClaim.display_name,
+      description: sellableOpenAiClaim.approved_language,
+      productTruth: {
+        capabilityId: sellableOpenAiClaim.capability_id,
+        claimId: sellableOpenAiClaim.claim_id,
+        evidenceReceiptIds: sellableOpenAiClaim.evidence_receipt_ids
+      }
+    });
+    expect(JSON.stringify(payload.items)).not.toMatch(/Mock Mode|Coming Soon|placeholder/iu);
+    expect(payload.product_truth.claims).toEqual([sellableOpenAiClaim]);
+    await app.close();
+  });
+
+  it("keeps the global internal integration list out of tenant member sessions", async () => {
+    const app = await connectionTestServer();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/connections/tools",
+      headers: { "x-test-session": "member" }
+    });
+    expect(response.statusCode).toBe(403);
+    expect(mocks.getPublicProjection).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it("blocks direct provider tests when the integration has no SELLABLE claim", async () => {
+    mocks.getPublicProjection.mockResolvedValue({
+      ...projection,
+      surface: "INTEGRATION_LIST",
+      claims: []
+    });
+    const app = await connectionTestServer();
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/connections/tools/codex/test",
+      headers: { "x-test-session": "internal" }
+    });
+    expect(response.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it("returns no legacy registry data when Product Truth is unavailable", async () => {
+    const { CapabilityTruthServiceError } = await import("../src/services/capabilityTruth.js");
+    mocks.getPublicProjection.mockRejectedValue(new CapabilityTruthServiceError(
+      "PRODUCT_TRUTH_UNAVAILABLE",
+      "Database is unavailable.",
+      503
+    ));
+    const app = await connectionTestServer();
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/connections/tools",
+      headers: { "x-test-session": "internal" }
+    });
+    expect(response.statusCode).toBe(503);
+    expect(response.body).not.toMatch(/items|OpenAI|Mock Mode/iu);
     await app.close();
   });
 });

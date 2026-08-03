@@ -14,7 +14,6 @@ const sourcePaths = {
   agent_template_gallery_presets: "frontend/components/AgentTemplateGallery.tsx",
   commander_pack_like_business_templates: "frontend/components/NeuronsCommandCenter.tsx",
   local_merch_workflows: "frontend/lib/merch-workflow.ts",
-  tutorial_modules: "frontend/components/OnboardingTour.tsx",
   tutorial_steps: "frontend/components/OnboardingTour.tsx",
   tutorial_contract_anchors: "packages/contracts/src/interaction.ts"
 };
@@ -173,6 +172,14 @@ function recordsFromObjects(path, declaration, idField, nameField) {
   }));
 }
 
+function identifierRecordsFromObjects(path, declaration, idField) {
+  return topLevelObjects(extractArray(sourceText.get(path), declaration)).map((source) => ({
+    identifier: stringField(source, idField),
+    displayName: null,
+    source
+  }));
+}
+
 const backendTools = recordsFromObjects(sourcePaths.backend_tool_blueprints, "const toolBlueprints", "id", "name")
   .map((record) => {
     const literal = optionalStringField(record.source, "status");
@@ -191,8 +198,7 @@ const agentTemplates = recordsFromObjects(sourcePaths.agent_template_gallery_pre
 const commanderPacks = recordsFromObjects(sourcePaths.commander_pack_like_business_templates, "const businessTemplates", "id", "label");
 const workflowSteps = recordsFromObjects(sourcePaths.local_merch_workflows, "export const merchLaunchWorkflowSteps", "id", "name")
   .map(({ identifier, displayName }) => ({ identifier, name: displayName }));
-const tutorialModules = recordsFromObjects(sourcePaths.tutorial_modules, "const modules", "id", "title");
-const tutorialSteps = recordsFromObjects(sourcePaths.tutorial_steps, "const academySteps", "id", "title");
+const tutorialSteps = identifierRecordsFromObjects(sourcePaths.tutorial_steps, "const academySteps", "id");
 const tutorialAnchors = [...extractArray(sourceText.get(sourcePaths.tutorial_contract_anchors), "export const TUTORIAL_ANCHOR_IDS").matchAll(/\"([^\"]+)\"/g)]
   .map((match) => ({ identifier: match[1], displayName: null }));
 
@@ -239,7 +245,7 @@ test("source-backed inventory is exact, conservative, and references immutable r
     assert.equal(entry.environment, "PRODUCTION");
     assert.equal(entry.scope, "GLOBAL");
     assert.equal(entry.owner, "UNASSIGNED");
-    assert.ok(["CATALOGUED", "DESIGNED"].includes(entry.lifecycle_state));
+    assert.equal(entry.lifecycle_state, "CATALOGUED");
     assert.notEqual(entry.lifecycle_state, "ACTIVE");
     assert.notEqual(entry.lifecycle_state, "SELLABLE");
     assert.equal(entry.public_claim_eligible, false);
@@ -253,7 +259,7 @@ test("source-backed inventory is exact, conservative, and references immutable r
       assert.equal(binding.reference, expectedReference);
     }
     if (["SIMULATED", "PLACEHOLDER", "LOCAL_ONLY", "UNVERIFIED", "DISABLED"].includes(entry.production_readiness)) {
-      assert.ok(["CATALOGUED", "DESIGNED"].includes(entry.lifecycle_state));
+      assert.equal(entry.lifecycle_state, "CATALOGUED");
     }
   }
 
@@ -325,12 +331,10 @@ test("Commander-pack-like templates and the local workflow are exhaustively cata
   assert.equal(workflowBindings[0].entry.production_readiness, "LOCAL_ONLY");
 });
 
-test("Tutorial modules, UI steps, and contract anchors remain source-aligned", () => {
-  assertGroupMatches("tutorial_modules", tutorialModules);
-  assertGroupMatches("tutorial_steps", tutorialSteps);
+test("Tutorial UI steps and contract anchors remain source-aligned", () => {
+  assertGroupMatches("tutorial_steps", tutorialSteps, { checkDisplayName: false });
   assertGroupMatches("tutorial_contract_anchors", tutorialAnchors, { checkDisplayName: false });
   assert.deepEqual(tutorialSteps.map(({ identifier }) => identifier), tutorialAnchors.map(({ identifier }) => identifier));
-  assert.equal(tutorialModules.length, inventory.source_group_counts.tutorial_modules);
   assert.equal(tutorialSteps.length, inventory.source_group_counts.tutorial_steps);
   assert.equal(tutorialAnchors.length, inventory.source_group_counts.tutorial_contract_anchors);
 });

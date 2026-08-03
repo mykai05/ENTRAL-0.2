@@ -1,29 +1,13 @@
 import {
-  assertCapabilityTruthRecord,
-  assertInstalledCapabilityRecord,
-  assertProductClaimRecord,
+  assertCapabilityTruthAdminReadback,
   assertPublicProductTruthProjection,
-  type CapabilityEvidenceReceipt,
-  type CapabilityTruthRecord,
-  type InstalledCapabilityRecord,
-  type ProductClaimRecord,
+  type CapabilityTruthAdminReadback,
   type ProductClaimSurface,
   type PublicProductTruthProjection
 } from "@entral/contracts";
 import { apiFetch } from "./api";
 
-export type CapabilityTruthAdminReadback = {
-  contract_version: "1.0.0";
-  schema_version: 1;
-  registry_revision: number;
-  generated_at: string;
-  records: CapabilityTruthRecord[];
-  claims: ProductClaimRecord[];
-  installations: InstalledCapabilityRecord[];
-  verification_receipts: CapabilityEvidenceReceipt[];
-  dependencies: unknown[];
-  transition_audit: unknown[];
-};
+export type { CapabilityTruthAdminReadback };
 
 export class ProductTruthValidationError extends Error {
   constructor(message: string) {
@@ -32,21 +16,7 @@ export class ProductTruthValidationError extends Error {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function assertSafePositiveInteger(value: unknown, field: string): asserts value is number {
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) {
-    throw new ProductTruthValidationError(`${field} must be a positive integer.`);
-  }
-}
-
-function assertIsoTimestamp(value: unknown, field: string): asserts value is string {
-  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
-    throw new ProductTruthValidationError(`${field} must be an ISO timestamp.`);
-  }
-}
+const MAX_PRODUCT_TRUTH_AGE_MS = 5 * 60_000;
 
 export function validateFreshProductTruthProjection(
   value: unknown,
@@ -65,7 +35,13 @@ export function validateFreshProductTruthProjection(
 
   const generatedAt = Date.parse(value.generated_at);
   const expiresAt = Date.parse(value.expires_at);
-  if (generatedAt > now + 60_000 || expiresAt <= now) {
+  if (
+    generatedAt > now + 60_000
+    || expiresAt <= now
+    || expiresAt <= generatedAt
+    || now - generatedAt > MAX_PRODUCT_TRUTH_AGE_MS
+    || expiresAt - generatedAt > MAX_PRODUCT_TRUTH_AGE_MS
+  ) {
     throw new ProductTruthValidationError("Product Truth returned a stale projection.");
   }
 
@@ -85,34 +61,12 @@ export async function loadMemberProductTruth(
 }
 
 export function validateCapabilityTruthAdminReadback(value: unknown): CapabilityTruthAdminReadback {
-  if (!isRecord(value)) {
-    throw new ProductTruthValidationError("Capability Truth returned a malformed admin readback.");
-  }
-  if (value.contract_version !== "1.0.0" || value.schema_version !== 1) {
-    throw new ProductTruthValidationError("Capability Truth returned an unsupported admin contract.");
-  }
-  assertSafePositiveInteger(value.registry_revision, "registry_revision");
-  assertIsoTimestamp(value.generated_at, "generated_at");
-  if (
-    !Array.isArray(value.records)
-    || !Array.isArray(value.claims)
-    || !Array.isArray(value.installations)
-    || !Array.isArray(value.verification_receipts)
-    || !Array.isArray(value.dependencies)
-    || !Array.isArray(value.transition_audit)
-  ) {
-    throw new ProductTruthValidationError("Capability Truth returned incomplete admin evidence.");
-  }
-
   try {
-    value.records.forEach((record) => assertCapabilityTruthRecord(record as CapabilityTruthRecord));
-    value.claims.forEach((claim) => assertProductClaimRecord(claim as ProductClaimRecord));
-    value.installations.forEach((installation) => assertInstalledCapabilityRecord(installation as InstalledCapabilityRecord));
+    assertCapabilityTruthAdminReadback(value);
   } catch {
     throw new ProductTruthValidationError("Capability Truth returned malformed registry records.");
   }
-
-  return value as CapabilityTruthAdminReadback;
+  return value;
 }
 
 export async function loadCapabilityTruthAdminReadback(

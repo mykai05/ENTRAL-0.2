@@ -115,6 +115,9 @@ export const PUBLICATION_DECISION_REASONS = [
   "CAPABILITY_NOT_REAL",
   "PUBLIC_CLAIM_INELIGIBLE",
   "CAPABILITY_FAILURE",
+  "CAPABILITY_EVIDENCE_INVALID",
+  "DEPENDENCY_UNSATISFIED",
+  "ACTIVATION_REQUIREMENT_UNSATISFIED",
   "CLAIM_NOT_APPROVED",
   "CLAIM_EVIDENCE_MISMATCH",
   "INSTALLATION_REQUIRED",
@@ -133,6 +136,11 @@ export interface CapabilityEvidenceReceipt {
   readonly content_sha256: string;
   readonly captured_at: string;
   readonly expires_at: string | null;
+}
+
+export interface CapabilityVerificationReceiptRecord extends CapabilityEvidenceReceipt {
+  readonly capability_id: string;
+  readonly capability_version: string;
 }
 
 export interface CapabilityDependency {
@@ -222,6 +230,46 @@ export interface InstalledCapabilityRecord {
   readonly updated_at: string;
 }
 
+export interface CapabilityDependencyRecord {
+  readonly capability_id: string;
+  readonly capability_version: string;
+  readonly dependency_capability_id: string;
+  readonly dependency_capability_version: string;
+  readonly minimum_lifecycle_state: CapabilityLifecycleState;
+  readonly required: boolean;
+}
+
+export interface CapabilityTransitionAuditRecord {
+  readonly transition_id: string;
+  readonly capability_id: string;
+  readonly capability_version: string;
+  readonly from_state: CapabilityLifecycleState;
+  readonly to_state: CapabilityLifecycleState;
+  readonly prior_record_version: number;
+  readonly resulting_record_version: number;
+  readonly evidence_receipt_ids: readonly string[];
+  readonly reason: string;
+  readonly actor_id: string;
+  readonly correlation_id: string;
+  readonly idempotency_key: string;
+  readonly request_sha256: string;
+  readonly requested_at: string;
+  readonly recorded_at: string;
+}
+
+export interface CapabilityTruthAdminReadback {
+  readonly contract_version: "1.0.0";
+  readonly schema_version: 1;
+  readonly registry_revision: number;
+  readonly generated_at: string;
+  readonly records: readonly CapabilityTruthRecord[];
+  readonly claims: readonly ProductClaimRecord[];
+  readonly installations: readonly InstalledCapabilityRecord[];
+  readonly verification_receipts: readonly CapabilityVerificationReceiptRecord[];
+  readonly dependencies: readonly CapabilityDependencyRecord[];
+  readonly transition_audit: readonly CapabilityTransitionAuditRecord[];
+}
+
 export interface CapabilityLifecycleTransitionRequest {
   readonly transition_id: string;
   readonly capability_id: string;
@@ -239,6 +287,7 @@ export interface CapabilityLifecycleTransitionRequest {
 export interface PublicationEvaluationInput {
   readonly capability: CapabilityTruthRecord;
   readonly claim: ProductClaimRecord;
+  readonly dependency_capabilities: readonly CapabilityTruthRecord[];
   readonly requested_environment: CapabilityEnvironment;
   readonly requested_tenant_id: string | null;
   readonly requested_organization_id: string | null;
@@ -358,6 +407,55 @@ function assertEvidenceReceipt(receipt: CapabilityEvidenceReceipt, index: number
   }
 }
 
+export function assertCapabilityEvidenceReceipt(receipt: CapabilityEvidenceReceipt): void {
+  assertEvidenceReceipt(receipt, 0);
+}
+
+export function assertCapabilityVerificationReceiptRecord(record: CapabilityVerificationReceiptRecord): void {
+  assertRecord(record, "capability_verification_receipt");
+  assertUuid(record.capability_id, "capability_id");
+  assertVersion(record.capability_version, "capability_version");
+  assertEvidenceReceipt(record, 0);
+}
+
+export function assertCapabilityDependencyRecord(record: CapabilityDependencyRecord): void {
+  assertRecord(record, "capability_dependency");
+  assertUuid(record.capability_id, "capability_id");
+  assertVersion(record.capability_version, "capability_version");
+  assertUuid(record.dependency_capability_id, "dependency_capability_id");
+  assertVersion(record.dependency_capability_version, "dependency_capability_version");
+  assertEnum(record.minimum_lifecycle_state, CAPABILITY_LIFECYCLE_STATES, "minimum_lifecycle_state");
+  if (typeof record.required !== "boolean" || record.capability_id === record.dependency_capability_id) {
+    throw new ContractError("INVALID_CAPABILITY_DEPENDENCY", "capability dependency is malformed");
+  }
+}
+
+export function assertCapabilityTransitionAuditRecord(record: CapabilityTransitionAuditRecord): void {
+  assertRecord(record, "capability_transition_audit");
+  assertUuid(record.transition_id, "transition_id");
+  assertUuid(record.capability_id, "capability_id");
+  assertVersion(record.capability_version, "capability_version");
+  assertEnum(record.from_state, CAPABILITY_LIFECYCLE_STATES, "from_state");
+  assertEnum(record.to_state, CAPABILITY_LIFECYCLE_STATES, "to_state");
+  assertRecordVersion(record.prior_record_version, "prior_record_version");
+  assertRecordVersion(record.resulting_record_version, "resulting_record_version");
+  if (record.resulting_record_version !== record.prior_record_version + 1) {
+    throw new ContractError("INVALID_TRANSITION_AUDIT_VERSION", "transition audit version is not sequential");
+  }
+  assertStringArray(record.evidence_receipt_ids, "evidence_receipt_ids", 36);
+  record.evidence_receipt_ids.forEach((id, index) => assertUuid(id, `evidence_receipt_ids[${index}]`));
+  assertUnique(record.evidence_receipt_ids, "evidence_receipt_ids");
+  assertNonEmptyString(record.reason, "reason", 2_000);
+  assertUuid(record.actor_id, "actor_id");
+  assertUuid(record.correlation_id, "correlation_id");
+  assertNonEmptyString(record.idempotency_key, "idempotency_key", 255);
+  if (record.idempotency_key.length < 12 || !SHA256_RE.test(record.request_sha256)) {
+    throw new ContractError("INVALID_TRANSITION_AUDIT_BINDING", "transition audit binding is malformed");
+  }
+  assertIsoDate(record.requested_at, "requested_at");
+  assertIsoDate(record.recorded_at, "recorded_at");
+}
+
 function assertFailureState(value: CapabilityFailureState | null): void {
   if (value === null) return;
   assertRecord(value, "failure_state");
@@ -370,9 +468,12 @@ function assertFailureState(value: CapabilityFailureState | null): void {
 }
 
 function evidenceTypes(record: CapabilityTruthRecord): ReadonlySet<CapabilityEvidenceType> {
+  const verifiedAt = record.last_verified_at === null ? null : Date.parse(record.last_verified_at);
   return new Set(
     record.verification_receipts
-      .filter((receipt) => receipt.status === "PASSED" && receipt.environment === record.environment)
+      .filter((receipt) => receipt.status === "PASSED"
+        && receipt.environment === record.environment
+        && (receipt.expires_at === null || verifiedAt === null || Date.parse(receipt.expires_at) > verifiedAt))
       .map((receipt) => receipt.evidence_type)
   );
 }
@@ -449,6 +550,12 @@ export function assertCapabilityTruthRecord(record: CapabilityTruthRecord): void
       assertUuid(id, `${field}.evidence_receipt_ids[${receiptIndex}]`);
     });
     assertUnique(requirement.evidence_receipt_ids, `${field}.evidence_receipt_ids`);
+    if (requirement.required && requirement.satisfied && requirement.evidence_receipt_ids.length === 0) {
+      throw new ContractError(
+        "ACTIVATION_EVIDENCE_REQUIRED",
+        `${field}.evidence_receipt_ids must bind a satisfied required activation requirement`
+      );
+    }
   });
   assertUnique(record.activation_requirements.map((requirement) => requirement.requirement_code), "activation_requirements");
   if (!Array.isArray(record.verification_receipts)) {
@@ -660,6 +767,37 @@ export function assertPublicProductTruthProjection(value: unknown): asserts valu
   assertUnique(projection.claims.map((claim) => claim.claim_id), "claims");
 }
 
+export function assertCapabilityTruthAdminReadback(value: unknown): asserts value is CapabilityTruthAdminReadback {
+  assertRecord(value, "capability_truth_admin_readback");
+  if (value.contract_version !== "1.0.0" || value.schema_version !== 1) {
+    throw new ContractError("INVALID_ADMIN_READBACK_CONTRACT", "admin readback contract is unsupported");
+  }
+  assertSafeNonNegativeInteger(value.registry_revision, "registry_revision");
+  if (value.registry_revision < 1) {
+    throw new ContractError("INVALID_ADMIN_READBACK_REVISION", "registry_revision must be at least 1");
+  }
+  assertIsoDate(value.generated_at, "generated_at");
+  for (const field of [
+    "records",
+    "claims",
+    "installations",
+    "verification_receipts",
+    "dependencies",
+    "transition_audit"
+  ] as const) {
+    if (!Array.isArray(value[field])) {
+      throw new ContractError("INVALID_ADMIN_READBACK_ARRAY", `${field} must be an array`);
+    }
+  }
+  const readback = value as unknown as CapabilityTruthAdminReadback;
+  readback.records.forEach(assertCapabilityTruthRecord);
+  readback.claims.forEach(assertProductClaimRecord);
+  readback.installations.forEach(assertInstalledCapabilityRecord);
+  readback.verification_receipts.forEach(assertCapabilityVerificationReceiptRecord);
+  readback.dependencies.forEach(assertCapabilityDependencyRecord);
+  readback.transition_audit.forEach(assertCapabilityTransitionAuditRecord);
+}
+
 function decision(
   input: PublicationEvaluationInput,
   allowed: boolean,
@@ -684,8 +822,10 @@ export function evaluateProductClaimPublication(input: PublicationEvaluationInpu
     assertEnum(input.requested_environment, CAPABILITY_ENVIRONMENTS, "requested_environment");
     if (input.requested_tenant_id !== null) assertUuid(input.requested_tenant_id, "requested_tenant_id");
     if (input.requested_organization_id !== null) assertUuid(input.requested_organization_id, "requested_organization_id");
+    if (!Array.isArray(input.dependency_capabilities)) throw new ContractError("INVALID_DEPENDENCY_TRUTH", "dependency_capabilities must be an array");
     assertCapabilityTruthRecord(input.capability);
     assertProductClaimRecord(input.claim);
+    input.dependency_capabilities.forEach(assertCapabilityTruthRecord);
   } catch {
     return decision(input, false, "MALFORMED_TRUTH");
   }
@@ -700,9 +840,44 @@ export function evaluateProductClaimPublication(input: PublicationEvaluationInpu
   if (capability.production_readiness !== "REAL") return decision(input, false, "CAPABILITY_NOT_REAL");
   if (!capability.public_claim_eligible) return decision(input, false, "PUBLIC_CLAIM_INELIGIBLE");
   if (capability.failure_state !== null) return decision(input, false, "CAPABILITY_FAILURE");
+  const dependencyRecords = new Map(input.dependency_capabilities.map((record) => [
+    `${record.capability_id}@${record.capability_version}`,
+    record
+  ]));
+  for (const dependency of capability.dependencies.filter((candidate) => candidate.required)) {
+    const required = dependencyRecords.get(`${dependency.capability_id}@${dependency.capability_version}`);
+    if (
+      !required
+      || required.failure_state !== null
+      || required.production_readiness !== "REAL"
+      || CAPABILITY_LIFECYCLE_STATES.indexOf(required.lifecycle_state)
+        < CAPABILITY_LIFECYCLE_STATES.indexOf(dependency.minimum_lifecycle_state)
+    ) {
+      return decision(input, false, "DEPENDENCY_UNSATISFIED");
+    }
+  }
   if (claim.status !== "APPROVED") return decision(input, false, "CLAIM_NOT_APPROVED");
-  const receiptIds = new Set(capability.verification_receipts.map((receipt) => receipt.receipt_id));
-  if (!claim.evidence_receipt_ids.every((id) => receiptIds.has(id))) {
+  const evaluatedAt = Date.parse(input.evaluated_at);
+  const validReceipts = new Map(capability.verification_receipts
+    .filter((receipt) => receipt.status === "PASSED"
+      && receipt.environment === capability.environment
+      && (receipt.expires_at === null || Date.parse(receipt.expires_at) > evaluatedAt))
+    .map((receipt) => [receipt.receipt_id, receipt]));
+  if (SELLABLE_EVIDENCE.some((evidenceType) => (
+    ![...validReceipts.values()].some((receipt) => receipt.evidence_type === evidenceType)
+  ))) {
+    return decision(input, false, "CAPABILITY_EVIDENCE_INVALID");
+  }
+  for (const requirement of capability.activation_requirements.filter((candidate) => candidate.required)) {
+    if (
+      !requirement.satisfied
+      || requirement.evidence_receipt_ids.length === 0
+      || !requirement.evidence_receipt_ids.every((id) => validReceipts.has(id))
+    ) {
+      return decision(input, false, "ACTIVATION_REQUIREMENT_UNSATISFIED");
+    }
+  }
+  if (!claim.evidence_receipt_ids.every((id) => validReceipts.has(id))) {
     return decision(input, false, "CLAIM_EVIDENCE_MISMATCH");
   }
   const requiresInstallation = claim.requires_tenant_installation || capability.scope === "TENANT";

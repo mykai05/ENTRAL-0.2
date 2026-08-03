@@ -64,11 +64,65 @@ function adminReadback() {
       created_at: "2026-08-03T03:00:00.000Z",
       updated_at: "2026-08-03T03:00:00.000Z"
     }],
-    claims: [],
-    installations: [],
+    claims: [{
+      claim_id: "20000000-0000-4000-8000-000000000001",
+      claim_key: "tutorial.command-overview",
+      capability_id: capabilityId,
+      capability_version: "200.0.0",
+      environment: "PRODUCTION",
+      surface: "TUTORIAL",
+      status: "DRAFT",
+      approved_language: "Command lesson publication candidate.",
+      limitations: ["Not approved."],
+      evidence_receipt_ids: [],
+      requires_tenant_installation: false,
+      approved_by_actor_id: null,
+      approved_at: null,
+      record_version: 1,
+      created_at: "2026-08-03T03:00:00.000Z",
+      updated_at: "2026-08-03T03:00:00.000Z"
+    }],
+    installations: [{
+      installation_id: "30000000-0000-4000-8000-000000000001",
+      tenant_id: "30000000-0000-4000-8000-000000000002",
+      organization_id: "30000000-0000-4000-8000-000000000003",
+      capability_id: capabilityId,
+      capability_version: "200.0.0",
+      state: "AVAILABLE",
+      plan_eligible: false,
+      suspension_reason: null,
+      activated_at: null,
+      verification_receipt_ids: [],
+      record_version: 1,
+      created_at: "2026-08-03T03:00:00.000Z",
+      updated_at: "2026-08-03T03:00:00.000Z"
+    }],
     verification_receipts: [],
-    dependencies: [],
-    transition_audit: []
+    dependencies: [{
+      capability_id: capabilityId,
+      capability_version: "200.0.0",
+      dependency_capability_id: "10000000-0000-4000-8000-000000000002",
+      dependency_capability_version: "1.0.0",
+      minimum_lifecycle_state: "IMPLEMENTED",
+      required: true
+    }],
+    transition_audit: [{
+      transition_id: "40000000-0000-4000-8000-000000000001",
+      capability_id: capabilityId,
+      capability_version: "200.0.0",
+      from_state: "CATALOGUED",
+      to_state: "DESIGNED",
+      prior_record_version: 1,
+      resulting_record_version: 2,
+      evidence_receipt_ids: [],
+      reason: "A reviewed design packet exists.",
+      actor_id: "40000000-0000-4000-8000-000000000002",
+      correlation_id: "40000000-0000-4000-8000-000000000003",
+      idempotency_key: "phase203-admin-test-transition",
+      request_sha256: "a".repeat(64),
+      requested_at: "2026-08-03T03:30:00.000Z",
+      recorded_at: "2026-08-03T03:30:01.000Z"
+    }]
   };
 }
 
@@ -86,16 +140,20 @@ describe("CapabilityTruthAdmin", () => {
     expect(mocks.apiFetch).toHaveBeenCalledWith("/admin/product-truth", expect.objectContaining({
       headers: { "x-admin-mfa-code": "verified" }
     }));
-    fireEvent.click(screen.getByText(/Command lesson/));
-    expect(screen.getByText(capabilityId)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Command lesson", { selector: "strong" }));
+    expect(screen.getAllByText(capabilityId).length).toBeGreaterThan(0);
     expect(screen.getByText("Capability owner")).toBeInTheDocument();
     expect(screen.getByText("CATALOGUED", { selector: "dd" })).toBeInTheDocument();
-    expect(screen.getByText("Blocked")).toBeInTheDocument();
+    expect(screen.getAllByText("Blocked")).toHaveLength(2);
     expect(screen.getByText("A production journey receipt is required.", { exact: false })).toBeInTheDocument();
     expect(screen.getByText("No verification receipts recorded.")).toBeInTheDocument();
     expect(screen.getByText("UNVERIFIED: Production verification has not been attached.", { exact: false })).toBeInTheDocument();
     expect(screen.getByText("Remove the catalog binding.")).toBeInTheDocument();
     expect(screen.getByText("Keep publication blocked.")).toBeInTheDocument();
+    expect(screen.getByText("tutorial.command-overview")).toBeInTheDocument();
+    expect(screen.getByText("Command lesson publication candidate.")).toBeInTheDocument();
+    expect(screen.getByText("AVAILABLE", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("CATALOGUED → DESIGNED", { exact: false })).toBeInTheDocument();
   });
 
   it("shows an explicit unavailable alert without cached registry records", async () => {

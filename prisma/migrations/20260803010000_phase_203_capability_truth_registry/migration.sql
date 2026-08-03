@@ -315,6 +315,7 @@ AS $phase203_requirements$
     OR (
       COALESCE((requirement->>'satisfied')::boolean,false)
       AND jsonb_typeof(COALESCE(requirement->'evidence_receipt_ids','[]'::jsonb))='array'
+      AND jsonb_array_length(COALESCE(requirement->'evidence_receipt_ids','[]'::jsonb))>0
       AND NOT EXISTS (
         SELECT 1
         FROM jsonb_array_elements_text(COALESCE(requirement->'evidence_receipt_ids','[]'::jsonb)) receipt_id
@@ -323,6 +324,7 @@ AS $phase203_requirements$
           WHERE receipt.receipt_id=receipt_id::uuid
             AND receipt.capability_id=p_capability_id
             AND receipt.capability_version=p_capability_version
+            AND receipt.environment=capability.environment
             AND receipt.status='PASSED'
             AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
         )
@@ -1412,18 +1414,6 @@ INSERT INTO entral.capability_records(
    'Keep unpublished, deactivate any tenant installation, then transition through DEPRECATED to RETIRED.',
    'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/lib/tool-registry.ts#outlook-calendar',
    ARRAY['This identifier exists only in the legacy frontend static registry and has no backend tool blueprint.','The source identifies it as coming soon; no provider operation or verification receipt exists.']::text[]),
-  ('20300000-0006-4000-8000-000000000501'::uuid,'capability.tutorial.module.command-guide','200.0.0','Command','Phase 200 Tutorial Command module source.','CAPABILITY','UNASSIGNED','PRODUCTION','GLOBAL','CATALOGUED','UNSUPPORTED','UNVERIFIED','[]'::jsonb,false,
-   'Retain the prior registry revision and the certified Phase 200 Tutorial implementation.','Keep unpublished and transition through DEPRECATED to RETIRED only with replacement evidence.',
-   'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx#command-guide',ARRAY['Source presence only; Phase 200 release receipts are not imported.','Tutorial presence does not establish public claim eligibility.']::text[]),
-  ('20300000-0006-4000-8000-000000000502'::uuid,'capability.tutorial.module.business-guide','200.0.0','Businesses','Phase 200 Tutorial Businesses module source.','CAPABILITY','UNASSIGNED','PRODUCTION','GLOBAL','CATALOGUED','UNSUPPORTED','UNVERIFIED','[]'::jsonb,false,
-   'Retain the prior registry revision and the certified Phase 200 Tutorial implementation.','Keep unpublished and transition through DEPRECATED to RETIRED only with replacement evidence.',
-   'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx#business-guide',ARRAY['Source presence only; Phase 200 release receipts are not imported.','Tutorial presence does not establish public claim eligibility.']::text[]),
-  ('20300000-0006-4000-8000-000000000503'::uuid,'capability.tutorial.module.hierarchy-guide','200.0.0','Universe','Phase 200 Tutorial Universe module source.','CAPABILITY','UNASSIGNED','PRODUCTION','GLOBAL','CATALOGUED','UNSUPPORTED','UNVERIFIED','[]'::jsonb,false,
-   'Retain the prior registry revision and the certified Phase 200 Tutorial implementation.','Keep unpublished and transition through DEPRECATED to RETIRED only with replacement evidence.',
-   'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx#hierarchy-guide',ARRAY['Source presence only; Phase 200 release receipts are not imported.','Tutorial presence does not establish public claim eligibility.']::text[]),
-  ('20300000-0006-4000-8000-000000000504'::uuid,'capability.tutorial.module.operations-guide','200.0.0','Records and help','Phase 200 Tutorial Records and help module source.','CAPABILITY','UNASSIGNED','PRODUCTION','GLOBAL','CATALOGUED','UNSUPPORTED','UNVERIFIED','[]'::jsonb,false,
-   'Retain the prior registry revision and the certified Phase 200 Tutorial implementation.','Keep unpublished and transition through DEPRECATED to RETIRED only with replacement evidence.',
-   'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx#operations-guide',ARRAY['Source presence only; Phase 200 release receipts are not imported.','Tutorial presence does not establish public claim eligibility.']::text[]),
   ('20300000-0006-4000-8000-000000000505'::uuid,'capability.tutorial.step.command-overview','200.0.0','Start from Command','Phase 200 Tutorial Command overview step and contract anchor.','CAPABILITY','UNASSIGNED','PRODUCTION','GLOBAL','CATALOGUED','UNSUPPORTED','UNVERIFIED','[]'::jsonb,false,
    'Retain the prior registry revision and the certified Phase 200 Tutorial implementation.','Keep unpublished and transition through DEPRECATED to RETIRED only with replacement evidence.',
    'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx#command-overview',ARRAY['UI and contract anchor presence does not import production journey or persistence receipts.','Tutorial step presence does not establish public claim eligibility.']::text[]),
@@ -1444,8 +1434,8 @@ DO $phase203_seed_assertion$
 DECLARE seeded_count integer;
 BEGIN
   SELECT count(*) INTO seeded_count FROM entral.capability_records;
-  IF seeded_count<>60 THEN
-    RAISE EXCEPTION 'Phase 203 conservative source inventory must seed exactly 60 records, found %',seeded_count;
+  IF seeded_count<>56 THEN
+    RAISE EXCEPTION 'Phase 203 conservative source inventory must seed exactly 56 records, found %',seeded_count;
   END IF;
   IF EXISTS (
     SELECT 1 FROM entral.capability_records
