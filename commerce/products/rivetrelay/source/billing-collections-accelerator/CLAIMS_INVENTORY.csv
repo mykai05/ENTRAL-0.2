@@ -1,0 +1,8 @@
+Claim_ID,Proposed_Claim,Artifact_Basis,Eligibility,Required_Qualifier,Prohibited_Extension
+RR-BC-C01,Includes an editable receivables operating tracker,receivables_tracker_template.csv and field specification,ELIGIBLE_AFTER_FILE_QA,Tracker is an operating view and not the accounting ledger,Do not claim bookkeeping or payment processing
+RR-BC-C02,Includes invoice promise dispute and follow-up workflows,BILLING_AND_COLLECTIONS_PLAYBOOK.md and controlled fields,ELIGIBLE_AFTER_EDITORIAL_QA,Every action requires verified facts and local review,Do not claim automated or legally compliant collections
+RR-BC-C03,Calculates balance variance aging buckets and action holds,receivables_fields_and_formulas.csv,ELIGIBLE_AFTER_FORMULA_QA,Depends on correctly reconciled authoritative inputs,Do not claim predictive collectability or recovered cash
+RR-BC-C04,Includes seven fully populated fictional invoice examples,receivables_tracker_fictional_example.csv,ELIGIBLE_AFTER_FILE_QA,All customers projects invoices and amounts are fictional,Do not present example values as customer results
+RR-BC-C05,Separates payment promises from verified payments,Promise fields and Payments_Applied definition,ELIGIBLE_AFTER_LOGIC_QA,Authoritative settlement still requires ledger/provider evidence,Do not count promises as sales receipts or revenue
+RR-BC-C06,Surfaces ledger variances disputes and contact holds,Action_Flag formula and exception rules,ELIGIBLE_AFTER_LOGIC_QA,Holds depend on complete maintained data,Do not claim dispute prevention or compliance
+RR-BC-C07,Works without a subscription,Delivered editable files,ELIGIBLE_ONLY_IF_FINAL_PACKAGE_CONFIRMS,May require purchaser-owned spreadsheet and document software,Do not claim compatibility with every accounting platform

@@ -1,0 +1,28 @@
+Field,Type,Required_When,Allowed_Values_or_Rule,Spreadsheet_Formula_or_Instruction,Why_It_Exists
+Lead_ID,Text,Always,Unique stable internal ID; do not use contact data,,Prevents duplicate and unstable records
+Received_Date,Date,Always,Actual received date; hold the record outside this tracker if the date is unavailable,,Orders the incoming queue without mixing dates and reasons
+Control_Date,Date,Always,Verified local operating date used by every age and due calculation,,Makes formula readback stable and auditable
+Customer_Record_Ref,Text,Always,Secure system reference rather than direct personal data,,Links to approved customer record
+Project_Type,Text,Always,Verified short description,,Supports routing
+Lead_Source,Controlled text,Always,Local verified source list,,Supports source comparison
+Preferred_Channel,Controlled text,When known,EMAIL;PHONE;MARKETPLACE;OTHER;UNKNOWN,,Supports customer preference
+Contact_Eligibility,Controlled text,Always,ELIGIBLE;PREFERENCE_LIMITED;OPTED_OUT;WRONG_CONTACT;UNKNOWN,,Fails closed for uncertain outreach
+Priority,Controlled text,Always,HIGH;MEDIUM;LOW based on local rule,,Supports queue ordering without inventing value
+Stage,Controlled text,Always,NEW;CONTACTED;QUALIFYING;SITE_VISIT;ESTIMATE_IN_PROGRESS;ESTIMATE_DELIVERED;DECISION_PENDING;CLOSED,,Shows current operating state
+Assigned_To,Text,When open,One accountable internal owner,,Prevents ownerless follow-up
+Last_Contact_Date,Date,After a contact event,Date of latest evidenced contact,,Makes cadence auditable
+Last_Contact_Channel,Controlled text,After a contact event,EMAIL;PHONE;MARKETPLACE;OTHER,,Binds the latest contact date to its approved channel while the source communication log retains every event
+Next_Action,Text,When open,Specific observable next step,,Makes the queue actionable
+Next_Action_Date,Date,When open,Date agreed or assigned,,Drives due queue
+Estimate_Ref,Text,When estimate exists,Approved secure estimate reference,,Binds tracker to estimate evidence
+Estimate_Delivered_Date,Date,When stage is ESTIMATE_DELIVERED or DECISION_PENDING,Verified delivery date,,Prevents presumed delivery
+Estimate_Amount,Currency,When estimate exists,Amount from approved estimate; blank if unavailable,,Supports bounded pipeline review
+Follow_Up_Count,Whole number,Always,Count only material documented attempts,,Avoids double-counting activity
+Days_Since_Estimate,Formula,When delivery date exists,Nonnegative whole number,"=IF(OR([@[Estimate_Delivered_Date]]="""",[@[Control_Date]]=""""),"""",MAX(0,[@[Control_Date]]-[@[Estimate_Delivered_Date]]))",Shows age against an explicit verified control date
+Response_Status,Controlled text,Always,NOT_STARTED;ATTEMPTED;CONNECTED;WAITING_CUSTOMER;WAITING_INTERNAL;COMPLETE,,Separates action state from lead outcome
+Outcome,Controlled text,When closed,WON;LOST;DECLINED;DUPLICATE;INVALID,,Records supported closure
+Outcome_Date,Date,When closed,Date the outcome was evidenced,,Completes lifecycle history
+Evidence_Ref,Text,After material event,Secure reference; no secret URL or credential,,Binds events to source evidence
+Notes,Text,Optional,Facts and decisions only; avoid sensitive personal details,,Adds necessary context
+Follow_Up_Flag,Formula,Always,CLOSED;HOLD;OVERDUE;DUE;NOT_DUE,"=IF([@[Stage]]=""CLOSED"",""CLOSED"",IF(OR([@[Control_Date]]="""",NOT(OR([@[Contact_Eligibility]]=""ELIGIBLE"",[@[Contact_Eligibility]]=""PREFERENCE_LIMITED""))),""HOLD"",IF([@[Next_Action_Date]]="""",""DUE"",IF([@[Next_Action_Date]]<[@[Control_Date]],""OVERDUE"",IF([@[Next_Action_Date]]=[@[Control_Date]],""DUE"",""NOT_DUE"")))))",Creates a fail-closed action queue against an explicit control date
+Record_Quality_Flag,Formula,Always,COMPLETE;REVIEW,"=IF(OR([@[Lead_ID]]="""",[@[Received_Date]]="""",[@[Control_Date]]="""",[@[Received_Date]]>[@[Control_Date]],[@[Customer_Record_Ref]]="""",[@[Project_Type]]="""",[@[Lead_Source]]="""",[@[Contact_Eligibility]]="""",[@[Priority]]="""",[@[Stage]]="""",[@[Follow_Up_Count]]="""",[@[Follow_Up_Count]]<0,[@[Response_Status]]="""",[@[Evidence_Ref]]="""",AND([@[Last_Contact_Date]]<>"""",[@[Last_Contact_Date]]>[@[Control_Date]]),AND([@[Follow_Up_Count]]>0,OR([@[Last_Contact_Date]]="""",[@[Last_Contact_Channel]]="""")),AND([@[Stage]]<>""CLOSED"",OR([@[Assigned_To]]="""",[@[Next_Action]]="""",[@[Next_Action_Date]]="""")),AND(OR([@[Stage]]=""ESTIMATE_DELIVERED"",[@[Stage]]=""DECISION_PENDING""),OR([@[Estimate_Ref]]="""",[@[Estimate_Delivered_Date]]="""",[@[Estimate_Delivered_Date]]>[@[Control_Date]])),AND([@[Stage]]=""CLOSED"",OR([@[Outcome]]="""",[@[Outcome_Date]]="""",[@[Outcome_Date]]>[@[Control_Date]]))),""REVIEW"",""COMPLETE"")",Surfaces missing invalid or future-dated operating evidence while the source communication log retains every material contact event
