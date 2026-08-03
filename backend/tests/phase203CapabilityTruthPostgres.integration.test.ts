@@ -23,6 +23,7 @@ vi.hoisted(() => {
 });
 
 import { withPersonalSession, withTenantSession } from "../src/db.js";
+import { CapabilityTruthService } from "../src/services/capabilityTruth.js";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const integrationEnabled = Boolean(
@@ -317,6 +318,23 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
         records: 56,
         unassigned: 56
       }]);
+
+      const migratedAccountReadback = await new CapabilityTruthService(api).getAdminReadback({
+        authSubject: migratedUserId,
+        requestId: randomUUID()
+      });
+      expect(migratedAccountReadback).toEqual(expect.objectContaining({
+        registry_revision: 1,
+        claims: [],
+        installations: []
+      }));
+      expect(migratedAccountReadback.records).toHaveLength(56);
+      expect(migratedAccountReadback.generated_at).toMatch(/\.\d{3}Z$/);
+      expect(migratedAccountReadback.records.every((record) => (
+        record.lifecycle_state === "CATALOGUED"
+        && record.created_at.endsWith("Z")
+        && record.updated_at.endsWith("Z")
+      ))).toBe(true);
 
       await expect(api.$executeRaw`
         UPDATE entral.capability_records
@@ -1312,6 +1330,7 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       expect(readback.claims).toHaveLength(4);
       expect(readback.transition_audit).toHaveLength(11);
       expect(readback.installation_transition_audit).toHaveLength(1);
+
     } finally {
       await Promise.allSettled([
         api?.$disconnect(),

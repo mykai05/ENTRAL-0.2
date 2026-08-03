@@ -241,5 +241,5 @@
     "owner_scope_supersedes_blanket_subagent_prohibition": true
   },
   "created_at": "2026-08-03T04:30:00.000Z",
-  "owner_directive": "Implement only the bounded Capability Truth Registry and Product Publication Gateway defined in the owner's seven requirements. Do not begin Phase 204, broaden into provider activation or commercial systems, or certify until protected-main exact-SHA production verification and ReleaseManifest gates pass."
+  "owner_directive": "Implement only the bounded Capability Truth Registry and Product Publication Gateway defined in the owner's seven requirements. The production admin-readback gate discovered that PostgreSQL jsonb timestamptz values use an offset form while the typed contract requires canonical ISO-8601 UTC Z timestamps; correct only that serialization boundary in backend/src/services/capabilityTruth.ts with negative and production-shaped regression coverage before rebuilding the accepted main SHA. Do not begin Phase 204, broaden into provider activation or commercial systems, or certify until protected-main exact-SHA production verification and ReleaseManifest gates pass."
 }

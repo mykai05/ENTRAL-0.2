@@ -153,7 +153,7 @@ describe("Phase 200 OnboardingProvider", () => {
     act(() => window.dispatchEvent(new Event("entral:open-academy")));
     expect(await screen.findByText("Server progress synced · revision 7")).toBeInTheDocument();
     expect(screen.getByText("Tutorial library")).toBeInTheDocument();
-    expect(screen.getByText("Published lessons")).toBeInTheDocument();
+    expect(await screen.findByText("Published lessons")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start from Command" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Review canonical businesses" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Navigate Universe" })).toBeInTheDocument();
