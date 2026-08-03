@@ -83,6 +83,12 @@ test("all later releases require a real authenticated production member journey"
   assert.match(journey, /memberSessionClaims/);
   assert.match(journey, /Current migrated member organization inventory/);
   assert.match(journey, /graphPreferenceActorBound/);
+  assert.match(journey, /preferences\.user_id === portfolio\.scope\.user_id[\s\S]*preferences\.user_id === hierarchy\.scope\.user_id/);
+  assert.doesNotMatch(journey, /preferences\.user_id === sessionClaims\.(?:sub|actorId)/);
+  assert.match(journey, /"sec-fetch-site": "same-origin"/);
+  assert.match(journey, /getAttribute\("data-mobile-dimension"\) === "2d"/);
+  assert.match(journey, /\.phase180-graph\[data-graph-dimension="2d"\]/);
+  assert.doesNotMatch(journey, /phase180-graph-2d/);
   assert.match(journey, /authorizedEntityIds/);
   assert.match(journey, /authorizedEdgeIds/);
   assert.match(journey, /Command canonical totals/);
