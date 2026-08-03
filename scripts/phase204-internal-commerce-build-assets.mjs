@@ -242,10 +242,13 @@ function documentHtml(title, sections) {
 .cover p { max-width:5.8in; color:var(--muted); font-size:13pt; }
 .brand { margin-top:.45in; font-size:12pt; font-weight:700; } .meta { color:var(--muted); font-size:9pt; }
 .section { break-before:auto; page-break-before:auto; } .section + .section { border-top:1px solid var(--line); margin-top:.34in; padding-top:.18in; }
-h1,h2,h3,h4 { color:var(--ink); line-height:1.15; page-break-after:avoid; }
+h1,h2,h3,h4 { display:block; color:var(--ink); line-height:1.15; break-after:avoid-page; page-break-after:avoid; }
 h1 { font-size:22pt; margin:0 0 .18in; border-bottom:2px solid var(--accent); padding-bottom:.08in; }
 h2 { font-size:16pt; margin:.2in 0 .08in; } h3 { font-size:12.5pt; margin:.15in 0 .06in; }
-p { margin:.04in 0 .09in; orphans:3; widows:3; } ul,ol { margin:.04in 0 .1in .24in; padding:0; } li { margin:.025in 0; break-inside:avoid; }
+p { margin:.04in 0 .09in; break-inside:avoid; page-break-inside:avoid; orphans:4; widows:4; }
+h1 + p,h2 + p,h3 + p,h4 + p { margin-top:.07in; }
+ul,ol { margin:.04in 0 .1in .24in; padding:0; break-inside:avoid; page-break-inside:avoid; }
+li { margin:.025in 0; break-inside:avoid; page-break-inside:avoid; }
 table { width:100%; border-collapse:collapse; margin:.12in 0 .2in; font-size:8.7pt; page-break-inside:auto; }
 thead { display:table-header-group; } tr { page-break-inside:avoid; } th,td { border:1px solid var(--line); padding:.06in; text-align:left; vertical-align:top; }
 th { background:var(--soft); } code { font:8.8pt Consolas, monospace; background:var(--soft); padding:.01in .035in; }
