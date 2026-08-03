@@ -90,7 +90,7 @@ beforeEach(() => {
 
 describe("Phase 203 Capability Truth service", () => {
   it("builds a fresh empty projection rather than falling back to static claims", async () => {
-    mocks.rootQueryRaw.mockResolvedValue([]);
+    mocks.rootQueryRaw.mockResolvedValue([{ claims: [], registryRevision: 1n }]);
     const { CapabilityTruthService } = await import("../src/services/capabilityTruth.js");
     const service = new CapabilityTruthService({ $queryRaw: mocks.rootQueryRaw } as never, () => now);
     await expect(service.getPublicProjection("WEBSITE")).resolves.toEqual({
@@ -107,7 +107,10 @@ describe("Phase 203 Capability Truth service", () => {
   });
 
   it("rejects any database claim that is not explicitly SELLABLE", async () => {
-    mocks.rootQueryRaw.mockResolvedValue([{ claim: publicClaim({ lifecycle_state: "ACTIVE" }) }]);
+    mocks.rootQueryRaw.mockResolvedValue([{
+      claims: [publicClaim({ lifecycle_state: "ACTIVE" })],
+      registryRevision: 8n
+    }]);
     const { CapabilityTruthService, CapabilityTruthServiceError } = await import("../src/services/capabilityTruth.js");
     const service = new CapabilityTruthService({ $queryRaw: mocks.rootQueryRaw } as never, () => now);
     await expect(service.getPublicProjection("WEBSITE")).rejects.toMatchObject({

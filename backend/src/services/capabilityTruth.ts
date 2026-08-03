@@ -18,7 +18,7 @@ import {
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma, withPersonalSession, withTenantSession } from "../db.js";
 
-type PublicationRow = { claim: unknown };
+type PublicationProjectionRow = { claims: unknown; registryRevision: bigint | number };
 type JsonValueRow = { value: unknown };
 
 export type CapabilityEvidenceRegistration = {
@@ -77,6 +77,13 @@ function publicClaim(value: unknown): PublicProductClaim {
     throw new CapabilityTruthServiceError("MALFORMED_PRODUCT_TRUTH", "Product Truth returned a malformed claim.", 503);
   }
   return value as PublicProductClaim;
+}
+
+function publicationClaims(value: unknown): PublicProductClaim[] {
+  if (!Array.isArray(value)) {
+    throw new CapabilityTruthServiceError("MALFORMED_PRODUCT_TRUTH", "Product Truth returned malformed claims.", 503);
+  }
+  return value.map(publicClaim);
 }
 
 function validateAdminReadback(value: unknown): CapabilityTruthAdminReadback {
@@ -169,7 +176,8 @@ export class CapabilityTruthService {
   private projection(
     claims: PublicProductClaim[],
     surface: ProductClaimSurface,
-    environment: CapabilityEnvironment
+    environment: CapabilityEnvironment,
+    registryRevision: bigint | number
   ): PublicProductTruthProjection {
     const generatedAt = isoNow(this.clock);
     const projection: PublicProductTruthProjection = {
@@ -178,7 +186,7 @@ export class CapabilityTruthService {
       projection_id: randomUUID(),
       environment,
       surface,
-      registry_revision: Math.max(1, ...claims.map((claim) => claim.capability_record_version)),
+      registry_revision: Number(registryRevision),
       generated_at: generatedAt,
       expires_at: expiresAt(generatedAt),
       claims
@@ -192,16 +200,16 @@ export class CapabilityTruthService {
     environment: CapabilityEnvironment = "PRODUCTION"
   ): Promise<PublicProductTruthProjection> {
     try {
-      const rows = await this.database.$queryRaw<PublicationRow[]>(Prisma.sql`
-        SELECT "claim"
+      const rows = await this.database.$queryRaw<PublicationProjectionRow[]>(Prisma.sql`
+        SELECT COALESCE(jsonb_agg(gate."claim"),'[]'::jsonb) AS "claims",
+               entral.phase203_registry_revision() AS "registryRevision"
         FROM entral.phase203_publication_gate(
-          ${surface}::text,
-          ${environment}::text,
-          NULL::uuid,
-          NULL::uuid
-        )
+          ${surface}::text, ${environment}::text, NULL::uuid, NULL::uuid
+        ) gate
       `);
-      return this.projection(rows.map((row) => publicClaim(row.claim)), surface, environment);
+      const row = rows[0];
+      if (!row) throw new CapabilityTruthServiceError("MALFORMED_PRODUCT_TRUTH", "Product Truth returned no projection.", 503);
+      return this.projection(publicationClaims(row.claims), surface, environment, row.registryRevision);
     } catch (error) {
       throw databaseFailure(error);
     }
@@ -222,16 +230,17 @@ export class CapabilityTruthService {
         if (identity.tenantId !== context.tenantId || identity.organizationId !== context.organizationId) {
           throw new CapabilityTruthServiceError("TENANT_ACTOR_BINDING_MISMATCH", "Tenant context does not match.", 403);
         }
-        const rows = await transaction.$queryRaw<PublicationRow[]>(Prisma.sql`
-          SELECT "claim"
+        const rows = await transaction.$queryRaw<PublicationProjectionRow[]>(Prisma.sql`
+          SELECT COALESCE(jsonb_agg(gate."claim"),'[]'::jsonb) AS "claims",
+                 entral.phase203_registry_revision() AS "registryRevision"
           FROM entral.phase203_publication_gate(
-            ${surface}::text,
-            ${environment}::text,
-            ${identity.tenantId}::uuid,
-            ${identity.organizationId}::uuid
-          )
+            ${surface}::text, ${environment}::text,
+            ${identity.tenantId}::uuid, ${identity.organizationId}::uuid
+          ) gate
         `);
-        return this.projection(rows.map((row) => publicClaim(row.claim)), surface, environment);
+        const row = rows[0];
+        if (!row) throw new CapabilityTruthServiceError("MALFORMED_PRODUCT_TRUTH", "Product Truth returned no projection.", 503);
+        return this.projection(publicationClaims(row.claims), surface, environment, row.registryRevision);
       });
     } catch (error) {
       throw databaseFailure(error);
