@@ -1,0 +1,101 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "checkpoint_id": "P203-CAPABILITY-TRUTH-CORE-CHECKPOINT-001",
+  "status": "PASSED",
+  "phase": 203,
+  "task_packet_id": "P203-CAPABILITY-TRUTH-REGISTRY-001",
+  "accepted_git_commit_sha": "2575fe741935a7c5e1ca9cc6eb9f26ade3fc3458",
+  "protected_main": {
+    "pull_request": 54,
+    "ci_run_id": 30804589003,
+    "ci_job_id": 91656855652,
+    "status": "PASSED"
+  },
+  "deployments": {
+    "frontend": "dpl_9hWP4d4NxST1aZ1NHrqS2ATamK5X",
+    "api": "cebe30e6-0eff-4a43-b65a-270008818a5c",
+    "worker": "3b008c43-9df1-4ba3-aa70-d0b53bedc13a",
+    "exact_source_archive_sha256": "4f2b1d2314ca8c5ff17910b6ca5835609d313b992a5752866fc8adc460cb4855"
+  },
+  "migration_and_role_audit": {
+    "apply_status": "PASSED",
+    "fresh_audit_status": "PASSED",
+    "applied": 46,
+    "failed": 0,
+    "rolled_back": 0,
+    "phase203_rows": 1,
+    "phase203_checksum": "336b0fb0310770460e73f2e7268dc5cd31f110d488e3345a4ab03f463ae6b7f4",
+    "api_direct_write_grants": 0,
+    "worker_table_grants": 0,
+    "public_table_grants": 0,
+    "verifier_select_grants": 12,
+    "audit_reader_select_grants": 5,
+    "api_execute_grants": 7,
+    "worker_execute_grants": 0,
+    "public_execute_grants": 0,
+    "receipt_sha256": "01e46f02f17569cd648e62ff73d39d572a58d055719edec2ddae7ea447dfa164"
+  },
+  "conservative_import_readback": {
+    "registry_revision": 1,
+    "record_count": 56,
+    "catalogued": 56,
+    "active": 0,
+    "sellable": 0,
+    "assigned_owner_count": 0,
+    "public_claim_eligible_count": 0,
+    "claim_count": 0,
+    "installation_count": 0,
+    "verification_receipt_count": 0,
+    "noncanonical_timestamp_count": 0
+  },
+  "publication_gateway_readback": {
+    "surfaces": [
+      "WEBSITE",
+      "TUTORIAL",
+      "PRICING",
+      "CHECKOUT",
+      "PROPOSAL",
+      "ONBOARDING",
+      "INTEGRATION_LIST",
+      "MEMBER_APPLICATION",
+      "SALES"
+    ],
+    "public_surface_count": 9,
+    "member_surface_count": 9,
+    "public_claim_count": 0,
+    "member_claim_count": 0,
+    "status": "PASSED",
+    "receipt_sha256": "b3d38aa4d74d305e05ca96b8f4ef7a873f49837b3431a50be50b2bc80ef56c11"
+  },
+  "admin_readback": {
+    "status": "PASSED",
+    "http_status": 200,
+    "registry_revision": 1,
+    "payload_sha256": "c1788afea879ffc9098004e81b3eb00d1a1fefa214364acb6c2335bbdb6193b5",
+    "cleanup_invariant_count": 6,
+    "cleanup_nonzero_count": 0,
+    "receipt_sha256": "e42bcbd1673b369e922247b63cde6ac9849c6bac689e121d38b569a247712621"
+  },
+  "migrated_member_journey": {
+    "status": "PASSED",
+    "canonical_node_count": 132,
+    "canonical_edge_count": 131,
+    "canonical_sync_errors": 0,
+    "receipt_sha256": "eb5f92f43f2f42ebe82a4fce48714d201c396695b661e7e5b8cc33d80b1031a0"
+  },
+  "secret_cleanup": {
+    "member_session_revoked": true,
+    "active_member_refresh_credentials": 0,
+    "temporary_mfa_active_factors": 0,
+    "temporary_mfa_pending_factors": 0,
+    "temporary_totp_secret_references": 0,
+    "local_secret_files_removed": true
+  },
+  "phase_certification": {
+    "status": "BLOCKED_PENDING_MEMBER_UI_TRUTH_CORRECTION",
+    "required_task_packet_id": "P203-MEMBER-UI-TRUTH-CORRECTION-001",
+    "reason": "Owner-discovered Command, Businesses, and Universe presentation defects require a second bounded Phase 203 packet before release certification."
+  },
+  "observed_at": "2026-08-03T10:33:33.872Z"
+}

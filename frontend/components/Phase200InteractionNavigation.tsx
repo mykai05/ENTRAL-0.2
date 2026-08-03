@@ -14,10 +14,17 @@ export const phase200InteractionDestinations = [
   { href: "/member/dashboard?destination=tutorial", icon: BookOpen, id: "tutorial", label: "Tutorial" }
 ] as const;
 
+function destinationHref(href: string, businessScopeId: string | null | undefined) {
+  if (!businessScopeId) return href;
+  return `${href}${href.includes("?") ? "&" : "?"}business=${encodeURIComponent(businessScopeId)}`;
+}
+
 export function Phase200InteractionNavigation({
+  businessScopeId,
   current,
   role
 }: {
+  readonly businessScopeId?: string | null;
   readonly current: Phase200InteractionDestination;
   readonly role: "MEMBER" | "OWNER";
 }) {
@@ -32,7 +39,8 @@ export function Phase200InteractionNavigation({
         <Link
           aria-current={current === id ? "page" : undefined}
           className={current === id ? "active" : ""}
-          href={href}
+          data-phase200-destination={id}
+          href={destinationHref(href, businessScopeId)}
           key={id}
           scroll={false}
         >

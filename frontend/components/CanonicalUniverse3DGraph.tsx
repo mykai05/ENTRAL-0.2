@@ -3,7 +3,7 @@
 import type { EntitySummary, GraphPreferenceSettings } from "@entral/contracts";
 import { Hand, Maximize2, Minimize2, PauseCircle, PlayCircle } from "lucide-react";
 import dynamic from "next/dynamic";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CanonicalGraphEmptyState,
   CanonicalGraphErrorBoundary
@@ -80,6 +80,8 @@ export function CanonicalUniverse3DGraph({
   viewFocusSignal?: number;
 }) {
   const [uncontrolledTouchInteractionActive, setUncontrolledTouchInteractionActive] = useState(false);
+  const [rendererFocusSignal, setRendererFocusSignal] = useState(viewFocusSignal);
+  const stageRef = useRef<HTMLDivElement>(null);
   const touchInteractionActive = controlledTouchInteractionActive ?? uncontrolledTouchInteractionActive;
   const setTouchInteractionActive = (active: boolean) => {
     if (controlledTouchInteractionActive === undefined) {
@@ -100,6 +102,27 @@ export function CanonicalUniverse3DGraph({
     }
   }, [controlledTouchInteractionActive, fullscreenActive]);
 
+  useEffect(() => {
+    if (!focusedEntityId) {
+      setRendererFocusSignal(viewFocusSignal);
+      return undefined;
+    }
+    const stage = stageRef.current;
+    if (!stage) return undefined;
+    let focusAppliedForMountedRenderer = false;
+    const applyFocusAfterRendererMount = () => {
+      if (focusAppliedForMountedRenderer || !stage.querySelector("canvas.command-center-canvas")) return;
+      focusAppliedForMountedRenderer = true;
+      /* The 3D renderer is lazy. Bump only after its real canvas exists so its
+         handled-signal ref cannot initialize to the already-bumped value. */
+      setRendererFocusSignal((current) => Math.max(current + 1, viewFocusSignal + 1));
+    };
+    applyFocusAfterRendererMount();
+    const observer = new MutationObserver(applyFocusAfterRendererMount);
+    observer.observe(stage, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [focusedEntityId, viewFocusSignal]);
+
   const handleWebGlStateChange = useCallback((event: CanonicalWebGlRendererEvent) => {
     onWebGlStateChange?.(event);
   }, [onWebGlStateChange]);
@@ -113,6 +136,8 @@ export function CanonicalUniverse3DGraph({
       data-canonical-edge-ids={layout.edges.map((edge) => edge.edgeId).join(",")}
       data-canonical-event-sequence={eventSequence}
       data-canonical-entity-ids={layout.points.map((point) => point.entityId).join(",")}
+      data-canonical-camera-target-entity-id={focusedEntityId ?? undefined}
+      data-canonical-camera-target-signal={rendererFocusSignal}
       data-canonical-detail-surface="3d"
       data-canonical-selected-active-alert={
         selectedEntity?.active_alert ?? undefined
@@ -179,7 +204,7 @@ export function CanonicalUniverse3DGraph({
           ) : null}
         </div>
       </header>
-      <div className="phase180-graph-3d-stage">
+      <div className="phase180-graph-3d-stage" ref={stageRef}>
         {entities.length === 0 ? (
           <CanonicalGraphEmptyState label="3D Graph" />
         ) : (
@@ -200,7 +225,7 @@ export function CanonicalUniverse3DGraph({
               canonicalSelectedEntityId={selectedEntityId}
               canonicalTouchInteractionActive={fullscreenActive || touchInteractionActive}
               canonicalViewFitSignal={viewFitSignal}
-              canonicalViewFocusSignal={viewFocusSignal}
+              canonicalViewFocusSignal={rendererFocusSignal}
               embeddedGraphOnly
               initialDestination="graph"
               onCanonicalInspectorCollapsedChange={onInspectorCollapsedChange}

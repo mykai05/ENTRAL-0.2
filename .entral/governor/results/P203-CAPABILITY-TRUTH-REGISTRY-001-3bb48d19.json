@@ -1,0 +1,151 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P203-CAPABILITY-TRUTH-REGISTRY-001-3bb48d19",
+  "task_packet_id": "P203-CAPABILITY-TRUTH-REGISTRY-001",
+  "phase": 203,
+  "outcome": "PASSED",
+  "commit_sha": "3bb48d19d95a3fa14dbd02be71b804a6ff9e2d0b",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/tasks/P203-CAPABILITY-TRUTH-REGISTRY-001.json",
+    ".github/workflows/ci-cd.yml",
+    "backend/src/dev-memory-server.ts",
+    "backend/src/routes/capabilityTruth.ts",
+    "backend/src/routes/connections.ts",
+    "backend/src/server.ts",
+    "backend/src/services/capabilityTruth.ts",
+    "backend/tests/phase203CapabilityTruthPostgres.integration.test.ts",
+    "backend/tests/phase203CapabilityTruthRoutes.test.ts",
+    "backend/tests/phase203CapabilityTruthService.test.ts",
+    "docs/evidence/phase203/capability-truth/CAPABILITY_TRUTH_CORE_CHECKPOINT.json",
+    "docs/evidence/phase203/capability-truth/PRODUCTION_DEPLOYMENT_READBACK.json",
+    "docs/evidence/phase203/capability-truth/PRODUCTION_MEMBER_JOURNEY.json",
+    "docs/evidence/phase203/capability-truth/PUBLICATION_CONSUMER_INVENTORY.json",
+    "docs/evidence/phase203/capability-truth/SOURCE_INVENTORY.json",
+    "e2e/entral.e2e.mjs",
+    "frontend/components/AdminDashboard.tsx",
+    "frontend/components/CapabilityTruthAdmin.tsx",
+    "frontend/components/ConnectionCenter.tsx",
+    "frontend/components/OnboardingTour.tsx",
+    "frontend/lib/capability-truth.ts",
+    "frontend/lib/tool-registry.ts",
+    "frontend/tests/CapabilityTruthAdmin.test.tsx",
+    "frontend/tests/CapabilityTruthIntegrationList.test.tsx",
+    "frontend/tests/CapabilityTruthTutorial.test.tsx",
+    "frontend/tests/OnboardingTour.test.tsx",
+    "package.json",
+    "packages/contracts/capability-truth-publication.schema.json",
+    "packages/contracts/capability-truth-record.schema.json",
+    "packages/contracts/openapi.yaml",
+    "packages/contracts/package.json",
+    "packages/contracts/src/capability-truth.ts",
+    "packages/contracts/src/index.ts",
+    "packages/contracts/tests/capability-truth.test.mjs",
+    "packages/contracts/tests/contracts.test.mjs",
+    "prisma/migrations/20260803010000_phase_203_capability_truth_registry/migration.sql",
+    "prisma/security/049_phase_203_roles_and_grants.sql",
+    "scripts/apply-database-roles.mjs",
+    "scripts/phase195-release-gates.test.mjs",
+    "scripts/phase203-capability-source-inventory.test.mjs",
+    "scripts/phase203-capability-truth-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "pnpm --filter @entral/backend exec vitest run tests/phase203CapabilityTruthService.test.ts tests/phase203CapabilityTruthRoutes.test.ts",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase203",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase203 with migrated-account PostgreSQL integration",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase200",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase202",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase203:graph-recovery",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED"
+    },
+    {
+      "command": "protected-main CI/CD run 30804589003 verify job 91656855652",
+      "status": "PASSED"
+    },
+    {
+      "command": "exact-SHA Vercel, Railway API, and Railway worker deployment readback",
+      "status": "PASSED"
+    },
+    {
+      "command": "production Prisma migration APPLY and role APPLY",
+      "status": "PASSED"
+    },
+    {
+      "command": "independent production migration, role, and conservative import AUDIT",
+      "status": "PASSED"
+    },
+    {
+      "command": "authenticated production Product Truth public and member readback for all nine surfaces",
+      "status": "PASSED"
+    },
+    {
+      "command": "authenticated production Product Truth admin readback with temporary MFA cleanup",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:e2e:production-member",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm governor verify",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "DEPLOYED_CORE_CHECKPOINT",
+    "main_sha": "2575fe741935a7c5e1ca9cc6eb9f26ade3fc3458",
+    "frontend_deployment_id": "dpl_9hWP4d4NxST1aZ1NHrqS2ATamK5X",
+    "api_deployment_id": "cebe30e6-0eff-4a43-b65a-270008818a5c",
+    "worker_deployment_id": "3b008c43-9df1-4ba3-aa70-d0b53bedc13a",
+    "certification_status": "BLOCKED_PENDING_P203_MEMBER_UI_TRUTH_CORRECTION_001"
+  },
+  "result_fingerprint": "86246dd7e7373730d81059e112fd2c32ec1d3f151e48ed1834aa1c184a47e232",
+  "completed_at": "2026-08-03T10:35:00.000Z"
+}

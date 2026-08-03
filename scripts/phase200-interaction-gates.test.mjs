@@ -109,11 +109,39 @@ test("Mobile Universe presents one synchronized renderer with progressive disclo
   assert.match(workspace, /collapseGraphToTopLevel/);
   assert.match(workspace, /phase200-mobile-graph-toolbar/);
   assert.match(workspace, /phase200-graph-legend/);
+  assert.match(workspace, /data-graph-overlay-contract="FOCAL_SAFE_V1"/);
+  assert.match(workspace, /data-graph-overlay-role="compact-toolbar"/);
+  assert.match(workspace, /data-graph-overlay-role="compact-legend"/);
   assert.match(viewState, /viewportWidth <= 360[\s\S]*viewportWidth <= 390[\s\S]*viewportWidth <= 412[\s\S]*viewportWidth <= 430/);
   assert.match(css, /\.phase195-authority-rings > li > span/);
   assert.match(css, /\.phase180-graph-drawer,[\s\S]*phase110-node-drawer/);
   assert.match(css, /orientation: landscape/);
   assert.match(css, /phase180-assistant-widget/);
+});
+
+test("Universe presentation chrome preserves a pointer-safe focal field", async () => {
+  const [css, twoD, threeD] = await Promise.all([
+    read("frontend/app/phase180.css"),
+    read("frontend/components/CanonicalUniverseGraph.tsx"),
+    read("frontend/components/CanonicalUniverse3DGraph.tsx")
+  ]);
+  assert.match(css, /\.phase195-graph-workspace \.phase195-authority-rings\s*\{[\s\S]*clip-path:\s*inset\(50%\)/);
+  assert.match(css, /\.phase195-graph-workspace \.phase195-graph-semantics-overlay,[\s\S]*pointer-events:\s*none;/);
+  assert.match(css, /\.phase195-graph-workspace \.phase200-mobile-graph-toolbar\s*\{[\s\S]*position:\s*relative;/);
+  assert.match(css, /\.phase195-graph-workspace \.phase180-graph-drawer,[\s\S]*width:\s*min\(22rem, calc\(50% - 2rem\)\);/);
+  assert.match(css, /max-height:\s*min\(24dvh, 16rem\);/);
+  assert.match(css, /max-width:\s*calc\(50vw - 1\.5rem\);/);
+  assert.match(css, /:has\(\.phase195-graph-workspace\) \.phase180-assistant-widget,[\s\S]*position:\s*relative;/);
+  assert.match(css, /:has\(\.phase180-assistant-widget\) \.phase180-entral-emblem\s*\{[\s\S]*display:\s*none;/);
+  assert.match(twoD, /canonical2DFocusAnchor/);
+  assert.match(twoD, /dataset\.canonicalFocusAnchorX/);
+  assert.match(twoD, /dataset\.canonicalCameraTargetEntityId/);
+  assert.match(twoD, /dataset\.canonicalSelectedScreenX/);
+  assert.match(twoD, /detailDrawerRef/);
+  assert.match(threeD, /data-canonical-camera-target-entity-id=\{focusedEntityId \?\? undefined\}/);
+  assert.match(threeD, /setRendererFocusSignal\(\(current\) => Math\.max\(current \+ 1, viewFocusSignal \+ 1\)\)/);
+  assert.match(threeD, /canonicalViewFocusSignal=\{rendererFocusSignal\}/);
+  assert.doesNotMatch(css, /\.phase200-graph-legend\s*\{[\s\S]{0,180}position:\s*(?:absolute|fixed)/);
 });
 
 test("Both graph renderers preserve collision avoidance, selected lineage emphasis, telemetry, and RLS authority", async () => {

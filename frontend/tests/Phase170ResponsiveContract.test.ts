@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { canonical2DFocusAnchor } from "../components/CanonicalUniverseGraph";
 
 const css = readFileSync(resolve(process.cwd(), "app", "phase170.css"), "utf8");
 const phase180Css = readFileSync(resolve(process.cwd(), "app", "phase180.css"), "utf8");
@@ -10,6 +11,26 @@ const canonicalShell = readFileSync(resolve(process.cwd(), "components", "Canoni
 const graphWorkspace = readFileSync(resolve(process.cwd(), "components", "CanonicalGraphWorkspace.tsx"), "utf8");
 
 describe("Phase 170 responsive and route contract", () => {
+  it("places the 2D focal anchor in the visible canvas region around inspectors", () => {
+    const canvas = { bottom: 600, height: 600, left: 0, right: 800, top: 0, width: 800 };
+    expect(canonical2DFocusAnchor(canvas, null)).toEqual({ x: 400, y: 300 });
+
+    const bottomSheet = { bottom: 600, height: 240, left: 0, right: 800, top: 360, width: 800 };
+    const portraitAnchor = canonical2DFocusAnchor(canvas, bottomSheet);
+    expect(portraitAnchor.x).toBe(400);
+    expect(portraitAnchor.y).toBeLessThan(bottomSheet.top - 12);
+
+    const sideSheet = { bottom: 600, height: 600, left: 440, right: 800, top: 0, width: 360 };
+    const landscapeAnchor = canonical2DFocusAnchor(canvas, sideSheet);
+    expect(landscapeAnchor.x).toBeLessThan(sideSheet.left - 12);
+    expect(landscapeAnchor.y).toBe(300);
+
+    const centerStraddlingRightSheet = { bottom: 600, height: 600, left: 390, right: 800, top: 0, width: 410 };
+    const straddlingAnchor = canonical2DFocusAnchor(canvas, centerStraddlingRightSheet);
+    expect(straddlingAnchor.x).toBeLessThan(centerStraddlingRightSheet.left - 12);
+    expect(straddlingAnchor.y).toBe(300);
+  });
+
   it("keeps the phone portfolio single-column and clips accidental horizontal overflow", () => {
     expect(css).toContain("@media (max-width: 560px)");
     expect(css).toContain("overflow-x: clip");
@@ -76,6 +97,24 @@ describe("Phase 170 responsive and route contract", () => {
     );
     expect(phase180Css).toMatch(
       /data-fullscreen-dimension="3d"[\s\S]*\.phase110-node-drawer\s*\{[\s\S]*right:\s*5\.5rem;/
+    );
+  });
+
+  it("keeps legacy semantics, responsive inspectors, and floating controls outside the canonical focal field", () => {
+    expect(graphWorkspace).toContain('data-graph-overlay-contract="FOCAL_SAFE_V1"');
+    expect(graphWorkspace).toContain('data-graph-overlay-role="compact-toolbar"');
+    expect(graphWorkspace).toContain('data-graph-overlay-role="compact-legend"');
+    expect(phase180Css).toMatch(
+      /\.phase195-graph-workspace \.phase195-authority-rings\s*\{[\s\S]*clip-path:\s*inset\(50%\)/
+    );
+    expect(phase180Css).toMatch(
+      /@media \(min-width:\s*768px\)[\s\S]*\.phase180-graph-drawer,[\s\S]*\.phase110-node-drawer:not\(\[data-collapsed="true"\]\)[\s\S]*width:\s*min\(22rem, calc\(50% - 2rem\)\)/
+    );
+    expect(phase180Css).toMatch(
+      /\.phase195-graph-workspace \.phase200-mobile-graph-toolbar\s*\{[\s\S]*position:\s*relative;[\s\S]*width:\s*100%;/
+    );
+    expect(phase180Css).toMatch(
+      /orientation:\s*landscape[\s\S]*max-width:\s*calc\(50vw - 1\.5rem\);[\s\S]*\.phase180-assistant-widget[\s\S]*left:\s*max\(0\.5rem, env\(safe-area-inset-left\)\);/
     );
   });
 });

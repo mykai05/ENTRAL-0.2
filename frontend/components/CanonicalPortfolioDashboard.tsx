@@ -3,6 +3,7 @@
 import type {
   BusinessFullRecord,
   BusinessSummary,
+  CanonicalHierarchyResponse,
   HealthState,
   JsonValue,
   PortfolioFinancialTotal,
@@ -43,6 +44,7 @@ type SortMode = "ENTRAL_PRIORITY" | "HEALTH" | "REVENUE" | "NET_CONTRIBUTION" | 
 type PerformanceFilter = "ALL" | "POSITIVE" | "NEGATIVE" | "UNAVAILABLE";
 type ChangeFilter = "ALL" | "RECENT" | "STALE";
 type PriorityFilter = "ALL" | "EXCEPTIONS" | "RECOMMENDATIONS";
+export type CanonicalPortfolioView = "businesses" | "combined" | "command";
 
 const healthOrder: Record<HealthState, number> = {
   CRITICAL: 0,
@@ -68,8 +70,29 @@ const sectionLabels: Readonly<Record<
 
 const sectionOrder = Object.keys(sectionLabels) as Array<keyof typeof sectionLabels>;
 
-function dashboardPath(source: CanonicalPortfolioSource) {
-  return source.organizationId ? "/member/dashboard" : "/dashboard";
+function dashboardPath(
+  source: CanonicalPortfolioSource,
+  view: CanonicalPortfolioView = "combined",
+  scopeBusinessId?: string | null
+) {
+  const dashboard = !source.organizationId
+    ? "/dashboard"
+    : view === "businesses"
+      ? "/member/dashboard?destination=businesses"
+      : "/member/dashboard";
+  if (!scopeBusinessId) return dashboard;
+  return `${dashboard}${dashboard.includes("?") ? "&" : "?"}business=${encodeURIComponent(scopeBusinessId)}`;
+}
+
+function businessPath(
+  source: CanonicalPortfolioSource,
+  view: CanonicalPortfolioView,
+  businessId: string,
+  scopeBusinessId?: string | null
+) {
+  const dashboard = dashboardPath(source, view, scopeBusinessId);
+  const detailKey = source.organizationId && view === "businesses" ? "record" : "business";
+  return `${dashboard}${dashboard.includes("?") ? "&" : "?"}${detailKey}=${encodeURIComponent(businessId)}`;
 }
 
 function errorMessage(error: unknown) {
@@ -136,6 +159,11 @@ function priorityScore(business: BusinessSummary) {
     + (business.top_recommendation ? 40 : 0)
     + (4 - healthOrder[business.health_state]) * 10
     + (isRecentChange(business) ? 2 : 0);
+}
+
+function compareEntralPriority(left: BusinessSummary, right: BusinessSummary) {
+  return priorityScore(right) - priorityScore(left)
+    || left.business_name.localeCompare(right.business_name);
 }
 
 function humanLabel(value: string) {
@@ -270,28 +298,30 @@ function BusinessCard({
 }
 
 function BusinessDetail({
+  backHref,
   business,
+  destinationView,
   error,
   isLoading,
   onRetry,
   requestedEvidenceId,
-  snapshotEventSequence,
-  source
+  snapshotEventSequence
 }: {
+  backHref: string;
   business: BusinessFullRecord | null;
+  destinationView: CanonicalPortfolioView;
   error: string;
   isLoading: boolean;
   onRetry: () => void;
   requestedEvidenceId: string | null;
   snapshotEventSequence: number;
-  source: CanonicalPortfolioSource;
 }) {
   if (isLoading) {
-    return <section className="phase170-loading" role="status"><Loader2 aria-hidden="true" className="spin" size={24} />Loading canonical business record…</section>;
+    return <section className="phase170-loading" data-businesses-section="business-detail-loading" data-member-destination-view={destinationView} role="status"><Loader2 aria-hidden="true" className="spin" size={24} />Loading canonical business record…</section>;
   }
   if (error) {
     return (
-      <section className="phase170-error" role="alert">
+      <section className="phase170-error" data-businesses-section="business-detail-error" data-member-destination-view={destinationView} role="alert">
         <AlertTriangle aria-hidden="true" size={22} />
         <div><h2>Business record unavailable</h2><p>{error}</p></div>
         <Button onClick={onRetry} variant="secondary"><RefreshCw aria-hidden="true" size={16} />Retry</Button>
@@ -303,8 +333,13 @@ function BusinessDetail({
   const sourceFreshness = freshness(summary);
 
   return (
-    <section className="phase170-business-detail" aria-labelledby="business-detail-heading">
-      <Link className="phase170-back-link" href={dashboardPath(source)} scroll={false}>
+    <section
+      aria-labelledby="business-detail-heading"
+      className="phase170-business-detail"
+      data-businesses-section="business-detail"
+      data-member-destination-view={destinationView}
+    >
+      <Link className="phase170-back-link" href={backHref} scroll={false}>
         <ArrowLeft aria-hidden="true" size={17} />Back to portfolio
       </Link>
       <header>
@@ -377,17 +412,25 @@ export function CanonicalPortfolioDashboard({
   organizationId,
   scopeBusinessId,
   userName,
+  view = "combined",
+  workspaceHierarchy,
   workspacePortfolio,
   workspaceStatus
 }: {
   organizationId?: string;
   scopeBusinessId?: string | null;
   userName?: string;
+  view?: CanonicalPortfolioView;
+  workspaceHierarchy?: CanonicalHierarchyResponse;
   workspacePortfolio?: PortfolioSummaryResponse;
   workspaceStatus?: string;
 }) {
   const searchParams = useSearchParams();
-  const selectedBusinessId = scopeBusinessId ?? searchParams.get("business");
+  const selectedBusinessId = view === "command"
+    ? null
+    : view === "businesses"
+      ? searchParams.get("record")
+      : scopeBusinessId ?? searchParams.get("business");
   const source = useMemo<CanonicalPortfolioSource>(() => ({ organizationId }), [organizationId]);
   const [portfolio, setPortfolio] = useState<PortfolioSummaryResponse | null>(
     () => workspacePortfolio ?? canonicalPortfolioCache.get(canonicalQueryKeys.portfolio(source)) ?? null
@@ -535,6 +578,7 @@ export function CanonicalPortfolioDashboard({
       .filter((candidate) => priority === "ALL"
         || (priority === "EXCEPTIONS" && Boolean(candidate.top_exception))
         || (priority === "RECOMMENDATIONS" && Boolean(candidate.top_recommendation)))
+      .filter((candidate) => !scopeBusinessId || candidate.business_id === scopeBusinessId)
       .sort((left, right) => {
         if (sort === "HEALTH") return healthOrder[left.health_state] - healthOrder[right.health_state];
         if (sort === "REVENUE") return (right.gross_revenue ?? Number.NEGATIVE_INFINITY) - (left.gross_revenue ?? Number.NEGATIVE_INFINITY);
@@ -542,7 +586,7 @@ export function CanonicalPortfolioDashboard({
         if (sort === "RECENT_CHANGE") return Date.parse(right.updated_at) - Date.parse(left.updated_at);
         return priorityScore(right) - priorityScore(left);
       });
-  }, [change, general, health, marshal, performance, portfolio, priority, search, sort, status]);
+  }, [change, general, health, marshal, performance, portfolio, priority, scopeBusinessId, search, sort, status]);
 
   const marshalOptions = useMemo(() => {
     const unique = new Map(portfolio?.businesses.map((candidate) => [candidate.marshal_id, candidate.marshal_name]) ?? []);
@@ -557,10 +601,60 @@ export function CanonicalPortfolioDashboard({
     return [...unique.entries()].sort((left, right) => left[1].localeCompare(right[1]));
   }, [marshal, portfolio]);
 
+  const showCommandSummary = view !== "businesses";
+  const showBusinesses = view !== "command";
+  const commandBusinesses = useMemo(() => (portfolio?.businesses ?? [])
+    .filter((candidate) => !scopeBusinessId || candidate.business_id === scopeBusinessId), [portfolio, scopeBusinessId]);
+  const commandAttention = useMemo(() => commandBusinesses
+    .filter((candidate) => candidate.top_exception
+      || candidate.health_state === "CRITICAL"
+      || candidate.health_state === "DEGRADED")
+    .sort(compareEntralPriority)
+    .slice(0, 5), [commandBusinesses]);
+  const commandWork = useMemo(() => commandBusinesses
+    .filter((candidate) => candidate.active_mission_count > 0
+      || candidate.active_task_count > 0)
+    .sort(compareEntralPriority)
+    .slice(0, 5), [commandBusinesses]);
+  const commandRecommendations = useMemo(() => commandBusinesses
+    .filter((candidate) => candidate.top_recommendation)
+    .sort(compareEntralPriority)
+    .slice(0, 5), [commandBusinesses]);
+  const commandEntralActions = useMemo(() => (workspaceHierarchy?.entities ?? [])
+    .filter((candidate) => !scopeBusinessId
+      || candidate.assigned_business_id === scopeBusinessId)
+    .filter((candidate) => candidate.current_mission
+      || candidate.active_task_count > 0
+      || candidate.latest_material_result !== null)
+    .sort((left, right) => right.active_task_count - left.active_task_count
+      || left.name.localeCompare(right.name))
+    .slice(0, 5), [scopeBusinessId, workspaceHierarchy]);
+  const headingId = view === "command"
+    ? "canonical-command-heading"
+    : view === "businesses"
+      ? "canonical-businesses-page-heading"
+      : "canonical-dashboard-heading";
+  const heading = view === "command"
+    ? "Command overview"
+    : view === "businesses"
+      ? "Businesses"
+      : userName
+        ? `${userName}'s Dashboard`
+        : "Dashboard";
+  const description = view === "command"
+    ? scopeBusinessId
+      ? "Verified executive operating details for the active business scope. Portfolio-wide totals remain explicitly labeled."
+      : "Verified executive operating totals from the current canonical portfolio snapshot."
+    : view === "businesses"
+      ? "Search and inspect only the canonical businesses visible to the active authority scope."
+      : "Canonical PostgreSQL summaries only. Missing financial, health, or operating data stays visibly unavailable.";
+
   if (selectedBusinessId) {
     return (
       <BusinessDetail
+        backHref={dashboardPath(source, view, scopeBusinessId)}
         business={business}
+        destinationView={view}
         error={businessError}
         isLoading={isBusinessLoading}
         onRetry={() => void refreshBusiness(
@@ -569,18 +663,21 @@ export function CanonicalPortfolioDashboard({
         )}
         requestedEvidenceId={searchParams.get("evidence")}
         snapshotEventSequence={workspacePortfolio?.event_sequence ?? portfolio?.event_sequence ?? 0}
-        source={source}
       />
     );
   }
 
   return (
-    <div className="phase170-portfolio">
+    <div
+      aria-labelledby={headingId}
+      className="phase170-portfolio"
+      data-member-destination-view={view}
+    >
       <header className="phase170-page-heading">
         <div>
           <p className="eyebrow">{portfolio?.scope.mode === "HUMAN_PORTFOLIO" ? "Human portfolio mode" : "Assigned business mode"}</p>
-          <h1>{userName ? `${userName}'s Dashboard` : "Dashboard"}</h1>
-          <p>Canonical PostgreSQL summaries only. Missing financial, health, or operating data stays visibly unavailable.</p>
+          <h1 id={headingId}>{heading}</h1>
+          <p>{description}</p>
         </div>
         <div className="phase170-scope-card" aria-label="Visible portfolio scope">
           <ShieldCheck aria-hidden="true" size={18} />
@@ -602,54 +699,134 @@ export function CanonicalPortfolioDashboard({
 
       {portfolio ? (
         <>
-          <section className="phase170-summary-grid" aria-label="Portfolio totals">
-            <article><span>Businesses</span><strong>{portfolio.totals.businesses}</strong><small>{portfolio.totals.active_commanders} active Commanders</small></article>
-            <article><span>Active Soldiers</span><strong>{portfolio.totals.active_soldiers}</strong><small>RLS-visible operating entities</small></article>
-            <article><span>Unresolved exceptions</span><strong>{portfolio.totals.unresolved_exceptions}</strong><small>{portfolio.totals.health_distribution.CRITICAL} critical / {portfolio.totals.health_distribution.DEGRADED} degraded</small></article>
-            {portfolio.totals.financials.length
-              ? portfolio.totals.financials.map((total) => <FinancialTotals key={total.currency} total={total} />)
-              : <article className="unavailable"><span>Financial totals</span><strong>Unavailable</strong><small>No canonical financial snapshots exist.</small></article>}
-          </section>
+          {showCommandSummary ? (
+            <>
+              <section
+                aria-label={scopeBusinessId ? "Portfolio-wide totals" : "Portfolio totals"}
+                className="phase170-summary-grid"
+                data-command-scope={scopeBusinessId ? "business" : "portfolio"}
+                data-command-section="portfolio-totals"
+              >
+                <article><span>Businesses</span><strong>{portfolio.totals.businesses}</strong><small>{portfolio.totals.active_commanders} active Commanders</small></article>
+                <article><span>Active Soldiers</span><strong>{portfolio.totals.active_soldiers}</strong><small>RLS-visible operating entities</small></article>
+                <article><span>Unresolved exceptions</span><strong>{portfolio.totals.unresolved_exceptions}</strong><small>{portfolio.totals.health_distribution.CRITICAL} critical / {portfolio.totals.health_distribution.DEGRADED} degraded</small></article>
+                {portfolio.totals.financials.length
+                  ? portfolio.totals.financials.map((total) => <FinancialTotals key={total.currency} total={total} />)
+                  : <article className="unavailable"><span>Financial totals</span><strong>Unavailable</strong><small>No canonical financial snapshots exist.</small></article>}
+              </section>
 
-          <section className="phase170-controls" aria-label="Portfolio search, sorting, and filters">
-            <label className="phase170-search"><Search aria-hidden="true" size={17} /><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Business, Marshal, General, objective" /></label>
-            <label><Filter aria-hidden="true" size={15} /><span>Marshal</span><select value={marshal} onChange={(event) => { setMarshal(event.target.value); setGeneral("ALL"); }}><option value="ALL">All Marshals</option>{marshalOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-            <label><span>General</span><select value={general} onChange={(event) => setGeneral(event.target.value)}><option value="ALL">All Generals</option>{generalOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-            <label><span>State</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All states</option>{["BUILDING", "OPERATING", "PAUSED", "DEGRADED", "RETIRED"].map((value) => <option key={value} value={value}>{humanLabel(value)}</option>)}</select></label>
-            <label><span>Health</span><select value={health} onChange={(event) => setHealth(event.target.value)}><option value="ALL">All health</option>{Object.keys(healthOrder).map((value) => <option key={value} value={value}>{humanLabel(value)}</option>)}</select></label>
-            <label><span>Performance</span><select value={performance} onChange={(event) => setPerformance(event.target.value as PerformanceFilter)}><option value="ALL">All performance</option><option value="POSITIVE">Positive net</option><option value="NEGATIVE">Non-positive net</option><option value="UNAVAILABLE">Unavailable</option></select></label>
-            <label><span>Change</span><select value={change} onChange={(event) => setChange(event.target.value as ChangeFilter)}><option value="ALL">Any change</option><option value="RECENT">Changed in 7 days</option><option value="STALE">Older than 7 days</option></select></label>
-            <label><span>ENTRAL priority</span><select value={priority} onChange={(event) => setPriority(event.target.value as PriorityFilter)}><option value="ALL">All priorities</option><option value="EXCEPTIONS">Urgent exceptions</option><option value="RECOMMENDATIONS">Open recommendations</option></select></label>
-            <label><span>Sort</span><select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}><option value="ENTRAL_PRIORITY">ENTRAL priority</option><option value="HEALTH">Health risk</option><option value="REVENUE">Revenue</option><option value="NET_CONTRIBUTION">Net contribution</option><option value="RECENT_CHANGE">Recent change</option></select></label>
-          </section>
+              <section
+                aria-labelledby="phase203-command-priorities-heading"
+                className="phase203-command-priorities"
+                data-command-section="operating-priorities"
+              >
+                <header>
+                  <div>
+                    <p className="eyebrow">Verified operating view</p>
+                    <h2 id="phase203-command-priorities-heading">Executive operating priorities</h2>
+                  </div>
+                  <span>Snapshot {new Date(portfolio.generated_at).toLocaleString()}</span>
+                </header>
+                <div className="phase203-command-priority-grid">
+                  <article data-command-priority="attention">
+                    <h3>Requires attention now</h3>
+                    {commandAttention.length ? (
+                      <ul>{commandAttention.map((candidate) => (
+                        <li key={candidate.business_id}>
+                          <Link href={businessPath(source, "businesses", candidate.business_id, scopeBusinessId)} scroll={false}>{candidate.business_name}</Link>
+                          <strong>{humanLabel(candidate.health_state)} · {humanLabel(candidate.status)}</strong>
+                          <span>{candidate.top_exception ?? "Canonical health requires attention; no exception narrative is recorded."}</span>
+                        </li>
+                      ))}</ul>
+                    ) : <p>No canonical exceptions or degraded businesses require attention.</p>}
+                  </article>
+                  <article data-command-priority="active-work">
+                    <h3>ENTRAL work now</h3>
+                    {commandWork.length ? (
+                      <ul>{commandWork.map((candidate) => (
+                        <li key={candidate.business_id}>
+                          <Link href={businessPath(source, "businesses", candidate.business_id, scopeBusinessId)} scroll={false}>{candidate.business_name}</Link>
+                          <strong>{candidate.active_mission_count} active missions · {candidate.active_task_count} active tasks</strong>
+                          <span>{candidate.primary_objective ?? "No canonical primary objective is recorded."}</span>
+                        </li>
+                      ))}</ul>
+                    ) : <p>No canonical active missions or tasks are recorded.</p>}
+                  </article>
+                  <article data-command-priority="entral-actions">
+                    <h3>Current ENTRAL actions and results</h3>
+                    {commandEntralActions.length ? (
+                      <ul>{commandEntralActions.map((candidate) => (
+                        <li key={candidate.entity_id}>
+                          <strong>{candidate.name} · {humanLabel(candidate.status)}</strong>
+                          <span>{candidate.current_mission ?? `${candidate.active_task_count} active tasks; no canonical mission label is recorded.`}</span>
+                          {candidate.latest_material_result !== null ? <JsonValueView value={candidate.latest_material_result} /> : null}
+                        </li>
+                      ))}</ul>
+                    ) : <p>No canonical entity action or material result is recorded for this scope.</p>}
+                  </article>
+                  <article data-command-priority="next-actions">
+                    <h3>Owner decisions and next actions</h3>
+                    {commandRecommendations.length ? (
+                      <ul>{commandRecommendations.map((candidate) => (
+                        <li key={candidate.business_id}>
+                          <Link href={businessPath(source, "businesses", candidate.business_id, scopeBusinessId)} scroll={false}>{candidate.business_name}</Link>
+                          <span>{candidate.top_recommendation}</span>
+                        </li>
+                      ))}</ul>
+                    ) : <p>No canonical owner decision or next recommendation is recorded.</p>}
+                  </article>
+                </div>
+              </section>
+            </>
+          ) : null}
 
-          <section className="phase170-business-list" aria-labelledby="canonical-businesses-heading">
-            <header>
-              <div><p className="eyebrow">Businesses</p><h2 id="canonical-businesses-heading">Canonical portfolio</h2></div>
-              <span>{businesses.length} of {portfolio.businesses.length} visible</span>
-            </header>
-            {businesses.length ? businesses.map((candidate) => (
-              <BusinessCard
-                business={candidate}
-                href={`${dashboardPath(source)}?business=${encodeURIComponent(candidate.business_id)}`}
-                key={candidate.business_id}
-              />
-            )) : (
-              <div className="phase170-empty-state">
-                <Database aria-hidden="true" size={28} />
-                <h3>{portfolio.businesses.length ? "No businesses match these filters." : "No canonical businesses are deployed."}</h3>
-                <p>{portfolio.businesses.length ? "Clear or change filters to review another scoped record." : "ENTRAL will not create or imply sample business data. A business appears here only after canonical deployment and scope assignment."}</p>
-              </div>
-            )}
-          </section>
+          {showBusinesses ? (
+            <>
+              <section className="phase170-controls" aria-label="Portfolio search, sorting, and filters">
+                <label className="phase170-search"><Search aria-hidden="true" size={17} /><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Business, Marshal, General, objective" /></label>
+                <label><Filter aria-hidden="true" size={15} /><span>Marshal</span><select value={marshal} onChange={(event) => { setMarshal(event.target.value); setGeneral("ALL"); }}><option value="ALL">All Marshals</option>{marshalOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+                <label><span>General</span><select value={general} onChange={(event) => setGeneral(event.target.value)}><option value="ALL">All Generals</option>{generalOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+                <label><span>State</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All states</option>{["BUILDING", "OPERATING", "PAUSED", "DEGRADED", "RETIRED"].map((value) => <option key={value} value={value}>{humanLabel(value)}</option>)}</select></label>
+                <label><span>Health</span><select value={health} onChange={(event) => setHealth(event.target.value)}><option value="ALL">All health</option>{Object.keys(healthOrder).map((value) => <option key={value} value={value}>{humanLabel(value)}</option>)}</select></label>
+                <label><span>Performance</span><select value={performance} onChange={(event) => setPerformance(event.target.value as PerformanceFilter)}><option value="ALL">All performance</option><option value="POSITIVE">Positive net</option><option value="NEGATIVE">Non-positive net</option><option value="UNAVAILABLE">Unavailable</option></select></label>
+                <label><span>Change</span><select value={change} onChange={(event) => setChange(event.target.value as ChangeFilter)}><option value="ALL">Any change</option><option value="RECENT">Changed in 7 days</option><option value="STALE">Older than 7 days</option></select></label>
+                <label><span>ENTRAL priority</span><select value={priority} onChange={(event) => setPriority(event.target.value as PriorityFilter)}><option value="ALL">All priorities</option><option value="EXCEPTIONS">Urgent exceptions</option><option value="RECOMMENDATIONS">Open recommendations</option></select></label>
+                <label><span>Sort</span><select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}><option value="ENTRAL_PRIORITY">ENTRAL priority</option><option value="HEALTH">Health risk</option><option value="REVENUE">Revenue</option><option value="NET_CONTRIBUTION">Net contribution</option><option value="RECENT_CHANGE">Recent change</option></select></label>
+              </section>
 
-          <section className="phase170-dashboard-footnotes" aria-label="Dashboard data contract">
-            <p><BriefcaseBusiness aria-hidden="true" size={17} /><span><strong>Reusable business view</strong>Store, software, service, marketplace, and subscription Commanders use this same contract.</span></p>
-            <p><Activity aria-hidden="true" size={17} /><span><strong>Version consistent</strong>Cards and detail records share the business aggregate version and refresh after canonical events.</span></p>
-            <p><CircleDollarSign aria-hidden="true" size={17} /><span><strong>Financially honest</strong>Currency totals remain separate; unavailable periods are never estimated.</span></p>
-            <p><Bot aria-hidden="true" size={17} /><span><strong>Scoped by authority</strong>Human authority sees the portfolio; other operators see only RLS-assigned businesses.</span></p>
-            <p><Wrench aria-hidden="true" size={17} /><span><strong>On demand</strong>Full operations, tools, decisions, evidence, and external activity load only after opening a business.</span></p>
-          </section>
+              <section
+                aria-labelledby="canonical-businesses-heading"
+                className="phase170-business-list"
+                data-businesses-section="portfolio-management"
+              >
+                <header>
+                  <div><p className="eyebrow">Businesses</p><h2 id="canonical-businesses-heading">Canonical portfolio</h2></div>
+                  <span>{businesses.length} of {portfolio.businesses.length} visible</span>
+                </header>
+                {businesses.length ? businesses.map((candidate) => (
+                  <BusinessCard
+                    business={candidate}
+                    href={businessPath(source, view, candidate.business_id, scopeBusinessId)}
+                    key={candidate.business_id}
+                  />
+                )) : (
+                  <div className="phase170-empty-state">
+                    <Database aria-hidden="true" size={28} />
+                    <h3>{portfolio.businesses.length ? "No businesses match these filters." : "No canonical businesses are deployed."}</h3>
+                    <p>{portfolio.businesses.length ? "Clear or change filters to review another scoped record." : "ENTRAL will not create or imply sample business data. A business appears here only after canonical deployment and scope assignment."}</p>
+                  </div>
+                )}
+              </section>
+
+              <section className="phase170-dashboard-footnotes" aria-label="Dashboard data contract">
+                <p><BriefcaseBusiness aria-hidden="true" size={17} /><span><strong>Reusable business view</strong>Store, software, service, marketplace, and subscription Commanders use this same contract.</span></p>
+                <p><Activity aria-hidden="true" size={17} /><span><strong>Version consistent</strong>Cards and detail records share the business aggregate version and refresh after canonical events.</span></p>
+                <p><CircleDollarSign aria-hidden="true" size={17} /><span><strong>Financially honest</strong>Currency totals remain separate; unavailable periods are never estimated.</span></p>
+                <p><Bot aria-hidden="true" size={17} /><span><strong>Scoped by authority</strong>Human authority sees the portfolio; other operators see only RLS-assigned businesses.</span></p>
+                <p><Wrench aria-hidden="true" size={17} /><span><strong>On demand</strong>Full operations, tools, decisions, evidence, and external activity load only after opening a business.</span></p>
+              </section>
+            </>
+          ) : null}
         </>
       ) : null}
     </div>

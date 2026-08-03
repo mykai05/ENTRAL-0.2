@@ -68,6 +68,26 @@ describe("Phase 200 interaction UI", () => {
       "/member/dashboard?destination=tutorial"
     ]);
     expect(screen.getByRole("link", { name: "Universe" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Businesses" })).toHaveAttribute("data-phase200-destination", "businesses");
+  });
+
+  it("preserves the active canonical business scope across every destination route", () => {
+    render(
+      <Phase200InteractionNavigation
+        businessScopeId="business/scope"
+        current="businesses"
+        role="MEMBER"
+      />
+    );
+
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/member/dashboard?business=business%2Fscope",
+      "/member/dashboard?destination=businesses&business=business%2Fscope",
+      "/member/graph?business=business%2Fscope",
+      "/member/infrastructure?business=business%2Fscope",
+      "/member/dashboard?destination=tutorial&business=business%2Fscope"
+    ]);
+    expect(screen.getByRole("link", { name: "Businesses" })).toHaveAttribute("aria-current", "page");
   });
 
   it("keeps executive and operational modes bound to the same canonical facts and evidence", async () => {

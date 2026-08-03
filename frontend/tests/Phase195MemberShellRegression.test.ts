@@ -65,4 +65,20 @@ describe("Phase 195 member Graph release boundaries", () => {
     expect(shell).toContain('router.push("/member/account/security")');
     expect(shell).toContain("Account security");
   });
+
+  it("removes only legacy visual guides while retaining canonical semantics and authority inputs", () => {
+    const css = frontendFile("app", "phase180.css");
+    const semantics = frontendFile("components", "CanonicalGraphSemanticsOverlay.tsx");
+    const workspace = frontendFile("components", "CanonicalGraphWorkspace.tsx");
+
+    expect(css).toMatch(
+      /\.phase195-graph-workspace \.phase195-authority-rings\s*\{[\s\S]*clip-path:\s*inset\(50%\)/
+    );
+    expect(semantics).toContain("canonicalAuthorityTierLabels");
+    expect(semantics).toContain("aria-label={`Tier ${tier.tier}: ${tier.role}");
+    expect(workspace).toContain("rendererProjection");
+    expect(workspace).toContain("recordCanonicalGraphTelemetry");
+    expect(workspace).toContain('data-graph-overlay-contract="FOCAL_SAFE_V1"');
+    expect(workspace).not.toMatch(/phase195-graph-fixtures|browser-local|mock graph/i);
+  });
 });
