@@ -29,6 +29,7 @@
     "e2e/production-member-journey.mjs",
     "scripts/phase199-baseline-gates.test.mjs",
     "scripts/phase200-interaction-gates.test.mjs",
+    "scripts/phase203-production-graph-recovery-gates.test.mjs",
     "scripts/phase203-capability-truth-gates.test.mjs",
     "docs/PHASE_203_CAPABILITY_TRUTH*.md",
     "docs/evidence/phase203/capability-truth/**",
