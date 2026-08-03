@@ -225,6 +225,43 @@ export function canonical2DLayoutTransitionEnabled({
   );
 }
 
+export function canonical2DLabelPlacement({
+  anchorX,
+  anchorY,
+  canvasHeight,
+  canvasWidth,
+  nodeRadius,
+  textWidth
+}: {
+  anchorX: number;
+  anchorY: number;
+  canvasHeight: number;
+  canvasWidth: number;
+  nodeRadius: number;
+  textWidth: number;
+}) {
+  const padding = 8;
+  const drawableWidth = Math.max(0, Math.min(textWidth, canvasWidth - padding * 2));
+  const gap = nodeRadius + 5;
+  const preferredRight = anchorX + gap;
+  const preferredLeft = anchorX - gap - drawableWidth;
+  const maximumLeft = Math.max(padding, canvasWidth - padding - drawableWidth);
+  const left = preferredRight + drawableWidth <= canvasWidth - padding
+    ? preferredRight
+    : preferredLeft >= padding
+      ? preferredLeft
+      : Math.min(Math.max(preferredRight, padding), maximumLeft);
+  const baselineY = Math.min(Math.max(anchorY + 4, 14), Math.max(14, canvasHeight - 8));
+  return {
+    baselineY,
+    bottom: baselineY + 4,
+    drawableWidth,
+    left,
+    right: left + drawableWidth,
+    top: baselineY - 10
+  };
+}
+
 const roleColors = {
   ENTRAL: "#f4f7ff",
   MARSHAL: "#8eb9ff",
@@ -560,24 +597,66 @@ export function CanonicalUniverseGraph({
     ) ?? pointById.get(entityId);
     if (!point) return;
     const canvas = canvasRef.current;
-    const anchor = canvas
-      ? canonical2DFocusAnchor(
-          canvas.getBoundingClientRect(),
-          detailDrawerRef.current?.getBoundingClientRect() ?? null
-        )
+    const canvasRect = canvas?.getBoundingClientRect() ?? null;
+    const inspectorRect = detailDrawerRef.current?.getBoundingClientRect() ?? null;
+    const anchor = canvasRect
+      ? canonical2DFocusAnchor(canvasRect, inspectorRect)
       : null;
-    setCamera((current) => ({
-      x: (anchor?.x ?? 0) - (canvas?.clientWidth ?? 0) / 2
-        - point.x * Math.max(current.zoom, 0.75),
-      y: (anchor?.y ?? 0) - (canvas?.clientHeight ?? 0) / 2
-        - point.y * Math.max(current.zoom, 0.75),
-      zoom: clampZoom(Math.max(current.zoom, 0.75))
-    }));
-    if (surfaceRef.current && anchor) {
-      surfaceRef.current.dataset.canonicalFocusAnchorX = anchor.x.toFixed(2);
-      surfaceRef.current.dataset.canonicalFocusAnchorY = anchor.y.toFixed(2);
+    const inspectorOverlapsCanvas = Boolean(
+      canvasRect
+      && inspectorRect
+      && inspectorRect.right > canvasRect.left
+      && inspectorRect.left < canvasRect.right
+      && inspectorRect.bottom > canvasRect.top
+      && inspectorRect.top < canvasRect.bottom
+    );
+    let inspectorFittedCamera: Camera | null = null;
+    let resolvedFocusAnchor = anchor;
+    if (canvas && canvasRect && inspectorRect && inspectorOverlapsCanvas) {
+      const usableWidth = Math.max(
+        160,
+        Math.min(canvas.clientWidth, inspectorRect.left - canvasRect.left - 12)
+      );
+      const focusPoints = renderedPointsRef.current.filter((candidate) =>
+        relatedIds.has(candidate.entity.entity_id)
+      );
+      const fitted = fitUniverseCamera(
+        focusPoints.length > 0 ? focusPoints : [point],
+        usableWidth,
+        canvas.clientHeight,
+        Math.min(
+          settings.advanced_2d.fit_padding,
+          usableWidth * 0.26,
+          canvas.clientHeight * 0.18
+        ),
+        0.75
+      );
+      if (fitted) {
+        inspectorFittedCamera = {
+          x: fitted.x + usableWidth / 2 - canvas.clientWidth / 2,
+          y: fitted.y,
+          zoom: fitted.zoom
+        };
+        resolvedFocusAnchor = {
+          x: canvas.clientWidth / 2 + inspectorFittedCamera.x + point.x * fitted.zoom,
+          y: canvas.clientHeight / 2 + inspectorFittedCamera.y + point.y * fitted.zoom
+        };
+      }
     }
-  }, [pointById]);
+    setCamera((current) => {
+      if (inspectorFittedCamera) return inspectorFittedCamera;
+      const focusedZoom = clampZoom(Math.max(current.zoom, 0.75));
+      return {
+        x: (anchor?.x ?? 0) - (canvas?.clientWidth ?? 0) / 2 - point.x * focusedZoom,
+        y: (anchor?.y ?? 0) - (canvas?.clientHeight ?? 0) / 2 - point.y * focusedZoom,
+        zoom: focusedZoom
+      };
+    });
+    if (surfaceRef.current && resolvedFocusAnchor) {
+      surfaceRef.current.dataset.canonicalFocusAnchorX = resolvedFocusAnchor.x.toFixed(2);
+      surfaceRef.current.dataset.canonicalFocusAnchorY = resolvedFocusAnchor.y.toFixed(2);
+    }
+  }, [pointById, relatedIds, settings.advanced_2d.fit_padding]);
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
@@ -877,7 +956,23 @@ export function CanonicalUniverseGraph({
         }
 
         context.font = `600 ${11 * settings.advanced_shared.label_scale}px Inter, system-ui, sans-serif`;
+        const canvasBounds = canvas.getBoundingClientRect();
+        const inspectorBounds = detailDrawerRef.current?.getBoundingClientRect() ?? null;
+        const labelViewportRight = inspectorBounds
+          && inspectorBounds.right > canvasBounds.left
+          && inspectorBounds.left < canvasBounds.right
+          && inspectorBounds.bottom > canvasBounds.top
+          && inspectorBounds.top < canvasBounds.bottom
+            ? Math.max(16, inspectorBounds.left - canvasBounds.left - 12)
+            : canvas.clientWidth;
         const occupiedLabels: Array<{ bottom: number; left: number; right: number; top: number }> = [];
+        if (surface) {
+          surface.dataset.canonicalLabelViewportRight = labelViewportRight.toFixed(2);
+          delete surface.dataset.canonicalSelectedLabelBottom;
+          delete surface.dataset.canonicalSelectedLabelLeft;
+          delete surface.dataset.canonicalSelectedLabelRight;
+          delete surface.dataset.canonicalSelectedLabelTop;
+        }
         labelCandidates
           .sort((left, right) => {
             const priority = (candidate: typeof left) => candidate.isSelected
@@ -892,10 +987,15 @@ export function CanonicalUniverseGraph({
           })
           .slice(0, maximumLiveLabels)
           .forEach((candidate) => {
-            const left = candidate.position.x + candidate.radius + 5;
-            const top = candidate.position.y - 8;
-            const right = left + context.measureText(candidate.entity.name).width;
-            const bottom = top + 14;
+            const placement = canonical2DLabelPlacement({
+              anchorX: candidate.position.x,
+              anchorY: candidate.position.y,
+              canvasHeight: canvas.clientHeight,
+              canvasWidth: labelViewportRight,
+              nodeRadius: candidate.radius,
+              textWidth: context.measureText(candidate.entity.name).width
+            });
+            const { baselineY, bottom, drawableWidth, left, right, top } = placement;
             const overlaps = occupiedLabels.some((bounds) =>
               left < bounds.right + 6
               && right + 6 > bounds.left
@@ -904,9 +1004,15 @@ export function CanonicalUniverseGraph({
             );
             if (overlaps && !candidate.isSelected) return;
             occupiedLabels.push({ bottom, left, right, top });
+            if (candidate.isSelected && surface) {
+              surface.dataset.canonicalSelectedLabelBottom = bottom.toFixed(2);
+              surface.dataset.canonicalSelectedLabelLeft = left.toFixed(2);
+              surface.dataset.canonicalSelectedLabelRight = right.toFixed(2);
+              surface.dataset.canonicalSelectedLabelTop = top.toFixed(2);
+            }
             context.globalAlpha = candidate.alpha;
             context.fillStyle = "#f0f5ff";
-            context.fillText(candidate.entity.name, left, candidate.position.y + 4);
+            context.fillText(candidate.entity.name, left, baselineY, drawableWidth);
             context.globalAlpha = 1;
           });
         if (settings.advanced_2d.minimap_visible && renderPoints.length > 1) {

@@ -52,7 +52,7 @@ describe("Command Center graph integrity", () => {
     expect(graphWorkspaceSource).not.toContain("executeCommand");
     expect(graphWorkspaceSource).not.toContain("apiFetch");
     expect(sha256(sourceSegment("  function getNodeMotion", "  function setCamera")))
-      .toBe("d707bd9d6bec9e82e812b42488d1c81a3354838e09505e27bd525206dbbad4d2");
+      .toBe("3c666ff73468f5a571e50e28bb77fd739fba72df5adc94329597c81a8da639b8");
   });
 
   it("preserves the approved pointer, touch, wheel, and keyboard camera controls", () => {

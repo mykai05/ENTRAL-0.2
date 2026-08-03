@@ -2134,12 +2134,30 @@ export function canonicalLabelNodeIds({
 }): readonly string[] {
   if (mode === "OFF" || maximumLiveLabels <= 0) return [];
   const relatedIds = relatedNodeIdsForSelection(selectedId, nodes);
+  const relevantLabelIds = new Set<string>();
+  if (selectedId) {
+    let cursor = nodes.find((node) => node.id === selectedId) ?? null;
+    while (cursor) {
+      relevantLabelIds.add(cursor.id);
+      cursor = cursor.parentId
+        ? nodes.find((node) => node.id === cursor?.parentId) ?? null
+        : null;
+    }
+    for (const node of nodes) {
+      if (node.parentId === selectedId) relevantLabelIds.add(node.id);
+    }
+  }
   const candidates = nodes.filter((node) => {
     const isSelected = node.id === selectedId;
     const isHovered = node.id === hoveredId;
     const isStructural = node.commandType === "emperor" || node.commandType === "marshal";
     const includedByMode = mode === "ALWAYS"
-      || mode === "RELEVANT" && (!selectedId || relatedIds.has(node.id))
+      || mode === "RELEVANT" && (
+        isHovered
+        || (selectedId
+          ? relevantLabelIds.has(node.id)
+          : isStructural)
+      )
       || mode === "HOVER_OR_FOCUS" && (isSelected || isHovered);
     if (!includedByMode) return false;
     return zoomFactor >= labelThreshold || isSelected || isHovered || isStructural;
@@ -2191,6 +2209,81 @@ export function canonicalEdgeStrokeOffsets(edgeWidth: number) {
     { length: strokeCount },
     (_, index) => -extent + (index / (strokeCount - 1)) * extent * 2
   );
+}
+
+export function canonical3DPointOpacity(
+  alpha: number,
+  lightingIntensity: number
+) {
+  const safeAlpha = Math.max(0, alpha);
+  const safeLighting = Math.max(0, Math.min(lightingIntensity, 5));
+  const lightingMultiplier = 0.35 + safeLighting * 0.65;
+  return Math.min(safeAlpha * lightingMultiplier, 1);
+}
+
+export function canonical3DPointScale(bloomIntensity: number) {
+  const safeBloom = Math.max(0, Math.min(bloomIntensity, 3));
+  return 1 + safeBloom * 0.15;
+}
+
+export function shouldDrawCanonical3DNodeMarker(
+  canonicalMode: boolean,
+  nodeId: string,
+  selectedId: string | null,
+  hoveredId: string | null
+) {
+  return !canonicalMode || nodeId === selectedId || nodeId === hoveredId;
+}
+
+export function canonical3DNodeMarkerSize(canonicalMode: boolean, nodeVisualSize: number) {
+  return canonicalMode
+    ? Math.min(Math.max(nodeVisualSize * 0.14, 2.5), 10)
+    : nodeVisualSize;
+}
+
+export function canonical3DLabelPlacement({
+  anchorX,
+  anchorY,
+  fontSize,
+  nodeRadius,
+  pixelRatio,
+  textWidth,
+  viewportHeight,
+  viewportWidth
+}: {
+  anchorX: number;
+  anchorY: number;
+  fontSize: number;
+  nodeRadius: number;
+  pixelRatio: number;
+  textWidth: number;
+  viewportHeight: number;
+  viewportWidth: number;
+}) {
+  const margin = 8 * pixelRatio;
+  const gap = (nodeRadius + 6) * pixelRatio;
+  const maxWidth = Math.max(0, Math.min(textWidth, viewportWidth - margin * 2));
+  const maximumLeft = Math.max(margin, viewportWidth - margin - maxWidth);
+  const preferredRight = anchorX + gap;
+  const preferredLeft = anchorX - gap - maxWidth;
+  const left = preferredRight + maxWidth <= viewportWidth - margin
+    ? preferredRight
+    : preferredLeft >= margin
+      ? preferredLeft
+      : Math.min(Math.max(preferredRight, margin), maximumLeft);
+  const halfHeight = fontSize * 0.65;
+  const baselineY = Math.min(
+    Math.max(anchorY, margin + halfHeight),
+    Math.max(margin + halfHeight, viewportHeight - margin - halfHeight)
+  );
+  return {
+    baselineY,
+    bottom: baselineY + halfHeight,
+    left,
+    maxWidth,
+    right: left + maxWidth,
+    top: baselineY - halfHeight
+  };
 }
 
 export function nextCanonicalGraphEntityId(
@@ -3801,9 +3894,14 @@ export function NeuronsCommandCenter({
       glContext.uniform3fv(pointProgram.color, hexToRgb01(color));
       glContext.uniform1f(
         pointProgram.alpha,
-        Math.min(alpha * (graphSettings ? lighting + bloom : controls.glowIntensity), 1.25)
+        graphSettings
+          ? canonical3DPointOpacity(alpha, lighting)
+          : Math.min(alpha * controls.glowIntensity, 1.25)
       );
-      glContext.uniform1f(pointProgram.size ?? null, size * nodeScale);
+      glContext.uniform1f(
+        pointProgram.size ?? null,
+        size * nodeScale * (graphSettings ? canonical3DPointScale(bloom) : 1)
+      );
       glContext.bindBuffer(glContext.ARRAY_BUFFER, positionBuffer);
       glContext.bufferData(glContext.ARRAY_BUFFER, new Float32Array([point.x, point.y, point.z]), glContext.STREAM_DRAW);
       glContext.enableVertexAttribArray(pointProgram.position);
@@ -3826,9 +3924,14 @@ export function NeuronsCommandCenter({
       glContext.uniform3fv(pointProgram.color, hexToRgb01(color));
       glContext.uniform1f(
         pointProgram.alpha,
-        Math.min(alpha * (graphSettings ? lighting + bloom : controls.glowIntensity), 1.25)
+        graphSettings
+          ? canonical3DPointOpacity(alpha, lighting)
+          : Math.min(alpha * controls.glowIntensity, 1.25)
       );
-      glContext.uniform1f(pointProgram.size ?? null, size * nodeScale);
+      glContext.uniform1f(
+        pointProgram.size ?? null,
+        size * nodeScale * (graphSettings ? canonical3DPointScale(bloom) : 1)
+      );
       glContext.bindBuffer(glContext.ARRAY_BUFFER, positionBuffer);
       glContext.bufferData(
         glContext.ARRAY_BUFFER,
@@ -3949,6 +4052,7 @@ export function NeuronsCommandCenter({
         selectedId: selectedRef.current,
         zoomFactor
       });
+      canvasElement.dataset.canonicalLiveLabelCount = "0";
       if (labelIds.length === 0) return;
       const nodesById = new Map(nodes.map((node) => [node.id, node]));
       const relatedIds = relatedNodeIdsForSelection(selectedRef.current, nodes);
@@ -3974,12 +4078,18 @@ export function NeuronsCommandCenter({
         }
         const isSelected = node.id === selectedRef.current;
         const isHovered = node.id === hoveredRef.current;
-        const left = projected.screenX
-          + (nodeVisualSize(node) * graphSettings.advanced_shared.node_scale * 0.28 + 6) * pixelRatio;
         const textWidth = labelContext.measureText(node.name).width;
-        const top = projected.screenY - fontSize * 0.65;
-        const right = left + textWidth;
-        const bottom = projected.screenY + fontSize * 0.65;
+        const placement = canonical3DLabelPlacement({
+          anchorX: projected.screenX,
+          anchorY: projected.screenY,
+          fontSize,
+          nodeRadius: nodeVisualSize(node) * graphSettings.advanced_shared.node_scale * 0.28,
+          pixelRatio,
+          textWidth,
+          viewportHeight: height,
+          viewportWidth: width
+        });
+        const { baselineY, bottom, left, maxWidth, right, top } = placement;
         const overlaps = occupied.some((bounds) =>
           left < bounds.right + 6 * pixelRatio
           && right + 6 * pixelRatio > bounds.left
@@ -3996,10 +4106,11 @@ export function NeuronsCommandCenter({
         labelContext.lineWidth = Math.max(2, 3 * pixelRatio);
         labelContext.strokeStyle = "rgba(3, 7, 14, 0.92)";
         labelContext.fillStyle = "#f0f5ff";
-        labelContext.strokeText(node.name, left, projected.screenY);
-        labelContext.fillText(node.name, left, projected.screenY);
+        labelContext.strokeText(node.name, left, baselineY, maxWidth);
+        labelContext.fillText(node.name, left, baselineY, maxWidth);
       }
       labelContext.globalAlpha = 1;
+      canvasElement.dataset.canonicalLiveLabelCount = String(occupied.length);
 
       glContext.activeTexture(glContext.TEXTURE0);
       glContext.bindTexture(glContext.TEXTURE_2D, labelTexture);
@@ -4019,6 +4130,7 @@ export function NeuronsCommandCenter({
       glContext.vertexAttribPointer(labelPositionAttribute, 2, glContext.FLOAT, false, 16, 0);
       glContext.enableVertexAttribArray(labelTextureCoordinateAttribute);
       glContext.vertexAttribPointer(labelTextureCoordinateAttribute, 2, glContext.FLOAT, false, 16, 8);
+      glContext.disable(glContext.DEPTH_TEST);
       glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE_MINUS_SRC_ALPHA);
       glContext.drawArrays(glContext.TRIANGLES, 0, 6);
     }
@@ -4157,13 +4269,20 @@ export function NeuronsCommandCenter({
       glContext.clearColor(0, 0, 0, 0);
       glContext.clear(glContext.COLOR_BUFFER_BIT | glContext.DEPTH_BUFFER_BIT);
       glContext.enable(glContext.BLEND);
-      glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE);
-      glContext.disable(glContext.DEPTH_TEST);
+      if (canonicalSettingsNow) {
+        glContext.enable(glContext.DEPTH_TEST);
+        glContext.depthFunc(glContext.LEQUAL);
+        glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE_MINUS_SRC_ALPHA);
+      } else {
+        glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE);
+        glContext.disable(glContext.DEPTH_TEST);
+      }
 
       const groups = new Map(graphNow.groups.map((group) => [group.id, group]));
       const nodes = new Map(graphNow.nodes.map((node) => [node.id, node]));
       const selectedForRender = selectedRef.current ? nodes.get(selectedRef.current) ?? null : null;
       const canonicalMode = Boolean(canonicalSettingsNow);
+      canvasElement.dataset.canonicalCompositing = canonicalMode ? "depth-alpha" : "legacy-additive";
       const visibleNodeIds = visibleNodeIdsForSelection(
         selectedRef.current,
         renderNodes,
@@ -4504,6 +4623,7 @@ export function NeuronsCommandCenter({
         drawPoint({ x: 0, y: 0, z: 0 }, "#f8ffff", 38 * corePulse, 0.98);
       }
 
+      let canonicalMarkerDrawCount = 0;
       if (useScaleBatching) {
         const pointBatches = new Map<string, { alpha: number; color: string; points: Vec3[]; size: number }>();
         const addPointToBatch = (node: GraphNode3D, color: string, size: number, alpha: number) => {
@@ -4537,7 +4657,16 @@ export function NeuronsCommandCenter({
           const size = nodeVisualSize(node) * selectedNodeScale;
           drawPoint(node, statusColor, size + 24, 0.42);
           drawPoint(node, color, size + 12, 1);
-          drawNodeMarker(node, color, statusColor, size, false, 1, billboardAxes);
+          drawNodeMarker(
+            node,
+            color,
+            statusColor,
+            canonical3DNodeMarkerSize(canonicalMode, size),
+            false,
+            1,
+            billboardAxes
+          );
+          if (canonicalMode) canonicalMarkerDrawCount += 1;
         }
       } else {
         for (const node of visibleNodes) {
@@ -4579,11 +4708,31 @@ export function NeuronsCommandCenter({
             }
             drawPoint(node, statusColor, (size + 18 + gravityStrength * 10) * pulse, dimmed ? 0.08 : 0.22 + gravityStrength * 0.16);
             drawPoint(node, color, (size + 9) * pulse, dimmed ? 0.34 : 0.98);
-            drawNodeMarker(node, color, statusColor || accent, size, dimmed, pulse, billboardAxes);
+            if (shouldDrawCanonical3DNodeMarker(
+              canonicalMode,
+              node.id,
+              selectedRef.current,
+              hoveredRef.current
+            )) {
+              drawNodeMarker(
+                node,
+                color,
+                statusColor || accent,
+                canonical3DNodeMarkerSize(canonicalMode, size),
+                dimmed,
+                pulse,
+                billboardAxes
+              );
+              if (canonicalMode) canonicalMarkerDrawCount += 1;
+            }
             drawPoint(node, statusColor || accent, Math.max(8, size * 0.28) * pulse, dimmed ? 0.2 : 0.82);
           }
         }
       }
+
+      canvasElement.dataset.canonicalMarkerCount = canonicalMode
+        ? String(canonicalMarkerDrawCount)
+        : "legacy";
 
       if (canonicalMode) {
         drawCanonicalLabelOverlay(visibleNodes, matrix, camera, activeLevelOfDetail);
@@ -8300,6 +8449,10 @@ export function NeuronsCommandCenter({
       data-graph-edge-depth-fade={canonicalGraphSettings?.advanced_3d.edge_depth_fade ? "on" : "off"}
       data-graph-level-of-detail={canonicalActiveLevelOfDetail ?? undefined}
       data-graph-node-billboard={canonicalGraphSettings?.advanced_3d.node_billboard ? "on" : "off"}
+      data-graph-canonical-marker-policy={canonicalGraph ? "selection-only" : undefined}
+      data-graph-canonical-marker-scale={canonicalGraph ? "compact" : undefined}
+      data-graph-point-compositing={canonicalGraph ? "bounded-lighting-bloom" : undefined}
+      data-graph-label-placement={canonicalGraph ? "viewport-contained" : undefined}
       data-graph-snapshot-strategy={canonicalRenderingActive ? "preserved-drawing-buffer" : undefined}
       data-graph-webgl-state={webGlState}
       data-mobile-tab={mobileTab}

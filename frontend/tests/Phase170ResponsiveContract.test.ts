@@ -114,7 +114,13 @@ describe("Phase 170 responsive and route contract", () => {
       /\.phase195-graph-workspace \.phase200-mobile-graph-toolbar\s*\{[\s\S]*position:\s*relative;[\s\S]*width:\s*100%;/
     );
     expect(phase180Css).toMatch(
-      /orientation:\s*landscape[\s\S]*max-width:\s*calc\(50vw - 1\.5rem\);[\s\S]*\.phase180-assistant-widget[\s\S]*left:\s*max\(0\.5rem, env\(safe-area-inset-left\)\);/
+      /\.phase180-graph-drawer\[data-canonical-detail-surface="2d"\]\s*\{[\s\S]*position:\s*relative;[\s\S]*width:\s*100%;/
+    );
+    expect(phase180Css).toMatch(
+      /\.phase200-mobile-graph-toolbar\s*\{[\s\S]*display:\s*grid;[\s\S]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);[\s\S]*overflow-x:\s*visible;/
+    );
+    expect(phase180Css).toMatch(
+      /orientation:\s*landscape[\s\S]*\.phase180-assistant-widget[\s\S]*left:\s*max\(0\.5rem, env\(safe-area-inset-left\)\);/
     );
   });
 });

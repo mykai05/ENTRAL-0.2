@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptedGraphFrameDeltaSeconds,
+  canonical3DLabelPlacement,
+  canonical3DNodeMarkerSize,
+  canonical3DPointOpacity,
+  canonical3DPointScale,
   canonicalEdgeStrokeOffsets,
   canonicalEdgesForConnectionMode,
   canonicalGraphDetailChildCount,
@@ -9,6 +13,7 @@ import {
   nextCanonicalGraphEntityId,
   relatedNodeIdsForSelection,
   resolveCanonicalLevelOfDetail,
+  shouldDrawCanonical3DNodeMarker,
   visibleNodeIdsForSelection
 } from "../components/NeuronsCommandCenter";
 import {
@@ -24,6 +29,102 @@ import { layoutGraph2D, layoutGraph3D } from "../lib/graph-layouts";
 import { buildRendererGraphProjection } from "../lib/graph-projection";
 
 describe("Phase 195 canonical 3D renderer policies", () => {
+  it("keeps canonical role markers selection-only and bounds depth-alpha point presentation", () => {
+    expect(shouldDrawCanonical3DNodeMarker(true, "general-a", "entral", null)).toBe(false);
+    expect(shouldDrawCanonical3DNodeMarker(true, "general-a", "general-a", null)).toBe(true);
+    expect(shouldDrawCanonical3DNodeMarker(true, "general-a", "entral", "general-a")).toBe(true);
+    expect(shouldDrawCanonical3DNodeMarker(false, "general-a", "entral", null)).toBe(true);
+    expect(canonical3DNodeMarkerSize(true, 68)).toBeLessThanOrEqual(10);
+    expect(canonical3DNodeMarkerSize(true, 28)).toBeCloseTo(3.92);
+    expect(canonical3DNodeMarkerSize(false, 68)).toBe(68);
+    expect(canonical3DPointOpacity(0.8, 1)).toBeCloseTo(0.8);
+    expect(canonical3DPointOpacity(0.2, 3)).toBeGreaterThan(canonical3DPointOpacity(0.2, 2));
+    expect(canonical3DPointOpacity(0.2, 5)).toBeGreaterThan(canonical3DPointOpacity(0.2, 3));
+    expect(canonical3DPointOpacity(5, 5)).toBe(1);
+    expect(canonical3DPointScale(0)).toBe(1);
+    expect(canonical3DPointScale(2)).toBeCloseTo(1.3);
+    expect(canonical3DPointScale(3)).toBeCloseTo(1.45);
+    expect(canonical3DPointScale(20)).toBeCloseTo(1.45);
+  });
+
+  it("keeps canonical labels inside the WebGL viewport and flips them away from the right edge", () => {
+    const rightEdge = canonical3DLabelPlacement({
+      anchorX: 350,
+      anchorY: 190,
+      fontSize: 11,
+      nodeRadius: 8,
+      pixelRatio: 1,
+      textWidth: 90,
+      viewportHeight: 200,
+      viewportWidth: 360
+    });
+    expect(rightEdge.left).toBeLessThan(350);
+    expect(rightEdge.right).toBeLessThanOrEqual(352);
+    expect(rightEdge.bottom).toBeLessThanOrEqual(192);
+
+    const longLabel = canonical3DLabelPlacement({
+      anchorX: 180,
+      anchorY: 100,
+      fontSize: 22,
+      nodeRadius: 8,
+      pixelRatio: 2,
+      textWidth: 900,
+      viewportHeight: 200,
+      viewportWidth: 360
+    });
+    expect(longLabel.maxWidth).toBe(328);
+    expect(longLabel.left).toBeGreaterThanOrEqual(16);
+    expect(longLabel.right).toBeLessThanOrEqual(344);
+  });
+
+  it("limits relevant labels to the selected lineage and direct children", () => {
+    const graph = graphStateFromCanonicalEntities(authorityHierarchy(), 195);
+    const rootLabels = canonicalLabelNodeIds({
+      hoveredId: null,
+      labelThreshold: 0.35,
+      maximumLiveLabels: 200,
+      mode: "RELEVANT",
+      nodes: graph.nodes,
+      selectedId: "entral",
+      zoomFactor: 1
+    });
+    expect(rootLabels).toEqual(["entral", "marshal-a", "marshal-b"]);
+    const generalLabels = canonicalLabelNodeIds({
+      hoveredId: null,
+      labelThreshold: 0.35,
+      maximumLiveLabels: 200,
+      mode: "RELEVANT",
+      nodes: graph.nodes,
+      selectedId: "general-a",
+      zoomFactor: 1
+    });
+    expect(generalLabels).toEqual(["general-a", "entral", "marshal-a", "commander-a"]);
+    expect(generalLabels).not.toContain("soldier-a");
+
+    const hoveredOutsideLineage = canonicalLabelNodeIds({
+      hoveredId: "general-b",
+      labelThreshold: 0.35,
+      maximumLiveLabels: 200,
+      mode: "RELEVANT",
+      nodes: graph.nodes,
+      selectedId: "general-a",
+      zoomFactor: 1
+    });
+    expect(hoveredOutsideLineage).toContain("general-b");
+
+    const noSelectionLabels = canonicalLabelNodeIds({
+      hoveredId: null,
+      labelThreshold: 0.35,
+      maximumLiveLabels: 200,
+      mode: "RELEVANT",
+      nodes: graph.nodes,
+      selectedId: null,
+      zoomFactor: 1
+    });
+    expect(noSelectionLabels).toEqual(["entral", "marshal-a", "marshal-b"]);
+    expect(noSelectionLabels).not.toContain("general-a");
+  });
+
   it("maps authorized detail fields while deriving 3D direct reports from canonical relationships", () => {
     const entities = authorityHierarchy().map((entity) =>
       entity.entity_id === "commander-b"
@@ -111,6 +212,7 @@ describe("Phase 195 canonical 3D renderer policies", () => {
     ]);
     expect(canonicalLabelNodeIds({ ...common, mode: "RELEVANT" })).toEqual([
       "general-a",
+      "general-b",
       "entral",
       "marshal-a"
     ]);
