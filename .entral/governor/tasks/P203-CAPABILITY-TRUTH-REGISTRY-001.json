@@ -75,7 +75,10 @@
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/scripts/check-production.mjs",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/tests/**",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/.env.example",
-    "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/README.md"
+    "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/README.md",
+    "repository:SovereignProtocol/sovereign-protocol-agent:platform/power-platform/agent-builds/business-discovery-research-v1.0/verification.json",
+    "repository:SovereignProtocol/sovereign-protocol-agent:platform/power-platform/agent-builds/business-discovery-research-v1.0/technical-approval.json",
+    "repository:SovereignProtocol/sovereign-protocol-agent:platform/power-platform/agent-inventory.v1.json"
   ],
   "likely_modules": [
     "packages/contracts/src/capability-truth.ts",
