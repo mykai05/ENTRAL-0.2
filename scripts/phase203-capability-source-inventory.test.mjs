@@ -233,6 +233,13 @@ test("source-backed inventory is exact, conservative, and references immutable r
   assert.equal(inventory.import_policy.mode, "CONSERVATIVE_FAIL_CLOSED");
   assert.equal(inventory.import_policy.source_presence_is_verification, false);
   assert.equal(inventory.import_policy.public_claim_eligible_default, false);
+  assert.equal(inventory.import_policy.data_classification_default, "INTERNAL");
+  assert.deepEqual(inventory.import_policy.supported_scopes_default, ["GLOBAL"]);
+  assert.ok(inventory.import_policy.required_evidence_default.includes("UNIT_TEST"));
+  assert.ok(inventory.import_policy.required_evidence_default.includes("PRODUCTION_READBACK"));
+  assert.equal(inventory.import_policy.pricing_eligibility_default, "NOT_ELIGIBLE");
+  assert.deepEqual(inventory.import_policy.tenant_feature_flags_default, {});
+  assert.deepEqual(inventory.import_policy.tenant_limits_default, {});
 
   const keys = inventory.entries.map((entry) => entry.capability_key);
   assert.equal(keys.length, new Set(keys).size, "capability keys must be unique");

@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import {
   assertCapabilityLifecycleTransitionRequest,
+  assertCapabilityTruthRecord,
   assertCapabilityTruthAdminReadback,
   assertPublicProductTruthProjection,
   type CapabilityEvidenceReceipt,
   type CapabilityEnvironment,
   type CapabilityLifecycleTransitionRequest,
   type CapabilityTruthAdminReadback,
+  type CapabilityTruthRecord,
   type ProductClaimSurface,
   type PublicProductClaim,
   type PublicProductTruthProjection
@@ -76,6 +78,15 @@ function validateAdminReadback(value: unknown): CapabilityTruthAdminReadback {
     throw new CapabilityTruthServiceError("MALFORMED_ADMIN_READBACK", "Capability Truth admin readback is malformed.", 500);
   }
   return value;
+}
+
+function validateCapabilityRecord(value: unknown): CapabilityTruthRecord {
+  try {
+    assertCapabilityTruthRecord(value as CapabilityTruthRecord);
+  } catch {
+    throw new CapabilityTruthServiceError("MALFORMED_CAPABILITY_TRUTH", "Capability Truth returned a malformed capability record.", 500);
+  }
+  return value as CapabilityTruthRecord;
 }
 
 function databaseFailure(error: unknown): CapabilityTruthServiceError {
@@ -165,7 +176,7 @@ export class CapabilityTruthService {
   ): Promise<PublicProductTruthProjection> {
     try {
       const rows = await this.database.$queryRaw<PublicationProjectionRow[]>(Prisma.sql`
-        SELECT COALESCE(jsonb_agg(gate."claim"),'[]'::jsonb) AS "claims",
+        SELECT COALESCE(jsonb_agg(gate."claim" ORDER BY gate."claim"->>'claim_key',gate."claim"->>'claim_id'),'[]'::jsonb) AS "claims",
                entral.phase203_registry_revision() AS "registryRevision"
         FROM entral.phase203_publication_gate(
           ${surface}::text, ${environment}::text, NULL::uuid, NULL::uuid
@@ -195,7 +206,7 @@ export class CapabilityTruthService {
           throw new CapabilityTruthServiceError("TENANT_ACTOR_BINDING_MISMATCH", "Tenant context does not match.", 403);
         }
         const rows = await transaction.$queryRaw<PublicationProjectionRow[]>(Prisma.sql`
-          SELECT COALESCE(jsonb_agg(gate."claim"),'[]'::jsonb) AS "claims",
+          SELECT COALESCE(jsonb_agg(gate."claim" ORDER BY gate."claim"->>'claim_key',gate."claim"->>'claim_id'),'[]'::jsonb) AS "claims",
                  entral.phase203_registry_revision() AS "registryRevision"
           FROM entral.phase203_publication_gate(
             ${surface}::text, ${environment}::text,
@@ -231,7 +242,7 @@ export class CapabilityTruthService {
   async recordEvidence(
     context: CapabilityTruthAdminContext,
     registration: CapabilityEvidenceRegistration
-  ): Promise<unknown> {
+  ): Promise<CapabilityTruthRecord> {
     try {
       return await withPersonalSession(this.database, {
         actionReason: "Record immutable Capability Truth verification evidence.",
@@ -246,7 +257,7 @@ export class CapabilityTruthService {
             ${registration.idempotency_key}::text
           ) AS "value"
         `);
-        return rows[0]?.value;
+        return validateCapabilityRecord(rows[0]?.value);
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
       throw databaseFailure(error);
@@ -256,7 +267,7 @@ export class CapabilityTruthService {
   async transition(
     context: CapabilityTruthAdminContext,
     request: CapabilityLifecycleTransitionRequest
-  ): Promise<unknown> {
+  ): Promise<CapabilityTruthRecord> {
     assertCapabilityLifecycleTransitionRequest(request);
     try {
       return await withPersonalSession(this.database, {
@@ -274,7 +285,7 @@ export class CapabilityTruthService {
         const rows = await transaction.$queryRaw<JsonValueRow[]>(Prisma.sql`
           SELECT entral.phase203_transition_capability(${JSON.stringify(request)}::jsonb) AS "value"
         `);
-        return rows[0]?.value;
+        return validateCapabilityRecord(rows[0]?.value);
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
       throw databaseFailure(error);

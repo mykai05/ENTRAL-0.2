@@ -83,6 +83,7 @@ export async function connectionRoutes(app: FastifyInstance, options: Connection
   }
 
   app.get("/connections/tools", { preHandler: requireAuth }, async (request, reply) => {
+    reply.header("Cache-Control", "private, no-store");
     if (!request.user) {
       return reply.code(401).send({ error: "Unauthorized", message: "Authentication is required." });
     }

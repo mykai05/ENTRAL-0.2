@@ -20,8 +20,13 @@ CREATE TABLE entral.capability_records (
   purpose text NOT NULL CHECK (length(btrim(purpose)) BETWEEN 1 AND 2000),
   kind text NOT NULL CHECK (kind IN ('CAPABILITY','INTEGRATION','AGENT','WORKFLOW','COMMANDER_PACK')),
   owner text NOT NULL CHECK (length(btrim(owner)) BETWEEN 1 AND 320),
+  data_classification text NOT NULL DEFAULT 'INTERNAL' CHECK (data_classification IN ('PUBLIC','INTERNAL','CONFIDENTIAL','RESTRICTED')),
   environment text NOT NULL CHECK (environment IN ('DEVELOPMENT','TEST','STAGING','CANARY','PRODUCTION')),
   scope text NOT NULL CHECK (scope IN ('GLOBAL','TENANT')),
+  supported_scopes text[] NOT NULL DEFAULT ARRAY['GLOBAL']::text[] CHECK (
+    cardinality(supported_scopes)>0 AND scope=ANY(supported_scopes)
+    AND supported_scopes<@ARRAY['GLOBAL','TENANT']::text[]
+  ),
   tenant_id uuid,
   organization_id uuid,
   lifecycle_state text NOT NULL DEFAULT 'CATALOGUED' CHECK (lifecycle_state IN (
@@ -34,10 +39,21 @@ CREATE TABLE entral.capability_records (
   production_readiness text NOT NULL DEFAULT 'UNVERIFIED' CHECK (production_readiness IN (
     'REAL','UNVERIFIED','SIMULATED','PLACEHOLDER','LOCAL_ONLY','DISABLED'
   )),
+  required_evidence text[] NOT NULL DEFAULT ARRAY[
+    'UNIT_TEST','INTEGRATION_TEST','CANARY','PRODUCTION_READBACK','SUPPORT_READINESS',
+    'PRICING_APPROVAL','TUTORIAL','DOCUMENTATION','ROLLBACK'
+  ]::text[] CHECK (
+    cardinality(required_evidence)>0 AND required_evidence<@ARRAY[
+      'UNIT_TEST','INTEGRATION_TEST','CANARY','PRODUCTION_READBACK','AUTHENTICATION',
+      'AUTHORIZATION_SCOPE','OPERATION','READBACK','RECONCILIATION','REFRESH_OR_WEBHOOK',
+      'FAILURE_HANDLING','SUPPORT_READINESS','PRICING_APPROVAL','TUTORIAL','DOCUMENTATION','ROLLBACK'
+    ]::text[]
+  ),
   activation_requirements jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(activation_requirements)='array'),
   last_verified_at timestamptz,
   failure_state jsonb CHECK (failure_state IS NULL OR jsonb_typeof(failure_state)='object'),
   public_claim_eligible boolean NOT NULL DEFAULT false,
+  pricing_eligibility text NOT NULL DEFAULT 'NOT_ELIGIBLE' CHECK (pricing_eligibility IN ('NOT_ELIGIBLE','INCLUDED','ADD_ON')),
   rollback_path text NOT NULL CHECK (length(btrim(rollback_path)) BETWEEN 1 AND 2000),
   deactivation_path text NOT NULL CHECK (length(btrim(deactivation_path)) BETWEEN 1 AND 2000),
   source_reference text NOT NULL CHECK (length(btrim(source_reference)) BETWEEN 1 AND 2000),
@@ -53,6 +69,7 @@ CREATE TABLE entral.capability_records (
     OR (scope='TENANT' AND tenant_id IS NOT NULL AND organization_id IS NOT NULL)
   ),
   CHECK (NOT public_claim_eligible OR lifecycle_state='SELLABLE'),
+  CHECK ((lifecycle_state='SELLABLE')=(pricing_eligibility<>'NOT_ELIGIBLE')),
   CHECK (lifecycle_state NOT IN ('ACTIVE','SELLABLE') OR (
     production_readiness='REAL' AND failure_state IS NULL AND last_verified_at IS NOT NULL
   )),
@@ -76,7 +93,7 @@ CREATE TABLE entral.capability_dependencies (
   dependency_capability_version text NOT NULL,
   minimum_lifecycle_state text NOT NULL CHECK (minimum_lifecycle_state IN (
     'CATALOGUED','DESIGNED','IMPLEMENTED','UNIT_VERIFIED','INTEGRATION_VERIFIED',
-    'CANARY_VERIFIED','ACTIVE','SELLABLE','DEPRECATED','RETIRED'
+    'CANARY_VERIFIED','ACTIVE','SELLABLE'
   )),
   required boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -123,6 +140,8 @@ CREATE TABLE entral.tenant_capability_installations (
   capability_version text NOT NULL,
   state text NOT NULL DEFAULT 'AVAILABLE' CHECK (state IN ('AVAILABLE','ACTIVATING','ACTIVE','SUSPENDED','DEACTIVATED')),
   plan_eligible boolean NOT NULL DEFAULT false,
+  feature_flags jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(feature_flags)='object'),
+  limits jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(limits)='object'),
   suspension_reason text,
   activated_at timestamptz,
   verification_receipt_ids uuid[] NOT NULL DEFAULT ARRAY[]::uuid[],
@@ -184,17 +203,40 @@ CREATE TABLE entral.capability_transition_audit (
   capability_version text NOT NULL,
   from_state text NOT NULL,
   to_state text NOT NULL,
+  pricing_eligibility text NOT NULL CHECK (pricing_eligibility IN ('NOT_ELIGIBLE','INCLUDED','ADD_ON')),
   prior_record_version bigint NOT NULL CHECK (prior_record_version>=1),
   resulting_record_version bigint NOT NULL CHECK (resulting_record_version=prior_record_version+1),
   evidence_receipt_ids uuid[] NOT NULL DEFAULT ARRAY[]::uuid[],
   reason text NOT NULL CHECK (length(btrim(reason)) BETWEEN 1 AND 2000),
   actor_id uuid NOT NULL REFERENCES public."IdentityActor"("id") ON DELETE RESTRICT,
+  tenant_id uuid,
+  organization_id uuid,
+  business_id uuid,
   correlation_id uuid NOT NULL,
   idempotency_key text NOT NULL CHECK (length(idempotency_key) BETWEEN 12 AND 255),
   request_sha256 text NOT NULL CHECK (request_sha256 ~ '^[0-9a-f]{64}$'),
+  release_version text NOT NULL CHECK (release_version='phase-203'),
+  response_snapshot jsonb NOT NULL CHECK (jsonb_typeof(response_snapshot)='object'),
   requested_at timestamptz NOT NULL,
   recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE (idempotency_key),
+  FOREIGN KEY (tenant_id,organization_id)
+    REFERENCES public."TenantBoundary"("id","organizationId") ON DELETE RESTRICT,
+  FOREIGN KEY (business_id,tenant_id,organization_id)
+    REFERENCES public."BusinessBoundary"("id","tenantId","organizationId") ON DELETE RESTRICT,
+  CHECK ((tenant_id IS NULL AND organization_id IS NULL AND business_id IS NULL)
+    OR (tenant_id IS NOT NULL AND organization_id IS NOT NULL)),
+  CHECK (response_snapshot ?& ARRAY[
+    'capability_id','capability_version','lifecycle_state','pricing_eligibility',
+    'record_version','tenant_id','organization_id'
+  ]::text[]),
+  CHECK (((response_snapshot->>'capability_id')::uuid=capability_id) IS TRUE),
+  CHECK ((response_snapshot->>'capability_version'=capability_version) IS TRUE),
+  CHECK ((response_snapshot->>'lifecycle_state'=to_state) IS TRUE),
+  CHECK ((response_snapshot->>'pricing_eligibility'=pricing_eligibility) IS TRUE),
+  CHECK (((response_snapshot->>'record_version')::bigint=resulting_record_version) IS TRUE),
+  CHECK (((response_snapshot->>'tenant_id')::uuid IS NOT DISTINCT FROM tenant_id) IS TRUE),
+  CHECK (((response_snapshot->>'organization_id')::uuid IS NOT DISTINCT FROM organization_id) IS TRUE),
   FOREIGN KEY (capability_id,capability_version)
     REFERENCES entral.capability_records(capability_id,capability_version) ON DELETE RESTRICT
 );
@@ -209,12 +251,47 @@ CREATE TABLE entral.product_claim_transition_audit (
   evidence_receipt_ids uuid[] NOT NULL DEFAULT ARRAY[]::uuid[],
   reason text NOT NULL CHECK (length(btrim(reason)) BETWEEN 1 AND 2000),
   actor_id uuid NOT NULL REFERENCES public."IdentityActor"("id") ON DELETE RESTRICT,
+  tenant_id uuid,
+  organization_id uuid,
+  business_id uuid,
   correlation_id uuid NOT NULL,
   idempotency_key text NOT NULL CHECK (length(idempotency_key) BETWEEN 12 AND 255),
   request_sha256 text NOT NULL CHECK (request_sha256 ~ '^[0-9a-f]{64}$'),
+  release_version text NOT NULL CHECK (release_version='phase-203'),
+  response_snapshot jsonb NOT NULL CHECK (jsonb_typeof(response_snapshot)='object'),
   requested_at timestamptz NOT NULL,
   recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
-  UNIQUE (idempotency_key)
+  UNIQUE (idempotency_key),
+  FOREIGN KEY (tenant_id,organization_id)
+    REFERENCES public."TenantBoundary"("id","organizationId") ON DELETE RESTRICT,
+  FOREIGN KEY (business_id,tenant_id,organization_id)
+    REFERENCES public."BusinessBoundary"("id","tenantId","organizationId") ON DELETE RESTRICT,
+  CHECK ((tenant_id IS NULL AND organization_id IS NULL AND business_id IS NULL)
+    OR (tenant_id IS NOT NULL AND organization_id IS NOT NULL))
+);
+
+CREATE TABLE entral.tenant_capability_installation_audit (
+  transition_id uuid PRIMARY KEY,
+  installation_id uuid NOT NULL REFERENCES entral.tenant_capability_installations(installation_id) ON DELETE RESTRICT,
+  tenant_id uuid NOT NULL,
+  organization_id uuid NOT NULL,
+  business_id uuid,
+  capability_id uuid NOT NULL,
+  capability_version text NOT NULL,
+  from_state text NOT NULL,
+  to_state text NOT NULL,
+  prior_record_version bigint NOT NULL CHECK (prior_record_version>=1),
+  resulting_record_version bigint NOT NULL CHECK (resulting_record_version=prior_record_version+1),
+  reason text NOT NULL CHECK (length(btrim(reason)) BETWEEN 1 AND 2000),
+  actor_id uuid NOT NULL REFERENCES public."IdentityActor"("id") ON DELETE RESTRICT,
+  correlation_id uuid NOT NULL,
+  idempotency_key text NOT NULL UNIQUE CHECK (length(idempotency_key) BETWEEN 12 AND 255),
+  release_version text NOT NULL CHECK (release_version='phase-203'),
+  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  FOREIGN KEY (tenant_id,organization_id)
+    REFERENCES public."TenantBoundary"("id","organizationId") ON DELETE RESTRICT,
+  FOREIGN KEY (business_id,tenant_id,organization_id)
+    REFERENCES public."BusinessBoundary"("id","tenantId","organizationId") ON DELETE RESTRICT
 );
 
 CREATE TABLE entral.capability_mutation_receipts (
@@ -279,30 +356,56 @@ AS $phase203_rank$
     ELSE 0 END
 $phase203_rank$;
 
-CREATE OR REPLACE FUNCTION entral.phase203_dependencies_healthy(
-  p_capability_id uuid,p_capability_version text
+CREATE OR REPLACE FUNCTION entral.phase203_current_evidence_receipt_passed(
+  p_receipt_id uuid
 ) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path=pg_catalog,public,entral,pg_temp
-AS $phase203_dependencies$
-  SELECT NOT EXISTS (
+AS $phase203_current_receipt$
+  SELECT EXISTS (
     SELECT 1
-    FROM entral.capability_dependencies dependency
-    LEFT JOIN entral.capability_records required_capability
-      ON required_capability.capability_id=dependency.dependency_capability_id
-     AND required_capability.capability_version=dependency.dependency_capability_version
-    WHERE dependency.capability_id=p_capability_id
-      AND dependency.capability_version=p_capability_version
-      AND dependency.required
-      AND (
-        required_capability.capability_id IS NULL
-        OR required_capability.failure_state IS NOT NULL
-        OR required_capability.production_readiness<>'REAL'
-        OR entral.phase203_lifecycle_rank(required_capability.lifecycle_state)
-           < entral.phase203_lifecycle_rank(dependency.minimum_lifecycle_state)
+    FROM entral.capability_verification_receipts receipt
+    JOIN entral.capability_records capability
+      ON capability.capability_id=receipt.capability_id
+     AND capability.capability_version=receipt.capability_version
+    WHERE receipt.receipt_id=p_receipt_id
+      AND receipt.environment=capability.environment
+      AND receipt.status='PASSED'
+      AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
+      AND receipt.receipt_id=(
+        SELECT candidate.receipt_id
+        FROM entral.capability_verification_receipts candidate
+        WHERE candidate.capability_id=receipt.capability_id
+          AND candidate.capability_version=receipt.capability_version
+          AND candidate.evidence_type=receipt.evidence_type
+          AND candidate.environment=capability.environment
+        ORDER BY candidate.captured_at DESC,candidate.receipt_id DESC
+        LIMIT 1
       )
   )
-$phase203_dependencies$;
+$phase203_current_receipt$;
+
+CREATE OR REPLACE FUNCTION entral.phase203_latest_evidence_passed(
+  p_capability_id uuid,p_capability_version text,p_evidence_type text
+) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase203_latest_evidence$
+  SELECT COALESCE((
+    SELECT receipt.status='PASSED'
+      AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
+    FROM entral.capability_verification_receipts receipt
+    JOIN entral.capability_records capability
+      ON capability.capability_id=receipt.capability_id
+     AND capability.capability_version=receipt.capability_version
+    WHERE receipt.capability_id=p_capability_id
+      AND receipt.capability_version=p_capability_version
+      AND receipt.evidence_type=p_evidence_type
+      AND receipt.environment=capability.environment
+    ORDER BY receipt.captured_at DESC,receipt.receipt_id DESC
+    LIMIT 1
+  ),false)
+$phase203_latest_evidence$;
 
 CREATE OR REPLACE FUNCTION entral.phase203_activation_requirements_healthy(
   p_capability_id uuid,p_capability_version text
@@ -325,8 +428,7 @@ AS $phase203_requirements$
             AND receipt.capability_id=p_capability_id
             AND receipt.capability_version=p_capability_version
             AND receipt.environment=capability.environment
-            AND receipt.status='PASSED'
-            AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
+            AND entral.phase203_current_evidence_receipt_passed(receipt.receipt_id)
         )
       )
     )
@@ -345,20 +447,86 @@ SET search_path=pg_catalog,public,entral,pg_temp
 AS $phase203_required_evidence$
   SELECT NOT EXISTS (
     SELECT 1 FROM unnest(p_evidence_types) required_type
-    WHERE NOT EXISTS (
-      SELECT 1 FROM entral.capability_verification_receipts receipt
-      JOIN entral.capability_records capability
-        ON capability.capability_id=receipt.capability_id
-       AND capability.capability_version=receipt.capability_version
-      WHERE receipt.capability_id=p_capability_id
-        AND receipt.capability_version=p_capability_version
-        AND receipt.evidence_type=required_type
-        AND receipt.environment=capability.environment
-        AND receipt.status='PASSED'
-        AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
+    WHERE NOT entral.phase203_latest_evidence_passed(
+      p_capability_id,p_capability_version,required_type
     )
   )
 $phase203_required_evidence$;
+
+CREATE OR REPLACE FUNCTION entral.phase203_operational_evidence_healthy(
+  p_capability_id uuid,p_capability_version text,p_target_state text DEFAULT NULL
+) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase203_operational_health$
+  SELECT COALESCE(CASE
+    WHEN COALESCE(p_target_state,capability.lifecycle_state) NOT IN ('ACTIVE','SELLABLE') THEN true
+    ELSE
+      entral.phase203_activation_requirements_healthy(capability.capability_id,capability.capability_version)
+      AND entral.phase203_required_evidence_present(
+        capability.capability_id,capability.capability_version,ARRAY['PRODUCTION_READBACK']::text[]
+      )
+      AND entral.phase203_required_evidence_present(
+        capability.capability_id,capability.capability_version,capability.required_evidence
+      )
+      AND (
+        capability.kind<>'INTEGRATION'
+        OR entral.phase203_required_evidence_present(
+          capability.capability_id,capability.capability_version,
+          ARRAY['AUTHENTICATION','AUTHORIZATION_SCOPE','OPERATION','READBACK','RECONCILIATION','REFRESH_OR_WEBHOOK','FAILURE_HANDLING']::text[]
+        )
+      )
+      AND (
+        COALESCE(p_target_state,capability.lifecycle_state)<>'SELLABLE'
+        OR entral.phase203_required_evidence_present(
+          capability.capability_id,capability.capability_version,
+          ARRAY['UNIT_TEST','INTEGRATION_TEST','CANARY','PRODUCTION_READBACK','SUPPORT_READINESS','PRICING_APPROVAL','TUTORIAL','DOCUMENTATION','ROLLBACK']::text[]
+        )
+      )
+  END,false)
+  FROM entral.capability_records capability
+  WHERE capability.capability_id=p_capability_id
+    AND capability.capability_version=p_capability_version
+$phase203_operational_health$;
+
+CREATE OR REPLACE FUNCTION entral.phase203_dependencies_healthy(
+  p_capability_id uuid,p_capability_version text
+) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase203_dependencies$
+  SELECT NOT EXISTS (
+    SELECT 1
+    FROM entral.capability_dependencies dependency
+    JOIN entral.capability_records dependent_capability
+      ON dependent_capability.capability_id=dependency.capability_id
+     AND dependent_capability.capability_version=dependency.capability_version
+    LEFT JOIN entral.capability_records required_capability
+      ON required_capability.capability_id=dependency.dependency_capability_id
+     AND required_capability.capability_version=dependency.dependency_capability_version
+    WHERE dependency.capability_id=p_capability_id
+      AND dependency.capability_version=p_capability_version
+      AND dependency.required
+      AND (
+        required_capability.capability_id IS NULL
+        OR required_capability.environment<>dependent_capability.environment
+        OR (dependent_capability.scope='GLOBAL' AND required_capability.scope<>'GLOBAL')
+        OR (dependent_capability.scope='TENANT' AND required_capability.scope='TENANT' AND (
+          required_capability.tenant_id IS DISTINCT FROM dependent_capability.tenant_id
+          OR required_capability.organization_id IS DISTINCT FROM dependent_capability.organization_id
+        ))
+        OR required_capability.failure_state IS NOT NULL
+        OR required_capability.production_readiness<>'REAL'
+        OR (dependency.minimum_lifecycle_state IN ('ACTIVE','SELLABLE') AND NOT
+          entral.phase203_operational_evidence_healthy(
+            required_capability.capability_id,required_capability.capability_version,
+            required_capability.lifecycle_state
+          ))
+        OR entral.phase203_lifecycle_rank(required_capability.lifecycle_state)
+           < entral.phase203_lifecycle_rank(dependency.minimum_lifecycle_state)
+      )
+  )
+$phase203_dependencies$;
 
 CREATE OR REPLACE FUNCTION entral.phase203_transition_evidence_includes(
   p_capability_id uuid,p_capability_version text,p_receipt_ids uuid[],p_evidence_types text[]
@@ -379,8 +547,7 @@ AS $phase203_transition_evidence$
         AND receipt.capability_version=p_capability_version
         AND receipt.evidence_type=required_type
         AND receipt.environment=capability.environment
-        AND receipt.status='PASSED'
-        AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
+        AND entral.phase203_current_evidence_receipt_passed(receipt.receipt_id)
     )
   )
 $phase203_transition_evidence$;
@@ -398,13 +565,16 @@ AS $phase203_record_json$
     'purpose',capability.purpose,
     'kind',capability.kind,
     'owner',capability.owner,
+    'data_classification',capability.data_classification,
     'environment',capability.environment,
     'scope',capability.scope,
+    'supported_scopes',to_jsonb(capability.supported_scopes),
     'tenant_id',capability.tenant_id,
     'organization_id',capability.organization_id,
     'lifecycle_state',capability.lifecycle_state,
     'audience_status',capability.audience_status,
     'production_readiness',capability.production_readiness,
+    'required_evidence',to_jsonb(capability.required_evidence),
     'dependencies',COALESCE((
       SELECT jsonb_agg(jsonb_build_object(
         'capability_id',dependency.dependency_capability_id,
@@ -435,6 +605,7 @@ AS $phase203_record_json$
     'last_verified_at',capability.last_verified_at,
     'failure_state',capability.failure_state,
     'public_claim_eligible',capability.public_claim_eligible,
+    'pricing_eligibility',capability.pricing_eligibility,
     'rollback_path',capability.rollback_path,
     'deactivation_path',capability.deactivation_path,
     'source_reference',capability.source_reference,
@@ -446,6 +617,24 @@ AS $phase203_record_json$
   FROM entral.capability_records capability
   WHERE capability.capability_id=p_capability_id
 $phase203_record_json$;
+
+CREATE OR REPLACE FUNCTION entral.phase203_product_claim_record_json(p_claim_id uuid)
+RETURNS jsonb
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase203_claim_record_json$
+  SELECT jsonb_build_object(
+    'claim_id',claim.claim_id,'claim_key',claim.claim_key,
+    'capability_id',claim.capability_id,'capability_version',claim.capability_version,
+    'environment',claim.environment,'surface',claim.surface,'status',claim.status,
+    'approved_language',claim.approved_language,'limitations',to_jsonb(claim.limitations),
+    'evidence_receipt_ids',COALESCE((SELECT jsonb_agg(link.receipt_id ORDER BY link.receipt_id)
+      FROM entral.product_claim_evidence_receipts link WHERE link.claim_id=claim.claim_id),'[]'::jsonb),
+    'requires_tenant_installation',claim.requires_tenant_installation,
+    'approved_by_actor_id',claim.approved_by_actor_id,'approved_at',claim.approved_at,
+    'record_version',claim.record_version,'created_at',claim.created_at,'updated_at',claim.updated_at
+  ) FROM entral.product_claims claim WHERE claim.claim_id=p_claim_id
+$phase203_claim_record_json$;
 
 CREATE OR REPLACE FUNCTION entral.phase203_bump_registry_revision()
 RETURNS bigint
@@ -499,6 +688,12 @@ FOR EACH ROW EXECUTE FUNCTION entral.phase203_block_append_only_mutation();
 CREATE TRIGGER product_claim_transition_audit_no_truncate
 BEFORE TRUNCATE ON entral.product_claim_transition_audit
 FOR EACH STATEMENT EXECUTE FUNCTION entral.phase203_block_append_only_mutation();
+CREATE TRIGGER tenant_capability_installation_audit_append_only
+BEFORE UPDATE OR DELETE ON entral.tenant_capability_installation_audit
+FOR EACH ROW EXECUTE FUNCTION entral.phase203_block_append_only_mutation();
+CREATE TRIGGER tenant_capability_installation_audit_no_truncate
+BEFORE TRUNCATE ON entral.tenant_capability_installation_audit
+FOR EACH STATEMENT EXECUTE FUNCTION entral.phase203_block_append_only_mutation();
 CREATE TRIGGER capability_mutation_receipts_append_only
 BEFORE UPDATE OR DELETE ON entral.capability_mutation_receipts
 FOR EACH ROW EXECUTE FUNCTION entral.phase203_block_append_only_mutation();
@@ -512,6 +707,71 @@ CREATE TRIGGER publication_decision_audit_no_truncate
 BEFORE TRUNCATE ON entral.publication_decision_audit
 FOR EACH STATEMENT EXECUTE FUNCTION entral.phase203_block_append_only_mutation();
 
+CREATE OR REPLACE FUNCTION entral.phase203_validate_tenant_installation()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase203_validate_installation$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM jsonb_each(NEW.feature_flags) entry
+    WHERE entry.key !~ '^[a-z0-9][a-z0-9._-]{2,159}$' OR jsonb_typeof(entry.value)<>'boolean'
+  ) OR EXISTS (
+    SELECT 1 FROM jsonb_each(NEW.limits) entry
+    WHERE entry.key !~ '^[a-z0-9][a-z0-9._-]{2,159}$'
+       OR jsonb_typeof(entry.value)<>'number'
+       OR (entry.value #>> '{}')::numeric<0
+       OR trunc((entry.value #>> '{}')::numeric)<>(entry.value #>> '{}')::numeric
+       OR (entry.value #>> '{}')::numeric>9007199254740991
+  ) THEN
+    RAISE EXCEPTION 'Tenant capability feature flags or limits violate the canonical contract'
+      USING ERRCODE='23514';
+  END IF;
+  IF NEW.state='ACTIVE' AND (
+    cardinality(NEW.verification_receipt_ids)=0 OR EXISTS (
+      SELECT 1 FROM unnest(NEW.verification_receipt_ids) requested_receipt_id
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM entral.capability_verification_receipts receipt
+        JOIN entral.capability_records capability
+          ON capability.capability_id=receipt.capability_id
+         AND capability.capability_version=receipt.capability_version
+        WHERE receipt.receipt_id=requested_receipt_id
+          AND receipt.capability_id=NEW.capability_id
+          AND receipt.capability_version=NEW.capability_version
+          AND receipt.environment=capability.environment
+          AND entral.phase203_current_evidence_receipt_passed(receipt.receipt_id)
+      )
+    )
+  ) THEN
+    RAISE EXCEPTION 'ACTIVE tenant capability installation requires exact fresh passed evidence'
+      USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END
+$phase203_validate_installation$;
+CREATE TRIGGER tenant_capability_installation_contract_guard
+BEFORE INSERT OR UPDATE ON entral.tenant_capability_installations
+FOR EACH ROW EXECUTE FUNCTION entral.phase203_validate_tenant_installation();
+
+CREATE OR REPLACE FUNCTION entral.phase203_validate_capability_metadata()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase203_validate_metadata$
+BEGIN
+  IF cardinality(NEW.supported_scopes)<>(SELECT count(DISTINCT value) FROM unnest(NEW.supported_scopes) value)
+     OR cardinality(NEW.required_evidence)<>(SELECT count(DISTINCT value) FROM unnest(NEW.required_evidence) value) THEN
+    RAISE EXCEPTION 'Capability supported scopes and required evidence must be unique'
+      USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END
+$phase203_validate_metadata$;
+CREATE TRIGGER capability_records_metadata_guard
+BEFORE INSERT OR UPDATE OF supported_scopes,required_evidence ON entral.capability_records
+FOR EACH ROW EXECUTE FUNCTION entral.phase203_validate_capability_metadata();
+
 CREATE OR REPLACE FUNCTION entral.phase203_guard_capability_transition()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER
@@ -520,7 +780,8 @@ AS $phase203_guard_capability$
 DECLARE v_transition_id uuid;
 BEGIN
   IF NEW.lifecycle_state IS NOT DISTINCT FROM OLD.lifecycle_state
-     AND NEW.public_claim_eligible IS NOT DISTINCT FROM OLD.public_claim_eligible THEN
+     AND NEW.public_claim_eligible IS NOT DISTINCT FROM OLD.public_claim_eligible
+     AND NEW.pricing_eligibility IS NOT DISTINCT FROM OLD.pricing_eligibility THEN
     RETURN NEW;
   END IF;
   v_transition_id := NULLIF(current_setting('app.phase203_transition_id',true),'')::uuid;
@@ -531,6 +792,7 @@ BEGIN
       AND transition.capability_version=OLD.capability_version
       AND transition.from_state=OLD.lifecycle_state
       AND transition.to_state=NEW.lifecycle_state
+      AND transition.pricing_eligibility=NEW.pricing_eligibility
       AND transition.prior_record_version=OLD.record_version
       AND transition.resulting_record_version=NEW.record_version
   ) THEN
@@ -545,7 +807,7 @@ BEGIN
 END
 $phase203_guard_capability$;
 CREATE TRIGGER capability_records_transition_guard
-BEFORE UPDATE OF lifecycle_state,public_claim_eligible ON entral.capability_records
+BEFORE UPDATE OF lifecycle_state,public_claim_eligible,pricing_eligibility ON entral.capability_records
 FOR EACH ROW EXECUTE FUNCTION entral.phase203_guard_capability_transition();
 
 CREATE OR REPLACE FUNCTION entral.phase203_guard_claim_transition()
@@ -637,6 +899,111 @@ CREATE TRIGGER product_claim_evidence_binding_guard
 BEFORE INSERT OR DELETE ON entral.product_claim_evidence_receipts
 FOR EACH ROW EXECUTE FUNCTION entral.phase203_guard_claim_evidence_binding();
 
+CREATE OR REPLACE FUNCTION entral.phase203_reconcile_unhealthy_dependents(
+  p_root_transition_id uuid,p_actor_id uuid,p_correlation_id uuid,p_release_version text
+) RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase203_reconcile_dependencies$
+DECLARE
+  dependent entral.capability_records%ROWTYPE;
+  installation entral.tenant_capability_installations%ROWTYPE;
+  v_transition_id uuid;
+  v_idempotency_key text;
+  v_updated_at timestamptz;
+  v_snapshot jsonb;
+  reconciled integer := 0;
+BEGIN
+  IF NOT entral.phase203_admin_access_allows()
+     OR p_actor_id IS DISTINCT FROM entral.phase202_current_actor_id()
+     OR p_release_version IS DISTINCT FROM 'phase-203' THEN
+    RAISE EXCEPTION 'Dependency reconciliation requires bound Phase 203 administrator authority'
+      USING ERRCODE='42501';
+  END IF;
+  LOOP
+    WITH RECURSIVE root AS (
+      SELECT transition.capability_id,transition.capability_version
+      FROM entral.capability_transition_audit transition
+      WHERE transition.transition_id=p_root_transition_id
+    ), affected(capability_id,capability_version) AS (
+      SELECT dependency.capability_id,dependency.capability_version
+      FROM entral.capability_dependencies dependency
+      JOIN root ON root.capability_id=dependency.dependency_capability_id
+        AND root.capability_version=dependency.dependency_capability_version
+      WHERE dependency.required
+      UNION
+      SELECT dependency.capability_id,dependency.capability_version
+      FROM entral.capability_dependencies dependency
+      JOIN affected ON affected.capability_id=dependency.dependency_capability_id
+        AND affected.capability_version=dependency.dependency_capability_version
+      WHERE dependency.required
+    )
+    SELECT record.* INTO dependent
+    FROM entral.capability_records record
+    JOIN affected USING (capability_id,capability_version)
+    WHERE record.lifecycle_state IN ('ACTIVE','SELLABLE')
+      AND NOT entral.phase203_dependencies_healthy(record.capability_id,record.capability_version)
+    ORDER BY record.capability_id
+    LIMIT 1 FOR UPDATE;
+    EXIT WHEN NOT FOUND;
+
+    v_transition_id := public.gen_random_uuid();
+    v_idempotency_key := 'phase203:dependency-disable:'||p_root_transition_id::text||':'||dependent.capability_id::text;
+    v_updated_at := clock_timestamp();
+    v_snapshot := entral.phase203_capability_record_json(dependent.capability_id) || jsonb_build_object(
+      'lifecycle_state','CANARY_VERIFIED','public_claim_eligible',false,
+      'pricing_eligibility','NOT_ELIGIBLE','record_version',dependent.record_version+1,
+      'updated_at',v_updated_at
+    );
+    INSERT INTO entral.capability_transition_audit(
+      transition_id,capability_id,capability_version,from_state,to_state,pricing_eligibility,
+      prior_record_version,resulting_record_version,evidence_receipt_ids,reason,
+      actor_id,tenant_id,organization_id,business_id,correlation_id,idempotency_key,
+      request_sha256,release_version,response_snapshot,requested_at
+    ) VALUES (
+      v_transition_id,dependent.capability_id,dependent.capability_version,dependent.lifecycle_state,'CANARY_VERIFIED','NOT_ELIGIBLE',
+      dependent.record_version,dependent.record_version+1,ARRAY[]::uuid[],
+      'Automatically downgraded because a required dependency became unhealthy.',
+      p_actor_id,dependent.tenant_id,dependent.organization_id,NULL,p_correlation_id,v_idempotency_key,
+      encode(public.digest(convert_to(v_idempotency_key,'UTF8'),'sha256'),'hex'),
+      p_release_version,v_snapshot,v_updated_at
+    );
+    PERFORM set_config('app.phase203_transition_id',v_transition_id::text,true);
+    UPDATE entral.capability_records
+    SET lifecycle_state='CANARY_VERIFIED',public_claim_eligible=false,
+        pricing_eligibility='NOT_ELIGIBLE',record_version=record_version+1,updated_at=v_updated_at
+    WHERE capability_id=dependent.capability_id;
+
+    FOR installation IN
+      SELECT record.* FROM entral.tenant_capability_installations record
+      WHERE record.capability_id=dependent.capability_id
+        AND record.capability_version=dependent.capability_version
+        AND record.state='ACTIVE'
+      ORDER BY record.installation_id FOR UPDATE
+    LOOP
+      INSERT INTO entral.tenant_capability_installation_audit(
+        transition_id,installation_id,tenant_id,organization_id,capability_id,capability_version,
+        from_state,to_state,prior_record_version,resulting_record_version,reason,actor_id,
+        correlation_id,idempotency_key,release_version
+      ) VALUES (
+        public.gen_random_uuid(),installation.installation_id,installation.tenant_id,installation.organization_id,
+        installation.capability_id,installation.capability_version,installation.state,'SUSPENDED',
+        installation.record_version,installation.record_version+1,
+        'Automatically suspended because a required capability dependency became unhealthy.',
+        p_actor_id,p_correlation_id,v_idempotency_key||':'||installation.installation_id::text,p_release_version
+      );
+      UPDATE entral.tenant_capability_installations
+      SET state='SUSPENDED',suspension_reason='Required capability dependency is unhealthy.',
+          record_version=record_version+1,updated_at=v_updated_at
+      WHERE installation_id=installation.installation_id;
+    END LOOP;
+    PERFORM entral.phase203_bump_registry_revision();
+    reconciled := reconciled+1;
+  END LOOP;
+  RETURN reconciled;
+END
+$phase203_reconcile_dependencies$;
+
 CREATE OR REPLACE FUNCTION entral.phase203_record_capability_evidence(
   p_capability_id uuid,p_expected_revision bigint,p_receipt jsonb,p_idempotency_key text
 ) RETURNS jsonb
@@ -645,8 +1012,9 @@ SET search_path=pg_catalog,public,entral,pg_temp
 AS $phase203_record_evidence$
 DECLARE
   capability entral.capability_records%ROWTYPE;
+  installation entral.tenant_capability_installations%ROWTYPE;
   current_actor_id uuid;
-  receipt_id uuid;
+  v_receipt_id uuid;
   receipt_environment text;
   receipt_status text;
   receipt_type text;
@@ -655,6 +1023,13 @@ DECLARE
   request_hash text;
   prior_receipt entral.capability_mutation_receipts%ROWTYPE;
   response jsonb;
+  v_failure_state jsonb;
+  v_transition_id uuid;
+  v_updated_at timestamptz;
+  v_snapshot jsonb;
+  v_receipt_is_latest boolean;
+  v_prior_lifecycle_state text;
+  v_remaining_failure_state jsonb;
 BEGIN
   IF NOT entral.phase203_admin_access_allows() THEN
     RAISE EXCEPTION 'Phase 203 evidence recording requires active human administrator authority'
@@ -687,7 +1062,7 @@ BEGIN
   END IF;
 
   BEGIN
-    receipt_id := (p_receipt->>'receipt_id')::uuid;
+    v_receipt_id := (p_receipt->>'receipt_id')::uuid;
     receipt_environment := p_receipt->>'environment';
     receipt_status := p_receipt->>'status';
     receipt_type := p_receipt->>'evidence_type';
@@ -715,16 +1090,132 @@ BEGIN
     receipt_id,capability_id,capability_version,evidence_type,environment,status,
     reference,content_sha256,captured_at,expires_at,recorded_by_actor_id
   ) VALUES (
-    receipt_id,capability.capability_id,capability.capability_version,receipt_type,
+    v_receipt_id,capability.capability_id,capability.capability_version,receipt_type,
     receipt_environment,receipt_status,p_receipt->>'reference',p_receipt->>'content_sha256',
     captured_at,expires_at,current_actor_id
   );
-  UPDATE entral.capability_records
-  SET last_verified_at=CASE WHEN receipt_status='PASSED'
-        THEN GREATEST(COALESCE(last_verified_at,captured_at),captured_at) ELSE last_verified_at END,
-      record_version=record_version+1,updated_at=clock_timestamp()
-  WHERE capability_id=p_capability_id;
-  PERFORM entral.phase203_bump_registry_revision();
+  SELECT current_receipt.receipt_id=v_receipt_id
+  INTO v_receipt_is_latest
+  FROM entral.capability_verification_receipts current_receipt
+  WHERE current_receipt.capability_id=capability.capability_id
+    AND current_receipt.capability_version=capability.capability_version
+    AND current_receipt.evidence_type=receipt_type
+    AND current_receipt.environment=capability.environment
+  ORDER BY current_receipt.captured_at DESC,current_receipt.receipt_id DESC
+  LIMIT 1;
+  v_updated_at := clock_timestamp();
+  v_prior_lifecycle_state := COALESCE(
+    NULLIF(capability.failure_state->>'prior_lifecycle_state',''),capability.lifecycle_state
+  );
+  v_failure_state := jsonb_build_object(
+    'code','VERIFICATION_FAILED',
+    'summary','The latest '||receipt_type||' verification failed.',
+    'observed_at',captured_at,
+    'retryable',true,
+    'evidence_type',receipt_type,
+    'receipt_id',v_receipt_id,
+    'prior_lifecycle_state',v_prior_lifecycle_state
+  );
+  SELECT jsonb_build_object(
+    'code','VERIFICATION_FAILED',
+    'summary','The latest '||latest_failed.evidence_type||' verification failed.',
+    'observed_at',latest_failed.captured_at,
+    'retryable',true,
+    'evidence_type',latest_failed.evidence_type,
+    'receipt_id',latest_failed.receipt_id,
+    'prior_lifecycle_state',v_prior_lifecycle_state
+  )
+  INTO v_remaining_failure_state
+  FROM (
+    SELECT current_by_type.*
+    FROM (
+      SELECT DISTINCT ON (receipt.evidence_type)
+        receipt.receipt_id,receipt.evidence_type,receipt.status,receipt.captured_at
+      FROM entral.capability_verification_receipts receipt
+      WHERE receipt.capability_id=capability.capability_id
+        AND receipt.capability_version=capability.capability_version
+        AND receipt.environment=capability.environment
+      ORDER BY receipt.evidence_type,receipt.captured_at DESC,receipt.receipt_id DESC
+    ) current_by_type
+    WHERE current_by_type.status='FAILED'
+    ORDER BY current_by_type.captured_at DESC,current_by_type.receipt_id DESC
+    LIMIT 1
+  ) latest_failed;
+
+  IF receipt_status='FAILED' AND v_receipt_is_latest
+     AND capability.lifecycle_state IN ('ACTIVE','SELLABLE') THEN
+    v_transition_id := public.gen_random_uuid();
+    v_snapshot := entral.phase203_capability_record_json(capability.capability_id) || jsonb_build_object(
+      'lifecycle_state','CANARY_VERIFIED','public_claim_eligible',false,
+      'pricing_eligibility','NOT_ELIGIBLE','failure_state',v_failure_state,
+      'record_version',capability.record_version+1,'updated_at',v_updated_at
+    );
+    INSERT INTO entral.capability_transition_audit(
+      transition_id,capability_id,capability_version,from_state,to_state,pricing_eligibility,
+      prior_record_version,resulting_record_version,evidence_receipt_ids,reason,
+      actor_id,tenant_id,organization_id,business_id,correlation_id,idempotency_key,
+      request_sha256,release_version,response_snapshot,requested_at
+    ) VALUES (
+      v_transition_id,capability.capability_id,capability.capability_version,
+      capability.lifecycle_state,'CANARY_VERIFIED','NOT_ELIGIBLE',
+      capability.record_version,capability.record_version+1,ARRAY[v_receipt_id]::uuid[],
+      'Automatically downgraded because the latest production verification failed.',
+      current_actor_id,capability.tenant_id,capability.organization_id,NULL,v_receipt_id,
+      'phase203:evidence-failure:'||v_receipt_id::text,request_hash,'phase-203',v_snapshot,v_updated_at
+    );
+    PERFORM set_config('app.phase203_transition_id',v_transition_id::text,true);
+    UPDATE entral.capability_records
+    SET lifecycle_state='CANARY_VERIFIED',public_claim_eligible=false,
+        pricing_eligibility='NOT_ELIGIBLE',failure_state=v_failure_state,
+        record_version=record_version+1,updated_at=v_updated_at
+    WHERE capability_id=p_capability_id;
+
+    FOR installation IN
+      SELECT record.* FROM entral.tenant_capability_installations record
+      WHERE record.capability_id=capability.capability_id
+        AND record.capability_version=capability.capability_version
+        AND record.state='ACTIVE'
+      ORDER BY record.installation_id FOR UPDATE
+    LOOP
+      INSERT INTO entral.tenant_capability_installation_audit(
+        transition_id,installation_id,tenant_id,organization_id,capability_id,capability_version,
+        from_state,to_state,prior_record_version,resulting_record_version,reason,actor_id,
+        correlation_id,idempotency_key,release_version
+      ) VALUES (
+        public.gen_random_uuid(),installation.installation_id,installation.tenant_id,installation.organization_id,
+        installation.capability_id,installation.capability_version,installation.state,'SUSPENDED',
+        installation.record_version,installation.record_version+1,
+        'Automatically suspended because the latest capability verification failed.',
+        current_actor_id,v_receipt_id,
+        'phase203:evidence-failure:'||v_receipt_id::text||':'||installation.installation_id::text,'phase-203'
+      );
+      UPDATE entral.tenant_capability_installations
+      SET state='SUSPENDED',suspension_reason='Latest capability verification failed.',
+          record_version=record_version+1,updated_at=v_updated_at
+      WHERE installation_id=installation.installation_id;
+    END LOOP;
+    PERFORM entral.phase203_bump_registry_revision();
+    PERFORM entral.phase203_reconcile_unhealthy_dependents(
+      v_transition_id,current_actor_id,v_receipt_id,'phase-203'
+    );
+  ELSE
+    UPDATE entral.capability_records
+    SET last_verified_at=CASE WHEN receipt_status='PASSED'
+          THEN GREATEST(COALESCE(last_verified_at,captured_at),captured_at) ELSE last_verified_at END,
+        failure_state=CASE
+          WHEN v_remaining_failure_state IS NOT NULL THEN v_remaining_failure_state
+          WHEN receipt_status='PASSED' AND v_receipt_is_latest
+            AND failure_state->>'code'='VERIFICATION_FAILED'
+            AND entral.phase203_operational_evidence_healthy(
+              capability.capability_id,capability.capability_version,
+              failure_state->>'prior_lifecycle_state'
+            ) THEN NULL
+          ELSE failure_state
+        END,
+        record_version=record_version+1,updated_at=v_updated_at
+    WHERE capability_id=p_capability_id;
+    PERFORM entral.phase203_bump_registry_revision();
+  END IF;
   response := entral.phase203_capability_record_json(p_capability_id);
   INSERT INTO entral.capability_mutation_receipts(
     operation,capability_id,idempotency_key,request_sha256,response_snapshot,actor_id
@@ -744,17 +1235,24 @@ DECLARE
   v_transition_id uuid;
   v_capability_id uuid;
   v_actor_id uuid;
+  v_tenant_id uuid;
+  v_organization_id uuid;
+  v_business_id uuid;
   v_correlation_id uuid;
   v_requested_at timestamptz;
   v_expected_record_version bigint;
   v_from_state text;
   v_to_state text;
+  v_pricing_eligibility text;
   v_idempotency_key text;
   v_reason text;
+  v_release_version text;
   v_evidence_receipt_ids uuid[];
   request_hash text;
   current_rank integer;
   target_rank integer;
+  v_updated_at timestamptz;
+  response jsonb;
 BEGIN
   IF NOT entral.phase203_admin_access_allows() THEN
     RAISE EXCEPTION 'Phase 203 lifecycle transition requires active human administrator authority'
@@ -767,13 +1265,18 @@ BEGIN
     v_transition_id := (p_request->>'transition_id')::uuid;
     v_capability_id := (p_request->>'capability_id')::uuid;
     v_actor_id := (p_request->>'actor_id')::uuid;
+    v_tenant_id := NULLIF(p_request->>'tenant_id','')::uuid;
+    v_organization_id := NULLIF(p_request->>'organization_id','')::uuid;
+    v_business_id := NULLIF(p_request->>'business_id','')::uuid;
     v_correlation_id := (p_request->>'correlation_id')::uuid;
     v_requested_at := (p_request->>'requested_at')::timestamptz;
     v_expected_record_version := (p_request->>'expected_record_version')::bigint;
     v_from_state := p_request->>'from_state';
     v_to_state := p_request->>'to_state';
+    v_pricing_eligibility := p_request->>'pricing_eligibility';
     v_idempotency_key := p_request->>'idempotency_key';
     v_reason := p_request->>'reason';
+    v_release_version := p_request->>'release_version';
     SELECT COALESCE(array_agg(value::uuid ORDER BY ordinal),ARRAY[]::uuid[])
     INTO v_evidence_receipt_ids
     FROM jsonb_array_elements_text(COALESCE(p_request->'evidence_receipt_ids','[]'::jsonb))
@@ -785,8 +1288,13 @@ BEGIN
      OR v_from_state NOT IN ('CATALOGUED','DESIGNED','IMPLEMENTED','UNIT_VERIFIED','INTEGRATION_VERIFIED','CANARY_VERIFIED','ACTIVE','SELLABLE','DEPRECATED','RETIRED')
      OR v_to_state NOT IN ('CATALOGUED','DESIGNED','IMPLEMENTED','UNIT_VERIFIED','INTEGRATION_VERIFIED','CANARY_VERIFIED','ACTIVE','SELLABLE','DEPRECATED','RETIRED')
      OR v_from_state=v_to_state OR v_expected_record_version<1
+     OR v_pricing_eligibility NOT IN ('NOT_ELIGIBLE','INCLUDED','ADD_ON')
+     OR (v_to_state='SELLABLE')<>(v_pricing_eligibility<>'NOT_ELIGIBLE')
      OR v_idempotency_key IS NULL OR length(v_idempotency_key) NOT BETWEEN 12 AND 255
      OR v_reason IS NULL OR length(btrim(v_reason)) NOT BETWEEN 1 AND 2000
+     OR v_release_version IS DISTINCT FROM 'phase-203'
+     OR NOT (p_request ? 'tenant_id') OR NOT (p_request ? 'organization_id')
+     OR NOT (p_request ? 'business_id') OR NOT (p_request ? 'release_version')
      OR v_requested_at IS NULL THEN
     RAISE EXCEPTION 'Phase 203 lifecycle request violates the canonical contract'
       USING ERRCODE='22023';
@@ -800,7 +1308,7 @@ BEGIN
       RAISE EXCEPTION 'Phase 203 lifecycle idempotency key was reused with a different request'
         USING ERRCODE='23505';
     END IF;
-    RETURN entral.phase203_capability_record_json(prior_transition.capability_id);
+    RETURN prior_transition.response_snapshot;
   END IF;
 
   SELECT * INTO capability FROM entral.capability_records record
@@ -808,6 +1316,19 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'Capability record does not exist' USING ERRCODE='P0002'; END IF;
   IF capability.lifecycle_state<>v_from_state OR capability.record_version<>v_expected_record_version THEN
     RAISE EXCEPTION 'Capability lifecycle revision conflict' USING ERRCODE='40001';
+  END IF;
+  IF (capability.scope='GLOBAL' AND (v_tenant_id IS NOT NULL OR v_organization_id IS NOT NULL OR v_business_id IS NOT NULL))
+     OR (capability.scope='TENANT' AND (
+       v_tenant_id IS DISTINCT FROM capability.tenant_id
+       OR v_organization_id IS DISTINCT FROM capability.organization_id
+     ))
+     OR (v_business_id IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM public."BusinessBoundary" business
+       WHERE business."id"=v_business_id AND business."tenantId"=v_tenant_id
+         AND business."organizationId"=v_organization_id
+     )) THEN
+    RAISE EXCEPTION 'Capability transition scope context does not match the canonical owner boundary'
+      USING ERRCODE='23514';
   END IF;
   current_rank := entral.phase203_lifecycle_rank(v_from_state);
   target_rank := entral.phase203_lifecycle_rank(v_to_state);
@@ -825,8 +1346,7 @@ BEGIN
       WHERE receipt.receipt_id=requested_receipt_id
         AND receipt.capability_id=capability.capability_id
         AND receipt.capability_version=capability.capability_version
-        AND receipt.status='PASSED'
-        AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
+        AND entral.phase203_current_evidence_receipt_passed(receipt.receipt_id)
     )
   ) THEN
     RAISE EXCEPTION 'Lifecycle transition evidence is missing, failed, expired, or version-mismatched'
@@ -864,6 +1384,18 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'Capability activation prerequisites are not healthy' USING ERRCODE='23514';
   END IF;
+  IF v_to_state IN ('ACTIVE','SELLABLE') AND (
+    NOT entral.phase203_required_evidence_present(
+      capability.capability_id,capability.capability_version,capability.required_evidence
+    )
+  ) THEN
+    RAISE EXCEPTION 'Capability record-required evidence is incomplete' USING ERRCODE='23514';
+  END IF;
+  IF v_to_state='SELLABLE' AND NOT entral.phase203_transition_evidence_includes(
+    capability.capability_id,capability.capability_version,v_evidence_receipt_ids,capability.required_evidence
+  ) THEN
+    RAISE EXCEPTION 'SELLABLE transition must bind the record-required evidence set' USING ERRCODE='23514';
+  END IF;
   IF v_to_state IN ('ACTIVE','SELLABLE') AND capability.kind='INTEGRATION'
      AND (
        NOT entral.phase203_required_evidence_present(
@@ -891,24 +1423,36 @@ BEGIN
     RAISE EXCEPTION 'SELLABLE evidence and public authority are incomplete' USING ERRCODE='23514';
   END IF;
 
+  v_updated_at := clock_timestamp();
+  response := entral.phase203_capability_record_json(capability.capability_id) || jsonb_build_object(
+    'lifecycle_state',v_to_state,'public_claim_eligible',(v_to_state='SELLABLE'),
+    'pricing_eligibility',v_pricing_eligibility,'record_version',capability.record_version+1,
+    'updated_at',v_updated_at
+  );
   INSERT INTO entral.capability_transition_audit(
-    transition_id,capability_id,capability_version,from_state,to_state,
+    transition_id,capability_id,capability_version,from_state,to_state,pricing_eligibility,
     prior_record_version,resulting_record_version,evidence_receipt_ids,reason,
-    actor_id,correlation_id,idempotency_key,request_sha256,requested_at
+    actor_id,tenant_id,organization_id,business_id,correlation_id,idempotency_key,
+    request_sha256,release_version,response_snapshot,requested_at
   ) VALUES (
-    v_transition_id,capability.capability_id,capability.capability_version,v_from_state,v_to_state,
+    v_transition_id,capability.capability_id,capability.capability_version,v_from_state,v_to_state,v_pricing_eligibility,
     capability.record_version,capability.record_version+1,v_evidence_receipt_ids,v_reason,
-    v_actor_id,v_correlation_id,v_idempotency_key,request_hash,v_requested_at
+    v_actor_id,v_tenant_id,v_organization_id,v_business_id,v_correlation_id,v_idempotency_key,
+    request_hash,v_release_version,response,v_requested_at
   );
   PERFORM set_config('app.phase203_transition_id',v_transition_id::text,true);
   UPDATE entral.capability_records
   SET lifecycle_state=v_to_state,
       public_claim_eligible=(v_to_state='SELLABLE'),
+      pricing_eligibility=v_pricing_eligibility,
       record_version=record_version+1,
-      updated_at=clock_timestamp()
+      updated_at=v_updated_at
   WHERE capability_id=capability.capability_id;
   PERFORM entral.phase203_bump_registry_revision();
-  RETURN entral.phase203_capability_record_json(capability.capability_id);
+  PERFORM entral.phase203_reconcile_unhealthy_dependents(
+    v_transition_id,v_actor_id,v_correlation_id,v_release_version
+  );
+  RETURN response;
 END
 $phase203_transition$;
 
@@ -1032,16 +1576,21 @@ DECLARE
   v_transition_id uuid;
   v_claim_id uuid;
   v_actor_id uuid;
+  v_tenant_id uuid;
+  v_organization_id uuid;
+  v_business_id uuid;
   v_correlation_id uuid;
   v_expected_record_version bigint;
   v_from_status text;
   v_to_status text;
   v_idempotency_key text;
   v_reason text;
+  v_release_version text;
   v_requested_at timestamptz;
   v_evidence_receipt_ids uuid[];
   request_hash text;
   response jsonb;
+  v_updated_at timestamptz;
 BEGIN
   IF NOT entral.phase203_admin_access_allows() THEN
     RAISE EXCEPTION 'Product claim transition requires active human administrator authority'
@@ -1051,12 +1600,16 @@ BEGIN
     v_transition_id := (p_request->>'transition_id')::uuid;
     v_claim_id := (p_request->>'claim_id')::uuid;
     v_actor_id := (p_request->>'actor_id')::uuid;
+    v_tenant_id := NULLIF(p_request->>'tenant_id','')::uuid;
+    v_organization_id := NULLIF(p_request->>'organization_id','')::uuid;
+    v_business_id := NULLIF(p_request->>'business_id','')::uuid;
     v_correlation_id := (p_request->>'correlation_id')::uuid;
     v_expected_record_version := (p_request->>'expected_record_version')::bigint;
     v_from_status := p_request->>'from_status';
     v_to_status := p_request->>'to_status';
     v_idempotency_key := p_request->>'idempotency_key';
     v_reason := p_request->>'reason';
+    v_release_version := p_request->>'release_version';
     v_requested_at := (p_request->>'requested_at')::timestamptz;
     SELECT COALESCE(array_agg(value::uuid ORDER BY ordinal),ARRAY[]::uuid[])
     INTO v_evidence_receipt_ids
@@ -1070,7 +1623,10 @@ BEGIN
      OR v_to_status NOT IN ('DRAFT','APPROVED','BLOCKED','RETIRED')
      OR v_from_status=v_to_status OR v_expected_record_version<1
      OR v_idempotency_key IS NULL OR length(v_idempotency_key) NOT BETWEEN 12 AND 255
-     OR v_reason IS NULL OR length(btrim(v_reason)) NOT BETWEEN 1 AND 2000 THEN
+     OR v_reason IS NULL OR length(btrim(v_reason)) NOT BETWEEN 1 AND 2000
+     OR v_release_version IS DISTINCT FROM 'phase-203'
+     OR NOT (p_request ? 'tenant_id') OR NOT (p_request ? 'organization_id')
+     OR NOT (p_request ? 'business_id') OR NOT (p_request ? 'release_version') THEN
     RAISE EXCEPTION 'Product claim transition violates the canonical contract' USING ERRCODE='22023';
   END IF;
   request_hash := encode(public.digest(convert_to(p_request::text,'UTF8'),'sha256'),'hex');
@@ -1082,7 +1638,7 @@ BEGIN
       RAISE EXCEPTION 'Product claim idempotency key was reused with a different request'
         USING ERRCODE='23505';
     END IF;
-    v_claim_id := prior_transition.claim_id;
+    RETURN prior_transition.response_snapshot;
   ELSE
     SELECT * INTO claim FROM entral.product_claims record
     WHERE record.claim_id=v_claim_id FOR UPDATE;
@@ -1100,9 +1656,28 @@ BEGIN
     SELECT * INTO capability FROM entral.capability_records record
     WHERE record.capability_id=claim.capability_id
       AND record.capability_version=claim.capability_version;
+    IF (capability.scope='GLOBAL' AND (v_tenant_id IS NOT NULL OR v_organization_id IS NOT NULL OR v_business_id IS NOT NULL))
+       OR (capability.scope='TENANT' AND (
+         v_tenant_id IS DISTINCT FROM capability.tenant_id
+         OR v_organization_id IS DISTINCT FROM capability.organization_id
+       ))
+       OR (v_business_id IS NOT NULL AND NOT EXISTS (
+         SELECT 1 FROM public."BusinessBoundary" business
+         WHERE business."id"=v_business_id AND business."tenantId"=v_tenant_id
+           AND business."organizationId"=v_organization_id
+       )) THEN
+      RAISE EXCEPTION 'Product claim transition scope context does not match the canonical owner boundary'
+        USING ERRCODE='23514';
+    END IF;
     IF v_to_status='APPROVED' AND (
       capability.lifecycle_state<>'SELLABLE' OR capability.production_readiness<>'REAL'
       OR NOT capability.public_claim_eligible OR capability.failure_state IS NOT NULL
+      OR capability.pricing_eligibility='NOT_ELIGIBLE'
+      OR NOT entral.phase203_dependencies_healthy(capability.capability_id,capability.capability_version)
+      OR NOT entral.phase203_activation_requirements_healthy(capability.capability_id,capability.capability_version)
+      OR NOT entral.phase203_required_evidence_present(
+        capability.capability_id,capability.capability_version,capability.required_evidence
+      )
       OR cardinality(v_evidence_receipt_ids)=0
       OR EXISTS (
         SELECT 1 FROM unnest(v_evidence_receipt_ids) requested_receipt_id
@@ -1111,20 +1686,28 @@ BEGIN
           WHERE receipt.receipt_id=requested_receipt_id
             AND receipt.capability_id=claim.capability_id
             AND receipt.capability_version=claim.capability_version
-            AND receipt.status='PASSED'
-            AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
+            AND entral.phase203_current_evidence_receipt_passed(receipt.receipt_id)
         )
       )
     ) THEN
       RAISE EXCEPTION 'Product claim cannot be approved without exact SELLABLE evidence'
         USING ERRCODE='23514';
     END IF;
+    v_updated_at := clock_timestamp();
+    response := entral.phase203_product_claim_record_json(claim.claim_id) || jsonb_build_object(
+      'status',v_to_status,'evidence_receipt_ids',to_jsonb(v_evidence_receipt_ids),
+      'approved_by_actor_id',CASE WHEN v_to_status='APPROVED' THEN to_jsonb(v_actor_id) ELSE 'null'::jsonb END,
+      'approved_at',CASE WHEN v_to_status='APPROVED' THEN to_jsonb(v_updated_at) ELSE 'null'::jsonb END,
+      'record_version',claim.record_version+1,'updated_at',v_updated_at
+    );
     INSERT INTO entral.product_claim_transition_audit(
       transition_id,claim_id,from_status,to_status,prior_record_version,resulting_record_version,
-      evidence_receipt_ids,reason,actor_id,correlation_id,idempotency_key,request_sha256,requested_at
+      evidence_receipt_ids,reason,actor_id,tenant_id,organization_id,business_id,correlation_id,
+      idempotency_key,request_sha256,release_version,response_snapshot,requested_at
     ) VALUES (
       v_transition_id,claim.claim_id,v_from_status,v_to_status,claim.record_version,claim.record_version+1,
-      v_evidence_receipt_ids,v_reason,v_actor_id,v_correlation_id,v_idempotency_key,request_hash,v_requested_at
+      v_evidence_receipt_ids,v_reason,v_actor_id,v_tenant_id,v_organization_id,v_business_id,v_correlation_id,
+      v_idempotency_key,request_hash,v_release_version,response,v_requested_at
     );
     PERFORM set_config('app.phase203_claim_transition_id',v_transition_id::text,true);
     DELETE FROM entral.product_claim_evidence_receipts WHERE product_claim_evidence_receipts.claim_id=claim.claim_id;
@@ -1133,22 +1716,11 @@ BEGIN
     UPDATE entral.product_claims
     SET status=v_to_status,
         approved_by_actor_id=CASE WHEN v_to_status='APPROVED' THEN v_actor_id ELSE NULL END,
-        approved_at=CASE WHEN v_to_status='APPROVED' THEN clock_timestamp() ELSE NULL END,
-        record_version=record_version+1,updated_at=clock_timestamp()
+        approved_at=CASE WHEN v_to_status='APPROVED' THEN v_updated_at ELSE NULL END,
+        record_version=record_version+1,updated_at=v_updated_at
     WHERE product_claims.claim_id=claim.claim_id;
     PERFORM entral.phase203_bump_registry_revision();
   END IF;
-  SELECT jsonb_build_object(
-    'claim_id',record.claim_id,'claim_key',record.claim_key,
-    'capability_id',record.capability_id,'capability_version',record.capability_version,
-    'environment',record.environment,'surface',record.surface,'status',record.status,
-    'approved_language',record.approved_language,'limitations',to_jsonb(record.limitations),
-    'evidence_receipt_ids',COALESCE((SELECT jsonb_agg(link.receipt_id ORDER BY link.receipt_id)
-      FROM entral.product_claim_evidence_receipts link WHERE link.claim_id=record.claim_id),'[]'::jsonb),
-    'requires_tenant_installation',record.requires_tenant_installation,
-    'approved_by_actor_id',record.approved_by_actor_id,'approved_at',record.approved_at,
-    'record_version',record.record_version,'created_at',record.created_at,'updated_at',record.updated_at
-  ) INTO response FROM entral.product_claims record WHERE record.claim_id=v_claim_id;
   RETURN response;
 END
 $phase203_transition_claim$;
@@ -1189,6 +1761,7 @@ BEGIN
       'capability_version',capability.capability_version,
       'display_name',capability.display_name,
       'lifecycle_state','SELLABLE',
+      'pricing_eligibility',capability.pricing_eligibility,
       'approved_language',product_claim.approved_language,
       'limitations',to_jsonb(product_claim.limitations),
       'evidence_receipt_ids',(
@@ -1210,14 +1783,19 @@ BEGIN
       AND capability.lifecycle_state='SELLABLE'
       AND capability.production_readiness='REAL'
       AND capability.public_claim_eligible
+      AND capability.pricing_eligibility<>'NOT_ELIGIBLE'
       AND capability.audience_status='CURRENT'
       AND capability.failure_state IS NULL
       AND capability.last_verified_at IS NOT NULL
+      AND (p_surface<>'INTEGRATION_LIST' OR capability.kind='INTEGRATION')
       AND entral.phase203_dependencies_healthy(capability.capability_id,capability.capability_version)
       AND entral.phase203_activation_requirements_healthy(capability.capability_id,capability.capability_version)
       AND entral.phase203_required_evidence_present(
         capability.capability_id,capability.capability_version,
         ARRAY['UNIT_TEST','INTEGRATION_TEST','CANARY','PRODUCTION_READBACK','SUPPORT_READINESS','PRICING_APPROVAL','TUTORIAL','DOCUMENTATION','ROLLBACK']::text[]
+      )
+      AND entral.phase203_required_evidence_present(
+        capability.capability_id,capability.capability_version,capability.required_evidence
       )
       AND (
         (capability.scope='GLOBAL' AND capability.tenant_id IS NULL AND capability.organization_id IS NULL)
@@ -1234,8 +1812,7 @@ BEGIN
          AND receipt.capability_id=capability.capability_id
          AND receipt.capability_version=capability.capability_version
          AND receipt.environment=capability.environment
-         AND receipt.status='PASSED'
-         AND (receipt.expires_at IS NULL OR receipt.expires_at>clock_timestamp())
+         AND entral.phase203_current_evidence_receipt_passed(receipt.receipt_id)
         WHERE link.claim_id=product_claim.claim_id AND receipt.receipt_id IS NULL
       )
       AND (
@@ -1248,6 +1825,18 @@ BEGIN
             AND installation.capability_version=capability.capability_version
             AND installation.state='ACTIVE' AND installation.plan_eligible
             AND installation.suspension_reason IS NULL
+            AND cardinality(installation.verification_receipt_ids)>0
+            AND NOT EXISTS (
+              SELECT 1 FROM unnest(installation.verification_receipt_ids) installation_receipt_id
+              WHERE NOT EXISTS (
+                SELECT 1 FROM entral.capability_verification_receipts installation_receipt
+                WHERE installation_receipt.receipt_id=installation_receipt_id
+                  AND installation_receipt.capability_id=capability.capability_id
+                  AND installation_receipt.capability_version=capability.capability_version
+                  AND installation_receipt.environment=capability.environment
+                  AND entral.phase203_current_evidence_receipt_passed(installation_receipt.receipt_id)
+              )
+            )
         )
       )
     ORDER BY product_claim.claim_key,product_claim.claim_id;
@@ -1301,7 +1890,8 @@ BEGIN
       'installation_id',installation.installation_id,'tenant_id',installation.tenant_id,
       'organization_id',installation.organization_id,'capability_id',installation.capability_id,
       'capability_version',installation.capability_version,'state',installation.state,
-      'plan_eligible',installation.plan_eligible,'suspension_reason',installation.suspension_reason,
+      'plan_eligible',installation.plan_eligible,'feature_flags',installation.feature_flags,
+      'limits',installation.limits,'suspension_reason',installation.suspension_reason,
       'activated_at',installation.activated_at,'verification_receipt_ids',to_jsonb(installation.verification_receipt_ids),
       'record_version',installation.record_version,'created_at',installation.created_at,'updated_at',installation.updated_at
     ) ORDER BY installation.tenant_id,installation.capability_id) FROM entral.tenant_capability_installations installation),'[]'::jsonb),
@@ -1321,7 +1911,10 @@ BEGIN
       FROM entral.capability_dependencies dependency),'[]'::jsonb),
     'transition_audit',COALESCE((SELECT jsonb_agg(to_jsonb(transition)
       ORDER BY transition.recorded_at,transition.transition_id)
-      FROM entral.capability_transition_audit transition),'[]'::jsonb)
+      FROM entral.capability_transition_audit transition),'[]'::jsonb),
+    'installation_transition_audit',COALESCE((SELECT jsonb_agg(to_jsonb(transition)
+      ORDER BY transition.recorded_at,transition.transition_id)
+      FROM entral.tenant_capability_installation_audit transition),'[]'::jsonb)
   ) INTO response;
   RETURN response;
 END
@@ -1468,6 +2061,7 @@ ALTER TABLE entral.product_claims ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entral.product_claim_evidence_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entral.capability_transition_audit ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entral.product_claim_transition_audit ENABLE ROW LEVEL SECURITY;
+ALTER TABLE entral.tenant_capability_installation_audit ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entral.capability_mutation_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entral.publication_decision_audit ENABLE ROW LEVEL SECURITY;
 
@@ -1488,6 +2082,8 @@ CREATE POLICY phase203_internal_claim_evidence_select ON entral.product_claim_ev
 CREATE POLICY phase203_internal_transition_select ON entral.capability_transition_audit
   FOR SELECT USING (entral.phase203_internal_read_allows());
 CREATE POLICY phase203_internal_claim_transition_select ON entral.product_claim_transition_audit
+  FOR SELECT USING (entral.phase203_internal_read_allows());
+CREATE POLICY phase203_internal_installation_transition_select ON entral.tenant_capability_installation_audit
   FOR SELECT USING (entral.phase203_internal_read_allows());
 CREATE POLICY phase203_internal_mutation_receipt_select ON entral.capability_mutation_receipts
   FOR SELECT USING (entral.phase203_internal_read_allows());

@@ -1032,7 +1032,11 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/CapabilityEvidenceRegistration" }
       responses:
-        "201": { description: Immutable evidence receipt recorded. }
+        "201":
+          description: Immutable evidence receipt recorded and exact capability result returned.
+          content:
+            application/json:
+              schema: { $ref: "./capability-truth-record.schema.json" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1050,7 +1054,11 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/CapabilityLifecycleTransitionRequest" }
       responses:
-        "200": { description: Audited lifecycle transition receipt. }
+        "200":
+          description: Audited lifecycle transition and immutable resulting capability snapshot.
+          content:
+            application/json:
+              schema: { $ref: "./capability-truth-record.schema.json" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1186,7 +1194,7 @@ components:
     PublicProductClaim:
       type: object
       additionalProperties: false
-      required: [claim_id, claim_key, capability_id, capability_key, capability_version, display_name, lifecycle_state, approved_language, limitations, evidence_receipt_ids, claim_record_version, capability_record_version]
+      required: [claim_id, claim_key, capability_id, capability_key, capability_version, display_name, lifecycle_state, pricing_eligibility, approved_language, limitations, evidence_receipt_ids, claim_record_version, capability_record_version]
       properties:
         claim_id: { type: string, format: uuid }
         claim_key: { type: string, minLength: 3, maxLength: 160 }
@@ -1195,6 +1203,7 @@ components:
         capability_version: { type: string, minLength: 5, maxLength: 80 }
         display_name: { type: string, minLength: 1, maxLength: 200 }
         lifecycle_state: { type: string, const: SELLABLE }
+        pricing_eligibility: { type: string, enum: [INCLUDED, ADD_ON] }
         approved_language: { type: string, minLength: 1, maxLength: 4000 }
         limitations: { type: array, uniqueItems: true, items: { type: string, minLength: 1, maxLength: 2000 } }
         evidence_receipt_ids: { type: array, minItems: 1, uniqueItems: true, items: { type: string, format: uuid } }
@@ -1226,18 +1235,23 @@ components:
     CapabilityLifecycleTransitionRequest:
       type: object
       additionalProperties: false
-      required: [transition_id, capability_id, from_state, to_state, expected_record_version, evidence_receipt_ids, reason, actor_id, correlation_id, idempotency_key, requested_at]
+      required: [transition_id, capability_id, from_state, to_state, pricing_eligibility, expected_record_version, evidence_receipt_ids, reason, actor_id, tenant_id, organization_id, business_id, correlation_id, idempotency_key, release_version, requested_at]
       properties:
         transition_id: { type: string, format: uuid }
         capability_id: { type: string, format: uuid }
         from_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
         to_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
+        pricing_eligibility: { type: string, enum: [NOT_ELIGIBLE, INCLUDED, ADD_ON] }
         expected_record_version: { type: integer, minimum: 1 }
         evidence_receipt_ids: { type: array, uniqueItems: true, items: { type: string, format: uuid } }
         reason: { type: string, minLength: 1, maxLength: 2000 }
         actor_id: { type: string, format: uuid }
+        tenant_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+        organization_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+        business_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
         correlation_id: { type: string, format: uuid }
         idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        release_version: { type: string, const: phase-203 }
         requested_at: { type: string, format: date-time }
     ProductClaimRecord:
       type: object
@@ -1263,7 +1277,7 @@ components:
     InstalledCapabilityRecord:
       type: object
       additionalProperties: false
-      required: [installation_id, tenant_id, organization_id, capability_id, capability_version, state, plan_eligible, suspension_reason, activated_at, verification_receipt_ids, record_version, created_at, updated_at]
+      required: [installation_id, tenant_id, organization_id, capability_id, capability_version, state, plan_eligible, feature_flags, limits, suspension_reason, activated_at, verification_receipt_ids, record_version, created_at, updated_at]
       properties:
         installation_id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
@@ -1272,6 +1286,8 @@ components:
         capability_version: { type: string, minLength: 5, maxLength: 80 }
         state: { type: string, enum: [AVAILABLE, ACTIVATING, ACTIVE, SUSPENDED, DEACTIVATED] }
         plan_eligible: { type: boolean }
+        feature_flags: { type: object, propertyNames: { pattern: '^[a-z0-9][a-z0-9._-]{2,159}$' }, additionalProperties: { type: boolean } }
+        limits: { type: object, propertyNames: { pattern: '^[a-z0-9][a-z0-9._-]{2,159}$' }, additionalProperties: { type: integer, minimum: 0, maximum: 9007199254740991 } }
         suspension_reason: { oneOf: [{ type: "null" }, { type: string }] }
         activated_at: { oneOf: [{ type: "null" }, { type: string, format: date-time }] }
         verification_receipt_ids: { type: array, uniqueItems: true, items: { type: string, format: uuid } }
@@ -1302,32 +1318,60 @@ components:
         capability_version: { type: string, minLength: 5, maxLength: 80 }
         dependency_capability_id: { type: string, format: uuid }
         dependency_capability_version: { type: string, minLength: 5, maxLength: 80 }
-        minimum_lifecycle_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
+        minimum_lifecycle_state: { type: string, enum: [CATALOGUED, DESIGNED, IMPLEMENTED, UNIT_VERIFIED, INTEGRATION_VERIFIED, CANARY_VERIFIED, ACTIVE, SELLABLE] }
         required: { type: boolean }
     CapabilityTransitionAuditRecord:
       type: object
       additionalProperties: false
-      required: [transition_id, capability_id, capability_version, from_state, to_state, prior_record_version, resulting_record_version, evidence_receipt_ids, reason, actor_id, correlation_id, idempotency_key, request_sha256, requested_at, recorded_at]
+      required: [transition_id, capability_id, capability_version, from_state, to_state, pricing_eligibility, prior_record_version, resulting_record_version, evidence_receipt_ids, reason, actor_id, tenant_id, organization_id, business_id, correlation_id, idempotency_key, request_sha256, release_version, response_snapshot, requested_at, recorded_at]
       properties:
         transition_id: { type: string, format: uuid }
         capability_id: { type: string, format: uuid }
         capability_version: { type: string, minLength: 5, maxLength: 80 }
         from_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
         to_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
+        pricing_eligibility: { type: string, enum: [NOT_ELIGIBLE, INCLUDED, ADD_ON] }
         prior_record_version: { type: integer, minimum: 1 }
         resulting_record_version: { type: integer, minimum: 2 }
         evidence_receipt_ids: { type: array, uniqueItems: true, items: { type: string, format: uuid } }
         reason: { type: string, minLength: 1, maxLength: 2000 }
         actor_id: { type: string, format: uuid }
+        tenant_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+        organization_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+        business_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
         correlation_id: { type: string, format: uuid }
         idempotency_key: { type: string, minLength: 12, maxLength: 255 }
         request_sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
+        release_version: { type: string, const: phase-203 }
+        response_snapshot: { $ref: "./capability-truth-record.schema.json" }
         requested_at: { type: string, format: date-time }
+        recorded_at: { type: string, format: date-time }
+    InstalledCapabilityTransitionAuditRecord:
+      type: object
+      additionalProperties: false
+      required: [transition_id, installation_id, tenant_id, organization_id, business_id, capability_id, capability_version, from_state, to_state, prior_record_version, resulting_record_version, reason, actor_id, correlation_id, idempotency_key, release_version, recorded_at]
+      properties:
+        transition_id: { type: string, format: uuid }
+        installation_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        organization_id: { type: string, format: uuid }
+        business_id: { oneOf: [{ type: "null" }, { type: string, format: uuid }] }
+        capability_id: { type: string, format: uuid }
+        capability_version: { type: string, minLength: 5, maxLength: 80 }
+        from_state: { type: string, enum: [AVAILABLE, ACTIVATING, ACTIVE, SUSPENDED, DEACTIVATED] }
+        to_state: { type: string, enum: [AVAILABLE, ACTIVATING, ACTIVE, SUSPENDED, DEACTIVATED] }
+        prior_record_version: { type: integer, minimum: 1 }
+        resulting_record_version: { type: integer, minimum: 2 }
+        reason: { type: string, minLength: 1, maxLength: 2000 }
+        actor_id: { type: string, format: uuid }
+        correlation_id: { type: string, format: uuid }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        release_version: { type: string, const: phase-203 }
         recorded_at: { type: string, format: date-time }
     CapabilityTruthAdminReadback:
       type: object
       additionalProperties: false
-      required: [contract_version, schema_version, registry_revision, generated_at, records, claims, installations, verification_receipts, dependencies, transition_audit]
+      required: [contract_version, schema_version, registry_revision, generated_at, records, claims, installations, verification_receipts, dependencies, transition_audit, installation_transition_audit]
       properties:
         contract_version: { type: string, const: "1.0.0" }
         schema_version: { type: integer, const: 1 }
@@ -1339,6 +1383,7 @@ components:
         verification_receipts: { type: array, items: { $ref: "#/components/schemas/CapabilityVerificationReceiptRecord" } }
         dependencies: { type: array, items: { $ref: "#/components/schemas/CapabilityDependencyRecord" } }
         transition_audit: { type: array, items: { $ref: "#/components/schemas/CapabilityTransitionAuditRecord" } }
+        installation_transition_audit: { type: array, items: { $ref: "#/components/schemas/InstalledCapabilityTransitionAuditRecord" } }
     Phase202AccountDeidentificationRequest:
       type: object
       additionalProperties: false

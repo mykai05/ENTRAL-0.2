@@ -57,6 +57,12 @@ function loginUrl(databaseUrl: URL, role: string, password: string) {
 
 type CapabilityRecordJson = {
   capability_id: string;
+  failure_state?: {
+    code?: string;
+    evidence_type?: string;
+    prior_lifecycle_state?: string;
+    receipt_id?: string;
+  } | null;
   lifecycle_state: string;
   public_claim_eligible: boolean;
   record_version: number;
@@ -321,13 +327,13 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       await owner.$executeRaw`
         INSERT INTO entral.capability_records(
           capability_id,capability_key,capability_version,display_name,purpose,kind,owner,
-          environment,scope,lifecycle_state,audience_status,production_readiness,
+          data_classification,environment,scope,supported_scopes,lifecycle_state,audience_status,production_readiness,
           activation_requirements,public_claim_eligible,rollback_path,deactivation_path,
           source_reference,limitations
         ) VALUES (
           ${capabilityId}::uuid,${`capability.phase203.test.${suffix.replaceAll("_", "-")}`},'1.0.0',
           'Phase 203 isolated verification capability','Exercises the real registry in a disposable PostgreSQL database.',
-          'CAPABILITY','Phase 203 integration test','PRODUCTION','GLOBAL','CATALOGUED','CURRENT','REAL',
+          'CAPABILITY','Phase 203 integration test','INTERNAL','PRODUCTION','GLOBAL',ARRAY['GLOBAL']::text[],'CATALOGUED','CURRENT','REAL',
           '[]'::jsonb,false,'Remove the isolated test record.','Keep the isolated test record unpublished.',
           'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
           ARRAY['Disposable database fixture only.']::text[]
@@ -410,12 +416,17 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
           capability_id: capabilityId,
           from_state: fromState,
           to_state: toState,
+          pricing_eligibility: toState === "SELLABLE" ? "INCLUDED" : "NOT_ELIGIBLE",
           expected_record_version: recordVersion,
           evidence_receipt_ids: evidenceReceiptIds,
           reason: `Verify ${fromState} to ${toState} in isolated PostgreSQL.`,
           actor_id: actorId,
+          tenant_id: null,
+          organization_id: null,
+          business_id: null,
           correlation_id: randomUUID(),
           idempotency_key: `${key}-${suffix}`,
+          release_version: "phase-203",
           requested_at: "2026-08-03T05:01:00.000Z"
         };
         const response = await adminQuery<CapabilityRecordJson>(Prisma.sql`
@@ -427,7 +438,7 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
         return { request, value };
       };
 
-      await transition("CATALOGUED", "DESIGNED", [], "phase203-designed");
+      const designed = await transition("CATALOGUED", "DESIGNED", [], "phase203-designed");
       await transition("DESIGNED", "IMPLEMENTED", [], "phase203-implemented");
       await expect(adminQuery(Prisma.sql`
         SELECT entral.phase203_transition_capability(${JSON.stringify({
@@ -435,12 +446,17 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
           capability_id: capabilityId,
           from_state: "IMPLEMENTED",
           to_state: "UNIT_VERIFIED",
+          pricing_eligibility: "NOT_ELIGIBLE",
           expected_record_version: recordVersion,
           evidence_receipt_ids: [],
           reason: "Prove UNIT_VERIFIED fails without its exact receipt.",
           actor_id: actorId,
+          tenant_id: null,
+          organization_id: null,
+          business_id: null,
           correlation_id: randomUUID(),
           idempotency_key: `phase203-unit-negative-${suffix}`,
+          release_version: "phase-203",
           requested_at: "2026-08-03T05:01:00.000Z"
         })}::jsonb) AS "value"
       `)).rejects.toThrow();
@@ -453,6 +469,53 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
         lifecycle_state: "SELLABLE",
         public_claim_eligible: true
       }));
+      await expect(owner.$executeRaw`
+        UPDATE entral.capability_records
+        SET pricing_eligibility='ADD_ON'
+        WHERE capability_id=${capabilityId}::uuid
+      `).rejects.toThrow();
+      const delayedLifecycleReplay = await adminQuery<CapabilityRecordJson>(Prisma.sql`
+        SELECT entral.phase203_transition_capability(${JSON.stringify(designed.request)}::jsonb) AS "value"
+      `);
+      expect((delayedLifecycleReplay.rows[0] as unknown as { value: CapabilityRecordJson }).value)
+        .toEqual(designed.value);
+      await expect(adminQuery(Prisma.sql`
+        SELECT entral.phase203_transition_capability(${JSON.stringify({
+          ...designed.request,
+          reason: "A conflicting payload must never reuse an idempotency key."
+        })}::jsonb) AS "value"
+      `)).rejects.toThrow();
+
+      await expect(owner.$executeRaw`
+        INSERT INTO entral.capability_transition_audit(
+          transition_id,capability_id,capability_version,from_state,to_state,pricing_eligibility,
+          prior_record_version,resulting_record_version,evidence_receipt_ids,reason,actor_id,
+          tenant_id,organization_id,business_id,correlation_id,idempotency_key,request_sha256,
+          release_version,response_snapshot,requested_at
+        ) VALUES (
+          ${randomUUID()}::uuid,${capabilityId}::uuid,'1.0.0','SELLABLE','SELLABLE','INCLUDED',
+          ${recordVersion - 1}::bigint,${recordVersion}::bigint,${Object.values(receiptIds)}::uuid[],
+          'Prove the database rejects a transition audit snapshot whose tenant scope is mismatched.',
+          ${actorId}::uuid,${migrated.tenantId}::uuid,${migrated.organizationId}::uuid,NULL,
+          ${randomUUID()}::uuid,${`phase203-audit-scope-negative-${suffix}`}::text,${"b".repeat(64)},
+          'phase-203',entral.phase203_capability_record_json(${capabilityId}::uuid),clock_timestamp()
+        )
+      `).rejects.toThrow();
+      await expect(owner.$executeRaw`
+        INSERT INTO entral.capability_transition_audit(
+          transition_id,capability_id,capability_version,from_state,to_state,pricing_eligibility,
+          prior_record_version,resulting_record_version,evidence_receipt_ids,reason,actor_id,
+          tenant_id,organization_id,business_id,correlation_id,idempotency_key,request_sha256,
+          release_version,response_snapshot,requested_at
+        ) VALUES (
+          ${randomUUID()}::uuid,${capabilityId}::uuid,'1.0.0','SELLABLE','SELLABLE','INCLUDED',
+          ${recordVersion - 1}::bigint,${recordVersion}::bigint,${Object.values(receiptIds)}::uuid[],
+          'Prove an audit snapshot missing an explicit tenant key fails closed.',${actorId}::uuid,
+          NULL,NULL,NULL,${randomUUID()}::uuid,${`phase203-audit-key-negative-${suffix}`}::text,
+          ${"d".repeat(64)},'phase-203',
+          entral.phase203_capability_record_json(${capabilityId}::uuid)-'tenant_id',clock_timestamp()
+        )
+      `).rejects.toThrow();
 
       const claimRegistration = {
         claim_id: claimId,
@@ -481,14 +544,68 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
         evidence_receipt_ids: Object.values(receiptIds),
         reason: "Approve only the exact receipt-bound isolated claim.",
         actor_id: actorId,
+        tenant_id: null,
+        organization_id: null,
+        business_id: null,
         correlation_id: randomUUID(),
         idempotency_key: `phase203-claim-approve-${suffix}`,
+        release_version: "phase-203",
         requested_at: "2026-08-03T05:02:00.000Z"
       };
       const approved = await adminQuery<ProductClaimJson>(Prisma.sql`
         SELECT entral.phase203_transition_product_claim(${JSON.stringify(claimTransition)}::jsonb) AS "value"
       `);
-      expect((approved.rows[0] as unknown as { value: ProductClaimJson }).value.status).toBe("APPROVED");
+      const approvedSnapshot = (approved.rows[0] as unknown as { value: ProductClaimJson }).value;
+      expect(approvedSnapshot.status).toBe("APPROVED");
+      const blockClaimRequest = {
+        transition_id: randomUUID(),
+        claim_id: claimId,
+        from_status: "APPROVED",
+        to_status: "BLOCKED",
+        expected_record_version: 2,
+        evidence_receipt_ids: [],
+        reason: "Exercise delayed claim-transition replay without publishing stale state.",
+        actor_id: actorId,
+        tenant_id: null,
+        organization_id: null,
+        business_id: null,
+        correlation_id: randomUUID(),
+        idempotency_key: `phase203-claim-block-${suffix}`,
+        release_version: "phase-203",
+        requested_at: "2026-08-03T05:02:10.000Z"
+      };
+      await adminQuery<ProductClaimJson>(Prisma.sql`
+        SELECT entral.phase203_transition_product_claim(${JSON.stringify(blockClaimRequest)}::jsonb) AS "value"
+      `);
+      const delayedClaimReplay = await adminQuery<ProductClaimJson>(Prisma.sql`
+        SELECT entral.phase203_transition_product_claim(${JSON.stringify(claimTransition)}::jsonb) AS "value"
+      `);
+      expect((delayedClaimReplay.rows[0] as unknown as { value: ProductClaimJson }).value)
+        .toEqual(approvedSnapshot);
+      const draftClaimRequest = {
+        ...blockClaimRequest,
+        transition_id: randomUUID(),
+        from_status: "BLOCKED",
+        to_status: "DRAFT",
+        expected_record_version: 3,
+        reason: "Return the disposable claim to draft after replay verification.",
+        correlation_id: randomUUID(),
+        idempotency_key: `phase203-claim-draft-${suffix}`,
+        requested_at: "2026-08-03T05:02:20.000Z"
+      };
+      await adminQuery<ProductClaimJson>(Prisma.sql`
+        SELECT entral.phase203_transition_product_claim(${JSON.stringify(draftClaimRequest)}::jsonb) AS "value"
+      `);
+      await adminQuery<ProductClaimJson>(Prisma.sql`
+        SELECT entral.phase203_transition_product_claim(${JSON.stringify({
+          ...claimTransition,
+          transition_id: randomUUID(),
+          expected_record_version: 4,
+          correlation_id: randomUUID(),
+          idempotency_key: `phase203-claim-reapprove-${suffix}`,
+          requested_at: "2026-08-03T05:02:30.000Z"
+        })}::jsonb) AS "value"
+      `);
 
       const publicClaims = await api.$queryRaw<Array<{ claim: {
         approved_language: string;
@@ -533,16 +650,16 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       await owner.$executeRaw`
         INSERT INTO entral.capability_records(
           capability_id,capability_key,capability_version,display_name,purpose,kind,owner,
-          environment,scope,tenant_id,organization_id,lifecycle_state,audience_status,
+          data_classification,environment,scope,supported_scopes,tenant_id,organization_id,lifecycle_state,audience_status,
           production_readiness,activation_requirements,last_verified_at,public_claim_eligible,
-          rollback_path,deactivation_path,source_reference,limitations
+          pricing_eligibility,rollback_path,deactivation_path,source_reference,limitations
         ) VALUES (
           ${tenantCapabilityId}::uuid,${`capability.phase203.tenant.${suffix.replaceAll("_", "-")}`},'1.0.0',
           'Tenant-scoped Phase 203 verification capability',
           'Exercises tenant installation and publication isolation in migrated state.',
-          'CAPABILITY','Phase 203 integration test','PRODUCTION','TENANT',
+          'CAPABILITY','Phase 203 integration test','INTERNAL','PRODUCTION','TENANT',ARRAY['TENANT']::text[],
           ${migrated.tenantId}::uuid,${migrated.organizationId}::uuid,
-          'SELLABLE','CURRENT','REAL','[]'::jsonb,now(),true,
+          'SELLABLE','CURRENT','REAL','[]'::jsonb,now(),true,'INCLUDED',
           'Remove the isolated tenant capability.','Keep the isolated tenant capability unpublished.',
           'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
           ARRAY['Disposable tenant-isolation fixture only.']::text[]
@@ -610,8 +727,12 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
           evidence_receipt_ids: Object.values(tenantReceiptIds),
           reason: "Approve the exact tenant-scoped claim for isolation verification.",
           actor_id: actorId,
+          tenant_id: migrated.tenantId,
+          organization_id: migrated.organizationId,
+          business_id: null,
           correlation_id: randomUUID(),
           idempotency_key: `phase203-tenant-claim-approve-${suffix}`,
+          release_version: "phase-203",
           requested_at: "2026-08-03T05:02:30.000Z"
         })}::jsonb) AS "value"
       `);
@@ -707,8 +828,12 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
           evidence_receipt_ids: [],
           reason: "Prove simulated provider publication is rejected.",
           actor_id: actorId,
+          tenant_id: null,
+          organization_id: null,
+          business_id: null,
           correlation_id: randomUUID(),
           idempotency_key: `phase203-simulated-approve-${suffix}`,
+          release_version: "phase-203",
           requested_at: "2026-08-03T05:03:00.000Z"
         })}::jsonb) AS "value"
       `)).rejects.toThrow();
@@ -719,17 +844,474 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       `);
       expect(finalPublicClaims.map((row) => row.claim.claim_id)).toEqual([claimId]);
 
+      const wrongKindIntegrationClaimId = randomUUID();
+      await adminQuery<ProductClaimJson>(Prisma.sql`
+        SELECT entral.phase203_register_product_claim(
+          ${JSON.stringify({
+            claim_id: wrongKindIntegrationClaimId,
+            claim_key: `phase203.non-integration-list.blocked.${suffix.replaceAll("_", "-")}`,
+            capability_id: capabilityId,
+            capability_version: "1.0.0",
+            environment: "PRODUCTION",
+            surface: "INTEGRATION_LIST",
+            approved_language: "A non-integration capability must never appear in an integration list.",
+            limitations: ["Disposable wrong-kind publication verification only."],
+            evidence_receipt_ids: Object.values(receiptIds),
+            requires_tenant_installation: false
+          })}::jsonb,${`phase203-wrong-kind-register-${suffix}`}::text
+        ) AS "value"
+      `);
+      await adminQuery<ProductClaimJson>(Prisma.sql`
+        SELECT entral.phase203_transition_product_claim(${JSON.stringify({
+          transition_id: randomUUID(),
+          claim_id: wrongKindIntegrationClaimId,
+          from_status: "DRAFT",
+          to_status: "APPROVED",
+          expected_record_version: 1,
+          evidence_receipt_ids: Object.values(receiptIds),
+          reason: "Prove INTEGRATION_LIST publication rejects a SELLABLE non-integration capability.",
+          actor_id: actorId,
+          tenant_id: null,
+          organization_id: null,
+          business_id: null,
+          correlation_id: randomUUID(),
+          idempotency_key: `phase203-wrong-kind-approve-${suffix}`,
+          release_version: "phase-203",
+          requested_at: "2026-08-03T05:03:30.000Z"
+        })}::jsonb) AS "value"
+      `);
+      expect(await api.$queryRaw<Array<{ claim: { claim_id: string } }>>(Prisma.sql`
+        SELECT gate."claim" FROM entral.phase203_publication_gate(
+          'INTEGRATION_LIST','PRODUCTION',NULL::uuid,NULL::uuid
+        ) gate
+      `)).toEqual([]);
+
+      const otherTenantDependencyId = randomUUID();
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_records(
+          capability_id,capability_key,capability_version,display_name,purpose,kind,owner,
+          data_classification,environment,scope,supported_scopes,tenant_id,organization_id,
+          lifecycle_state,audience_status,production_readiness,activation_requirements,
+          public_claim_eligible,pricing_eligibility,rollback_path,deactivation_path,source_reference,limitations
+        ) VALUES (
+          ${otherTenantDependencyId}::uuid,${`capability.phase203.other-tenant.${suffix.replaceAll("_", "-")}`},'1.0.0',
+          'Other tenant dependency fixture','Proves another tenant cannot satisfy dependency health.',
+          'CAPABILITY','Phase 203 integration test','INTERNAL','PRODUCTION','TENANT',ARRAY['TENANT']::text[],
+          ${otherMigrated.tenantId}::uuid,${otherMigrated.organizationId}::uuid,
+          'CATALOGUED','UNSUPPORTED','REAL','[]'::jsonb,false,'NOT_ELIGIBLE',
+          'Delete the disposable fixture.','Keep the disposable fixture unpublished.',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
+          ARRAY['Disposable cross-tenant dependency fixture only.']::text[]
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_dependencies(
+          capability_id,capability_version,dependency_capability_id,dependency_capability_version,
+          minimum_lifecycle_state,required
+        ) VALUES (
+          ${tenantCapabilityId}::uuid,'1.0.0',${otherTenantDependencyId}::uuid,'1.0.0','CATALOGUED',true
+        )
+      `;
+      const crossTenantHealth = await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_dependencies_healthy(${tenantCapabilityId}::uuid,'1.0.0') AS "healthy"
+      `;
+      expect(crossTenantHealth).toEqual([{ healthy: false }]);
+      await owner.$executeRaw`
+        DELETE FROM entral.capability_dependencies
+        WHERE capability_id=${tenantCapabilityId}::uuid
+          AND dependency_capability_id=${otherTenantDependencyId}::uuid
+      `;
+      const incompleteIntegrationId = randomUUID();
+      const incompleteIntegrationUnitReceiptId = randomUUID();
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_records(
+          capability_id,capability_key,capability_version,display_name,purpose,kind,owner,
+          data_classification,environment,scope,supported_scopes,lifecycle_state,audience_status,
+          production_readiness,required_evidence,activation_requirements,last_verified_at,
+          public_claim_eligible,pricing_eligibility,rollback_path,deactivation_path,source_reference,limitations
+        ) VALUES (
+          ${incompleteIntegrationId}::uuid,${`integration.phase203.incomplete.${suffix.replaceAll("_", "-")}`},'1.0.0',
+          'Incomplete Phase 203 integration fixture',
+          'Proves ACTIVE integration dependencies require the complete seven-part provider evidence set.',
+          'INTEGRATION','Phase 203 integration test','INTERNAL','PRODUCTION','GLOBAL',ARRAY['GLOBAL']::text[],
+          'ACTIVE','CURRENT','REAL',ARRAY['UNIT_TEST']::text[],'[]'::jsonb,now(),false,'NOT_ELIGIBLE',
+          'Remove the disposable incomplete integration.','Keep the disposable integration unpublished.',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
+          ARRAY['Disposable integration evidence fixture only.']::text[]
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_verification_receipts(
+          receipt_id,capability_id,capability_version,evidence_type,environment,status,
+          reference,content_sha256,captured_at,expires_at,recorded_by_actor_id
+        ) VALUES (
+          ${incompleteIntegrationUnitReceiptId}::uuid,${incompleteIntegrationId}::uuid,'1.0.0',
+          'UNIT_TEST','PRODUCTION','PASSED',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/incomplete-integration-unit.json',
+          ${"c".repeat(64)},clock_timestamp(),NULL,${actorId}::uuid
+        )
+      `;
+      expect(await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_operational_evidence_healthy(
+          ${incompleteIntegrationId}::uuid,'1.0.0','ACTIVE'
+        ) AS "healthy"
+      `).toEqual([{ healthy: false }]);
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_dependencies(
+          capability_id,capability_version,dependency_capability_id,dependency_capability_version,
+          minimum_lifecycle_state,required
+        ) VALUES (
+          ${tenantCapabilityId}::uuid,'1.0.0',${incompleteIntegrationId}::uuid,'1.0.0','ACTIVE',true
+        )
+      `;
+      expect(await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_dependencies_healthy(${tenantCapabilityId}::uuid,'1.0.0') AS "healthy"
+      `).toEqual([{ healthy: false }]);
+      await owner.$executeRaw`
+        DELETE FROM entral.capability_dependencies
+        WHERE capability_id=${tenantCapabilityId}::uuid
+          AND dependency_capability_id=${incompleteIntegrationId}::uuid
+      `;
+      const narrowedActiveCapabilityId = randomUUID();
+      const narrowedActiveUnitReceiptId = randomUUID();
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_records(
+          capability_id,capability_key,capability_version,display_name,purpose,kind,owner,
+          data_classification,environment,scope,supported_scopes,lifecycle_state,audience_status,
+          production_readiness,required_evidence,activation_requirements,last_verified_at,
+          public_claim_eligible,pricing_eligibility,rollback_path,deactivation_path,source_reference,limitations
+        ) VALUES (
+          ${narrowedActiveCapabilityId}::uuid,${`capability.phase203.narrowed-active.${suffix.replaceAll("_", "-")}`},'1.0.0',
+          'Narrowed ACTIVE evidence fixture',
+          'Proves ACTIVE health always requires production readback even when mutable required evidence is narrowed.',
+          'CAPABILITY','Phase 203 integration test','INTERNAL','PRODUCTION','GLOBAL',ARRAY['GLOBAL']::text[],
+          'ACTIVE','CURRENT','REAL',ARRAY['UNIT_TEST']::text[],'[]'::jsonb,now(),false,'NOT_ELIGIBLE',
+          'Remove the disposable narrowed fixture.','Keep the disposable narrowed fixture unpublished.',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
+          ARRAY['Disposable narrowed-evidence fixture only.']::text[]
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_verification_receipts(
+          receipt_id,capability_id,capability_version,evidence_type,environment,status,
+          reference,content_sha256,captured_at,expires_at,recorded_by_actor_id
+        ) VALUES (
+          ${narrowedActiveUnitReceiptId}::uuid,${narrowedActiveCapabilityId}::uuid,'1.0.0',
+          'UNIT_TEST','PRODUCTION','PASSED',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/narrowed-active-unit.json',
+          ${"7".repeat(64)},clock_timestamp(),NULL,${actorId}::uuid
+        )
+      `;
+      expect(await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_operational_evidence_healthy(
+          ${narrowedActiveCapabilityId}::uuid,'1.0.0','ACTIVE'
+        ) AS "healthy"
+      `).toEqual([{ healthy: false }]);
+      const cascadeCapabilityId = randomUUID();
+      const cascadeSecondLevelId = randomUUID();
+      const expiredDependencyId = randomUUID();
+      const unrelatedUnhealthyId = randomUUID();
+      const cascadeReceiptId = randomUUID();
+      const cascadeProductionReadbackReceiptId = randomUUID();
+      const expiredReceiptId = randomUUID();
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_records(
+          capability_id,capability_key,capability_version,display_name,purpose,kind,owner,
+          data_classification,environment,scope,supported_scopes,tenant_id,organization_id,
+          lifecycle_state,audience_status,production_readiness,required_evidence,
+          activation_requirements,last_verified_at,public_claim_eligible,pricing_eligibility,
+          rollback_path,deactivation_path,source_reference,limitations
+        ) VALUES
+        (
+          ${cascadeCapabilityId}::uuid,${`capability.phase203.cascade-one.${suffix.replaceAll("_", "-")}`},'1.0.0',
+          'Phase 203 cascade level one','Proves a first-level reverse dependency downgrade.',
+          'CAPABILITY','Phase 203 integration test','INTERNAL','PRODUCTION','TENANT',ARRAY['TENANT']::text[],
+          ${migrated.tenantId}::uuid,${migrated.organizationId}::uuid,
+          'ACTIVE','CURRENT','REAL',ARRAY['UNIT_TEST']::text[],'[]'::jsonb,now(),false,'NOT_ELIGIBLE',
+          'Remove the disposable cascade fixture.','Keep the disposable cascade fixture unpublished.',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
+          ARRAY['Disposable reverse-closure fixture only.']::text[]
+        ),
+        (
+          ${cascadeSecondLevelId}::uuid,${`capability.phase203.cascade-two.${suffix.replaceAll("_", "-")}`},'1.0.0',
+          'Phase 203 cascade level two','Proves a transitive reverse dependency downgrade.',
+          'CAPABILITY','Phase 203 integration test','INTERNAL','PRODUCTION','TENANT',ARRAY['TENANT']::text[],
+          ${migrated.tenantId}::uuid,${migrated.organizationId}::uuid,
+          'ACTIVE','CURRENT','REAL',ARRAY['UNIT_TEST']::text[],'[]'::jsonb,now(),false,'NOT_ELIGIBLE',
+          'Remove the disposable cascade fixture.','Keep the disposable cascade fixture unpublished.',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
+          ARRAY['Disposable transitive reverse-closure fixture only.']::text[]
+        ),
+        (
+          ${expiredDependencyId}::uuid,${`capability.phase203.expired-dependency.${suffix.replaceAll("_", "-")}`},'1.0.0',
+          'Phase 203 expired dependency','Proves dependency evidence is evaluated at current time.',
+          'CAPABILITY','Phase 203 integration test','INTERNAL','PRODUCTION','GLOBAL',ARRAY['GLOBAL']::text[],
+          NULL,NULL,'ACTIVE','CURRENT','REAL',ARRAY['UNIT_TEST']::text[],'[]'::jsonb,
+          now()-interval '2 hours',false,'NOT_ELIGIBLE',
+          'Remove the disposable expiry fixture.','Keep the disposable expiry fixture unpublished.',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
+          ARRAY['Disposable expired-evidence fixture only.']::text[]
+        ),
+        (
+          ${unrelatedUnhealthyId}::uuid,${`capability.phase203.unrelated-unhealthy.${suffix.replaceAll("_", "-")}`},'1.0.0',
+          'Phase 203 unrelated unhealthy dependent','Proves reconciliation does not mutate records outside the root reverse closure.',
+          'CAPABILITY','Phase 203 integration test','INTERNAL','PRODUCTION','GLOBAL',ARRAY['GLOBAL']::text[],
+          NULL,NULL,'SELLABLE','CURRENT','REAL',ARRAY['UNIT_TEST']::text[],'[]'::jsonb,now(),true,'INCLUDED',
+          'Remove the disposable unrelated fixture.','Keep the disposable unrelated fixture unpublished.',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:backend/tests/phase203CapabilityTruthPostgres.integration.test.ts',
+          ARRAY['Disposable unrelated reconciliation fixture only.']::text[]
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_verification_receipts(
+          receipt_id,capability_id,capability_version,evidence_type,environment,status,
+          reference,content_sha256,captured_at,expires_at,recorded_by_actor_id
+        ) VALUES
+        (
+          ${cascadeReceiptId}::uuid,${cascadeCapabilityId}::uuid,'1.0.0','UNIT_TEST','PRODUCTION','PASSED',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/cascade-unit.json',
+          ${"e".repeat(64)},now(),NULL,${actorId}::uuid
+        ),
+        (
+          ${cascadeProductionReadbackReceiptId}::uuid,${cascadeCapabilityId}::uuid,'1.0.0',
+          'PRODUCTION_READBACK','PRODUCTION','PASSED',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/cascade-production-readback.json',
+          ${"6".repeat(64)},now(),NULL,${actorId}::uuid
+        ),
+        (
+          ${expiredReceiptId}::uuid,${expiredDependencyId}::uuid,'1.0.0','UNIT_TEST','PRODUCTION','PASSED',
+          'mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/expired-unit.json',
+          ${"f".repeat(64)},now()-interval '3 hours',now()-interval '1 hour',${actorId}::uuid
+        )
+      `;
+      await owner.$executeRaw`
+        INSERT INTO entral.capability_dependencies(
+          capability_id,capability_version,dependency_capability_id,dependency_capability_version,
+          minimum_lifecycle_state,required
+        ) VALUES
+          (${tenantCapabilityId}::uuid,'1.0.0',${capabilityId}::uuid,'1.0.0','SELLABLE',true),
+          (${cascadeCapabilityId}::uuid,'1.0.0',${tenantCapabilityId}::uuid,'1.0.0','ACTIVE',true),
+          (${cascadeSecondLevelId}::uuid,'1.0.0',${cascadeCapabilityId}::uuid,'1.0.0','ACTIVE',true),
+          (${unrelatedUnhealthyId}::uuid,'1.0.0',${expiredDependencyId}::uuid,'1.0.0','ACTIVE',true)
+      `;
+      expect(await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_dependencies_healthy(${tenantCapabilityId}::uuid,'1.0.0') AS "healthy"
+      `).toEqual([{ healthy: true }]);
+      expect(await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_dependencies_healthy(${cascadeCapabilityId}::uuid,'1.0.0') AS "healthy"
+      `).toEqual([{ healthy: true }]);
+      expect(await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_dependencies_healthy(${cascadeSecondLevelId}::uuid,'1.0.0') AS "healthy"
+      `).toEqual([{ healthy: true }]);
+      expect(await owner.$queryRaw<Array<{ healthy: boolean }>>`
+        SELECT entral.phase203_dependencies_healthy(${unrelatedUnhealthyId}::uuid,'1.0.0') AS "healthy"
+      `).toEqual([{ healthy: false }]);
+
+      expect(await owner.$queryRaw<Array<{ passed: boolean }>>`
+        SELECT entral.phase203_latest_evidence_passed(
+          ${capabilityId}::uuid,'1.0.0','PRODUCTION_READBACK'
+        ) AS "passed"
+      `).toEqual([{ passed: true }]);
+
+      const backdatedFailedReadback = {
+        receipt_id: randomUUID(),
+        evidence_type: "PRODUCTION_READBACK",
+        environment: "PRODUCTION",
+        status: "FAILED",
+        reference: "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/backdated-failed-production-readback.json",
+        content_sha256: "8".repeat(64),
+        captured_at: "2026-08-03T04:59:00.000Z",
+        expires_at: null
+      };
+      const backdatedFailure = await adminQuery<CapabilityRecordJson>(Prisma.sql`
+        SELECT entral.phase203_record_capability_evidence(
+          ${capabilityId}::uuid,${recordVersion}::bigint,${JSON.stringify(backdatedFailedReadback)}::jsonb,
+          ${`phase203-evidence-backdated-failure-${suffix}`}::text
+        ) AS "value"
+      `);
+      const backdatedFailureSnapshot = (
+        backdatedFailure.rows[0] as unknown as { value: CapabilityRecordJson }
+      ).value;
+      expect(backdatedFailureSnapshot).toEqual(expect.objectContaining({
+        lifecycle_state: "SELLABLE",
+        public_claim_eligible: true,
+        failure_state: null
+      }));
+      recordVersion = backdatedFailureSnapshot.record_version;
+      expect(await owner.$queryRaw<Array<{ passed: boolean }>>`
+        SELECT entral.phase203_current_evidence_receipt_passed(
+          ${receiptIds.PRODUCTION_READBACK}::uuid
+        ) AS "passed"
+      `).toEqual([{ passed: true }]);
+
+      const failedReadback = {
+        receipt_id: randomUUID(),
+        evidence_type: "PRODUCTION_READBACK",
+        environment: "PRODUCTION",
+        status: "FAILED",
+        reference: "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/failed-production-readback.json",
+        content_sha256: "9".repeat(64),
+        captured_at: "2026-08-03T05:04:00.000Z",
+        expires_at: null
+      };
+      const failureIdempotencyKey = `phase203-evidence-failure-${suffix}`;
+      const failure = await adminQuery<CapabilityRecordJson>(Prisma.sql`
+        SELECT entral.phase203_record_capability_evidence(
+          ${capabilityId}::uuid,${recordVersion}::bigint,${JSON.stringify(failedReadback)}::jsonb,
+          ${failureIdempotencyKey}::text
+        ) AS "value"
+      `);
+      const failureSnapshot = (failure.rows[0] as unknown as { value: CapabilityRecordJson }).value;
+      expect(failureSnapshot).toEqual(expect.objectContaining({
+        lifecycle_state: "CANARY_VERIFIED",
+        public_claim_eligible: false,
+        failure_state: expect.objectContaining({
+          code: "VERIFICATION_FAILED",
+          evidence_type: "PRODUCTION_READBACK",
+          receipt_id: failedReadback.receipt_id
+        })
+      }));
+      recordVersion = failureSnapshot.record_version;
+      const failureReplay = await adminQuery<CapabilityRecordJson>(Prisma.sql`
+        SELECT entral.phase203_record_capability_evidence(
+          ${capabilityId}::uuid,${recordVersion - 1}::bigint,${JSON.stringify(failedReadback)}::jsonb,
+          ${failureIdempotencyKey}::text
+        ) AS "value"
+      `);
+      expect((failureReplay.rows[0] as unknown as { value: CapabilityRecordJson }).value)
+        .toEqual(failureSnapshot);
+      expect(await owner.$queryRaw<Array<{ passed: boolean }>>`
+        SELECT entral.phase203_latest_evidence_passed(
+          ${capabilityId}::uuid,'1.0.0','PRODUCTION_READBACK'
+        ) AS "passed"
+      `).toEqual([{ passed: false }]);
+      expect(await owner.$queryRaw<Array<{ passed: boolean }>>`
+        SELECT entral.phase203_current_evidence_receipt_passed(
+          ${receiptIds.PRODUCTION_READBACK}::uuid
+        ) AS "passed"
+      `).toEqual([{ passed: false }]);
+      const failedSupportReadiness = {
+        receipt_id: randomUUID(),
+        evidence_type: "SUPPORT_READINESS",
+        environment: "PRODUCTION",
+        status: "FAILED",
+        reference: "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/failed-support-readiness.json",
+        content_sha256: "1".repeat(64),
+        captured_at: "2026-08-03T05:04:30.000Z",
+        expires_at: null
+      };
+      const secondFailure = await adminQuery<CapabilityRecordJson>(Prisma.sql`
+        SELECT entral.phase203_record_capability_evidence(
+          ${capabilityId}::uuid,${recordVersion}::bigint,${JSON.stringify(failedSupportReadiness)}::jsonb,
+          ${`phase203-evidence-second-failure-${suffix}`}::text
+        ) AS "value"
+      `);
+      const secondFailureSnapshot = (
+        secondFailure.rows[0] as unknown as { value: CapabilityRecordJson }
+      ).value;
+      expect(secondFailureSnapshot.failure_state).toEqual(expect.objectContaining({
+        evidence_type: "SUPPORT_READINESS",
+        receipt_id: failedSupportReadiness.receipt_id,
+        prior_lifecycle_state: "SELLABLE"
+      }));
+      recordVersion = secondFailureSnapshot.record_version;
+      const repairedSupportReadiness = {
+        ...failedSupportReadiness,
+        receipt_id: randomUUID(),
+        status: "PASSED",
+        reference: "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/repaired-support-readiness.json",
+        content_sha256: "2".repeat(64),
+        captured_at: "2026-08-03T05:05:00.000Z"
+      };
+      const partialRepair = await adminQuery<CapabilityRecordJson>(Prisma.sql`
+        SELECT entral.phase203_record_capability_evidence(
+          ${capabilityId}::uuid,${recordVersion}::bigint,${JSON.stringify(repairedSupportReadiness)}::jsonb,
+          ${`phase203-evidence-partial-repair-${suffix}`}::text
+        ) AS "value"
+      `);
+      const partialRepairSnapshot = (
+        partialRepair.rows[0] as unknown as { value: CapabilityRecordJson }
+      ).value;
+      expect(partialRepairSnapshot.failure_state).toEqual(expect.objectContaining({
+        evidence_type: "PRODUCTION_READBACK",
+        receipt_id: failedReadback.receipt_id,
+        prior_lifecycle_state: "SELLABLE"
+      }));
+      expect(partialRepairSnapshot.lifecycle_state).toBe("CANARY_VERIFIED");
+      recordVersion = partialRepairSnapshot.record_version;
+      const dependencyReadback = await owner.$queryRaw<Array<{
+        capabilityState: string;
+        installationState: string;
+        suspensionReason: string | null;
+      }>>`
+        SELECT capability.lifecycle_state AS "capabilityState",installation.state AS "installationState",
+               installation.suspension_reason AS "suspensionReason"
+        FROM entral.capability_records capability
+        JOIN entral.tenant_capability_installations installation
+          ON installation.capability_id=capability.capability_id
+        WHERE capability.capability_id=${tenantCapabilityId}::uuid
+      `;
+      expect(dependencyReadback).toEqual([{
+        capabilityState: "CANARY_VERIFIED",
+        installationState: "SUSPENDED",
+        suspensionReason: "Required capability dependency is unhealthy."
+      }]);
+      const cascadeReadback = await owner.$queryRaw<Array<{ capabilityId: string; lifecycleState: string }>>`
+        SELECT capability_id::text AS "capabilityId",lifecycle_state AS "lifecycleState"
+        FROM entral.capability_records
+        WHERE capability_id IN (
+          ${cascadeCapabilityId}::uuid,${cascadeSecondLevelId}::uuid,
+          ${expiredDependencyId}::uuid,${unrelatedUnhealthyId}::uuid
+        )
+        ORDER BY capability_id
+      `;
+      const cascadeStates = new Map(cascadeReadback.map((record) => [record.capabilityId, record.lifecycleState]));
+      expect(cascadeStates.get(cascadeCapabilityId)).toBe("CANARY_VERIFIED");
+      expect(cascadeStates.get(cascadeSecondLevelId)).toBe("CANARY_VERIFIED");
+      expect(cascadeStates.get(expiredDependencyId)).toBe("ACTIVE");
+      expect(cascadeStates.get(unrelatedUnhealthyId)).toBe("SELLABLE");
+      expect(await api.$queryRaw<Array<{ claim: { claim_id: string } }>>(Prisma.sql`
+        SELECT gate."claim" FROM entral.phase203_publication_gate(
+          'WEBSITE','PRODUCTION',NULL::uuid,NULL::uuid
+        ) gate
+      `)).toEqual([]);
+
+      const repairedReadback = {
+        ...failedReadback,
+        receipt_id: randomUUID(),
+        status: "PASSED",
+        reference: "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:docs/evidence/phase203/capability-truth/repaired-production-readback.json",
+        content_sha256: "a".repeat(64),
+        captured_at: "2026-08-03T05:06:00.000Z"
+      };
+      const repaired = await adminQuery<CapabilityRecordJson>(Prisma.sql`
+        SELECT entral.phase203_record_capability_evidence(
+          ${capabilityId}::uuid,${recordVersion}::bigint,${JSON.stringify(repairedReadback)}::jsonb,
+          ${`phase203-evidence-repair-${suffix}`}::text
+        ) AS "value"
+      `);
+      const repairedSnapshot = (repaired.rows[0] as unknown as { value: CapabilityRecordJson }).value;
+      expect(repairedSnapshot.failure_state).toBeNull();
+      expect(repairedSnapshot.lifecycle_state).toBe("CANARY_VERIFIED");
+      expect(await owner.$queryRaw<Array<{ passed: boolean }>>`
+        SELECT entral.phase203_latest_evidence_passed(
+          ${capabilityId}::uuid,'1.0.0','PRODUCTION_READBACK'
+        ) AS "passed"
+      `).toEqual([{ passed: true }]);
+
       const auditReadback = await adminQuery<{ value: {
         claims: ProductClaimJson[];
         records: CapabilityRecordJson[];
         registry_revision: number;
         transition_audit: unknown[];
+        installation_transition_audit: unknown[];
       } }>(Prisma.sql`SELECT entral.phase203_admin_readback() AS "value"`);
       const readback = auditReadback.rows[0]!.value;
       expect(readback.registry_revision).toBeGreaterThan(1);
-      expect(readback.records).toHaveLength(58);
-      expect(readback.claims).toHaveLength(3);
-      expect(readback.transition_audit).toHaveLength(7);
+      expect(readback.records).toHaveLength(65);
+      expect(readback.claims).toHaveLength(4);
+      expect(readback.transition_audit).toHaveLength(11);
+      expect(readback.installation_transition_audit).toHaveLength(1);
     } finally {
       await Promise.allSettled([
         api?.$disconnect(),

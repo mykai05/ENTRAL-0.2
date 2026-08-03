@@ -429,15 +429,30 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   function openAt(stepId?: string, nextView: "tour" | "library" = "tour") {
     if (!requireSignedInForAcademy()) return;
     const nextSteps = visibleSteps;
-    const requestedAnchor = stepId ?? (nextView === "tour" ? tutorialCurrentAnchorRef.current : null);
-    const index = requestedAnchor ? nextSteps.findIndex((step) => step.id === requestedAnchor) : safeStepIndex;
-    tutorialCurrentAnchorRef.current = (nextSteps[index >= 0 ? index : 0]?.id ?? null) as TutorialProgress["current_anchor_id"];
+    if (nextView === "tour") {
+      const requestedAnchor = stepId ?? tutorialCurrentAnchorRef.current;
+      const index = requestedAnchor ? nextSteps.findIndex((step) => step.id === requestedAnchor) : safeStepIndex;
+      if (nextSteps.length > 0) {
+        tutorialCurrentAnchorRef.current = nextSteps[index >= 0 ? index : 0]!.id as TutorialProgress["current_anchor_id"];
+        setStepIndex(index >= 0 ? index : 0);
+      }
+    }
     closeSettingsWindow();
-    setStepIndex(index >= 0 ? index : 0);
     setView(nextView);
     setIsOpen(true);
     const organizationId = organizationIdRef.current;
     if (organizationId) {
+      if (tutorialTruthExpiryTimerRef.current !== null) {
+        window.clearTimeout(tutorialTruthExpiryTimerRef.current);
+        tutorialTruthExpiryTimerRef.current = null;
+      }
+      setTutorialClaims([]);
+      setTutorialTruthStatus("loading");
+      setTutorialTruthMessage("Checking receipt-backed Tutorial publication...");
+      setSpotlightStepId(null);
+      setHighlightRect(null);
+      const truthGeneration = ++tutorialTruthGenerationRef.current;
+      void loadPublishedTutorial(organizationId, truthGeneration);
       void recordInteractionAnalytics({
         controlId: nextView === "library" ? "tutorial-library" : "tutorial-tour",
         eventType: "HELP_USED",
@@ -559,19 +574,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
 
     function openLibrary() {
-      if (!requireSignedInForAcademy()) return;
-      closeSettingsWindow();
-      setView("library");
-      setIsOpen(true);
-      const organizationId = organizationIdRef.current;
-      if (organizationId) {
-        void recordInteractionAnalytics({
-          controlId: "tutorial-library",
-          eventType: "HELP_USED",
-          organizationId,
-          route: pathname
-        }).catch(() => undefined);
-      }
+      openAt(undefined, "library");
     }
 
     window.addEventListener("entral:open-tutorial", openFromShortcut);

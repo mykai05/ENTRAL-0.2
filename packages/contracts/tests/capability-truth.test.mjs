@@ -5,6 +5,7 @@ import {
   CAPABILITY_LIFECYCLE_STATES,
   ContractError,
   assertCapabilityLifecycleTransitionRequest,
+  assertCapabilityTransitionAuditRecord,
   assertCapabilityTruthRecord,
   assertInstalledCapabilityRecord,
   assertProductClaimRecord,
@@ -54,14 +55,17 @@ function sellableCapability(overrides = {}) {
     purpose: "Expose verified canonical workspace projections.",
     kind: "CAPABILITY",
     owner: "product-owner@entral.example",
+    data_classification: "INTERNAL",
     environment: "PRODUCTION",
     scope: "GLOBAL",
+    supported_scopes: ["GLOBAL", "TENANT"],
     tenant_id: null,
     organization_id: null,
     lifecycle_state: "SELLABLE",
     audience_status: "CURRENT",
     production_readiness: "REAL",
     dependencies: [],
+    required_evidence: sellableEvidenceTypes,
     activation_requirements: [{
       requirement_code: "production-readback",
       description: "Authenticated production readback must pass.",
@@ -73,6 +77,7 @@ function sellableCapability(overrides = {}) {
     last_verified_at: now,
     failure_state: null,
     public_claim_eligible: true,
+    pricing_eligibility: "INCLUDED",
     rollback_path: "Restore the prior certified release.",
     deactivation_path: "Transition the capability to DEPRECATED and suppress claims.",
     source_reference: `mykai05/ENTRAL-0.2@${"a".repeat(40)}:backend/src/routes/member.ts`,
@@ -115,6 +120,8 @@ function installation(overrides = {}) {
     capability_version: "1.0.0",
     state: "ACTIVE",
     plan_eligible: true,
+    feature_flags: { "canonical.workspace": true },
+    limits: { "graph.nodes": 1000 },
     suspension_reason: null,
     activated_at: now,
     verification_receipt_ids: ["623e4567-e89b-42d3-a456-000000000003"],
@@ -171,12 +178,31 @@ test("a receipt-bound SELLABLE capability and approved claim publish", () => {
   });
 });
 
+test("capability metadata and tenant configuration fail closed when incomplete or malformed", () => {
+  const capability = sellableCapability();
+  for (const invalid of [
+    { ...capability, data_classification: undefined },
+    { ...capability, required_evidence: [] },
+    { ...capability, supported_scopes: [] },
+    { ...capability, supported_scopes: ["TENANT"] }
+  ]) assert.throws(() => assertCapabilityTruthRecord(invalid), ContractError);
+  assert.throws(
+    () => assertInstalledCapabilityRecord(installation({ feature_flags: { "canonical.workspace": "yes" } })),
+    ContractError
+  );
+  assert.throws(
+    () => assertInstalledCapabilityRecord(installation({ limits: { "graph.nodes": -1 } })),
+    ContractError
+  );
+});
+
 test("catalogued, simulated, placeholder, local-only, and disabled sources fail closed", () => {
   for (const readiness of ["SIMULATED", "PLACEHOLDER", "LOCAL_ONLY", "DISABLED"]) {
     const candidate = sellableCapability({
       lifecycle_state: "CATALOGUED",
       production_readiness: readiness,
       public_claim_eligible: false,
+      pricing_eligibility: "NOT_ELIGIBLE",
       last_verified_at: null
     });
     assert.doesNotThrow(() => assertCapabilityTruthRecord(candidate));
@@ -205,6 +231,67 @@ test("SELLABLE is blocked without support, pricing, Tutorial, documentation, or 
   }
 });
 
+test("ACTIVE requires the record-specific fresh evidence set", () => {
+  const capability = sellableCapability();
+  const activeWithoutUnitEvidence = sellableCapability({
+    lifecycle_state: "ACTIVE",
+    public_claim_eligible: false,
+    pricing_eligibility: "NOT_ELIGIBLE",
+    required_evidence: ["UNIT_TEST"],
+    verification_receipts: capability.verification_receipts.filter((record) => record.evidence_type !== "UNIT_TEST")
+  });
+  assert.throws(
+    () => assertCapabilityTruthRecord(activeWithoutUnitEvidence),
+    (error) => error instanceof ContractError && error.code === "CAPABILITY_REQUIRED_EVIDENCE"
+  );
+
+  const narrowedWithoutProductionReadback = sellableCapability({
+    lifecycle_state: "ACTIVE",
+    public_claim_eligible: false,
+    pricing_eligibility: "NOT_ELIGIBLE",
+    required_evidence: ["UNIT_TEST"],
+    activation_requirements: [],
+    verification_receipts: capability.verification_receipts.filter(
+      (record) => record.evidence_type !== "PRODUCTION_READBACK"
+    )
+  });
+  assert.throws(
+    () => assertCapabilityTruthRecord(narrowedWithoutProductionReadback),
+    (error) => error instanceof ContractError && error.code === "ACTIVE_CAPABILITY_EVIDENCE"
+  );
+});
+
+test("the latest evidence observation wins over an older unexpired pass", () => {
+  const capability = sellableCapability();
+  const failedReadback = {
+    ...receipt("PRODUCTION_READBACK", 99),
+    status: "FAILED",
+    captured_at: "2026-08-03T05:01:00.000Z"
+  };
+  const failed = sellableCapability({
+    activation_requirements: [],
+    verification_receipts: [...capability.verification_receipts, failedReadback],
+    last_verified_at: "2026-08-03T05:01:00.000Z",
+    updated_at: "2026-08-03T05:01:00.000Z"
+  });
+  assert.throws(
+    () => assertCapabilityTruthRecord(failed),
+    (error) => error instanceof ContractError && error.code === "ACTIVE_CAPABILITY_EVIDENCE"
+  );
+
+  const repaired = sellableCapability({
+    activation_requirements: [],
+    verification_receipts: [
+      ...capability.verification_receipts,
+      failedReadback,
+      { ...receipt("PRODUCTION_READBACK", 100), captured_at: "2026-08-03T05:02:00.000Z" }
+    ],
+    last_verified_at: "2026-08-03T05:02:00.000Z",
+    updated_at: "2026-08-03T05:02:00.000Z"
+  });
+  assert.doesNotThrow(() => assertCapabilityTruthRecord(repaired));
+});
+
 test("claim evidence must stay synchronized with the exact capability version and receipts", () => {
   const capability = sellableCapability();
   const versionMismatch = approvedClaim(capability, { capability_version: "1.0.1" });
@@ -221,7 +308,11 @@ test("claim evidence must stay synchronized with the exact capability version an
   );
 
   for (const invalidReceipt of [
-    { ...receipt("PRODUCTION_READBACK", 91), status: "FAILED" },
+    {
+      ...receipt("PRODUCTION_READBACK", 91),
+      status: "FAILED",
+      captured_at: "2026-08-03T04:59:00.000Z"
+    },
     { ...receipt("PRODUCTION_READBACK", 92), environment: "STAGING" },
     {
       ...receipt("PRODUCTION_READBACK", 93),
@@ -262,11 +353,60 @@ test("required dependencies and activation requirements fail closed", () => {
   assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
     dependency_capabilities: [dependency]
   })).allowed, true);
+  assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
+    dependency_capabilities: [dependency, { ...dependency }]
+  })).reason_code, "MALFORMED_TRUTH");
+  const expiredDependencyEvidence = sellableCapability({
+    capability_id: dependencyId,
+    capability_key: "entral.required-dependency",
+    required_evidence: ["UNIT_TEST"],
+    last_verified_at: "2026-08-03T04:00:00.000Z",
+    verification_receipts: dependency.verification_receipts.map((record) => (
+      record.evidence_type === "UNIT_TEST"
+        ? { ...record, captured_at: "2026-08-03T03:00:00.000Z", expires_at: "2026-08-03T04:30:00.000Z" }
+        : record
+    ))
+  });
+  assert.doesNotThrow(() => assertCapabilityTruthRecord(expiredDependencyEvidence));
+  assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
+    dependency_capabilities: [expiredDependencyEvidence]
+  })).reason_code, "DEPENDENCY_UNSATISFIED");
+  for (const unhealthyDependency of [
+    sellableCapability({
+      capability_id: dependencyId,
+      capability_key: "entral.required-dependency",
+      environment: "TEST",
+      lifecycle_state: "ACTIVE",
+      public_claim_eligible: false,
+      pricing_eligibility: "NOT_ELIGIBLE",
+      verification_receipts: sellableCapability().verification_receipts.map((record) => ({ ...record, environment: "TEST" }))
+    }),
+    sellableCapability({
+      capability_id: dependencyId,
+      capability_key: "entral.required-dependency",
+      lifecycle_state: "DEPRECATED",
+      public_claim_eligible: false,
+      pricing_eligibility: "NOT_ELIGIBLE"
+    }),
+    sellableCapability({
+      capability_id: dependencyId,
+      capability_key: "entral.required-dependency",
+      scope: "TENANT",
+      tenant_id: tenantId,
+      organization_id: organizationId,
+      supported_scopes: ["TENANT"]
+    })
+  ]) {
+    assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
+      dependency_capabilities: [unhealthyDependency]
+    })).reason_code, "DEPENDENCY_UNSATISFIED");
+  }
 
   const emptyActivationEvidence = sellableCapability({
     lifecycle_state: "CATALOGUED",
     production_readiness: "UNVERIFIED",
     public_claim_eligible: false,
+    pricing_eligibility: "NOT_ELIGIBLE",
     last_verified_at: null,
     activation_requirements: [{
       requirement_code: "production-readback",
@@ -285,12 +425,16 @@ test("required dependencies and activation requirements fail closed", () => {
 test("tenant-scoped publication requires the exact active and plan-eligible installation", () => {
   const capability = sellableCapability({
     scope: "TENANT",
+    supported_scopes: ["TENANT"],
     tenant_id: tenantId,
     organization_id: organizationId
   });
   const claim = approvedClaim(capability, { requires_tenant_installation: true });
   assert.equal(
-    evaluateProductClaimPublication(evaluation(capability, claim)).reason_code,
+    evaluateProductClaimPublication(evaluation(capability, claim, {
+      requested_tenant_id: tenantId,
+      requested_organization_id: organizationId
+    })).reason_code,
     "INSTALLATION_REQUIRED"
   );
   assert.doesNotThrow(() => assertInstalledCapabilityRecord(installation()));
@@ -301,9 +445,24 @@ test("tenant-scoped publication requires the exact active and plan-eligible inst
   })).allowed, true);
   assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
     requested_tenant_id: tenantId,
+    requested_organization_id: null,
+    installation: installation()
+  })).reason_code, "MALFORMED_TRUTH");
+  assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
+    requested_tenant_id: "923e4567-e89b-42d3-a456-426614174000",
+    requested_organization_id: organizationId,
+    installation: installation()
+  })).reason_code, "SCOPE_MISMATCH");
+  assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
+    requested_tenant_id: tenantId,
     requested_organization_id: organizationId,
     installation: installation({ plan_eligible: false })
   })).reason_code, "PLAN_INELIGIBLE");
+  assert.equal(evaluateProductClaimPublication(evaluation(capability, claim, {
+    requested_tenant_id: tenantId,
+    requested_organization_id: organizationId,
+    installation: installation({ verification_receipt_ids: ["823e4567-e89b-42d3-a456-426614174000"] })
+  })).reason_code, "INSTALLATION_EVIDENCE_INVALID");
 });
 
 test("lifecycle transitions are versioned, audited requests and cannot skip verification", () => {
@@ -312,18 +471,66 @@ test("lifecycle transitions are versioned, audited requests and cannot skip veri
     capability_id: capabilityId,
     from_state: "IMPLEMENTED",
     to_state: "UNIT_VERIFIED",
+    pricing_eligibility: "NOT_ELIGIBLE",
     expected_record_version: 3,
     evidence_receipt_ids: ["623e4567-e89b-42d3-a456-000000000000"],
     reason: "The bounded unit suite passed.",
     actor_id: actorId,
+    tenant_id: null,
+    organization_id: null,
+    business_id: null,
     correlation_id: "a23e4567-e89b-42d3-a456-426614174000",
     idempotency_key: "phase203-transition-implemented-unit",
+    release_version: "phase-203",
     requested_at: now
   };
   assert.doesNotThrow(() => assertCapabilityLifecycleTransitionRequest(request));
   assert.throws(
     () => assertCapabilityLifecycleTransitionRequest({ ...request, to_state: "ACTIVE" }),
     (error) => error instanceof ContractError && error.code === "INVALID_CAPABILITY_TRANSITION"
+  );
+  assert.throws(
+    () => assertCapabilityLifecycleTransitionRequest({ ...request, release_version: "" }),
+    ContractError
+  );
+
+  const responseSnapshot = sellableCapability({
+    lifecycle_state: "CANARY_VERIFIED",
+    pricing_eligibility: "NOT_ELIGIBLE",
+    public_claim_eligible: false,
+    record_version: 9
+  });
+  const auditRecord = {
+    transition_id: request.transition_id,
+    capability_id: capabilityId,
+    capability_version: "1.0.0",
+    from_state: "SELLABLE",
+    to_state: "CANARY_VERIFIED",
+    pricing_eligibility: "NOT_ELIGIBLE",
+    prior_record_version: 8,
+    resulting_record_version: 9,
+    evidence_receipt_ids: [],
+    reason: "A production verification failure automatically revoked public eligibility.",
+    actor_id: actorId,
+    tenant_id: null,
+    organization_id: null,
+    business_id: null,
+    correlation_id: request.correlation_id,
+    idempotency_key: "phase203-verification-failure-audit",
+    request_sha256: "b".repeat(64),
+    release_version: "phase-203",
+    response_snapshot: responseSnapshot,
+    requested_at: now,
+    recorded_at: now
+  };
+  assert.doesNotThrow(() => assertCapabilityTransitionAuditRecord(auditRecord));
+  assert.throws(
+    () => assertCapabilityTransitionAuditRecord({
+      ...auditRecord,
+      tenant_id: tenantId,
+      organization_id: organizationId
+    }),
+    (error) => error instanceof ContractError && error.code === "INVALID_TRANSITION_SNAPSHOT"
   );
 });
 
@@ -345,6 +552,7 @@ test("public Product Truth projections contain only receipt-bound SELLABLE claim
       capability_version: "1.0.0",
       display_name: "Canonical workspace",
       lifecycle_state: "SELLABLE",
+      pricing_eligibility: "INCLUDED",
       approved_language: "ENTRAL provides a verified canonical workspace.",
       limitations: ["Requires authentication."],
       evidence_receipt_ids: ["623e4567-e89b-42d3-a456-000000000003"],
@@ -381,6 +589,10 @@ test("Capability Truth JSON schemas preserve fail-closed lifecycle and publicati
     recordSchema.allOf[2].then.properties.public_claim_eligible.const,
     true
   );
+  assert.equal(recordSchema.allOf[2].else.properties.public_claim_eligible.const, false);
+  assert.equal(recordSchema.allOf[2].else.properties.pricing_eligibility.const, "NOT_ELIGIBLE");
+  assert.equal(recordSchema.allOf[0].then.properties.supported_scopes.contains.const, "GLOBAL");
+  assert.equal(recordSchema.allOf[1].then.properties.supported_scopes.contains.const, "TENANT");
   assert.equal(publicationSchema.additionalProperties, false);
   assert.equal(publicationSchema.properties.claims.items.properties.lifecycle_state.const, "SELLABLE");
   assert.equal(publicationSchema.properties.claims.items.properties.evidence_receipt_ids.minItems, 1);

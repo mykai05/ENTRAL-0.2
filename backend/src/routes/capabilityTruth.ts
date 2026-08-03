@@ -2,6 +2,7 @@ import {
   CAPABILITY_EVIDENCE_TYPES,
   CAPABILITY_ENVIRONMENTS,
   CAPABILITY_LIFECYCLE_STATES,
+  CAPABILITY_PRICING_ELIGIBILITY,
   PRODUCT_CLAIM_SURFACES,
   ContractError,
   assertCapabilityLifecycleTransitionRequest,
@@ -51,12 +52,17 @@ const transitionSchema = z.object({
   capability_id: z.string().uuid(),
   from_state: z.enum(CAPABILITY_LIFECYCLE_STATES),
   to_state: z.enum(CAPABILITY_LIFECYCLE_STATES),
+  pricing_eligibility: z.enum(CAPABILITY_PRICING_ELIGIBILITY),
   expected_record_version: z.number().int().min(1),
   evidence_receipt_ids: z.array(z.string().uuid()),
   reason: z.string().trim().min(1).max(2_000),
   actor_id: z.string().uuid(),
+  tenant_id: z.string().uuid().nullable(),
+  organization_id: z.string().uuid().nullable(),
+  business_id: z.string().uuid().nullable(),
   correlation_id: z.string().uuid(),
   idempotency_key: z.string().trim().min(12).max(255),
+  release_version: z.literal("phase-203"),
   requested_at: z.string().datetime()
 }).strict();
 

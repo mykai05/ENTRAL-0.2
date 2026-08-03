@@ -42,7 +42,19 @@ test("Capability Truth contract exposes the exact lifecycle and fail-closed publ
   assert.deepEqual([...lifecycleBody.matchAll(/"([A-Z_]+)"/gu)].map((match) => match[1]), expectedLifecycle);
   assert.deepEqual(schema.$defs.lifecycle.enum, expectedLifecycle);
   assert.equal(publicationSchema.properties.claims.items.properties.lifecycle_state.const, "SELLABLE");
+  assert.deepEqual(publicationSchema.properties.claims.items.properties.pricing_eligibility.enum, ["INCLUDED", "ADD_ON"]);
   assert.equal(publicationSchema.properties.claims.items.properties.evidence_receipt_ids.minItems, 1);
+  for (const field of [
+    "data_classification",
+    "supported_scopes",
+    "required_evidence",
+    "pricing_eligibility",
+    "feature_flags",
+    "limits",
+    "installation_transition_audit"
+  ]) assert.ok(contract.includes(field), `contract must bind ${field}`);
+  assert.equal(schema.allOf[0].then.properties.supported_scopes.contains.const, "GLOBAL");
+  assert.equal(schema.allOf[1].then.properties.supported_scopes.contains.const, "TENANT");
   for (const blockedReadiness of ["UNVERIFIED", "SIMULATED", "PLACEHOLDER", "LOCAL_ONLY", "DISABLED"]) {
     assert.ok(contract.includes(`"${blockedReadiness}"`));
   }
@@ -63,6 +75,12 @@ test("source import is exhaustive, immutable-source-backed, and conservatively n
   assert.deepEqual(inventory.import_policy.allowed_initial_lifecycle_states, ["CATALOGUED"]);
   assert.ok(inventory.entries.every((entry) => entry.public_claim_eligible === false));
   assert.ok(inventory.entries.every((entry) => entry.owner === "UNASSIGNED"));
+  assert.equal(inventory.import_policy.data_classification_default, "INTERNAL");
+  assert.deepEqual(inventory.import_policy.supported_scopes_default, ["GLOBAL"]);
+  assert.ok(inventory.import_policy.required_evidence_default.includes("PRODUCTION_READBACK"));
+  assert.equal(inventory.import_policy.pricing_eligibility_default, "NOT_ELIGIBLE");
+  assert.deepEqual(inventory.import_policy.tenant_feature_flags_default, {});
+  assert.deepEqual(inventory.import_policy.tenant_limits_default, {});
   assert.ok(inventory.entries.every((entry) => entry.source_bindings.every(
     (binding) => binding.reference.startsWith(`${inventory.repository}@${inventory.source_commit}:`)
   )));
@@ -81,6 +99,9 @@ test("migration owns one durable registry, audited transitions, RLS, and an exac
     "tenant_capability_installations",
     "product_claims",
     "capability_transition_audit",
+    "product_claim_transition_audit",
+    "tenant_capability_installation_audit",
+    "capability_mutation_receipts",
     "publication_decision_audit"
   ]) {
     assert.match(migration, new RegExp(`CREATE TABLE entral\\.${table}\\b`, "u"));
@@ -92,6 +113,13 @@ test("migration owns one durable registry, audited transitions, RLS, and an exac
     "phase203_transition_capability",
     "phase203_register_product_claim",
     "phase203_transition_product_claim",
+    "phase203_current_evidence_receipt_passed",
+    "phase203_latest_evidence_passed",
+    "phase203_operational_evidence_healthy",
+    "phase203_activation_requirements_healthy",
+    "phase203_required_evidence_present",
+    "phase203_dependencies_healthy",
+    "phase203_reconcile_unhealthy_dependents",
     "phase203_publication_gate",
     "phase203_registry_revision",
     "phase203_admin_readback"
@@ -101,6 +129,19 @@ test("migration owns one durable registry, audited transitions, RLS, and an exac
   assert.match(migration, /REVOKE ALL ON FUNCTION %s FROM PUBLIC/);
   assert.match(migration, /Capability lifecycle mutation requires an audited Phase 203 transition/);
   assert.match(migration, /Product claim .* requires an audited Phase 203 transition/);
+  assert.match(migration, /BEFORE UPDATE OF lifecycle_state,public_claim_eligible,pricing_eligibility/);
+  assert.match(migration, /WITH RECURSIVE root AS/);
+  assert.match(migration, /JOIN affected ON affected\.capability_id=dependency\.dependency_capability_id/);
+  assert.match(migration, /NOT entral\.phase203_activation_requirements_healthy/);
+  assert.match(migration, /NOT entral\.phase203_required_evidence_present/);
+  assert.match(migration, /ARRAY\['PRODUCTION_READBACK'\]::text\[\]/);
+  assert.match(migration, /response_snapshot \?& ARRAY\[/);
+  assert.match(migration, /v_prior_lifecycle_state := COALESCE/);
+  assert.match(migration, /v_remaining_failure_state/);
+  assert.match(migration, /release_version='phase-203'/);
+  assert.match(migration, /FOREIGN KEY \(business_id,tenant_id,organization_id\)/);
+  assert.match(migration, /feature_flags jsonb NOT NULL DEFAULT '\{\}'::jsonb/);
+  assert.match(migration, /limits jsonb NOT NULL DEFAULT '\{\}'::jsonb/);
   assert.match(migration, /ARRAY\['UNIT_TEST'\]/);
   assert.match(migration, /ARRAY\['INTEGRATION_TEST'\]/);
   assert.match(migration, /ARRAY\['CANARY'\]/);
@@ -125,6 +166,9 @@ test("role grants expose functions but no direct capability or claim mutation", 
   assert.doesNotMatch(roles, /GRANT\s+(?:INSERT|UPDATE|DELETE)[\s\S]{0,80}entral\.capability_records/iu);
   assert.doesNotMatch(roles, /GRANT\s+(?:INSERT|UPDATE|DELETE)[\s\S]{0,80}entral\.product_claims/iu);
   assert.match(roles, /REVOKE ALL ON (?:TABLE|FUNCTION)/);
+  assert.match(roles, /phase203_current_evidence_receipt_passed\(uuid\)/);
+  assert.match(roles, /phase203_latest_evidence_passed\(uuid,text,text\)/);
+  assert.match(roles, /phase203_operational_evidence_healthy\(uuid,text,text\)/);
 });
 
 test("typed API and OpenAPI expose only public-safe, member-scoped, and internal-admin surfaces", async () => {

@@ -16,6 +16,24 @@
       "SELLABLE"
     ],
     "public_claim_eligible_default": false,
+    "data_classification_default": "INTERNAL",
+    "supported_scopes_default": [
+      "GLOBAL"
+    ],
+    "required_evidence_default": [
+      "UNIT_TEST",
+      "INTEGRATION_TEST",
+      "CANARY",
+      "PRODUCTION_READBACK",
+      "SUPPORT_READINESS",
+      "PRICING_APPROVAL",
+      "TUTORIAL",
+      "DOCUMENTATION",
+      "ROLLBACK"
+    ],
+    "pricing_eligibility_default": "NOT_ELIGIBLE",
+    "tenant_feature_flags_default": {},
+    "tenant_limits_default": {},
     "duplicate_authority_rule": "Backend source is canonical where a backend blueprint exists; legacy frontend sources are drift evidence only.",
     "omitted_source_rule": "Do not invent records for a kind or identifier absent from the enumerated repository sources."
   },

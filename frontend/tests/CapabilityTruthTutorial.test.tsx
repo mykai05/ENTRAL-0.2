@@ -69,6 +69,7 @@ function projection(overrides: Record<string, unknown> = {}, claimOverrides: Rec
       capability_version: "200.0.0",
       display_name: "Approved Command lesson",
       lifecycle_state: "SELLABLE",
+      pricing_eligibility: "INCLUDED",
       approved_language: "Use the approved Command lesson backed by production evidence.",
       limitations: [],
       evidence_receipt_ids: ["20000000-0000-4000-8000-000000000004"],
@@ -127,7 +128,7 @@ describe("Phase 203 Tutorial Product Truth publication", () => {
     expect(screen.queryByText("Navigate Universe")).not.toBeInTheDocument();
 
     act(() => window.dispatchEvent(new Event("entral:open-tutorial")));
-    expect(screen.getByRole("heading", { level: 2, name: "Approved Command lesson" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Approved Command lesson" })).toBeInTheDocument();
     expect(screen.getAllByText("Use the approved Command lesson backed by production evidence.")).toHaveLength(2);
     expect(screen.queryByText("Review the business-health explanation and open its evidence source before choosing an action.")).not.toBeInTheDocument();
     expect(screen.queryByText("Command is the default post-login surface.", { exact: false })).not.toBeInTheDocument();
@@ -155,6 +156,24 @@ describe("Phase 203 Tutorial Product Truth publication", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Tutorial publication unavailable");
     expect(screen.getByRole("alert")).toHaveTextContent("No local or cached lessons");
     expect(screen.queryByText("Start from Command")).not.toBeInTheDocument();
+  });
+
+  it("performs a fresh fail-closed Product Truth readback each time Tutorial opens", async () => {
+    api.apiFetch.mockResolvedValue(projection({
+      expires_at: new Date(Date.now() + 300).toISOString()
+    }));
+    renderProvider();
+    authenticate();
+    await waitFor(() => expect(api.apiFetch).toHaveBeenCalled());
+    openLibrary();
+    expect(await screen.findByRole("button", { name: "Approved Command lesson" })).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Tutorial publication unavailable");
+
+    api.apiFetch.mockResolvedValue(projection());
+    openLibrary();
+
+    expect(await screen.findByRole("button", { name: "Approved Command lesson" })).toBeInTheDocument();
+    expect(api.apiFetch.mock.calls.length).toBeGreaterThanOrEqual(3);
   });
 
   it.each([

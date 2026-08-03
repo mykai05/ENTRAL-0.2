@@ -14,56 +14,61 @@ vi.mock("../lib/api", async (importOriginal) => ({
 const capabilityId = "10000000-0000-4000-8000-000000000001";
 
 function adminReadback() {
+  const capabilityRecord = {
+    capability_id: capabilityId,
+    capability_key: "capability.tutorial.step.command-overview",
+    capability_version: "200.0.0",
+    display_name: "Command lesson",
+    purpose: "Published Tutorial lesson source.",
+    kind: "CAPABILITY",
+    owner: "Capability owner",
+    data_classification: "INTERNAL",
+    environment: "PRODUCTION",
+    scope: "GLOBAL",
+    supported_scopes: ["GLOBAL"],
+    tenant_id: null,
+    organization_id: null,
+    lifecycle_state: "CATALOGUED",
+    audience_status: "UNSUPPORTED",
+    production_readiness: "UNVERIFIED",
+    dependencies: [{
+      capability_id: "10000000-0000-4000-8000-000000000002",
+      capability_version: "1.0.0",
+      minimum_lifecycle_state: "IMPLEMENTED",
+      required: true
+    }],
+    required_evidence: ["UNIT_TEST"],
+    activation_requirements: [{
+      requirement_code: "PRODUCTION_READBACK",
+      description: "A production journey receipt is required.",
+      required: true,
+      satisfied: false,
+      evidence_receipt_ids: []
+    }],
+    verification_receipts: [],
+    last_verified_at: null,
+    failure_state: {
+      code: "UNVERIFIED",
+      summary: "Production verification has not been attached.",
+      observed_at: "2026-08-03T03:00:00.000Z",
+      retryable: true
+    },
+    public_claim_eligible: false,
+    pricing_eligibility: "NOT_ELIGIBLE",
+    rollback_path: "Remove the catalog binding.",
+    deactivation_path: "Keep publication blocked.",
+    source_reference: "mykai05/ENTRAL-0.2@bdceb245ab7d94530f31e4293536497adcad4542:frontend/components/OnboardingTour.tsx",
+    limitations: ["Source presence is not product readiness."],
+    record_version: 1,
+    created_at: "2026-08-03T03:00:00.000Z",
+    updated_at: "2026-08-03T03:00:00.000Z"
+  };
   return {
     contract_version: "1.0.0",
     schema_version: 1,
     registry_revision: 7,
     generated_at: "2026-08-03T04:00:00.000Z",
-    records: [{
-      capability_id: capabilityId,
-      capability_key: "capability.tutorial.step.command-overview",
-      capability_version: "200.0.0",
-      display_name: "Command lesson",
-      purpose: "Published Tutorial lesson source.",
-      kind: "CAPABILITY",
-      owner: "Capability owner",
-      environment: "PRODUCTION",
-      scope: "GLOBAL",
-      tenant_id: null,
-      organization_id: null,
-      lifecycle_state: "CATALOGUED",
-      audience_status: "UNSUPPORTED",
-      production_readiness: "UNVERIFIED",
-      dependencies: [{
-        capability_id: "10000000-0000-4000-8000-000000000002",
-        capability_version: "1.0.0",
-        minimum_lifecycle_state: "IMPLEMENTED",
-        required: true
-      }],
-      activation_requirements: [{
-        requirement_code: "PRODUCTION_READBACK",
-        description: "A production journey receipt is required.",
-        required: true,
-        satisfied: false,
-        evidence_receipt_ids: []
-      }],
-      verification_receipts: [],
-      last_verified_at: null,
-      failure_state: {
-        code: "UNVERIFIED",
-        summary: "Production verification has not been attached.",
-        observed_at: "2026-08-03T03:00:00.000Z",
-        retryable: true
-      },
-      public_claim_eligible: false,
-      rollback_path: "Remove the catalog binding.",
-      deactivation_path: "Keep publication blocked.",
-      source_reference: "mykai05/ENTRAL-0.2@commit:frontend/components/OnboardingTour.tsx",
-      limitations: ["Source presence is not product readiness."],
-      record_version: 1,
-      created_at: "2026-08-03T03:00:00.000Z",
-      updated_at: "2026-08-03T03:00:00.000Z"
-    }],
+    records: [capabilityRecord],
     claims: [{
       claim_id: "20000000-0000-4000-8000-000000000001",
       claim_key: "tutorial.command-overview",
@@ -90,6 +95,8 @@ function adminReadback() {
       capability_version: "200.0.0",
       state: "AVAILABLE",
       plan_eligible: false,
+      feature_flags: { "tutorial.enabled": false },
+      limits: { "tutorial.max_steps": 0 },
       suspension_reason: null,
       activated_at: null,
       verification_receipt_ids: [],
@@ -117,12 +124,24 @@ function adminReadback() {
       evidence_receipt_ids: [],
       reason: "A reviewed design packet exists.",
       actor_id: "40000000-0000-4000-8000-000000000002",
+      tenant_id: null,
+      organization_id: null,
+      business_id: null,
+      pricing_eligibility: "NOT_ELIGIBLE",
       correlation_id: "40000000-0000-4000-8000-000000000003",
       idempotency_key: "phase203-admin-test-transition",
       request_sha256: "a".repeat(64),
+      release_version: "phase-203",
+      response_snapshot: {
+        ...capabilityRecord,
+        lifecycle_state: "DESIGNED",
+        record_version: 2,
+        updated_at: "2026-08-03T03:30:01.000Z"
+      },
       requested_at: "2026-08-03T03:30:00.000Z",
       recorded_at: "2026-08-03T03:30:01.000Z"
-    }]
+    }],
+    installation_transition_audit: []
   };
 }
 
@@ -143,6 +162,9 @@ describe("CapabilityTruthAdmin", () => {
     fireEvent.click(screen.getByText("Command lesson", { selector: "strong" }));
     expect(screen.getAllByText(capabilityId).length).toBeGreaterThan(0);
     expect(screen.getByText("Capability owner")).toBeInTheDocument();
+    expect(screen.getByText("INTERNAL")).toBeInTheDocument();
+    expect(screen.getByText("UNIT_TEST")).toBeInTheDocument();
+    expect(screen.getAllByText("NOT_ELIGIBLE", { selector: "dd" })).toHaveLength(3);
     expect(screen.getByText("CATALOGUED", { selector: "dd" })).toBeInTheDocument();
     expect(screen.getAllByText("Blocked")).toHaveLength(2);
     expect(screen.getByText("A production journey receipt is required.", { exact: false })).toBeInTheDocument();
@@ -150,9 +172,17 @@ describe("CapabilityTruthAdmin", () => {
     expect(screen.getByText("UNVERIFIED: Production verification has not been attached.", { exact: false })).toBeInTheDocument();
     expect(screen.getByText("Remove the catalog binding.")).toBeInTheDocument();
     expect(screen.getByText("Keep publication blocked.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /frontend\/components\/OnboardingTour\.tsx/u })).toHaveAttribute(
+      "href",
+      "https://github.com/mykai05/ENTRAL-0.2/blob/bdceb245ab7d94530f31e4293536497adcad4542/frontend/components/OnboardingTour.tsx"
+    );
     expect(screen.getByText("tutorial.command-overview")).toBeInTheDocument();
     expect(screen.getByText("Command lesson publication candidate.")).toBeInTheDocument();
     expect(screen.getByText("AVAILABLE", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("tutorial.enabled")).toBeInTheDocument();
+    expect(screen.getByText("tutorial.max_steps")).toBeInTheDocument();
+    expect(screen.getByText("phase-203")).toBeInTheDocument();
+    expect(screen.getByText("No installation transitions are recorded.")).toBeInTheDocument();
     expect(screen.getByText("CATALOGUED → DESIGNED", { exact: false })).toBeInTheDocument();
   });
 

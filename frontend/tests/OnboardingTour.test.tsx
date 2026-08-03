@@ -53,6 +53,7 @@ function publishedTutorialProjection() {
       capability_version: "200.0.0",
       display_name: title,
       lifecycle_state: "SELLABLE",
+      pricing_eligibility: "INCLUDED",
       approved_language: `Receipt-backed ${title} lesson.`,
       limitations: [],
       evidence_receipt_ids: [`30000000-0000-4000-8002-${String(index + 2).padStart(12, "0")}`],
@@ -160,7 +161,7 @@ describe("Phase 200 OnboardingProvider", () => {
     expect(screen.getByRole("button", { name: "Use contextual ENTRAL help" })).toBeInTheDocument();
     expect(screen.getByLabelText("2 of 5 Academy lessons completed")).toBeInTheDocument();
     act(() => window.dispatchEvent(new Event("entral:open-tutorial")));
-    expect(screen.getByRole("heading", { level: 2, name: "Navigate Universe" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Navigate Universe" })).toBeInTheDocument();
   });
 
   it("persists mode through the versioned server transition without local progress state", async () => {

@@ -71,6 +71,18 @@ const projection = {
   claims: []
 };
 
+const publicationSurfaces = [
+  "WEBSITE",
+  "PRICING",
+  "CHECKOUT",
+  "PROPOSAL",
+  "ONBOARDING",
+  "TUTORIAL",
+  "MEMBER_APPLICATION",
+  "INTEGRATION_LIST",
+  "SALES"
+] as const;
+
 async function testServer() {
   const [{ capabilityTruthRoutes }, { CapabilityTruthServiceError }] = await Promise.all([
     import("../src/routes/capabilityTruth.js"),
@@ -114,7 +126,8 @@ beforeEach(() => {
     installations: [],
     verification_receipts: [],
     dependencies: [],
-    transition_audit: []
+    transition_audit: [],
+    installation_transition_audit: []
   });
   mocks.hasVerifiedMemberTeamAccess.mockResolvedValue(true);
 });
@@ -130,6 +143,19 @@ describe("Phase 203 Capability Truth routes", () => {
     expect(response.headers["cache-control"]).toContain("no-store");
     expect(response.json()).toEqual(projection);
     expect(mocks.getPublicProjection).toHaveBeenCalledWith("WEBSITE");
+    await app.close();
+  });
+
+  it.each(publicationSurfaces)("binds the %s surface to its exact publication projection", async (surface) => {
+    const { app } = await testServer();
+    mocks.getPublicProjection.mockResolvedValue({ ...projection, surface });
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/v1/product-truth/claims?surface=${surface}`
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().surface).toBe(surface);
+    expect(mocks.getPublicProjection).toHaveBeenCalledWith(surface);
     await app.close();
   });
 
@@ -231,12 +257,17 @@ describe("Phase 203 Capability Truth routes", () => {
         capability_id: bodyCapabilityId,
         from_state: "CATALOGUED",
         to_state: "DESIGNED",
+        pricing_eligibility: "NOT_ELIGIBLE",
         expected_record_version: 1,
         evidence_receipt_ids: [],
         reason: "A complete design packet is available.",
         actor_id: "523e4567-e89b-42d3-a456-426614174000",
+        tenant_id: null,
+        organization_id: null,
+        business_id: null,
         correlation_id: "623e4567-e89b-42d3-a456-426614174000",
         idempotency_key: "phase203-transition-mismatch",
+        release_version: "phase-203",
         requested_at: "2026-08-03T05:00:00.000Z"
       }
     });
@@ -255,6 +286,7 @@ describe("Phase 203 integration-list publication boundary", () => {
     capability_version: "1.0.0",
     display_name: "Approved OpenAI integration",
     lifecycle_state: "SELLABLE",
+    pricing_eligibility: "INCLUDED",
     approved_language: "Approved receipt-bound AI provider connection.",
     limitations: ["Provider credentials and authorization remain required."],
     evidence_receipt_ids: ["923e4567-e89b-42d3-a456-426614174000"],
@@ -275,6 +307,7 @@ describe("Phase 203 integration-list publication boundary", () => {
       headers: { "x-test-session": "internal" }
     });
     expect(response.statusCode).toBe(200);
+    expect(response.headers["cache-control"]).toContain("no-store");
     const payload = response.json();
     expect(payload.items).toHaveLength(1);
     expect(payload.items[0]).toMatchObject({

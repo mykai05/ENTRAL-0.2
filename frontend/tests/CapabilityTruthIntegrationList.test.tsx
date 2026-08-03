@@ -1,6 +1,17 @@
-import { describe, expect, it } from "vitest";
+import "@testing-library/jest-dom/vitest";
+import React, { useState } from "react";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProductTruthValidationError } from "../lib/capability-truth";
-import { validatePublishedIntegrationTools } from "../components/ConnectionCenter";
+import { ConnectionCenter, validatePublishedIntegrationTools } from "../components/ConnectionCenter";
+import type { ToolRegistryEntry } from "../lib/tool-registry";
+
+const mocks = vi.hoisted(() => ({ apiFetch: vi.fn() }));
+
+vi.mock("../lib/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/api")>()),
+  apiFetch: mocks.apiFetch
+}));
 
 const now = Date.now();
 const claim = {
@@ -11,6 +22,7 @@ const claim = {
   capability_version: "1.0.0",
   display_name: "Approved OpenAI integration",
   lifecycle_state: "SELLABLE",
+  pricing_eligibility: "INCLUDED",
   approved_language: "Approved receipt-bound AI provider connection.",
   limitations: ["Provider authorization remains required."],
   evidence_receipt_ids: ["323e4567-e89b-42d3-a456-426614174000"],
@@ -58,6 +70,14 @@ function tool() {
 }
 
 describe("Capability Truth integration list", () => {
+  beforeEach(() => {
+    mocks.apiFetch.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("accepts only exact receipt-bound SELLABLE integration items", () => {
     expect(validatePublishedIntegrationTools({
       items: [tool()],
@@ -84,5 +104,36 @@ describe("Capability Truth integration list", () => {
         product_truth: projection()
       })).toThrow(ProductTruthValidationError);
     }
+  });
+
+  it("loads once across inline parent callback rerenders", async () => {
+    mocks.apiFetch.mockResolvedValue({ items: [tool()], product_truth: projection() });
+    function Parent() {
+      const [, setPublished] = useState<ToolRegistryEntry[]>([]);
+      return <ConnectionCenter onEvent={() => undefined} onRegistryLoad={(items) => setPublished(items)} />;
+    }
+    const view = render(<Parent />);
+    expect(await screen.findByText(claim.display_name)).toBeInTheDocument();
+    await act(async () => { await Promise.resolve(); });
+    expect(mocks.apiFetch).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it("clears stale integrations and revalidates at projection expiry", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    mocks.apiFetch.mockResolvedValue({ items: [tool()], product_truth: projection() });
+    const onRegistryLoad = vi.fn();
+    const view = render(<ConnectionCenter onRegistryLoad={onRegistryLoad} />);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getByText(claim.display_name)).toBeInTheDocument();
+    await act(async () => {
+      vi.advanceTimersByTime(4 * 60_000 + 1);
+      await Promise.resolve();
+    });
+    expect(mocks.apiFetch).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(claim.display_name)).not.toBeInTheDocument();
+    expect(onRegistryLoad).toHaveBeenLastCalledWith([]);
+    view.unmount();
   });
 });

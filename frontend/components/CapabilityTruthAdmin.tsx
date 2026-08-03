@@ -18,6 +18,29 @@ function formatTimestamp(value: string | null) {
   return value ? new Date(value).toLocaleString() : "Never verified";
 }
 
+function evidenceHref(reference: string) {
+  const match = /^([^/]+\/[^@]+)@([0-9a-f]{40}):([^#]+)(#.*)?$/u.exec(reference);
+  if (!match) return null;
+  return `https://github.com/${match[1]}/blob/${match[2]}/${match[3]}${match[4] ?? ""}`;
+}
+
+function JsonMap({ value }: { value: Readonly<Record<string, boolean | number>> }) {
+  const entries = Object.entries(value);
+  if (entries.length === 0) return <>None</>;
+  return (
+    <ul>
+      {entries.map(([key, entry]) => <li key={key}><code>{key}</code>: {String(entry)}</li>)}
+    </ul>
+  );
+}
+
+function EvidenceReference({ reference }: { reference: string }) {
+  const href = evidenceHref(reference);
+  return href
+    ? <a href={href} rel="noreferrer" target="_blank">{reference}</a>
+    : <span>{reference}</span>;
+}
+
 function CapabilityRecordDetails({ record }: { record: CapabilityTruthRecord }) {
   return (
     <details className="admin-row">
@@ -38,10 +61,18 @@ function CapabilityRecordDetails({ record }: { record: CapabilityTruthRecord }) 
         <dd>{record.public_claim_eligible ? "Eligible" : "Blocked"}</dd>
         <dt>Owner</dt>
         <dd>{record.owner}</dd>
+        <dt>Data classification</dt>
+        <dd>{record.data_classification}</dd>
         <dt>Environment</dt>
         <dd>{record.environment}</dd>
         <dt>Scope</dt>
         <dd>{record.scope}{record.organization_id ? ` · organization ${record.organization_id}` : ""}</dd>
+        <dt>Supported scopes</dt>
+        <dd>{record.supported_scopes.join(", ")}</dd>
+        <dt>Required evidence</dt>
+        <dd>{record.required_evidence.join(", ")}</dd>
+        <dt>Pricing eligibility</dt>
+        <dd>{record.pricing_eligibility}</dd>
         <dt>Last verification</dt>
         <dd>{formatTimestamp(record.last_verified_at)}</dd>
         <dt>Failure state</dt>
@@ -54,6 +85,8 @@ function CapabilityRecordDetails({ record }: { record: CapabilityTruthRecord }) 
         <dd>{record.rollback_path}</dd>
         <dt>Deactivation path</dt>
         <dd>{record.deactivation_path}</dd>
+        <dt>Source evidence</dt>
+        <dd><EvidenceReference reference={record.source_reference} /></dd>
       </dl>
 
       <section aria-label={`${record.display_name} dependencies`}>
@@ -89,7 +122,7 @@ function CapabilityRecordDetails({ record }: { record: CapabilityTruthRecord }) 
             {record.verification_receipts.map((receipt) => (
               <li key={receipt.receipt_id}>
                 <strong>{receipt.evidence_type}</strong> · {receipt.status} · {receipt.environment} · {formatTimestamp(receipt.captured_at)}<br />
-                <span>{receipt.reference}</span>
+                <EvidenceReference reference={receipt.reference} />
               </li>
             ))}
           </ul>
@@ -186,6 +219,10 @@ export function CapabilityTruthAdmin({ headers }: CapabilityTruthAdminProps) {
                       <dt>Claim ID</dt><dd><code>{claim.claim_id}</code></dd>
                       <dt>Capability</dt><dd><code>{claim.capability_id}</code> · {claim.capability_version}</dd>
                       <dt>Approved language</dt><dd>{claim.approved_language}</dd>
+                      <dt>Pricing eligibility</dt><dd>{readback.records.find((record) => (
+                        record.capability_id === claim.capability_id
+                        && record.capability_version === claim.capability_version
+                      ))?.pricing_eligibility ?? "NOT_ELIGIBLE"}</dd>
                       <dt>Evidence receipts</dt><dd>{claim.evidence_receipt_ids.length > 0 ? claim.evidence_receipt_ids.join(", ") : "None"}</dd>
                       <dt>Tenant installation required</dt><dd>{claim.requires_tenant_installation ? "Yes" : "No"}</dd>
                     </dl>
@@ -206,6 +243,8 @@ export function CapabilityTruthAdmin({ headers }: CapabilityTruthAdminProps) {
                       <dt>Organization</dt><dd><code>{installation.organization_id}</code></dd>
                       <dt>Capability version</dt><dd>{installation.capability_version}</dd>
                       <dt>Plan eligibility</dt><dd>{installation.plan_eligible ? "Eligible" : "Blocked"}</dd>
+                      <dt>Feature flags</dt><dd><JsonMap value={installation.feature_flags} /></dd>
+                      <dt>Limits</dt><dd><JsonMap value={installation.limits} /></dd>
                       <dt>Suspension</dt><dd>{installation.suspension_reason ?? "Not suspended"}</dd>
                       <dt>Verification receipts</dt><dd>{installation.verification_receipt_ids.length > 0 ? installation.verification_receipt_ids.join(", ") : "None"}</dd>
                     </dl>
@@ -226,8 +265,38 @@ export function CapabilityTruthAdmin({ headers }: CapabilityTruthAdminProps) {
                       <dt>Record version</dt><dd>{transition.prior_record_version} → {transition.resulting_record_version}</dd>
                       <dt>Reason</dt><dd>{transition.reason}</dd>
                       <dt>Actor</dt><dd><code>{transition.actor_id}</code></dd>
+                      <dt>Tenant</dt><dd>{transition.tenant_id ? <code>{transition.tenant_id}</code> : "Global"}</dd>
+                      <dt>Organization</dt><dd>{transition.organization_id ? <code>{transition.organization_id}</code> : "Global"}</dd>
+                      <dt>Business</dt><dd>{transition.business_id ? <code>{transition.business_id}</code> : "None"}</dd>
+                      <dt>Pricing eligibility</dt><dd>{transition.pricing_eligibility}</dd>
+                      <dt>Release</dt><dd>{transition.release_version}</dd>
                       <dt>Correlation</dt><dd><code>{transition.correlation_id}</code></dd>
+                      <dt>Idempotency key</dt><dd><code>{transition.idempotency_key}</code></dd>
                       <dt>Evidence receipts</dt><dd>{transition.evidence_receipt_ids.length > 0 ? transition.evidence_receipt_ids.join(", ") : "None"}</dd>
+                    </dl>
+                  </details>
+                ))}
+              </div>
+            )}
+          </section>
+          <section aria-label="Capability installation transition audit">
+            <h3>Installation transition audit</h3>
+            {readback.installation_transition_audit.length === 0 ? <p>No installation transitions are recorded.</p> : (
+              <div className="audit-list">
+                {readback.installation_transition_audit.map((transition) => (
+                  <details className="admin-row" key={transition.transition_id}>
+                    <summary><strong>{transition.from_state} → {transition.to_state}</strong> · {formatTimestamp(transition.recorded_at)}</summary>
+                    <dl>
+                      <dt>Installation</dt><dd><code>{transition.installation_id}</code></dd>
+                      <dt>Tenant</dt><dd><code>{transition.tenant_id}</code></dd>
+                      <dt>Organization</dt><dd><code>{transition.organization_id}</code></dd>
+                      <dt>Business</dt><dd>{transition.business_id ? <code>{transition.business_id}</code> : "None"}</dd>
+                      <dt>Capability</dt><dd><code>{transition.capability_id}</code> · {transition.capability_version}</dd>
+                      <dt>Record version</dt><dd>{transition.prior_record_version} → {transition.resulting_record_version}</dd>
+                      <dt>Reason</dt><dd>{transition.reason}</dd>
+                      <dt>Actor</dt><dd><code>{transition.actor_id}</code></dd>
+                      <dt>Release</dt><dd>{transition.release_version}</dd>
+                      <dt>Correlation</dt><dd><code>{transition.correlation_id}</code></dd>
                     </dl>
                   </details>
                 ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, FlaskConical, LockKeyhole, PlugZap, ShieldAlert } from "lucide-react";
 import { apiFetch, ApiError } from "../lib/api";
 import { ProductTruthValidationError, validateFreshProductTruthProjection } from "../lib/capability-truth";
@@ -84,9 +84,14 @@ export function ConnectionCenter({ onEvent, onRegistryLoad }: ConnectionCenterPr
   const [activeResult, setActiveResult] = useState<ToolTestResult | null>(null);
   const [activeError, setActiveError] = useState("");
   const [busyToolId, setBusyToolId] = useState<string | null>(null);
+  const onEventRef = useRef(onEvent);
+  const onRegistryLoadRef = useRef(onRegistryLoad);
+  onEventRef.current = onEvent;
+  onRegistryLoadRef.current = onRegistryLoad;
 
   useEffect(() => {
     let isCancelled = false;
+    let expiryTimer: ReturnType<typeof setTimeout> | undefined;
 
     async function loadTools() {
       setIsLoading(true);
@@ -94,17 +99,32 @@ export function ConnectionCenter({ onEvent, onRegistryLoad }: ConnectionCenterPr
         const response = await apiFetch<ToolsResponse>("/connections/tools", { timeoutMs: 8000 });
         if (isCancelled) return;
         const publishedTools = validatePublishedIntegrationTools(response);
+        const projection = validateFreshProductTruthProjection(response.product_truth, "INTEGRATION_LIST");
+        if (expiryTimer) clearTimeout(expiryTimer);
+        expiryTimer = setTimeout(() => {
+          if (isCancelled) return;
+          const message = "Connection Product Truth expired. Refreshing the canonical registry.";
+          setTools([]);
+          setActiveResult(null);
+          setBusyToolId(null);
+          setActiveError(message);
+          onRegistryLoadRef.current?.([]);
+          onEventRef.current?.(message);
+          void loadTools();
+        }, Math.max(0, Date.parse(projection.expires_at) - Date.now()));
         setTools(publishedTools);
         setActiveError("");
-        onRegistryLoad?.(publishedTools);
+        onRegistryLoadRef.current?.(publishedTools);
       } catch (error) {
         if (isCancelled) return;
+        if (expiryTimer) clearTimeout(expiryTimer);
         const message = error instanceof ApiError
           ? `Connection registry unavailable (${error.status}). No local substitute was selected.`
           : "Connection registry unavailable. No local substitute was selected.";
         setTools([]);
         setActiveError(message);
-        onEvent?.(message);
+        onRegistryLoadRef.current?.([]);
+        onEventRef.current?.(message);
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -116,8 +136,9 @@ export function ConnectionCenter({ onEvent, onRegistryLoad }: ConnectionCenterPr
 
     return () => {
       isCancelled = true;
+      if (expiryTimer) clearTimeout(expiryTimer);
     };
-  }, [onEvent, onRegistryLoad]);
+  }, []);
 
   const groupedTools = useMemo(() => toolsByCategory(tools), [tools]);
 
