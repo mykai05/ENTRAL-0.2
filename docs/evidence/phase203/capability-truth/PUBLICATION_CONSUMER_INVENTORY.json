@@ -1,0 +1,107 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 203,
+  "generated_at": "2026-08-03T07:40:00.000Z",
+  "gateway": {
+    "repository": "mykai05/ENTRAL-0.2",
+    "implementation_commit": "7febcd072a29c3796caec4503d623c2d03da6f0e",
+    "references": [
+      "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:prisma/migrations/20260803010000_phase_203_capability_truth_registry/migration.sql",
+      "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:backend/src/routes/capabilityTruth.ts",
+      "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:backend/src/services/capabilityTruth.ts"
+    ]
+  },
+  "consumer_repositories": [
+    {
+      "repository": "mykai05/ENTRAL-0.2",
+      "commit": "7febcd072a29c3796caec4503d623c2d03da6f0e"
+    },
+    {
+      "repository": "mykai05/Sovereign-Protocol",
+      "commit": "1c7442e47b3f468e2227ba86b83f30ccc8bf0f56"
+    }
+  ],
+  "surfaces": [
+    {
+      "surface": "WEBSITE",
+      "behavior": "Only fresh receipt-bound SELLABLE website claims render; unavailable or empty truth has one explicit fail-closed status and no local product fallback.",
+      "references": [
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/app/page.tsx",
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/app/entral/page.tsx"
+      ]
+    },
+    {
+      "surface": "TUTORIAL",
+      "behavior": "Every Tutorial or Academy open performs a fresh tenant Product Truth readback and removes static lesson eligibility on failure or expiry.",
+      "references": [
+        "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:frontend/components/OnboardingTour.tsx",
+        "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:frontend/tests/CapabilityTruthTutorial.test.tsx"
+      ]
+    },
+    {
+      "surface": "PRICING",
+      "behavior": "No Entral price or plan claim renders without a fresh PRICING projection; static pricing is absent.",
+      "references": [
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/lib/product-truth.ts",
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/tests/rendered-html.test.mjs"
+      ]
+    },
+    {
+      "surface": "CHECKOUT",
+      "behavior": "Checkout remains disabled and no checkout control or claim appears without a fresh CHECKOUT projection and later authorized billing controls.",
+      "references": [
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/README.md",
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/tests/rendered-html.test.mjs"
+      ]
+    },
+    {
+      "surface": "PROPOSAL",
+      "behavior": "Entral proposal claims are omitted unless the exact PROPOSAL projection is fresh and SELLABLE.",
+      "references": [
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/lib/product-truth.ts",
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/worker/concierge.ts"
+      ]
+    },
+    {
+      "surface": "ONBOARDING",
+      "behavior": "Public onboarding language is omitted unless the exact ONBOARDING projection is fresh and SELLABLE.",
+      "references": [
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/lib/product-truth.ts",
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/tests/product-truth.test.mjs"
+      ]
+    },
+    {
+      "surface": "INTEGRATION_LIST",
+      "behavior": "Connection Center shows only fresh SELLABLE INTEGRATION records and clears the projection on expiry or any readback failure.",
+      "references": [
+        "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:frontend/components/ConnectionCenter.tsx",
+        "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:frontend/tests/CapabilityTruthIntegrationList.test.tsx"
+      ]
+    },
+    {
+      "surface": "MEMBER_APPLICATION",
+      "behavior": "The public member sign-in handoff exists only while an exact fresh MEMBER_APPLICATION claim and trusted application origin are both present.",
+      "references": [
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/app/member/sign-in/page.tsx",
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/tests/rendered-html.test.mjs"
+      ]
+    },
+    {
+      "surface": "SALES",
+      "behavior": "Sales and concierge claims use only exact fresh SALES Product Truth; unsupported Entral answers remain unknown and no product-specific inquiry option is exposed.",
+      "references": [
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/worker/concierge.ts",
+        "mykai05/Sovereign-Protocol@1c7442e47b3f468e2227ba86b83f30ccc8bf0f56:apps/website/worker/inquiries.ts"
+      ]
+    }
+  ],
+  "administrative_surface": {
+    "behavior": "Internal administrators receive typed registry, claim, installation, transition-audit, and publication-decision readback; members cannot mutate or bypass the gateway.",
+    "references": [
+      "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:frontend/components/CapabilityTruthAdmin.tsx",
+      "mykai05/ENTRAL-0.2@7febcd072a29c3796caec4503d623c2d03da6f0e:packages/contracts/openapi.yaml"
+    ]
+  },
+  "seed_policy": "No production capability, integration, agent, workflow, Commander Pack, or product claim is seeded ACTIVE or SELLABLE in Phase 203."
+}

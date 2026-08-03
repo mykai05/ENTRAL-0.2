@@ -195,3 +195,29 @@ test("typed API and OpenAPI expose only public-safe, member-scoped, and internal
   assert.match(server, /register\(capabilityTruthRoutes/);
   assert.match(openapi, /lifecycle_state: \{ type: string, const: SELLABLE \}/);
 });
+
+test("every Product Truth consumer is exact-commit-bound and fail closed", async () => {
+  const inventory = JSON.parse(await read(
+    "docs/evidence/phase203/capability-truth/PUBLICATION_CONSUMER_INVENTORY.json"
+  ));
+  const expectedSurfaces = [
+    "WEBSITE",
+    "TUTORIAL",
+    "PRICING",
+    "CHECKOUT",
+    "PROPOSAL",
+    "ONBOARDING",
+    "INTEGRATION_LIST",
+    "MEMBER_APPLICATION",
+    "SALES"
+  ];
+  assert.equal(inventory.phase, 203);
+  assert.equal(inventory.gateway.implementation_commit, "7febcd072a29c3796caec4503d623c2d03da6f0e");
+  assert.deepEqual(inventory.surfaces.map((entry) => entry.surface), expectedSurfaces);
+  assert.ok(inventory.surfaces.every((entry) => entry.references.length >= 2));
+  assert.ok(inventory.surfaces.flatMap((entry) => entry.references).every((reference) => (
+    /^mykai05\/(?:ENTRAL-0\.2|Sovereign-Protocol)@[0-9a-f]{40}:[^\s]+$/u.test(reference)
+  )));
+  assert.match(inventory.seed_policy, /No production capability/);
+  assert.match(inventory.seed_policy, /ACTIVE or SELLABLE/);
+});
