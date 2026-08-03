@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Billing and Collections Accelerator</title><style>
+@page { size: Letter; margin: 0.48in 0.58in 0.52in; }
+:root { color-scheme: light; --ink:#14212b; --muted:#5b6670; --accent:#b5452d; --soft:#f3eee8; --line:#d8d4cf; }
+* { box-sizing:border-box; } body { margin:0; color:var(--ink); font:9.8pt/1.38 Arial, Helvetica, sans-serif; }
+.cover { min-height:8.45in; display:flex; flex-direction:column; justify-content:center; padding:0.45in; border:2px solid var(--ink); background:linear-gradient(145deg,#fff 0%,var(--soft) 100%); page-break-after:always; }
+.eyebrow { color:var(--accent); font-size:10pt; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }
+.cover h1 { margin:.18in 0 .12in; font-size:31pt; line-height:1.05; letter-spacing:-.025em; }
+.cover p { max-width:5.8in; color:var(--muted); font-size:13pt; }
+.brand { margin-top:.45in; font-size:12pt; font-weight:700; } .meta { color:var(--muted); font-size:9pt; }
+.section { break-before:auto; page-break-before:auto; } .section + .section { border-top:1px solid var(--line); margin-top:.34in; padding-top:.18in; }
+h1,h2,h3,h4 { display:block; color:var(--ink); line-height:1.15; break-after:avoid-page; page-break-after:avoid; }
+h1 { font-size:22pt; margin:0 0 .18in; border-bottom:2px solid var(--accent); padding-bottom:.08in; }
+h2 { font-size:16pt; margin:.26in 0 .13in; } h3 { font-size:12.5pt; margin:.2in 0 .1in; }
+p { margin:.04in 0 .09in; break-inside:avoid; page-break-inside:avoid; orphans:4; widows:4; }
+h1 + p,h2 + p,h3 + p,h4 + p { margin-top:.11in; }
+p + h2,ul + h2,ol + h2 { margin-top:.28in; }
+ul,ol { margin:.04in 0 .1in .24in; padding:0; break-inside:avoid; page-break-inside:avoid; }
+li { margin:.025in 0; break-inside:avoid; page-break-inside:avoid; }
+table { width:100%; border-collapse:collapse; margin:.12in 0 .2in; font-size:8.7pt; page-break-inside:auto; }
+thead { display:table-header-group; } tr { page-break-inside:avoid; } th,td { border:1px solid var(--line); padding:.06in; text-align:left; vertical-align:top; }
+th { background:var(--soft); } code { font:8.8pt Consolas, monospace; background:var(--soft); padding:.01in .035in; }
+pre { white-space:pre-wrap; background:#f7f5f2; border:1px solid var(--line); padding:.12in; page-break-inside:avoid; }
+blockquote { margin:.12in 0; padding:.1in .14in; border-left:4px solid var(--accent); background:var(--soft); }
+hr { border:0; border-top:1px solid var(--line); margin:.22in 0; } a { color:#7d2f20; }
+.source-label { color:var(--accent); font-size:8pt; font-weight:700; letter-spacing:.11em; text-transform:uppercase; margin-bottom:.08in; break-after:avoid; page-break-after:avoid; }
+</style></head><body>
+<section class="cover"><div class="eyebrow">RivetRelay contractor operations toolkit</div><h1>Billing and Collections Accelerator</h1><p>Practical, editable operating materials for specialty contractors. Built for disciplined follow-through; no outcome or legal guarantee is implied.</p><div class="brand">RivetRelay</div><div class="meta">Version 1.0.0 · AI-assisted original work · Licensed for one purchasing business</div></section>
+<section class="section"><div class="source-label">START HERE</div><h1>Billing and Collections Accelerator</h1>
+<ul><li>Product ID: RR-BC-001</li><li>Version: 1.0.0</li><li>Initial test price: $49</li><li>Working brand: RivetRelay (provisional; not cleared for publication)</li></ul>
+<h2>What this product does</h2>
+<p>This product helps a contractor reconcile issued invoices, payments, credits, disputes, promises, and next actions in one operating view. It does not issue invoices, process payments, determine enforceability, or guarantee collection.</p>
+<h2>Included source files</h2>
+<ul><li><code>START_HERE.md</code>: controlled setup and daily/weekly operation.</li><li><code>IMPLEMENTATION_GUIDE.md</code>: accounting boundary, ownership, reconciliation, and exception handling.</li><li><code>BILLING_AND_COLLECTIONS_PLAYBOOK.md</code>: invoice readiness, communication scripts, dispute route, and checklists.</li><li><code>receivables_tracker_template.csv</code>: clean import/source table.</li><li><code>receivables_tracker_fictional_example.csv</code>: seven fully populated fictional records.</li><li><code>receivables_fields_and_formulas.csv</code>: field definitions, validations, aging, and control formulas.</li><li><code>VERSION_LICENSE_SUPPORT.md</code>: version, permitted use, limitations, support, and AI disclosure.</li><li><code>CLAIMS_INVENTORY.csv</code>: bounded public-claim evidence.</li></ul>
+<p>The populated fictional tracker is a static example snapshot with <code>Control_Date</code> set to 2026-07-13. The packaged workbook recalculates aging and action values only from the explicit control date; it never substitutes the device's current date.</p>
+<h2>Safe first setup</h2>
+<ol><li>Confirm the accounting system remains the financial system of record.</li><li>Assign a billing owner, a collections owner, and a dispute escalation owner.</li><li>Open the delivered tracker workbook and import only actually issued invoices using stable accounting references.</li><li>Reconcile original amount, credits, payments, and balance to the accounting system.</li><li>Retain the protected formula columns and set the verified <code>Control_Date</code>; use the CSV source only for a controlled import or system mapping.</li><li>Record the next action for each open balance.</li><li>Verify the contract, recipient, channel eligibility, and local collection rules before any external message.</li></ol>
+<p>Never record a draft invoice as issued, an open invoice as revenue collected, a promise as payment, or an unresolved difference as zero.</p>
+<h2>Daily operating loop</h2>
+<h3>Reconcile</h3>
+<ul><li>Import or record actual invoices issued since the last review.</li><li>Record payments and credits from the accounting system or verified provider event.</li><li>Resolve any computed balance that differs from the system of record.</li><li>Preserve refund, chargeback, and dispute states separately.</li></ul>
+<h3>Act</h3>
+<ul><li>Filter <code>Action_Flag</code> to <code>HOLD</code>, <code>OVERDUE</code>, or <code>DUE</code>.</li><li>Resolve holds before contact.</li><li>Confirm the latest customer preference and communication history.</li><li>Use the message matching the actual lifecycle event.</li><li>Set the next action and date from a supported commitment or internal policy.</li></ul>
+<h3>Close</h3>
+<ul><li>Mark <code>PAID</code> only after verified settlement.</li><li>Mark <code>CREDITED</code> only from an issued credit reference.</li><li>Mark <code>WRITE_OFF_REVIEW</code> as a review state; do not alter the accounting ledger from this tracker.</li></ul>
+<h2>Weekly owner review</h2>
+<ul><li>Total open balance reconciled to the ledger.</li><li>Past-due balances by aging bucket.</li><li>Broken or due promises.</li><li>Unresolved disputes and required owner decisions.</li><li>Completed work awaiting invoice issuance in the upstream process.</li><li>Credits, refunds, or chargebacks requiring reconciliation.</li><li>Accounts on service hold under approved contract and policy.</li></ul>
+<p>If data is not reconciled, report it as unavailable or under review. Do not fill gaps with estimates.</p></section>
+<section class="section"><div class="source-label">IMPLEMENTATION GUIDE</div><h1>Implementation guide</h1>
+<h2>System-of-record boundary</h2>
+<p>The purchaser's accounting system, bank, and payment providers remain authoritative for invoices, credits, payments, refunds, fees, and settlement. This tracker is an operating queue derived from those records. A calculated value must not post, reverse, or write off a financial transaction.</p>
+<h2>Roles</h2>
+<table><thead><tr><th>Role</th><th>Minimum responsibility</th></tr></thead><tbody><tr><td>Billing owner</td><td>Confirms invoice readiness, issuance, amount, due date, and reference.</td></tr><tr><td>Collections owner</td><td>Reviews eligible open balances and documents actions.</td></tr><tr><td>Accounting reconciler</td><td>Confirms payments, credits, refunds, and ledger agreement.</td></tr><tr><td>Dispute owner</td><td>Investigates disputed scope, amount, quality, or payment allocation.</td></tr><tr><td>Business owner</td><td>Approves holds, settlement decisions, escalation, or write-off review.</td></tr></tbody></table>
+<p>The person sending a message must have authority to do so. Access should be limited because invoice and customer records may be sensitive.</p>
+<h2>Setup sequence</h2>
+<h3>1. Define local policy</h3>
+<p>Document:</p>
+<ul><li>when an invoice is ready to issue;</li><li>accepted delivery channels and evidence;</li><li>contractual payment terms;</li><li>contact cadence and permitted contact hours;</li><li>service-hold authority and restrictions;</li><li>dispute escalation path;</li><li>refund, credit, and write-off authority;</li><li>retention and access requirements.</li></ul>
+<p>Obtain qualified guidance for consumer-debt, lien, notice, interest, fee, privacy, licensing, and jurisdiction-specific requirements. The product does not define them.</p>
+<h3>2. Configure controlled states</h3>
+<ul><li><code>Invoice_Status</code>: ISSUED, PARTIALLY_PAID, PAID, DISPUTED, CREDITED, VOID, WRITE_OFF_REVIEW.</li><li><code>Dispute_Status</code>: NONE, CUSTOMER_QUESTION, INTERNAL_REVIEW, RESPONSE_DUE, RESOLVED, ESCALATED.</li><li><code>Contact_Eligibility</code>: ELIGIBLE, PREFERENCE_LIMITED, OPTED_OUT, WRONG_CONTACT, LEGAL_HOLD, UNKNOWN.</li><li><code>Promise_Status</code>: NONE, OPEN, KEPT, MISSED, REPLACED, WITHDRAWN.</li><li><code>Action_Type</code>: VERIFY_RECORD, SEND_INVOICE_COPY, COURTESY_REMINDER, PAST_DUE_FOLLOW_UP, PROMISE_CHECK, DISPUTE_RESPONSE, OWNER_REVIEW, NONE.</li></ul>
+<p>Unknown eligibility, legal hold, unresolved ledger variance, or unresolved dispute must suppress routine outreach.</p>
+<h3>3. Import the open-invoice population</h3>
+<p>Use one row per issued invoice. Use secure references instead of account numbers, bank data, or payment credentials. Record actual issue and due dates. Import credits and payments only when the authoritative record supports them.</p>
+<h3>4. Apply formulas</h3>
+<p>The delivered workbook contains a protected Excel table named <code>Receivables</code>, controlled-value validation, and explicit date and currency formats. Its calculations use the verified <code>Control_Date</code>. Test formula behavior for blank dates, future due dates, partial payments, credits, variances, and paid invoices before relying on queues.</p>
+<h3>5. Reconcile</h3>
+<p>For every open row:</p>
+<p><code>Original_Amount - Credits_Applied - Payments_Applied = Calculated_Balance</code></p>
+<p>Compare <code>Calculated_Balance</code> with <code>Ledger_Balance</code>. A nonzero <code>Balance_Variance</code> creates a hold. Resolve the authoritative records; never force the calculation to match by entering an unsupported adjustment.</p>
+<h2>Invoice-ready test</h2>
+<p>Before issuing an invoice in the accounting system, confirm:</p>
+<ul><li>bill-to party and recipient;</li><li>contract/project reference;</li><li>approved base scope and changes;</li><li>performed-work or milestone evidence;</li><li>price, tax, credits, deposit allocation, and payment terms;</li><li>required supporting documents;</li><li>internal authorization.</li></ul>
+<p>The tracker may record the resulting invoice only after actual issuance.</p>
+<h2>Communication control</h2>
+<p>Before any message:</p>
+<ul><li>verify the invoice is real and current;</li><li>verify the recipient and eligible channel;</li><li>read the latest dispute and customer preference;</li><li>avoid unsupported fees, threats, deadlines, or legal claims;</li><li>use only actual amount, due date, payment link, and contact route;</li><li>record the material event once.</li></ul>
+<h2>Exception handling</h2>
+<table><thead><tr><th>Exception</th><th>Safe response</th></tr></thead><tbody><tr><td>Ledger variance</td><td>Set hold, compare invoice/payment/credit records, and resolve before outreach.</td></tr><tr><td>Customer disputes amount</td><td>Set dispute state, pause routine reminders, acknowledge, and route evidence review.</td></tr><tr><td>Payment promised</td><td>Record amount/date/source as a promise, not a payment.</td></tr><tr><td>Payment appears in bank but not ledger</td><td>Hold external action and reconcile through approved accounting process.</td></tr><tr><td>Customer opts out of a channel</td><td>Preserve the preference and use only a lawful approved alternative, if any.</td></tr><tr><td>Legal or insolvency notice</td><td>Set LEGAL_HOLD and escalate; do not use routine scripts.</td></tr><tr><td>Partial payment</td><td>Record verified payment, leave supported balance open, and recalculate.</td></tr><tr><td>Refund or chargeback</td><td>Preserve it as a separate authoritative event and reconcile the ledger.</td></tr></tbody></table>
+<h2>Maintenance</h2>
+<p>Reconcile at a fixed frequency suitable for transaction volume. Lock prior-period exports. Test formulas after structural change. Audit user access. Remove personal data that is not needed. Retain contact and decision evidence according to approved policy.</p></section>
+<section class="section"><div class="source-label">BILLING AND COLLECTIONS PLAYBOOK</div><h1>Billing and collections playbook</h1>
+<p>Every external message below requires verified facts, recipient, channel, authority, and applicable rules. Replace bracketed text only with supported values. Do not add threats, legal consequences, interest, penalties, or collection fees unless separately authorized and verified.</p>
+<h2>Invoice issuance checklist</h2>
+<ul><li>Accounting invoice is actually issued.</li><li>Invoice ID, issue date, due date, and amount match the ledger.</li><li>Customer/project reference is correct.</li><li>Scope and approved changes reconcile.</li><li>Credits, deposits, tax, and prior payments reconcile.</li><li>Supporting documents are included where required.</li><li>Recipient and delivery channel are verified.</li><li>Delivery evidence reference is stored.</li><li>Next action and date are assigned.</li></ul>
+<h2>Script 1 — invoice delivered</h2>
+<p>Subject: Invoice [invoice ID] from [business name]</p>
+<p>Hello [recipient name],</p>
+<p>Invoice [invoice ID] was issued on [issue date] for [verified project or milestone description]. The invoice total is [actual amount] and the stated due date is [due date]. The invoice and supporting documents are available at [approved secure delivery route].</p>
+<p>If the bill-to information, payment allocation, or supporting record needs review, contact [approved route] and reference the invoice ID.</p>
+<p>[Authorized sender]</p>
+<h2>Script 2 — courtesy reminder before or on due date</h2>
+<p>Subject: Invoice [invoice ID] — due [due date]</p>
+<p>Hello [recipient name],</p>
+<p>This is a reminder that invoice [invoice ID] shows an open balance of [verified ledger balance] with a stated due date of [due date]. If payment has already been initiated, no additional payment action is requested from this reminder; please share the remittance reference through [approved route] so the team can reconcile it.</p>
+<p>Questions or disputes can be sent to [approved route].</p>
+<p>[Authorized sender]</p>
+<h2>Script 3 — past-due follow-up</h2>
+<p>Subject: Account review for invoice [invoice ID]</p>
+<p>Hello [recipient name],</p>
+<p>As of [verified as-of date], invoice [invoice ID] shows an open balance of [verified ledger balance] and a stated due date of [due date]. Please confirm one of the following through [approved route]: payment information for reconciliation, a specific question or dispute, or the date you expect to provide an update.</p>
+<p>This message does not add a fee or change the underlying agreement.</p>
+<p>[Authorized sender]</p>
+<h2>Script 4 — payment promise confirmation</h2>
+<p>Subject: Confirmation of your update for invoice [invoice ID]</p>
+<p>Hello [recipient name],</p>
+<p>This confirms the update received on [date]: [promised amount] expected by [promised date], subject to actual receipt and reconciliation. The invoice remains open until the accounting record confirms payment. If any detail is incorrect, reply through [approved route].</p>
+<p>[Authorized sender]</p>
+<h2>Script 5 — dispute acknowledgment</h2>
+<p>Subject: Review opened for invoice [invoice ID]</p>
+<p>Hello [recipient name],</p>
+<p>We recorded your question about [factual dispute topic] on [date]. Routine follow-up on the disputed item is paused while [assigned owner] reviews [specific records]. We expect to provide a status update by [supported date or window].</p>
+<p>This acknowledgment does not decide the dispute. Please send additional relevant records through [approved secure route].</p>
+<p>[Authorized sender]</p>
+<h2>Script 6 — reconciled resolution</h2>
+<p>Subject: Resolution record for invoice [invoice ID]</p>
+<p>Hello [recipient name],</p>
+<p>The review of [factual topic] is complete. The current accounting record shows [verified resolution: balance/credit/payment allocation/corrected invoice reference]. Supporting documentation is available at [approved route]. If this does not match your records, contact [approved dispute route] and reference [resolution reference].</p>
+<p>[Authorized sender]</p>
+<h2>Promise-to-pay record</h2>
+<ul><li>Invoice ID:</li><li>Recorded date/time:</li><li>Person providing update:</li><li>Channel and evidence reference:</li><li>Promised amount:</li><li>Promised date:</li><li>Conditions stated by customer:</li><li>Internal owner:</li><li>Follow-up date:</li><li>Actual settlement reference when received:</li><li>Final status: OPEN, KEPT, MISSED, REPLACED, WITHDRAWN.</li></ul>
+<p>Do not populate an actual settlement reference until payment is verified.</p>
+<h2>Dispute intake record</h2>
+<ul><li>Invoice ID and current ledger balance:</li><li>Date received:</li><li>Customer's stated issue, attributed and quoted only as needed:</li><li>Category: scope, completion, quality, price, tax, payment allocation, duplicate, recipient, other.</li><li>Affected amount, if the customer specified it:</li><li>Unaffected amount, only if verified:</li><li>Records required for review:</li><li>Assigned dispute owner:</li><li>Routine contact pause state:</li><li>Next status date:</li><li>Decision authority:</li><li>Resolution evidence reference:</li></ul>
+<h2>Weekly reconciliation checklist</h2>
+<ul><li>Open-invoice total matches the authoritative report.</li><li>Every payment/credit imported has an evidence reference.</li><li>No paid invoice remains in an active follow-up queue.</li><li>Ledger variances are held.</li><li>Disputed invoices use the dispute route.</li><li>Promise dates are reviewed without recording promises as cash.</li><li>Service holds have explicit authority and contract review.</li><li>Refunds, chargebacks, and write-off reviews are separately visible.</li><li>Owner decisions are documented.</li></ul></section>
+<section class="section"><div class="source-label">VERSION LICENSE SUPPORT</div><h1>Version, license, support, and disclosure</h1>
+<ul><li>Product: Billing and Collections Accelerator</li><li>Product ID: RR-BC-001</li><li>Edition: 1.0.0 source edition</li><li>Working brand: RivetRelay (provisional; pending owner/legal/marketplace clearance)</li></ul>
+<h2>Version notes</h2>
+<p>Version 1.0.0 defines ledger reconciliation, invoice lifecycle, eligibility holds, dispute routing, promises, aging, next actions, six communication scripts, and seven fictional examples.</p>
+<h2>Permitted-use license</h2>
+<p>After authorized purchase, the purchaser may copy, edit, print, and use these files for the internal operations of one legal business and its personnel. The purchaser may populate the tools with its own records and adapt scripts for legitimate business communications after verifying each fact and requirement.</p>
+<p>The purchaser may not resell, sublicense, publish, share outside that business, distribute as a template, remove the license notice from redistributed extracts, use the files as a white-label product, or use the source content to train or benchmark a commercial model. No trademark, brand, software, or ownership right transfers. Rights not expressly granted are reserved by the publisher. Public sale requires final owner approval of these terms.</p>
+<h2>Limitations</h2>
+<p>This product is an editable operational aid, not legal, debt-collection, lien, tax, accounting, privacy, or financial advice. It does not replace the accounting ledger, issue invoices, process payments, contact customers, assess collectability, or guarantee payment, cash flow, margin, or compliance. The purchaser must adapt it to contracts, customer type, applicable law, provider rules, and qualified professional guidance.</p>
+<h2>Support instructions</h2>
+<p>The final storefront listing must provide the owner-approved support address and response window before publication. Support covers missing or unreadable delivered files and clarification of field definitions. It excludes bookkeeping, tax/legal advice, collection action, account reconciliation, data recovery, and custom software integration. Never send bank information, card data, payment links containing tokens, credentials, MFA codes, or full customer records in a support request.</p>
+<p>Pre-publication support route: not yet active. Publication must fail closed until the approved support route is inserted.</p>
+<h2>AI-assistance disclosure</h2>
+<p>This edition was developed with generative-AI-assisted drafting under directed product-development controls. It contains original product-specific structure and language and uses fictional data; no real invoices, customers, or payment records were used. The publisher must complete a final human publication, accuracy, licensing, legal-boundary, and file-integrity review before sale. Users must review every financial input and external message before use.</p></section>
+</body></html>

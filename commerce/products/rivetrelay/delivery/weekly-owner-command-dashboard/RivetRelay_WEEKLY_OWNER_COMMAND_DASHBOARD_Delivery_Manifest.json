@@ -1,0 +1,57 @@
+{
+  "contract_version": "1.0.0",
+  "product_code": "WEEKLY_OWNER_COMMAND_DASHBOARD",
+  "title": "Weekly Owner Command Dashboard",
+  "version": "1.0.0",
+  "currency": "USD",
+  "price_cents": 3900,
+  "public_brand": "RivetRelay",
+  "brand_clearance": "OWNER_LEGAL_AND_PROVIDER_CLEARANCE_REQUIRED",
+  "delivery_status": "DRAFT_NOT_FOR_PUBLICATION",
+  "publication_authorized": false,
+  "support_ready": false,
+  "ai_disclosure": "AI tools assisted drafting and formatting; final publisher review and owner authorization remain required before sale.",
+  "license_scope": "ONE_PURCHASER_OWNED_BUSINESS_INTERNAL_USE_NO_REDISTRIBUTION",
+  "build_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:scripts/phase204-internal-commerce-build-assets.mjs",
+  "product_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:commerce/products/rivetrelay/source/weekly-owner-command-dashboard",
+  "files": [
+    {
+      "file_name": "RivetRelay_WEEKLY_OWNER_COMMAND_DASHBOARD_Guide.pdf",
+      "byte_size": 126899,
+      "content_sha256": "0c753a1c3778a5322a6b57c61e9800bf51e73d2d9909a13e979eec17d1dd7734",
+      "roles": [
+        "FINAL_DELIVERY",
+        "INSTRUCTIONS",
+        "IMPLEMENTATION_GUIDANCE",
+        "SUPPORT_INSTRUCTIONS",
+        "LICENSE_TERMS",
+        "VERSION_INFORMATION"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_WEEKLY_OWNER_COMMAND_DASHBOARD_Tracker.xlsx",
+      "byte_size": 57585,
+      "content_sha256": "f8647763fe4d26121722c9f3d8a2e4e2088d1e6a9ae5827ad768510b0e458692",
+      "roles": [
+        "TRACKING_TOOL",
+        "EDITABLE_SOURCE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_WEEKLY_OWNER_COMMAND_DASHBOARD_Fictional_Example.csv",
+      "byte_size": 2049,
+      "content_sha256": "a2c9975390dd8e50dda1bba2090f0f9f552bbdfe29aedf7dcebeefd76dea6c51",
+      "roles": [
+        "EXAMPLE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_WEEKLY_OWNER_COMMAND_DASHBOARD_Editable_Source.zip",
+      "byte_size": 12524,
+      "content_sha256": "593cca1e3bda480740757c6624b8433ffcfbd70f35c8f2139fc9b3ca9730fd6e",
+      "roles": [
+        "EDITABLE_SOURCE"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "contract_version": "1.0.0",
+  "product_code": "SCOPE_CHANGE_ORDER_CONTROL_PACK",
+  "title": "Scope and Change-Order Control Pack",
+  "version": "1.0.0",
+  "currency": "USD",
+  "price_cents": 4900,
+  "public_brand": "RivetRelay",
+  "brand_clearance": "OWNER_LEGAL_AND_PROVIDER_CLEARANCE_REQUIRED",
+  "delivery_status": "DRAFT_NOT_FOR_PUBLICATION",
+  "publication_authorized": false,
+  "support_ready": false,
+  "ai_disclosure": "AI tools assisted drafting and formatting; final publisher review and owner authorization remain required before sale.",
+  "license_scope": "ONE_PURCHASER_OWNED_BUSINESS_INTERNAL_USE_NO_REDISTRIBUTION",
+  "build_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:scripts/phase204-internal-commerce-build-assets.mjs",
+  "product_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:commerce/products/rivetrelay/source/scope-change-order-control",
+  "files": [
+    {
+      "file_name": "RivetRelay_SCOPE_CHANGE_ORDER_CONTROL_PACK_Guide.pdf",
+      "byte_size": 136978,
+      "content_sha256": "99379a42568061b05fda43a02af8600a1eae06538aee197fa018f8c9e04dc5cc",
+      "roles": [
+        "FINAL_DELIVERY",
+        "INSTRUCTIONS",
+        "IMPLEMENTATION_GUIDANCE",
+        "SUPPORT_INSTRUCTIONS",
+        "LICENSE_TERMS",
+        "VERSION_INFORMATION"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_SCOPE_CHANGE_ORDER_CONTROL_PACK_Tracker.xlsx",
+      "byte_size": 59491,
+      "content_sha256": "624437cc703776bbd3211ea9bc11c64ada25631143535c09a3ca9281e636ff4f",
+      "roles": [
+        "TRACKING_TOOL",
+        "EDITABLE_SOURCE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_SCOPE_CHANGE_ORDER_CONTROL_PACK_Fictional_Example.csv",
+      "byte_size": 2969,
+      "content_sha256": "d17de1ade61a2456b8e820e3f54751684c193d49c414f4dc6f43713f9e59ab4f",
+      "roles": [
+        "EXAMPLE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_SCOPE_CHANGE_ORDER_CONTROL_PACK_Editable_Source.zip",
+      "byte_size": 13439,
+      "content_sha256": "9d083460be51c6a9aeeadd901539af85dfb64cd3f28fac2be8d565568a9b89c7",
+      "roles": [
+        "EDITABLE_SOURCE"
+      ]
+    }
+  ]
+}

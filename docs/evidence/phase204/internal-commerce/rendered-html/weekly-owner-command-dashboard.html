@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Weekly Owner Command Dashboard</title><style>
+@page { size: Letter; margin: 0.48in 0.58in 0.52in; }
+:root { color-scheme: light; --ink:#14212b; --muted:#5b6670; --accent:#b5452d; --soft:#f3eee8; --line:#d8d4cf; }
+* { box-sizing:border-box; } body { margin:0; color:var(--ink); font:9.8pt/1.38 Arial, Helvetica, sans-serif; }
+.cover { min-height:8.45in; display:flex; flex-direction:column; justify-content:center; padding:0.45in; border:2px solid var(--ink); background:linear-gradient(145deg,#fff 0%,var(--soft) 100%); page-break-after:always; }
+.eyebrow { color:var(--accent); font-size:10pt; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }
+.cover h1 { margin:.18in 0 .12in; font-size:31pt; line-height:1.05; letter-spacing:-.025em; }
+.cover p { max-width:5.8in; color:var(--muted); font-size:13pt; }
+.brand { margin-top:.45in; font-size:12pt; font-weight:700; } .meta { color:var(--muted); font-size:9pt; }
+.section { break-before:auto; page-break-before:auto; } .section + .section { border-top:1px solid var(--line); margin-top:.34in; padding-top:.18in; }
+h1,h2,h3,h4 { display:block; color:var(--ink); line-height:1.15; break-after:avoid-page; page-break-after:avoid; }
+h1 { font-size:22pt; margin:0 0 .18in; border-bottom:2px solid var(--accent); padding-bottom:.08in; }
+h2 { font-size:16pt; margin:.26in 0 .13in; } h3 { font-size:12.5pt; margin:.2in 0 .1in; }
+p { margin:.04in 0 .09in; break-inside:avoid; page-break-inside:avoid; orphans:4; widows:4; }
+h1 + p,h2 + p,h3 + p,h4 + p { margin-top:.11in; }
+p + h2,ul + h2,ol + h2 { margin-top:.28in; }
+ul,ol { margin:.04in 0 .1in .24in; padding:0; break-inside:avoid; page-break-inside:avoid; }
+li { margin:.025in 0; break-inside:avoid; page-break-inside:avoid; }
+table { width:100%; border-collapse:collapse; margin:.12in 0 .2in; font-size:8.7pt; page-break-inside:auto; }
+thead { display:table-header-group; } tr { page-break-inside:avoid; } th,td { border:1px solid var(--line); padding:.06in; text-align:left; vertical-align:top; }
+th { background:var(--soft); } code { font:8.8pt Consolas, monospace; background:var(--soft); padding:.01in .035in; }
+pre { white-space:pre-wrap; background:#f7f5f2; border:1px solid var(--line); padding:.12in; page-break-inside:avoid; }
+blockquote { margin:.12in 0; padding:.1in .14in; border-left:4px solid var(--accent); background:var(--soft); }
+hr { border:0; border-top:1px solid var(--line); margin:.22in 0; } a { color:#7d2f20; }
+.source-label { color:var(--accent); font-size:8pt; font-weight:700; letter-spacing:.11em; text-transform:uppercase; margin-bottom:.08in; break-after:avoid; page-break-after:avoid; }
+</style></head><body>
+<section class="cover"><div class="eyebrow">RivetRelay contractor operations toolkit</div><h1>Weekly Owner Command Dashboard</h1><p>Practical, editable operating materials for specialty contractors. Built for disciplined follow-through; no outcome or legal guarantee is implied.</p><div class="brand">RivetRelay</div><div class="meta">Version 1.0.0 · AI-assisted original work · Licensed for one purchasing business</div></section>
+<section class="section"><div class="source-label">START HERE</div><h1>Weekly Owner Command Dashboard</h1>
+<ul><li>Product ID: RR-WD-001</li><li>Version: 1.0.0</li><li>Initial test price: $39</li><li>Working brand: RivetRelay (provisional; not cleared for publication)</li></ul>
+<h2>What this dashboard does</h2>
+<p>This dashboard converts a bounded weekly set of verified operating inputs into an owner review: what changed, what is constrained, what requires a decision, and what happens next. It does not connect to source systems, predict results, or replace accounting, project, safety, or customer records.</p>
+<h2>Included source files</h2>
+<ul><li><code>START_HERE.md</code>: first-use path and weekly cadence.</li><li><code>IMPLEMENTATION_GUIDE.md</code>: metric dictionary, source mapping, ownership, thresholds, and controls.</li><li><code>WEEKLY_COMMAND_PLAYBOOK.md</code>: data-close checklist, review agenda, decision log, and next-action protocol.</li><li><code>weekly_dashboard_template.csv</code>: clean weekly source table.</li><li><code>weekly_dashboard_fictional_example.csv</code>: four fully populated fictional weeks.</li><li><code>weekly_dashboard_fields_and_formulas.csv</code>: field definitions, validation, and formulas.</li><li><code>VERSION_LICENSE_SUPPORT.md</code>: version, permitted use, limitations, support, and AI disclosure.</li><li><code>CLAIMS_INVENTORY.csv</code>: bounded claims linked to evidence.</li></ul>
+<h2>First setup</h2>
+<ol><li>Choose one fixed weekly cutoff and one owner review time.</li><li>Assign a named source owner for leads, estimates, changes, invoices, cash, projects, capacity, safety holds, and decisions.</li><li>Map every field to an authoritative source before entering a value.</li><li>Mark unavailable data as unavailable; never enter zero unless the verified value is zero.</li><li>Define local <code>HEALTHY</code>, <code>DEGRADED</code>, and <code>BLOCKED</code> rules in writing.</li><li>Open the delivered dashboard workbook and retain its protected formulas and validation rules; use the CSV source only for a controlled import.</li><li>Run the first review from a closed evidence packet, not from memory.</li></ol>
+<h2>Weekly cadence</h2>
+<h3>Data close</h3>
+<ul><li>Freeze the as-of time.</li><li>Reconcile each input to its source.</li><li>Preserve the evidence packet reference.</li><li>Record unavailable inputs and unresolved variances.</li><li>Calculate rates only when their denominators and source values are valid.</li></ul>
+<h3>Owner command review</h3>
+<p>Answer in order:</p>
+<ol><li>Is any safety, customer, cash, capacity, or authority condition blocking work?</li><li>Which exceptions materially changed this week?</li><li>Which owner decisions are open and by when?</li><li>Which committed actions were completed, missed, or superseded?</li><li>What are the three bounded next actions for the coming week?</li></ol>
+<h3>Close the review</h3>
+<ul><li>Assign each action to one owner and date.</li><li>Link the supporting mission/task or business record where available.</li><li>Record why a decision was made.</li><li>Carry forward only unresolved items; do not duplicate them as new work.</li></ul>
+<h2>Interpretation boundary</h2>
+<p>The dashboard describes recorded operations through its as-of time. It does not establish profitability, tax position, earned revenue, customer satisfaction, safety compliance, or future performance. A green status is not valid when required data is unavailable or contradictory.</p></section>
+<section class="section"><div class="source-label">IMPLEMENTATION GUIDE</div><h1>Implementation guide</h1>
+<h2>Metric-source map</h2>
+<p>Complete this map before first use. Each field must have a source, owner, cutoff, and reconciliation rule.</p>
+<table><thead><tr><th>Input family</th><th>Preferred source evidence</th><th>Owner question</th></tr></thead><tbody><tr><td>Leads and estimates</td><td>Verified lead/CRM export and approved estimate register</td><td>Are all open inquiries and issued estimates included once?</td></tr><tr><td>Change orders</td><td>Current approved change register</td><td>Are approved, completed, and billed states distinguished?</td></tr><tr><td>Invoices and cash</td><td>Accounting ledger and verified settlement report</td><td>Are invoices issued and cash received kept separate?</td></tr><tr><td>Receivables</td><td>Accounting open-invoice report</td><td>Does the total reconcile as of the cutoff?</td></tr><tr><td>Projects</td><td>Current project/field status records</td><td>Is at-risk status supported by a specific condition?</td></tr><tr><td>Capacity</td><td>Approved crew/resource schedule</td><td>Are available and committed days measured consistently?</td></tr><tr><td>Safety holds</td><td>Approved safety/operations record</td><td>Are open holds visible without exposing sensitive details?</td></tr><tr><td>Owner decisions</td><td>Decision queue or task record</td><td>Does each item have an owner, evidence, and due date?</td></tr></tbody></table>
+<h2>Definitions</h2>
+<ul><li><code>Lead_Response_Coverage</code>: leads with a documented first response divided by leads received in the same bounded cohort. It is not response-time performance.</li><li><code>Estimate_Acceptance_Rate</code>: accepted estimates divided by estimates with a recorded accept/decline decision. It excludes undecided estimates.</li><li><code>Capacity_Load</code>: committed crew-days divided by available crew-days for the same next-week scope. It is not labor productivity.</li><li><code>AR_Past_Due</code>: open accounts receivable past the authoritative due date at cutoff. It is not predicted loss.</li><li><code>Completed_Unbilled_Change_Value</code>: supported approved change value recorded complete but not actually invoiced. It is not revenue or cash.</li><li><code>Owner_Decisions_Open</code>: decisions explicitly requiring owner authority at cutoff. Routine tasks do not belong here.</li><li><code>Data_Unavailable_Count</code>: required fields unavailable or unreconciled. Zero means each required input was validated, not that every business value was zero.</li></ul>
+<h2>Status rules</h2>
+<p>Customize thresholds to the business and preserve the approved rule version.</p>
+<h3>BLOCKED</h3>
+<p>Use when a verified condition prevents authorized work, safe operation, required payment action, customer commitment, or an owner decision from proceeding. Examples may include an unresolved safety hold, missing authority for a critical action, an unavailable required crew/resource, or an accounting variance that blocks an external statement.</p>
+<h3>DEGRADED</h3>
+<p>Use when work can proceed but a verified exception threatens the weekly plan, such as overdue owner decisions, capacity overcommitment, materially aged receivables under active review, or incomplete source data.</p>
+<h3>HEALTHY</h3>
+<p>Use only when no blocking condition is open, material exceptions are assigned within tolerance, and required data is reconciled. Healthy does not mean perfect or guarantee a result.</p>
+<p>The final <code>Overall_Status</code> is a supported owner/operations classification. Do not calculate it solely from color or a single metric.</p>
+<h2>Setup sequence</h2>
+<h3>1. Establish the reporting boundary</h3>
+<ul><li>Local week start/end.</li><li>Data cutoff and timezone.</li><li>Included legal business or operating unit.</li><li>Currency.</li><li>Source systems and versions.</li><li>Person authorized to close the weekly packet.</li></ul>
+<h3>2. Import the table</h3>
+<p>Use the delivered workbook for normal operation. It contains the <code>WeeklyCommand</code> Excel table, controlled-value validation, explicit date, currency, and percentage formats, and protected calculated columns. The CSV template and field dictionary remain the editable import and implementation specification.</p>
+<h3>3. Test with one historical week</h3>
+<p>Recreate one week from closed source records. Trace every input back to evidence. Compare formula results by hand. If a source value cannot be confirmed, leave it unavailable and record the reason.</p>
+<h3>4. Start the live cadence</h3>
+<p>Create one row per week and never overwrite a closed prior week. Corrections should create a versioned evidence note and update the affected value with a clear reconciliation record.</p>
+<h2>Data quality control</h2>
+<p><code>Data_Quality_Flag</code> must be <code>REVIEW</code> when:</p>
+<ul><li>a required input is blank;</li><li><code>Data_Unavailable_Count</code> is greater than zero;</li><li>responded leads exceed received leads for the bounded cohort;</li><li>accepted estimates exceed decided estimates;</li><li>past-due AR exceeds total open AR;</li><li>committed capacity is reported but available capacity is blank or zero;</li><li>projects at risk exceed active projects;</li><li>evidence packet or as-of time is missing.</li></ul>
+<p>Do not hide exceptions by changing the cohort after seeing the result.</p>
+<h2>Privacy and access</h2>
+<p>The weekly row should use aggregate values and secure evidence references. Do not include customer names, employee medical data, bank details, card data, credentials, private project disputes, or sensitive safety narratives in the dashboard.</p>
+<h2>Maintenance</h2>
+<p>Review metric definitions quarterly and after a source-system change. Version threshold rules. Retest formulas after column changes. Preserve evidence packets and decision logs according to policy. Retire a metric if it no longer informs a decision rather than keeping decorative activity counts.</p></section>
+<section class="section"><div class="source-label">WEEKLY COMMAND PLAYBOOK</div><h1>Weekly command playbook</h1>
+<h2>A. Data-close checklist</h2>
+<ul><li>Confirm week, timezone, and as-of time.</li><li>Pull each source from its approved system.</li><li>Reconcile leads and estimates to stable record IDs.</li><li>Reconcile approved/completed/unbilled changes to the change register.</li><li>Reconcile issued invoices and cash received to accounting/provider evidence.</li><li>Reconcile total and past-due AR.</li><li>Confirm active and at-risk project counts from project status records.</li><li>Confirm next-week available and committed capacity use the same unit.</li><li>Count open owner decisions from the decision queue.</li><li>Count safety holds without copying sensitive details.</li><li>Record all unavailable inputs.</li><li>Create the evidence packet reference and lock the cutoff.</li></ul>
+<h2>B. Twenty-five-minute owner review</h2>
+<h3>Minutes 0-5 — control and blockers</h3>
+<p>Read <code>Overall_Status</code>, <code>Data_Quality_Flag</code>, safety holds, top exception, and open owner decisions. If data quality is <code>REVIEW</code>, decide whether the meeting can proceed for unaffected topics and assign reconciliation.</p>
+<h3>Minutes 5-10 — demand and decisions</h3>
+<p>Review received/responded leads, issued/decided/accepted estimates, and the factual lead or estimate exceptions. Avoid interpreting a rate without cohort size and data quality.</p>
+<h3>Minutes 10-15 — delivery and capacity</h3>
+<p>Review active projects, at-risk projects, approved change value, completed unbilled change value, and next-week capacity. Identify the exact constraint and its owner.</p>
+<h3>Minutes 15-20 — billing and cash</h3>
+<p>Review invoices issued, cash actually received, open AR, past-due AR, and credits/refunds. Keep issued, earned, collected, and forecast values distinct.</p>
+<h3>Minutes 20-25 — decisions and next actions</h3>
+<p>Resolve or route the highest-authority decisions. Confirm no more than three material next actions, each with one owner, due date, and evidence or task reference.</p>
+<h2>C. Owner decision record</h2>
+<ul><li>Decision ID:</li><li>Week and business scope:</li><li>Condition requiring a decision:</li><li>Source/evidence references:</li><li>Known facts:</li><li>Unknowns and assumptions:</li><li>Options considered:</li><li>Decision:</li><li>Authority basis:</li><li>Decision date/time:</li><li>Accountable implementation owner:</li><li>Due date:</li><li>Stop or rollback condition:</li><li>Result evidence when complete:</li></ul>
+<h2>D. Exception record</h2>
+<ul><li>Exception ID:</li><li>Category: safety, customer, scope, capacity, billing, cash, data, authority, other.</li><li>Observed condition:</li><li>Business effect stated conservatively:</li><li>Evidence reference:</li><li>Status: OPEN, CONTAINED, RESOLVED, DISPROVEN.</li><li>Owner:</li><li>Next action and date:</li><li>Escalation condition:</li><li>Resolution evidence:</li></ul>
+<h2>E. Next-action test</h2>
+<p>A next action is acceptable when it:</p>
+<ul><li>begins with an observable verb;</li><li>names one accountable owner;</li><li>has a due date or explicit trigger;</li><li>links to the condition and evidence;</li><li>stays within the person's authority;</li><li>defines completion;</li><li>states a hold or escalation route when authority/data is missing.</li></ul>
+<p>Weak: “Improve collections.” Bounded: “Morgan will reconcile FICTIONAL-INV-705 ledger variance against the invoice and payment records by July 13; routine contact remains held until variance is zero or owner review is recorded.”</p>
+<p>The example above is fictional.</p>
+<h2>F. End-of-review readback</h2>
+<ul><li>Current status and its evidence basis.</li><li>Data unavailable or under review.</li><li>Top three exceptions.</li><li>Decisions made and decisions still open.</li><li>Three next actions, owners, and dates.</li><li>Any stop condition requiring immediate escalation.</li><li>Evidence packet and meeting record references.</li></ul>
+<h2>G. Monthly trend review</h2>
+<p>Use closed weekly rows to observe patterns, but do not imply causation. Check whether definitions or source boundaries changed before comparing rates. Investigate unusually favorable results with the same diligence as unfavorable results.</p></section>
+<section class="section"><div class="source-label">VERSION LICENSE SUPPORT</div><h1>Version, license, support, and disclosure</h1>
+<ul><li>Product: Weekly Owner Command Dashboard</li><li>Product ID: RR-WD-001</li><li>Edition: 1.0.0 source edition</li><li>Working brand: RivetRelay (provisional; pending owner/legal/marketplace clearance)</li></ul>
+<h2>Version notes</h2>
+<p>Version 1.0.0 defines one closed weekly row, a bounded set of verified source inputs, three calculated rates, one data-quality formula, three operating status states, a 25-minute review, decision and exception records, and four fictional weeks.</p>
+<h2>Permitted-use license</h2>
+<p>After authorized purchase, the purchaser may copy, edit, print, and use these files for the internal operations of one legal business and its personnel. The purchaser may populate the dashboard with its own verified aggregate data and create internal working copies, reports, and backups.</p>
+<p>The purchaser may not resell, sublicense, publish, share outside that business, distribute as a template, remove the license notice from redistributed extracts, use the files as a white-label product, or use the source content to train or benchmark a commercial model. No trademark, brand, software, or ownership right transfers. Rights not expressly granted are reserved by the publisher. Public sale requires final owner approval of these terms.</p>
+<h2>Limitations</h2>
+<p>This dashboard is an editable management aid, not accounting, tax, legal, safety, employment, forecasting, or financial advice. It does not connect to source systems, validate source records, predict outcomes, or guarantee efficiency, revenue, margin, cash flow, capacity, safety, or business health. The purchaser is responsible for definitions, thresholds, access, reconciliation, decisions, and qualified review.</p>
+<h2>Support instructions</h2>
+<p>The final storefront listing must provide the owner-approved support address and response window before publication. Support covers missing or unreadable delivered files and clarification of included field definitions. It excludes management consulting, metric interpretation, accounting reconciliation, formula customization, source-system integration, and business-result advice. Never send bank data, credentials, MFA codes, employee medical information, customer files, or sensitive safety records in a support request.</p>
+<p>Pre-publication support route: not yet active. Publication must fail closed until the approved support route is inserted.</p>
+<h2>AI-assistance disclosure</h2>
+<p>This edition was developed with generative-AI-assisted drafting under directed product-development controls. It contains original product-specific structure and language and uses fictional aggregate data; no real customer, financial, safety, or employee records were used. The publisher must complete a final human publication, accuracy, licensing, claims, and file-integrity review before sale. Users must verify every source value and decision before relying on the dashboard.</p></section>
+</body></html>

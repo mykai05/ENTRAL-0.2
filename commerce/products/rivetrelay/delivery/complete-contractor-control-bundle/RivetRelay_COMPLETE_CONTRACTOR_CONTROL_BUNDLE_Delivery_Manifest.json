@@ -1,0 +1,57 @@
+{
+  "contract_version": "1.0.0",
+  "product_code": "COMPLETE_CONTRACTOR_CONTROL_BUNDLE",
+  "title": "Complete Contractor Control Bundle",
+  "version": "1.0.0",
+  "currency": "USD",
+  "price_cents": 11900,
+  "component_product_codes": [
+    "LEAD_RESPONSE_ESTIMATE_FOLLOW_UP_KIT",
+    "SCOPE_CHANGE_ORDER_CONTROL_PACK",
+    "BILLING_COLLECTIONS_ACCELERATOR",
+    "WEEKLY_OWNER_COMMAND_DASHBOARD"
+  ],
+  "public_brand": "RivetRelay",
+  "brand_clearance": "OWNER_LEGAL_AND_PROVIDER_CLEARANCE_REQUIRED",
+  "delivery_status": "DRAFT_NOT_FOR_PUBLICATION",
+  "publication_authorized": false,
+  "support_ready": false,
+  "ai_disclosure": "AI tools assisted drafting and formatting; final publisher review and owner authorization remain required before sale.",
+  "license_scope": "ONE_PURCHASER_OWNED_BUSINESS_INTERNAL_USE_NO_REDISTRIBUTION",
+  "build_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:scripts/phase204-internal-commerce-build-assets.mjs",
+  "product_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:commerce/products/rivetrelay/source/complete-contractor-control-bundle",
+  "component_manifest_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:commerce/products/rivetrelay/source/complete-contractor-control-bundle/BUNDLE_MANIFEST.csv",
+  "files": [
+    {
+      "file_name": "RivetRelay_COMPLETE_CONTRACTOR_CONTROL_BUNDLE_Guide.pdf",
+      "byte_size": 118476,
+      "content_sha256": "d3b14e066e1c46c25173b0f5eeec5cc4cd2699025421551733f2d92682ab704c",
+      "roles": [
+        "FINAL_DELIVERY",
+        "INSTRUCTIONS",
+        "IMPLEMENTATION_GUIDANCE",
+        "SUPPORT_INSTRUCTIONS",
+        "LICENSE_TERMS",
+        "VERSION_INFORMATION"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_COMPLETE_CONTRACTOR_CONTROL_BUNDLE_Weekly_Command_Tracker.xlsx",
+      "byte_size": 57585,
+      "content_sha256": "f8647763fe4d26121722c9f3d8a2e4e2088d1e6a9ae5827ad768510b0e458692",
+      "roles": [
+        "TRACKING_TOOL",
+        "EDITABLE_SOURCE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_COMPLETE_CONTRACTOR_CONTROL_BUNDLE_Complete_Delivery.zip",
+      "byte_size": 604126,
+      "content_sha256": "f76e69106625f7a72e98431f59f6a8f730f071feb11c157ea60446f0821eeddd",
+      "roles": [
+        "EDITABLE_SOURCE",
+        "EXAMPLE"
+      ]
+    }
+  ]
+}
