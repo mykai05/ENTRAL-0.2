@@ -323,7 +323,12 @@ try {
       result: "NOT_APPLICABLE_NO_CANONICAL_BUSINESS"
     };
   }
-  const graphPreferenceActorBound = preferences.user_id === sessionClaims.sub;
+  // Graph preferences and the portfolio scope are both bound by
+  // withCanonicalSession to entral.app_users.id. JWT sub/aid identify the
+  // public User and Phase 202 IdentityActor respectively, so neither is the
+  // canonical RLS owner used by graph preference storage.
+  const graphPreferenceActorBound = preferences.user_id === portfolio.scope.user_id
+    && preferences.user_id === hierarchy.scope.user_id;
   const graphPreferenceOrganizationBound = preferences.organization_id === organizationId;
   const projectionOrganizationBound = projection.organization_id === organizationId;
   const canonicalRootVisible = rootFullRecord.entity?.summary?.entity_id === projection.root_id;
@@ -397,6 +402,10 @@ try {
       reason_code: "RELEASE_ACCEPTANCE",
       route: "/member/graph",
       schema_version: 1
+    },
+    headers: {
+      origin,
+      "sec-fetch-site": "same-origin"
     }
   }), "Tenant-bound interaction analytics", 202);
 
@@ -487,7 +496,16 @@ try {
         throw new Error(`${width}px Universe did not bind canonical projection parity and version.`);
       }
 
-      const twoD = page.locator('.phase180-graph-2d[data-graph-dimension="2d"]');
+      // Acceptance must exercise both mobile renderers without assuming which
+      // synchronized dimension a member's current URL preference selects.
+      if (mobile) {
+        const initialToolbar = page.getByRole("toolbar", { name: "Compact mobile Universe controls" });
+        await expectVisible(initialToolbar, `${width}px compact Universe toolbar`);
+        await initialToolbar.getByRole("button", { name: "2D" }).click();
+        await page.waitForFunction(() => document.querySelector(".phase180-graph-workspace")
+          ?.getAttribute("data-mobile-dimension") === "2d");
+      }
+      const twoD = page.locator('.phase180-graph[data-graph-dimension="2d"]');
       await expectVisible(twoD, `${width}px 2D projection`, 45_000);
       const twoDCanvas = page.getByLabel(/Canonical Universe Graph with \d+ entities/i);
       await expectVisible(twoDCanvas, `${width}px canonical 2D canvas`, 45_000);
