@@ -241,7 +241,8 @@ function documentHtml(title, sections) {
 .cover h1 { margin:.18in 0 .12in; font-size:31pt; line-height:1.05; letter-spacing:-.025em; }
 .cover p { max-width:5.8in; color:var(--muted); font-size:13pt; }
 .brand { margin-top:.45in; font-size:12pt; font-weight:700; } .meta { color:var(--muted); font-size:9pt; }
-.section { page-break-before:always; } h1,h2,h3,h4 { color:var(--ink); line-height:1.15; page-break-after:avoid; }
+.section { break-before:auto; page-break-before:auto; } .section + .section { border-top:1px solid var(--line); margin-top:.34in; padding-top:.18in; }
+h1,h2,h3,h4 { color:var(--ink); line-height:1.15; page-break-after:avoid; }
 h1 { font-size:22pt; margin:0 0 .18in; border-bottom:2px solid var(--accent); padding-bottom:.08in; }
 h2 { font-size:16pt; margin:.2in 0 .08in; } h3 { font-size:12.5pt; margin:.15in 0 .06in; }
 p { margin:.04in 0 .09in; orphans:3; widows:3; } ul,ol { margin:.04in 0 .1in .24in; padding:0; } li { margin:.025in 0; break-inside:avoid; }
@@ -251,7 +252,7 @@ th { background:var(--soft); } code { font:8.8pt Consolas, monospace; background
 pre { white-space:pre-wrap; background:#f7f5f2; border:1px solid var(--line); padding:.12in; page-break-inside:avoid; }
 blockquote { margin:.12in 0; padding:.1in .14in; border-left:4px solid var(--accent); background:var(--soft); }
 hr { border:0; border-top:1px solid var(--line); margin:.22in 0; } a { color:#7d2f20; }
-.source-label { color:var(--accent); font-size:8pt; font-weight:700; letter-spacing:.11em; text-transform:uppercase; margin-bottom:.08in; }
+.source-label { color:var(--accent); font-size:8pt; font-weight:700; letter-spacing:.11em; text-transform:uppercase; margin-bottom:.08in; break-after:avoid; page-break-after:avoid; }
 </style></head><body>
 <section class="cover"><div class="eyebrow">RivetRelay contractor operations toolkit</div><h1>${xmlEscape(title)}</h1><p>Practical, editable operating materials for specialty contractors. Built for disciplined follow-through; no outcome or legal guarantee is implied.</p><div class="brand">RivetRelay</div><div class="meta">Version 1.0.0 · AI-assisted original work · Licensed for one purchasing business</div></section>
 ${sections.map((section) => `<section class="section"><div class="source-label">${xmlEscape(section.label)}</div>${markdownToHtml(section.markdown)}</section>`).join("\n")}
