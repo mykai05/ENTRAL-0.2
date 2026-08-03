@@ -16,6 +16,7 @@
     "baseline-certification.schema.json",
     "capability-truth-record.schema.json",
     "capability-truth-publication.schema.json",
+    "phase204-internal-commerce.schema.json",
     "openapi.yaml",
     "action-policy-matrix.yaml",
     "integration-registry-record.schema.json"

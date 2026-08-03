@@ -1,0 +1,32 @@
+Field,Type,Required_When,Allowed_Values_or_Rule,Spreadsheet_Formula_or_Instruction,Why_It_Exists
+Project_ID,Text,Always,Stable internal project reference,,Binds the change to one project
+Change_Order_ID,Text,Always,Unique within the project,,Supports revision and evidence control
+Revision,Whole number,Always,Starts at 1 and increments; never overwrite issued revision,,Prevents version ambiguity
+Date_Identified,Date,Always,Observed or requested date,,Starts the decision clock
+Control_Date,Date,Always,Verified local operating date used by every age calculation,,Makes formula readback stable and auditable
+Requested_By,Controlled text,Always,CUSTOMER;CONTRACTOR;DESIGNER;AUTHORITY;SITE_CONDITION;OTHER,,Attributes the source without guessing motive
+Safety_Class,Controlled text,Always,ROUTINE;SAFETY_HOLD;EMERGENCY_MAKE_SAFE,,Separates safety response from permanent authorization
+Observed_Condition,Text,Always,Factual condition or request,,Preserves observation
+Original_Scope_Ref,Text,Always,Current approved agreement/scope reference,,Supports scope comparison
+Proposed_Change,Text,When status is beyond IDENTIFIED,Exact added removed or revised scope,,Defines the decision object
+Change_Status,Controlled text,Always,IDENTIFIED;PRICING;PENDING_CUSTOMER;APPROVED;DECLINED;ON_HOLD;SCHEDULED;COMPLETED;BILLED;VOID,,Shows lifecycle
+Cost_Impact_PreTax,Currency,When proposal issued,Supported nonnegative or signed credit value,,Records approved calculation output
+Tax_Impact,Currency,When proposal issued,Reviewed value; do not guess,,Keeps tax impact explicit
+Total_Change,Formula,When cost and tax known,Currency,"=IF(OR([@[Cost_Impact_PreTax]]="""",[@[Tax_Impact]]=""""),"""",[@[Cost_Impact_PreTax]]+[@[Tax_Impact]])",Calculates stated total
+Schedule_Impact_Days,Whole number,When known,Signed or zero supported impact,,Quantifies supported effect
+Schedule_Impact_State,Controlled text,Always,UNKNOWN;ESTIMATED;VERIFIED;NOT_APPLICABLE,,Prevents unsupported schedule certainty
+Proposal_Ref,Text,When proposal issued,Stable issued-document reference,,Binds decision to exact revision
+Proposal_Issued_Date,Date,When proposal issued,Actual issue date,,Supports decision age
+Approval_State,Controlled text,Always,NOT_REQUESTED;REQUESTED;APPROVED;DECLINED;EXPIRED;DISPUTED;NOT_APPLICABLE,,Records decision state
+Decision_Date,Date,When approval state is final,Actual evidenced date,,Completes decision record
+Decision_Evidence_Ref,Text,When approval state is APPROVED DECLINED or DISPUTED,Secure stable reference,,Prevents approval by assumption
+Authorized_By,Text,When approved,Verified party or internal safety authority reference,,Supports authority readback
+Work_Completed_Date,Date,When completed or billed,Actual completion date,,Supports billing reconciliation
+Completion_Evidence_Ref,Text,When completed or billed,Secure evidence reference,,Binds performed work
+Billing_Status,Controlled text,Always,NOT_READY;READY;INVOICED;PARTIALLY_PAID;PAID;DISPUTED;CREDITED,,Tracks billing handoff without replacing ledger
+Invoice_Ref,Text,When invoice is actually issued,Accounting-system reference,,Binds actual invoice
+Days_Pending_Decision,Formula,Always,Nonnegative days or zero,"=IF(AND([@[Approval_State]]=""REQUESTED"",[@[Proposal_Issued_Date]]<>"""",[@[Control_Date]]<>""""),MAX(0,[@[Control_Date]]-[@[Proposal_Issued_Date]]),0)",Surfaces aging proposals against an explicit verified control date
+Unbilled_Approved_Value,Formula,Always,Currency or zero,"=IF(AND([@[Approval_State]]=""APPROVED"",OR([@[Change_Status]]=""APPROVED"",[@[Change_Status]]=""SCHEDULED"",[@[Change_Status]]=""COMPLETED"",[@[Change_Status]]=""BILLED""),OR([@[Billing_Status]]=""NOT_READY"",[@[Billing_Status]]=""READY""),[@[Total_Change]]<>""""),[@[Total_Change]],0)",Surfaces only lifecycle-consistent approved value awaiting invoice without calling it revenue
+Control_Flag,Formula,Always,COMPLETE;REVIEW;HOLD,"=IF(OR([@[Project_ID]]="""",[@[Change_Order_ID]]="""",[@[Revision]]="""",[@[Revision]]<1,[@[Date_Identified]]="""",[@[Control_Date]]="""",[@[Date_Identified]]>[@[Control_Date]],[@[Requested_By]]="""",[@[Safety_Class]]="""",[@[Observed_Condition]]="""",[@[Original_Scope_Ref]]="""",[@[Change_Status]]="""",[@[Schedule_Impact_State]]="""",[@[Approval_State]]="""",[@[Billing_Status]]="""",[@[Owner]]="""",AND(OR([@[Change_Status]]=""PENDING_CUSTOMER"",[@[Change_Status]]=""APPROVED"",[@[Change_Status]]=""DECLINED"",[@[Change_Status]]=""SCHEDULED"",[@[Change_Status]]=""COMPLETED"",[@[Change_Status]]=""BILLED""),OR([@[Proposed_Change]]="""",[@[Cost_Impact_PreTax]]="""",[@[Tax_Impact]]="""",[@[Proposal_Ref]]="""",[@[Proposal_Issued_Date]]="""",[@[Proposal_Issued_Date]]<[@[Date_Identified]],[@[Proposal_Issued_Date]]>[@[Control_Date]])),AND([@[Approval_State]]=""REQUESTED"",OR([@[Proposal_Ref]]="""",[@[Proposal_Issued_Date]]="""")),AND(OR([@[Approval_State]]=""APPROVED"",[@[Approval_State]]=""DECLINED"",[@[Approval_State]]=""EXPIRED"",[@[Approval_State]]=""DISPUTED""),OR([@[Decision_Date]]="""",[@[Decision_Date]]>[@[Control_Date]],[@[Decision_Evidence_Ref]]="""")),AND([@[Approval_State]]=""APPROVED"",[@[Authorized_By]]=""""),AND(OR([@[Change_Status]]=""COMPLETED"",[@[Change_Status]]=""BILLED""),OR([@[Work_Completed_Date]]="""",[@[Work_Completed_Date]]>[@[Control_Date]],[@[Completion_Evidence_Ref]]="""")),AND(OR([@[Billing_Status]]=""INVOICED"",[@[Billing_Status]]=""PARTIALLY_PAID"",[@[Billing_Status]]=""PAID"",[@[Billing_Status]]=""DISPUTED"",[@[Billing_Status]]=""CREDITED""),[@[Invoice_Ref]]="""")),""REVIEW"",IF(AND(OR([@[Change_Status]]=""APPROVED"",[@[Change_Status]]=""SCHEDULED"",[@[Change_Status]]=""COMPLETED"",[@[Change_Status]]=""BILLED""),NOT(OR(AND([@[Approval_State]]=""APPROVED"",[@[Decision_Evidence_Ref]]<>"""",[@[Authorized_By]]<>""""),AND([@[Safety_Class]]=""EMERGENCY_MAKE_SAFE"",[@[Approval_State]]=""NOT_APPLICABLE"",[@[Decision_Evidence_Ref]]<>"""",[@[Authorized_By]]<>"""")))),""HOLD"",""COMPLETE""))",Fails closed on missing invalid future-dated identity authority proposal decision completion billing and lifecycle evidence while allowing a separately evidenced emergency make-safe path
+Owner,Text,Always,One accountable internal owner,,Prevents unowned changes
+Notes,Text,Optional,Facts assumptions and exceptions only,,Adds bounded context

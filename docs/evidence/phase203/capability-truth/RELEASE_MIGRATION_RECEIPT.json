@@ -1,0 +1,58 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-MIGRATION-AUDIT-438E1B05",
+  "phase": 203,
+  "environment": "PRODUCTION",
+  "apply": {
+    "status": "PASSED",
+    "pending_migrations": 0,
+    "roles_applied": true
+  },
+  "fresh_audit": {
+    "status": "PASSED",
+    "applied": 46,
+    "failed": 0,
+    "rolled_back": 0,
+    "pending": 0,
+    "phase203_rows": 2,
+    "api_direct_write_grants": 0,
+    "worker_table_grants": 0,
+    "public_table_grants": 0,
+    "verifier_select_grants": 12,
+    "audit_reader_select_grants": 5,
+    "api_execute_grants": 7,
+    "worker_execute_grants": 0,
+    "public_execute_grants": 0
+  },
+  "migrations": [
+    {
+      "name": "20260803000000_phase_203_graph_recovery",
+      "fingerprint_sha256": "faa9a235325d09c7f184381bdab570cbc95ea98d65c708514415f5645330c23e",
+      "database_checksum": "427d1501909fc4b40fdfd09ceef8f441f46ed76240f865bb7b52fe5005609891",
+      "status": "VERIFIED"
+    },
+    {
+      "name": "20260803010000_phase_203_capability_truth_registry",
+      "fingerprint_sha256": "adb2db73baadfffcecbe5a76c830151a2b39f27203cedeeb93b5af2b72a1ce3c",
+      "database_checksum": "336b0fb0310770460e73f2e7268dc5cd31f110d488e3345a4ab03f463ae6b7f4",
+      "status": "VERIFIED"
+    }
+  ],
+  "roles_sql_sha256": "7337082f2f21f7d5efabedd3017ed1b90c2d0da2a66e971e0db149ff5ae4d894",
+  "conservative_import": {
+    "registry_revision": 1,
+    "record_count": 56,
+    "catalogued": 56,
+    "active": 0,
+    "sellable": 0,
+    "assigned_owner_count": 0,
+    "public_claim_eligible_count": 0,
+    "claim_count": 0,
+    "installation_count": 0,
+    "verification_receipt_count": 0
+  },
+  "status": "PASSED",
+  "observed_at": "2026-08-03T17:27:27.076Z",
+  "receipt_sha256": "aa4182268e6c1e5bae63f26de1f598d9c0b8944c94bbc4062f1e0a93c670cc0a"
+}

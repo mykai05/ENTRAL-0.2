@@ -1,0 +1,8 @@
+Claim_ID,Proposed_Claim,Artifact_Basis,Eligibility,Required_Qualifier,Prohibited_Extension
+RR-LR-C01,Includes an editable lead and estimate follow-up tracker,lead_tracker_template.csv and field specification,ELIGIBLE_AFTER_FILE_QA,CSV source is intended for spreadsheet packaging,Do not claim CRM integration or automatic synchronization
+RR-LR-C02,Includes six event-specific response and follow-up scripts,RESPONSE_AND_FOLLOW_UP_PLAYBOOK.md sections Script 1 through Script 6,ELIGIBLE_AFTER_EDITORIAL_QA,Scripts require fact and contact-eligibility review,Do not claim automated or legally compliant outreach
+RR-LR-C03,Includes setup daily review and weekly review guidance,START_HERE.md and IMPLEMENTATION_GUIDE.md,ELIGIBLE_AFTER_EDITORIAL_QA,Operational guidance must be adapted locally,Do not promise a response-time or conversion improvement
+RR-LR-C04,Includes a fully populated fictional example,lead_tracker_fictional_example.csv,ELIGIBLE_AFTER_FILE_QA,Example companies people projects and amounts are fictional,Do not present example values as customer results
+RR-LR-C05,Surfaces due overdue held and incomplete records,lead_tracker_fields_and_formulas.csv,ELIGIBLE_AFTER_FORMULA_QA,Depends on correct complete dates and spreadsheet formulas,Do not claim alerts automation or real-time monitoring
+RR-LR-C06,Helps organize inquiry ownership and next actions,Assigned_To and Next_Action fields plus operating loop,ELIGIBLE_AFTER_FILE_QA,Organization depends on user maintenance,Do not claim more leads sales or revenue
+RR-LR-C07,Works without a subscription,Delivered editable files,ELIGIBLE_ONLY_IF_FINAL_PACKAGE_CONFIRMS,May require purchaser-owned spreadsheet software,Do not claim compatibility with every software product

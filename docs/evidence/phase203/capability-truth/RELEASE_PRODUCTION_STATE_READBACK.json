@@ -1,0 +1,45 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-PRODUCTION-STATE-438E1B05",
+  "phase": 203,
+  "status": "PASSED",
+  "authenticated": true,
+  "main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+  "deployment_readback_sha256": "2344cd409325195cfd2f2d3e6b95ec1990bc0959561156c75dba6a54905056fe",
+  "production_member_journey_sha256": "c45e397810d2ceecb0a7fdd9cc88b129ee3524785507190aee6d78a15a5bb3d2",
+  "canonical_state": {
+    "business_count": 0,
+    "businesses_state": "EMPTY_CANONICAL",
+    "node_count": 132,
+    "edge_count": 131,
+    "event_sequence": 401,
+    "sync_errors": 0,
+    "endpoint_readback_count": 8
+  },
+  "capability_truth": {
+    "registry_revision": 1,
+    "record_count": 56,
+    "catalogued": 56,
+    "active": 0,
+    "sellable": 0,
+    "public_claim_count": 0,
+    "runtime_tree_unchanged_from_checkpoint": true,
+    "checkpoint_reference": "mykai05/ENTRAL-0.2@4b0b656d87bc7689368d2b6e734c719b1fec4d40:docs/evidence/phase203/capability-truth/CAPABILITY_TRUTH_CORE_CHECKPOINT.json"
+  },
+  "health": {
+    "frontend_http_status": 200,
+    "api_http_status": 200,
+    "worker_ready": true,
+    "failed_jobs": 0,
+    "dead_letter_jobs": 0
+  },
+  "website": {
+    "main_sha": "569cd32af4f263634d9aa625d18f77840002d831",
+    "live_url": "https://spcommand.com",
+    "last_verified_phase203_checkpoint": true
+  },
+  "blockers": [],
+  "observed_at": "2026-08-03T17:33:00.000Z",
+  "receipt_sha256": "5998e6aaf35c7c692155b847c1277f313742847b7ef23b4e068bb9caff85f2bd"
+}

@@ -1,0 +1,30 @@
+Field,Type,Required_When,Allowed_Values_or_Rule,Spreadsheet_Formula_or_Instruction,Why_It_Exists
+Invoice_ID,Text,Always,Actual unique accounting invoice reference,,Prevents duplicate invoice records
+Project_ID,Text,Always,Stable internal project reference,,Links invoice to performed work
+Customer_Record_Ref,Text,Always,Secure customer reference; no payment credential,,Links approved recipient record
+Issue_Date,Date,Always,Actual accounting issue date,,Prevents draft invoices entering queue
+Due_Date,Date,Always,Date stated by authoritative invoice/terms,,Drives aging
+Control_Date,Date,Always,Verified local operating date used by every age and due calculation,,Makes formula readback stable and auditable
+Original_Amount,Currency,Always,Actual issued amount,,Starts balance reconciliation
+Credits_Applied,Currency,Always,Verified credits; default zero,,Preserves issued adjustments
+Payments_Applied,Currency,Always,Verified settled payments; default zero,,Prevents promises being counted as cash
+Calculated_Balance,Formula,Always,Currency,"=ROUND([@[Original_Amount]]-[@[Credits_Applied]]-[@[Payments_Applied]],2)",Calculates expected open amount
+Ledger_Balance,Currency,Always,Current authoritative ledger balance,,Enables reconciliation
+Balance_Variance,Formula,Always,Currency,"=ROUND([@[Calculated_Balance]]-[@[Ledger_Balance]],2)",Surfaces mismatches
+Invoice_Status,Controlled text,Always,ISSUED;PARTIALLY_PAID;PAID;DISPUTED;CREDITED;VOID;WRITE_OFF_REVIEW,,Records lifecycle without altering ledger
+Contact_Eligibility,Controlled text,Always,ELIGIBLE;PREFERENCE_LIMITED;OPTED_OUT;WRONG_CONTACT;LEGAL_HOLD;UNKNOWN,,Fails closed for uncertain outreach
+Dispute_Status,Controlled text,Always,NONE;CUSTOMER_QUESTION;INTERNAL_REVIEW;RESPONSE_DUE;RESOLVED;ESCALATED,,Routes disputes separately
+Promise_Amount,Currency,When promise open,Customer-stated amount; not payment,,Records commitment without inflating cash
+Promise_Date,Date,When promise open,Customer-stated date,,Drives promise review
+Promise_Status,Controlled text,Always,NONE;OPEN;KEPT;MISSED;REPLACED;WITHDRAWN,,Tracks promise lifecycle
+Last_Contact_Date,Date,After contact,Actual material contact date,,Supports audit and cadence
+Next_Action_Type,Controlled text,When balance open,VERIFY_RECORD;SEND_INVOICE_COPY;COURTESY_REMINDER;PAST_DUE_FOLLOW_UP;PROMISE_CHECK;DISPUTE_RESPONSE;OWNER_REVIEW;NONE,,Defines bounded action
+Next_Action_Date,Date,When next action is not NONE,Assigned or promised date,,Drives queue
+Owner,Text,When balance open,One accountable internal owner,,Prevents ownerless balances
+Aging_Days,Formula,Always,Nonnegative whole days or zero,"=IF(OR([@[Calculated_Balance]]<=0,[@[Due_Date]]="""",[@[Control_Date]]=""""),0,MAX(0,[@[Control_Date]]-[@[Due_Date]]))",Calculates days past due only for open balance against an explicit control date
+Aging_Bucket,Formula,Always,CURRENT;1-30;31-60;61-90;91+,"=IF([@[Calculated_Balance]]<=0,""CURRENT"",IF([@[Aging_Days]]=0,""CURRENT"",IF([@[Aging_Days]]<=30,""1-30"",IF([@[Aging_Days]]<=60,""31-60"",IF([@[Aging_Days]]<=90,""61-90"",""91+"")))))",Groups aging without estimating collectability
+Action_Flag,Formula,Always,CLOSED;HOLD;OVERDUE;DUE;NOT_DUE,"=IF(OR([@[Control_Date]]="""",[@[Calculated_Balance]]="""",[@[Ledger_Balance]]="""",ABS([@[Balance_Variance]])>0.009),""HOLD"",IF([@[Calculated_Balance]]<=0,""CLOSED"",IF(OR(NOT(OR([@[Contact_Eligibility]]=""ELIGIBLE"",[@[Contact_Eligibility]]=""PREFERENCE_LIMITED"")),[@[Invoice_Status]]=""PAID"",[@[Invoice_Status]]=""CREDITED"",[@[Invoice_Status]]=""VOID"",AND([@[Dispute_Status]]<>""NONE"",[@[Dispute_Status]]<>""RESOLVED"")),""HOLD"",IF([@[Next_Action_Date]]="""",""DUE"",IF([@[Next_Action_Date]]<[@[Control_Date]],""OVERDUE"",IF([@[Next_Action_Date]]=[@[Control_Date]],""DUE"",""NOT_DUE""))))))",Holds variance unsupported closure eligibility and dispute states before scheduling any action
+Record_Quality_Flag,Formula,Always,COMPLETE;REVIEW,"=IF(OR([@[Invoice_ID]]="""",[@[Project_ID]]="""",[@[Customer_Record_Ref]]="""",[@[Issue_Date]]="""",[@[Due_Date]]="""",[@[Control_Date]]="""",[@[Issue_Date]]>[@[Control_Date]],[@[Original_Amount]]="""",[@[Original_Amount]]<0,[@[Credits_Applied]]="""",[@[Credits_Applied]]<0,[@[Payments_Applied]]="""",[@[Payments_Applied]]<0,[@[Calculated_Balance]]="""",[@[Ledger_Balance]]="""",[@[Ledger_Balance]]<0,[@[Invoice_Status]]="""",[@[Contact_Eligibility]]="""",[@[Dispute_Status]]="""",[@[Promise_Status]]="""",[@[Owner]]="""",[@[Invoice_Evidence_Ref]]="""",[@[Latest_Event_Evidence_Ref]]="""",ABS([@[Balance_Variance]])>0.009,AND([@[Calculated_Balance]]>0,OR([@[Invoice_Status]]=""PAID"",[@[Invoice_Status]]=""CREDITED"",[@[Invoice_Status]]=""VOID"")),AND([@[Calculated_Balance]]<=0,NOT(OR([@[Invoice_Status]]=""PAID"",[@[Invoice_Status]]=""CREDITED"",[@[Invoice_Status]]=""VOID"",[@[Invoice_Status]]=""WRITE_OFF_REVIEW""))),AND([@[Invoice_Status]]=""DISPUTED"",[@[Dispute_Status]]=""NONE""),AND([@[Promise_Status]]=""OPEN"",OR([@[Promise_Amount]]="""",[@[Promise_Amount]]<0,[@[Promise_Date]]="""")),AND([@[Promise_Status]]=""NONE"",OR([@[Promise_Amount]]<>"""",[@[Promise_Date]]<>"""")),AND([@[Calculated_Balance]]>0,OR([@[Next_Action_Type]]="""",[@[Next_Action_Type]]=""NONE"",[@[Next_Action_Date]]=""""))),""REVIEW"",""COMPLETE"")",Fails closed on missing negative future-dated evidence variance lifecycle promise and next-action contradictions
+Invoice_Evidence_Ref,Text,Always,Secure invoice/delivery reference,,Binds actual issuance
+Latest_Event_Evidence_Ref,Text,After material event,Secure payment credit contact or dispute reference,,Binds current state
+Notes,Text,Optional,Facts only; no payment credentials or unnecessary personal data,,Adds bounded context

@@ -1,0 +1,57 @@
+{
+  "contract_version": "1.0.0",
+  "product_code": "LEAD_RESPONSE_ESTIMATE_FOLLOW_UP_KIT",
+  "title": "Lead Response and Estimate Follow-Up Kit",
+  "version": "1.0.0",
+  "currency": "USD",
+  "price_cents": 2900,
+  "public_brand": "RivetRelay",
+  "brand_clearance": "OWNER_LEGAL_AND_PROVIDER_CLEARANCE_REQUIRED",
+  "delivery_status": "DRAFT_NOT_FOR_PUBLICATION",
+  "publication_authorized": false,
+  "support_ready": false,
+  "ai_disclosure": "AI tools assisted drafting and formatting; final publisher review and owner authorization remain required before sale.",
+  "license_scope": "ONE_PURCHASER_OWNED_BUSINESS_INTERNAL_USE_NO_REDISTRIBUTION",
+  "build_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:scripts/phase204-internal-commerce-build-assets.mjs",
+  "product_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:commerce/products/rivetrelay/source/lead-response-estimate-follow-up",
+  "files": [
+    {
+      "file_name": "RivetRelay_LEAD_RESPONSE_ESTIMATE_FOLLOW_UP_KIT_Guide.pdf",
+      "byte_size": 127814,
+      "content_sha256": "43a0db65f18f99b50d20fc5ba0e66227d0fa69fd3316e9801233204b9353c6b0",
+      "roles": [
+        "FINAL_DELIVERY",
+        "INSTRUCTIONS",
+        "IMPLEMENTATION_GUIDANCE",
+        "SUPPORT_INSTRUCTIONS",
+        "LICENSE_TERMS",
+        "VERSION_INFORMATION"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_LEAD_RESPONSE_ESTIMATE_FOLLOW_UP_KIT_Tracker.xlsx",
+      "byte_size": 48948,
+      "content_sha256": "c92d990694efa17ffa46917b8520f7e3beba41e9cc2db748ea3a086adfc7cf65",
+      "roles": [
+        "TRACKING_TOOL",
+        "EDITABLE_SOURCE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_LEAD_RESPONSE_ESTIMATE_FOLLOW_UP_KIT_Fictional_Example.csv",
+      "byte_size": 2343,
+      "content_sha256": "4b5b5ed99dbedfe3cb19d5b67da75e59ee86f5726ff37c74c55fffa2f037ed89",
+      "roles": [
+        "EXAMPLE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_LEAD_RESPONSE_ESTIMATE_FOLLOW_UP_KIT_Editable_Source.zip",
+      "byte_size": 12922,
+      "content_sha256": "568944dc1f1e6960672f2313544a89e4945dac8a7b7af598caa536d1f34e4447",
+      "roles": [
+        "EDITABLE_SOURCE"
+      ]
+    }
+  ]
+}

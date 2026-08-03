@@ -1,0 +1,34 @@
+Field,Type,Required_When,Allowed_Values_or_Rule,Spreadsheet_Formula_or_Instruction,Why_It_Exists
+Week_Start,Date,Always,Start of fixed local reporting week,,Defines cohort
+Week_End,Date,Always,End of same reporting week,,Defines cohort
+Data_As_Of,Date-time,Always,Closed cutoff with timezone,,Prevents mixed cutoffs
+Business_Scope,Text,Always,One verified business or approved aggregate,,Defines boundary
+Currency,Controlled text,Always,ISO currency code,,Prevents mixed currency
+Leads_Received,Whole number,Always,Unique verified inquiries in cohort,,Demand input
+Leads_With_First_Response,Whole number,Always,Same cohort with documented response,,Response coverage numerator
+Estimates_Issued,Whole number,Always,Actually issued approved estimates in cohort,,Estimate activity input
+Estimates_Decided,Whole number,Always,Same defined decision cohort with accept/decline,,Valid rate denominator
+Estimates_Accepted,Whole number,Always,Accepted within the decided cohort,,Valid rate numerator
+Estimate_Value_Issued,Currency,Always,Value of actually issued estimates; not revenue,,Shows bounded issued value
+Approved_Change_Value,Currency,Always,Approved changes in reporting boundary; not cash,,Shows supported approval value
+Completed_Unbilled_Change_Value,Currency,Always,Approved completed changes not yet invoiced,,Surfaces billing handoff without calling it revenue
+Invoices_Issued_Value,Currency,Always,Actually issued invoice value,,Separates billing from cash
+Cash_Received,Currency,Always,Verified settled cash receipts in period,,Measures actual receipt
+Open_AR,Currency,Always,Authoritative open receivables at cutoff,,Shows open ledger balance
+AR_Past_Due,Currency,Always,Open AR beyond authoritative due date,,Shows aging exposure without predicting loss
+Credits_And_Refunds,Currency,Always,Actually issued credits and settled refunds in period,,Keeps offsets visible
+Active_Projects,Whole number,Always,Projects meeting approved active definition,,Delivery scope
+Projects_At_Risk,Whole number,Always,Active projects with evidenced at-risk condition,,Surfaces exceptions
+Available_Crew_Days_Next_Week,Decimal,Always,Approved available capacity in consistent units,,Capacity denominator
+Committed_Crew_Days_Next_Week,Decimal,Always,Approved scheduled capacity in same units,,Capacity numerator
+Owner_Decisions_Open,Whole number,Always,Open items requiring owner authority,,Shows decision load
+Safety_Holds,Whole number,Always,Open approved safety-hold records,,Shows stop conditions without narrative
+Data_Unavailable_Count,Whole number,Always,Required unavailable or unreconciled inputs,,Prevents false completeness
+Lead_Response_Coverage,Formula,Always,Blank when inputs are invalid or no leads; otherwise percentage,"=IF(OR([@[Leads_Received]]="""",[@[Leads_With_First_Response]]="""",[@[Leads_Received]]<=0,[@[Leads_With_First_Response]]<0,[@[Leads_With_First_Response]]>[@[Leads_Received]]),"""",[@[Leads_With_First_Response]]/[@[Leads_Received]])",Measures recorded coverage only for a valid cohort
+Estimate_Acceptance_Rate,Formula,Always,Blank when inputs are invalid or no decisions; otherwise percentage,"=IF(OR([@[Estimates_Decided]]="""",[@[Estimates_Accepted]]="""",[@[Estimates_Decided]]<=0,[@[Estimates_Accepted]]<0,[@[Estimates_Accepted]]>[@[Estimates_Decided]]),"""",[@[Estimates_Accepted]]/[@[Estimates_Decided]])",Uses only a valid decided cohort
+Capacity_Load,Formula,Always,Blank when capacity inputs are invalid unavailable or zero,"=IF(OR([@[Available_Crew_Days_Next_Week]]="""",[@[Committed_Crew_Days_Next_Week]]="""",[@[Available_Crew_Days_Next_Week]]<=0,[@[Committed_Crew_Days_Next_Week]]<0),"""",[@[Committed_Crew_Days_Next_Week]]/[@[Available_Crew_Days_Next_Week]])",Shows scheduling load only for valid capacity inputs
+Overall_Status,Controlled text,Always,HEALTHY;DEGRADED;BLOCKED under versioned local rule,,Summarizes supported operating condition
+Top_Exception,Text,Always,One factual material exception or NONE,,Centers review on evidence
+Next_Owner_Action,Text,Always,Observable action owner and due date or NONE,,Creates accountable readback
+Evidence_Packet_Ref,Text,Always,Secure closed weekly evidence reference,,Binds inputs
+Data_Quality_Flag,Formula,Always,COMPLETE;REVIEW,"=IF(OR([@[Week_Start]]="""",[@[Week_End]]="""",[@[Week_End]]<[@[Week_Start]],[@[Data_As_Of]]="""",[@[Business_Scope]]="""",LEN([@[Currency]])<>3,[@[Leads_Received]]="""",[@[Leads_With_First_Response]]="""",[@[Estimates_Issued]]="""",[@[Estimates_Decided]]="""",[@[Estimates_Accepted]]="""",[@[Estimate_Value_Issued]]="""",[@[Approved_Change_Value]]="""",[@[Completed_Unbilled_Change_Value]]="""",[@[Invoices_Issued_Value]]="""",[@[Cash_Received]]="""",[@[Open_AR]]="""",[@[AR_Past_Due]]="""",[@[Credits_And_Refunds]]="""",[@[Active_Projects]]="""",[@[Projects_At_Risk]]="""",[@[Available_Crew_Days_Next_Week]]="""",[@[Committed_Crew_Days_Next_Week]]="""",[@[Owner_Decisions_Open]]="""",[@[Safety_Holds]]="""",[@[Data_Unavailable_Count]]="""",[@[Overall_Status]]="""",[@[Top_Exception]]="""",[@[Next_Owner_Action]]="""",[@[Evidence_Packet_Ref]]="""",MIN([@[Leads_Received]],[@[Leads_With_First_Response]],[@[Estimates_Issued]],[@[Estimates_Decided]],[@[Estimates_Accepted]],[@[Estimate_Value_Issued]],[@[Approved_Change_Value]],[@[Completed_Unbilled_Change_Value]],[@[Invoices_Issued_Value]],[@[Cash_Received]],[@[Open_AR]],[@[AR_Past_Due]],[@[Credits_And_Refunds]],[@[Active_Projects]],[@[Projects_At_Risk]],[@[Available_Crew_Days_Next_Week]],[@[Committed_Crew_Days_Next_Week]],[@[Owner_Decisions_Open]],[@[Safety_Holds]],[@[Data_Unavailable_Count]])<0,[@[Data_Unavailable_Count]]>0,[@[Leads_With_First_Response]]>[@[Leads_Received]],[@[Estimates_Accepted]]>[@[Estimates_Decided]],[@[AR_Past_Due]]>[@[Open_AR]],[@[Projects_At_Risk]]>[@[Active_Projects]],AND([@[Committed_Crew_Days_Next_Week]]>0,[@[Available_Crew_Days_Next_Week]]<=0),AND([@[Safety_Holds]]>0,[@[Overall_Status]]<>""BLOCKED""),AND([@[Overall_Status]]=""HEALTHY"",OR([@[Projects_At_Risk]]>0,[@[Owner_Decisions_Open]]>0,[@[Safety_Holds]]>0,[@[Data_Unavailable_Count]]>0,[@[Capacity_Load]]>1))),""REVIEW"",""COMPLETE"")",Fails closed on every required blank invalid range unavailable input and status contradiction

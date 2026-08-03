@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lead Response and Estimate Follow-Up Kit</title><style>
+@page { size: Letter; margin: 0.48in 0.58in 0.52in; }
+:root { color-scheme: light; --ink:#14212b; --muted:#5b6670; --accent:#b5452d; --soft:#f3eee8; --line:#d8d4cf; }
+* { box-sizing:border-box; } body { margin:0; color:var(--ink); font:9.8pt/1.38 Arial, Helvetica, sans-serif; }
+.cover { min-height:8.45in; display:flex; flex-direction:column; justify-content:center; padding:0.45in; border:2px solid var(--ink); background:linear-gradient(145deg,#fff 0%,var(--soft) 100%); page-break-after:always; }
+.eyebrow { color:var(--accent); font-size:10pt; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }
+.cover h1 { margin:.18in 0 .12in; font-size:31pt; line-height:1.05; letter-spacing:-.025em; }
+.cover p { max-width:5.8in; color:var(--muted); font-size:13pt; }
+.brand { margin-top:.45in; font-size:12pt; font-weight:700; } .meta { color:var(--muted); font-size:9pt; }
+.section { break-before:auto; page-break-before:auto; } .section + .section { border-top:1px solid var(--line); margin-top:.34in; padding-top:.18in; }
+h1,h2,h3,h4 { display:block; color:var(--ink); line-height:1.15; break-after:avoid-page; page-break-after:avoid; }
+h1 { font-size:22pt; margin:0 0 .18in; border-bottom:2px solid var(--accent); padding-bottom:.08in; }
+h2 { font-size:16pt; margin:.26in 0 .13in; } h3 { font-size:12.5pt; margin:.2in 0 .1in; }
+p { margin:.04in 0 .09in; break-inside:avoid; page-break-inside:avoid; orphans:4; widows:4; }
+h1 + p,h2 + p,h3 + p,h4 + p { margin-top:.11in; }
+p + h2,ul + h2,ol + h2 { margin-top:.28in; }
+ul,ol { margin:.04in 0 .1in .24in; padding:0; break-inside:avoid; page-break-inside:avoid; }
+li { margin:.025in 0; break-inside:avoid; page-break-inside:avoid; }
+table { width:100%; border-collapse:collapse; margin:.12in 0 .2in; font-size:8.7pt; page-break-inside:auto; }
+thead { display:table-header-group; } tr { page-break-inside:avoid; } th,td { border:1px solid var(--line); padding:.06in; text-align:left; vertical-align:top; }
+th { background:var(--soft); } code { font:8.8pt Consolas, monospace; background:var(--soft); padding:.01in .035in; }
+pre { white-space:pre-wrap; background:#f7f5f2; border:1px solid var(--line); padding:.12in; page-break-inside:avoid; }
+blockquote { margin:.12in 0; padding:.1in .14in; border-left:4px solid var(--accent); background:var(--soft); }
+hr { border:0; border-top:1px solid var(--line); margin:.22in 0; } a { color:#7d2f20; }
+.source-label { color:var(--accent); font-size:8pt; font-weight:700; letter-spacing:.11em; text-transform:uppercase; margin-bottom:.08in; break-after:avoid; page-break-after:avoid; }
+</style></head><body>
+<section class="cover"><div class="eyebrow">RivetRelay contractor operations toolkit</div><h1>Lead Response and Estimate Follow-Up Kit</h1><p>Practical, editable operating materials for specialty contractors. Built for disciplined follow-through; no outcome or legal guarantee is implied.</p><div class="brand">RivetRelay</div><div class="meta">Version 1.0.0 · AI-assisted original work · Licensed for one purchasing business</div></section>
+<section class="section"><div class="source-label">START HERE</div><h1>Lead Response and Estimate Follow-Up Kit</h1>
+<ul><li>Product ID: RR-LR-001</li><li>Version: 1.0.0</li><li>Initial test price: $29</li><li>Working brand: RivetRelay (provisional; not cleared for publication)</li></ul>
+<h2>What this kit does</h2>
+<p>This kit gives a specialty contractor one place to record a new inquiry, set the next action, document estimate delivery, and close the loop. It is an operating aid, not a CRM replacement or a promise that a lead will convert.</p>
+<h2>Included source files</h2>
+<ul><li><code>START_HERE.md</code>: quick start and operating rhythm.</li><li><code>IMPLEMENTATION_GUIDE.md</code>: setup, ownership, field mapping, quality controls, and maintenance.</li><li><code>RESPONSE_AND_FOLLOW_UP_PLAYBOOK.md</code>: channel-aware scripts, call notes, and stage checklists.</li><li><code>lead_tracker_template.csv</code>: clean import/source table.</li><li><code>lead_tracker_fictional_example.csv</code>: six fully populated fictional records.</li><li><code>lead_tracker_fields_and_formulas.csv</code>: field definitions, validation rules, and spreadsheet formulas.</li><li><code>VERSION_LICENSE_SUPPORT.md</code>: version, permitted use, support, limitations, and AI disclosure.</li><li><code>CLAIMS_INVENTORY.csv</code>: bounded claims and their source evidence.</li></ul>
+<p>The populated fictional tracker is a static example snapshot with <code>Control_Date</code> set to 2026-07-13. The packaged workbook recalculates date-derived values only from the explicit control date; it never substitutes the device's current date.</p>
+<h2>Twenty-minute start</h2>
+<ol><li>Assign one person as the tracker owner and one backup.</li><li>Open the delivered tracker workbook, retain its protected formula columns, and set the verified <code>Control_Date</code> for each operating row.</li><li>Use the CSV template and field dictionary from the editable-source archive only for a controlled import or system mapping.</li><li>Enter every open inquiry and estimate. Use a stable internal lead ID rather than a phone number or email address.</li><li>Assign a stage, owner, and next action date to every open record.</li><li>Select only scripts that match the actual event and the customer's permitted contact channel.</li><li>Review the overdue and unassigned queues at the start and end of each workday.</li></ol>
+<h2>Daily operating loop</h2>
+<h3>Start of day</h3>
+<ul><li>Filter <code>Follow_Up_Flag</code> to <code>DUE</code> or <code>OVERDUE</code>.</li><li>Assign records where <code>Assigned_To</code> is blank.</li><li>Confirm the customer has not opted out before sending a follow-up.</li><li>Prioritize promised callbacks and estimates already delivered.</li></ul>
+<h3>During the day</h3>
+<ul><li>Record each material contact attempt once.</li><li>Set the next action while the context is fresh.</li><li>Do not mark an estimate delivered until the delivery channel and date are known.</li><li>Record objections as facts, not guesses about the customer's intent.</li></ul>
+<h3>End of day</h3>
+<ul><li>Resolve missing next-action dates.</li><li>Close records that were won, lost, declined, duplicate, or invalid.</li><li>Escalate estimates older than the business's chosen review window.</li><li>Keep opt-outs and wrong-contact records suppressed.</li></ul>
+<h2>Weekly review questions</h2>
+<ul><li>Which open leads have no assigned owner?</li><li>Which delivered estimates have no documented next action?</li><li>Which follow-ups are overdue?</li><li>Which lead sources produced actual booked work in this period?</li><li>Which objections repeat often enough to require an operational response?</li></ul>
+<p>The tracker supports these questions only when records are complete. Blank or stale data must be treated as unavailable, not as a positive result.</p></section>
+<section class="section"><div class="source-label">IMPLEMENTATION GUIDE</div><h1>Implementation guide</h1>
+<h2>Intended operating environment</h2>
+<p>Use this kit for a small specialty-contractor or field-service team that receives inquiries by phone, email, form, referral, or a provider marketplace. It can be maintained in a spreadsheet or mapped into an existing CRM. It does not send communications, verify consent, or synchronize with another system by itself.</p>
+<h2>Roles</h2>
+<table><thead><tr><th>Role</th><th>Minimum responsibility</th></tr></thead><tbody><tr><td>Tracker owner</td><td>Maintains field definitions, resolves duplicates, and reviews exceptions.</td></tr><tr><td>Lead owner</td><td>Responds, documents the event, and sets the next action.</td></tr><tr><td>Estimator</td><td>Confirms estimate status, amount, delivery date, and material revision.</td></tr><tr><td>Business owner</td><td>Chooses service standards and reviews unresolved exceptions.</td></tr></tbody></table>
+<p>One person may hold several roles, but each open record should have one named <code>Assigned_To</code> value.</p>
+<h2>Setup sequence</h2>
+<h3>1. Define local operating rules</h3>
+<p>Record these decisions before importing open work:</p>
+<ul><li>Business hours and the response target used internally.</li><li>Approved contact channels and how consent or preference is documented.</li><li>Estimate stages used by the business.</li><li>Follow-up intervals appropriate to the project type.</li><li>Final outcomes and who may close a record.</li><li>Where estimate files and communication evidence are stored.</li></ul>
+<p>The kit intentionally does not prescribe a legal contact cadence. The business must align use with its contracts, customer preferences, platform rules, and applicable law.</p>
+<h3>2. Create the working table</h3>
+<p>Use the delivered workbook for normal operation. It contains an Excel table, controlled-value validation, explicit date and currency formats, and protected formula columns. Keep the source column names stable so formulas and future imports remain traceable. The CSV template and <code>lead_tracker_fields_and_formulas.csv</code> remain the editable import and implementation specification.</p>
+<p>Recommended controlled values:</p>
+<ul><li><code>Stage</code>: NEW, CONTACTED, QUALIFYING, SITE_VISIT, ESTIMATE_IN_PROGRESS, ESTIMATE_DELIVERED, DECISION_PENDING, CLOSED.</li><li><code>Response_Status</code>: NOT_STARTED, ATTEMPTED, CONNECTED, WAITING_CUSTOMER, WAITING_INTERNAL, COMPLETE.</li><li><code>Outcome</code>: blank while open; WON, LOST, DECLINED, DUPLICATE, INVALID when closed.</li><li><code>Contact_Eligibility</code>: ELIGIBLE, PREFERENCE_LIMITED, OPTED_OUT, WRONG_CONTACT, UNKNOWN.</li></ul>
+<p>Treat <code>UNKNOWN</code> as a hold for outbound communication until the business can verify eligibility.</p>
+<h3>3. Import existing work</h3>
+<p>For each live inquiry, create one record using a business-generated <code>Lead_ID</code>. Do not use the customer's phone number or email address as the primary key. If customer contact details are needed, keep them in the business's approved system and place only the secure record reference in <code>Customer_Record_Ref</code>.</p>
+<p>For historical items, import only facts needed for current operation. Do not infer contact attempts or delivery dates.</p>
+<h3>4. Configure formulas</h3>
+<p>The delivered workbook uses an Excel table named <code>Leads</code>. Equivalent formulas may be used in another spreadsheet tool. Confirm locale-specific separators and date behavior before use. Every age and due calculation uses the explicit verified <code>Control_Date</code>; never replace an unknown date with the device date merely to clear an exception.</p>
+<h3>5. Run a controlled first week</h3>
+<ul><li>Day 1: enter open leads and check required fields.</li><li>Days 2-3: compare tracker events with the underlying communication and estimate records.</li><li>Day 4: resolve duplicates and adjust local controlled values only if the distinction changes an action.</li><li>Day 5: perform the weekly review using actual records.</li></ul>
+<h2>Record-quality checks</h2>
+<p>A record is operationally complete when:</p>
+<ul><li>its ID is unique;</li><li>received date and source are known or explicitly marked unavailable;</li><li>stage and assigned owner are present;</li><li>open work has a next action and date;</li><li>delivered estimates have a delivery date and secure estimate reference;</li><li>every contact attempt remains in the authoritative communication log, while the tracker retains the latest evidenced channel and date;</li><li>closed work has a final outcome and outcome date;</li><li>opt-outs are preserved.</li></ul>
+<h2>Exception handling</h2>
+<table><thead><tr><th>Exception</th><th>Safe response</th></tr></thead><tbody><tr><td>Duplicate inquiry</td><td>Link the duplicate to the retained record and close it as DUPLICATE.</td></tr><tr><td>Customer disputes contact</td><td>Stop outbound contact, preserve the request, and escalate to the business owner.</td></tr><tr><td>Estimate amount changed</td><td>Update the amount only from the approved estimate record; note the revision reference.</td></tr><tr><td>Owner unavailable</td><td>Reassign explicitly; do not leave the old name while another person acts.</td></tr><tr><td>Contact eligibility unknown</td><td>Hold outbound action until verified.</td></tr><tr><td>Formula error</td><td>Treat the derived field as unavailable and repair the formula before relying on the queue.</td></tr></tbody></table>
+<h2>Maintenance</h2>
+<p>Review controlled values monthly. Archive closed records according to the business's retention policy. Test formulas after any column change. Keep a versioned backup before bulk imports. When mapping into a CRM, reconcile sample records in both directions before retiring the spreadsheet.</p>
+<h2>Privacy boundary</h2>
+<p>Use stable references instead of unnecessary personal details. Limit access to personnel who need the records. Do not paste payment data, government identifiers, private job-site access codes, or sensitive customer communications into the tracker.</p></section>
+<section class="section"><div class="source-label">RESPONSE AND FOLLOW UP PLAYBOOK</div><h1>Response and follow-up playbook</h1>
+<p>These scripts are starting language, not automated messages. Confirm the recipient, event, channel eligibility, job facts, and sender identity before use. Replace bracketed fields with verified information; if a fact is not known, omit it.</p>
+<h2>Script 1 — first response after an inquiry</h2>
+<p>Subject: Your [project type] inquiry with [business name]</p>
+<p>Hello [customer name],</p>
+<p>Thank you for contacting [business name] about [brief verified project description]. I’m [sender name], and I’ll coordinate the next step. To route this correctly, could you confirm [one or two specific facts needed for qualification]?</p>
+<p>Our next step is [verified next step]. I can [call/reply] on [specific available window]. If another channel or time works better, let me know.</p>
+<p>[Sender name] / [Business name] / [Approved contact information]</p>
+<h2>Script 2 — voicemail after a permitted call attempt</h2>
+<p>“Hello [customer name], this is [sender name] with [business name] returning your inquiry about [project type]. I’m calling to confirm [specific next step]. You can reach us at [approved number] during [business hours], or reply through [approved alternate channel]. Again, this is [sender name] with [business name].”</p>
+<p>Record the attempt once. Do not repeatedly call to satisfy an internal count.</p>
+<h2>Script 3 — estimate delivery</h2>
+<p>Subject: [business name] estimate [estimate reference]</p>
+<p>Hello [customer name],</p>
+<p>Attached or linked is estimate [estimate reference] for [verified scope summary]. Please review the included scope, assumptions, exclusions, price, and timing. The estimate shows [expiration or review date only if present in the approved estimate].</p>
+<p>I can walk through the document on [available window]. Questions or requested changes will be documented before any revised estimate or agreement is issued.</p>
+<p>[Sender name]</p>
+<h2>Script 4 — estimate follow-up</h2>
+<p>Subject: Question about estimate [estimate reference]</p>
+<p>Hello [customer name],</p>
+<p>I’m following up on estimate [estimate reference], delivered [verified date]. Do you have a question about the scope, timing, or next step that I can route to the right person?</p>
+<p>No action has been scheduled from this message alone. If you want to proceed, pause, or close the request, reply with your preference and we will document it.</p>
+<p>[Sender name]</p>
+<h2>Script 5 — documented requested callback</h2>
+<p>Subject: Confirming the callback you requested</p>
+<p>Hello [customer name],</p>
+<p>This confirms your request for a callback about [topic] on [date or agreed window]. [Owner name] is assigned. If the timing changes, reply here or use [approved contact route].</p>
+<p>[Sender name]</p>
+<h2>Script 6 — close-the-loop message</h2>
+<p>Subject: Closing estimate follow-up for [estimate reference]</p>
+<p>Hello [customer name],</p>
+<p>We have not recorded a decision on estimate [estimate reference]. Unless you ask us to keep it open, we will close the follow-up record on [date]. Closing the follow-up does not create a cancellation fee or change signed obligations; any existing agreement remains governed by its own terms.</p>
+<p>If you would like the team to review a change or next step, reply through [approved channel].</p>
+<p>[Sender name]</p>
+<h2>New-inquiry checklist</h2>
+<ul><li>Confirm the inquiry belongs to the business.</li><li>Assign a unique internal lead ID.</li><li>Record received time and source from evidence.</li><li>Check contact eligibility and channel preference.</li><li>Capture only the minimum qualification facts needed.</li><li>Assign one owner.</li><li>Set the next action and date.</li><li>Send or record only an eligible first response.</li></ul>
+<h2>Estimate-delivery checklist</h2>
+<ul><li>Confirm the estimate is approved for delivery.</li><li>Confirm the recipient and delivery channel.</li><li>Verify the scope reference, amount, and revision.</li><li>Store the estimate in the approved location.</li><li>Record delivery date and secure evidence reference.</li><li>Set the next action; do not assume customer acceptance.</li></ul>
+<h2>Follow-up checklist</h2>
+<ul><li>Verify the estimate was actually delivered.</li><li>Review the latest customer preference or opt-out.</li><li>Check whether another team member already contacted the customer.</li><li>Use a script appropriate to the current event.</li><li>Record the attempt once, including channel and date.</li><li>Record the actual response or <code>NO_RESPONSE</code>; do not infer sentiment.</li><li>Set the next action or close with a supported outcome.</li></ul>
+<h2>Weekly exception checklist</h2>
+<ul><li>Open lead with no owner.</li><li>Open lead with no next action.</li><li>Delivered estimate missing a delivery reference.</li><li>Follow-up date in the past.</li><li>Unknown contact eligibility.</li><li>More than one open record for the same underlying inquiry.</li><li>Closed record without outcome evidence.</li></ul></section>
+<section class="section"><div class="source-label">VERSION LICENSE SUPPORT</div><h1>Version, license, support, and disclosure</h1>
+<ul><li>Product: Lead Response and Estimate Follow-Up Kit</li><li>Product ID: RR-LR-001</li><li>Edition: 1.0.0 source edition</li><li>Working brand: RivetRelay (provisional; pending owner/legal/marketplace clearance)</li></ul>
+<h2>Version notes</h2>
+<p>Version 1.0.0 defines the lead record, eligibility hold, response stages, estimate follow-up queue, six communication scripts, operating checklists, and fictional example data. Dates and formulas must be verified in the purchaser's spreadsheet locale before operational use.</p>
+<h2>Permitted-use license</h2>
+<p>After authorized purchase, the purchaser may copy, edit, print, and use these files for the internal operations of one legal business and its personnel. The purchaser may enter its own data and create internal working copies and backups.</p>
+<p>The purchaser may not resell, sublicense, publish, share outside that business, distribute as a template, remove the license notice from redistributed extracts, use the files as a white-label product, or use the source content to train or benchmark a commercial model. Client-facing messages produced from the scripts may be sent in the ordinary operation of the licensed business after the purchaser verifies them.</p>
+<p>No trademark, brand, software, or ownership right transfers. Rights not expressly granted are reserved by the publisher. Public sale requires final owner approval of these terms.</p>
+<h2>Limitations</h2>
+<p>This kit provides editable operational materials. It is not legal, tax, accounting, privacy, marketing-consent, or financial advice. It does not verify contact eligibility, send messages, connect to a provider, or guarantee response speed, conversion, revenue, or customer outcomes. The purchaser is responsible for local requirements, customer preferences, contract terms, system configuration, access control, and final review of every external communication.</p>
+<h2>Support instructions</h2>
+<p>The final storefront listing must provide the owner-approved support address and response window before publication. Support covers missing or unreadable delivered files and clarification of included field definitions. It does not include custom implementation, legal review, CRM integration, data recovery, or business-result guarantees. Never send passwords, payment data, MFA codes, full customer records, or regulated data in a support request.</p>
+<p>Pre-publication support route: not yet active. Publication must fail closed until the approved support route is inserted.</p>
+<h2>AI-assistance disclosure</h2>
+<p>This edition was developed with generative-AI-assisted drafting under directed product-development controls. It contains original product-specific structure and language and uses fictional example data; no real customer data was used in the examples. The publisher must complete a final human publication, accuracy, licensing, and file-integrity review before sale. Users must review and adapt all external messages before sending them.</p></section>
+</body></html>

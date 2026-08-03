@@ -1,0 +1,45 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-RELEASE-TESTS-438E1B05",
+  "phase": 203,
+  "task_packet_id": "P203-MEMBER-UI-TRUTH-CORRECTION-001",
+  "implementation_commit_sha": "10c9fff0eb14adffca058edc1af8fb0cf46aaf8b",
+  "protected_main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+  "suites": [
+    {"name":"pnpm contracts:verify","status":"PASSED"},
+    {"name":"pnpm prisma:generate","status":"PASSED"},
+    {"name":"pnpm test:phase203","status":"PASSED"},
+    {"name":"pnpm test:phase203:graph-recovery","status":"PASSED"},
+    {"name":"pnpm test:phase202","status":"PASSED"},
+    {"name":"pnpm test:phase200","status":"PASSED"},
+    {"name":"pnpm --filter @entral/backend test","status":"PASSED"},
+    {"name":"pnpm --filter @entral/frontend test","status":"PASSED","test_count":473},
+    {"name":"pnpm lint","status":"PASSED"},
+    {"name":"pnpm test","status":"PASSED"},
+    {"name":"pnpm test:e2e","status":"PASSED"},
+    {"name":"pnpm build","status":"PASSED"},
+    {"name":"pnpm release:check","status":"PASSED"},
+    {"name":"pnpm test:e2e:production-member","status":"PASSED"},
+    {"name":"pnpm governor verify","status":"PASSED"},
+    {"name":"git diff --check","status":"PASSED"}
+  ],
+  "exact_head_ci": [
+    {"kind":"PUSH","run_id":30833992153,"job_id":91754567818,"status":"PASSED"},
+    {"kind":"PULL_REQUEST","run_id":30833996710,"job_id":91754582216,"status":"PASSED"}
+  ],
+  "protected_main_ci": {"run_id":30834996449,"job_id":91757890720,"status":"PASSED"},
+  "browser_widths_css_px": [360,390,412,430,1440,1920],
+  "production_screenshot_count": 32,
+  "independent_visual_qa": {
+    "status": "PASSED",
+    "discrepancies": 0,
+    "receipt_sha256_verified": "c45e397810d2ceecb0a7fdd9cc88b129ee3524785507190aee6d78a15a5bb3d2",
+    "canonical_node_count": 132,
+    "canonical_edge_count": 131
+  },
+  "security_scan": "NOT_RUN_OWNER_PROHIBITED",
+  "status": "PASSED",
+  "observed_at": "2026-08-03T17:36:45.000Z",
+  "receipt_sha256": "783ada384c6ed9ed4e02e76789851235928ed299566e176c4e655615aa54c715"
+}

@@ -109,6 +109,11 @@ jobs:
           RUN_POSTGRES_INTEGRATION: "1"
           TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
         run: pnpm test:phase203
+      - name: Verify Phase 204 internal commerce, product assets, and migrated-account boundaries
+        env:
+          RUN_POSTGRES_INTEGRATION: "1"
+          TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
+        run: pnpm test:phase204:internal-commerce
       - name: Verify Phase 195 backup, restore, forward recovery, and restart
         env:
           PHASE195_RECOVERY_GATE_CONFIRM: DISPOSABLE_ONLY
@@ -180,6 +185,16 @@ jobs:
             test-results/phase202/**
             docs/evidence/phase202/**
           if-no-files-found: warn
+          retention-days: 90
+      - name: Retain Phase 204 internal commerce evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase-204-internal-commerce-evidence
+          path: |
+            docs/evidence/phase204/internal-commerce/**
+            commerce/products/rivetrelay/evidence/**
+          if-no-files-found: error
           retention-days: 90
       - run: pnpm build
       - run: pnpm release:check

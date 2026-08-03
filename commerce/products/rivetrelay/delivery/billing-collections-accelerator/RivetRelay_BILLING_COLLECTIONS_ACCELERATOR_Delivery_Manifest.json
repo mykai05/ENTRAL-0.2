@@ -1,0 +1,57 @@
+{
+  "contract_version": "1.0.0",
+  "product_code": "BILLING_COLLECTIONS_ACCELERATOR",
+  "title": "Billing and Collections Accelerator",
+  "version": "1.0.0",
+  "currency": "USD",
+  "price_cents": 4900,
+  "public_brand": "RivetRelay",
+  "brand_clearance": "OWNER_LEGAL_AND_PROVIDER_CLEARANCE_REQUIRED",
+  "delivery_status": "DRAFT_NOT_FOR_PUBLICATION",
+  "publication_authorized": false,
+  "support_ready": false,
+  "ai_disclosure": "AI tools assisted drafting and formatting; final publisher review and owner authorization remain required before sale.",
+  "license_scope": "ONE_PURCHASER_OWNED_BUSINESS_INTERNAL_USE_NO_REDISTRIBUTION",
+  "build_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:scripts/phase204-internal-commerce-build-assets.mjs",
+  "product_source_reference": "mykai05/ENTRAL-0.2@1db16dfd279ad29b0a1fbab133cab43a2d0a56a0:commerce/products/rivetrelay/source/billing-collections-accelerator",
+  "files": [
+    {
+      "file_name": "RivetRelay_BILLING_COLLECTIONS_ACCELERATOR_Guide.pdf",
+      "byte_size": 130653,
+      "content_sha256": "4d21bcb270f7626f2172b31659e70f501d0c9c98417d9ca28745a2835c1f2628",
+      "roles": [
+        "FINAL_DELIVERY",
+        "INSTRUCTIONS",
+        "IMPLEMENTATION_GUIDANCE",
+        "SUPPORT_INSTRUCTIONS",
+        "LICENSE_TERMS",
+        "VERSION_INFORMATION"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_BILLING_COLLECTIONS_ACCELERATOR_Tracker.xlsx",
+      "byte_size": 54581,
+      "content_sha256": "9cb7a8fc6e5e36b46e26f5fa397282cbc56e3143c5a1c053f0b705dbfd0a6c4d",
+      "roles": [
+        "TRACKING_TOOL",
+        "EDITABLE_SOURCE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_BILLING_COLLECTIONS_ACCELERATOR_Fictional_Example.csv",
+      "byte_size": 2702,
+      "content_sha256": "fa9e2405c8cf0df112ec881d9cd8e305e3c6ea4d856dbdecb9e20ace09795004",
+      "roles": [
+        "EXAMPLE"
+      ]
+    },
+    {
+      "file_name": "RivetRelay_BILLING_COLLECTIONS_ACCELERATOR_Editable_Source.zip",
+      "byte_size": 13040,
+      "content_sha256": "03ea83bccdab795564123a939cab80284a33fa35fa79c1b37c41e7e5b858f497",
+      "roles": [
+        "EDITABLE_SOURCE"
+      ]
+    }
+  ]
+}

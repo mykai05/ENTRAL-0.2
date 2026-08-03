@@ -1,1 +1,13 @@
 frontend/tests/goldens/*.svg text eol=lf
+.gitattributes text eol=lf
+commerce/products/rivetrelay/source/** text eol=lf
+commerce/products/rivetrelay/delivery/**/*.json text eol=lf
+commerce/products/rivetrelay/delivery/**/*.csv text eol=lf
+commerce/products/rivetrelay/delivery/**/*.pdf binary
+commerce/products/rivetrelay/delivery/**/*.xlsx binary
+commerce/products/rivetrelay/delivery/**/*.zip binary
+docs/evidence/phase204/internal-commerce/**/*.md text eol=lf
+docs/evidence/phase204/internal-commerce/**/*.json text eol=lf
+docs/evidence/phase204/internal-commerce/**/*.html text eol=lf
+scripts/phase204-*.mjs text eol=lf
+scripts/lib/phase204-*.mjs text eol=lf

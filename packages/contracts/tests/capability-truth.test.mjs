@@ -485,6 +485,7 @@ test("lifecycle transitions are versioned, audited requests and cannot skip veri
     requested_at: now
   };
   assert.doesNotThrow(() => assertCapabilityLifecycleTransitionRequest(request));
+  assert.doesNotThrow(() => assertCapabilityLifecycleTransitionRequest({ ...request, release_version: "phase-204" }));
   assert.throws(
     () => assertCapabilityLifecycleTransitionRequest({ ...request, to_state: "ACTIVE" }),
     (error) => error instanceof ContractError && error.code === "INVALID_CAPABILITY_TRANSITION"
@@ -492,6 +493,10 @@ test("lifecycle transitions are versioned, audited requests and cannot skip veri
   assert.throws(
     () => assertCapabilityLifecycleTransitionRequest({ ...request, release_version: "" }),
     ContractError
+  );
+  assert.throws(
+    () => assertCapabilityLifecycleTransitionRequest({ ...request, release_version: "phase-205" }),
+    (error) => error instanceof ContractError && error.code === "INVALID_RELEASE_VERSION"
   );
 
   const responseSnapshot = sellableCapability({

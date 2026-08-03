@@ -3,6 +3,7 @@ import {
   CAPABILITY_ENVIRONMENTS,
   CAPABILITY_LIFECYCLE_STATES,
   CAPABILITY_PRICING_ELIGIBILITY,
+  CAPABILITY_RELEASE_VERSIONS,
   PRODUCT_CLAIM_SURFACES,
   ContractError,
   assertCapabilityLifecycleTransitionRequest,
@@ -62,7 +63,7 @@ const transitionSchema = z.object({
   business_id: z.string().uuid().nullable(),
   correlation_id: z.string().uuid(),
   idempotency_key: z.string().trim().min(12).max(255),
-  release_version: z.literal("phase-203"),
+  release_version: z.enum(CAPABILITY_RELEASE_VERSIONS),
   requested_at: z.string().datetime()
 }).strict();
 

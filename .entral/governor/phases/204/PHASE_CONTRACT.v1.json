@@ -1,0 +1,450 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 204,
+  "title": "Revenue Activation and Evidence Kernel",
+  "review_policy": "CONDITIONAL",
+  "objective": "Activate one evidence-bound internal commerce business, deliver the smallest real high-ticket prospecting system, and apply bounded tracing, budget, reliability, and stop controls to both revenue workflows without building speculative general-purpose platforms.",
+  "owner_amendment": {
+    "decision_id": "OWNER-P204-REVENUE-KERNEL-20260803",
+    "attestation_path": ".entral/governor/phases/204/OWNER_PHASE_AMENDMENT_ATTESTATION.v1.json",
+    "attestation_sha256": "4b6686ca77aae2921db8be6fc99102984369464197ec4eb2c80b303218955e39",
+    "supersedes": "ENTRAL-PHASE-204-MINIMUM-EVALUATION-TRACING-BUDGET-INJECTION-DEFENSE-AND-RELIABILITY-KERNEL.zip",
+    "supersession_reason": "The owner approved a revenue-first Phase 204 that applies the minimum evaluation kernel to two concrete revenue workflows and forbids execution of the prior generic package unchanged.",
+    "source_package_validation": {
+      "outer_package_sha256": "0455050c7c0d4d9383669a46f7a8b6a843fc593e75beebf0b9310ad9f2115075",
+      "superseded_phase_package_sha256": "a8d5a49af85ec04f9ed0a90b94d9e808913568a80f14e6d48019e215158998d2",
+      "manifest_entries_passed": 17,
+      "manifest_entries_failed": 0
+    }
+  },
+  "task_packet_order": [
+    {
+      "sequence": 1,
+      "task_packet_id": "P204-INTERNAL-COMMERCE-ACTIVATION-001",
+      "objective": "Create canonical internal business SP-COMMERCE-001, truthfully activate only evidence-complete internal commerce capabilities, produce four finished contractor-operation products and one bundle, and place the approved line on one real Etsy storefront or a documented-blocker Gumroad fallback.",
+      "must_pass_before_next": true
+    },
+    {
+      "sequence": 2,
+      "task_packet_id": "P204-SOVEREIGN-HIGH-TICKET-PROSPECTING-MVP-001",
+      "objective": "Implement a separate public-evidence prospect domain and a human-approved, suppression-aware MVP for no more than 25 specialty-contractor and field-service prospects, including audit booking, proposal preparation, and explicit conversion into canonical client state.",
+      "must_pass_before_next": true
+    },
+    {
+      "sequence": 3,
+      "task_packet_id": "P204-REVENUE-EVIDENCE-EVALUATION-001",
+      "objective": "Apply source lineage, traces, actual cost attribution, bounded budgets, reliability controls, escalation, and outcome measurement to the two implemented revenue workflows.",
+      "must_pass_before_certification": true
+    }
+  ],
+  "internal_commerce_contract": {
+    "capability_truth": {
+      "audit_all_catalogued_records": true,
+      "mass_promotion_forbidden": true,
+      "required_transition_sequence": [
+        "IMPLEMENTED",
+        "UNIT_VERIFIED",
+        "INTEGRATION_VERIFIED",
+        "CANARY_VERIFIED",
+        "ACTIVE"
+      ],
+      "activation_scope": "SOVEREIGN_PROTOCOL_INTERNAL_TENANT_PRODUCTION_ONLY",
+      "internal_active_does_not_imply_sellable": true,
+      "incomplete_or_simulated_remains_below_active": true
+    },
+    "canonical_business": {
+      "internal_code": "SP-COMMERCE-001",
+      "working_name": "Contractor Operations Products",
+      "placement": "ENTRAL_HEART_COMMERCE_AUTHORITY",
+      "authority_assignments": [
+        "EXISTING_COMMERCE_MARSHAL",
+        "EXISTING_DIGITAL_PRODUCTS_GENERAL",
+        "ONE_BUSINESS_COMMANDER",
+        "MISSION_CREATED_SOLDIERS"
+      ],
+      "duplicate_hierarchy_forbidden": true,
+      "permanent_idle_agent_fleet_forbidden": true,
+      "required_surfaces": [
+        "BUSINESSES",
+        "COMMAND_WHEN_MATERIAL",
+        "HEART_2D",
+        "HEART_3D",
+        "BUSINESS_FULL_RECORD"
+      ],
+      "canonical_record_families": [
+        "BUSINESS",
+        "ENTITY",
+        "MISSION",
+        "TASK",
+        "EVIDENCE",
+        "EVENT",
+        "AUTHORITY"
+      ]
+    },
+    "product_line": [
+      {
+        "name": "Lead Response and Estimate Follow-Up Kit",
+        "initial_test_price_usd": 29
+      },
+      {
+        "name": "Scope and Change-Order Control Pack",
+        "initial_test_price_usd": 49
+      },
+      {
+        "name": "Billing and Collections Accelerator",
+        "initial_test_price_usd": 49
+      },
+      {
+        "name": "Weekly Owner Command Dashboard",
+        "initial_test_price_usd": 39
+      },
+      {
+        "name": "Complete Contractor Control Bundle",
+        "initial_test_price_usd": 119
+      }
+    ],
+    "product_requirements": [
+      "PUBLIC_BRAND_SELECTED_FROM_CURRENT_MARKET_EVIDENCE",
+      "ORIGINAL_FINISHED_USABLE_ASSETS",
+      "EDITABLE_SOURCES_WHERE_APPLICABLE",
+      "FINAL_DELIVERY_FILES",
+      "INSTRUCTIONS_AND_IMPLEMENTATION_GUIDANCE",
+      "EXAMPLES_AND_TRACKING_TOOLS",
+      "VERSION_SUPPORT_LICENSE_AND_PERMITTED_USE",
+      "ORIGINALITY_LICENSING_CLAIMS_AI_DISCLOSURE_INTEGRITY_AND_DELIVERY_GATES",
+      "NO_EMPTY_TEMPLATE_SHELLS_GENERIC_PROMPT_COLLECTIONS_OR_UNFINISHED_FILES",
+      "NO_COPIED_CONTENT_OR_ASSETS_WITH_UNRESOLVED_LICENSING"
+    ],
+    "storefront": {
+      "primary": "ETSY",
+      "fallback": "GUMROAD_ONLY_FOR_DOCUMENTED_ETSY_ONBOARDING_BLOCKER",
+      "official_policy_and_fee_refresh_required_at_execution": true,
+      "first_external_publication_owner_approval_required": true,
+      "owner_approval_envelope": [
+        "STORE",
+        "PRODUCTS",
+        "PRICES",
+        "FILES",
+        "CLAIMS",
+        "PUBLICATION"
+      ],
+      "maximum_initial_setup_spend_usd": 150,
+      "initial_paid_advertising_budget_usd": 0,
+      "second_store_brand_or_ad_campaign_forbidden": true,
+      "credential_material_forbidden_from_repository_logs_and_model_context": true,
+      "post_approval_listing_maintenance": "ONLY_WITHIN_THE_EXACT_OWNER_APPROVED_PUBLICATION_ENVELOPE",
+      "early_release_gate": "DEPLOY_INTERNAL_FUNCTIONALITY_AFTER_TASKPACKET_1_TESTS_AND_ALLOW_STOREFRONT_PUBLICATION_AFTER_EXACT_OWNER_APPROVAL_WITHOUT_WAITING_FOR_TASKPACKETS_2_OR_3"
+    },
+    "real_operations": {
+      "provider_supported_imports": [
+        "LISTINGS",
+        "ORDERS",
+        "SALES",
+        "FEES",
+        "REFUNDS",
+        "DISPUTES",
+        "CUSTOMER_MESSAGES",
+        "DELIVERY_OUTCOMES",
+        "PAYOUTS"
+      ],
+      "replace_estimated_fees_with_provider_transactions": true,
+      "metrics": [
+        "GROSS_SALES",
+        "PLATFORM_FEES",
+        "PAYMENT_PROCESSING_FEES",
+        "REFUNDS",
+        "NET_RECEIPTS",
+        "CONTRIBUTION_MARGIN",
+        "CONVERSION",
+        "SUPPORT_VOLUME",
+        "PRODUCT_PERFORMANCE"
+      ],
+      "controls": [
+        "PAUSE",
+        "PUBLICATION_DISABLE",
+        "BUSINESS_KILL"
+      ],
+      "daily_summary_truth": "REAL_OR_EXPLICITLY_UNAVAILABLE_ONLY"
+    }
+  },
+  "prospecting_mvp_contract": {
+    "separate_domain": true,
+    "record_types": [
+      "ProspectCompany",
+      "ProspectContact",
+      "PublicEvidence",
+      "LeakageSignal",
+      "OpportunityScore",
+      "ContactEligibility",
+      "OutreachAttempt",
+      "FollowUp",
+      "AuditOpportunity",
+      "SuppressionRecord",
+      "ConversionBridgeRecord"
+    ],
+    "canonical_conversion_action": "CONVERT_PROSPECT_TO_CLIENT",
+    "initial_market": "SPECIALTY_CONTRACTORS_AND_FIELD_SERVICE_BUSINESSES",
+    "initial_priority": "OWNER_LED_OR_CLOSELY_HELD_BUSINESSES_WITH_HIGH_IMPLEMENTATION_VALUE_AND_DECISION_MAKER_ACCESSIBILITY",
+    "maximum_initial_prospects": 25,
+    "public_evidence_only_before_client_audit": true,
+    "evidence_fields": [
+      "SOURCE",
+      "URL",
+      "CAPTURE_TIME",
+      "HASH_OR_SCREENSHOT",
+      "OBSERVED_CONDITION",
+      "INFERENCE",
+      "ASSUMPTIONS",
+      "CONFIDENCE",
+      "VERIFICATION_STATE"
+    ],
+    "finding_states": [
+      "OBSERVED",
+      "INFERRED",
+      "CLIENT_CONFIRMED",
+      "DATA_VERIFIED",
+      "IMPLEMENTATION_VERIFIED",
+      "OUTCOME_VERIFIED",
+      "DISPROVEN"
+    ],
+    "exact_loss_without_internal_evidence_forbidden": true,
+    "public_leakage_snapshot": [
+      "TWO_TO_FIVE_OBSERVATIONS",
+      "SOURCES",
+      "WHY_IT_MAY_MATTER",
+      "LOW_EXPECTED_HIGH_RANGES",
+      "CONFIDENCE",
+      "VERIFICATION_INPUTS",
+      "NEXT_STEP",
+      "OPERATING_AUDIT_INVITATION"
+    ],
+    "scoring_factors": [
+      "EXPECTED_RECOVERABLE_VALUE",
+      "SERVICE_FIT",
+      "EVIDENCE_CONFIDENCE",
+      "URGENCY",
+      "DECISION_MAKER_REACHABILITY",
+      "PROBABLE_ENGAGEMENT_VALUE",
+      "SALES_CYCLE",
+      "IMPLEMENTATION_DIFFICULTY",
+      "DELIVERY_CAPACITY_COST",
+      "CASE_STUDY_VALUE"
+    ],
+    "human_approved_initial_outreach": true,
+    "initial_outreach_owner_approval_envelope": [
+      "OFFER",
+      "MESSAGE_FAMILY",
+      "CHANNELS",
+      "VOLUME",
+      "FIRST_CONTACT_BATCH"
+    ],
+    "complete_contact_eligibility_and_suppression": true,
+    "immediate_opt_out": true,
+    "prohibited_channels": [
+      "ROBOCALLING",
+      "PRERECORDED_CALLS",
+      "AUTOMATED_TEXT_CAMPAIGNS",
+      "PURCHASED_MASS_LISTS",
+      "HIGH_VOLUME_GENERIC_EMAIL"
+    ],
+    "first_offer": "ENTRAL_OPERATING_AUDIT",
+    "public_price_without_owner_approval_forbidden": true,
+    "proposal_framework": [
+      "LEAKAGE",
+      "RECOVERABLE_VALUE",
+      "OWNER_IMPACT",
+      "DIFFICULTY",
+      "ROI",
+      "PAYBACK",
+      "SCOPE",
+      "PAYMENT",
+      "CONFIDENTIALITY",
+      "CLIENT_DATA"
+    ],
+    "website_scope": "MINIMUM_TRUTHFUL_REQUEST_AN_AUDIT_ENTRY_POINT_ONLY",
+    "website_positioning": "Sovereign Protocol - Business repair powered by ENTRAL",
+    "website_requirements": [
+      "WHAT_SOVEREIGN_PROTOCOL_REPAIRS",
+      "WHAT_THE_OPERATING_AUDIT_PRODUCES",
+      "REQUEST_AN_AUDIT_ACTION",
+      "CONFIDENTIALITY_AND_EVIDENCE_LANGUAGE",
+      "NO_UNSUPPORTED_RESULTS_OR_CAPABILITY_CLAIMS"
+    ],
+    "acceptance_outputs": [
+      "TWENTY_FIVE_BOUNDED_PROSPECT_RECORDS",
+      "EVIDENCE_BACKED_QUALIFICATION",
+      "RANKED_NEXT_ACTIONS",
+      "HUMAN_APPROVED_OUTREACH_PREPARATION",
+      "SUPPRESSION",
+      "AUDIT_BOOKING_STATE",
+      "PROPOSAL_GENERATION",
+      "CLIENT_CONVERSION_ATTRIBUTION"
+    ]
+  },
+  "revenue_evidence_kernel_contract": {
+    "material_claim_lineage_required": true,
+    "trace_types": [
+      "RESEARCH",
+      "PRODUCT_GENERATION",
+      "ASSET_VERIFICATION",
+      "PROVIDER_PUBLICATION",
+      "OUTREACH_GENERATION",
+      "OWNER_APPROVAL",
+      "EXTERNAL_ACTION",
+      "ORDER",
+      "FEE",
+      "REFUND",
+      "AUDIT_BOOKING",
+      "PROPOSAL",
+      "CONVERSION",
+      "OUTCOME"
+    ],
+    "actual_cost_types": [
+      "MODEL",
+      "PROVIDER",
+      "LABOR",
+      "PLATFORM",
+      "AUTOMATION"
+    ],
+    "workflow_limits": [
+      "SPENDING",
+      "MESSAGE_VOLUME",
+      "PROVIDER_CALLS",
+      "RETRIES",
+      "FAILED_PUBLICATIONS",
+      "CUSTOMER_COMPLAINTS",
+      "REFUNDS",
+      "UNSUPPORTED_CLAIMS",
+      "DELIVERY_CAPACITY"
+    ],
+    "stop_conditions": [
+      "REPEATED_PROVIDER_FAILURE",
+      "UNCLEAR_LICENSING",
+      "UNSUPPORTED_FINANCIAL_CLAIMS",
+      "ABNORMAL_REFUNDS_OR_COMPLAINTS",
+      "BUDGET_EXCEEDED",
+      "ACCOUNT_SUSPENSION_RISK",
+      "DELIVERY_CAPACITY_EXHAUSTED",
+      "CREDENTIAL_OR_MFA_REQUIRED",
+      "UNAPPROVED_IRREVERSIBLE_PUBLICATION_OR_SPENDING"
+    ],
+    "outcomes": [
+      "LISTINGS_PUBLISHED",
+      "QUALIFIED_TRAFFIC",
+      "CONVERSION",
+      "SALES",
+      "NET_CONTRIBUTION",
+      "QUALIFIED_PROSPECTS",
+      "APPROVED_OUTREACH",
+      "REPLIES",
+      "AUDITS_BOOKED",
+      "PROPOSALS_SENT",
+      "WINS",
+      "REALIZED_ENGAGEMENT_REVENUE"
+    ],
+    "activity_is_not_revenue": true,
+    "internal_active_does_not_imply_software_sellable": true
+  },
+  "execution_policy": {
+    "implementation_model": "CODEX_5_6_SOL_XHIGH_ONLY",
+    "native_codex_xhigh_subagents": "ALLOWED_WHEN_MATERIALLY_USEFUL",
+    "single_writer_boundary": "ONE_WRITER_PER_MUTABLE_SCOPE",
+    "lead_authority": [
+      "ARCHITECTURE",
+      "INTEGRATION",
+      "RELEASE",
+      "CERTIFICATION"
+    ]
+  },
+  "tutorial_contract": "PRESERVE_EXISTING_TUTORIAL_AND_FILTER_EXISTING_CONTENT_BY_CAPABILITY_TRUTH_ONLY",
+  "owner_escalation_conditions": [
+    "CREDENTIAL_OR_MFA",
+    "DENIED_EXTERNAL_ACCESS",
+    "MATERIAL_SPENDING",
+    "IRREVERSIBLE_EXTERNAL_ACT",
+    "PRICING_LEGAL_OR_DATA_RIGHTS",
+    "PRODUCT_DEFINING_AMBIGUITY",
+    "PROTOCOL_REQUIRED_REVIEW"
+  ],
+  "release_requirements": [
+    "FIRST_INTERNAL_BUSINESS_EXISTS_CANONICALLY",
+    "REQUIRED_INTERNAL_COMMERCE_CAPABILITIES_ACTIVE_WITH_EVIDENCE",
+    "REAL_STOREFRONT_LIVE_OR_ONE_EXACT_OWNER_OR_PROVIDER_BLOCKER",
+    "FIVE_FINISHED_PRODUCT_OFFERS_EXIST",
+    "PROVIDER_SUPPORTED_ORDER_AND_FEE_INGESTION_VERIFIED",
+    "PROSPECTING_MVP_OPERATIONAL",
+    "EVIDENCE_AND_SUPPRESSION_CONTROLS_PASS",
+    "COMMAND_BUSINESSES_HEART_2D_AND_HEART_3D_TRUTHFULLY_DISPLAY_INTERNAL_BUSINESS",
+    "CURRENT_ORIGIN_MAIN_RECONCILED",
+    "COMPLETE_PHASE_SUITE_PASSED",
+    "PROTECTED_MAIN_INTEGRATED_AND_PUSHED",
+    "EXACT_MAIN_SHA_DEPLOYED_TO_FRONTEND_API_AND_WORKER",
+    "MIGRATIONS_AND_DATABASE_ROLES_VERIFIED",
+    "AUTHENTICATED_PRODUCTION_SMOKE_AND_STATE_READBACK",
+    "CONDITIONAL_GPT_PRO_REVIEW_RESOLVED",
+    "PHASE_204_RELEASE_MANIFEST_AND_ROLLBACK_RECORDED",
+    "PHASE_205_NOT_STARTED"
+  ],
+  "out_of_scope": [
+    "PRIOR_GENERIC_PHASE_204_PACKAGE_EXECUTED_UNCHANGED",
+    "TUTORIAL_EXPANSION_BEYOND_CAPABILITY_TRUTH_FILTERING",
+    "FULL_OPPORTUNITY_RADAR_GRAPH",
+    "FULL_PHASE_218_WEBSITE_REMODEL",
+    "SECOND_STORE_OR_BRAND",
+    "PAID_ADVERTISING",
+    "MASS_CAPABILITY_PROMOTION",
+    "MOCK_SAMPLE_PLACEHOLDER_FAKE_METRIC_NO_OP_OR_PRODUCTION_FALLBACK",
+    "NEW_REPOSITORY_SECURITY_SCAN",
+    "PHASE_205_OR_LATER_IMPLEMENTATION"
+  ],
+  "accepted_amendments": [
+    {
+      "amendment_id": "AMEND-IMP-bea698ba2540f0c8d57f995d-1",
+      "candidate_id": "IMP-bea698ba2540f0c8d57f995d",
+      "added_requirements": [
+        "Apply the evidence kernel only to the two implemented revenue workflows.",
+        "Execute P204-INTERNAL-COMMERCE-ACTIVATION-001 first.",
+        "Execute P204-REVENUE-EVIDENCE-EVALUATION-001 third.",
+        "Execute P204-SOVEREIGN-HIGH-TICKET-PROSPECTING-MVP-001 second.",
+        "Require owner approval before first external publication and preserve provider credential boundaries."
+      ],
+      "removed_requirements": [
+        "Execute the prior generic Phase 204 package unchanged."
+      ],
+      "affected_paths": [
+        ".entral/governor/phases/204/**",
+        ".entral/governor/tasks/P204-*.json",
+        "backend/src/**phase204**",
+        "docs/PHASE_204_*.md",
+        "frontend/**phase204**",
+        "packages/contracts/**phase204**",
+        "prisma/**phase_204**",
+        "scripts/phase204-*"
+      ],
+      "affected_contracts": [
+        "CapabilityTruth",
+        "ExecutionResult",
+        "PhaseContract",
+        "ReleaseManifest",
+        "TaskPacket"
+      ],
+      "acceptance_criteria": [
+        "Both revenue workflows have claim lineage, cost, budget, stop, and outcome controls.",
+        "Exact-SHA production deployment, authenticated readback, conditional review, and Phase 204 certification pass without Phase 205 work.",
+        "The canonical internal commerce business and required tenant-scoped capabilities are production-verified.",
+        "The prospecting MVP supports no more than 25 evidence-backed prospects with human-approved outreach and suppression.",
+        "The storefront is live after exact owner approval or one owner/provider blocker is recorded."
+      ],
+      "commercial_unlock": "Authorizes a bounded, evidence-controlled first product storefront and high-ticket audit acquisition workflow without declaring internal ENTRAL software sellable.",
+      "supersession_record": {
+        "supersedes": [
+          "ENTRAL-PHASE-204-MINIMUM-EVALUATION-TRACING-BUDGET-INJECTION-DEFENSE-AND-RELIABILITY-KERNEL.zip"
+        ],
+        "reason": "The owner explicitly replaced the unactivated generic package with the Revenue Activation and Evidence Kernel while retaining bounded evaluation requirements inside the third TaskPacket."
+      },
+      "owner_decision_id": "OWNER-P204-REVENUE-KERNEL-20260803",
+      "accepted_at": "2026-08-03T18:05:00.000Z"
+    }
+  ]
+}

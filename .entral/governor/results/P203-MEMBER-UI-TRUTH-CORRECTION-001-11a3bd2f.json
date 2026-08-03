@@ -1,0 +1,193 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P203-MEMBER-UI-TRUTH-CORRECTION-001-11a3bd2f",
+  "task_packet_id": "P203-MEMBER-UI-TRUTH-CORRECTION-001",
+  "phase": 203,
+  "outcome": "PASSED",
+  "commit_sha": "11a3bd2f563ca8fc46add7d156e62574725e8513",
+  "changed_files": [
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/lib/contracts.mjs",
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/release-control/phase-203/EVIDENCE_BUNDLE.json",
+    ".entral/governor/release-control/phase-203/RELEASE_CONTROL_EVIDENCE.json",
+    ".entral/governor/release-control/phase-203/RELEASE_CONTROL_PLAN.json",
+    ".entral/governor/releases/phase-203.json",
+    ".entral/governor/results/P203-CAPABILITY-TRUTH-REGISTRY-001-3bb48d19.json",
+    ".entral/governor/tasks/P203-MEMBER-UI-TRUTH-CORRECTION-001.json",
+    ".entral/governor/tests/governor.test.mjs",
+    ".entral/governor/tests/release-controller.test.mjs",
+    "docs/evidence/phase203/capability-truth/RELEASE_AUTHENTICATED_SMOKE_RECEIPT.json",
+    "docs/evidence/phase203/capability-truth/RELEASE_FEATURE_ACCEPTANCE.json",
+    "docs/evidence/phase203/capability-truth/RELEASE_MIGRATION_RECEIPT.json",
+    "docs/evidence/phase203/capability-truth/RELEASE_PRODUCTION_DEPLOYMENT_READBACK.json",
+    "docs/evidence/phase203/capability-truth/RELEASE_PRODUCTION_MEMBER_JOURNEY.json",
+    "docs/evidence/phase203/capability-truth/RELEASE_PRODUCTION_STATE_READBACK.json",
+    "docs/evidence/phase203/capability-truth/RELEASE_PROTECTED_MAIN_RECEIPT.json",
+    "docs/evidence/phase203/capability-truth/RELEASE_ROLLBACK_READINESS_RECEIPT.json",
+    "docs/evidence/phase203/capability-truth/RELEASE_TEST_RECEIPTS.json",
+    "docs/evidence/phase203/capability-truth/screenshots/businesses-1440px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/businesses-1920px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/businesses-360px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/businesses-390px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/businesses-412px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/businesses-430px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/command-1440px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/command-1920px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/command-360px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/command-390px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/command-412px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/command-430px.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-1440px-landscape-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-1440px-landscape-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-1920px-landscape-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-1920px-landscape-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-360px-landscape-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-360px-landscape-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-360px-portrait-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-360px-portrait-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-390px-landscape-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-390px-landscape-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-390px-portrait-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-390px-portrait-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-412px-landscape-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-412px-landscape-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-412px-portrait-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-412px-portrait-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-430px-landscape-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-430px-landscape-3d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-430px-portrait-2d.png",
+    "docs/evidence/phase203/capability-truth/screenshots/universe-430px-portrait-3d.png",
+    "docs/PHASE_203_CAPABILITY_TRUTH_VERIFICATION.md",
+    "e2e/entral.e2e.mjs",
+    "e2e/production-member-journey.mjs",
+    "frontend/app/phase180.css",
+    "frontend/components/CanonicalGraphWorkspace.tsx",
+    "frontend/components/CanonicalMemberShell.tsx",
+    "frontend/components/CanonicalPortfolioDashboard.tsx",
+    "frontend/components/CanonicalUniverse3DGraph.tsx",
+    "frontend/components/CanonicalUniverseGraph.tsx",
+    "frontend/components/NeuronsCommandCenter.tsx",
+    "frontend/components/Phase200InteractionNavigation.tsx",
+    "frontend/tests/CanonicalPortfolio.test.tsx",
+    "frontend/tests/CommandCenterGraphIntegrity.test.ts",
+    "frontend/tests/MemberCommandCenterClient.test.tsx",
+    "frontend/tests/Phase170ResponsiveContract.test.ts",
+    "frontend/tests/Phase195Canonical3DRenderer.test.ts",
+    "frontend/tests/Phase195MemberShellRegression.test.ts",
+    "frontend/tests/Phase200InteractionLayer.test.tsx",
+    "scripts/phase199-baseline-gates.test.mjs",
+    "scripts/phase200-interaction-gates.test.mjs",
+    "scripts/phase203-production-graph-recovery-gates.test.mjs"
+  ],
+  "tests": [
+    {
+      "command": "pnpm contracts:verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm prisma:generate",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase203",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase203:graph-recovery",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase202",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase200",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm --filter @entral/backend test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm --filter @entral/frontend test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm lint",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:e2e",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm build",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm release:check",
+      "status": "PASSED"
+    },
+    {
+      "command": "exact-head push CI 30833992153 and pull-request CI 30833996710",
+      "status": "PASSED"
+    },
+    {
+      "command": "protected-main CI 30834996449 verify job 91757890720",
+      "status": "PASSED"
+    },
+    {
+      "command": "exact-SHA Vercel frontend, Railway API, and Railway worker deployment readback",
+      "status": "PASSED"
+    },
+    {
+      "command": "production Prisma migration APPLY and database role APPLY",
+      "status": "PASSED"
+    },
+    {
+      "command": "separate fresh production migration, role, and conservative-import AUDIT",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:e2e:production-member at 360, 390, 412, 430, 1440, and 1920 CSS pixels",
+      "status": "PASSED"
+    },
+    {
+      "command": "independent read-only audit of 32 production screenshots and collision evidence",
+      "status": "PASSED"
+    },
+    {
+      "command": "release-controller HIGH-risk evaluation",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm governor verify",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "DEPLOYED_EXACT_MAIN_PRODUCTION_VERIFIED",
+    "main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+    "release_tag": "phase-203",
+    "frontend_deployment_id": "dpl_65xstFttgWYZadD8vpx1BbwvN9Dr",
+    "api_deployment_id": "f7ee0e60-9fa6-4048-bad1-22b3d111e038",
+    "worker_deployment_id": "f41994af-8d3d-4970-8241-a71c16608b8a",
+    "migration_status": "APPLIED_AND_FRESH_AUDIT_PASSED",
+    "authenticated_member_journey": "PASSED",
+    "release_controller": "PASS",
+    "certification_status": "READY"
+  },
+  "result_fingerprint": "77dd997ced08ebf5d9168cf56648a383ddb8a3bbd626028d9029a57d871c9468",
+  "completed_at": "2026-08-03T17:46:00.000Z"
+}

@@ -8,6 +8,7 @@ export * from "./interaction.js";
 export * from "./identity-authority.js";
 export * from "./member.js";
 export * from "./personality.js";
+export * from "./phase204-internal-commerce.js";
 export * from "./portfolio.js";
 export * from "./runtime.js";
 export * from "./release.js";
