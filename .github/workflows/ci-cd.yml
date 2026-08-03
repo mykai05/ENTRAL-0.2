@@ -102,6 +102,11 @@ jobs:
           RUN_POSTGRES_INTEGRATION: "1"
           TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
         run: pnpm test:phase203:graph-recovery
+      - name: Verify Phase 203 Capability Truth and publication gateway
+        env:
+          RUN_POSTGRES_INTEGRATION: "1"
+          TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
+        run: pnpm test:phase203
       - name: Verify Phase 195 backup, restore, forward recovery, and restart
         env:
           PHASE195_RECOVERY_GATE_CONFIRM: DISPOSABLE_ONLY
