@@ -896,13 +896,19 @@ export function validateReleaseManifest(value) {
       320,
       10_000
     ));
-    for (const requiredWidth of [360, 390, 412, 430]) {
+    for (const requiredWidth of [360, 390, 412, 430, 1440, 1920]) {
       if (!journey.viewport_widths.includes(requiredWidth)) {
         fail("INCOMPLETE_MEMBER_VIEWPORTS", `Authenticated member journey is missing the ${requiredWidth}px viewport`);
       }
     }
     if (!journey.viewport_widths.some((width) => width >= 1024)) {
       fail("MISSING_DESKTOP_MEMBER_JOURNEY", "Authenticated member journey requires a desktop viewport");
+    }
+    if (
+      journey.destination_visual_evidence_verified !== true
+      || journey.screenshot_collision_evidence_verified !== true
+    ) {
+      fail("UNVERIFIED_MEMBER_VISUAL_EVIDENCE", "Command, Businesses, and graph collision screenshots must be verified before release");
     }
     assertArray(journey.viewport_observations, "release_manifest.authenticated_member_journey.viewport_observations", {
       minimum: journey.viewport_widths.length,
@@ -936,11 +942,173 @@ export function validateReleaseManifest(value) {
       assertInteger(observation.sync_errors, `${field}.sync_errors`, 0, 0);
       assertSha256(observation.entity_set_sha256, `${field}.entity_set_sha256`);
       assertSha256(observation.edge_set_sha256, `${field}.edge_set_sha256`);
+      assertArray(observation.destination_visual_evidence, `${field}.destination_visual_evidence`, {
+        minimum: 2,
+        maximum: 2
+      });
+      const visibleDestinations = new Set();
+      const destinationScreenshotHashes = new Set();
+      observation.destination_visual_evidence.forEach((evidence, evidenceIndex) => {
+        const evidenceField = `${field}.destination_visual_evidence[${evidenceIndex}]`;
+        assertRecord(evidence, evidenceField);
+        assertEnum(evidence.destination, ["COMMAND", "BUSINESSES"], `${evidenceField}.destination`);
+        assertRelativePath(evidence.screenshot_file, `${evidenceField}.screenshot_file`);
+        assertSha256(evidence.screenshot_sha256, `${evidenceField}.screenshot_sha256`);
+        assertInteger(evidence.viewport_width, `${evidenceField}.viewport_width`, 320, 10_000);
+        assertInteger(evidence.viewport_height, `${evidenceField}.viewport_height`, 1, 10_000);
+        assertInteger(evidence.obscuring_surface_count, `${evidenceField}.obscuring_surface_count`, 0, 0);
+        assertRecord(evidence.root_bounds, `${evidenceField}.root_bounds`);
+        for (const coordinate of ["bottom", "height", "left", "right", "top", "width"]) {
+          assertNumber(evidence.root_bounds[coordinate], `${evidenceField}.root_bounds.${coordinate}`, -1_000_000, 1_000_000);
+        }
+        if (
+          visibleDestinations.has(evidence.destination)
+          || destinationScreenshotHashes.has(evidence.screenshot_sha256)
+          || evidence.viewport_width !== observation.viewport_width
+          || evidence.screenshot_file !== `screenshots/${evidence.destination.toLowerCase()}-${observation.viewport_width}px.png`
+          || evidence.root_bounds.width <= 1 || evidence.root_bounds.height <= 1
+          || evidence.root_bounds.right <= 0 || evidence.root_bounds.left >= evidence.viewport_width
+          || evidence.root_bounds.bottom <= 0 || evidence.root_bounds.top >= evidence.viewport_height
+        ) {
+          fail("INVALID_DESTINATION_VISUAL_EVIDENCE", "Each viewport requires visibly unobscured, distinct, width-bound Command and Businesses screenshots");
+        }
+        visibleDestinations.add(evidence.destination);
+        destinationScreenshotHashes.add(evidence.screenshot_sha256);
+      });
+      if (visibleDestinations.size !== 2) {
+        fail("INCOMPLETE_DESTINATION_VISUAL_EVIDENCE", "Each viewport requires both Command and Businesses screenshots");
+      }
       assertRecord(observation.destination_sync_errors, `${field}.destination_sync_errors`);
       for (const destination of requiredDestinations) {
         assertInteger(observation.destination_sync_errors[destination], `${field}.destination_sync_errors.${destination}`, 0, 0);
       }
       const mobile = observation.viewport_width < 1024;
+      assertArray(observation.graph_presentation_evidence, `${field}.graph_presentation_evidence`, {
+        minimum: mobile ? 4 : 2,
+        maximum: mobile ? 4 : 2
+      });
+      const graphPresentations = new Set();
+      observation.graph_presentation_evidence.forEach((evidence, evidenceIndex) => {
+        const evidenceField = `${field}.graph_presentation_evidence[${evidenceIndex}]`;
+        assertRecord(evidence, evidenceField);
+        assertEnum(evidence.dimension, ["2D", "3D"], `${evidenceField}.dimension`);
+        assertEnum(evidence.orientation, ["portrait", "landscape"], `${evidenceField}.orientation`);
+        assertBoolean(evidence.collision_free, `${evidenceField}.collision_free`);
+        assertBoolean(evidence.focus_bound_to_selected_entity, `${evidenceField}.focus_bound_to_selected_entity`);
+        assertBoolean(evidence.protected_focal_region_clear, `${evidenceField}.protected_focal_region_clear`);
+        assertRelativePath(evidence.screenshot_file, `${evidenceField}.screenshot_file`);
+        assertSha256(evidence.screenshot_sha256, `${evidenceField}.screenshot_sha256`);
+        assertInteger(evidence.viewport_width, `${evidenceField}.viewport_width`, 320, 10_000);
+        assertNumber(evidence.stage_height, `${evidenceField}.stage_height`, 1, 10_000);
+        assertNumber(evidence.stage_width, `${evidenceField}.stage_width`, 1, 10_000);
+        const key = `${evidence.dimension}:${evidence.orientation}`;
+        if (
+          graphPresentations.has(key)
+          || evidence.viewport_width !== observation.viewport_width
+          || evidence.screenshot_file !== `screenshots/universe-${observation.viewport_width}px-${evidence.orientation}-${evidence.dimension.toLowerCase()}.png`
+          || evidence.collision_free !== true
+          || evidence.focus_bound_to_selected_entity !== true
+          || evidence.protected_focal_region_clear !== true
+        ) {
+          fail("INVALID_GRAPH_PRESENTATION_EVIDENCE", "Every graph screenshot must be unique, width-bound, collision-free, and focused on the selected canonical entity");
+        }
+        if (evidence.dimension === "2D") {
+          assertInteger(evidence.minimap_label_collision_count, `${evidenceField}.minimap_label_collision_count`, 0, 0);
+          if (evidence.minimap_visible !== true) {
+            fail("INVALID_GRAPH_PRESENTATION_EVIDENCE", "2D graph evidence must exercise the visible minimap");
+          }
+          assertRecord(evidence.minimap_bounds, `${evidenceField}.minimap_bounds`);
+          for (const coordinate of ["bottom", "left", "right", "top"]) {
+            assertNumber(evidence.minimap_bounds[coordinate], `${evidenceField}.minimap_bounds.${coordinate}`);
+          }
+          assertArray(evidence.rendered_label_bounds, `${evidenceField}.rendered_label_bounds`, { minimum: 1, maximum: 300 });
+          assertInteger(evidence.rendered_label_count, `${evidenceField}.rendered_label_count`, 1, 300);
+          assertSha256(evidence.rendered_label_bounds_sha256, `${evidenceField}.rendered_label_bounds_sha256`);
+          if (
+            evidence.rendered_label_count !== evidence.rendered_label_bounds.length
+            || evidence.rendered_label_bounds_sha256 !== evidenceBindingSha256(evidence.rendered_label_bounds)
+            || evidence.minimap_bounds.right <= evidence.minimap_bounds.left
+            || evidence.minimap_bounds.bottom <= evidence.minimap_bounds.top
+            || evidence.minimap_bounds.right > evidence.stage_width
+            || evidence.minimap_bounds.bottom > evidence.stage_height
+          ) {
+            fail("INVALID_GRAPH_PRESENTATION_EVIDENCE", "2D minimap and rendered-label evidence must be positive, contained, complete, and hash-bound");
+          }
+          evidence.rendered_label_bounds.forEach((bounds, boundsIndex) => {
+            const boundsField = `${evidenceField}.rendered_label_bounds[${boundsIndex}]`;
+            assertRecord(bounds, boundsField);
+            for (const coordinate of ["bottom", "left", "right", "top"]) {
+              assertNumber(bounds[coordinate], `${boundsField}.${coordinate}`);
+            }
+            if (
+              bounds.right <= bounds.left || bounds.bottom <= bounds.top
+              || bounds.left < evidence.minimap_bounds.right
+                && bounds.right > evidence.minimap_bounds.left
+                && bounds.top < evidence.minimap_bounds.bottom
+                && bounds.bottom > evidence.minimap_bounds.top
+            ) {
+              fail("GRAPH_PRESENTATION_COLLISION", "Rendered 2D labels must have positive bounds and remain outside the visible minimap");
+            }
+          });
+        } else if (evidence.minimap_label_collision_count !== null) {
+          fail("INVALID_GRAPH_PRESENTATION_EVIDENCE", "3D graph evidence cannot claim a 2D minimap collision measurement");
+        } else if (
+          evidence.minimap_bounds !== null
+          || evidence.minimap_visible !== null
+          || evidence.rendered_label_bounds !== null
+          || evidence.rendered_label_bounds_sha256 !== null
+          || evidence.rendered_label_count !== null
+        ) {
+          fail("INVALID_GRAPH_PRESENTATION_EVIDENCE", "3D graph evidence cannot carry 2D minimap or rendered-label measurements");
+        }
+        graphPresentations.add(key);
+      });
+      const requiredPresentations = mobile
+        ? ["2D:portrait", "3D:portrait", "2D:landscape", "3D:landscape"]
+        : ["2D:landscape", "3D:landscape"];
+      if (requiredPresentations.some((presentation) => !graphPresentations.has(presentation))) {
+        fail("INCOMPLETE_GRAPH_PRESENTATION_EVIDENCE", "Every required graph dimension and orientation needs collision-checked screenshot evidence");
+      }
+      if (mobile) {
+        if (observation.desktop_layout_evidence !== null) {
+          fail("INVALID_MOBILE_GRAPH_LAYOUT_EVIDENCE", "Mobile viewport evidence cannot claim a desktop panel layout");
+        }
+      } else {
+        assertRecord(observation.desktop_layout_evidence, `${field}.desktop_layout_evidence`);
+        assertEnum(observation.desktop_layout_evidence.layout, ["side-by-side"], `${field}.desktop_layout_evidence.layout`);
+        assertRecord(observation.desktop_layout_evidence.viewport, `${field}.desktop_layout_evidence.viewport`);
+        assertNumber(observation.desktop_layout_evidence.viewport.height, `${field}.desktop_layout_evidence.viewport.height`, 1, 10_000);
+        assertNumber(observation.desktop_layout_evidence.viewport.width, `${field}.desktop_layout_evidence.viewport.width`, 1, 10_000);
+        for (const panel of ["panels", "twoDPanel", "threeDPanel", "twoD", "threeD"]) {
+          assertRecord(observation.desktop_layout_evidence[panel], `${field}.desktop_layout_evidence.${panel}`);
+          for (const coordinate of ["bottom", "height", "left", "right", "top", "width"]) {
+            assertNumber(observation.desktop_layout_evidence[panel][coordinate], `${field}.desktop_layout_evidence.${panel}.${coordinate}`, -1_000_000, 1_000_000);
+          }
+        }
+        const { panels, twoD, twoDPanel, threeD, threeDPanel, viewport } = observation.desktop_layout_evidence;
+        const contained = (inner, outer) => inner.left >= outer.left - 2
+          && inner.right <= outer.right + 2
+          && inner.top >= outer.top - 2
+          && inner.bottom <= outer.bottom + 2;
+        const panelGap = threeDPanel.left - twoDPanel.right;
+        const stageVerticalOverlap = Math.min(twoD.bottom, threeD.bottom) - Math.max(twoD.top, threeD.top);
+        if (
+          viewport.width !== observation.viewport_width
+          || [panels, twoDPanel, threeDPanel, twoD, threeD].some((box) => box.width <= 1 || box.height <= 1)
+          || Math.abs(twoDPanel.top - threeDPanel.top) > 4
+          || twoDPanel.right > threeDPanel.left + 2
+          || panelGap > panels.width * 0.08
+          || twoDPanel.width < panels.width * 0.35
+          || threeDPanel.width < panels.width * 0.35
+          || stageVerticalOverlap < Math.min(twoD.height, threeD.height) * 0.5
+          || !contained(twoDPanel, panels) || !contained(threeDPanel, panels)
+          || !contained(twoD, twoDPanel) || !contained(threeD, threeDPanel)
+          || twoD.right <= 0 || twoD.left >= viewport.width || twoD.bottom <= 0 || twoD.top >= viewport.height
+          || threeD.right <= 0 || threeD.left >= viewport.width || threeD.bottom <= 0 || threeD.top >= viewport.height
+        ) {
+          fail("INVALID_DESKTOP_SIDE_BY_SIDE_EVIDENCE", "Desktop graph panels and stages must be visibly, measurably side by side and contained");
+        }
+      }
       if (
         observation.two_d_loaded !== true || observation.three_d_loaded !== true
         || observation.renderer_parity_verified !== true || observation.renderer_state_preserved !== true

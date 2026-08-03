@@ -92,6 +92,10 @@ test("all later releases require a real authenticated production member journey"
   assert.match(journey, /authorizedEntityIds/);
   assert.match(journey, /authorizedEdgeIds/);
   assert.match(journey, /Command canonical totals/);
+  assert.match(journey, /destination_visual_evidence/);
+  assert.match(journey, /data-layout="side-by-side"/);
+  assert.match(journey, /canonical-minimap-label-collision-count/);
+  assert.match(journey, /const widths = \[360, 390, 412, 430, 1440, 1920\]/);
   assert.match(journey, /assertNoCanonicalSyncError\(page, `\$\{width\}px Tutorial`\)/);
   assert.doesNotMatch(journey, /\/api\/v1\/me\b/);
   assert.doesNotMatch(journey, /page\.route\(|route\.fulfill\(/);

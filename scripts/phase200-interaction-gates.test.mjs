@@ -151,6 +151,10 @@ test("Both graph renderers preserve collision avoidance, selected lineage emphas
     read("frontend/components/CanonicalGraphWorkspace.tsx")
   ]);
   assert.match(twoD, /occupiedLabels/);
+  assert.match(twoD, /minimapBounds \? \[minimapBounds\] : \[\]/);
+  assert.match(twoD, /canonical2DLabelBoundsAccepted\(bounds, occupiedLabels\)/);
+  assert.match(twoD, /canonicalRenderedLabelBounds/);
+  assert.match(twoD, /canonicalMinimapLabelCollisionCount/);
   assert.match(twoD, /lineage_emphasis/);
   assert.match(twoD, /dimUnrelated && unrelated/);
   assert.match(threeD, /const occupied:/);

@@ -392,35 +392,83 @@ test("Phase 197 ReleaseManifest requires compatible dual repository and controll
   assert.throws(() => validateReleaseManifest({ ...manifest, repositories: manifest.repositories.slice(0, 1) }), (error) => error.code === "INVALID_CONTRACT");
   assert.throws(() => validateReleaseManifest({ ...manifest, release_controller: { ...manifest.release_controller, health_status: "FAILED" } }), (error) => error.code === "INVALID_ENUM");
 
-  const viewportWidths = [360, 390, 412, 430, 1440];
-  const viewportObservations = viewportWidths.map((viewportWidth) => ({
-    business_count: 0,
-    businesses_state: "EMPTY_CANONICAL",
-    command_canonical_data_verified: true,
-    desktop_side_by_side: viewportWidth >= 1024,
-    destination_sync_errors: {
-      BUSINESSES: 0,
-      COMMAND: 0,
-      INFRASTRUCTURE: 0,
-      TUTORIAL: 0,
-      UNIVERSE_2D: 0,
-      UNIVERSE_3D: 0
-    },
-    edge_count: 8,
-    edge_set_sha256: SHA.rollback,
-    entity_count: 9,
-    entity_set_sha256: SHA.receipt,
-    event_sequence: 399,
-    mobile_single_renderer: viewportWidth < 1024,
-    renderer_parity_verified: true,
-    rendered_subset_authorized: true,
-    renderer_state_preserved: true,
-    selected_entity_authorized: true,
-    sync_errors: 0,
-    three_d_loaded: true,
-    two_d_loaded: true,
-    viewport_width: viewportWidth
-  }));
+  const viewportWidths = [360, 390, 412, 430, 1440, 1920];
+  const viewportObservations = viewportWidths.map((viewportWidth) => {
+    const mobile = viewportWidth < 1024;
+    const renderedLabelBounds = [{ bottom: 40, left: 20, right: 80, top: 20 }];
+    const graphPresentation = (dimension, orientation) => ({
+      collision_free: true,
+      dimension,
+      focus_bound_to_selected_entity: true,
+      minimap_bounds: dimension === "2D" ? { bottom: 580, left: 270, right: 386, top: 498 } : null,
+      minimap_label_collision_count: dimension === "2D" ? 0 : null,
+      minimap_visible: dimension === "2D" ? true : null,
+      orientation,
+      protected_focal_region_clear: true,
+      rendered_label_bounds: dimension === "2D" ? renderedLabelBounds : null,
+      rendered_label_bounds_sha256: dimension === "2D" ? sha256(renderedLabelBounds) : null,
+      rendered_label_count: dimension === "2D" ? renderedLabelBounds.length : null,
+      screenshot_file: `screenshots/universe-${viewportWidth}px-${orientation}-${dimension.toLowerCase()}.png`,
+      screenshot_sha256: sha256(`universe:${viewportWidth}:${orientation}:${dimension}`),
+      stage_height: 600,
+      stage_width: 400,
+      viewport_width: viewportWidth
+    });
+    return {
+      business_count: 0,
+      businesses_state: "EMPTY_CANONICAL",
+      command_canonical_data_verified: true,
+      desktop_side_by_side: !mobile,
+      desktop_layout_evidence: mobile ? null : {
+        layout: "side-by-side",
+        panels: { bottom: 900, height: 800, left: 0, right: 1200, top: 100, width: 1200 },
+        threeD: { bottom: 800, height: 600, left: 620, right: 1190, top: 200, width: 570 },
+        threeDPanel: { bottom: 900, height: 800, left: 610, right: 1200, top: 100, width: 590 },
+        twoD: { bottom: 800, height: 600, left: 10, right: 580, top: 200, width: 570 },
+        twoDPanel: { bottom: 900, height: 800, left: 0, right: 590, top: 100, width: 590 },
+        viewport: { height: 1000, width: viewportWidth }
+      },
+      destination_visual_evidence: ["COMMAND", "BUSINESSES"].map((destination) => ({
+        destination,
+        obscuring_surface_count: 0,
+        root_bounds: { bottom: 800, height: 700, left: 0, right: viewportWidth, top: 100, width: viewportWidth },
+        screenshot_file: `screenshots/${destination.toLowerCase()}-${viewportWidth}px.png`,
+        screenshot_sha256: sha256(`${destination}:${viewportWidth}`),
+        viewport_height: 1000,
+        viewport_width: viewportWidth
+      })),
+      destination_sync_errors: {
+        BUSINESSES: 0,
+        COMMAND: 0,
+        INFRASTRUCTURE: 0,
+        TUTORIAL: 0,
+        UNIVERSE_2D: 0,
+        UNIVERSE_3D: 0
+      },
+      edge_count: 8,
+      edge_set_sha256: SHA.rollback,
+      entity_count: 9,
+      entity_set_sha256: SHA.receipt,
+      event_sequence: 399,
+      graph_presentation_evidence: mobile
+        ? [
+            graphPresentation("2D", "portrait"),
+            graphPresentation("3D", "portrait"),
+            graphPresentation("2D", "landscape"),
+            graphPresentation("3D", "landscape")
+          ]
+        : [graphPresentation("2D", "landscape"), graphPresentation("3D", "landscape")],
+      mobile_single_renderer: mobile,
+      renderer_parity_verified: true,
+      rendered_subset_authorized: true,
+      renderer_state_preserved: true,
+      selected_entity_authorized: true,
+      sync_errors: 0,
+      three_d_loaded: true,
+      two_d_loaded: true,
+      viewport_width: viewportWidth
+    };
+  });
   const authenticatedMemberJourney = {
     business_count: 0,
     businesses_state: "EMPTY_CANONICAL",
@@ -443,6 +491,7 @@ test("Phase 197 ReleaseManifest requires compatible dual repository and controll
     deployed_commit_sha: SHA.productMain,
     deployment_readback_exact_sha_verified: true,
     deployment_readback_receipt_sha256: SHA.rollback,
+    destination_visual_evidence_verified: true,
     destinations: ["COMMAND", "BUSINESSES", "UNIVERSE_2D", "UNIVERSE_3D", "INFRASTRUCTURE", "TUTORIAL"],
     environment: "PRODUCTION",
     graph_preference_actor_bound: true,
@@ -480,6 +529,7 @@ test("Phase 197 ReleaseManifest requires compatible dual repository and controll
     receipt_sha256: SHA.receipt,
     renderer_state_preserved: true,
     route_interception: false,
+    screenshot_collision_evidence_verified: true,
     session_scope: "MIGRATED_MEMBER",
     session_subject_sha256: SHA.rollback,
     status: "PASSED",
@@ -496,6 +546,18 @@ test("Phase 197 ReleaseManifest requires compatible dual repository and controll
     release_tag: "phase-203"
   };
   assert.equal(validateReleaseManifest(phase203Manifest), phase203Manifest);
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: { ...authenticatedMemberJourney, destination_visual_evidence_verified: false }
+  }), (error) => error.code === "UNVERIFIED_MEMBER_VISUAL_EVIDENCE");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: {
+      ...authenticatedMemberJourney,
+      viewport_widths: viewportWidths.filter((width) => width !== 1920),
+      viewport_observations: viewportObservations.filter((observation) => observation.viewport_width !== 1920)
+    }
+  }), (error) => error.code === "INCOMPLETE_MEMBER_VIEWPORTS");
   assert.throws(() => validateReleaseManifest({
     ...phase203Manifest,
     authenticated_member_journey: undefined
@@ -532,6 +594,45 @@ test("Phase 197 ReleaseManifest requires compatible dual repository and controll
         : observation)
     }
   }), (error) => error.code === "FAILED_MEMBER_RENDERER_OBSERVATION");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: {
+      ...authenticatedMemberJourney,
+      viewport_observations: viewportObservations.map((observation) => observation.viewport_width === 1440
+        ? {
+            ...observation,
+            desktop_layout_evidence: {
+              ...observation.desktop_layout_evidence,
+              threeD: { ...observation.desktop_layout_evidence.threeD, left: 0, top: 900 }
+            }
+          }
+        : observation)
+    }
+  }), (error) => error.code === "INVALID_DESKTOP_SIDE_BY_SIDE_EVIDENCE");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: {
+      ...authenticatedMemberJourney,
+      viewport_observations: viewportObservations.map((observation) => observation.viewport_width === 430
+        ? {
+            ...observation,
+            graph_presentation_evidence: observation.graph_presentation_evidence.map((evidence) =>
+              evidence.dimension === "2D" && evidence.orientation === "landscape"
+                ? { ...evidence, minimap_label_collision_count: 1 }
+                : evidence)
+          }
+        : observation)
+    }
+  }), (error) => error.code === "INVALID_CONTRACT");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: {
+      ...authenticatedMemberJourney,
+      viewport_observations: viewportObservations.map((observation) => observation.viewport_width === 360
+        ? { ...observation, destination_visual_evidence: observation.destination_visual_evidence.slice(0, 1) }
+        : observation)
+    }
+  }), (error) => error.code === "INVALID_CONTRACT");
 });
 
 test("release mutations fail closed for unauthorized models", async () => {

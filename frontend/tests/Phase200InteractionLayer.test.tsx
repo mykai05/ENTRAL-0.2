@@ -4,7 +4,11 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Phase200BusinessHealthPanel } from "../components/Phase200BusinessHealthPanel";
 import { Phase200InteractionNavigation } from "../components/Phase200InteractionNavigation";
-import { canonical2DLabelPlacement } from "../components/CanonicalUniverseGraph";
+import {
+  canonical2DBoundsOverlap,
+  canonical2DLabelBoundsAccepted,
+  canonical2DLabelPlacement
+} from "../components/CanonicalUniverseGraph";
 import { phase200GraphLabelBudget } from "../lib/graph-view-state";
 
 const interactionMocks = vi.hoisted(() => ({
@@ -69,6 +73,30 @@ describe("Phase 200 interaction UI", () => {
     expect(placement.left).toBeGreaterThanOrEqual(8);
     expect(placement.right).toBeLessThanOrEqual(352);
     expect(placement.bottom).toBeLessThanOrEqual(296);
+  });
+
+  it("treats the visible minimap as a reserved label-exclusion rectangle", () => {
+    const minimap = { bottom: 288, left: 232, right: 348, top: 206 };
+    const obstructedLabel = canonical2DLabelPlacement({
+      anchorX: 220,
+      anchorY: 230,
+      canvasHeight: 300,
+      canvasWidth: 360,
+      nodeRadius: 8,
+      textWidth: 110
+    });
+    const clearLabel = canonical2DLabelPlacement({
+      anchorX: 24,
+      anchorY: 40,
+      canvasHeight: 300,
+      canvasWidth: 360,
+      nodeRadius: 8,
+      textWidth: 80
+    });
+
+    expect(canonical2DBoundsOverlap(obstructedLabel, minimap, 6, 3)).toBe(true);
+    expect(canonical2DLabelBoundsAccepted(obstructedLabel, [minimap])).toBe(false);
+    expect(canonical2DLabelBoundsAccepted(clearLabel, [minimap])).toBe(true);
   });
 
   it("renders exactly the five stable role-aware primary destinations", () => {

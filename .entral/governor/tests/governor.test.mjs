@@ -151,7 +151,7 @@ function authenticatedMemberJourney() {
     UNIVERSE_2D: 0,
     UNIVERSE_3D: 0
   };
-  const viewportWidths = [360, 390, 412, 430, 1440];
+  const viewportWidths = [360, 390, 412, 430, 1440, 1920];
   return {
     business_count: 0,
     businesses_state: "EMPTY_CANONICAL",
@@ -174,6 +174,7 @@ function authenticatedMemberJourney() {
     deployed_commit_sha: H,
     deployment_readback_exact_sha_verified: true,
     deployment_readback_receipt_sha256: "5".repeat(64),
+    destination_visual_evidence_verified: true,
     destinations: ["COMMAND", "BUSINESSES", "UNIVERSE_2D", "UNIVERSE_3D", "INFRASTRUCTURE", "TUTORIAL"],
     environment: "PRODUCTION",
     graph_preference_actor_bound: true,
@@ -211,32 +212,81 @@ function authenticatedMemberJourney() {
     receipt_sha256: "d".repeat(64),
     renderer_state_preserved: true,
     route_interception: false,
+    screenshot_collision_evidence_verified: true,
     session_scope: "MIGRATED_MEMBER",
     session_subject_sha256: "a".repeat(64),
     status: "PASSED",
     team_scope_sha256: "b".repeat(64),
     tenant_scope_sha256: "c".repeat(64),
-    viewport_observations: viewportWidths.map((viewportWidth) => ({
-      business_count: 0,
-      businesses_state: "EMPTY_CANONICAL",
-      command_canonical_data_verified: true,
-      desktop_side_by_side: viewportWidth >= 1024,
-      destination_sync_errors: { ...destinationSyncErrors },
-      edge_count: 2,
-      edge_set_sha256: "3".repeat(64),
-      entity_count: 3,
-      entity_set_sha256: "4".repeat(64),
-      event_sequence: 399,
-      mobile_single_renderer: viewportWidth < 1024,
-      renderer_parity_verified: true,
-      rendered_subset_authorized: true,
-      renderer_state_preserved: true,
-      selected_entity_authorized: true,
-      sync_errors: 0,
-      three_d_loaded: true,
-      two_d_loaded: true,
-      viewport_width: viewportWidth
-    })),
+    viewport_observations: viewportWidths.map((viewportWidth) => {
+      const mobile = viewportWidth < 1024;
+      const renderedLabelBounds = [{ bottom: 40, left: 20, right: 80, top: 20 }];
+      const graphPresentation = (dimension, orientation) => ({
+        collision_free: true,
+        dimension,
+        focus_bound_to_selected_entity: true,
+        minimap_bounds: dimension === "2D" ? { bottom: 580, left: 270, right: 386, top: 498 } : null,
+        minimap_label_collision_count: dimension === "2D" ? 0 : null,
+        minimap_visible: dimension === "2D" ? true : null,
+        orientation,
+        protected_focal_region_clear: true,
+        rendered_label_bounds: dimension === "2D" ? renderedLabelBounds : null,
+        rendered_label_bounds_sha256: dimension === "2D" ? sha256(renderedLabelBounds) : null,
+        rendered_label_count: dimension === "2D" ? renderedLabelBounds.length : null,
+        screenshot_file: `screenshots/universe-${viewportWidth}px-${orientation}-${dimension.toLowerCase()}.png`,
+        screenshot_sha256: sha256(`universe:${viewportWidth}:${orientation}:${dimension}`),
+        stage_height: 600,
+        stage_width: 400,
+        viewport_width: viewportWidth
+      });
+      return {
+        business_count: 0,
+        businesses_state: "EMPTY_CANONICAL",
+        command_canonical_data_verified: true,
+        desktop_side_by_side: !mobile,
+        desktop_layout_evidence: mobile ? null : {
+          layout: "side-by-side",
+          panels: { bottom: 900, height: 800, left: 0, right: 1200, top: 100, width: 1200 },
+          threeD: { bottom: 800, height: 600, left: 620, right: 1190, top: 200, width: 570 },
+          threeDPanel: { bottom: 900, height: 800, left: 610, right: 1200, top: 100, width: 590 },
+          twoD: { bottom: 800, height: 600, left: 10, right: 580, top: 200, width: 570 },
+          twoDPanel: { bottom: 900, height: 800, left: 0, right: 590, top: 100, width: 590 },
+          viewport: { height: 1000, width: viewportWidth }
+        },
+        destination_visual_evidence: ["COMMAND", "BUSINESSES"].map((destination) => ({
+          destination,
+          obscuring_surface_count: 0,
+          root_bounds: { bottom: 800, height: 700, left: 0, right: viewportWidth, top: 100, width: viewportWidth },
+          screenshot_file: `screenshots/${destination.toLowerCase()}-${viewportWidth}px.png`,
+          screenshot_sha256: sha256(`${destination}:${viewportWidth}`),
+          viewport_height: 1000,
+          viewport_width: viewportWidth
+        })),
+        destination_sync_errors: { ...destinationSyncErrors },
+        edge_count: 2,
+        edge_set_sha256: "3".repeat(64),
+        entity_count: 3,
+        entity_set_sha256: "4".repeat(64),
+        event_sequence: 399,
+        graph_presentation_evidence: mobile
+          ? [
+              graphPresentation("2D", "portrait"),
+              graphPresentation("3D", "portrait"),
+              graphPresentation("2D", "landscape"),
+              graphPresentation("3D", "landscape")
+            ]
+          : [graphPresentation("2D", "landscape"), graphPresentation("3D", "landscape")],
+        mobile_single_renderer: mobile,
+        renderer_parity_verified: true,
+        rendered_subset_authorized: true,
+        renderer_state_preserved: true,
+        selected_entity_authorized: true,
+        sync_errors: 0,
+        three_d_loaded: true,
+        two_d_loaded: true,
+        viewport_width: viewportWidth
+      };
+    }),
     viewport_widths: viewportWidths
   };
 }
