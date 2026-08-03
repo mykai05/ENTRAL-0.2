@@ -1431,19 +1431,20 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Create a commit-bound GPT-5.6 Pro review packet for accepted material amendment AMEND-IMP-bea698ba2540f0c8d57f995d-1.",
+  "next_action": "Create a GPT-5.6 Pro review packet for PUBLIC_CLAIM_OR_PRICING_CHANGE.",
   "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [
-    "MATERIAL_PHASE_AMENDMENT"
+    "MATERIAL_PHASE_AMENDMENT",
+    "PUBLIC_CLAIM_OR_PRICING_CHANGE"
   ],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 197,
-  "updated_at": "2026-08-03T19:05:16.285Z",
+  "version": 198,
+  "updated_at": "2026-08-03T19:05:35.540Z",
   "task_deadline_at": "2026-08-03T20:39:06.117Z",
   "pending_release_manifest": null,
-  "event_count": 197,
-  "event_head_hash": "8a7bce9a3418754c2ce962a952b08c68b80a651c3a3cc7dde5f9938c4ddf672e"
+  "event_count": 198,
+  "event_head_hash": "0b649565c9a8f70b4642f3dfc13296aceaf418902541f12694186ffa55923d6a"
 }
