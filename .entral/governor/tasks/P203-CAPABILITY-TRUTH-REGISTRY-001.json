@@ -60,6 +60,7 @@
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/page.tsx",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/contact/**",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/member/sign-in/**",
+    "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/privacy/page.tsx",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/site-navigation.tsx",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/site-chrome.tsx",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/services/page.tsx",
