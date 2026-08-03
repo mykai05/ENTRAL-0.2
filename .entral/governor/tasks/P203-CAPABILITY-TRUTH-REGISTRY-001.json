@@ -68,6 +68,7 @@
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/lib/product-truth.ts",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/worker/concierge.ts",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/worker/inquiries.ts",
+    "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/worker/index.ts",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/scripts/check-production.mjs",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/tests/**",
     "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/.env.example",
