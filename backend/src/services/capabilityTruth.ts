@@ -110,6 +110,32 @@ function validateAdminReadback(value: unknown): CapabilityTruthAdminReadback {
 function databaseFailure(error: unknown): CapabilityTruthServiceError {
   if (error instanceof CapabilityTruthServiceError) return error;
   const message = error instanceof Error ? error.message : "";
+  const metadataCode = typeof error === "object" && error !== null && "meta" in error
+    && typeof error.meta === "object" && error.meta !== null && "code" in error.meta
+    && typeof error.meta.code === "string"
+    ? error.meta.code
+    : null;
+  const directCode = typeof error === "object" && error !== null && "code" in error
+    && typeof error.code === "string" && error.code !== "P2010"
+    ? error.code
+    : null;
+  const sqlState = metadataCode ?? directCode;
+  if (sqlState === "P0002") {
+    return new CapabilityTruthServiceError("CAPABILITY_NOT_FOUND", "Capability not found.", 404);
+  }
+  if (sqlState === "40001" || sqlState === "23505") {
+    return new CapabilityTruthServiceError(
+      sqlState === "40001" ? "CAPABILITY_REVISION_CONFLICT" : "CAPABILITY_IDEMPOTENCY_CONFLICT",
+      "Capability Truth state changed or the idempotency key conflicts.",
+      409
+    );
+  }
+  if (sqlState === "42501") {
+    return new CapabilityTruthServiceError("CAPABILITY_AUTHORITY_REQUIRED", "Active Human authority is required.", 403);
+  }
+  if (sqlState === "22023" || sqlState === "23514") {
+    return new CapabilityTruthServiceError("CAPABILITY_REQUIREMENTS_UNSATISFIED", "Capability Truth requirements are not satisfied.", 422);
+  }
   const boundedCode = [
     "ACTIVE_HUMAN_ACTOR_REQUIRED",
     "CAPABILITY_NOT_FOUND",

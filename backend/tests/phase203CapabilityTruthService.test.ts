@@ -178,4 +178,29 @@ describe("Phase 203 Capability Truth service", () => {
     });
     expect(mocks.personalQueryRaw).not.toHaveBeenCalled();
   });
+
+  it("maps PostgreSQL transition failures to bounded API errors without leaking SQL", async () => {
+    mocks.personalQueryRaw.mockRejectedValue({ code: "P2010", meta: { code: "23514", message: "sensitive database detail" } });
+    const { CapabilityTruthService } = await import("../src/services/capabilityTruth.js");
+    const service = new CapabilityTruthService({ $queryRaw: mocks.rootQueryRaw } as never, () => now);
+    await expect(service.recordEvidence({ authSubject: "admin-user", requestId: "request-5" }, {
+      capability_id: capabilityId,
+      expected_record_version: 1,
+      idempotency_key: "phase203-bounded-error",
+      receipt: {
+        receipt_id: "d23e4567-e89b-42d3-a456-426614174000",
+        evidence_type: "UNIT_TEST",
+        environment: "PRODUCTION",
+        status: "PASSED",
+        reference: "repository@commit:path",
+        content_sha256: "a".repeat(64),
+        captured_at: now.toISOString(),
+        expires_at: null
+      }
+    })).rejects.toMatchObject({
+      code: "CAPABILITY_REQUIREMENTS_UNSATISFIED",
+      message: "Capability Truth requirements are not satisfied.",
+      statusCode: 422
+    });
+  });
 });
