@@ -347,24 +347,25 @@
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/app/industries/**",
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/lib/product-truth.ts",
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/worker/concierge.ts",
+      "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/worker/inquiries.ts",
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/scripts/check-production.mjs",
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/tests/**",
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/.env.example",
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/README.md"
     ],
     "acquired_at": "2026-08-03T04:28:36.905Z",
-    "heartbeat_at": "2026-08-03T06:03:20.523Z",
-    "expires_at": "2026-08-03T06:33:20.523Z"
+    "heartbeat_at": "2026-08-03T06:21:40.932Z",
+    "expires_at": "2026-08-03T06:51:40.932Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 159,
-  "updated_at": "2026-08-03T06:03:20.523Z",
+  "version": 160,
+  "updated_at": "2026-08-03T06:21:40.932Z",
   "task_deadline_at": "2026-08-03T20:28:21.277Z",
   "pending_release_manifest": null,
-  "event_count": 159,
-  "event_head_hash": "4278328dcb1fdd2e243b8192ca0b898de115870307be7b9d2601605cfb9330c9"
+  "event_count": 160,
+  "event_head_hash": "aa5b1c037a70d726aa5617516be88e49d0596f24b55d6fc1611bfa209060e558"
 }
