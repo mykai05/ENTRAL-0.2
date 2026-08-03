@@ -867,6 +867,46 @@ export function validateReleaseManifest(value) {
     ) {
       fail("MISMATCHED_CANONICAL_ENDPOINT_READBACK", "Canonical endpoint results must agree with the journey counts, event version, ownership, and root visibility");
     }
+    if (value.phase >= 204) {
+      if (
+        journey.business_count < 1
+        || journey.businesses_state !== "REAL_RECORDS"
+        || journey.phase204_internal_business_code !== "SP-COMMERCE-001"
+        || journey.phase204_internal_business_verified !== true
+        || journey.phase204_internal_commerce_readback_verified !== true
+      ) {
+        fail("UNVERIFIED_PHASE204_INTERNAL_COMMERCE", "Phase 204 must bind the exact canonical internal commerce business and its authenticated readback");
+      }
+      assertInteger(
+        journey.phase204_internal_commerce_entity_count,
+        "release_manifest.authenticated_member_journey.phase204_internal_commerce_entity_count",
+        4,
+        4
+      );
+      const commerceReadback = journey.phase204_internal_commerce_endpoint_readback;
+      const commerceField = "release_manifest.authenticated_member_journey.phase204_internal_commerce_endpoint_readback";
+      assertRecord(commerceReadback, commerceField);
+      assertEnum(commerceReadback.endpoint, ["PHASE204_INTERNAL_COMMERCE"], `${commerceField}.endpoint`);
+      assertInteger(commerceReadback.http_status, `${commerceField}.http_status`, 200, 200);
+      assertEnum(commerceReadback.result, ["PASSED"], `${commerceField}.result`);
+      assertEnum(commerceReadback.business_code, ["SP-COMMERCE-001"], `${commerceField}.business_code`);
+      assertInteger(commerceReadback.product_count, `${commerceField}.product_count`, 5, 5);
+      assertInteger(commerceReadback.active_internal_capability_count, `${commerceField}.active_internal_capability_count`, 3, 3);
+      assertInteger(commerceReadback.commerce_entity_count, `${commerceField}.commerce_entity_count`, 4, 4);
+      assertBoolean(commerceReadback.external_publication_performed, `${commerceField}.external_publication_performed`);
+      assertEnum(commerceReadback.storefront_provider, ["ETSY", "GUMROAD"], `${commerceField}.storefront_provider`);
+      assertEnum(
+        commerceReadback.storefront_state,
+        ["OWNER_ACTION_REQUIRED", "BLOCKED", "READY_FOR_OWNER_APPROVAL", "PUBLISHED", "PAUSED", "DISABLED"],
+        `${commerceField}.storefront_state`
+      );
+      if (
+        commerceReadback.commerce_entity_count !== journey.phase204_internal_commerce_entity_count
+        || (commerceReadback.storefront_state === "PUBLISHED" && commerceReadback.external_publication_performed !== true)
+      ) {
+        fail("MISMATCHED_PHASE204_INTERNAL_COMMERCE_READBACK", "Phase 204 internal commerce endpoint evidence must match the canonical journey and external publication truth");
+      }
+    }
     if (journey.route_interception !== false) {
       fail("INTERCEPTED_PRODUCTION_JOURNEY", "The authenticated production member journey cannot use route interception");
     }

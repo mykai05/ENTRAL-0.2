@@ -17,7 +17,9 @@ import {
 } from "../lib/canonical-portfolio";
 
 const mocks = vi.hoisted(() => ({
+  applyCommerceControl: vi.fn(),
   apiFetch: vi.fn(),
+  loadCommerce: vi.fn(),
   search: ""
 }));
 
@@ -28,6 +30,12 @@ vi.mock("next/navigation", () => ({
 vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
   apiFetch: mocks.apiFetch
+}));
+
+vi.mock("../lib/phase204-internal-commerce", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/phase204-internal-commerce")>()),
+  applyPhase204CommerceControl: mocks.applyCommerceControl,
+  loadPhase204InternalCommerce: mocks.loadCommerce
 }));
 
 const userId = "123e4567-e89b-42d3-a456-426614174000";
@@ -175,6 +183,8 @@ function fullRecord(summary = businesses[1]): BusinessFullRecordResponse {
 beforeEach(() => {
   canonicalPortfolioCache.clear();
   mocks.apiFetch.mockReset();
+  mocks.applyCommerceControl.mockReset();
+  mocks.loadCommerce.mockReset();
   mocks.search = "";
 });
 
@@ -353,6 +363,42 @@ describe("Phase 170 canonical Dashboard", () => {
       "href",
       "/member/dashboard?destination=businesses"
     );
+  });
+
+  it("loads internal commerce truth only inside the real SP-COMMERCE-001 business record", async () => {
+    const commerceSummary = business(
+      "f23e4567-e89b-42d3-a456-426614174000",
+      "Contractor Operations Products",
+      "9ce85809-e772-5a8f-be8d-34e01a9448a8",
+      "Digital Products",
+      { stable_code: "SP-COMMERCE-001" }
+    );
+    const commercePortfolio = {
+      ...portfolio,
+      businesses: [...portfolio.businesses, commerceSummary]
+    };
+    mocks.search = `destination=businesses&record=${commerceSummary.business_id}`;
+    mocks.apiFetch.mockResolvedValueOnce(fullRecord(commerceSummary));
+    mocks.loadCommerce.mockResolvedValue({
+      business: null,
+      organization_id: "223e4567-e89b-42d3-a456-426614174000",
+      release_version: "phase-204",
+      session_authority: { recent_mfa_verified: false },
+      state: "NOT_ACTIVATED",
+      tenant_id: "323e4567-e89b-42d3-a456-426614174000"
+    });
+
+    render(
+      <CanonicalPortfolioDashboard
+        organizationId="organization-1"
+        view="businesses"
+        workspacePortfolio={commercePortfolio}
+      />
+    );
+
+    expect(await screen.findByRole("heading", { name: "Internal Commerce" })).toBeInTheDocument();
+    expect(await screen.findByText("Internal commerce is not activated")).toBeInTheDocument();
+    expect(mocks.loadCommerce).toHaveBeenCalledWith("organization-1", { signal: expect.any(AbortSignal) });
   });
 
   it("keeps canonical scope separate from business record navigation", async () => {

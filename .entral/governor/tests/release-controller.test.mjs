@@ -633,6 +633,54 @@ test("Phase 197 ReleaseManifest requires compatible dual repository and controll
         : observation)
     }
   }), (error) => error.code === "INVALID_CONTRACT");
+
+  const phase204Journey = structuredClone(authenticatedMemberJourney);
+  phase204Journey.business_count = 1;
+  phase204Journey.businesses_state = "REAL_RECORDS";
+  phase204Journey.receipt_id = "P204-INTERNAL-COMMERCE-PRODUCTION-JOURNEY-001";
+  phase204Journey.phase204_internal_business_code = "SP-COMMERCE-001";
+  phase204Journey.phase204_internal_business_verified = true;
+  phase204Journey.phase204_internal_commerce_entity_count = 4;
+  phase204Journey.phase204_internal_commerce_readback_verified = true;
+  phase204Journey.phase204_internal_commerce_endpoint_readback = {
+    active_internal_capability_count: 3,
+    business_code: "SP-COMMERCE-001",
+    commerce_entity_count: 4,
+    endpoint: "PHASE204_INTERNAL_COMMERCE",
+    external_publication_performed: false,
+    http_status: 200,
+    product_count: 5,
+    result: "PASSED",
+    storefront_provider: "ETSY",
+    storefront_state: "OWNER_ACTION_REQUIRED"
+  };
+  phase204Journey.canonical_endpoint_readback = phase204Journey.canonical_endpoint_readback.map((entry) => {
+    if (entry.endpoint === "PORTFOLIO_SUMMARY") return { ...entry, business_count: 1 };
+    if (entry.endpoint === "BUSINESS_FULL_RECORD") return { endpoint: entry.endpoint, http_status: 200, result: "PASSED" };
+    return entry;
+  });
+  phase204Journey.viewport_observations = phase204Journey.viewport_observations.map((observation) => ({
+    ...observation,
+    business_count: 1,
+    businesses_state: "REAL_RECORDS"
+  }));
+  const phase204Manifest = {
+    ...phase203Manifest,
+    authenticated_member_journey: phase204Journey,
+    phase: 204,
+    release_tag: "phase-204"
+  };
+  assert.equal(validateReleaseManifest(phase204Manifest), phase204Manifest);
+  assert.throws(() => validateReleaseManifest({
+    ...phase204Manifest,
+    authenticated_member_journey: {
+      ...phase204Journey,
+      phase204_internal_commerce_endpoint_readback: {
+        ...phase204Journey.phase204_internal_commerce_endpoint_readback,
+        commerce_entity_count: 3
+      }
+    }
+  }), (error) => error.code === "INVALID_CONTRACT");
 });
 
 test("release mutations fail closed for unauthorized models", async () => {

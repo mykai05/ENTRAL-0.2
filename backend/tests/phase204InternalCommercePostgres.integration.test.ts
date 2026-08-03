@@ -102,6 +102,20 @@ type InstallationSnapshot = {
   state: string;
 };
 
+type ProductEvidenceSnapshot = {
+  artifact_id: string;
+  content_sha256: string;
+  evidence_code: string;
+  evidence_kind: string;
+  product_id: string;
+  source_record_id: string;
+};
+
+type ProductAssetSnapshot = {
+  asset_role: string;
+  product_asset_id: string;
+};
+
 function runPrisma(
   prismaCli: string,
   repositoryRoot: string,
@@ -382,6 +396,20 @@ describe.skipIf(!integrationEnabled)("Phase 204 migrated-account internal commer
         ["migrate", "deploy", "--schema", stagedSchema],
         "Phase 204 idempotent migration retry"
       );
+      runPrisma(
+        prismaCli,
+        repositoryRoot,
+        isolatedUrl.toString(),
+        [
+          "db",
+          "execute",
+          "--file",
+          "prisma/security/050_phase_204_internal_commerce_roles_and_grants.sql",
+          "--schema",
+          stagedSchema
+        ],
+        "Phase 204 internal commerce role deployment"
+      );
 
       owner = new PrismaClient({ datasources: { db: { url: isolatedUrl.toString() } } });
       api = new PrismaClient({
@@ -626,6 +654,422 @@ describe.skipIf(!integrationEnabled)("Phase 204 migrated-account internal commer
           WHERE product_code='COMPLETE_CONTRACTOR_CONTROL_BUNDLE')
       `).toEqual([{ count: 4 }]);
 
+      const productRecords = await owner.$queryRaw<Array<{
+        productCode: string;
+        productId: string;
+      }>>`
+        SELECT product_id::text AS "productId",product_code AS "productCode"
+        FROM entral.phase204_internal_commerce_products
+        WHERE business_boundary_id=${activated.value.business_boundary_id}::uuid
+        ORDER BY product_code
+      `;
+      const allAssetRoles = [
+        "EDITABLE_SOURCE",
+        "FINAL_DELIVERY",
+        "INSTRUCTIONS",
+        "IMPLEMENTATION_GUIDANCE",
+        "EXAMPLE",
+        "TRACKING_TOOL",
+        "VERSION_INFORMATION",
+        "SUPPORT_INSTRUCTIONS",
+        "LICENSE_TERMS"
+      ] as const;
+      const roleFiles = [
+        {
+          code: "GUIDE",
+          editable: false,
+          extension: "pdf",
+          mediaType: "application/pdf",
+          roles: [
+            "FINAL_DELIVERY",
+            "INSTRUCTIONS",
+            "IMPLEMENTATION_GUIDANCE",
+            "VERSION_INFORMATION",
+            "SUPPORT_INSTRUCTIONS",
+            "LICENSE_TERMS"
+          ] as const
+        },
+        {
+          code: "TRACKER",
+          editable: true,
+          extension: "xlsx",
+          mediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          roles: ["EDITABLE_SOURCE", "TRACKING_TOOL"] as const
+        },
+        {
+          code: "EXAMPLE",
+          editable: false,
+          extension: "csv",
+          mediaType: "text/csv",
+          roles: ["EXAMPLE"] as const
+        }
+      ] as const;
+      let foreignAssetEvidence: null | {
+        artifactId: string;
+        byteSize: number;
+        contentSha256: string;
+        fileName: string;
+        mediaType: string;
+        sourceRecordId: string;
+        sourceReference: string;
+      } = null;
+      let foreignGateEvidence: null | {
+        artifactId: string;
+        contentSha256: string;
+        sourceRecordId: string;
+      } = null;
+      for (const [productIndex, productRecord] of productRecords.entries()) {
+        const roleReceipts = new Map<string, ProductAssetSnapshot>();
+        for (const [fileIndex, roleFile] of roleFiles.entries()) {
+          const contentSha256 = ((productIndex * roleFiles.length + fileIndex + 1) % 15 + 1)
+            .toString(16)
+            .repeat(64);
+          const evidenceRequest = {
+            source_record_id: randomUUID(),
+            artifact_id: randomUUID(),
+            product_id: productRecord.productId,
+            tenant_id: migrated.tenantId,
+            organization_id: migrated.organizationId,
+            evidence_kind: "PRODUCT_ASSET",
+            evidence_code: roleFile.code,
+            file_name: `${productRecord.productCode}_${roleFile.code}.${roleFile.extension}`,
+            media_type: roleFile.mediaType,
+            byte_size: 1_024 + productIndex * 100 + fileIndex,
+            content_sha256: contentSha256,
+            source_reference: evidenceReference(
+              releaseCommit,
+              suffix,
+              `${productRecord.productCode}-${roleFile.code}`
+            ),
+            captured_at: new Date().toISOString(),
+            idempotency_key: `phase204-product-evidence-${productIndex}-${fileIndex}-${suffix}`,
+            release_version: "phase-204"
+          };
+          const evidence = await ownerQuery<ProductEvidenceSnapshot>(Prisma.sql`
+            SELECT entral.phase204_register_product_evidence(
+              ${JSON.stringify(evidenceRequest)}::jsonb
+            ) AS "value"
+          `);
+          expect(evidence.value).toEqual(expect.objectContaining({
+            artifact_id: evidenceRequest.artifact_id,
+            evidence_code: roleFile.code,
+            evidence_kind: "PRODUCT_ASSET",
+            product_id: productRecord.productId,
+            source_record_id: evidenceRequest.source_record_id
+          }));
+          const replayedEvidence = await ownerQuery<ProductEvidenceSnapshot>(Prisma.sql`
+            SELECT entral.phase204_register_product_evidence(
+              ${JSON.stringify(evidenceRequest)}::jsonb
+            ) AS "value"
+          `);
+          expect(replayedEvidence.value).toEqual(evidence.value);
+          if (productIndex === 0 && fileIndex === 0) {
+            foreignAssetEvidence = {
+              artifactId: evidence.value.artifact_id,
+              byteSize: evidenceRequest.byte_size,
+              contentSha256: evidenceRequest.content_sha256,
+              fileName: evidenceRequest.file_name,
+              mediaType: evidenceRequest.media_type,
+              sourceRecordId: evidence.value.source_record_id,
+              sourceReference: evidenceRequest.source_reference
+            };
+            await expect(ownerQuery(Prisma.sql`
+              SELECT entral.phase204_register_product_asset(${JSON.stringify({
+                product_asset_id: randomUUID(),
+                product_id: productRecord.productId,
+                tenant_id: migrated.tenantId,
+                organization_id: migrated.organizationId,
+                artifact_id: evidence.value.artifact_id,
+                asset_role: "FINAL_DELIVERY",
+                asset_version: "1.0.0",
+                file_name: `tampered-${evidenceRequest.file_name}`,
+                media_type: evidenceRequest.media_type,
+                editable: false,
+                byte_size: evidenceRequest.byte_size,
+                content_sha256: evidenceRequest.content_sha256,
+                source_reference: evidenceRequest.source_reference,
+                readiness: "FINAL",
+                license_status: "CLEARED",
+                idempotency_key: `phase204-wrong-file-name-${suffix}`,
+                release_version: "phase-204"
+              })}::jsonb) AS "value"
+            `)).rejects.toThrow();
+          }
+          if (productIndex === 1 && fileIndex === 0) {
+            expect(foreignAssetEvidence).not.toBeNull();
+            await withPersonalSession(
+              api!,
+              {
+                actionReason: "Attempt mutable metadata relabeling without changing immutable evidence identity.",
+                authSubject: migratedUserId,
+                requestId: randomUUID()
+              },
+              async (transaction) => {
+                const targetMetadata = JSON.stringify({
+                  evidence_code: roleFile.code,
+                  evidence_kind: "PRODUCT_ASSET",
+                  product_code: productRecord.productCode,
+                  product_id: productRecord.productId,
+                  release_version: "phase-204"
+                });
+                await transaction.$executeRaw(Prisma.sql`
+                  UPDATE entral.source_records SET metadata=${targetMetadata}::jsonb
+                  WHERE id=${foreignAssetEvidence!.sourceRecordId}::uuid
+                `);
+                await transaction.$executeRaw(Prisma.sql`
+                  UPDATE entral.artifacts SET metadata=${targetMetadata}::jsonb
+                  WHERE id=${foreignAssetEvidence!.artifactId}::uuid
+                `);
+              },
+              { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+            );
+            await expect(ownerQuery(Prisma.sql`
+              SELECT entral.phase204_register_product_asset(${JSON.stringify({
+                product_asset_id: randomUUID(),
+                product_id: productRecord.productId,
+                tenant_id: migrated.tenantId,
+                organization_id: migrated.organizationId,
+                artifact_id: foreignAssetEvidence!.artifactId,
+                asset_role: "FINAL_DELIVERY",
+                asset_version: "1.0.0",
+                file_name: foreignAssetEvidence!.fileName,
+                media_type: foreignAssetEvidence!.mediaType,
+                editable: false,
+                byte_size: foreignAssetEvidence!.byteSize,
+                content_sha256: foreignAssetEvidence!.contentSha256,
+                source_reference: foreignAssetEvidence!.sourceReference,
+                readiness: "FINAL",
+                license_status: "CLEARED",
+                idempotency_key: `phase204-cross-product-asset-${suffix}`,
+                release_version: "phase-204"
+              })}::jsonb) AS "value"
+            `)).rejects.toThrow();
+          }
+
+          for (const [roleIndex, assetRole] of roleFile.roles.entries()) {
+            const assetRequest = {
+              product_asset_id: randomUUID(),
+              product_id: productRecord.productId,
+              tenant_id: migrated.tenantId,
+              organization_id: migrated.organizationId,
+              artifact_id: evidence.value.artifact_id,
+              asset_role: assetRole,
+              asset_version: "1.0.0",
+              file_name: evidenceRequest.file_name,
+              media_type: evidenceRequest.media_type,
+              editable: assetRole === "EDITABLE_SOURCE" ? true : roleFile.editable,
+              byte_size: evidenceRequest.byte_size,
+              content_sha256: evidenceRequest.content_sha256,
+              source_reference: evidenceRequest.source_reference,
+              readiness: "FINAL",
+              license_status: "CLEARED",
+              idempotency_key: `phase204-product-asset-${productIndex}-${fileIndex}-${roleIndex}-${suffix}`,
+              release_version: "phase-204"
+            };
+            const asset = await ownerQuery<ProductAssetSnapshot>(Prisma.sql`
+              SELECT entral.phase204_register_product_asset(
+                ${JSON.stringify(assetRequest)}::jsonb
+              ) AS "value"
+            `);
+            expect(asset.value).toEqual(expect.objectContaining({
+              asset_role: assetRole,
+              product_asset_id: assetRequest.product_asset_id
+            }));
+            roleReceipts.set(assetRole, asset.value);
+          }
+        }
+        expect([...roleReceipts.keys()].sort()).toEqual([...allAssetRoles].sort());
+
+        const gateEvidenceHash = ((productIndex + 9) % 15 + 1).toString(16).repeat(64);
+        const gateEvidenceRequest = {
+          source_record_id: randomUUID(),
+          artifact_id: randomUUID(),
+          product_id: productRecord.productId,
+          tenant_id: migrated.tenantId,
+          organization_id: migrated.organizationId,
+          evidence_kind: "PRODUCT_GATE",
+          evidence_code: "PRODUCT_READINESS",
+          file_name: `${productRecord.productCode}_PRODUCT_READINESS.json`,
+          media_type: "application/json",
+          byte_size: 2_048 + productIndex,
+          content_sha256: gateEvidenceHash,
+          source_reference: evidenceReference(
+            releaseCommit,
+            suffix,
+            `${productRecord.productCode}-product-readiness`
+          ),
+          captured_at: new Date().toISOString(),
+          idempotency_key: `phase204-product-gate-evidence-${productIndex}-${suffix}`,
+          release_version: "phase-204"
+        };
+        const gateEvidence = await ownerQuery<ProductEvidenceSnapshot>(Prisma.sql`
+          SELECT entral.phase204_register_product_evidence(
+            ${JSON.stringify(gateEvidenceRequest)}::jsonb
+          ) AS "value"
+        `);
+        const manifestRows = await owner.$queryRaw<Array<{ value: {
+          claims_manifest_sha256: string;
+          delivery_manifest_sha256: string;
+        } }>>`
+          SELECT entral.phase204_product_manifest_hashes(
+            ${productRecord.productId}::uuid
+          ) AS "value"
+        `;
+        const manifest = manifestRows[0]!.value;
+        const assessedAt = new Date(Date.now() + 1_000).toISOString();
+        const evidenceIds = [gateEvidence.value.artifact_id];
+        if (productIndex === 0) {
+          foreignGateEvidence = {
+            artifactId: gateEvidence.value.artifact_id,
+            contentSha256: gateEvidenceHash,
+            sourceRecordId: gateEvidence.value.source_record_id
+          };
+        }
+        if (productIndex === 1) {
+          expect(foreignGateEvidence).not.toBeNull();
+          await withPersonalSession(
+            api!,
+            {
+              actionReason: "Attempt mutable gate metadata relabeling without changing immutable evidence identity.",
+              authSubject: migratedUserId,
+              requestId: randomUUID()
+            },
+            async (transaction) => {
+              const targetMetadata = JSON.stringify({
+                evidence_code: "PRODUCT_READINESS",
+                evidence_kind: "PRODUCT_GATE",
+                product_code: productRecord.productCode,
+                product_id: productRecord.productId,
+                release_version: "phase-204"
+              });
+              await transaction.$executeRaw(Prisma.sql`
+                UPDATE entral.source_records SET metadata=${targetMetadata}::jsonb
+                WHERE id=${foreignGateEvidence!.sourceRecordId}::uuid
+              `);
+              await transaction.$executeRaw(Prisma.sql`
+                UPDATE entral.artifacts SET metadata=${targetMetadata}::jsonb
+                WHERE id=${foreignGateEvidence!.artifactId}::uuid
+              `);
+            },
+            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+          );
+          await expect(ownerQuery(Prisma.sql`
+            SELECT entral.phase204_record_product_gate(${JSON.stringify({
+              gate_receipt_id: randomUUID(),
+              product_id: productRecord.productId,
+              tenant_id: migrated.tenantId,
+              organization_id: migrated.organizationId,
+              gate_type: "ORIGINALITY",
+              status: "PASSED",
+              evidence_source_record_id: null,
+              evidence_artifact_id: foreignGateEvidence!.artifactId,
+              evidence_sha256: foreignGateEvidence!.contentSha256,
+              assertion_summary: "Cross-product evidence must never satisfy a product-specific gate.",
+              gate_payload: {
+                status: "PASSED",
+                original_work: true,
+                copied_content: false,
+                generic_prompt_collection: false,
+                evidence_ids: [foreignGateEvidence!.artifactId],
+                checked_at: assessedAt
+              },
+              evidence_ids: [foreignGateEvidence!.artifactId],
+              assessed_at: assessedAt,
+              idempotency_key: `phase204-cross-product-gate-${suffix}`,
+              release_version: "phase-204"
+            })}::jsonb) AS "value"
+          `)).rejects.toThrow();
+        }
+        const gatePayloads = {
+          ORIGINALITY: {
+            status: "PASSED",
+            original_work: true,
+            copied_content: false,
+            generic_prompt_collection: false,
+            evidence_ids: evidenceIds,
+            checked_at: assessedAt
+          },
+          LICENSING: {
+            status: "PASSED",
+            unresolved_rights: false,
+            permitted_use_terms_asset_id: roleReceipts.get("LICENSE_TERMS")!.product_asset_id,
+            evidence_ids: evidenceIds,
+            checked_at: assessedAt
+          },
+          CLAIMS: {
+            status: "PASSED",
+            unsupported_claim_count: 0,
+            claims_sha256: gateEvidenceHash,
+            evidence_ids: evidenceIds,
+            checked_at: assessedAt
+          },
+          AI_DISCLOSURE: {
+            status: "PASSED",
+            ai_assisted: true,
+            disclosure_included: true,
+            disclosure_text: "AI tools assisted drafting and formatting; final publisher review is human-owned.",
+            evidence_ids: evidenceIds,
+            checked_at: assessedAt
+          },
+          FILE_INTEGRITY: {
+            status: "PASSED",
+            invalid_file_count: 0,
+            delivery_manifest_sha256: manifest.delivery_manifest_sha256,
+            evidence_ids: evidenceIds,
+            checked_at: assessedAt
+          },
+          DELIVERY_READINESS: {
+            status: "PASSED",
+            missing_asset_roles: [],
+            customer_delivery_tested: true,
+            support_ready: true,
+            evidence_ids: evidenceIds,
+            checked_at: assessedAt
+          }
+        } as const;
+        for (const [gateIndex, [gateType, gatePayload]] of Object.entries(gatePayloads).entries()) {
+          const gateRequest = {
+            gate_receipt_id: randomUUID(),
+            product_id: productRecord.productId,
+            tenant_id: migrated.tenantId,
+            organization_id: migrated.organizationId,
+            gate_type: gateType,
+            status: "PASSED",
+            evidence_source_record_id: null,
+            evidence_artifact_id: gateEvidence.value.artifact_id,
+            evidence_sha256: gateEvidenceHash,
+            assertion_summary: `Verified ${gateType} for the exact migrated-account product evidence.`,
+            gate_payload: gatePayload,
+            evidence_ids: evidenceIds,
+            assessed_at: assessedAt,
+            idempotency_key: `phase204-product-gate-${productIndex}-${gateIndex}-${suffix}`,
+            release_version: "phase-204"
+          };
+          await expect(ownerQuery<JsonRecord>(Prisma.sql`
+            SELECT entral.phase204_record_product_gate(
+              ${JSON.stringify(gateRequest)}::jsonb
+            ) AS "value"
+          `)).resolves.toEqual(expect.objectContaining({
+            value: expect.objectContaining({ gate_type: gateType, status: "PASSED" })
+          }));
+        }
+      }
+
+      const productReadiness = await owner.$queryRaw<Array<{
+        allReady: boolean;
+        assetCount: number;
+        gateCount: number;
+      }>>`
+        SELECT bool_and(entral.phase204_product_is_ready(product.product_id)) AS "allReady",
+               (SELECT count(*)::int FROM entral.phase204_product_assets
+                 WHERE business_boundary_id=${activated.value.business_boundary_id}::uuid) AS "assetCount",
+               (SELECT count(*)::int FROM entral.phase204_product_gate_receipts
+                 WHERE business_boundary_id=${activated.value.business_boundary_id}::uuid) AS "gateCount"
+        FROM entral.phase204_internal_commerce_products product
+        WHERE product.business_boundary_id=${activated.value.business_boundary_id}::uuid
+      `;
+      expect(productReadiness).toEqual([{ allReady: true, assetCount: 45, gateCount: 30 }]);
+
       const metricTruth = await owner.$queryRaw<Array<{
         fakeZeroCount: number;
         metricCount: number;
@@ -719,6 +1163,12 @@ describe.skipIf(!integrationEnabled)("Phase 204 migrated-account internal commer
           pricing_eligibility: "NOT_ELIGIBLE",
           public_claim_eligible: false
         }));
+
+        if (catalogCapabilityId === "20300000-0001-4000-8000-000000000012") {
+          // Etsy remains catalogued until a real provider connection supplies
+          // every required live authentication, operation, and readback receipt.
+          continue;
+        }
 
         let recordVersion = registered.value.record_version;
         const receiptIds: string[] = [];
@@ -899,11 +1349,11 @@ describe.skipIf(!integrationEnabled)("Phase 204 migrated-account internal commer
             WHERE tenant_id=${migrated.tenantId}::uuid AND plan_eligible) AS "installationPlanEligible"
       `;
       expect(capabilityTruth).toEqual([{
-        activeTenant: 4,
+        activeTenant: 3,
         globalCatalogued: 56,
         globalRecords: 56,
         globalSellable: 0,
-        installationActive: 4,
+        installationActive: 3,
         installationPlanEligible: 0,
         tenantPublic: 0,
         tenantRecords: 4,
@@ -930,7 +1380,7 @@ describe.skipIf(!integrationEnabled)("Phase 204 migrated-account internal commer
           status: "OPERATING"
         }),
         readiness: expect.objectContaining({
-          all_products_ready: false,
+          all_products_ready: true,
           exact_control_count: 3,
           exact_metric_truth_count: 54,
           exact_product_count: 5,
@@ -1017,7 +1467,7 @@ describe.skipIf(!integrationEnabled)("Phase 204 migrated-account internal commer
           product_code: "LEAD_RESPONSE_ESTIMATE_FOLLOW_UP_KIT",
           provider_listing_id: null,
           status: "READY_FOR_OWNER_APPROVAL",
-          price_cents: 2_900,
+          price_cents: 2_901,
           delivery_manifest_sha256: leadManifest[0]!.manifest.delivery_manifest_sha256,
           published_at: null,
           provider_evidence_ids: [],
@@ -1121,8 +1571,8 @@ describe.skipIf(!integrationEnabled)("Phase 204 migrated-account internal commer
       `;
       expect(auditTruth).toEqual([{
         activationMutations: 1,
-        capabilityTransitions: 24,
-        installationTransitions: 8,
+        capabilityTransitions: 18,
+        installationTransitions: 6,
         releaseMismatch: 0
       }]);
     } finally {

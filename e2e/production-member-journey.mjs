@@ -32,6 +32,20 @@ if (
 const PHASE_202_MAIN_SHA = "c689176234bca8a43f6bb5665f6a8a63d8d653dd";
 const PHASE_202_MIGRATION_CUTOVER_AT = "2026-08-02T19:04:46.197Z";
 const PHASE_202_MIGRATED_STATE_RECEIPT_SHA256 = "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c";
+const PHASE204_INTERNAL_BUSINESS_CODE = "SP-COMMERCE-001";
+const PHASE204_ENTITY_CODES = [
+  "C-SP-COMMERCE-001",
+  "S-SP-COMMERCE-001-01",
+  "S-SP-COMMERCE-001-02",
+  "S-SP-COMMERCE-001-03"
+];
+const PHASE204_PRODUCT_PRICES = new Map([
+  ["LEAD_RESPONSE_ESTIMATE_FOLLOW_UP_KIT", 2_900],
+  ["SCOPE_CHANGE_ORDER_CONTROL_PACK", 4_900],
+  ["BILLING_COLLECTIONS_ACCELERATOR", 4_900],
+  ["WEEKLY_OWNER_COMMAND_DASHBOARD", 3_900],
+  ["COMPLETE_CONTRACTOR_CONTROL_BUNDLE", 11_900]
+]);
 if (migratedStateReceiptSha256 !== PHASE_202_MIGRATED_STATE_RECEIPT_SHA256) {
   throw new Error("Migrated-state evidence must be the certified Phase 202 production state readback receipt.");
 }
@@ -177,7 +191,8 @@ async function rendererSnapshot(renderer, label, {
   authorizedEdgeIds,
   authorizedEntityIds,
   projectionVersion,
-  requireWebGl = false
+  requireWebGl = false,
+  requiredEntityIds = new Set()
 }) {
   await expectVisible(renderer, label, 60_000);
   const entityIds = canonicalIds(await renderer.getAttribute("data-canonical-entity-ids"), `${label} entities`);
@@ -197,6 +212,10 @@ async function rendererSnapshot(renderer, label, {
   ) {
     throw new Error(`${label} rendered identifiers or state outside the authorized canonical projection.`);
   }
+  const missingRequiredEntities = [...requiredEntityIds].filter((id) => !entityIds.includes(id));
+  if (missingRequiredEntities.length) {
+    throw new Error(`${label} did not render the complete canonical Phase 204 commerce hierarchy.`);
+  }
   if (requireWebGl) {
     await expectVisible(renderer.locator('[data-graph-webgl-state="ready"]'), `${label} ready WebGL renderer`, 60_000);
     await expectVisible(renderer.getByLabel(/Canonical 3D Universe Graph with \d+ entities/i), `${label} WebGL canvas`, 60_000);
@@ -211,6 +230,7 @@ async function rendererSnapshot(renderer, label, {
     entity_set_sha256: sha256(entityIds),
     event_sequence: eventSequence,
     rendered_subset_authorized: true,
+    required_entity_count: requiredEntityIds.size,
     selected_entity_id: selectedEntityId
   };
 }
@@ -793,6 +813,9 @@ let projection;
 let portfolio;
 let membershipEvidence;
 let migratedProvenanceEvidence;
+let commerceBusiness;
+let commerceEntityIds;
+let phase204EndpointReadback;
 
 try {
   const apiContext = await browser.newContext();
@@ -864,28 +887,114 @@ try {
     await apiContext.request.get(`${memberBase}/entities/${encodeURIComponent(projection.root_id)}/full`),
     "Canonical root full record"
   );
-  let businessFullRecordResult;
-  if (portfolio.businesses.length) {
-    await readJson(
-      await apiContext.request.get(`${memberBase}/businesses/${encodeURIComponent(portfolio.businesses[0].business_id)}/full`),
-      "Canonical business full record"
-    );
-    businessFullRecordResult = { endpoint: "BUSINESS_FULL_RECORD", http_status: 200, result: "PASSED" };
-  } else {
-    const absentBusiness = await readJson(
-      await apiContext.request.get(`${memberBase}/businesses/00000000-0000-4000-8000-000000000000/full`),
-      "Absent canonical business full record",
-      404
-    );
-    if (absentBusiness.error !== "Not Found") {
-      throw new Error("Absent canonical business full-record readback did not fail with the bounded not-found response.");
-    }
-    businessFullRecordResult = {
-      endpoint: "BUSINESS_FULL_RECORD",
-      http_status: 404,
-      result: "NOT_APPLICABLE_NO_CANONICAL_BUSINESS"
-    };
+  const commerceBusinesses = portfolio.businesses.filter(
+    (business) => business.stable_code === PHASE204_INTERNAL_BUSINESS_CODE
+  );
+  if (commerceBusinesses.length !== 1) {
+    throw new Error("Production portfolio did not expose exactly one canonical SP-COMMERCE-001 business.");
   }
+  commerceBusiness = commerceBusinesses[0];
+  const commerceFullRecord = await readJson(
+    await apiContext.request.get(`${memberBase}/businesses/${encodeURIComponent(commerceBusiness.business_id)}/full`),
+    "Phase 204 canonical commerce business full record"
+  );
+  if (
+    commerceBusiness.status !== "OPERATING"
+    || commerceFullRecord.business?.summary?.business_id !== commerceBusiness.business_id
+    || commerceFullRecord.business?.summary?.stable_code !== PHASE204_INTERNAL_BUSINESS_CODE
+    || commerceFullRecord.business?.summary?.status !== "OPERATING"
+  ) {
+    throw new Error("Phase 204 full business record was not bound to the exact canonical commerce business.");
+  }
+  const commerceReadback = await readJson(
+    await apiContext.request.get(`${memberBase}/internal-commerce`),
+    "Phase 204 internal commerce readback"
+  );
+  const capabilityByCatalogId = new Map(
+    (commerceReadback.capabilities ?? []).map((capability) => [capability.catalog_capability_id, capability])
+  );
+  const requiredActiveCapabilityIds = [
+    "20300000-0002-4000-8000-000000000108",
+    "20300000-0002-4000-8000-000000000107",
+    "20300000-0002-4000-8000-000000000106"
+  ];
+  const etsyCapability = capabilityByCatalogId.get("20300000-0001-4000-8000-000000000012");
+  if (
+    commerceReadback.release_version !== "phase-204"
+    || commerceReadback.business?.canonical_business_id !== commerceBusiness.business_id
+    || commerceReadback.business?.internal_code !== PHASE204_INTERNAL_BUSINESS_CODE
+    || commerceReadback.business?.status !== "OPERATING"
+    || commerceReadback.business?.boundary_status !== "ACTIVE"
+    || commerceReadback.products?.length !== PHASE204_PRODUCT_PRICES.size
+    || commerceReadback.products.some((product) => (
+      PHASE204_PRODUCT_PRICES.get(product.product_code) !== product.price_cents
+      || product.ready !== true
+      || product.asset_role_count !== 9
+      || product.latest_passed_gate_count !== 6
+    ))
+    || capabilityByCatalogId.size !== 4
+    || requiredActiveCapabilityIds.some((capabilityId) => {
+      const capability = capabilityByCatalogId.get(capabilityId);
+      return capability?.lifecycle_state !== "ACTIVE"
+        || capability?.installation_state !== "ACTIVE"
+        || capability?.public_claim_eligible !== false;
+    })
+    || !etsyCapability
+    || etsyCapability.lifecycle_state === "ACTIVE"
+    || etsyCapability.installation_state === "ACTIVE"
+    || etsyCapability.public_claim_eligible !== false
+    || commerceReadback.operational_metrics?.length !== 54
+    || commerceReadback.operational_metrics.some((metric) => metric.is_estimate !== false)
+    || commerceReadback.controls?.length !== 3
+    || commerceReadback.storefront?.preferred_provider !== "ETSY"
+    || commerceReadback.storefront?.external_provider_mutation_available !== false
+  ) {
+    throw new Error("Phase 204 internal commerce readback was incomplete or weakened a fail-closed truth boundary.");
+  }
+  const commerceEntities = PHASE204_ENTITY_CODES.map((stableCode) =>
+    hierarchy.entities.find((entity) => entity.stable_code === stableCode)
+  );
+  if (
+    commerceEntities.some((entity) => !entity)
+    || commerceEntities.some((entity) => entity.assigned_business_id !== commerceBusiness.business_id)
+    || commerceEntities.some((entity) => entity.status !== "ACTIVE")
+    || commerceEntities[0].entity_type !== "COMMANDER"
+    || commerceEntities[0].parent_id !== commerceReadback.business.general_id
+    || commerceEntities.slice(1).some((entity) => entity.entity_type !== "SOLDIER")
+    || commerceEntities.slice(1).some((entity) => entity.parent_id !== commerceEntities[0].entity_id)
+  ) {
+    throw new Error("Canonical hierarchy did not expose the exact Phase 204 Commander and three mission-created Soldiers.");
+  }
+  commerceEntityIds = commerceEntities.map((entity) => entity.entity_id);
+  const projectionEntityIds = new Set(projection.entities.map((entity) => entity.entity_id));
+  if (
+    commerceEntityIds.some((entityId) => !projectionEntityIds.has(entityId))
+    || commerceEntities.some((entity) => !projection.edges.some(
+      (edge) => edge.source_id === entity.parent_id && edge.target_id === entity.entity_id
+    ))
+  ) {
+    throw new Error("Canonical graph projection omitted the Phase 204 commerce hierarchy or an authority edge.");
+  }
+  const businessFullRecordResult = {
+    business_code: PHASE204_INTERNAL_BUSINESS_CODE,
+    endpoint: "BUSINESS_FULL_RECORD",
+    http_status: 200,
+    result: "PASSED"
+  };
+  phase204EndpointReadback = {
+    active_internal_capability_count: requiredActiveCapabilityIds.length,
+    business_code: PHASE204_INTERNAL_BUSINESS_CODE,
+    commerce_entity_count: commerceEntityIds.length,
+    endpoint: "PHASE204_INTERNAL_COMMERCE",
+    external_publication_performed: commerceReadback.storefront.listings.some((listing) => (
+      listing.status === "PUBLISHED" && Boolean(listing.provider_listing_id)
+    )),
+    http_status: 200,
+    product_count: commerceReadback.products.length,
+    result: "PASSED",
+    storefront_provider: commerceReadback.storefront.provider,
+    storefront_state: commerceReadback.storefront.state
+  };
   // Graph preferences and the portfolio scope are both bound by
   // withCanonicalSession to entral.app_users.id. JWT sub/aid identify the
   // public User and Phase 202 IdentityActor respectively, so neither is the
@@ -1022,7 +1131,8 @@ try {
     const rendererAuthorization = {
       authorizedEdgeIds: viewportEdgeIds,
       authorizedEntityIds: viewportEntityIds,
-      projectionVersion: viewportProjection.projection_version
+      projectionVersion: viewportProjection.projection_version,
+      requiredEntityIds: new Set(commerceEntityIds)
     };
     const context = await browser.newContext({
       deviceScaleFactor: mobile ? 2 : 1,
@@ -1058,6 +1168,10 @@ try {
       if (commandBusinessCount !== portfolio.totals.businesses || await page.locator(".phase170-error").count()) {
         throw new Error(`${width}px Command did not render the authenticated canonical portfolio totals.`);
       }
+      await expectVisible(
+        command.locator('[data-command-priority="active-work"]').filter({ hasText: commerceBusiness.business_name }),
+        `${width}px Command active work for SP-COMMERCE-001`
+      );
       const commandScope = await canonicalScopeSnapshot(page);
       await assertNoCanonicalSyncError(page, `${width}px Command`);
       destinationVisualEvidence.push(await captureDestinationScreenshot(page, {
@@ -1109,8 +1223,49 @@ try {
         throw new Error(`${width}px Command and Businesses screenshots were not visibly distinct.`);
       }
 
+      const commerceCard = businesses.locator(".phase170-business-card")
+        .filter({ hasText: commerceBusiness.business_name });
+      await expectVisible(commerceCard, `${width}px canonical SP-COMMERCE-001 business card`);
+      await commerceCard.getByRole("link", { name: "Open business" }).click();
+      await page.waitForURL(new RegExp(`record=${commerceBusiness.business_id}`));
+      const commerceDetail = page.locator('[data-businesses-section="business-detail"]');
+      await expectVisible(commerceDetail, `${width}px canonical SP-COMMERCE-001 full record`);
+      await expectVisible(
+        commerceDetail.getByRole("heading", { level: 1, name: commerceBusiness.business_name }),
+        `${width}px canonical SP-COMMERCE-001 record heading`
+      );
+      const commercePanel = commerceDetail.locator(".phase204-commerce");
+      await expectVisible(commercePanel, `${width}px Phase 204 internal commerce truth`, 45_000);
+      await expectVisible(
+        commercePanel.getByRole("heading", { name: "Products and readiness" }),
+        `${width}px Phase 204 finished product line`,
+        45_000
+      );
+      if (
+        await commercePanel.locator("[data-product-code]").count() !== PHASE204_PRODUCT_PRICES.size
+        || await commercePanel.locator('.phase204-state[role="alert"]').count()
+        || await commercePanel.getByText("Delivery ready", { exact: true }).count() !== PHASE204_PRODUCT_PRICES.size
+      ) {
+        throw new Error(`${width}px SP-COMMERCE-001 full record did not expose five verified delivery-ready products.`);
+      }
+      await commerceDetail.getByRole("link", { name: "Back to portfolio" }).click();
+      await page.waitForURL(/\/member\/dashboard\?[^#]*destination=businesses/);
+      const businessScopeSelector = page.getByLabel("Canonical business scope");
+      await businessScopeSelector.selectOption(commerceBusiness.business_id);
+      await page.waitForFunction(
+        (businessId) => document.querySelector('select[aria-label="Canonical business scope"]')?.value === businessId,
+        commerceBusiness.business_id
+      );
+      const commerceScope = await canonicalScopeSnapshot(page);
+      if (commerceScope.business !== commerceBusiness.business_id) {
+        throw new Error(`${width}px canonical SP-COMMERCE-001 scope was not preserved for the production graph journey.`);
+      }
+
       await navigation.getByRole("link", { name: "Universe" }).click();
       await page.waitForURL(/\/member\/graph/);
+      if (JSON.stringify(await canonicalScopeSnapshot(page)) !== JSON.stringify(commerceScope)) {
+        throw new Error(`${width}px Businesses to Universe navigation did not preserve organization and SP-COMMERCE-001 scope.`);
+      }
       const workspace = page.locator(".phase180-graph-workspace");
       await expectVisible(workspace, `${width}px Universe workspace`, 45_000);
       await page.waitForFunction(({ nodes, version }) => {
@@ -1259,6 +1414,8 @@ try {
         business_count: portfolio.businesses.length,
         businesses_state: portfolio.businesses.length ? "REAL_RECORDS" : "EMPTY_CANONICAL",
         command_canonical_data_verified: true,
+        internal_commerce_full_record_verified: true,
+        internal_commerce_graph_entity_count: commerceEntityIds.length,
         desktop_layout_evidence: desktopLayoutEvidence,
         desktop_side_by_side: !mobile && Boolean(desktopLayoutEvidence),
         destination_visual_evidence: destinationVisualEvidence,
@@ -1345,9 +1502,15 @@ const receipt = {
   migrated_tenant_scope_sha256: migratedProvenanceEvidence.tenant_scope_sha256,
   observed_at: new Date().toISOString(),
   organization_scope_sha256: sha256(membershipEvidence.organization_id),
+  phase: 204,
+  phase204_internal_business_code: PHASE204_INTERNAL_BUSINESS_CODE,
+  phase204_internal_business_verified: true,
+  phase204_internal_commerce_entity_count: commerceEntityIds.length,
+  phase204_internal_commerce_endpoint_readback: phase204EndpointReadback,
+  phase204_internal_commerce_readback_verified: true,
   pre_phase_202_provenance_verified: true,
   projection_organization_bound: true,
-  receipt_id: "P203-PRODUCTION-MEMBER-JOURNEY-001",
+  receipt_id: "P204-INTERNAL-COMMERCE-PRODUCTION-JOURNEY-001",
   renderer_state_preserved: true,
   screenshot_collision_evidence_verified: observed.every((viewport) =>
     Array.isArray(viewport.graph_presentation_evidence)

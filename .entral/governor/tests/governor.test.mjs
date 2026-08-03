@@ -321,6 +321,47 @@ function phase203ReleaseManifest() {
   };
 }
 
+function phase204ReleaseManifest() {
+  const manifest = phase203ReleaseManifest();
+  const journey = structuredClone(manifest.authenticated_member_journey);
+  journey.business_count = 1;
+  journey.businesses_state = "REAL_RECORDS";
+  journey.receipt_id = "P204-INTERNAL-COMMERCE-PRODUCTION-JOURNEY-001";
+  journey.phase = 204;
+  journey.phase204_internal_business_code = "SP-COMMERCE-001";
+  journey.phase204_internal_business_verified = true;
+  journey.phase204_internal_commerce_entity_count = 4;
+  journey.phase204_internal_commerce_readback_verified = true;
+  journey.phase204_internal_commerce_endpoint_readback = {
+    active_internal_capability_count: 3,
+    business_code: "SP-COMMERCE-001",
+    commerce_entity_count: 4,
+    endpoint: "PHASE204_INTERNAL_COMMERCE",
+    external_publication_performed: false,
+    http_status: 200,
+    product_count: 5,
+    result: "PASSED",
+    storefront_provider: "ETSY",
+    storefront_state: "OWNER_ACTION_REQUIRED"
+  };
+  journey.canonical_endpoint_readback = journey.canonical_endpoint_readback.map((entry) => {
+    if (entry.endpoint === "PORTFOLIO_SUMMARY") return { ...entry, business_count: 1 };
+    if (entry.endpoint === "BUSINESS_FULL_RECORD") return { endpoint: entry.endpoint, http_status: 200, result: "PASSED" };
+    return entry;
+  });
+  journey.viewport_observations = journey.viewport_observations.map((observation) => ({
+    ...observation,
+    business_count: 1,
+    businesses_state: "REAL_RECORDS"
+  }));
+  return {
+    ...manifest,
+    authenticated_member_journey: journey,
+    phase: 204,
+    release_tag: "phase-204"
+  };
+}
+
 async function setup({ phase = 196, certifiedPhases = [195] } = {}) {
   const root = await makeRepository();
   const program = await readSourceJson(".entral/governor/program/PHASE_DAG.v1.json");
@@ -603,6 +644,33 @@ test("Phase 203 release certification rejects unbound production member journey 
   assert.throws(
     () => validateNamedContract("ReleaseManifest", tutorialSyncFailure),
     (error) => error.code === "INVALID_CONTRACT"
+  );
+});
+
+test("Phase 204 release certification binds the internal commerce endpoint outside the canonical eight", () => {
+  const valid = phase204ReleaseManifest();
+  assert.doesNotThrow(() => validateNamedContract("ReleaseManifest", valid));
+  assert.equal(valid.authenticated_member_journey.canonical_endpoint_readback.length, 8);
+
+  const missingReadback = structuredClone(valid);
+  delete missingReadback.authenticated_member_journey.phase204_internal_commerce_endpoint_readback;
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", missingReadback),
+    (error) => error.code === "INVALID_CONTRACT"
+  );
+
+  const massPromotion = structuredClone(valid);
+  massPromotion.authenticated_member_journey.phase204_internal_commerce_endpoint_readback.active_internal_capability_count = 56;
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", massPromotion),
+    (error) => error.code === "INVALID_CONTRACT"
+  );
+
+  const falsePublication = structuredClone(valid);
+  falsePublication.authenticated_member_journey.phase204_internal_commerce_endpoint_readback.storefront_state = "PUBLISHED";
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", falsePublication),
+    (error) => error.code === "MISMATCHED_PHASE204_INTERNAL_COMMERCE_READBACK"
   );
 });
 

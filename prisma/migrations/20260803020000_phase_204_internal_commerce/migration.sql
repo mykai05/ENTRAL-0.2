@@ -19,7 +19,7 @@ CREATE TABLE entral.phase204_mutation_receipts (
   operation text NOT NULL CHECK (operation IN (
     'REGISTER_CAPABILITY','RECORD_CAPABILITY_EVIDENCE','BIND_CAPABILITY_REQUIREMENT','CAPABILITY_TRANSITION',
     'REGISTER_INSTALLATION','TRANSITION_INSTALLATION','ACTIVATE_INTERNAL_COMMERCE',
-    'REGISTER_PRODUCT_ASSET','RECORD_PRODUCT_GATE','RECORD_STOREFRONT_STATE',
+    'REGISTER_PRODUCT_EVIDENCE','REGISTER_PRODUCT_ASSET','RECORD_PRODUCT_GATE','RECORD_STOREFRONT_STATE',
     'OWNER_PUBLICATION_APPROVAL','RECORD_LISTING_STATE','INGEST_PROVIDER_FACT',
     'RECORD_METRIC_TRUTH','SET_COMMERCE_CONTROL'
   )),
@@ -162,7 +162,6 @@ CREATE TABLE entral.phase204_product_assets (
   created_by_actor_id uuid NOT NULL REFERENCES public."IdentityActor"("id") ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE (product_id,asset_role,asset_version,content_sha256),
-  UNIQUE (product_id,artifact_id),
   FOREIGN KEY (tenant_id,organization_id)
     REFERENCES public."TenantBoundary"("id","organizationId") ON DELETE RESTRICT,
   FOREIGN KEY (business_boundary_id,tenant_id,organization_id)
@@ -2575,6 +2574,204 @@ BEGIN
 END
 $phase204_activate_internal_commerce$;
 
+-- Product files and their verification receipts must first exist as canonical,
+-- repository-backed evidence in the same business. This narrow function is the
+-- only Phase 204 path that creates those prerequisite source/artifact records.
+CREATE OR REPLACE FUNCTION entral.phase204_register_product_evidence(p_request jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase204_register_product_evidence$
+DECLARE
+  v_source_record_id uuid;
+  v_artifact_id uuid;
+  v_product_id uuid;
+  v_tenant_id uuid;
+  v_organization_id uuid;
+  v_captured_at timestamptz;
+  v_actor_id uuid;
+  v_idempotency_key text;
+  v_request_hash text;
+  v_artifact_kind entral.artifact_kind;
+  v_external_id text;
+  prior_response jsonb;
+  response jsonb;
+  product entral.phase204_internal_commerce_products%ROWTYPE;
+  activation entral.phase204_internal_commerce_activations%ROWTYPE;
+BEGIN
+  IF p_request IS NULL OR jsonb_typeof(p_request)<>'object'
+     OR p_request-ARRAY[
+       'source_record_id','artifact_id','product_id','tenant_id','organization_id',
+       'evidence_kind','evidence_code','file_name','media_type','byte_size',
+       'content_sha256','source_reference','captured_at','idempotency_key','release_version'
+     ]::text[]<>'{}'::jsonb THEN
+    RAISE EXCEPTION 'Invalid Phase 204 product evidence envelope' USING ERRCODE='22023';
+  END IF;
+  BEGIN
+    v_source_record_id := (p_request->>'source_record_id')::uuid;
+    v_artifact_id := (p_request->>'artifact_id')::uuid;
+    v_product_id := (p_request->>'product_id')::uuid;
+    v_tenant_id := (p_request->>'tenant_id')::uuid;
+    v_organization_id := (p_request->>'organization_id')::uuid;
+    v_captured_at := (p_request->>'captured_at')::timestamptz;
+    PERFORM (p_request->>'byte_size')::bigint;
+  EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range OR datetime_field_overflow THEN
+    RAISE EXCEPTION 'Malformed Phase 204 product evidence envelope' USING ERRCODE='22023';
+  END;
+  v_idempotency_key := p_request->>'idempotency_key';
+  IF p_request->>'release_version'<>'phase-204'
+     OR v_idempotency_key IS NULL OR length(v_idempotency_key) NOT BETWEEN 12 AND 255
+     OR p_request->>'evidence_kind' NOT IN ('PRODUCT_ASSET','PRODUCT_GATE')
+     OR COALESCE(p_request->>'evidence_code','') !~ '^[A-Z][A-Z0-9_]{1,63}$'
+     OR length(btrim(COALESCE(p_request->>'file_name',''))) NOT BETWEEN 1 AND 255
+     OR COALESCE(p_request->>'media_type','') !~ '^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$'
+     OR (p_request->>'byte_size')::bigint<=0
+     OR COALESCE(p_request->>'content_sha256','') !~ '^[0-9a-f]{64}$'
+     OR COALESCE(p_request->>'source_reference','') !~ '^[^@[:space:]]+@[0-9a-f]{40}:.+'
+     OR v_captured_at IS NULL OR v_captured_at>clock_timestamp()+interval '5 minutes' THEN
+    RAISE EXCEPTION 'Phase 204 product evidence violates the source contract' USING ERRCODE='22023';
+  END IF;
+  v_artifact_kind := CASE
+    WHEN p_request->>'media_type'='application/pdf' THEN 'DOCUMENT'::entral.artifact_kind
+    WHEN p_request->>'media_type' IN (
+      'text/csv','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ) THEN 'DATASET'::entral.artifact_kind
+    WHEN p_request->>'media_type'='application/zip' THEN 'EXPORT'::entral.artifact_kind
+    WHEN p_request->>'media_type'='application/json' THEN 'REPORT'::entral.artifact_kind
+    ELSE 'OTHER'::entral.artifact_kind
+  END;
+  IF NOT entral.phase204_operation_access_allows(v_tenant_id,v_organization_id) THEN
+    RAISE EXCEPTION 'Product evidence recording requires exact tenant operations authority'
+      USING ERRCODE='42501';
+  END IF;
+  v_actor_id := entral.phase202_current_actor_id();
+  v_request_hash := entral.phase204_request_hash(p_request);
+  PERFORM pg_advisory_xact_lock(hashtextextended('phase204:product-evidence:'||v_idempotency_key,0));
+  prior_response := entral.phase204_mutation_replay(
+    'REGISTER_PRODUCT_EVIDENCE',v_idempotency_key,v_request_hash
+  );
+  IF prior_response IS NOT NULL THEN RETURN prior_response; END IF;
+
+  SELECT * INTO product FROM entral.phase204_internal_commerce_products
+  WHERE product_id=v_product_id AND tenant_id=v_tenant_id AND organization_id=v_organization_id
+  FOR SHARE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Product evidence is outside the exact Phase 204 tenant scope'
+      USING ERRCODE='23503';
+  END IF;
+  SELECT * INTO activation FROM entral.phase204_internal_commerce_activations
+  WHERE business_boundary_id=product.business_boundary_id
+    AND tenant_id=v_tenant_id AND organization_id=v_organization_id
+  FOR SHARE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Product evidence has no canonical Phase 204 activation'
+      USING ERRCODE='23503';
+  END IF;
+  v_external_id := 'phase-204:'||product.product_code||':'||
+    (p_request->>'evidence_kind')||':'||(p_request->>'evidence_code')||':'||
+    (p_request->>'content_sha256');
+  INSERT INTO entral.source_records(
+    id,source_type,provider,external_id,business_id,entity_id,uri,content_sha256,
+    observed_at,trust_level,metadata
+  ) VALUES (
+    v_source_record_id,'REPOSITORY_RELEASE','GITHUB',v_external_id,
+    product.canonical_business_id,activation.commander_id,p_request->>'source_reference',
+    p_request->>'content_sha256',v_captured_at,'AUTHORITATIVE',jsonb_build_object(
+      'release_version','phase-204','product_id',v_product_id,
+      'product_code',product.product_code,'evidence_kind',p_request->>'evidence_kind',
+      'evidence_code',p_request->>'evidence_code'
+    )
+  );
+  INSERT INTO entral.artifacts(
+    id,artifact_kind,stable_code,name,business_id,entity_id,mission_id,storage_uri,
+    media_type,content_sha256,size_bytes,source_record_id,classification,retention_policy,metadata
+  ) VALUES (
+    v_artifact_id,v_artifact_kind,
+    'SP-COMMERCE-001-'||product.product_code||'-'||(p_request->>'evidence_kind')||'-'||
+      (p_request->>'evidence_code'),
+    p_request->>'file_name',product.canonical_business_id,activation.commander_id,
+    activation.launch_mission_id,p_request->>'source_reference',p_request->>'media_type',
+    p_request->>'content_sha256',(p_request->>'byte_size')::bigint,v_source_record_id,
+    'INTERNAL',jsonb_build_object('retention','PERMANENT'),jsonb_build_object(
+      'release_version','phase-204','product_id',v_product_id,
+      'product_code',product.product_code,'evidence_kind',p_request->>'evidence_kind',
+      'evidence_code',p_request->>'evidence_code'
+    )
+  );
+  INSERT INTO entral.evidence_links(
+    from_type,from_id,artifact_id,evidence_role,claim,locator
+  ) VALUES (
+    'MISSION',activation.launch_mission_id,v_artifact_id,p_request->>'evidence_kind',
+    'Phase 204 product evidence is bound to an exact repository artifact and canonical business.',
+    jsonb_build_object('product_id',v_product_id,'product_code',product.product_code,
+      'evidence_code',p_request->>'evidence_code')
+  );
+  response := jsonb_build_object(
+    'source_record_id',v_source_record_id,'artifact_id',v_artifact_id,
+    'product_id',v_product_id,'evidence_kind',p_request->>'evidence_kind',
+    'evidence_code',p_request->>'evidence_code','file_name',p_request->>'file_name',
+    'media_type',p_request->>'media_type','byte_size',(p_request->>'byte_size')::bigint,
+    'content_sha256',p_request->>'content_sha256','source_reference',p_request->>'source_reference',
+    'captured_at',v_captured_at,'release_version','phase-204'
+  );
+  PERFORM entral.phase204_record_mutation(
+    'REGISTER_PRODUCT_EVIDENCE',v_tenant_id,v_organization_id,NULL,NULL,
+    v_idempotency_key,v_request_hash,response,v_actor_id
+  );
+  RETURN response;
+END
+$phase204_register_product_evidence$;
+
+CREATE OR REPLACE FUNCTION entral.phase204_product_evidence_identity_matches(
+  p_evidence_id uuid,
+  p_product_code text,
+  p_business_id uuid,
+  p_allowed_kinds text[]
+)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path=pg_catalog,public,entral,pg_temp
+AS $phase204_product_evidence_identity_matches$
+  SELECT EXISTS (
+    SELECT 1
+    FROM entral.source_records source
+    WHERE source.id=p_evidence_id
+      AND source.business_id=p_business_id
+      AND source.source_type='REPOSITORY_RELEASE'
+      AND source.provider='GITHUB'
+      AND split_part(source.external_id,':',1)='phase-204'
+      AND split_part(source.external_id,':',2)=p_product_code
+      AND split_part(source.external_id,':',3)=ANY(p_allowed_kinds)
+      AND split_part(source.external_id,':',4)~'^[A-Z][A-Z0-9_]{1,63}$'
+      AND source.external_id='phase-204:'||p_product_code||':'||
+        split_part(source.external_id,':',3)||':'||split_part(source.external_id,':',4)||':'||
+        source.content_sha256
+      AND source.content_sha256~'^[0-9a-f]{64}$'
+    UNION ALL
+    SELECT 1
+    FROM entral.artifacts artifact
+    JOIN entral.source_records source ON source.id=artifact.source_record_id
+    WHERE artifact.id=p_evidence_id
+      AND artifact.business_id=p_business_id
+      AND source.business_id=p_business_id
+      AND source.source_type='REPOSITORY_RELEASE'
+      AND source.provider='GITHUB'
+      AND split_part(source.external_id,':',1)='phase-204'
+      AND split_part(source.external_id,':',2)=p_product_code
+      AND split_part(source.external_id,':',3)=ANY(p_allowed_kinds)
+      AND split_part(source.external_id,':',4)~'^[A-Z][A-Z0-9_]{1,63}$'
+      AND source.external_id='phase-204:'||p_product_code||':'||
+        split_part(source.external_id,':',3)||':'||split_part(source.external_id,':',4)||':'||
+        source.content_sha256
+      AND artifact.stable_code='SP-COMMERCE-001-'||p_product_code||'-'||
+        split_part(source.external_id,':',3)||'-'||split_part(source.external_id,':',4)
+      AND artifact.content_sha256=source.content_sha256
+      AND artifact.storage_uri=source.uri
+  )
+$phase204_product_evidence_identity_matches$;
+
+REVOKE ALL ON FUNCTION entral.phase204_product_evidence_identity_matches(uuid,text,uuid,text[]) FROM PUBLIC;
+
 CREATE OR REPLACE FUNCTION entral.phase204_register_product_asset(p_request jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER
@@ -2593,6 +2790,7 @@ DECLARE
   response jsonb;
   product entral.phase204_internal_commerce_products%ROWTYPE;
   artifact_record entral.artifacts%ROWTYPE;
+  source_record entral.source_records%ROWTYPE;
 BEGIN
   IF p_request IS NULL OR jsonb_typeof(p_request)<>'object'
      OR p_request-ARRAY[
@@ -2643,17 +2841,26 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'Product is outside the exact Phase 204 tenant scope' USING ERRCODE='23503'; END IF;
   SELECT * INTO artifact_record FROM entral.artifacts
   WHERE id=v_artifact_id AND business_id=product.canonical_business_id FOR SHARE;
-  IF NOT FOUND OR artifact_record.content_sha256 IS DISTINCT FROM p_request->>'content_sha256'
-     OR artifact_record.media_type IS DISTINCT FROM p_request->>'media_type'
-     OR artifact_record.size_bytes IS DISTINCT FROM (p_request->>'byte_size')::bigint
-     OR artifact_record.storage_uri IS DISTINCT FROM p_request->>'source_reference'
-     OR p_request->>'asset_version' IS DISTINCT FROM product.product_version THEN
-    RAISE EXCEPTION 'Product asset must bind the current exact same-business repository artifact'
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Product asset must bind the current exact product repository artifact'
       USING ERRCODE='23514';
   END IF;
-  IF EXISTS (SELECT 1 FROM entral.phase204_product_assets prior
-      WHERE prior.product_id=v_product_id AND prior.artifact_id=v_artifact_id) THEN
-    RAISE EXCEPTION 'One artifact cannot fill more than one product asset role' USING ERRCODE='23505';
+  SELECT * INTO source_record FROM entral.source_records
+  WHERE id=artifact_record.source_record_id FOR SHARE;
+  IF NOT FOUND OR artifact_record.content_sha256 IS DISTINCT FROM p_request->>'content_sha256'
+     OR artifact_record.media_type IS DISTINCT FROM p_request->>'media_type'
+     OR artifact_record.name IS DISTINCT FROM p_request->>'file_name'
+     OR artifact_record.size_bytes IS DISTINCT FROM (p_request->>'byte_size')::bigint
+     OR artifact_record.storage_uri IS DISTINCT FROM p_request->>'source_reference'
+     OR source_record.business_id IS DISTINCT FROM product.canonical_business_id
+     OR source_record.content_sha256 IS DISTINCT FROM artifact_record.content_sha256
+     OR source_record.uri IS DISTINCT FROM artifact_record.storage_uri
+     OR NOT entral.phase204_product_evidence_identity_matches(
+       v_artifact_id,product.product_code,product.canonical_business_id,ARRAY['PRODUCT_ASSET']::text[]
+     )
+     OR p_request->>'asset_version' IS DISTINCT FROM product.product_version THEN
+    RAISE EXCEPTION 'Product asset must bind the current exact product repository artifact'
+      USING ERRCODE='23514';
   END IF;
   INSERT INTO entral.phase204_product_assets(
     product_asset_id,product_id,tenant_id,organization_id,business_boundary_id,artifact_id,
@@ -2734,6 +2941,8 @@ DECLARE
   v_checked_at timestamptz;
   v_current_manifests jsonb;
   v_permitted_asset_id uuid;
+  evidence_source entral.source_records%ROWTYPE;
+  evidence_artifact entral.artifacts%ROWTYPE;
 BEGIN
   IF p_request IS NULL OR jsonb_typeof(p_request)<>'object'
      OR p_request-ARRAY[
@@ -2786,15 +2995,36 @@ BEGIN
   WHERE product_id=v_product_id AND tenant_id=v_tenant_id AND organization_id=v_organization_id FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Product is outside the exact Phase 204 tenant scope' USING ERRCODE='23503'; END IF;
   IF v_source_record_id IS NOT NULL THEN
-    SELECT content_sha256,business_id INTO v_evidence_hash,v_evidence_business_id
-    FROM entral.source_records WHERE id=v_source_record_id FOR SHARE;
+    SELECT * INTO evidence_source FROM entral.source_records
+    WHERE id=v_source_record_id FOR SHARE;
+    IF FOUND THEN
+      v_evidence_hash := evidence_source.content_sha256;
+      v_evidence_business_id := evidence_source.business_id;
+    END IF;
   ELSE
-    SELECT content_sha256,business_id INTO v_evidence_hash,v_evidence_business_id
-    FROM entral.artifacts WHERE id=v_artifact_id FOR SHARE;
+    SELECT * INTO evidence_artifact FROM entral.artifacts
+    WHERE id=v_artifact_id FOR SHARE;
+    IF FOUND THEN
+      SELECT * INTO evidence_source FROM entral.source_records
+      WHERE id=evidence_artifact.source_record_id FOR SHARE;
+      v_evidence_hash := evidence_artifact.content_sha256;
+      v_evidence_business_id := evidence_artifact.business_id;
+    END IF;
   END IF;
   IF NOT FOUND OR v_evidence_hash IS DISTINCT FROM p_request->>'evidence_sha256'
-     OR v_evidence_business_id IS DISTINCT FROM product.canonical_business_id THEN
-    RAISE EXCEPTION 'Product gate must bind exact same-business evidence' USING ERRCODE='23514';
+     OR v_evidence_business_id IS DISTINCT FROM product.canonical_business_id
+     OR evidence_source.business_id IS DISTINCT FROM product.canonical_business_id
+     OR evidence_source.content_sha256 IS DISTINCT FROM v_evidence_hash
+     OR NOT entral.phase204_product_evidence_identity_matches(
+       COALESCE(v_source_record_id,v_artifact_id),product.product_code,
+       product.canonical_business_id,ARRAY['PRODUCT_GATE']::text[]
+     )
+     OR (v_artifact_id IS NOT NULL AND (
+       evidence_artifact.source_record_id IS DISTINCT FROM evidence_source.id
+       OR evidence_artifact.storage_uri IS DISTINCT FROM evidence_source.uri
+     )) THEN
+    RAISE EXCEPTION 'Product gate must bind exact product-specific canonical evidence'
+      USING ERRCODE='23514';
   END IF;
   IF COALESCE(v_source_record_id,v_artifact_id)<>ALL(v_evidence_ids) THEN
     RAISE EXCEPTION 'Primary gate evidence must be present in the exact evidence identifier set'
@@ -2802,18 +3032,12 @@ BEGIN
   END IF;
   IF EXISTS (
     SELECT 1 FROM unnest(v_evidence_ids) evidence_id
-    WHERE NOT EXISTS (SELECT 1 FROM entral.source_records source
-      WHERE source.id=evidence_id AND source.business_id=product.canonical_business_id
-        AND source.observed_at IS NOT NULL AND source.observed_at<=v_assessed_at
-        AND source.trust_level IN ('HIGH','AUTHORITATIVE')
-        AND COALESCE(source.content_sha256,'') ~ '^[0-9a-f]{64}$'
-        AND (source.uri ~ '^https://[^[:space:]]+$'
-          OR source.uri ~ '^[^@[:space:]]+@[0-9a-f]{40}:.+'))
-      AND NOT EXISTS (SELECT 1 FROM entral.artifacts artifact
-        WHERE artifact.id=evidence_id AND artifact.business_id=product.canonical_business_id
-          AND artifact.content_sha256 ~ '^[0-9a-f]{64}$')
+    WHERE NOT entral.phase204_product_evidence_identity_matches(
+      evidence_id,product.product_code,product.canonical_business_id,
+      ARRAY['PRODUCT_GATE','PRODUCT_ASSET']::text[]
+    )
   ) THEN
-    RAISE EXCEPTION 'Every gate evidence identifier must resolve to current same-business evidence'
+    RAISE EXCEPTION 'Every gate evidence identifier must resolve to current same-product evidence'
       USING ERRCODE='23514';
   END IF;
   IF EXISTS (SELECT 1 FROM entral.phase204_product_assets asset
@@ -2942,7 +3166,7 @@ AS $phase204_product_ready$
     WHERE original_work AND delivery_ready AND readiness='FINAL' AND license_status='CLEARED'
   )
   SELECT EXISTS (SELECT 1 FROM entral.phase204_internal_commerce_products WHERE product_id=p_product_id)
-    AND (SELECT role_count=9 AND artifact_count=9 FROM asset_state)
+    AND (SELECT role_count=9 AND artifact_count>=3 FROM asset_state)
     AND (SELECT count(*)=6 AND bool_and(status='PASSED')
          AND min(assessed_at)>=(SELECT newest_asset FROM asset_state) FROM latest_gates)
 $phase204_product_ready$;
@@ -4501,7 +4725,8 @@ BEGIN
       entral.phase204_bind_capability_requirement(jsonb),
       entral.phase204_register_capability_installation(jsonb),entral.phase204_transition_capability_installation(jsonb),
       entral.phase204_tenant_capability_readback(uuid,uuid),entral.phase204_activate_internal_commerce(jsonb),
-      entral.phase204_register_product_asset(jsonb),entral.phase204_record_product_gate(jsonb),
+      entral.phase204_register_product_evidence(jsonb),entral.phase204_register_product_asset(jsonb),
+      entral.phase204_record_product_gate(jsonb),
       entral.phase204_record_storefront_state(jsonb),entral.phase204_approve_publication(jsonb),
       entral.phase204_publication_allowed(uuid),entral.phase204_ingest_provider_fact(jsonb),
       entral.phase204_record_listing_state(jsonb),entral.phase204_record_metric_truth(jsonb),
@@ -4563,6 +4788,8 @@ COMMENT ON TABLE entral.phase204_commerce_controls IS
   'Independent versioned pause, publication-disable, and owner-kill controls with current evidence and fail-closed state.';
 COMMENT ON FUNCTION entral.phase204_activate_internal_commerce(jsonb) IS
   'Owner-only, idempotent narrow provisioning of one tenant-bound canonical commerce business and bounded mission-owned agent hierarchy.';
+COMMENT ON FUNCTION entral.phase204_register_product_evidence(jsonb) IS
+  'Tenant-operations-only canonical registration of exact repository product files and gate evidence before product readiness mutations.';
 COMMENT ON FUNCTION entral.phase204_approve_publication(jsonb) IS
   'Owner-only approval of exact current product, asset, claim, license, AI-disclosure, price, brand, provider, and spend manifests; performs no provider mutation.';
 COMMENT ON FUNCTION entral.phase204_publication_allowed(uuid) IS

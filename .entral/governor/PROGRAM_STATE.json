@@ -1502,8 +1502,8 @@
       "package.json"
     ],
     "acquired_at": "2026-08-03T19:07:56.357Z",
-    "heartbeat_at": "2026-08-03T19:07:56.357Z",
-    "expires_at": "2026-08-03T23:07:56.357Z"
+    "heartbeat_at": "2026-08-03T21:31:05.686Z",
+    "expires_at": "2026-08-04T01:31:05.686Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
@@ -1513,10 +1513,10 @@
   ],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 200,
-  "updated_at": "2026-08-03T19:07:56.357Z",
+  "version": 201,
+  "updated_at": "2026-08-03T21:31:05.686Z",
   "task_deadline_at": "2026-08-04T19:07:56.160Z",
   "pending_release_manifest": null,
-  "event_count": 200,
-  "event_head_hash": "f00cbfb6119cbd285826303b1e1081695c55a160c41e454a407abfa6f862c4b8"
+  "event_count": 201,
+  "event_head_hash": "bf61e7106d4178d05fc9b79b2b2e8c1adea2a1a5e17f7b06200d4c2c2590103b"
 }

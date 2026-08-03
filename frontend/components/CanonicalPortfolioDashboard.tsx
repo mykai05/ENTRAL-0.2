@@ -38,7 +38,15 @@ import {
   subscribeCanonicalPortfolioEvents,
   type CanonicalPortfolioSource
 } from "../lib/canonical-portfolio";
+import {
+  PHASE204_INTERNAL_BUSINESS_CODE,
+  applyPhase204CommerceControl,
+  loadPhase204InternalCommerce,
+  type Phase204ControlAction,
+  type Phase204InternalCommerceReadback
+} from "../lib/phase204-internal-commerce";
 import { Button } from "./Button";
+import { Phase204InternalCommerce } from "./Phase204InternalCommerce";
 
 type SortMode = "ENTRAL_PRIORITY" | "HEALTH" | "REVENUE" | "NET_CONTRIBUTION" | "RECENT_CHANGE";
 type PerformanceFilter = "ALL" | "POSITIVE" | "NEGATIVE" | "UNAVAILABLE";
@@ -303,6 +311,7 @@ function BusinessDetail({
   destinationView,
   error,
   isLoading,
+  organizationId,
   onRetry,
   requestedEvidenceId,
   snapshotEventSequence
@@ -312,6 +321,7 @@ function BusinessDetail({
   destinationView: CanonicalPortfolioView;
   error: string;
   isLoading: boolean;
+  organizationId?: string;
   onRetry: () => void;
   requestedEvidenceId: string | null;
   snapshotEventSequence: number;
@@ -369,6 +379,10 @@ function BusinessDetail({
         ))}
       </div>
 
+      {organizationId && summary.stable_code === PHASE204_INTERNAL_BUSINESS_CODE ? (
+        <InternalCommerceBusinessTruth organizationId={organizationId} />
+      ) : null}
+
       {business.evidence_ids.length ? (
         <section aria-label="Canonical business evidence references" className="phase170-evidence-list">
           <h2>Evidence references</h2>
@@ -405,6 +419,74 @@ function BusinessDetail({
         <span>{business.version_history.length} recorded version{business.version_history.length === 1 ? "" : "s"}</span>
       </footer>
     </section>
+  );
+}
+
+type Phase204PanelPendingAction = Phase204ControlAction | "REFRESH" | null;
+
+function InternalCommerceBusinessTruth({ organizationId }: { organizationId: string }) {
+  const [readback, setReadback] = useState<Phase204InternalCommerceReadback | null>(null);
+  const [status, setStatus] = useState<"error" | "loading" | "ready">("loading");
+  const [loadError, setLoadError] = useState("");
+  const [pendingAction, setPendingAction] = useState<Phase204PanelPendingAction>(null);
+
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    setLoadError("");
+    setStatus("loading");
+    try {
+      setReadback(await loadPhase204InternalCommerce(organizationId, { signal }));
+      if (!signal?.aborted) setStatus("ready");
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      if (!signal?.aborted) {
+        setReadback(null);
+        setLoadError(errorMessage(error));
+        setStatus("error");
+      }
+    }
+  }, [organizationId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void refresh(controller.signal);
+    return () => controller.abort();
+  }, [refresh]);
+
+  const runControl = useCallback(async (command: {
+    action: Phase204ControlAction;
+    businessBoundaryId: string;
+    reason: string;
+  }) => {
+    setPendingAction(command.action);
+    try {
+      await applyPhase204CommerceControl(organizationId, command);
+      setReadback(await loadPhase204InternalCommerce(organizationId));
+      setStatus("ready");
+    } finally {
+      setPendingAction(null);
+    }
+  }, [organizationId]);
+
+  const refreshFromPanel = useCallback(async () => {
+    setPendingAction("REFRESH");
+    try {
+      await refresh();
+    } finally {
+      setPendingAction(null);
+    }
+  }, [refresh]);
+
+  const recentMfa = readback?.session_authority?.recent_mfa_verified === true;
+  return (
+    <Phase204InternalCommerce
+      errorMessage={loadError}
+      mfaState={{ KILL_BUSINESS: recentMfa ? "VERIFIED" : "REQUIRED" }}
+      onControlAction={runControl}
+      onRefresh={refreshFromPanel}
+      pendingAction={pendingAction}
+      readback={readback}
+      status={status}
+    />
   );
 }
 
@@ -657,6 +739,7 @@ export function CanonicalPortfolioDashboard({
         destinationView={view}
         error={businessError}
         isLoading={isBusinessLoading}
+        organizationId={organizationId}
         onRetry={() => void refreshBusiness(
           selectedBusinessId,
           workspacePortfolio?.event_sequence ?? portfolio?.event_sequence ?? 0
