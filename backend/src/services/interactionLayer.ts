@@ -238,8 +238,8 @@ export const interactionLayerService = {
     readonly organizationId: string;
     readonly role: "MEMBER" | "OWNER";
     readonly userId: string;
-  }) {
-    const row = await prisma.memberTutorialProgress.upsert({
+  }, database: Prisma.TransactionClient | typeof prisma = prisma) {
+    const row = await database.memberTutorialProgress.upsert({
       create: {
         businessModelContext: null,
         commanderPackContext: null,
@@ -260,8 +260,8 @@ export const interactionLayerService = {
     readonly role: "MEMBER" | "OWNER";
     readonly update: TutorialProgressUpdateRequest;
     readonly userId: string;
-  }) {
-    return prisma.$transaction(async (transaction) => {
+  }, database?: Prisma.TransactionClient) {
+    const execute = async (transaction: Prisma.TransactionClient) => {
       const receiptKey = tutorialReceiptKey(input.userId, input.organizationId, input.update.idempotency_key);
       const replay = await transaction.memberTutorialMutationReceipt.findUnique({ where: receiptKey });
       if (replay) return publicTutorialMutation(replay, true);
@@ -315,7 +315,8 @@ export const interactionLayerService = {
         }
       });
       return publicTutorialMutation(receipt, false);
-    });
+    };
+    return database ? execute(database) : prisma.$transaction(execute);
   },
 
   async resetTutorialProgress(input: {
@@ -324,8 +325,8 @@ export const interactionLayerService = {
     readonly organizationId: string;
     readonly role: "MEMBER" | "OWNER";
     readonly userId: string;
-  }) {
-    return prisma.$transaction(async (transaction) => {
+  }, database?: Prisma.TransactionClient) {
+    const execute = async (transaction: Prisma.TransactionClient) => {
       const receiptKey = tutorialReceiptKey(input.userId, input.organizationId, input.idempotencyKey);
       const replay = await transaction.memberTutorialMutationReceipt.findUnique({ where: receiptKey });
       if (replay) return publicTutorialMutation(replay, true);
@@ -377,6 +378,7 @@ export const interactionLayerService = {
         }
       });
       return publicTutorialMutation(receipt, false);
-    });
+    };
+    return database ? execute(database) : prisma.$transaction(execute);
   }
 };

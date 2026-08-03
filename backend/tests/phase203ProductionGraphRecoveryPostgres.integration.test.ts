@@ -24,6 +24,7 @@ vi.hoisted(() => {
 import { withTenantSession } from "../src/db.js";
 import { CanonicalControlPlaneRepository } from "../src/services/canonicalControlPlane.js";
 import { recordAuditLog } from "../src/services/audit.js";
+import { interactionLayerService } from "../src/services/interactionLayer.js";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const integrationEnabled = Boolean(
@@ -304,6 +305,15 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account production grap
         tenantId: migrated.tenantId
       }, (transaction) => transaction.memberTutorialProgress.findMany());
       expect(tutorialBeforeRepair).toEqual([]);
+      await expect(withTenantSession(api, {
+        actionReason: "Reproduce the unbound migrated Tutorial service failure.",
+        authSubject: migratedUserId,
+        tenantId: migrated.tenantId
+      }, (transaction) => interactionLayerService.getTutorialProgress({
+        organizationId: migratedTeamId,
+        role: "OWNER",
+        userId: migratedUserId
+      }, transaction))).rejects.toThrow();
       const memberAssignment = await owner.$queryRaw<Array<{
         organizationId: string;
         tenantId: string;
@@ -386,6 +396,20 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account production grap
         organizationId: migratedTeamId,
         tenantId: migrated.tenantId,
         userId: migratedUserId
+      }));
+      const routeBoundTutorial = await withTenantSession(api, {
+        actionReason: "Verify the migrated Tutorial service uses the tenant transaction.",
+        authSubject: migratedUserId,
+        tenantId: migrated.tenantId
+      }, (transaction) => interactionLayerService.getTutorialProgress({
+        organizationId: migratedTeamId,
+        role: "OWNER",
+        userId: migratedUserId
+      }, transaction));
+      expect(routeBoundTutorial).toEqual(expect.objectContaining({
+        organization_id: migratedTeamId,
+        role_context: "OWNER",
+        user_id: migratedUserId
       }));
 
       const memberAnalyticsId = randomUUID();

@@ -32,6 +32,10 @@ test("migrated-account and interaction analytics regressions are release-bound",
   assert.match(postgres, /phase202_live_ownership_blockers/);
   assert.match(interactionRoute, /withTenantSession\(prisma/);
   assert.match(interactionRoute, /Record tenant-bound member interaction analytics evidence/);
+  assert.match(interactionRoute, /Read tenant-bound Tutorial progress/);
+  assert.match(interactionRoute, /Update tenant-bound Tutorial progress/);
+  assert.match(interactionRoute, /Reset tenant-bound Tutorial progress/);
+  assert.match(postgres, /migrated Tutorial service uses the tenant transaction/);
   assert.match(ci, /Verify migrated-account Phase 203 production graph recovery/);
   assert.ok(packageJson.scripts["test:phase203:graph-recovery"]);
 });
@@ -65,5 +69,8 @@ test("all later releases require a real authenticated production member journey"
   assert.match(journey, /data-canonical-edge-ids/);
   assert.match(journey, /data-graph-webgl-state=\"ready\"/);
   assert.match(journey, /E2E_MIGRATED_STATE_RECEIPT_SHA256/);
+  assert.match(journey, /memberSessionClaims/);
+  assert.match(journey, /Current migrated member organization inventory/);
+  assert.doesNotMatch(journey, /\/api\/v1\/me\b/);
   assert.doesNotMatch(journey, /page\.route\(|route\.fulfill\(/);
 });
