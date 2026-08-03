@@ -49,6 +49,7 @@
     "frontend/tests/OnboardingTour.test.tsx",
     "frontend/tests/ToolRegistry*.test.tsx",
     "e2e/**",
+    "scripts/phase195-release-gates.test.mjs",
     "scripts/phase203-capability-truth*.mjs",
     "scripts/phase203-capability-source-inventory.test.mjs",
     "scripts/apply-database-roles.mjs",

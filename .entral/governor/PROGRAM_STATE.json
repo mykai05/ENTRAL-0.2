@@ -330,6 +330,7 @@
       "frontend/tests/OnboardingTour.test.tsx",
       "frontend/tests/ToolRegistry*.test.tsx",
       "e2e/**",
+      "scripts/phase195-release-gates.test.mjs",
       "scripts/phase203-capability-truth*.mjs",
       "scripts/phase203-capability-source-inventory.test.mjs",
       "scripts/apply-database-roles.mjs",
@@ -362,18 +363,18 @@
       "repository:SovereignProtocol/sovereign-protocol-agent:platform/power-platform/agent-inventory.v1.json"
     ],
     "acquired_at": "2026-08-03T04:28:36.905Z",
-    "heartbeat_at": "2026-08-03T08:25:05.499Z",
-    "expires_at": "2026-08-03T11:25:05.499Z"
+    "heartbeat_at": "2026-08-03T08:31:01.781Z",
+    "expires_at": "2026-08-03T12:31:01.781Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 167,
-  "updated_at": "2026-08-03T08:25:05.499Z",
+  "version": 168,
+  "updated_at": "2026-08-03T08:31:01.781Z",
   "task_deadline_at": "2026-08-03T20:28:21.277Z",
   "pending_release_manifest": null,
-  "event_count": 167,
-  "event_head_hash": "ac36413183936d05b6095052d035a31961d2199b3da91a6c9d8149dc97783ceb"
+  "event_count": 168,
+  "event_head_hash": "c9f72ea7b321e2ddf2b9f921e0980e8e95ca1fd195ca51cc30f65f763e54e2c5"
 }

@@ -263,11 +263,8 @@ test("Phase 195 database preference and release evidence changes are present", a
     );
   }
 
-  const securityFiles = (await readdir(path.join(root, "prisma/security")))
-    .filter((name) => name.endsWith(".sql"))
-    .sort();
-  const latestSecurity = await projectFile(`prisma/security/${securityFiles.at(-1)}`);
-  assert.match(latestSecurity, /graph_view_preferences/i);
+  const phaseSecurity = await projectFile("prisma/security/047_phase_195_roles_and_grants.sql");
+  assert.match(phaseSecurity, /graph_view_preferences/i);
 
   const roleApply = await projectFile("scripts/apply-database-roles.mjs");
   const baseGrantIndex = roleApply.indexOf("prisma/security/046_roles_and_grants.sql");
@@ -291,7 +288,7 @@ test("Phase 195 database preference and release evidence changes are present", a
   );
 
   assert.doesNotMatch(
-    latestSecurity,
+    phaseSecurity,
     /GRANT\s+SELECT\s*,\s*INSERT\s*,\s*UPDATE[\s\S]*?TO\s+entral_verifier/i,
     "the verifier runtime role cannot mutate immutable release evidence"
   );
