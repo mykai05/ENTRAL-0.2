@@ -1431,17 +1431,19 @@
   },
   "blocked_reason": null,
   "retry_count": 0,
-  "next_action": "Create one bounded Phase 204 TaskPacket.",
+  "next_action": "Create a commit-bound GPT-5.6 Pro review packet for accepted material amendment AMEND-IMP-bea698ba2540f0c8d57f995d-1.",
   "active_write_lease": null,
   "latest_checkpoint": null,
   "review_state": null,
-  "conditional_review_triggers": [],
+  "conditional_review_triggers": [
+    "MATERIAL_PHASE_AMENDMENT"
+  ],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 196,
-  "updated_at": "2026-08-03T19:05:04.026Z",
+  "version": 197,
+  "updated_at": "2026-08-03T19:05:16.285Z",
   "task_deadline_at": "2026-08-03T20:39:06.117Z",
   "pending_release_manifest": null,
-  "event_count": 196,
-  "event_head_hash": "dbd94dc4c4797ec12c3318f4c4dec65ce434fabaa7a9170f0084d541a91d92d9"
+  "event_count": 197,
+  "event_head_hash": "8a7bce9a3418754c2ce962a952b08c68b80a651c3a3cc7dde5f9938c4ddf672e"
 }

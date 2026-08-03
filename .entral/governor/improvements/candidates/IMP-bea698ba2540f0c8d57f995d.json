@@ -7,7 +7,7 @@
   "business_id": null,
   "actor": "CODEX_5_6_SOL_XHIGH",
   "request_idempotency_key": "7b944e8bb959c06e6f6e529682cf95b5dbb90a82375b87fa6937ee42f5f57f53",
-  "version": 2,
+  "version": 3,
   "source": "SUPPORT",
   "category": "COMMERCIAL_CHANGE",
   "title": "Replace unactivated generic Phase 204 with the owner-approved Revenue Activation and Evidence Kernel",
@@ -82,8 +82,8 @@
   "root_cause_fingerprint_sha256": "da7ca46090b3cacac650b9b7237426419df827d19fa3154f180f042405e300de",
   "evidence_lineage_sha256": "fb4761640358bc9fd982b0cba187dd9099e56f3bb6db99e1d3247efa86a21f24",
   "deduplication_key_sha256": "bea698ba2540f0c8d57f995d7a6103a6b7b65750248d048fc6dc5f0c191583a3",
-  "status": "AMENDMENT_PROPOSED",
-  "rationale": "Material change requires owner-reviewed PhaseAmendment.",
+  "status": "AMENDMENT_ACCEPTED",
+  "rationale": "Owner accepted AMEND-IMP-bea698ba2540f0c8d57f995d-1; schedule the amended phase through normal TaskPacket and release gates.",
   "reevaluation_trigger": null,
   "proposed_phase": 204,
   "outcome_target": {
@@ -145,6 +145,6 @@
     }
   },
   "created_at": "2026-08-03T19:03:26.166Z",
-  "updated_at": "2026-08-03T19:03:49.129Z",
+  "updated_at": "2026-08-03T19:05:16.285Z",
   "release_version": "438e1b0546532efa48cd156e08af12168f4283d1"
 }
