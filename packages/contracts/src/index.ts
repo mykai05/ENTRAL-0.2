@@ -1,5 +1,6 @@
 export * from "./assistant.js";
 export * from "./baseline.js";
+export * from "./capability-truth.js";
 export * from "./domain.js";
 export * from "./graph.js";
 export * from "./integration.js";
