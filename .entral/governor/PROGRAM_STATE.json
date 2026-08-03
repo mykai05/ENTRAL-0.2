@@ -306,18 +306,18 @@
       "package.json"
     ],
     "acquired_at": "2026-08-02T23:32:29.485Z",
-    "heartbeat_at": "2026-08-02T23:56:23.674Z",
-    "expires_at": "2026-08-03T03:56:23.674Z"
+    "heartbeat_at": "2026-08-03T00:44:10.878Z",
+    "expires_at": "2026-08-03T01:14:10.878Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 134,
-  "updated_at": "2026-08-02T23:56:23.674Z",
+  "version": 135,
+  "updated_at": "2026-08-03T00:44:10.878Z",
   "task_deadline_at": "2026-08-03T15:32:15.211Z",
   "pending_release_manifest": null,
-  "event_count": 134,
-  "event_head_hash": "862117d8005289bac6bb2b7bf411eda690cdfb599ce9dbd47b6bb8d1005d3909"
+  "event_count": 135,
+  "event_head_hash": "0737a84ea8bcf546969890f59c399844d337d78acf440f4b901ec92995524fbf"
 }
