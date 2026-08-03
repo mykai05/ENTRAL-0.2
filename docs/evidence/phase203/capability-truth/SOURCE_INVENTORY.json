@@ -9,8 +9,7 @@
     "mode": "CONSERVATIVE_FAIL_CLOSED",
     "source_presence_is_verification": false,
     "allowed_initial_lifecycle_states": [
-      "CATALOGUED",
-      "DESIGNED"
+      "CATALOGUED"
     ],
     "forbidden_initial_lifecycle_states": [
       "ACTIVE",

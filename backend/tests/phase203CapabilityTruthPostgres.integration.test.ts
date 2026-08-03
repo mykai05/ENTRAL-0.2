@@ -1,5 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { cpSync, copyFileSync, mkdtempSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  copyFileSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -105,6 +114,7 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
     let api: PrismaClientType | null = null;
     let databaseCreated = false;
     let apiRoleCreated = false;
+    let serverVersionNumber = 0;
 
     try {
       await admin.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
@@ -118,6 +128,10 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
       );
 
       owner = new PrismaClient({ datasources: { db: { url: isolatedUrl.toString() } } });
+      const versionRows = await owner.$queryRaw<Array<{ versionNumber: number }>>`
+        SELECT current_setting('server_version_num')::int AS "versionNumber"
+      `;
+      serverVersionNumber = versionRows[0]?.versionNumber ?? 0;
       await owner.$executeRaw`
         INSERT INTO public."User" (
           "id","name","email","passwordHash","role","internalAccess",
@@ -163,11 +177,22 @@ describe.skipIf(!integrationEnabled)("Phase 203 migrated-account Capability Trut
         "prisma/security/047_phase_195_roles_and_grants.sql",
         "prisma/security/048_phase_202_roles_and_grants.sql"
       ]) {
+        let executableSecurityFile = securityFile;
+        if (securityFile.endsWith("046_roles_and_grants.sql") && serverVersionNumber < 160000) {
+          const source = readFileSync(join(repositoryRoot, securityFile), "utf8");
+          const normalized = source.replace(
+            "GRANT entral_verifier TO entral_api WITH INHERIT FALSE, SET FALSE;",
+            "GRANT entral_verifier TO entral_api;"
+          );
+          if (normalized === source) throw new Error("PostgreSQL 15 role normalization boundary drifted.");
+          executableSecurityFile = join(stagedPrisma, "046_roles_and_grants.pg15.sql");
+          writeFileSync(executableSecurityFile, normalized, "utf8");
+        }
         runPrisma(
           prismaCli,
           repositoryRoot,
           isolatedUrl.toString(),
-          ["db", "execute", "--file", securityFile, "--schema", stagedSchema],
+          ["db", "execute", "--file", executableSecurityFile, "--schema", stagedSchema],
           `Phase 203 prerequisite role deployment (${securityFile})`
         );
       }
