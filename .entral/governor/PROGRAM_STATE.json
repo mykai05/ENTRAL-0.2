@@ -327,24 +327,25 @@
       "e2e/production-member-journey.mjs",
       "scripts/phase199-baseline-gates.test.mjs",
       "scripts/phase200-interaction-gates.test.mjs",
+      "scripts/phase203-production-graph-recovery-gates.test.mjs",
       "scripts/phase203-capability-truth-gates.test.mjs",
       "docs/PHASE_203_CAPABILITY_TRUTH*.md",
       "docs/evidence/phase203/capability-truth/**",
       "package.json"
     ],
     "acquired_at": "2026-08-03T10:39:20.666Z",
-    "heartbeat_at": "2026-08-03T13:06:32.898Z",
-    "expires_at": "2026-08-03T13:36:32.898Z"
+    "heartbeat_at": "2026-08-03T16:48:53.764Z",
+    "expires_at": "2026-08-03T17:48:53.764Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 175,
-  "updated_at": "2026-08-03T13:06:32.898Z",
+  "version": 188,
+  "updated_at": "2026-08-03T16:48:53.764Z",
   "task_deadline_at": "2026-08-03T20:39:06.117Z",
   "pending_release_manifest": null,
-  "event_count": 175,
-  "event_head_hash": "1f7565f1145a028b3ce300866be153cd1ae345685439b9755be3909d165a6771"
+  "event_count": 188,
+  "event_head_hash": "9ba8d130ee72de179ae49c8adc55fa4b7b8716bebf17bd21f5b97bc098bebf3c"
 }
