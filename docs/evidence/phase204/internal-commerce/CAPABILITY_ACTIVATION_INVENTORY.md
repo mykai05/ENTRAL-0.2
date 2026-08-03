@@ -41,4 +41,3 @@ Tenant runtime derivatives advance one state at a time:
 `CATALOGUED -> DESIGNED -> IMPLEMENTED -> UNIT_VERIFIED -> INTEGRATION_VERIFIED -> CANARY_VERIFIED -> ACTIVE`
 
 Each transition is immutable and receipt-bound. `ACTIVE` additionally requires `REAL` production readiness, no failure state, satisfied dependencies, complete required evidence, a production readback receipt, an exact tenant and organization scope, and an active tenant installation. Missing, failed, expired, wrong-environment, wrong-capability, or wrong-tenant evidence fails closed.
-
