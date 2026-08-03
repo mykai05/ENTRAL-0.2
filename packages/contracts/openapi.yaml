@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: ENTRAL implemented API
-  version: 1.8.0
+  version: 1.9.0
   description: >
-    Phase 202 identity, tenancy, session, authority, and support-access contract surface.
+    Phase 203 Capability Truth plus Phase 202 identity, tenancy, session, authority, and support-access contract surface.
     Only paths with complete backend behavior are included. Canonical control-plane paths
     require internal Admin authentication. Member and identity paths require a verified,
     durable session; PostgreSQL row-level security resolves Human, service, support, and
@@ -978,8 +978,98 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "503": { $ref: "#/components/responses/DependencyUnavailable" }
+  /api/v1/product-truth/claims:
+    get:
+      operationId: getPublicProductTruthClaims
+      summary: Return a fresh public-safe projection containing only receipt-bound SELLABLE claims.
+      parameters:
+        - $ref: "#/components/parameters/ProductClaimSurface"
+      responses:
+        "200":
+          description: A fail-closed public Product Truth projection. The claims array may be empty.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicProductTruthProjection" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+  /api/v1/member/organizations/{organizationId}/product-truth:
+    get:
+      operationId: getMemberProductTruthClaims
+      summary: Return tenant- and organization-bound SELLABLE claims for the authenticated member.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationId"
+        - $ref: "#/components/parameters/ProductClaimSurface"
+      responses:
+        "200":
+          description: Tenant-bound Product Truth projection.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicProductTruthProjection" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+  /api/v1/admin/product-truth:
+    get:
+      operationId: getCapabilityTruthAdminReadback
+      summary: Read the complete internal Capability Truth Registry under durable Admin and recent MFA authority.
+      responses:
+        "200":
+          description: Complete internal registry readback.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CapabilityTruthAdminReadback" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+  /api/v1/admin/product-truth/capabilities/{capabilityId}/evidence:
+    post:
+      operationId: recordCapabilityTruthEvidence
+      summary: Record immutable version-bound verification evidence under authenticated Human authority.
+      parameters:
+        - $ref: "#/components/parameters/CapabilityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CapabilityEvidenceRegistration" }
+      responses:
+        "201": { description: Immutable evidence receipt recorded. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { description: Evidence does not satisfy the bounded contract. }
+  /api/v1/admin/product-truth/capabilities/{capabilityId}/transitions:
+    post:
+      operationId: transitionCapabilityTruthLifecycle
+      summary: Execute one audited, version-checked Capability Truth lifecycle transition.
+      parameters:
+        - $ref: "#/components/parameters/CapabilityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CapabilityLifecycleTransitionRequest" }
+      responses:
+        "200": { description: Audited lifecycle transition receipt. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { description: Lifecycle or evidence requirements are not satisfied. }
 components:
   parameters:
+    CapabilityId:
+      name: capabilityId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ProductClaimSurface:
+      name: surface
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: [WEBSITE, TUTORIAL, PRICING, CHECKOUT, PROPOSAL, ONBOARDING, INTEGRATION_LIST, MEMBER_APPLICATION, SALES]
     OrganizationId:
       name: organizationId
       in: path
@@ -1075,6 +1165,95 @@ components:
           schema:
             $ref: "#/components/schemas/DependencyUnavailableResult"
   schemas:
+    CapabilityLifecycleState:
+      type: string
+      enum: [CATALOGUED, DESIGNED, IMPLEMENTED, UNIT_VERIFIED, INTEGRATION_VERIFIED, CANARY_VERIFIED, ACTIVE, SELLABLE, DEPRECATED, RETIRED]
+    CapabilityEvidenceReceipt:
+      type: object
+      additionalProperties: false
+      required: [receipt_id, evidence_type, environment, status, reference, content_sha256, captured_at, expires_at]
+      properties:
+        receipt_id: { type: string, format: uuid }
+        evidence_type:
+          type: string
+          enum: [UNIT_TEST, INTEGRATION_TEST, CANARY, PRODUCTION_READBACK, AUTHENTICATION, AUTHORIZATION_SCOPE, OPERATION, READBACK, RECONCILIATION, REFRESH_OR_WEBHOOK, FAILURE_HANDLING, SUPPORT_READINESS, PRICING_APPROVAL, TUTORIAL, DOCUMENTATION, ROLLBACK]
+        environment: { type: string, enum: [DEVELOPMENT, TEST, STAGING, CANARY, PRODUCTION] }
+        status: { type: string, enum: [PASSED, FAILED] }
+        reference: { type: string, minLength: 1, maxLength: 2000 }
+        content_sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
+        captured_at: { type: string, format: date-time }
+        expires_at: { oneOf: [{ type: "null" }, { type: string, format: date-time }] }
+    PublicProductClaim:
+      type: object
+      additionalProperties: false
+      required: [claim_id, claim_key, capability_id, capability_key, capability_version, display_name, lifecycle_state, approved_language, limitations, evidence_receipt_ids, claim_record_version, capability_record_version]
+      properties:
+        claim_id: { type: string, format: uuid }
+        claim_key: { type: string, minLength: 3, maxLength: 160 }
+        capability_id: { type: string, format: uuid }
+        capability_key: { type: string, minLength: 3, maxLength: 160 }
+        capability_version: { type: string, minLength: 5, maxLength: 80 }
+        display_name: { type: string, minLength: 1, maxLength: 200 }
+        lifecycle_state: { type: string, const: SELLABLE }
+        approved_language: { type: string, minLength: 1, maxLength: 4000 }
+        limitations: { type: array, uniqueItems: true, items: { type: string, minLength: 1, maxLength: 2000 } }
+        evidence_receipt_ids: { type: array, minItems: 1, uniqueItems: true, items: { type: string, format: uuid } }
+        claim_record_version: { type: integer, minimum: 1 }
+        capability_record_version: { type: integer, minimum: 1 }
+    PublicProductTruthProjection:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, projection_id, environment, surface, registry_revision, generated_at, expires_at, claims]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        projection_id: { type: string, format: uuid }
+        environment: { type: string, enum: [DEVELOPMENT, TEST, STAGING, CANARY, PRODUCTION] }
+        surface: { type: string, enum: [WEBSITE, TUTORIAL, PRICING, CHECKOUT, PROPOSAL, ONBOARDING, INTEGRATION_LIST, MEMBER_APPLICATION, SALES] }
+        registry_revision: { type: integer, minimum: 1 }
+        generated_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        claims: { type: array, items: { $ref: "#/components/schemas/PublicProductClaim" } }
+    CapabilityEvidenceRegistration:
+      type: object
+      additionalProperties: false
+      required: [capability_id, expected_record_version, receipt, idempotency_key]
+      properties:
+        capability_id: { type: string, format: uuid }
+        expected_record_version: { type: integer, minimum: 1 }
+        receipt: { $ref: "#/components/schemas/CapabilityEvidenceReceipt" }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+    CapabilityLifecycleTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [transition_id, capability_id, from_state, to_state, expected_record_version, evidence_receipt_ids, reason, actor_id, correlation_id, idempotency_key, requested_at]
+      properties:
+        transition_id: { type: string, format: uuid }
+        capability_id: { type: string, format: uuid }
+        from_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
+        to_state: { $ref: "#/components/schemas/CapabilityLifecycleState" }
+        expected_record_version: { type: integer, minimum: 1 }
+        evidence_receipt_ids: { type: array, uniqueItems: true, items: { type: string, format: uuid } }
+        reason: { type: string, minLength: 1, maxLength: 2000 }
+        actor_id: { type: string, format: uuid }
+        correlation_id: { type: string, format: uuid }
+        idempotency_key: { type: string, minLength: 12, maxLength: 255 }
+        requested_at: { type: string, format: date-time }
+    CapabilityTruthAdminReadback:
+      type: object
+      additionalProperties: false
+      required: [contract_version, schema_version, registry_revision, generated_at, records, claims, installations, verification_receipts, dependencies, transition_audit]
+      properties:
+        contract_version: { type: string, const: "1.0.0" }
+        schema_version: { type: integer, const: 1 }
+        registry_revision: { type: integer, minimum: 1 }
+        generated_at: { type: string, format: date-time }
+        records: { type: array, items: { $ref: "./capability-truth-record.schema.json" } }
+        claims: { type: array, items: { type: object } }
+        installations: { type: array, items: { type: object } }
+        verification_receipts: { type: array, items: { $ref: "#/components/schemas/CapabilityEvidenceReceipt" } }
+        dependencies: { type: array, items: { type: object } }
+        transition_audit: { type: array, items: { type: object } }
     Phase202AccountDeidentificationRequest:
       type: object
       additionalProperties: false

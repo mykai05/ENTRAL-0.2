@@ -1400,13 +1400,16 @@ test("event and audit consumers reject malformed canonical records", () => {
   assert.throws(() => assertAuditEntry({ ...audit, result: "PENDING" }), ContractError);
 });
 
-test("OpenAPI exposes only implemented canonical, member, interaction, and Phase 202 identity paths", async () => {
+test("OpenAPI exposes only implemented canonical, member, Capability Truth, interaction, and identity paths", async () => {
   const openapi = await readFile(new URL("../openapi.yaml", import.meta.url), "utf8");
   const document = parseYaml(openapi);
   assert.equal(document.openapi, "3.1.0");
   assert.deepEqual(Object.keys(document.paths).sort(), [
     "/api/v1/account",
     "/api/v1/account/export",
+    "/api/v1/admin/product-truth",
+    "/api/v1/admin/product-truth/capabilities/{capabilityId}/evidence",
+    "/api/v1/admin/product-truth/capabilities/{capabilityId}/transitions",
     "/api/v1/control-plane/businesses",
     "/api/v1/control-plane/businesses/{businessId}",
     "/api/v1/control-plane/businesses/{businessId}/full",
@@ -1451,8 +1454,13 @@ test("OpenAPI exposes only implemented canonical, member, interaction, and Phase
     "/api/v1/member/organizations/{organizationId}/interaction/business-health",
     "/api/v1/member/organizations/{organizationId}/interaction/tutorial-progress",
     "/api/v1/member/organizations/{organizationId}/overview",
-    "/api/v1/member/organizations/{organizationId}/portfolio/summary"
+    "/api/v1/member/organizations/{organizationId}/portfolio/summary",
+    "/api/v1/member/organizations/{organizationId}/product-truth",
+    "/api/v1/product-truth/claims"
   ]);
+  assert.equal(document.components.schemas.PublicProductTruthProjection.additionalProperties, false);
+  assert.equal(document.components.schemas.PublicProductClaim.properties.lifecycle_state.const, "SELLABLE");
+  assert.equal(document.components.schemas.CapabilityTruthAdminReadback.additionalProperties, false);
   assert.equal(document.components.schemas.CanonicalEntitySummary.additionalProperties, false);
   assert.equal(document.components.schemas.Phase202AccountExport.additionalProperties, false);
   assert.equal(document.components.schemas.Phase202AccountDeidentificationRequest.additionalProperties, false);
