@@ -461,7 +461,7 @@ async function trackerWorkbook(definition) {
       title: key,
       type: workbookType(field[index.Type], formula, allowedValues),
       required: field[index.Required_When] === "Always" && !formula,
-      allowedValues,
+      ...(allowedValues.length > 0 ? { allowedValues } : {}),
       width: Math.min(42, Math.max(13, key.length + 2)),
       description: `${field[index.Required_When]}. ${field[index.Allowed_Values_or_Rule]} ${field[index.Why_It_Exists]}`,
       ...(formula ? { formula, resultType: formulaResultType(field[index.Allowed_Values_or_Rule]) } : {})

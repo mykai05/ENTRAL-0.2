@@ -144,4 +144,5 @@ test("Phase 204 XLSX stores values as values and rejects unsafe or ambiguous def
   assert.throws(() => generatePhase204Xlsx({ ...definition, columns: [...definition.columns, definition.columns[0]] }), /duplicates another table header/u);
   assert.throws(() => generatePhase204Xlsx({ ...definition, columns: [{ title: "Bad", type: "formula", formula: "SUM(A1:A2)" }] }), /must begin with =/u);
   assert.throws(() => generatePhase204Xlsx({ ...definition, columns: [{ title: "Bad", type: "text", allowedValues: ["A"], formula: "=1" }] }), /cannot combine formula and allowedValues/u);
+  assert.throws(() => generatePhase204Xlsx({ ...definition, columns: [{ title: "Bad", type: "text", allowedValues: [] }] }), /must not be empty when provided/u);
 });
