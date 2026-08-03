@@ -1,0 +1,89 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "amendment_id": "AMEND-IMP-bea698ba2540f0c8d57f995d-1",
+  "candidate_id": "IMP-bea698ba2540f0c8d57f995d",
+  "tenant_id": null,
+  "organization_id": null,
+  "business_id": null,
+  "actor": "CODEX_5_6_SOL_XHIGH",
+  "request_idempotency_key": "3564f488b18843203bf500dd75821ef5c32694f3c7c85cd24691733eebbae8e1",
+  "phase": 204,
+  "version": 1,
+  "candidate_version": 1,
+  "reason": "The prior generic Phase 204 package does not implement the owner's now-approved revenue activation order, provider approval boundaries, internal capability truth, bounded prospecting domain, or workflow-specific evidence kernel.",
+  "scope_delta": {
+    "added_requirements": [
+      "Apply the evidence kernel only to the two implemented revenue workflows.",
+      "Execute P204-INTERNAL-COMMERCE-ACTIVATION-001 first.",
+      "Execute P204-REVENUE-EVIDENCE-EVALUATION-001 third.",
+      "Execute P204-SOVEREIGN-HIGH-TICKET-PROSPECTING-MVP-001 second.",
+      "Require owner approval before first external publication and preserve provider credential boundaries."
+    ],
+    "removed_requirements": [
+      "Execute the prior generic Phase 204 package unchanged."
+    ],
+    "affected_paths": [
+      ".entral/governor/phases/204/**",
+      ".entral/governor/tasks/P204-*.json",
+      "backend/src/**phase204**",
+      "docs/PHASE_204_*.md",
+      "frontend/**phase204**",
+      "packages/contracts/**phase204**",
+      "prisma/**phase_204**",
+      "scripts/phase204-*"
+    ]
+  },
+  "evidence": [
+    {
+      "evidence_id": "EVID-732656474812b9ca3700c3c2",
+      "kind": "SUPPORT",
+      "reference": "repository://mykai05/ENTRAL-0.2/.entral/governor/phases/204/OWNER_PHASE_AMENDMENT_ATTESTATION.v1.json",
+      "lineage_sha256": "4b6686ca77aae2921db8be6fc99102984369464197ec4eb2c80b303218955e39",
+      "valid": true,
+      "observed_at": "2026-08-03T18:05:00.000Z"
+    }
+  ],
+  "affected_contracts": [
+    "CapabilityTruth",
+    "ExecutionResult",
+    "PhaseContract",
+    "ReleaseManifest",
+    "TaskPacket"
+  ],
+  "acceptance_criteria": [
+    "Both revenue workflows have claim lineage, cost, budget, stop, and outcome controls.",
+    "Exact-SHA production deployment, authenticated readback, conditional review, and Phase 204 certification pass without Phase 205 work.",
+    "The canonical internal commerce business and required tenant-scoped capabilities are production-verified.",
+    "The prospecting MVP supports no more than 25 evidence-backed prospects with human-approved outreach and suppression.",
+    "The storefront is live after exact owner approval or one owner/provider blocker is recorded."
+  ],
+  "commercial_unlock": "Authorizes a bounded, evidence-controlled first product storefront and high-ticket audit acquisition workflow without declaring internal ENTRAL software sellable.",
+  "dag_update": {
+    "target_phase": 204,
+    "dependencies": [
+      203
+    ]
+  },
+  "supersession_record": {
+    "supersedes": [
+      "ENTRAL-PHASE-204-MINIMUM-EVALUATION-TRACING-BUDGET-INJECTION-DEFENSE-AND-RELIABILITY-KERNEL.zip"
+    ],
+    "reason": "The owner explicitly replaced the unactivated generic package with the Revenue Activation and Evidence Kernel while retaining bounded evaluation requirements inside the third TaskPacket."
+  },
+  "approval_status": "OWNER_REVIEW_REQUIRED",
+  "owner_review_topics": [
+    "CUSTOMER_DATA_RIGHTS",
+    "LEGAL",
+    "MATERIAL_SPENDING",
+    "PACKAGING",
+    "PRICING",
+    "PUBLIC_COMMITMENT"
+  ],
+  "owner_approval": null,
+  "rationale": "Material scope is reviewable and cannot silently alter the roadmap.",
+  "reevaluation_trigger": null,
+  "created_at": "2026-08-03T19:03:49.129Z",
+  "updated_at": "2026-08-03T19:03:49.129Z",
+  "release_version": "438e1b0546532efa48cd156e08af12168f4283d1"
+}
