@@ -2334,7 +2334,7 @@ body:has(.phase180-embedded-3d) {
 }
 
 .phase180-assistant-panel form {
-  align-items: end;
+  align-items: flex-end;
   border-top: 1px solid rgba(148, 177, 220, 0.12);
   display: grid;
   gap: 0.45rem;
@@ -3430,9 +3430,299 @@ body:has(.phase180-embedded-3d) {
   }
 }
 
+/* Phase 203 separates the executive Command surface from portfolio
+   management while rendering only fields already present in the canonical
+   portfolio response. */
+.phase203-command-priorities {
+  background: linear-gradient(145deg, rgba(15, 31, 54, 0.94), rgba(7, 14, 26, 0.96));
+  border: 1px solid var(--phase180-border);
+  border-radius: 18px;
+  padding: clamp(1rem, 2vw, 1.4rem);
+}
+
+.phase203-command-priorities > header {
+  align-items: flex-end;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.phase203-command-priorities > header h2,
+.phase203-command-priorities > header p {
+  margin: 0;
+}
+
+.phase203-command-priorities > header > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.phase203-command-priority-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.phase203-command-priority-grid > article {
+  background: rgba(3, 10, 20, 0.5);
+  border: 1px solid rgba(148, 177, 220, 0.14);
+  border-radius: 14px;
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.phase203-command-priority-grid h3 {
+  font-size: 0.88rem;
+  margin: 0 0 0.7rem;
+}
+
+.phase203-command-priority-grid p,
+.phase203-command-priority-grid ul {
+  color: var(--muted);
+  font-size: 0.76rem;
+  margin: 0;
+}
+
+.phase203-command-priority-grid ul {
+  display: grid;
+  gap: 0.65rem;
+  list-style: none;
+  padding: 0;
+}
+
+.phase203-command-priority-grid li {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.phase203-command-priority-grid li a {
+  color: var(--phase180-accent);
+  font-weight: 800;
+}
+
+.phase203-command-priority-grid li strong,
+.phase203-command-priority-grid li span {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .phase203-command-priority-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .phase203-command-priorities > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 430px) {
   .phase200-graph-legend > div {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Phase 203 production preflight: keep presentation chrome out of the
+   canonical node field. The authority list remains in the accessibility tree,
+   but its legacy Phase 195 rings and bands are no longer painted over the
+   camera-controlled 2D and 3D canvases. */
+.phase195-graph-workspace .phase195-graph-semantics-overlay,
+.phase195-graph-workspace .phase195-authority-rings,
+.phase195-graph-workspace .phase195-graph-semantics-key {
+  pointer-events: none;
+  user-select: none;
+}
+
+.phase195-graph-workspace .phase195-authority-rings {
+  border: 0 !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  height: 1px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: absolute !important;
+  white-space: nowrap !important;
+  width: 1px !important;
+}
+
+/* On the Universe route, the expanded assistant is a real document-flow
+   surface after the graph workspace. This keeps the conversation available
+   without painting it over canonical nodes, labels, controls, legends, or an
+   open entity inspector. Other member destinations retain the floating
+   assistant presentation. */
+.phase180-shell:has(.phase195-graph-workspace) .phase180-assistant-widget,
+.phase180-shell:has(.phase195-graph-workspace) .phase180-assistant-widget.dock-left {
+  bottom: auto;
+  height: min(60dvh, 36rem);
+  left: auto;
+  margin: 0 auto max(1rem, env(safe-area-inset-bottom));
+  max-width: calc(100% - 2rem);
+  position: relative;
+  right: auto;
+  top: auto;
+  width: min(48rem, calc(100% - 2rem));
+  z-index: 20;
+}
+
+.phase180-shell:has(.phase195-graph-workspace):has(.phase180-assistant-widget) .phase180-entral-emblem {
+  display: none;
+}
+
+.phase180-shell:has(.phase195-graph-workspace):has(.phase180-assistant-widget) .phase180-graph-drawer,
+.phase180-shell:has(.phase195-graph-workspace):has(.phase180-assistant-widget) .phase180-embedded-3d .phase110-node-drawer:not([data-collapsed="true"]) {
+  bottom: 0.75rem;
+  position: absolute;
+  top: auto;
+}
+
+/* A selected entity inspector may share a renderer panel, but it must never
+   cross the geometric focal center used by both canonical cameras. */
+@media (min-width: 768px) {
+  .phase195-graph-workspace .phase180-graph-drawer,
+  .phase195-graph-workspace .phase180-embedded-3d .phase110-node-drawer:not([data-collapsed="true"]) {
+    max-width: 22rem;
+    width: min(22rem, calc(50% - 2rem));
+  }
+
+  .phase195-graph-workspace .phase180-embedded-3d .phase110-node-drawer[data-collapsed="true"] {
+    right: 4.75rem;
+    width: min(18rem, calc(50% - 2rem));
+  }
+
+  .phase180-shell:has(.phase180-graph-drawer) .phase180-assistant-widget,
+  .phase180-shell:has(.phase110-node-drawer:not([data-collapsed="true"])) .phase180-assistant-widget {
+    bottom: auto;
+    height: min(22dvh, 15rem);
+    max-height: min(22dvh, 15rem);
+    top: max(0.75rem, env(safe-area-inset-top));
+  }
+}
+
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+  /* Mobile member chrome stays in document flow on Universe. Sticky/fixed
+     shell navigation otherwise crosses the canvas after a user scrolls or
+     rotates, obscuring the selected node even when graph-owned overlays are
+     collision-free. */
+  .phase180-shell:has(.phase195-graph-workspace) > .phase180-shell-header,
+  .phase180-shell:has(.phase195-graph-workspace) > .phase180-scope-bar {
+    position: relative;
+    top: auto;
+  }
+
+  .phase180-shell:has(.phase195-graph-workspace) > .phase180-shell-header .phase200-interaction-navigation {
+    bottom: auto;
+    left: auto;
+    position: relative;
+    right: auto;
+  }
+
+  /* The compact toolbar remains in document flow. Sticky/fixed placement put
+     it over the same canvas area used by focused nodes in portrait and
+     landscape. */
+  .phase195-graph-workspace .phase200-mobile-graph-toolbar {
+    flex: 0 0 auto;
+    inset: auto;
+    pointer-events: auto;
+    position: relative;
+    top: auto;
+    width: 100%;
+    z-index: 120;
+  }
+
+  .phase195-graph-workspace .phase180-graph-drawer,
+  .phase195-graph-workspace .phase180-embedded-3d .phase110-node-drawer:not([data-collapsed="true"]) {
+    bottom: 0.45rem;
+    max-height: min(24dvh, 16rem);
+    position: absolute;
+    top: auto;
+  }
+
+  .phase195-graph-workspace .phase180-embedded-3d .phase110-node-drawer[data-collapsed="true"] {
+    right: 4.25rem;
+    width: min(18rem, calc(100% - 5rem));
+  }
+
+  .phase180-shell:has(.phase180-graph-drawer) .phase180-entral-emblem,
+  .phase180-shell:has(.phase110-node-drawer:not([data-collapsed="true"])) .phase180-entral-emblem {
+    bottom: calc(24dvh + 96px + env(safe-area-inset-bottom));
+  }
+
+  .phase180-shell:has(.phase180-graph-drawer) .phase180-assistant-widget,
+  .phase180-shell:has(.phase110-node-drawer:not([data-collapsed="true"])) .phase180-assistant-widget {
+    bottom: auto;
+    height: min(28dvh, 15rem);
+    max-height: min(28dvh, 15rem);
+    top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  .phase180-shell:fullscreen .phase195-graph-workspace .phase180-graph-panels,
+  .phase195-graph-workspace[data-fullscreen-fallback="true"] .phase180-graph-panels {
+    height: calc(100% - 3.35rem);
+  }
+}
+
+@media (max-width: 767px) and (orientation: landscape),
+  (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
+  .phase180-shell:has(.phase195-graph-workspace) > .phase180-scope-bar {
+    align-items: stretch;
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .phase180-shell:has(.phase195-graph-workspace) > .phase180-scope-bar > svg {
+    display: none;
+  }
+
+  .phase180-shell:has(.phase195-graph-workspace) > .phase180-scope-bar > div:not(.phase180-sync-status) {
+    align-items: stretch;
+    display: grid;
+    gap: 0.18rem;
+  }
+
+  .phase180-shell:has(.phase195-graph-workspace) > .phase180-scope-bar .phase180-sync-status {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .phase195-graph-workspace .phase200-mobile-graph-toolbar {
+    inset: auto;
+    margin-right: auto;
+    max-width: calc(50vw - 1.5rem);
+    position: relative;
+    width: min(24rem, calc(50vw - 1.5rem));
+  }
+
+  .phase195-graph-workspace .phase200-graph-legend {
+    margin-right: auto;
+    max-width: calc(50vw - 1.5rem);
+    width: min(24rem, calc(50vw - 1.5rem));
+  }
+
+  .phase195-graph-workspace .phase180-graph-drawer,
+  .phase195-graph-workspace .phase180-embedded-3d .phase110-node-drawer:not([data-collapsed="true"]) {
+    bottom: 0.35rem;
+    max-height: calc(100dvh - 1rem);
+    max-width: calc(50vw - 1.5rem);
+    position: absolute;
+    top: auto;
+  }
+
+  .phase180-shell:has(.phase180-graph-drawer) .phase180-assistant-widget,
+  .phase180-shell:has(.phase110-node-drawer:not([data-collapsed="true"])) .phase180-assistant-widget {
+    left: max(0.5rem, env(safe-area-inset-left));
+    right: auto;
+    width: min(20rem, calc(50vw - 2.5rem));
+  }
+
+  .phase180-shell:has(.phase180-graph-drawer) .phase180-entral-emblem,
+  .phase180-shell:has(.phase110-node-drawer:not([data-collapsed="true"])) .phase180-entral-emblem {
+    bottom: max(0.5rem, env(safe-area-inset-bottom));
+    left: max(0.5rem, env(safe-area-inset-left));
+    right: auto;
   }
 }
 

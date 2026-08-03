@@ -122,6 +122,10 @@ export function CanonicalMemberShell({
     [businessScopeId, hierarchy?.entities]
   );
 
+  useEffect(() => {
+    setBusinessScopeId((current) => current === routeBusinessId ? current : routeBusinessId);
+  }, [routeBusinessId]);
+
   const refreshWorkspace = useCallback(async (
     signal?: AbortSignal,
     minimumEventSequence = pendingEventSequenceRef.current ?? 0
@@ -369,6 +373,7 @@ export function CanonicalMemberShell({
       const nextSearch = new URLSearchParams(searchParams.toString());
       if (value) nextSearch.set("business", value);
       else nextSearch.delete("business");
+      nextSearch.delete("record");
       const query = nextSearch.toString();
       router.replace(query ? `/member/dashboard?${query}` : "/member/dashboard", { scroll: false });
     }
@@ -416,7 +421,11 @@ export function CanonicalMemberShell({
     <main className="phase180-shell" id="main-content">
       <header className="phase180-shell-header">
         <BrandMark href="/member/dashboard" label="Entral member dashboard" />
-        <Phase200InteractionNavigation current={interactionDestination} role={selectedOrganization?.role ?? "MEMBER"} />
+        <Phase200InteractionNavigation
+          businessScopeId={businessScopeId}
+          current={interactionDestination}
+          role={selectedOrganization?.role ?? "MEMBER"}
+        />
         <div className="phase180-account-actions">
           <button onClick={() => window.dispatchEvent(new Event("entral:open-academy"))} type="button"><BookOpen size={17} /> Academy</button>
           <button onClick={() => router.push("/member/account/security")} type="button"><ShieldCheck size={17} /> Account security</button>
@@ -505,18 +514,29 @@ export function CanonicalMemberShell({
               scopeLabel={scopeLabel}
               selectedEntityId={selectedEntityId}
             />
+          ) : initialDestination === "dashboard" && interactionDestination === "businesses" ? (
+            <CanonicalPortfolioDashboard
+              organizationId={organizationId}
+              scopeBusinessId={businessScopeId}
+              userName={initialSession.user.name}
+              view="businesses"
+              workspacePortfolio={portfolio}
+              workspaceStatus={syncStatus}
+            />
           ) : initialDestination === "dashboard" ? (
             <>
               <Phase200BusinessHealthPanel
                 businessId={businessScopeId}
                 organizationId={organizationId}
-                route={interactionDestination === "businesses" ? "/member/dashboard?destination=businesses" : interactionDestination === "tutorial" ? "/member/dashboard?destination=tutorial" : "/member/dashboard"}
+                route={interactionDestination === "tutorial" ? "/member/dashboard?destination=tutorial" : "/member/dashboard"}
               />
               <CanonicalPortfolioDashboard
                 organizationId={organizationId}
-                scopeBusinessId={businessScopeId}
-                userName={initialSession.user.name}
-                workspacePortfolio={portfolio}
+              scopeBusinessId={businessScopeId}
+              userName={initialSession.user.name}
+              view="command"
+              workspaceHierarchy={hierarchy ?? undefined}
+              workspacePortfolio={portfolio}
                 workspaceStatus={syncStatus}
               />
             </>

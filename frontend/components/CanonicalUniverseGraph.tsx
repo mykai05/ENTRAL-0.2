@@ -20,7 +20,7 @@ import {
   ZoomIn,
   ZoomOut
 } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   availableUniverseNavigationPoints,
   canonicalGraphMotionProgress,
@@ -46,6 +46,7 @@ import { CanonicalGraphSemanticsOverlay } from "./CanonicalGraphSemanticsOverlay
 
 type Camera = { x: number; y: number; zoom: number };
 type PointerRecord = { x: number; y: number };
+type FocusRect = Pick<DOMRectReadOnly, "bottom" | "height" | "left" | "right" | "top" | "width">;
 type Canonical2DRenderPoint = {
   readonly entity: EntitySummary;
   readonly x: number;
@@ -77,6 +78,51 @@ export function phase195Canonical2DRenderIds(
   }[]
 ) {
   return new Set(points.map((point) => point.entity.entity_id));
+}
+
+export function canonical2DFocusAnchor(
+  canvasRect: FocusRect,
+  inspectorRect: FocusRect | null,
+  clearance = 12
+): PointerRecord {
+  const center = {
+    x: canvasRect.width / 2,
+    y: canvasRect.height / 2
+  };
+  if (
+    !inspectorRect
+    || inspectorRect.right <= canvasRect.left
+    || inspectorRect.left >= canvasRect.right
+    || inspectorRect.bottom <= canvasRect.top
+    || inspectorRect.top >= canvasRect.bottom
+  ) {
+    return center;
+  }
+
+  const overlapWidth = Math.min(canvasRect.right, inspectorRect.right)
+    - Math.max(canvasRect.left, inspectorRect.left);
+  const overlayStartsAtX = inspectorRect.left - canvasRect.left;
+  const overlayStartsAtY = inspectorRect.top - canvasRect.top;
+  if (overlapWidth >= canvasRect.width * 0.6) {
+    return {
+      x: center.x,
+      y: Math.max(24, Math.min(center.y, (overlayStartsAtY - clearance) / 2))
+    };
+  }
+  const canvasCenterX = canvasRect.left + center.x;
+  const inspectorCenterX = (inspectorRect.left + inspectorRect.right) / 2;
+  if (inspectorCenterX >= canvasCenterX) {
+    return {
+      x: Math.max(24, Math.min(center.x, (overlayStartsAtX - clearance) / 2)),
+      y: center.y
+    };
+  }
+  return {
+    x: Math.min(canvasRect.width - 24, Math.max(center.x, (
+      inspectorRect.right - canvasRect.left + clearance + canvasRect.width
+    ) / 2)),
+    y: center.y
+  };
 }
 
 export function canonical2DFramePosition(
@@ -286,6 +332,7 @@ export function CanonicalUniverseGraph({
   );
   const surfaceRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const detailDrawerRef = useRef<HTMLElement>(null);
   const frameRef = useRef<number | null>(null);
   const lastViewFitSignalRef = useRef(viewFitSignal);
   const lastViewFocusSignalRef = useRef(viewFocusSignal);
@@ -512,12 +559,58 @@ export function CanonicalUniverseGraph({
       (candidate) => candidate.entity.entity_id === entityId
     ) ?? pointById.get(entityId);
     if (!point) return;
+    const canvas = canvasRef.current;
+    const anchor = canvas
+      ? canonical2DFocusAnchor(
+          canvas.getBoundingClientRect(),
+          detailDrawerRef.current?.getBoundingClientRect() ?? null
+        )
+      : null;
     setCamera((current) => ({
-      x: -point.x * Math.max(current.zoom, 0.75),
-      y: -point.y * Math.max(current.zoom, 0.75),
+      x: (anchor?.x ?? 0) - (canvas?.clientWidth ?? 0) / 2
+        - point.x * Math.max(current.zoom, 0.75),
+      y: (anchor?.y ?? 0) - (canvas?.clientHeight ?? 0) / 2
+        - point.y * Math.max(current.zoom, 0.75),
       zoom: clampZoom(Math.max(current.zoom, 0.75))
     }));
+    if (surfaceRef.current && anchor) {
+      surfaceRef.current.dataset.canonicalFocusAnchorX = anchor.x.toFixed(2);
+      surfaceRef.current.dataset.canonicalFocusAnchorY = anchor.y.toFixed(2);
+    }
   }, [pointById]);
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    const drawer = detailDrawerRef.current;
+    if (!selectedEntityId || !canvas || !drawer) return undefined;
+    moveCameraToEntity(selectedEntityId);
+    const observer = new ResizeObserver(() => moveCameraToEntity(selectedEntityId));
+    observer.observe(canvas);
+    observer.observe(drawer);
+    return () => observer.disconnect();
+  }, [moveCameraToEntity, selectedEntityId]);
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    const point = selectedEntityId
+      ? renderedPointsRef.current.find((candidate) => candidate.entity.entity_id === selectedEntityId)
+        ?? pointById.get(selectedEntityId)
+      : null;
+    const position = point && canvas
+      ? canonical2DFramePosition(point, visibleIds, camera, canvas.clientWidth, canvas.clientHeight)
+      : null;
+    if (!position || !selectedEntityId) {
+      delete surface.dataset.canonicalCameraTargetEntityId;
+      delete surface.dataset.canonicalSelectedScreenX;
+      delete surface.dataset.canonicalSelectedScreenY;
+      return;
+    }
+    surface.dataset.canonicalCameraTargetEntityId = selectedEntityId;
+    surface.dataset.canonicalSelectedScreenX = position.x.toFixed(2);
+    surface.dataset.canonicalSelectedScreenY = position.y.toFixed(2);
+  }, [camera, pointById, selectedEntityId, visibleIds]);
 
   const focusEntity = useCallback((entityId: string) => {
     moveCameraToEntity(entityId);
@@ -1364,6 +1457,7 @@ export function CanonicalUniverseGraph({
           data-canonical-selected-latest-material-result={
             graphDetailAttribute(selected.latest_material_result)
           }
+          ref={detailDrawerRef}
         >
           <header>
             <div><span>{selected.entity_type}</span><h2>{selected.name}</h2></div>

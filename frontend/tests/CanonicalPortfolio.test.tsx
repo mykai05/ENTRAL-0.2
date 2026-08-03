@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   BusinessFullRecordResponse,
   BusinessSummary,
+  CanonicalHierarchyResponse,
   PortfolioSummaryResponse
 } from "@entral/contracts";
 import { CanonicalPortfolioDashboard } from "../components/CanonicalPortfolioDashboard";
@@ -125,6 +126,31 @@ const portfolio: PortfolioSummaryResponse = {
   }
 };
 
+const hierarchy: CanonicalHierarchyResponse = {
+  entities: [{
+    active_alert: null,
+    active_task_count: 2,
+    assigned_business_id: businesses[0].business_id,
+    child_count: 0,
+    compute_tier: "STANDARD",
+    current_mission: "Reconcile verified storefront operations.",
+    entity_id: commanderId,
+    entity_type: "COMMANDER",
+    health: "HEALTHY",
+    latest_material_result: { summary: "Verified settlement completed." },
+    model_class: "CODEX",
+    name: "Northstar Commander",
+    parent_id: marshalId,
+    stable_code: "commander.northstar",
+    status: "ACTIVE",
+    updated_at: "2026-07-25T01:30:00.000Z",
+    version: 4
+  }],
+  event_sequence: portfolio.event_sequence,
+  generated_at: portfolio.generated_at,
+  scope: portfolio.scope
+};
+
 function fullRecord(summary = businesses[1]): BusinessFullRecordResponse {
   return {
     business: {
@@ -211,6 +237,144 @@ describe("Phase 170 canonical Dashboard", () => {
     expect(screen.getByText("1 of 5 visible")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Atlas Software" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Northstar Store" })).not.toBeInTheDocument();
+  });
+
+  it("renders Command as an executive-only canonical summary without the Businesses management surface", () => {
+    render(
+      <CanonicalPortfolioDashboard
+        organizationId="organization-1"
+        userName="Ada"
+        view="command"
+        workspaceHierarchy={hierarchy}
+        workspacePortfolio={portfolio}
+        workspaceStatus="Canonical event 9"
+      />
+    );
+
+    const command = screen.getByRole("heading", { name: "Command overview" }).closest("[data-member-destination-view]");
+    expect(command).toHaveAttribute("data-member-destination-view", "command");
+    expect(screen.getByLabelText("Portfolio totals")).toHaveAttribute("data-command-section", "portfolio-totals");
+    expect(screen.getByRole("heading", { name: "Executive operating priorities" }).closest("[data-command-section]"))
+      .toHaveAttribute("data-command-section", "operating-priorities");
+    expect(screen.getByRole("heading", { name: "Requires attention now" })).toBeInTheDocument();
+    expect(screen.getByText("No canonical exceptions or degraded businesses require attention.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "ENTRAL work now" })).toBeInTheDocument();
+    expect(screen.getAllByText("1 active missions · 2 active tasks")).toHaveLength(businesses.length);
+    expect(screen.getByRole("heading", { name: "Current ENTRAL actions and results" })).toBeInTheDocument();
+    expect(screen.getByText("Reconcile verified storefront operations.")).toBeInTheDocument();
+    expect(screen.getByText("Verified settlement completed.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Owner decisions and next actions" })).toBeInTheDocument();
+    expect(screen.getAllByText("Review the next evidence-backed improvement.")).toHaveLength(businesses.length);
+    expect(screen.queryByLabelText("Portfolio search, sorting, and filters")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Canonical portfolio" })).not.toBeInTheDocument();
+    expect(screen.queryAllByText("Open business")).toHaveLength(0);
+  });
+
+  it("keeps scoped Command details business-bound and excludes objective-only work", () => {
+    const objectiveOnlyPortfolio = {
+      ...portfolio,
+      businesses: portfolio.businesses.map((candidate, index) => index === 0
+        ? { ...candidate, active_mission_count: 0, active_task_count: 0 }
+        : candidate)
+    };
+    const scopedHierarchy = {
+      ...hierarchy,
+      entities: [
+        {
+          ...hierarchy.entities[0],
+          entity_id: "entral-root",
+          entity_type: "ENTRAL" as const,
+          assigned_business_id: null,
+          current_mission: "Portfolio-wide root action must stay outside a business scope.",
+          active_task_count: 1
+        },
+        ...hierarchy.entities.filter((candidate) => candidate.assigned_business_id === businesses[0].business_id)
+      ]
+    };
+
+    render(
+      <CanonicalPortfolioDashboard
+        organizationId="organization-1"
+        scopeBusinessId={businesses[0].business_id}
+        view="command"
+        workspaceHierarchy={scopedHierarchy}
+        workspacePortfolio={objectiveOnlyPortfolio}
+        workspaceStatus="Canonical event 9"
+      />
+    );
+
+    expect(screen.getByLabelText("Portfolio-wide totals")).toHaveAttribute("data-command-scope", "business");
+    expect(screen.getByText("Verified executive operating details for the active business scope. Portfolio-wide totals remain explicitly labeled."))
+      .toBeInTheDocument();
+    expect(screen.getByText("No canonical active missions or tasks are recorded.")).toBeInTheDocument();
+    expect(screen.queryByText("Portfolio-wide root action must stay outside a business scope.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: businesses[1].business_name })).not.toBeInTheDocument();
+  });
+
+  it("renders Businesses as portfolio management without duplicating the Command summary", () => {
+    render(
+      <CanonicalPortfolioDashboard
+        organizationId="organization-1"
+        view="businesses"
+        workspacePortfolio={portfolio}
+        workspaceStatus="Canonical event 9"
+      />
+    );
+
+    const businessesView = screen.getByRole("heading", { name: "Businesses" }).closest("[data-member-destination-view]");
+    expect(businessesView).toHaveAttribute("data-member-destination-view", "businesses");
+    expect(screen.getByLabelText("Portfolio search, sorting, and filters")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Canonical portfolio" }).closest("[data-businesses-section]"))
+      .toHaveAttribute("data-businesses-section", "portfolio-management");
+    expect(screen.queryByLabelText("Portfolio totals")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Open business")[0]).toHaveAttribute(
+      "href",
+      `/member/dashboard?destination=businesses&record=${businesses[0].business_id}`
+    );
+  });
+
+  it("keeps business detail and back navigation inside the Businesses destination", async () => {
+    mocks.search = `destination=businesses&record=${businesses[1].business_id}`;
+    mocks.apiFetch.mockResolvedValueOnce(fullRecord());
+
+    render(
+      <CanonicalPortfolioDashboard
+        organizationId="organization-1"
+        view="businesses"
+        workspacePortfolio={portfolio}
+      />
+    );
+
+    const detail = (await screen.findByRole("heading", { name: businesses[1].business_name }))
+      .closest("[data-member-destination-view]");
+    expect(detail).toHaveAttribute("data-member-destination-view", "businesses");
+    expect(detail).toHaveAttribute("data-businesses-section", "business-detail");
+    expect(screen.getByRole("link", { name: "Back to portfolio" })).toHaveAttribute(
+      "href",
+      "/member/dashboard?destination=businesses"
+    );
+  });
+
+  it("keeps canonical scope separate from business record navigation", async () => {
+    mocks.search = `destination=businesses&business=${businesses[1].business_id}&record=${businesses[1].business_id}`;
+    mocks.apiFetch.mockResolvedValueOnce(fullRecord());
+
+    render(
+      <CanonicalPortfolioDashboard
+        organizationId="organization-1"
+        scopeBusinessId={businesses[1].business_id}
+        view="businesses"
+        workspacePortfolio={portfolio}
+      />
+    );
+
+    const detail = (await screen.findByRole("heading", { name: businesses[1].business_name }))
+      .closest("[data-member-destination-view]");
+    expect(detail).toHaveAttribute("data-businesses-section", "business-detail");
+    expect(screen.getByRole("link", { name: "Back to portfolio" })).toHaveAttribute(
+      "href",
+      `/member/dashboard?destination=businesses&business=${businesses[1].business_id}`
+    );
   });
 
   it("loads the full business only after opening its canonical route and keeps versions aligned", async () => {

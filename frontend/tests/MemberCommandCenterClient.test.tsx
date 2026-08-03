@@ -12,7 +12,8 @@ import {
 const navigation = vi.hoisted(() => ({
   push: vi.fn(),
   refresh: vi.fn(),
-  replace: vi.fn()
+  replace: vi.fn(),
+  search: ""
 }));
 
 const api = vi.hoisted(() => ({
@@ -44,7 +45,7 @@ const canonicalEvents = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => "/member/dashboard",
   useRouter: () => navigation,
-  useSearchParams: () => new URLSearchParams()
+  useSearchParams: () => new URLSearchParams(navigation.search)
 }));
 
 vi.mock("../lib/api", async (importOriginal) => {
@@ -69,13 +70,21 @@ vi.mock("../lib/canonical-portfolio", async (importOriginal) => {
 vi.mock("../lib/interaction-layer", () => interaction);
 
 vi.mock("../components/Phase200BusinessHealthPanel", () => ({
-  Phase200BusinessHealthPanel: () => null
+  Phase200BusinessHealthPanel: ({ route }: { route: string }) => (
+    <section data-command-section="business-health" data-route={route}>Canonical business health</section>
+  )
 }));
 
 vi.mock("../components/CanonicalPortfolioDashboard", () => ({
-  CanonicalPortfolioDashboard: ({ workspacePortfolio }: {
+  CanonicalPortfolioDashboard: ({ view = "combined", workspacePortfolio }: {
+    view?: "businesses" | "combined" | "command";
     workspacePortfolio: { scope: { label: string } };
-  }) => <><h1>Member Dashboard</h1><div>{workspacePortfolio.scope.label}</div></>
+  }) => (
+    <section data-member-destination-view={view}>
+      <h1>Member Dashboard</h1>
+      <div>{workspacePortfolio.scope.label}</div>
+    </section>
+  )
 }));
 
 const portfolio = {
@@ -217,6 +226,7 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     interaction.resetTutorialProgress.mockReset().mockResolvedValue(phase200TutorialProgress);
     interaction.saveTutorialProgress.mockReset().mockResolvedValue(phase200TutorialProgress);
     canonicalEvents.subscriptions.length = 0;
+    navigation.search = "";
     window.localStorage.clear();
     window.sessionStorage.clear();
   });
@@ -253,6 +263,38 @@ describe("MemberCommandCenterClient authentication handoff", () => {
     expect(storedIdentity).not.toHaveProperty("token");
 
     window.removeEventListener("entral:user-authenticated", handleAuthenticated);
+  });
+
+  it("renders Command as the verified executive destination with canonical health", async () => {
+    render(
+      <MemberCommandCenterClient
+        organizationId="organization-1"
+        userId="user-1"
+      />
+    );
+
+    const command = (await screen.findByRole("heading", { name: "Member Dashboard" }))
+      .closest("[data-member-destination-view]");
+    expect(command).toHaveAttribute("data-member-destination-view", "command");
+    expect(screen.getByText("Canonical business health")).toHaveAttribute("data-command-section", "business-health");
+    expect(screen.getByRole("link", { name: "Command" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("renders Businesses as portfolio management without the Command-only health panel", async () => {
+    navigation.search = "destination=businesses";
+
+    render(
+      <MemberCommandCenterClient
+        organizationId="organization-1"
+        userId="user-1"
+      />
+    );
+
+    const businesses = (await screen.findByRole("heading", { name: "Member Dashboard" }))
+      .closest("[data-member-destination-view]");
+    expect(businesses).toHaveAttribute("data-member-destination-view", "businesses");
+    expect(screen.queryByText("Canonical business health")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Businesses" })).toHaveAttribute("aria-current", "page");
   });
 
   it("opens Academy from the real provider hierarchy without redirecting the authenticated member", async () => {

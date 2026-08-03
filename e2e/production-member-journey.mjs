@@ -13,6 +13,11 @@ const deploymentReadbackReceiptSha256 = process.env.E2E_DEPLOYMENT_READBACK_RECE
 const migratedStateReceiptPath = process.env.E2E_MIGRATED_STATE_RECEIPT;
 const migratedStateReceiptSha256 = process.env.E2E_MIGRATED_STATE_RECEIPT_SHA256;
 const receiptPath = process.env.E2E_PRODUCTION_JOURNEY_RECEIPT;
+const screenshotDirectory = resolve(
+  process.env.E2E_PRODUCTION_SCREENSHOT_DIR
+    ?? (receiptPath ? dirname(resolve(receiptPath)) : resolve("test-results", "production-member-journey")),
+  "screenshots"
+);
 if (
   !memberToken || !organizationId || !deployedCommitSha
   || !/^[a-f0-9]{40}$/.test(deployedCommitSha)
@@ -142,6 +147,19 @@ async function assertNoCanonicalSyncError(page, label) {
   if (workspaceErrors || blockedStatus) throw new Error(`${label} reported a canonical synchronization error.`);
 }
 
+async function canonicalScopeSnapshot(page) {
+  const scope = page.getByRole("region", { name: "Inherited canonical scope" });
+  await expectVisible(scope, "Inherited canonical scope");
+  const organizationSelect = scope.getByLabel("Member access organization");
+  const organization = await organizationSelect.count()
+    ? await organizationSelect.inputValue()
+    : (await scope.locator("strong").first().textContent())?.trim();
+  return {
+    business: await scope.getByLabel("Canonical business scope").inputValue(),
+    organization
+  };
+}
+
 async function readJson(response, label, expectedStatus = 200) {
   if (response.status() !== expectedStatus) {
     throw new Error(`${label} returned HTTP ${response.status()}: ${(await response.text()).slice(0, 300)}`);
@@ -208,6 +226,257 @@ function assertRendererParity(left, right, label) {
   }
 }
 
+function rectanglesOverlap(left, right, inset = 0) {
+  return left.left + inset < right.right - inset
+    && left.right - inset > right.left + inset
+    && left.top + inset < right.bottom - inset
+    && left.bottom - inset > right.top + inset;
+}
+
+async function captureGraphPresentation(page, workspace, { dimension, orientation, width }) {
+  const scopeGeometry = await page.evaluate(() => {
+    const rect = (element) => {
+      if (!(element instanceof HTMLElement)) return null;
+      const box = element.getBoundingClientRect();
+      return { bottom: box.bottom, left: box.left, right: box.right, top: box.top };
+    };
+    return {
+      selector: rect(document.querySelector('.phase180-scope-bar select[aria-label="Canonical business scope"]')),
+      status: rect(document.querySelector(".phase180-scope-bar .phase180-sync-status"))
+    };
+  });
+  if (!scopeGeometry.selector || !scopeGeometry.status
+    || rectanglesOverlap(scopeGeometry.selector, scopeGeometry.status, 1)) {
+    throw new Error(`${width}px ${orientation} canonical scope selector/status collision: ${JSON.stringify(scopeGeometry)}`);
+  }
+  const stage = workspace.locator(
+    `[data-graph-dimension="${dimension}"] ${dimension === "2d" ? ".phase180-graph-stage" : ".phase180-graph-3d-stage"}`
+  );
+  await expectVisible(stage, `${width}px ${orientation} ${dimension.toUpperCase()} canonical graph stage`);
+  await stage.scrollIntoViewIfNeeded();
+  const assistantLauncher = page.getByRole("button", { name: "Open ENTRAL assistant" });
+  await expectVisible(assistantLauncher, `${width}px ${orientation} ENTRAL assistant launcher`);
+  let actual3DCameraTargetEntityId = null;
+  if (dimension === "3d") {
+    const canvas = stage.locator("canvas.command-center-canvas");
+    await expectVisible(canvas, `${width}px ${orientation} 3D renderer canvas`);
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error(`${width}px ${orientation} 3D renderer canvas had no measurable bounds.`);
+    const expectedEntityId = await workspace.locator('.phase180-graph-3d[data-graph-dimension="3d"]')
+      .getAttribute("data-canonical-selected-entity-id");
+    if (!expectedEntityId) throw new Error(`${width}px ${orientation} 3D renderer had no selected entity before camera hit testing.`);
+    await canvas.focus();
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.querySelector('[data-graph-dimension="3d"]')
+      ?.getAttribute("data-canonical-selected-entity-id"));
+    await canvas.dispatchEvent("pointerup", {
+      button: 0,
+      clientX: box.x + box.width / 2,
+      clientY: box.y + box.height / 2,
+      pointerId: 1,
+      pointerType: "mouse"
+    });
+    await page.waitForFunction((expected) => document.querySelector('[data-graph-dimension="3d"]')
+      ?.getAttribute("data-canonical-selected-entity-id") === expected, expectedEntityId, { timeout: 5_000 });
+    actual3DCameraTargetEntityId = expectedEntityId;
+  }
+  const geometry = await page.evaluate(({ activeDimension, actual3DTarget, mobileViewport, viewportOrientation }) => {
+    const visibleRect = (element) => {
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      if (style.display === "none" || style.visibility === "hidden" || box.width < 2 || box.height < 2) return null;
+      return {
+        bottom: box.bottom,
+        height: box.height,
+        left: box.left,
+        right: box.right,
+        top: box.top,
+        width: box.width
+      };
+    };
+    const renderer = document.querySelector(`[data-graph-dimension="${activeDimension}"]`);
+    const stage = renderer?.querySelector(activeDimension === "2d" ? ".phase180-graph-stage" : ".phase180-graph-3d-stage");
+    const stageBox = visibleRect(stage);
+    if (!stageBox) return { error: `No visible ${activeDimension} graph stage.` };
+    const protectedWidth = stageBox.width * (mobileViewport ? 0.24 : 0.34);
+    const protectedHeight = stageBox.height * (mobileViewport ? 0.24 : 0.34);
+    const focalCenterX = mobileViewport && viewportOrientation === "landscape" ? 0.25 : 0.5;
+    const focalCenterY = mobileViewport && viewportOrientation === "portrait" ? 0.28 : 0.5;
+    let protectedFocalRegion = {
+      bottom: stageBox.top + (stageBox.height * focalCenterY) + (protectedHeight / 2),
+      height: protectedHeight,
+      left: stageBox.left + (stageBox.width * focalCenterX) - (protectedWidth / 2),
+      right: stageBox.left + (stageBox.width * focalCenterX) + (protectedWidth / 2),
+      top: stageBox.top + (stageBox.height * focalCenterY) - (protectedHeight / 2),
+      width: protectedWidth
+    };
+    const selectedEntityId = renderer?.getAttribute("data-canonical-selected-entity-id") ?? null;
+    const anchorXValue = renderer?.getAttribute("data-canonical-focus-anchor-x") ?? null;
+    const anchorYValue = renderer?.getAttribute("data-canonical-focus-anchor-y") ?? null;
+    const anchorX = anchorXValue === null ? null : Number(anchorXValue);
+    const anchorY = anchorYValue === null ? null : Number(anchorYValue);
+    if (activeDimension === "2d" && Number.isFinite(anchorX) && Number.isFinite(anchorY)) {
+      protectedFocalRegion = {
+        bottom: stageBox.top + anchorY + (protectedHeight / 2),
+        height: protectedHeight,
+        left: stageBox.left + anchorX - (protectedWidth / 2),
+        right: stageBox.left + anchorX + (protectedWidth / 2),
+        top: stageBox.top + anchorY - (protectedHeight / 2),
+        width: protectedWidth
+      };
+    }
+    return {
+      assistantLauncher: visibleRect(document.querySelector(".phase180-entral-emblem")),
+      inspector: visibleRect(document.querySelector(activeDimension === "2d"
+        ? '.phase180-graph-drawer[data-canonical-detail-surface="2d"]'
+        : '.phase110-node-drawer[data-canonical-detail-surface="3d-inspector"]')),
+      legend: visibleRect(document.querySelector(".phase200-graph-legend > summary")),
+      focus: activeDimension === "2d" ? {
+        anchorViewportX: stageBox.left + anchorX,
+        anchorViewportY: stageBox.top + anchorY,
+        anchorX,
+        anchorY,
+        cameraTargetEntityId: renderer?.getAttribute("data-canonical-camera-target-entity-id") ?? null,
+        selectedScreenX: Number(renderer?.getAttribute("data-canonical-selected-screen-x")),
+        selectedScreenY: Number(renderer?.getAttribute("data-canonical-selected-screen-y")),
+        selectedEntityId
+      } : {
+        actualCameraTargetEntityId: actual3DTarget,
+        cameraTargetEntityId: renderer?.getAttribute("data-canonical-camera-target-entity-id") ?? null,
+        cameraTargetSignal: Number(renderer?.getAttribute("data-canonical-camera-target-signal")),
+        selectedEntityId
+      },
+      protectedFocalRegion,
+      stage: stageBox,
+      toolbar: mobileViewport
+        ? visibleRect(document.querySelector('.phase200-mobile-graph-toolbar[aria-label="Compact mobile Universe controls"]'))
+        : null
+    };
+  }, { activeDimension: dimension, actual3DTarget: actual3DCameraTargetEntityId, mobileViewport: width < 1024, viewportOrientation: orientation });
+  if (geometry.error) throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} geometry failed: ${geometry.error}`);
+  if (
+    geometry.stage.bottom <= 0 || geometry.stage.top >= await page.evaluate(() => window.innerHeight)
+    || geometry.stage.right <= 0 || geometry.stage.left >= await page.evaluate(() => window.innerWidth)
+  ) {
+    throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} canonical graph stage was outside the viewport during collision measurement.`);
+  }
+  for (const required of ["assistantLauncher", "inspector", "legend", ...(width < 1024 ? ["toolbar"] : [])]) {
+    if (!geometry[required]) {
+      throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} did not expose a visible ${required}.`);
+    }
+  }
+  if (
+    geometry.protectedFocalRegion.left < geometry.stage.left
+    || geometry.protectedFocalRegion.right > geometry.stage.right
+    || geometry.protectedFocalRegion.top < geometry.stage.top
+    || geometry.protectedFocalRegion.bottom > geometry.stage.bottom
+  ) {
+    throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} protected focal region escaped the canonical graph stage.`);
+  }
+  if (dimension === "2d") {
+    if (
+      !geometry.focus.selectedEntityId
+      || geometry.focus.cameraTargetEntityId !== geometry.focus.selectedEntityId
+      || !Number.isFinite(geometry.focus.anchorX) || !Number.isFinite(geometry.focus.anchorY)
+      || !Number.isFinite(geometry.focus.selectedScreenX) || !Number.isFinite(geometry.focus.selectedScreenY)
+      || Math.abs(geometry.focus.selectedScreenX - geometry.focus.anchorX) > 2.5
+      || Math.abs(geometry.focus.selectedScreenY - geometry.focus.anchorY) > 2.5
+      || geometry.focus.anchorX < 0 || geometry.focus.anchorX > geometry.stage.width
+      || geometry.focus.anchorY < 0 || geometry.focus.anchorY > geometry.stage.height
+      || geometry.focus.anchorViewportX < geometry.stage.left || geometry.focus.anchorViewportX > geometry.stage.right
+      || geometry.focus.anchorViewportY < geometry.stage.top || geometry.focus.anchorViewportY > geometry.stage.bottom
+    ) {
+      throw new Error(`${width}px ${orientation} 2D selected entity was not bound to an in-stage camera focus anchor: ${JSON.stringify(geometry.focus)}`);
+    }
+    const focusPoint = {
+      bottom: geometry.focus.anchorViewportY + 1,
+      left: geometry.focus.anchorViewportX - 1,
+      right: geometry.focus.anchorViewportX + 1,
+      top: geometry.focus.anchorViewportY - 1
+    };
+    for (const overlay of ["assistant", "assistantLauncher", "inspector", "legend", "toolbar"]) {
+      if (geometry[overlay] && rectanglesOverlap(geometry[overlay], focusPoint)) {
+        throw new Error(`${width}px ${orientation} 2D ${overlay} covered the selected entity camera focus anchor.`);
+      }
+    }
+  } else if (
+    !geometry.focus.selectedEntityId
+    || geometry.focus.cameraTargetEntityId !== geometry.focus.selectedEntityId
+    || geometry.focus.actualCameraTargetEntityId !== geometry.focus.selectedEntityId
+    || !Number.isFinite(geometry.focus.cameraTargetSignal)
+    || geometry.focus.cameraTargetSignal < 1
+  ) {
+    throw new Error(`${width}px ${orientation} 3D selected entity was not the active camera target: ${JSON.stringify(geometry.focus)}`);
+  }
+  const collisionPairs = [
+    ["inspector", "toolbar"],
+    ["legend", "assistantLauncher"],
+    ["legend", "inspector"],
+    ["legend", "toolbar"],
+    ["assistantLauncher", "inspector"],
+    ["assistantLauncher", "toolbar"]
+  ];
+  for (const [left, right] of collisionPairs) {
+    if (geometry[left] && geometry[right] && rectanglesOverlap(geometry[left], geometry[right], 2)) {
+      throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} ${left}/${right} collision: ${JSON.stringify(geometry)}`);
+    }
+  }
+  for (const overlay of ["assistantLauncher", "inspector", "legend", "toolbar"]) {
+    if (geometry[overlay] && rectanglesOverlap(geometry[overlay], geometry.protectedFocalRegion, 2)) {
+      throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} ${overlay} obscured the protected graph focal region: ${JSON.stringify(geometry)}`);
+    }
+  }
+  const screenshotName = `universe-${width}px-${orientation}-${dimension}.png`;
+  const screenshotPath = resolve(screenshotDirectory, screenshotName);
+  await mkdir(dirname(screenshotPath), { recursive: true });
+  await page.screenshot({ animations: "disabled", fullPage: false, path: screenshotPath });
+  await assistantLauncher.click();
+  const assistantRegion = page.getByRole("region", { name: "ENTRAL assistant" });
+  await expectVisible(assistantRegion, `${width}px ${orientation} expanded ENTRAL assistant`);
+  const expandedGeometry = await page.evaluate((activeDimension) => {
+    const documentRect = (element) => {
+      if (!(element instanceof HTMLElement)) return null;
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      if (style.display === "none" || style.visibility === "hidden" || box.width < 2 || box.height < 2) return null;
+      return {
+        bottom: box.bottom + window.scrollY,
+        left: box.left + window.scrollX,
+        right: box.right + window.scrollX,
+        top: box.top + window.scrollY
+      };
+    };
+    const renderer = document.querySelector(`[data-graph-dimension="${activeDimension}"]`);
+    return {
+      assistant: documentRect(document.querySelector(".phase180-assistant-widget")),
+      inspector: documentRect(document.querySelector(activeDimension === "2d"
+        ? '.phase180-graph-drawer[data-canonical-detail-surface="2d"]'
+        : '.phase110-node-drawer[data-canonical-detail-surface="3d-inspector"]')),
+      legend: documentRect(document.querySelector(".phase200-graph-legend")),
+      stage: documentRect(renderer?.querySelector(activeDimension === "2d" ? ".phase180-graph-stage" : ".phase180-graph-3d-stage")),
+      toolbar: documentRect(document.querySelector('.phase200-mobile-graph-toolbar[aria-label="Compact mobile Universe controls"]'))
+    };
+  }, dimension);
+  if (!expandedGeometry.assistant) throw new Error(`${width}px ${orientation} expanded ENTRAL assistant had no measurable document-flow rectangle.`);
+  for (const surface of ["inspector", "legend", "stage", "toolbar"]) {
+    if (expandedGeometry[surface] && rectanglesOverlap(expandedGeometry.assistant, expandedGeometry[surface], 2)) {
+      throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} expanded assistant/${surface} collision: ${JSON.stringify(expandedGeometry)}`);
+    }
+  }
+  await assistantRegion.getByRole("button", { name: "Close ENTRAL assistant" }).click();
+  return {
+    collision_free: true,
+    dimension: dimension.toUpperCase(),
+    focus_bound_to_selected_entity: true,
+    orientation,
+    protected_focal_region_clear: true,
+    screenshot_file: `screenshots/${screenshotName}`,
+    screenshot_sha256: createHash("sha256").update(await readFile(screenshotPath)).digest("hex"),
+    viewport_width: width
+  };
+}
+
 const executablePath = browserExecutable();
 if (!executablePath) throw new Error("A Chrome-compatible browser is required for production member acceptance.");
 const migratedStateReceipt = await verifiedReceipt(
@@ -223,7 +492,7 @@ const deploymentReadbackReceipt = await verifiedReceipt(
 validateDeploymentReadback(deploymentReadbackReceipt, deployedCommitSha);
 const browser = await chromium.launch({ executablePath, headless: process.env.E2E_HEADED !== "true" });
 const origin = new URL(frontendUrl).origin;
-const widths = [360, 390, 412, 430, 1440];
+const widths = [360, 390, 412, 430, 1440, 1920];
 const observed = [];
 const endpointReadback = [];
 let projection;
@@ -455,7 +724,14 @@ try {
       await page.goto(`${origin}/member/dashboard`, { waitUntil: "domcontentloaded" });
       const navigation = page.getByRole("navigation", { name: /primary destinations/i });
       await expectVisible(navigation, `${width}px primary navigation`);
-      await expectVisible(page.locator(".phase170-portfolio"), `${width}px Command canonical portfolio`);
+      const command = page.locator('[data-member-destination-view="command"]');
+      await expectVisible(command, `${width}px Command operating overview`);
+      await expectVisible(command.getByRole("heading", { level: 1, name: "Command overview" }), `${width}px Command heading`);
+      await expectVisible(command.locator('[data-command-section="portfolio-totals"]'), `${width}px Command totals section`);
+      await expectVisible(command.locator('[data-command-section="operating-priorities"]'), `${width}px Command operating priorities`);
+      if (await command.locator('[data-businesses-section="portfolio-management"]').count()) {
+        throw new Error(`${width}px Command exposed the Businesses management surface.`);
+      }
       const commandTotals = page.locator('.phase170-summary-grid[aria-label="Portfolio totals"]');
       await expectVisible(commandTotals, `${width}px Command canonical totals`);
       const commandBusinessCount = Number(await commandTotals.locator("article").filter({ hasText: "Businesses" })
@@ -463,17 +739,39 @@ try {
       if (commandBusinessCount !== portfolio.totals.businesses || await page.locator(".phase170-error").count()) {
         throw new Error(`${width}px Command did not render the authenticated canonical portfolio totals.`);
       }
+      const commandScope = await canonicalScopeSnapshot(page);
       await assertNoCanonicalSyncError(page, `${width}px Command`);
 
       await navigation.getByRole("link", { name: "Businesses" }).click();
-      await expectVisible(page.getByRole("heading", { name: "Canonical portfolio" }), `${width}px Businesses`);
-      const visibleBusinessCards = await page.locator(".phase170-business-card").count();
+      await page.waitForURL(/\/member\/dashboard\?[^#]*destination=businesses/);
+      const businesses = page.locator('[data-member-destination-view="businesses"]');
+      await expectVisible(businesses, `${width}px Businesses management surface`);
+      await expectVisible(businesses.getByRole("heading", { level: 1, name: "Businesses" }), `${width}px Businesses heading`);
+      await expectVisible(businesses.locator('[data-businesses-section="portfolio-management"]'), `${width}px Businesses management section`);
+      await expectVisible(businesses.getByRole("heading", { name: "Canonical portfolio" }), `${width}px canonical business list`);
+      if (
+        await businesses.locator('[data-command-section="portfolio-totals"]').count()
+        || await businesses.locator('[data-command-section="operating-priorities"]').count()
+      ) {
+        throw new Error(`${width}px Businesses exposed the Command executive-totals surface.`);
+      }
+      if (JSON.stringify(await canonicalScopeSnapshot(page)) !== JSON.stringify(commandScope)) {
+        throw new Error(`${width}px Command to Businesses navigation did not preserve the authenticated canonical scope.`);
+      }
+      const visibleBusinessCards = await businesses.locator(".phase170-business-card").count();
       if (visibleBusinessCards !== portfolio.businesses.length) {
         throw new Error(`${width}px Businesses did not render the authenticated canonical business count.`);
       }
-      if (!portfolio.businesses.length) {
+      if (portfolio.businesses.length) {
+        for (const business of portfolio.businesses) {
+          await expectVisible(
+            businesses.locator(".phase170-business-card").filter({ hasText: business.business_name }),
+            `${width}px canonical business ${business.business_name}`
+          );
+        }
+      } else {
         await expectVisible(
-          page.getByRole("heading", { name: "No canonical businesses are deployed." }),
+          businesses.getByRole("heading", { name: "No canonical businesses are deployed." }),
           `${width}px truthful empty canonical business state`
         );
       }
@@ -530,6 +828,11 @@ try {
         });
       }
       const twoDSnapshot = await rendererSnapshot(twoD, `${width}px 2D projection`, rendererAuthorization);
+      const presentationEvidence = [await captureGraphPresentation(page, workspace, {
+        dimension: "2d",
+        orientation: mobile ? "portrait" : "landscape",
+        width
+      })];
 
       let threeDSnapshot;
       if (mobile) {
@@ -546,6 +849,11 @@ try {
           requireWebGl: true
         });
         assertRendererParity(twoDSnapshot, threeDSnapshot, `${width}px 2D to 3D switch`);
+        presentationEvidence.push(await captureGraphPresentation(page, workspace, {
+          dimension: "3d",
+          orientation: "portrait",
+          width
+        }));
         if (
           await workspace.getAttribute("data-graph-parity-key") !== parityKey
           || threeDSnapshot.selected_entity_id !== twoDSnapshot.selected_entity_id
@@ -556,6 +864,22 @@ try {
         await expectVisible(twoD, `${width}px 2D projection return`, 45_000);
         const returnedTwoD = await rendererSnapshot(twoD, `${width}px returned 2D projection`, rendererAuthorization);
         assertRendererParity(twoDSnapshot, returnedTwoD, `${width}px 3D to 2D switch`);
+        await page.setViewportSize({ height: 390, width: 767 });
+        await expectVisible(twoD, `${width}px landscape 2D projection`, 45_000);
+        presentationEvidence.push(await captureGraphPresentation(page, workspace, {
+          dimension: "2d",
+          orientation: "landscape",
+          width
+        }));
+        await toolbar.getByRole("button", { name: "3D" }).click();
+        await expectVisible(threeD, `${width}px landscape 3D projection`, 60_000);
+        presentationEvidence.push(await captureGraphPresentation(page, workspace, {
+          dimension: "3d",
+          orientation: "landscape",
+          width
+        }));
+        await toolbar.getByRole("button", { name: "2D" }).click();
+        await page.setViewportSize({ height: 844, width });
       } else {
         if (
           await workspace.getAttribute("data-mobile-presentation") !== "desktop-dual"
@@ -569,6 +893,11 @@ try {
           requireWebGl: true
         });
         assertRendererParity(twoDSnapshot, threeDSnapshot, `${width}px desktop 2D and 3D renderers`);
+        presentationEvidence.push(await captureGraphPresentation(page, workspace, {
+          dimension: "3d",
+          orientation: "landscape",
+          width
+        }));
       }
 
       await navigation.getByRole("link", { name: "Infrastructure" }).click();
@@ -581,6 +910,13 @@ try {
       await expectVisible(academy, `${width}px Tutorial`, 30_000);
       await academy.locator(".academy-sync-status").filter({ hasText: /Server progress synced/ })
         .waitFor({ state: "visible", timeout: 30_000 });
+      await expectVisible(
+        academy.getByRole("heading", { level: 3, name: "No published Tutorial lessons" }),
+        `${width}px fail-closed Tutorial publication state`
+      );
+      if (await academy.getByRole("button", { name: "Navigate Universe" }).count()) {
+        throw new Error(`${width}px Tutorial expanded a lesson without a SELLABLE Product Truth claim.`);
+      }
       if ((await academy.innerText()).includes("Tutorial progress is unavailable")) {
         throw new Error(`${width}px Tutorial did not load its server-backed state.`);
       }
@@ -604,6 +940,7 @@ try {
         entity_count: twoDSnapshot.entity_count,
         entity_set_sha256: twoDSnapshot.entity_set_sha256,
         event_sequence: twoDSnapshot.event_sequence,
+        graph_presentation_evidence: presentationEvidence,
         mobile_single_renderer: mobile,
         renderer_parity_verified: true,
         rendered_subset_authorized: twoDSnapshot.rendered_subset_authorized
@@ -672,6 +1009,9 @@ const receipt = {
   projection_organization_bound: true,
   receipt_id: "P203-PRODUCTION-MEMBER-JOURNEY-001",
   renderer_state_preserved: true,
+  screenshot_collision_evidence_verified: observed.every((viewport) =>
+    Array.isArray(viewport.graph_presentation_evidence)
+      && viewport.graph_presentation_evidence.every((entry) => entry.collision_free && entry.protected_focal_region_clear)),
   route_interception: false,
   schema_version: 1,
   session_scope: "MIGRATED_MEMBER",

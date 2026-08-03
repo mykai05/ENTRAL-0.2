@@ -1684,6 +1684,7 @@ export function CanonicalGraphWorkspace({
       data-fullscreen-dimension={fullscreenDimension ?? undefined}
       data-fullscreen-fallback={usesViewportFallback ? "true" : undefined}
       data-graph-layout={requestedArrangement}
+      data-graph-overlay-contract="FOCAL_SAFE_V1"
       data-effective-level-of-detail={
         effectiveRendererPerformance.effectiveLevelOfDetail
       }
@@ -1781,7 +1782,12 @@ export function CanonicalGraphWorkspace({
         </details>
       </header>
 
-      <div className="phase200-mobile-graph-toolbar" role="toolbar" aria-label="Compact mobile Universe controls">
+      <div
+        aria-label="Compact mobile Universe controls"
+        className="phase200-mobile-graph-toolbar"
+        data-graph-overlay-role="compact-toolbar"
+        role="toolbar"
+      >
         <div role="group" aria-label="Synchronized graph renderer">
           <button aria-pressed={mobileDimension === "2d"} onClick={() => changeMobileDimension("2d")} type="button">
             <Columns2 aria-hidden="true" size={16} /> 2D
@@ -1816,6 +1822,25 @@ export function CanonicalGraphWorkspace({
           Full screen
         </button>
       </div>
+
+      {settings.advanced_shared.legend_visible ? (
+        <details
+          className="phase200-graph-legend"
+          data-graph-overlay-role="compact-legend"
+        >
+          <summary><ChevronDown aria-hidden="true" size={15} /> Universe legend</summary>
+          <div aria-label="Graph legend">
+            <span data-tier="0">ENTRAL · center</span>
+            <span data-tier="1">Marshal · tier 1</span>
+            <span data-tier="2">General · tier 2</span>
+            <span data-tier="3">Commander · tier 3</span>
+            <span data-tier="4">Soldier · tier 4</span>
+            <span>Selected lineage · emphasized teal edges</span>
+            <span>Unrelated edges · dimmed on mobile selection</span>
+            <span>Health and status · color plus tooltip text</span>
+          </div>
+        </details>
+      ) : null}
 
       <section className="phase195-shared-toolbar" aria-label="Shared graph navigation and filters">
         <div className="phase195-navigation-controls" role="group" aria-label="Graph navigation">
@@ -2395,21 +2420,6 @@ export function CanonicalGraphWorkspace({
         </div>
       )}
 
-      {settings.advanced_shared.legend_visible ? (
-        <details className="phase200-graph-legend">
-          <summary><ChevronDown aria-hidden="true" size={15} /> Universe legend</summary>
-          <div aria-label="Graph legend">
-            <span data-tier="0">ENTRAL · center</span>
-            <span data-tier="1">Marshal · tier 1</span>
-            <span data-tier="2">General · tier 2</span>
-            <span data-tier="3">Commander · tier 3</span>
-            <span data-tier="4">Soldier · tier 4</span>
-            <span>Selected lineage · emphasized teal edges</span>
-            <span>Unrelated edges · dimmed on mobile selection</span>
-            <span>Health and status · color plus tooltip text</span>
-          </div>
-        </details>
-      ) : null}
       <CanonicalGraphTextualHierarchy entities={activeEntities} label="Universe Graph" />
       <span className="sr-only" aria-live="polite">
         {fullscreenDimension
