@@ -109,11 +109,14 @@ export async function interactionLayerRoutes(app: FastifyInstance) {
     const { organizationId } = organizationParamsSchema.parse(request.params);
     const role = await memberRole(request, organizationId);
     if (!role) return unavailableOrganization(reply);
-    return reply.send(await interactionLayerService.getTutorialProgress({
+    return reply.send(await withTenantSession(prisma, canonicalSession(
+      request,
+      `Read tenant-bound Tutorial progress for member access ${organizationId}.`
+    ), (transaction) => interactionLayerService.getTutorialProgress({
       organizationId,
       role,
       userId: currentUser.sub
-    }));
+    }, transaction)));
   });
 
   app.patch("/member/organizations/:organizationId/interaction/tutorial-progress", {
@@ -127,12 +130,15 @@ export async function interactionLayerRoutes(app: FastifyInstance) {
     if (!role) return unavailableOrganization(reply);
     try {
       const update = parseTutorialProgressUpdateRequest(request.body);
-      return reply.send(await interactionLayerService.updateTutorialProgress({
+      return reply.send(await withTenantSession(prisma, canonicalSession(
+        request,
+        `Update tenant-bound Tutorial progress for member access ${organizationId}.`
+      ), (transaction) => interactionLayerService.updateTutorialProgress({
         organizationId,
         role,
         update,
         userId: currentUser.sub
-      }));
+      }, transaction)));
     } catch (error) {
       if (error instanceof ContractError) return contractError(reply, error);
       if (error instanceof TutorialProgressConflictError) return conflict(reply, error);
@@ -151,13 +157,16 @@ export async function interactionLayerRoutes(app: FastifyInstance) {
     if (!role) return unavailableOrganization(reply);
     try {
       const reset = parseTutorialProgressResetRequest(request.body);
-      return reply.send(await interactionLayerService.resetTutorialProgress({
+      return reply.send(await withTenantSession(prisma, canonicalSession(
+        request,
+        `Reset tenant-bound Tutorial progress for member access ${organizationId}.`
+      ), (transaction) => interactionLayerService.resetTutorialProgress({
         expectedRevision: reset.expected_revision,
         idempotencyKey: reset.idempotency_key,
         organizationId,
         role,
         userId: currentUser.sub
-      }));
+      }, transaction)));
     } catch (error) {
       if (error instanceof ContractError) return contractError(reply, error);
       if (error instanceof TutorialProgressConflictError) return conflict(reply, error);

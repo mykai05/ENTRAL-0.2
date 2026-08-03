@@ -248,6 +248,11 @@ describe("Phase 200 interaction routes", () => {
       url: `/api/v1/member/organizations/${organizationId}/interaction/tutorial-progress`
     });
     expect(getResponse.json()).toMatchObject({ revision: 1, user_id: userId });
+    expect(mocks.getTutorialProgress).toHaveBeenCalledWith(expect.objectContaining({
+      organizationId,
+      role: "MEMBER",
+      userId
+    }), expect.anything());
 
     const patchResponse = await app.inject({
       headers: { authorization },
@@ -269,10 +274,14 @@ describe("Phase 200 interaction routes", () => {
       organizationId,
       role: "MEMBER",
       userId
-    }));
+    }), expect.anything());
     expect(mocks.updateTutorialProgress).toHaveBeenCalledWith(expect.objectContaining({
       update: expect.objectContaining({ idempotency_key: "phase200:tutorial:update:route-test" })
-    }));
+    }), expect.anything());
+    expect(mocks.withTenantSession).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      authSubject: userId,
+      tenantId
+    }), expect.any(Function));
     await app.close();
   });
 

@@ -53,6 +53,25 @@ function sha256(value) {
   return createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(stableValue(value))).digest("hex");
 }
 
+function memberSessionClaims(token) {
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Production journey member token is not a signed JWT.");
+  const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
+  const claims = {
+    organizationId: payload.oid,
+    session: payload.session,
+    sub: payload.sub,
+    tenantId: payload.tid
+  };
+  if (
+    claims.session !== "member" || typeof claims.sub !== "string"
+    || typeof claims.tenantId !== "string" || typeof claims.organizationId !== "string"
+  ) {
+    throw new Error("Production journey token is not bound to a tenant member session.");
+  }
+  return claims;
+}
+
 async function expectVisible(locator, label, timeout = 30_000) {
   await locator.waitFor({ state: "visible", timeout }).catch((error) => {
     throw new Error(`${label} was not visible: ${error instanceof Error ? error.message : String(error)}`);
@@ -137,26 +156,25 @@ try {
     url: origin,
     value: memberToken
   }]);
-  const currentAccount = await readJson(await apiContext.request.get(`${origin}/api/v1/me`), "Current migrated member account");
   const memberOrganizations = await readJson(
     await apiContext.request.get(`${origin}/api/v1/member/organizations`),
     "Current migrated member organization inventory"
   );
-  const currentTeam = currentAccount.teams?.find((team) => team.id === organizationId);
+  const sessionClaims = memberSessionClaims(memberToken);
   const currentMembership = memberOrganizations.organizations?.find((organization) => organization.id === organizationId);
   if (
-    !currentAccount.user?.id || !currentTeam?.tenantId || !currentTeam?.organizationId
+    !memberOrganizations.user?.id || memberOrganizations.user.id !== sessionClaims.sub
     || !currentMembership?.joinedAt || !["OWNER", "MEMBER"].includes(currentMembership.role)
   ) {
     throw new Error("Production journey is not bound to the nominated existing migrated member organization.");
   }
   membershipEvidence = {
     joined_at: currentMembership.joinedAt,
-    organization_id: currentTeam.organizationId,
+    organization_id: sessionClaims.organizationId,
     role: currentMembership.role,
     team_id: organizationId,
-    tenant_id: currentTeam.tenantId,
-    user_id: currentAccount.user.id
+    tenant_id: sessionClaims.tenantId,
+    user_id: memberOrganizations.user.id
   };
   const memberBase = `${origin}/api/v1/member/organizations/${encodeURIComponent(organizationId)}`;
   portfolio = await readJson(await apiContext.request.get(`${memberBase}/portfolio/summary`), "Portfolio summary");
