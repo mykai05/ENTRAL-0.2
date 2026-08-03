@@ -234,6 +234,7 @@ function rectanglesOverlap(left, right, inset = 0) {
 }
 
 async function captureDestinationScreenshot(page, { destination, root, width }) {
+  await root.scrollIntoViewIfNeeded();
   const geometry = await root.evaluate((element) => {
     const visible = (candidate) => {
       if (!(candidate instanceof HTMLElement)) return false;
@@ -255,7 +256,7 @@ async function captureDestinationScreenshot(page, { destination, root, width }) 
         top: bounds.top,
         width: bounds.width
       },
-      viewport: { height: window.innerHeight, width: window.innerWidth }
+      viewport: { height: window.innerHeight, scroll_y: window.scrollY, width: window.innerWidth }
     };
   });
   if (
@@ -278,6 +279,7 @@ async function captureDestinationScreenshot(page, { destination, root, width }) 
     screenshot_file: `screenshots/${screenshotName}`,
     screenshot_sha256: createHash("sha256").update(await readFile(screenshotPath)).digest("hex"),
     viewport_height: geometry.viewport.height,
+    viewport_scroll_y: geometry.viewport.scroll_y,
     viewport_width: width
   };
 }
@@ -288,6 +290,18 @@ async function selectDesktopSideBySide(workspace) {
     await workspace.getByLabel("Graph arrangement", { exact: true }).selectOption("side-by-side");
   }
   await workspace.locator('.phase180-graph-panels[data-layout="side-by-side"]').waitFor({ state: "attached" });
+}
+
+async function switchMobileGraphDimension(page, toolbar, dimension, width, label) {
+  await toolbar.getByRole("button", { name: dimension.toUpperCase() }).click();
+  await page.waitForFunction((expectedDimension) => document.querySelector(".phase180-graph-workspace")
+    ?.getAttribute("data-mobile-dimension") === expectedDimension, dimension);
+  await page.waitForURL((url) =>
+    url.pathname === "/member/graph" && url.searchParams.get("graph") === dimension,
+  { timeout: 45_000 });
+  if (await toolbar.getByRole("button", { name: dimension.toUpperCase() }).getAttribute("aria-pressed") !== "true") {
+    throw new Error(`${width}px ${label} did not synchronize the ${dimension.toUpperCase()} toolbar state.`);
+  }
 }
 
 async function measureDesktopSideBySide(workspace, width) {
@@ -977,15 +991,39 @@ try {
   }
   const authorizedEntityIds = nodeIds;
   const authorizedEdgeIds = new Set(projection.edges.map((edge) => edge.edge_id));
-  const rendererAuthorization = {
-    authorizedEdgeIds,
-    authorizedEntityIds,
-    projectionVersion: projection.projection_version
-  };
-  await apiContext.close();
 
   for (const width of widths) {
     const mobile = width < 1024;
+    const viewportHierarchy = await readJson(
+      await apiContext.request.get(`${memberBase}/hierarchy`),
+      `${width}px current canonical hierarchy`
+    );
+    const viewportProjection = await readJson(
+      await apiContext.request.get(`${memberBase}/graph/projection`),
+      `${width}px current graph projection`
+    );
+    const viewportEntityIds = new Set(viewportProjection.entities.map((entity) => entity.entity_id));
+    const viewportEdgeIds = new Set(viewportProjection.edges.map((edge) => edge.edge_id));
+    const viewportRoots = viewportProjection.entities.filter(
+      (entity) => entity.parent_id === null && entity.entity_type === "ENTRAL"
+    );
+    if (
+      viewportProjection.organization_id !== organizationId
+      || viewportProjection.projection_version !== viewportHierarchy.event_sequence
+      || viewportEntityIds.size !== authorizedEntityIds.size
+      || viewportEdgeIds.size !== authorizedEdgeIds.size
+      || [...viewportEntityIds].some((id) => !authorizedEntityIds.has(id))
+      || [...viewportEdgeIds].some((id) => !authorizedEdgeIds.has(id))
+      || viewportRoots.length !== 1
+      || viewportRoots[0].entity_id !== viewportProjection.root_id
+    ) {
+      throw new Error(`${width}px current projection changed canonical authority, topology, root, or hierarchy alignment.`);
+    }
+    const rendererAuthorization = {
+      authorizedEdgeIds: viewportEdgeIds,
+      authorizedEntityIds: viewportEntityIds,
+      projectionVersion: viewportProjection.projection_version
+    };
     const context = await browser.newContext({
       deviceScaleFactor: mobile ? 2 : 1,
       isMobile: mobile,
@@ -1080,11 +1118,11 @@ try {
         return Number(element?.getAttribute("data-authorized-projection-entity-count")) === nodes
           && Number(element?.getAttribute("data-canonical-entity-count")) >= 1
           && Number(element?.getAttribute("data-canonical-event-sequence")) === version;
-      }, { nodes: projection.entities.length, version: projection.projection_version });
+      }, { nodes: viewportProjection.entities.length, version: viewportProjection.projection_version });
       await assertNoCanonicalSyncError(page, `${width}px Universe`);
       const parityKey = await workspace.getAttribute("data-graph-parity-key");
       const eventSequence = await workspace.getAttribute("data-canonical-event-sequence");
-      if (!parityKey || Number(eventSequence) !== projection.projection_version) {
+      if (!parityKey || Number(eventSequence) !== viewportProjection.projection_version) {
         throw new Error(`${width}px Universe did not bind canonical projection parity and version.`);
       }
       let desktopLayoutEvidence = null;
@@ -1095,9 +1133,7 @@ try {
       if (mobile) {
         const initialToolbar = page.getByRole("toolbar", { name: "Compact mobile Universe controls" });
         await expectVisible(initialToolbar, `${width}px compact Universe toolbar`);
-        await initialToolbar.getByRole("button", { name: "2D" }).click();
-        await page.waitForFunction(() => document.querySelector(".phase180-graph-workspace")
-          ?.getAttribute("data-mobile-dimension") === "2d");
+        await switchMobileGraphDimension(page, initialToolbar, "2d", width, "initial mobile selection");
       }
       const twoD = page.locator('.phase180-graph[data-graph-dimension="2d"]');
       await expectVisible(twoD, `${width}px 2D projection`, 45_000);
@@ -1137,7 +1173,7 @@ try {
         }
         const toolbar = page.getByRole("toolbar", { name: "Compact mobile Universe controls" });
         await expectVisible(toolbar, `${width}px compact Universe toolbar`);
-        await toolbar.getByRole("button", { name: "3D" }).click();
+        await switchMobileGraphDimension(page, toolbar, "3d", width, "portrait switch");
         const threeD = page.locator('.phase180-graph-3d[data-graph-dimension="3d"]');
         await expectVisible(threeD, `${width}px 3D projection`, 60_000);
         threeDSnapshot = await rendererSnapshot(threeD, `${width}px 3D projection`, {
@@ -1156,7 +1192,7 @@ try {
         ) {
           throw new Error(`${width}px 2D to 3D switch did not preserve canonical graph state.`);
         }
-        await toolbar.getByRole("button", { name: "2D" }).click();
+        await switchMobileGraphDimension(page, toolbar, "2d", width, "portrait return");
         await expectVisible(twoD, `${width}px 2D projection return`, 45_000);
         const returnedTwoD = await rendererSnapshot(twoD, `${width}px returned 2D projection`, rendererAuthorization);
         assertRendererParity(twoDSnapshot, returnedTwoD, `${width}px 3D to 2D switch`);
@@ -1167,20 +1203,19 @@ try {
           orientation: "landscape",
           width
         }));
-        await toolbar.getByRole("button", { name: "3D" }).click();
+        await switchMobileGraphDimension(page, toolbar, "3d", width, "landscape switch");
         await expectVisible(threeD, `${width}px landscape 3D projection`, 60_000);
         presentationEvidence.push(await captureGraphPresentation(page, workspace, {
           dimension: "3d",
           orientation: "landscape",
           width
         }));
-        await toolbar.getByRole("button", { name: "2D" }).click();
+        await switchMobileGraphDimension(page, toolbar, "2d", width, "landscape return");
         await page.setViewportSize({ height: 844, width });
       } else {
         if (
           await workspace.getAttribute("data-mobile-presentation") !== "desktop-dual"
           || await workspace.locator(".phase180-graph-panel").count() !== 2
-          || !desktopLayoutEvidence
         ) {
           throw new Error("Desktop Universe did not preserve the side-by-side 2D and 3D presentation.");
         }
@@ -1256,6 +1291,7 @@ try {
       await context.close();
     }
   }
+  await apiContext.close();
 } finally {
   await browser.close();
 }
