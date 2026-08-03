@@ -244,9 +244,10 @@ function documentHtml(title, sections) {
 .section { break-before:auto; page-break-before:auto; } .section + .section { border-top:1px solid var(--line); margin-top:.34in; padding-top:.18in; }
 h1,h2,h3,h4 { display:block; color:var(--ink); line-height:1.15; break-after:avoid-page; page-break-after:avoid; }
 h1 { font-size:22pt; margin:0 0 .18in; border-bottom:2px solid var(--accent); padding-bottom:.08in; }
-h2 { font-size:16pt; margin:.2in 0 .08in; } h3 { font-size:12.5pt; margin:.15in 0 .06in; }
+h2 { font-size:16pt; margin:.26in 0 .13in; } h3 { font-size:12.5pt; margin:.2in 0 .1in; }
 p { margin:.04in 0 .09in; break-inside:avoid; page-break-inside:avoid; orphans:4; widows:4; }
-h1 + p,h2 + p,h3 + p,h4 + p { margin-top:.07in; }
+h1 + p,h2 + p,h3 + p,h4 + p { margin-top:.11in; }
+p + h2,ul + h2,ol + h2 { margin-top:.28in; }
 ul,ol { margin:.04in 0 .1in .24in; padding:0; break-inside:avoid; page-break-inside:avoid; }
 li { margin:.025in 0; break-inside:avoid; page-break-inside:avoid; }
 table { width:100%; border-collapse:collapse; margin:.12in 0 .2in; font-size:8.7pt; page-break-inside:auto; }
