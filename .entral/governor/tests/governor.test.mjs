@@ -142,6 +142,135 @@ function releaseManifest(phase = 196, overrides = {}) {
   };
 }
 
+function authenticatedMemberJourney() {
+  const destinationSyncErrors = {
+    BUSINESSES: 0,
+    COMMAND: 0,
+    INFRASTRUCTURE: 0,
+    TUTORIAL: 0,
+    UNIVERSE_2D: 0,
+    UNIVERSE_3D: 0
+  };
+  const viewportWidths = [360, 390, 412, 430, 1440];
+  return {
+    business_count: 0,
+    businesses_state: "EMPTY_CANONICAL",
+    canonical_edge_count: 2,
+    canonical_edge_set_sha256: "3".repeat(64),
+    canonical_endpoint_readback: [
+      { business_count: 0, endpoint: "PORTFOLIO_SUMMARY", event_sequence: 399, http_status: 200, result: "PASSED" },
+      { endpoint: "HIERARCHY", entity_count: 3, event_sequence: 399, http_status: 200, result: "PASSED", root_count: 1 },
+      { endpoint: "ENTRAL_CONVERSATION", event_sequence: 399, http_status: 200, message_count: 0, result: "PASSED" },
+      { edge_count: 2, endpoint: "GRAPH_PROJECTION", entity_count: 3, http_status: 200, projection_version: 399, result: "PASSED" },
+      { actor_bound: true, endpoint: "GRAPH_PREFERENCES", http_status: 200, organization_bound: true, preference_version: 5, result: "PASSED" },
+      { endpoint: "EVENTS", event_count: 399, http_status: 200, result: "PASSED" },
+      { endpoint: "BUSINESS_FULL_RECORD", http_status: 404, result: "NOT_APPLICABLE_NO_CANONICAL_BUSINESS" },
+      { canonical_root_visible: true, endpoint: "ENTITY_FULL_RECORD", http_status: 200, result: "PASSED" }
+    ],
+    canonical_node_count: 3,
+    canonical_node_set_sha256: "4".repeat(64),
+    canonical_sync_errors: 0,
+    command_canonical_data_verified: true,
+    deployed_commit_sha: H,
+    deployment_readback_exact_sha_verified: true,
+    deployment_readback_receipt_sha256: "5".repeat(64),
+    destinations: ["COMMAND", "BUSINESSES", "UNIVERSE_2D", "UNIVERSE_3D", "INFRASTRUCTURE", "TUTORIAL"],
+    environment: "PRODUCTION",
+    graph_preference_actor_bound: true,
+    graph_preference_organization_bound: true,
+    membership_provenance_sha256: "6".repeat(64),
+    migrated_account_provenance_sha256: sha256([
+      "2026-08-01T12:00:00.000Z",
+      "8".repeat(64),
+      "2026-08-02T19:04:46.197Z",
+      "2026-08-02T22:45:45.000Z",
+      "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      202,
+      "P202-PROD-READBACK-C6891762",
+      "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c",
+      "a".repeat(64),
+      "b".repeat(64),
+      "c".repeat(64)
+    ]),
+    migrated_membership_joined_at: "2026-08-01T12:00:00.000Z",
+    migrated_organization_scope_sha256: "8".repeat(64),
+    migrated_phase_202_cutover_at: "2026-08-02T19:04:46.197Z",
+    migrated_source_checked_at: "2026-08-02T22:45:45.000Z",
+    migrated_source_main_sha: "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    migrated_source_phase: 202,
+    migrated_state_receipt_id: "P202-PROD-READBACK-C6891762",
+    migrated_state_receipt_sha256: "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c",
+    migrated_subject_sha256: "a".repeat(64),
+    migrated_team_scope_sha256: "b".repeat(64),
+    migrated_tenant_scope_sha256: "c".repeat(64),
+    observed_at: "2026-08-03T00:20:00.000Z",
+    organization_scope_sha256: "8".repeat(64),
+    pre_phase_202_provenance_verified: true,
+    projection_organization_bound: true,
+    receipt_id: "P203-PRODUCTION-MEMBER-JOURNEY-001",
+    receipt_sha256: "d".repeat(64),
+    renderer_state_preserved: true,
+    route_interception: false,
+    session_scope: "MIGRATED_MEMBER",
+    session_subject_sha256: "a".repeat(64),
+    status: "PASSED",
+    team_scope_sha256: "b".repeat(64),
+    tenant_scope_sha256: "c".repeat(64),
+    viewport_observations: viewportWidths.map((viewportWidth) => ({
+      business_count: 0,
+      businesses_state: "EMPTY_CANONICAL",
+      command_canonical_data_verified: true,
+      desktop_side_by_side: viewportWidth >= 1024,
+      destination_sync_errors: { ...destinationSyncErrors },
+      edge_count: 2,
+      edge_set_sha256: "3".repeat(64),
+      entity_count: 3,
+      entity_set_sha256: "4".repeat(64),
+      event_sequence: 399,
+      mobile_single_renderer: viewportWidth < 1024,
+      renderer_parity_verified: true,
+      rendered_subset_authorized: true,
+      renderer_state_preserved: true,
+      selected_entity_authorized: true,
+      sync_errors: 0,
+      three_d_loaded: true,
+      two_d_loaded: true,
+      viewport_width: viewportWidth
+    })),
+    viewport_widths: viewportWidths
+  };
+}
+
+function phase203ReleaseManifest() {
+  const manifest = releaseManifest(203);
+  return {
+    ...manifest,
+    authenticated_member_journey: authenticatedMemberJourney(),
+    deployments: manifest.deployments.map((deployment) => ({
+      ...deployment,
+      live_url: deployment.role === "FRONTEND"
+        ? "https://entral-0-2-frontend.vercel.app"
+        : "https://entral-backend-production.up.railway.app/health"
+    })),
+    production_readback: {
+      ...manifest.production_readback,
+      deployment_readback_sha256: "5".repeat(64)
+    },
+    release_controller: {
+      decision: "PASS",
+      evidence_bundle_sha256: "e".repeat(64),
+      failure_proof_status: "PASSED",
+      health_status: "PASSED",
+      plan_sha256: "f".repeat(64),
+      risk_tier: "HIGH"
+    },
+    repositories: [
+      { compatibility_status: "PASSED", contract_version: "release-control-v1", main_sha: H, repository: "mykai05/ENTRAL-0.2", role: "PRODUCT" },
+      { compatibility_status: "PASSED", contract_version: "release-control-v1", main_sha: "a".repeat(40), repository: "SovereignProtocol/sovereign-protocol-agent", role: "CONTROL_WEBSITE" }
+    ]
+  };
+}
+
 async function setup({ phase = 196, certifiedPhases = [195] } = {}) {
   const root = await makeRepository();
   const program = await readSourceJson(".entral/governor/program/PHASE_DAG.v1.json");
@@ -363,6 +492,68 @@ test("release certification rejects duplicate roles, drifted SHAs, and remaining
   const blocked = releaseManifest();
   blocked.production_readback.blockers = ["migration readback missing"];
   assert.throws(() => validateNamedContract("ReleaseManifest", blocked), (error) => error.code === "PRODUCTION_BLOCKERS_REMAIN");
+});
+
+test("Phase 203 release certification rejects unbound production member journey evidence", () => {
+  const valid = phase203ReleaseManifest();
+  assert.doesNotThrow(() => validateNamedContract("ReleaseManifest", valid));
+
+  const migratedSubjectMismatch = structuredClone(valid);
+  migratedSubjectMismatch.authenticated_member_journey.migrated_subject_sha256 = "e".repeat(64);
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", migratedSubjectMismatch),
+    (error) => error.code === "UNBOUND_MIGRATED_MEMBER_PROVENANCE"
+  );
+
+  const postCutoverMembership = structuredClone(valid);
+  postCutoverMembership.authenticated_member_journey.migrated_membership_joined_at = "2026-08-02T20:00:00.000Z";
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", postCutoverMembership),
+    (error) => error.code === "UNBOUND_MIGRATED_MEMBER_PROVENANCE"
+  );
+
+  const deploymentMismatch = structuredClone(valid);
+  deploymentMismatch.authenticated_member_journey.deployment_readback_receipt_sha256 = "f".repeat(64);
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", deploymentMismatch),
+    (error) => error.code === "UNBOUND_MEMBER_JOURNEY_DEPLOYMENT"
+  );
+
+  const missingEndpoint = structuredClone(valid);
+  missingEndpoint.authenticated_member_journey.canonical_endpoint_readback.pop();
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", missingEndpoint),
+    (error) => error.code === "INVALID_CONTRACT"
+  );
+
+  const wrongPreferenceOwner = structuredClone(valid);
+  wrongPreferenceOwner.authenticated_member_journey.canonical_endpoint_readback
+    .find((entry) => entry.endpoint === "GRAPH_PREFERENCES").actor_bound = false;
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", wrongPreferenceOwner),
+    (error) => error.code === "MISMATCHED_CANONICAL_ENDPOINT_READBACK"
+  );
+
+  const unauthorizedRenderer = structuredClone(valid);
+  unauthorizedRenderer.authenticated_member_journey.viewport_observations[0].rendered_subset_authorized = false;
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", unauthorizedRenderer),
+    (error) => error.code === "FAILED_MEMBER_RENDERER_OBSERVATION"
+  );
+
+  const commandWithoutData = structuredClone(valid);
+  commandWithoutData.authenticated_member_journey.viewport_observations[0].command_canonical_data_verified = false;
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", commandWithoutData),
+    (error) => error.code === "FAILED_MEMBER_RENDERER_OBSERVATION"
+  );
+
+  const tutorialSyncFailure = structuredClone(valid);
+  tutorialSyncFailure.authenticated_member_journey.viewport_observations[0].destination_sync_errors.TUTORIAL = 1;
+  assert.throws(
+    () => validateNamedContract("ReleaseManifest", tutorialSyncFailure),
+    (error) => error.code === "INVALID_CONTRACT"
+  );
 });
 
 test("mandatory review enters durable waiting and a PASS verdict cannot override a failed gate", async (t) => {

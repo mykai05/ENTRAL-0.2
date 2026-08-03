@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 export const CONTRACT_VERSION = "1.0.0";
@@ -116,6 +117,10 @@ export class GovernorError extends Error {
 
 function fail(code, message, details) {
   throw new GovernorError(code, message, details);
+}
+
+function evidenceBindingSha256(values) {
+  return createHash("sha256").update(JSON.stringify(values)).digest("hex");
 }
 
 export function assertRecord(value, field) {
@@ -716,13 +721,152 @@ export function validateReleaseManifest(value) {
     for (const field of [
       "canonical_node_set_sha256",
       "canonical_edge_set_sha256",
+      "deployment_readback_receipt_sha256",
       "membership_provenance_sha256",
+      "migrated_account_provenance_sha256",
+      "migrated_organization_scope_sha256",
       "migrated_state_receipt_sha256",
+      "migrated_subject_sha256",
+      "migrated_team_scope_sha256",
+      "migrated_tenant_scope_sha256",
       "session_subject_sha256",
+      "team_scope_sha256",
       "tenant_scope_sha256",
       "organization_scope_sha256"
     ]) assertSha256(journey[field], `release_manifest.authenticated_member_journey.${field}`);
+    assertId(journey.migrated_state_receipt_id, "release_manifest.authenticated_member_journey.migrated_state_receipt_id");
+    assertInteger(journey.migrated_source_phase, "release_manifest.authenticated_member_journey.migrated_source_phase", 202, 202);
+    assertSha40(journey.migrated_source_main_sha, "release_manifest.authenticated_member_journey.migrated_source_main_sha");
+    assertIso(journey.migrated_membership_joined_at, "release_manifest.authenticated_member_journey.migrated_membership_joined_at");
+    assertIso(journey.migrated_phase_202_cutover_at, "release_manifest.authenticated_member_journey.migrated_phase_202_cutover_at");
+    assertIso(journey.migrated_source_checked_at, "release_manifest.authenticated_member_journey.migrated_source_checked_at");
     assertIso(journey.observed_at, "release_manifest.authenticated_member_journey.observed_at");
+    const migratedAccountProvenanceSha256 = evidenceBindingSha256([
+      journey.migrated_membership_joined_at,
+      journey.migrated_organization_scope_sha256,
+      journey.migrated_phase_202_cutover_at,
+      journey.migrated_source_checked_at,
+      journey.migrated_source_main_sha,
+      journey.migrated_source_phase,
+      journey.migrated_state_receipt_id,
+      journey.migrated_state_receipt_sha256,
+      journey.migrated_subject_sha256,
+      journey.migrated_team_scope_sha256,
+      journey.migrated_tenant_scope_sha256
+    ]);
+    if (
+      journey.pre_phase_202_provenance_verified !== true
+      || journey.migrated_source_main_sha !== "c689176234bca8a43f6bb5665f6a8a63d8d653dd"
+      || journey.migrated_state_receipt_id !== "P202-PROD-READBACK-C6891762"
+      || journey.migrated_state_receipt_sha256 !== "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c"
+      || journey.migrated_account_provenance_sha256 !== migratedAccountProvenanceSha256
+      || journey.migrated_subject_sha256 !== journey.session_subject_sha256
+      || journey.migrated_tenant_scope_sha256 !== journey.tenant_scope_sha256
+      || journey.migrated_organization_scope_sha256 !== journey.organization_scope_sha256
+      || journey.migrated_team_scope_sha256 !== journey.team_scope_sha256
+      || Date.parse(journey.migrated_membership_joined_at) >= Date.parse(journey.migrated_phase_202_cutover_at)
+      || Date.parse(journey.migrated_source_checked_at) < Date.parse(journey.migrated_phase_202_cutover_at)
+      || Date.parse(journey.observed_at) < Date.parse(journey.migrated_source_checked_at)
+    ) {
+      fail("UNBOUND_MIGRATED_MEMBER_PROVENANCE", "The production journey must cryptographically bind a pre-Phase-202 member, tenant, organization, and team to the certified Phase 202 state receipt");
+    }
+    assertSha256(value.production_readback.deployment_readback_sha256, "release_manifest.production_readback.deployment_readback_sha256");
+    if (
+      journey.deployment_readback_exact_sha_verified !== true
+      || journey.deployment_readback_receipt_sha256 !== value.production_readback.deployment_readback_sha256
+    ) {
+      fail("UNBOUND_MEMBER_JOURNEY_DEPLOYMENT", "The authenticated member journey must bind the independently verified exact-SHA frontend, API, and worker deployment receipt");
+    }
+    if (
+      journey.command_canonical_data_verified !== true
+      || journey.graph_preference_actor_bound !== true
+      || journey.graph_preference_organization_bound !== true
+      || journey.projection_organization_bound !== true
+    ) {
+      fail("UNBOUND_CANONICAL_MEMBER_DATA", "The production journey must bind visible Command data, graph preference ownership, and projection organization authority");
+    }
+    assertInteger(journey.business_count, "release_manifest.authenticated_member_journey.business_count", 0);
+    assertEnum(journey.businesses_state, ["REAL_RECORDS", "EMPTY_CANONICAL"], "release_manifest.authenticated_member_journey.businesses_state");
+    assertInteger(journey.canonical_node_count, "release_manifest.authenticated_member_journey.canonical_node_count", 2);
+    assertInteger(journey.canonical_edge_count, "release_manifest.authenticated_member_journey.canonical_edge_count", 1);
+    assertInteger(journey.canonical_sync_errors, "release_manifest.authenticated_member_journey.canonical_sync_errors", 0, 0);
+    if (
+      (journey.businesses_state === "REAL_RECORDS" && journey.business_count === 0)
+      || (journey.businesses_state === "EMPTY_CANONICAL" && journey.business_count !== 0)
+    ) {
+      fail("INVALID_CANONICAL_BUSINESS_STATE", "The production member journey business state must match its canonical business count");
+    }
+    const requiredEndpoints = [
+      "PORTFOLIO_SUMMARY",
+      "HIERARCHY",
+      "ENTRAL_CONVERSATION",
+      "GRAPH_PROJECTION",
+      "GRAPH_PREFERENCES",
+      "EVENTS",
+      "BUSINESS_FULL_RECORD",
+      "ENTITY_FULL_RECORD"
+    ];
+    assertArray(journey.canonical_endpoint_readback, "release_manifest.authenticated_member_journey.canonical_endpoint_readback", {
+      minimum: requiredEndpoints.length,
+      maximum: requiredEndpoints.length
+    });
+    const endpointByName = new Map();
+    journey.canonical_endpoint_readback.forEach((endpoint, index) => {
+      const field = `release_manifest.authenticated_member_journey.canonical_endpoint_readback[${index}]`;
+      assertRecord(endpoint, field);
+      assertEnum(endpoint.endpoint, requiredEndpoints, `${field}.endpoint`);
+      if (endpointByName.has(endpoint.endpoint)) {
+        fail("DUPLICATE_MEMBER_ENDPOINT_READBACK", "Every canonical member endpoint requires exactly one readback result");
+      }
+      endpointByName.set(endpoint.endpoint, endpoint);
+      assertInteger(endpoint.http_status, `${field}.http_status`, 100, 599);
+      if (endpoint.endpoint === "BUSINESS_FULL_RECORD") {
+        assertEnum(endpoint.result, ["PASSED", "NOT_APPLICABLE_NO_CANONICAL_BUSINESS"], `${field}.result`);
+        if (
+          (endpoint.result === "PASSED" && endpoint.http_status !== 200)
+          || (endpoint.result === "NOT_APPLICABLE_NO_CANONICAL_BUSINESS" && endpoint.http_status !== 404)
+        ) {
+          fail("INVALID_BUSINESS_FULL_RECORD_READBACK", "Business full-record evidence must be a successful canonical record or an explicit truthful empty-state 404");
+        }
+      } else if (endpoint.result !== "PASSED" || endpoint.http_status !== 200) {
+        fail("FAILED_CANONICAL_ENDPOINT_READBACK", `${endpoint.endpoint} must pass authenticated production readback`);
+      }
+    });
+    if (requiredEndpoints.some((endpoint) => !endpointByName.has(endpoint))) {
+      fail("INCOMPLETE_CANONICAL_ENDPOINT_READBACK", "Every canonical workspace endpoint requires authenticated production readback");
+    }
+    const portfolioReadback = endpointByName.get("PORTFOLIO_SUMMARY");
+    const hierarchyReadback = endpointByName.get("HIERARCHY");
+    const conversationReadback = endpointByName.get("ENTRAL_CONVERSATION");
+    const projectionReadback = endpointByName.get("GRAPH_PROJECTION");
+    const preferenceReadback = endpointByName.get("GRAPH_PREFERENCES");
+    const eventsReadback = endpointByName.get("EVENTS");
+    const businessReadback = endpointByName.get("BUSINESS_FULL_RECORD");
+    const entityReadback = endpointByName.get("ENTITY_FULL_RECORD");
+    assertInteger(portfolioReadback.business_count, "release_manifest.authenticated_member_journey.portfolio_readback.business_count", 0);
+    assertInteger(portfolioReadback.event_sequence, "release_manifest.authenticated_member_journey.portfolio_readback.event_sequence", 0);
+    assertInteger(hierarchyReadback.entity_count, "release_manifest.authenticated_member_journey.hierarchy_readback.entity_count", 2);
+    assertInteger(hierarchyReadback.root_count, "release_manifest.authenticated_member_journey.hierarchy_readback.root_count", 1, 1);
+    assertInteger(hierarchyReadback.event_sequence, "release_manifest.authenticated_member_journey.hierarchy_readback.event_sequence", 0);
+    assertInteger(conversationReadback.message_count, "release_manifest.authenticated_member_journey.conversation_readback.message_count", 0);
+    assertInteger(conversationReadback.event_sequence, "release_manifest.authenticated_member_journey.conversation_readback.event_sequence", 0);
+    assertInteger(projectionReadback.entity_count, "release_manifest.authenticated_member_journey.projection_readback.entity_count", 2);
+    assertInteger(projectionReadback.edge_count, "release_manifest.authenticated_member_journey.projection_readback.edge_count", 1);
+    assertInteger(projectionReadback.projection_version, "release_manifest.authenticated_member_journey.projection_readback.projection_version", 0);
+    assertInteger(preferenceReadback.preference_version, "release_manifest.authenticated_member_journey.preference_readback.preference_version", 0);
+    assertInteger(eventsReadback.event_count, "release_manifest.authenticated_member_journey.events_readback.event_count", 0);
+    if (
+      portfolioReadback.business_count !== journey.business_count
+      || projectionReadback.entity_count !== journey.canonical_node_count
+      || projectionReadback.edge_count !== journey.canonical_edge_count
+      || projectionReadback.projection_version !== hierarchyReadback.event_sequence
+      || preferenceReadback.actor_bound !== true || preferenceReadback.organization_bound !== true
+      || (journey.businesses_state === "REAL_RECORDS" && businessReadback.result !== "PASSED")
+      || (journey.businesses_state === "EMPTY_CANONICAL" && businessReadback.result !== "NOT_APPLICABLE_NO_CANONICAL_BUSINESS")
+      || entityReadback.canonical_root_visible !== true
+    ) {
+      fail("MISMATCHED_CANONICAL_ENDPOINT_READBACK", "Canonical endpoint results must agree with the journey counts, event version, ownership, and root visibility");
+    }
     if (journey.route_interception !== false) {
       fail("INTERCEPTED_PRODUCTION_JOURNEY", "The authenticated production member journey cannot use route interception");
     }
@@ -760,9 +904,6 @@ export function validateReleaseManifest(value) {
     if (!journey.viewport_widths.some((width) => width >= 1024)) {
       fail("MISSING_DESKTOP_MEMBER_JOURNEY", "Authenticated member journey requires a desktop viewport");
     }
-    assertInteger(journey.canonical_node_count, "release_manifest.authenticated_member_journey.canonical_node_count", 2);
-    assertInteger(journey.canonical_edge_count, "release_manifest.authenticated_member_journey.canonical_edge_count", 1);
-    assertInteger(journey.canonical_sync_errors, "release_manifest.authenticated_member_journey.canonical_sync_errors", 0, 0);
     assertArray(journey.viewport_observations, "release_manifest.authenticated_member_journey.viewport_observations", {
       minimum: journey.viewport_widths.length,
       maximum: journey.viewport_widths.length
@@ -777,23 +918,37 @@ export function validateReleaseManifest(value) {
       }
       observedWidths.add(observation.viewport_width);
       for (const booleanField of [
+        "command_canonical_data_verified",
         "desktop_side_by_side",
         "mobile_single_renderer",
         "renderer_parity_verified",
+        "rendered_subset_authorized",
         "renderer_state_preserved",
+        "selected_entity_authorized",
         "two_d_loaded",
         "three_d_loaded"
       ]) assertBoolean(observation[booleanField], `${field}.${booleanField}`);
+      assertInteger(observation.business_count, `${field}.business_count`, 0);
+      assertEnum(observation.businesses_state, ["REAL_RECORDS", "EMPTY_CANONICAL"], `${field}.businesses_state`);
       assertInteger(observation.entity_count, `${field}.entity_count`, 2);
       assertInteger(observation.edge_count, `${field}.edge_count`, 1);
       assertInteger(observation.event_sequence, `${field}.event_sequence`, 0);
       assertInteger(observation.sync_errors, `${field}.sync_errors`, 0, 0);
       assertSha256(observation.entity_set_sha256, `${field}.entity_set_sha256`);
       assertSha256(observation.edge_set_sha256, `${field}.edge_set_sha256`);
+      assertRecord(observation.destination_sync_errors, `${field}.destination_sync_errors`);
+      for (const destination of requiredDestinations) {
+        assertInteger(observation.destination_sync_errors[destination], `${field}.destination_sync_errors.${destination}`, 0, 0);
+      }
       const mobile = observation.viewport_width < 1024;
       if (
         observation.two_d_loaded !== true || observation.three_d_loaded !== true
         || observation.renderer_parity_verified !== true || observation.renderer_state_preserved !== true
+        || observation.rendered_subset_authorized !== true || observation.selected_entity_authorized !== true
+        || observation.command_canonical_data_verified !== true
+        || observation.business_count !== journey.business_count
+        || observation.businesses_state !== journey.businesses_state
+        || observation.event_sequence !== projectionReadback.projection_version
         || observation.mobile_single_renderer !== mobile
         || observation.desktop_side_by_side !== !mobile
       ) {
