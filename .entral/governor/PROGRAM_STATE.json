@@ -322,6 +322,7 @@
       "frontend/tests/Phase195MemberShellRegression.test.ts",
       "frontend/tests/Phase195Canonical3DRenderer.test.ts",
       "frontend/tests/Phase195GraphSemanticsVisual.test.tsx",
+      "frontend/tests/CommandCenterGraphIntegrity.test.ts",
       "e2e/entral.e2e.mjs",
       "e2e/production-member-journey.mjs",
       "scripts/phase199-baseline-gates.test.mjs",
@@ -332,18 +333,18 @@
       "package.json"
     ],
     "acquired_at": "2026-08-03T10:39:20.666Z",
-    "heartbeat_at": "2026-08-03T12:56:52.987Z",
-    "expires_at": "2026-08-03T13:26:52.987Z"
+    "heartbeat_at": "2026-08-03T13:06:32.898Z",
+    "expires_at": "2026-08-03T13:36:32.898Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 174,
-  "updated_at": "2026-08-03T12:56:52.987Z",
+  "version": 175,
+  "updated_at": "2026-08-03T13:06:32.898Z",
   "task_deadline_at": "2026-08-03T20:39:06.117Z",
   "pending_release_manifest": null,
-  "event_count": 174,
-  "event_head_hash": "bd1005149b4089a4c5956107feaaf19d8b68c3f3469334f7bd307b08fb3642d7"
+  "event_count": 175,
+  "event_head_hash": "1f7565f1145a028b3ce300866be153cd1ae345685439b9755be3909d165a6771"
 }

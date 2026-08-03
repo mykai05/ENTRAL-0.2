@@ -24,6 +24,7 @@
     "frontend/tests/Phase195MemberShellRegression.test.ts",
     "frontend/tests/Phase195Canonical3DRenderer.test.ts",
     "frontend/tests/Phase195GraphSemanticsVisual.test.tsx",
+    "frontend/tests/CommandCenterGraphIntegrity.test.ts",
     "e2e/entral.e2e.mjs",
     "e2e/production-member-journey.mjs",
     "scripts/phase199-baseline-gates.test.mjs",
