@@ -292,11 +292,12 @@
       "packages/contracts/src/index.ts",
       "packages/contracts/capability-truth*.schema.json",
       "packages/contracts/openapi.yaml",
+      "packages/contracts/package.json",
       "packages/contracts/tests/contracts.test.mjs",
       "packages/contracts/tests/capability-truth.test.mjs",
       "prisma/schema.prisma",
       "prisma/migrations/*phase_203_capability_truth*/**",
-      "prisma/security/*phase_203_capability_truth*.sql",
+      "prisma/security/049_phase_203_roles_and_grants.sql",
       "backend/src/db.ts",
       "backend/src/server.ts",
       "backend/src/auth.ts",
@@ -330,6 +331,8 @@
       "frontend/tests/ToolRegistry*.test.tsx",
       "e2e/**",
       "scripts/phase203-capability-truth*.mjs",
+      "scripts/phase203-capability-source-inventory.test.mjs",
+      "scripts/apply-database-roles.mjs",
       "scripts/release-readiness.mjs",
       "scripts/release-control/**",
       "docs/PHASE_203_CAPABILITY_TRUTH*.md",
@@ -356,18 +359,18 @@
       "repository:SovereignProtocol/sovereign-protocol-agent:apps/website/README.md"
     ],
     "acquired_at": "2026-08-03T04:28:36.905Z",
-    "heartbeat_at": "2026-08-03T06:53:20.298Z",
-    "expires_at": "2026-08-03T07:23:20.298Z"
+    "heartbeat_at": "2026-08-03T07:10:18.054Z",
+    "expires_at": "2026-08-03T07:40:18.054Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 163,
-  "updated_at": "2026-08-03T06:53:20.298Z",
+  "version": 164,
+  "updated_at": "2026-08-03T07:10:18.054Z",
   "task_deadline_at": "2026-08-03T20:28:21.277Z",
   "pending_release_manifest": null,
-  "event_count": 163,
-  "event_head_hash": "1a35a7443877f6578443eaf007450e23fceb0a77fae93c80a4cc78c72e58164c"
+  "event_count": 164,
+  "event_head_hash": "f7300abf30b0c5183e1f432ac9baef89a081020f6d57d14549ecede82c781bea"
 }
