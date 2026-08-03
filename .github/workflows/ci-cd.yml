@@ -97,6 +97,11 @@ jobs:
           pnpm --filter @entral/backend exec vitest run
           tests/phase202IdentityTenancyPostgres.integration.test.ts
           tests/phase202TenantWorker.integration.test.ts
+      - name: Verify migrated-account Phase 203 production graph recovery
+        env:
+          RUN_POSTGRES_INTEGRATION: "1"
+          TEST_DATABASE_URL: postgresql://postgres:entral_phase150_ci@127.0.0.1:5432/postgres
+        run: pnpm test:phase203:graph-recovery
       - name: Verify Phase 195 backup, restore, forward recovery, and restart
         env:
           PHASE195_RECOVERY_GATE_CONFIRM: DISPOSABLE_ONLY

@@ -1,0 +1,34 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P202-PROD-BROWSER-C6891762",
+  "phase": 202,
+  "status": "PASSED",
+  "repository": "mykai05/ENTRAL-0.2",
+  "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "frontend_url": "https://entral-0-2-frontend.vercel.app",
+  "authentication": "real production HttpOnly member session; subject and tenant retained only as SHA-256",
+  "auth_subject_sha256": "8ca0691af0667fbe14520e94aec89cde84002b79d6329a7bd0ac470562e70a72",
+  "tenant_sha256": "bce70acc12401f2ded3936c3bab14132028689a72db8636468dd8f8ab7278a74",
+  "browser": "Google Chrome",
+  "network_interception": false,
+  "desktop": {
+    "viewport_width": 1920,
+    "document_width": 1905,
+    "horizontal_overflow": false,
+    "page_title": "Account security | Entral",
+    "required_headings_visible": true,
+    "status": "PASSED"
+  },
+  "mobile_profiles": [
+    {"width":360,"document_width":345,"horizontal_overflow":false,"content_contained":true,"account_security":"PASSED","invitation_surface_visible":true,"invitation_token_in_url":false,"invitation_token_rendered":false,"status":"PASSED"},
+    {"width":390,"document_width":375,"horizontal_overflow":false,"content_contained":true,"account_security":"PASSED","invitation_surface_visible":true,"invitation_token_in_url":false,"invitation_token_rendered":false,"status":"PASSED"},
+    {"width":412,"document_width":397,"horizontal_overflow":false,"content_contained":true,"account_security":"PASSED","invitation_surface_visible":true,"invitation_token_in_url":false,"invitation_token_rendered":false,"status":"PASSED"},
+    {"width":430,"document_width":415,"horizontal_overflow":false,"content_contained":true,"account_security":"PASSED","invitation_surface_visible":true,"invitation_token_in_url":false,"invitation_token_rendered":false,"status":"PASSED"}
+  ],
+  "invitation_path": "/member/invitations/accept",
+  "session_revocation_readback": "PASSED_REDIRECT_TO_SIGN_IN",
+  "temporary_auth_artifact_removed": true,
+  "checked_at": "2026-08-02T22:45:30.000Z",
+  "receipt_sha256": "dcd3a0f671dd44554d9319ac62e0dbd1f55b37fcd5ccb5eba10529134abf10d7"
+}

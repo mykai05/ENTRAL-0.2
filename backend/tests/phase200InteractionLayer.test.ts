@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
   teamMemberFindUnique: vi.fn(),
   updateTutorialProgress: vi.fn(),
   userFindUnique: vi.fn(),
-  withPersonalSession: vi.fn()
+  withPersonalSession: vi.fn(),
+  withTenantSession: vi.fn()
 }));
 
 vi.mock("../src/db.js", () => ({
@@ -20,7 +21,8 @@ vi.mock("../src/db.js", () => ({
     user: { findUnique: mocks.userFindUnique }
   },
   resolveVerifiedMemberTeamAccess: mocks.resolveVerifiedMemberTeamAccess,
-  withPersonalSession: mocks.withPersonalSession
+  withPersonalSession: mocks.withPersonalSession,
+  withTenantSession: mocks.withTenantSession
 }));
 
 vi.mock("../src/services/canonicalControlPlane.js", () => ({
@@ -155,6 +157,14 @@ beforeEach(() => {
     actorId: "623e4567-e89b-42d3-a456-426614174000",
     appUserId: "723e4567-e89b-42d3-a456-426614174000",
     authSubject: context.authSubject
+  }));
+  mocks.withTenantSession.mockImplementation(async (database, context, operation) => operation(database, {
+    actorId: "623e4567-e89b-42d3-a456-426614174000",
+    appUserId: "723e4567-e89b-42d3-a456-426614174000",
+    authSubject: context.authSubject,
+    organizationId: tenantOrganizationId,
+    role: "MEMBER",
+    tenantId: context.tenantId
   }));
   mocks.teamMemberFindUnique.mockResolvedValue({
     role: "MEMBER",
@@ -308,7 +318,11 @@ describe("Phase 200 interaction routes", () => {
       actorUserId: userId,
       targetId: validEvent.event_id,
       targetType: "INTERACTION_ANALYTICS"
-    }));
+    }), expect.anything());
+    expect(mocks.withTenantSession).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      authSubject: userId,
+      tenantId
+    }), expect.any(Function));
 
     const rejected = await app.inject({
       headers: { authorization },

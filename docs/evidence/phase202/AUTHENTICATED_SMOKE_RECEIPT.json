@@ -1,0 +1,32 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P202-AUTH-SMOKE-2772287F",
+  "phase": 202,
+  "accepted_git_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "authenticated": true,
+  "member_subject_sha256": "8ca0691af0667fbe14520e94aec89cde84002b79d6329a7bd0ac470562e70a72",
+  "tenant_sha256": "bce70acc12401f2ded3936c3bab14132028689a72db8636468dd8f8ab7278a74",
+  "session_inventory": {
+    "durable_session_count_during_readback": 2,
+    "current_session_present": true,
+    "stale_verification_session_present": true,
+    "revoke_all_completed": true,
+    "release_verification_sessions_remaining": 0
+  },
+  "requests": [
+    {"surface":"CUSTOMER","method":"GET","url":"https://entral-0-2-frontend.vercel.app/member/account/security","http_status":200,"authenticated":true},
+    {"surface":"FRONTEND","method":"GET","url":"https://entral-0-2-frontend.vercel.app/member/api/v1/identity/mfa/factors","http_status":200,"result_count":0,"authenticated":true},
+    {"surface":"API","method":"GET","url":"https://entral-0-2-frontend.vercel.app/member/api/v1/identity/sessions","http_status":200,"result_count":2,"authenticated":true},
+    {"surface":"API","method":"GET","url":"https://entral-0-2-frontend.vercel.app/member/api/v1/identity/support-access","http_status":200,"result_count":0,"authenticated":true},
+    {"surface":"API","method":"GET","url":"https://entral-0-2-frontend.vercel.app/member/api/v1/identity/memberships","http_status":200,"result_count":1,"authenticated":true},
+    {"surface":"WORKER","method":"GET","url":"https://entral-backend-production.up.railway.app/health","http_status":200,"authenticated":true,"worker_ready":true}
+  ],
+  "account_security_headings": ["Account security","Durable sessions","Authenticator MFA","Tenant membership readback","Owner-visible support access"],
+  "sign_out_everywhere": "PASSED",
+  "post_revocation_security_redirect": "SIGN_IN",
+  "credential_material_persisted": false,
+  "status": "PASSED",
+  "checked_at": "2026-08-02T22:45:00.000Z",
+  "receipt_sha256": "1428a92121d38a6638eebc4d006cb2dd15e315c6e306ad1845cef96a5df9ab13"
+}

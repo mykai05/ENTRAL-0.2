@@ -1,0 +1,42 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P202-MIGRATION-20260802",
+  "phase": 202,
+  "accepted_git_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "migration": "20260802090000_phase_202_identity_tenancy_authority",
+  "migration_sql_sha256": "b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf",
+  "apply": {
+    "command": "pnpm prisma:deploy against Railway production",
+    "status": "PASSED",
+    "migrations_found": 44,
+    "migration_applied": "20260802090000_phase_202_identity_tenancy_authority",
+    "finished_at": "2026-08-02T19:04:46.197Z",
+    "applied_steps": 1
+  },
+  "database_roles": {
+    "command": "pnpm prisma:roles against Railway production",
+    "status": "PASSED",
+    "source": "prisma/security/048_phase_202_roles_and_grants.sql",
+    "source_sha256": "58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302",
+    "worker_runtime_notification_outbox_direct_select": false,
+    "worker_runtime_notification_outbox_direct_insert": false,
+    "worker_runtime_notification_outbox_direct_update": false,
+    "verifier_release_blocker_view_select": true
+  },
+  "independent_fresh_audit": {
+    "commands": ["pnpm prisma migrate status against a fresh production connection","direct read-only query of production _prisma_migrations"],
+    "status": "PASSED",
+    "migration_directories": 44,
+    "applied": 44,
+    "failed": 0,
+    "rolled_back": 0,
+    "pending": 0,
+    "latest_migration": "20260802090000_phase_202_identity_tenancy_authority",
+    "database_checksum_sha256": "b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf",
+    "checked_at": "2026-08-02T22:38:30.000Z"
+  },
+  "production_schema_status": "UP_TO_DATE",
+  "status": "VERIFIED",
+  "receipt_sha256": "12ed9231190f11ea803986cce795597b4d6b9fe411066011db4be0d0435ce07b"
+}

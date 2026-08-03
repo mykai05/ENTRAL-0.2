@@ -391,6 +391,90 @@ test("Phase 197 ReleaseManifest requires compatible dual repository and controll
   assert.equal(validateReleaseManifest(manifest), manifest);
   assert.throws(() => validateReleaseManifest({ ...manifest, repositories: manifest.repositories.slice(0, 1) }), (error) => error.code === "INVALID_CONTRACT");
   assert.throws(() => validateReleaseManifest({ ...manifest, release_controller: { ...manifest.release_controller, health_status: "FAILED" } }), (error) => error.code === "INVALID_ENUM");
+
+  const viewportWidths = [360, 390, 412, 430, 1440];
+  const viewportObservations = viewportWidths.map((viewportWidth) => ({
+    desktop_side_by_side: viewportWidth >= 1024,
+    edge_count: 8,
+    edge_set_sha256: SHA.rollback,
+    entity_count: 9,
+    entity_set_sha256: SHA.receipt,
+    event_sequence: 399,
+    mobile_single_renderer: viewportWidth < 1024,
+    renderer_parity_verified: true,
+    renderer_state_preserved: true,
+    sync_errors: 0,
+    three_d_loaded: true,
+    two_d_loaded: true,
+    viewport_width: viewportWidth
+  }));
+  const authenticatedMemberJourney = {
+    canonical_edge_count: 131,
+    canonical_edge_set_sha256: SHA.rollback,
+    canonical_node_count: 132,
+    canonical_node_set_sha256: SHA.receipt,
+    canonical_sync_errors: 0,
+    deployed_commit_sha: SHA.productMain,
+    destinations: ["COMMAND", "BUSINESSES", "UNIVERSE_2D", "UNIVERSE_3D", "INFRASTRUCTURE", "TUTORIAL"],
+    environment: "PRODUCTION",
+    membership_provenance_sha256: SHA.receipt,
+    migrated_state_receipt_sha256: SHA.rollback,
+    observed_at: at(5),
+    organization_scope_sha256: SHA.receipt,
+    receipt_id: "P203-PRODUCTION-MEMBER-JOURNEY-001",
+    receipt_sha256: SHA.receipt,
+    renderer_state_preserved: true,
+    route_interception: false,
+    session_scope: "MIGRATED_MEMBER",
+    session_subject_sha256: SHA.rollback,
+    status: "PASSED",
+    tenant_scope_sha256: SHA.receipt,
+    viewport_observations: viewportObservations,
+    viewport_widths: viewportWidths
+  };
+  const phase203Manifest = {
+    ...manifest,
+    authenticated_member_journey: authenticatedMemberJourney,
+    phase: 203,
+    release_tag: "phase-203"
+  };
+  assert.equal(validateReleaseManifest(phase203Manifest), phase203Manifest);
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: undefined
+  }), (error) => error.code === "INVALID_CONTRACT");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: { ...authenticatedMemberJourney, route_interception: true }
+  }), (error) => error.code === "INTERCEPTED_PRODUCTION_JOURNEY");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: { ...authenticatedMemberJourney, canonical_node_count: 0 }
+  }), (error) => error.code === "INVALID_CONTRACT");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: { ...authenticatedMemberJourney, deployed_commit_sha: SHA.task }
+  }), (error) => error.code === "MEMBER_JOURNEY_SHA_MISMATCH");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: { ...authenticatedMemberJourney, canonical_edge_set_sha256: undefined }
+  }), (error) => error.code === "INVALID_SHA256");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: {
+      ...authenticatedMemberJourney,
+      viewport_observations: viewportObservations.slice(0, -1)
+    }
+  }), (error) => error.code === "INVALID_CONTRACT");
+  assert.throws(() => validateReleaseManifest({
+    ...phase203Manifest,
+    authenticated_member_journey: {
+      ...authenticatedMemberJourney,
+      viewport_observations: viewportObservations.map((observation) => observation.viewport_width === 1440
+        ? { ...observation, three_d_loaded: false }
+        : observation)
+    }
+  }), (error) => error.code === "FAILED_MEMBER_RENDERER_OBSERVATION");
 });
 
 test("release mutations fail closed for unauthorized models", async () => {

@@ -3,12 +3,13 @@
   "schema_version": 1,
   "phase": 202,
   "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
-  "status": "PRE_INTEGRATION_LOCAL_PASS",
-  "qualification": "These are local deterministic and browser receipts from the post-correction Phase 202 candidate reconciled with current origin/main. The accepted implementation commit passed an independent exact-commit clean-checkout replay. They do not prove protected main or production.",
+  "status": "FINAL_RELEASE_PASS",
+  "qualification": "Phase 202 passed local deterministic and browser acceptance, exact-commit clean-checkout replay, every protected-main integration gate, the exact final-main CI suite, exact-SHA deployment, production migration and roles, independent reconciliation audits, authenticated production readback, and production browser acceptance.",
   "accepted_candidate": {
-    "commit_sha": "8eb3399485eb7a36bade3d2e19bc3b21a7675d17",
-    "tree_sha": "f3ade9f5fb9ea844eeb5000856ef1bfd74564cda",
-    "clean_checkout_status": "PASSED",
+    "commit_sha": "013a10da24b414731cab37c301fdf74dfbabcc46",
+    "tree_sha": "ec3cd83672e3eb7e8c9ce9548c4f5fb73e169073",
+    "protected_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "clean_checkout_status": "PASSED_VIA_PR_AND_PROTECTED_MAIN_CI",
     "working_tree_status_after_replay": "CLEAN",
     "ci_prerequisite_order": "FROZEN_INSTALL_THEN_PRISMA_GENERATE_THEN_PHASE202"
   },
@@ -20,7 +21,7 @@
     {
       "command": "pnpm test:phase202",
       "status": "PASSED",
-      "results": "41 contract/static/reconciliation tests, 272 backend tests, and 19 frontend tests; all 20 PostgreSQL identity/tenancy cases and the tenant-worker integration case ran with zero environment skips"
+      "results": "41 contract/static/reconciliation tests, 272 backend tests, and 20 frontend tests; the final protected-main suite also ran all 20 PostgreSQL identity/tenancy cases and the tenant-worker integration case with zero environment skips"
     },
     {
       "command": "pnpm contracts:verify",
@@ -118,6 +119,11 @@
       "results": "no whitespace errors in the Phase 202 candidate"
     },
     {
+      "command": "GitHub protected-main CI run 30769935889",
+      "status": "PASSED",
+      "results": "attempt 1 passed the exact final main SHA c689176234bca8a43f6bb5665f6a8a63d8d653dd, including the complete deterministic, migration, recovery, build, and browser gates"
+    },
+    {
       "command": "governor verify",
       "status": "PASSED",
       "results": "Governor event chain, active Phase 202 TaskPacket, and claimed write lease verified"
@@ -150,29 +156,18 @@
     {
       "command": "security scan",
       "reason": "Owner explicitly prohibited a new security scan."
-    },
-    {
-      "command": "protected-main Phase 202 checks",
-      "reason": "Pre-integration evidence cannot claim protected-main checks before the accepted candidate is integrated."
-    },
-    {
-      "command": "exact-main-SHA Phase 202 production deployment and production migrations",
-      "reason": "These must run only after protected-main integration identifies the exact accepted release SHA."
-    },
-    {
-      "command": "production ownership APPLY and independent fresh AUDIT",
-      "reason": "The committed runner must execute APPLY after exact-SHA deployment and AUDIT in a separate fresh invocation retaining both receipt hashes."
-    },
-    {
-      "command": "production credential-reference APPLY and independent fresh AUDIT",
-      "reason": "The committed runner must execute APPLY after exact-SHA deployment and AUDIT in a separate fresh invocation for the two protected Shopify credential targets."
-    },
-    {
-      "command": "authenticated Phase 202 production smoke, browser acceptance, and state readback",
-      "reason": "These require the exact accepted main SHA to be live in frontend, API, worker, and database."
     }
   ],
-  "pending_pre_integration": [
-    "perform final origin/main reconciliation and rerun any affected gate"
-  ]
+  "final_release_gates": {
+    "protected_main_ci_run_id": 30769935889,
+    "protected_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "exact_sha_deployments": "PASSED",
+    "migration_and_roles": "PASSED",
+    "ownership_apply_then_fresh_audit": "PASSED",
+    "credential_reference_apply_then_fresh_audit": "PASSED",
+    "release_blockers": 0,
+    "authenticated_production_smoke": "PASSED",
+    "production_browser": "PASSED",
+    "production_state_readback": "PASSED"
+  }
 }

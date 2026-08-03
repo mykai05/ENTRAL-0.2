@@ -1,0 +1,19 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P202-RELEASE-BLOCKERS-CLEAR",
+  "phase": 202,
+  "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "source": "entral.phase202_release_blockers",
+  "database_role": "entral_verifier",
+  "select_grant_verified": true,
+  "blocker_rows": [],
+  "blocker_count": 0,
+  "ownership_apply_receipt_sha256": "6626af83009bf218e78cbc4ff78f3390c40030cbd3244a70fe6995be64a0a1b1",
+  "ownership_audit_receipt_sha256": "9885fb23635357fcf9c4e83fda5ab2b90eea562f9a5dc829e54cb096fbc4156a",
+  "credential_apply_receipt_sha256": "d4fb2892ff7b3ea83d89f6ef362cb24d6c84d2f7f3ffb519d73368731213e47d",
+  "credential_audit_receipt_sha256": "5726d8869e5a2f1e87d72c6c7a423659572b082cdf11e945a3ef561d8baa3a7b",
+  "status": "PASSED",
+  "checked_at": "2026-08-02T22:41:10.000Z",
+  "receipt_sha256": "1e08b3ff7e2336ad347be19f7d7be74e24bf7e90d9b2b410fec4568bc94c90eb"
+}

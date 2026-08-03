@@ -1,0 +1,123 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "phase": 202,
+  "repository": "mykai05/ENTRAL-0.2",
+  "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "release_tag": "phase-202",
+  "tests_passed": true,
+  "protected_main_checks_passed": true,
+  "migrations_verified": true,
+  "deployments": [
+    {
+      "provider": "VERCEL",
+      "deployment_id": "5718266943",
+      "role": "FRONTEND",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "status": "READY",
+      "deployed_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "0cc752c9-1599-49e8-b0d2-c7eb15f0c900",
+      "role": "API",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY",
+      "deployed_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd"
+    },
+    {
+      "provider": "RAILWAY",
+      "deployment_id": "e3c342e6-efcd-430e-a49d-195e51670b54",
+      "role": "WORKER",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "status": "READY",
+      "deployed_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "20260802090000_phase_202_identity_tenancy_authority",
+      "status": "VERIFIED",
+      "readback": "Production Prisma migration status and a fresh direct _prisma_migrations query report 44 applied migrations, zero failed, zero rolled back, and zero pending; Phase 202 database roles and grants were applied and independently read back.",
+      "production_schema_status": "UP_TO_DATE",
+      "applied_migration_count": 44,
+      "checksum_sha256": "b209a75ef9dc5c8dcf1f2d09428b0d799485bccaab5582d26420844196bb26bf",
+      "roles_sql_sha256": "58072f5f069490a3936baa9ec931621feedff60823cb6ce0244da43c883e9302",
+      "readback_sha256": "12ed9231190f11ea803986cce795597b4d6b9fe411066011db4be0d0435ce07b"
+    }
+  ],
+  "authenticated_smoke": {
+    "status": "PASSED",
+    "receipt_id": "P202-AUTH-SMOKE-2772287F",
+    "receipt_sha256": "1428a92121d38a6638eebc4d006cb2dd15e315c6e306ad1845cef96a5df9ab13"
+  },
+  "production_readback": {
+    "status": "PASSED",
+    "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "receipt_id": "P202-PROD-READBACK-C6891762",
+    "receipt_sha256": "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c",
+    "deployment_readback_sha256": "c3f6251b746ef0baca742edd97651de96e2ea96b857b3e63fd2a11bc42d4f1cc",
+    "production_browser_receipt_sha256": "dcd3a0f671dd44554d9319ac62e0dbd1f55b37fcd5ccb5eba10529134abf10d7",
+    "release_blocker_receipt_sha256": "1e08b3ff7e2336ad347be19f7d7be74e24bf7e90d9b2b410fec4568bc94c90eb",
+    "blockers": []
+  },
+  "rollback_point": {
+    "status": "RESTORE_VERIFIED",
+    "reference": "release:phase-198:5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "release_tag": "phase-198",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "receipt_sha256": "f82085ae21f7f7f337be2d8f39d6f6450fc8a80032da91202dfccb03e5ab73dc"
+  },
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "repository": "mykai05/ENTRAL-0.2",
+      "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "main_sha": "8f1923fcec20a11dc0aef304c0e05827fe2cb5c5",
+      "contract_version": "release-control-v1",
+      "compatibility_status": "PASSED"
+    }
+  ],
+  "release_controller": {
+    "risk_tier": "HIGH",
+    "decision": "PASS",
+    "plan_sha256": "53dab0413d064698f1dedf088cd92899cfbdbae70321fec3dda6d0110b2ac803",
+    "evidence_bundle_sha256": "42ca49c9c20f65f40c60ec1ddef970da9a548183808466185800a998e441e683",
+    "health_status": "PASSED",
+    "failure_proof_status": "PASSED"
+  },
+  "phase_202_acceptance": {
+    "protected_main_receipt_sha256": "008ef5aa2bc021ea81d85c731df59898301baabc9a117e16c0cd4e30a5052578",
+    "migration_receipt_sha256": "12ed9231190f11ea803986cce795597b4d6b9fe411066011db4be0d0435ce07b",
+    "ownership_apply_receipt_sha256": "6626af83009bf218e78cbc4ff78f3390c40030cbd3244a70fe6995be64a0a1b1",
+    "ownership_audit_receipt_sha256": "9885fb23635357fcf9c4e83fda5ab2b90eea562f9a5dc829e54cb096fbc4156a",
+    "credential_reference_apply_receipt_sha256": "d4fb2892ff7b3ea83d89f6ef362cb24d6c84d2f7f3ffb519d73368731213e47d",
+    "credential_reference_audit_receipt_sha256": "5726d8869e5a2f1e87d72c6c7a423659572b082cdf11e945a3ef561d8baa3a7b",
+    "release_blocker_receipt_sha256": "1e08b3ff7e2336ad347be19f7d7be74e24bf7e90d9b2b410fec4568bc94c90eb",
+    "production_browser_receipt_sha256": "dcd3a0f671dd44554d9319ac62e0dbd1f55b37fcd5ccb5eba10529134abf10d7",
+    "integration_pull_requests": [
+      44,
+      45,
+      46,
+      47,
+      48
+    ],
+    "release_blockers": 0,
+    "mobile_widths_css_px": [
+      360,
+      390,
+      412,
+      430
+    ],
+    "invitation_token_scrub": "PASSED",
+    "session_revocation": "PASSED"
+  },
+  "security_scan": "NOT_RUN_OWNER_PROHIBITED",
+  "recorded_at": "2026-08-02T22:59:30.000Z"
+}

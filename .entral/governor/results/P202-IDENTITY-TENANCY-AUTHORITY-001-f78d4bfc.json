@@ -1,0 +1,100 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "execution_result_id": "P202-IDENTITY-TENANCY-AUTHORITY-001-f78d4bfc",
+  "task_packet_id": "P202-IDENTITY-TENANCY-AUTHORITY-001",
+  "phase": 202,
+  "outcome": "PASSED",
+  "commit_sha": "f78d4bfcfa69ad515510c3e42397a97739bb3810",
+  "changed_files": [
+    ".entral/governor/PROGRAM_STATE.json",
+    ".entral/governor/events/EVENTS.jsonl",
+    ".entral/governor/release-control/phase-202/EVIDENCE_BUNDLE.json",
+    ".entral/governor/release-control/phase-202/RELEASE_CONTROL_EVIDENCE.json",
+    ".entral/governor/release-control/phase-202/RELEASE_CONTROL_PLAN.json",
+    ".entral/governor/releases/phase-202.json",
+    "docs/PHASE_202_VERIFICATION.md",
+    "docs/evidence/phase202/AUTHENTICATED_SMOKE_RECEIPT.json",
+    "docs/evidence/phase202/CREDENTIAL_REFERENCE_APPLY_RECEIPT.json",
+    "docs/evidence/phase202/CREDENTIAL_REFERENCE_AUDIT_RECEIPT.json",
+    "docs/evidence/phase202/FEATURE_ACCEPTANCE.json",
+    "docs/evidence/phase202/MIGRATION_RECEIPT.json",
+    "docs/evidence/phase202/OWNERSHIP_APPLY_RECEIPT.json",
+    "docs/evidence/phase202/OWNERSHIP_AUDIT_RECEIPT.json",
+    "docs/evidence/phase202/PRODUCTION_BROWSER_RECEIPT.json",
+    "docs/evidence/phase202/PRODUCTION_DEPLOYMENT_READBACK.json",
+    "docs/evidence/phase202/PRODUCTION_STATE_READBACK.json",
+    "docs/evidence/phase202/PROTECTED_MAIN_RECEIPT.json",
+    "docs/evidence/phase202/RELEASE_BLOCKER_READBACK.json",
+    "docs/evidence/phase202/ROLLBACK_READINESS_RECEIPT.json",
+    "docs/evidence/phase202/TEST_RECEIPTS.json"
+  ],
+  "tests": [
+    {
+      "command": "Phase 202 feature gates P202-F001-A through P202-F020-A",
+      "status": "PASSED"
+    },
+    {
+      "command": "complete Phase 202 deterministic, PostgreSQL, browser, prior-phase, recovery, build, and release suites",
+      "status": "PASSED"
+    },
+    {
+      "command": "protected pull requests #44 through #48 and exact-main CI run 30769935889",
+      "status": "PASSED"
+    },
+    {
+      "command": "exact-main Vercel frontend, Railway API, and Railway worker deployment readback",
+      "status": "PASSED"
+    },
+    {
+      "command": "production migration 20260802090000, database roles, and fresh status audit",
+      "status": "PASSED"
+    },
+    {
+      "command": "production ownership APPLY followed by independent fresh AUDIT",
+      "status": "PASSED"
+    },
+    {
+      "command": "production credential-reference APPLY followed by independent fresh AUDIT",
+      "status": "PASSED"
+    },
+    {
+      "command": "zero-row Phase 202 release-blocker readback",
+      "status": "PASSED"
+    },
+    {
+      "command": "authenticated production identity, session, membership, support-access, browser, revocation, and state readback",
+      "status": "PASSED"
+    },
+    {
+      "command": "Governor ReleaseControlPlan, ReleaseControlEvidence, ReleaseEvidenceBundle, ReleaseManifest, evaluation, and integrity validation",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase202 after final evidence construction",
+      "status": "PASSED"
+    },
+    {
+      "command": "pnpm test:phase196 after final evidence construction",
+      "status": "PASSED"
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED"
+    }
+  ],
+  "unresolved_failures": [],
+  "deployment_state": {
+    "status": "DEPLOYED",
+    "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "release_tag": "phase-202",
+    "frontend_deployment_id": "5718266943",
+    "api_deployment_id": "0cc752c9-1599-49e8-b0d2-c7eb15f0c900",
+    "worker_deployment_id": "e3c342e6-efcd-430e-a49d-195e51670b54",
+    "release_manifest_sha256": "646d3b4a2b610b0aaab4d95a69319b65d60492d2eb5fea1196ec1f2b71b3b7b9",
+    "release_evidence_bundle_sha256": "42ca49c9c20f65f40c60ec1ddef970da9a548183808466185800a998e441e683",
+    "rollback_main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594"
+  },
+  "result_fingerprint": "96b4d88230ad3b0549416eecb6f02ed9ceede74e26f10484885c72e29ee800dc",
+  "completed_at": "2026-08-02T23:05:00.000Z"
+}

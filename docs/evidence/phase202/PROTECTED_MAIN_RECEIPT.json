@@ -1,0 +1,53 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P202-PROTECTED-MAIN-30769935889",
+  "phase": 202,
+  "repository": "mykai05/ENTRAL-0.2",
+  "accepted_git_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "accepted_git_tree_sha": "ec3cd83672e3eb7e8c9ce9548c4f5fb73e169073",
+  "integration_chain": [
+    {"pull_request":44,"accepted_head_sha":"c73e45b1addcde5f3c78a364c24345cd680ed6d8","merge_commit_sha":"83fe4eefc4f24c92f6489a9492787d0bd643cfae","purpose":"Phase 202 implementation"},
+    {"pull_request":45,"accepted_head_sha":"f05b9f8a195eedcdb42d37a3cb60ca197a6c5b37","merge_commit_sha":"18f55239d0cb1e9b8429fabd990bc567eba52ffc","purpose":"notification SQL runtime repair"},
+    {"pull_request":46,"accepted_head_sha":"cf7bdbfbe9588b0e9851ac5a471c30503bc56d95","merge_commit_sha":"b34b7e184c30abac1a8e9d4ec273ec0de19a843a","purpose":"credential reconciliation SQL runtime repair"},
+    {"pull_request":47,"accepted_head_sha":"3a0408820c37832b84220b0d1b41b77ae447893c","merge_commit_sha":"274fff3d353906f2e83813092392bff53454cf7d","purpose":"mobile account-security containment"},
+    {"pull_request":48,"accepted_head_sha":"013a10da24b414731cab37c301fdf74dfbabcc46","merge_commit_sha":"c689176234bca8a43f6bb5665f6a8a63d8d653dd","purpose":"legacy Phase 180 browser harness stabilization"}
+  ],
+  "protected_main_checks": {
+    "workflow": "CI/CD",
+    "run_id": 30769935889,
+    "run_url": "https://github.com/mykai05/ENTRAL-0.2/actions/runs/30769935889",
+    "head_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "event": "push",
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2026-08-02T22:21:50.000Z",
+    "completed_at": "2026-08-02T22:33:14.000Z",
+    "complete_phase_suite": true
+  },
+  "source_archive": {
+    "construction": "git archive of the exact protected-main commit with tracked-file inventory parity",
+    "tracked_files": 835,
+    "bytes": 23521280,
+    "sha256": "e0e010264248676c1eec9b0f41f38032d4d852edbb82911a7d2e13419bc5fda1",
+    "railway_json_present_at_root": true,
+    "railway_worker_json_present_at_root": true,
+    "package_json_present_at_root": true
+  },
+  "release_tag": {
+    "name": "phase-202",
+    "annotated_object_sha": "7abb2d56f8ceb982c914182a6ab5fdeda7b7a5da",
+    "target_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "pushed": true
+  },
+  "reconciliation": {
+    "prerequisite_main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "reconciled_head_sha": "013a10da24b414731cab37c301fdf74dfbabcc46",
+    "protected_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "status": "RECONCILED"
+  },
+  "status": "PASSED",
+  "checked_at": "2026-08-02T22:50:00.000Z",
+  "receipt_sha256": "008ef5aa2bc021ea81d85c731df59898301baabc9a117e16c0cd4e30a5052578"
+}
