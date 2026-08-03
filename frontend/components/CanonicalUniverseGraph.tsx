@@ -262,6 +262,32 @@ export function canonical2DLabelPlacement({
   };
 }
 
+export type Canonical2DBounds = Readonly<{
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+}>;
+
+export function canonical2DBoundsOverlap(
+  left: Canonical2DBounds,
+  right: Canonical2DBounds,
+  horizontalGap = 0,
+  verticalGap = 0
+) {
+  return left.left < right.right + horizontalGap
+    && left.right + horizontalGap > right.left
+    && left.top < right.bottom + verticalGap
+    && left.bottom + verticalGap > right.top;
+}
+
+export function canonical2DLabelBoundsAccepted(
+  candidate: Canonical2DBounds,
+  occupied: readonly Canonical2DBounds[]
+) {
+  return !occupied.some((bounds) => canonical2DBoundsOverlap(candidate, bounds, 6, 3));
+}
+
 const roleColors = {
   ENTRAL: "#f4f7ff",
   MARSHAL: "#8eb9ff",
@@ -965,13 +991,35 @@ export function CanonicalUniverseGraph({
           && inspectorBounds.top < canvasBounds.bottom
             ? Math.max(16, inspectorBounds.left - canvasBounds.left - 12)
             : canvas.clientWidth;
-        const occupiedLabels: Array<{ bottom: number; left: number; right: number; top: number }> = [];
+        const minimapBounds: Canonical2DBounds | null =
+          settings.advanced_2d.minimap_visible && renderPoints.length > 1
+            ? {
+                bottom: canvas.clientHeight - 12,
+                left: canvas.clientWidth - 128,
+                right: canvas.clientWidth - 12,
+                top: canvas.clientHeight - 94
+              }
+            : null;
+        const occupiedLabels: Canonical2DBounds[] = minimapBounds ? [minimapBounds] : [];
+        const renderedLabelBounds: Canonical2DBounds[] = [];
         if (surface) {
           surface.dataset.canonicalLabelViewportRight = labelViewportRight.toFixed(2);
+          surface.dataset.canonicalMinimapVisible = String(Boolean(minimapBounds));
           delete surface.dataset.canonicalSelectedLabelBottom;
           delete surface.dataset.canonicalSelectedLabelLeft;
           delete surface.dataset.canonicalSelectedLabelRight;
           delete surface.dataset.canonicalSelectedLabelTop;
+          if (minimapBounds) {
+            surface.dataset.canonicalMinimapBottom = minimapBounds.bottom.toFixed(2);
+            surface.dataset.canonicalMinimapLeft = minimapBounds.left.toFixed(2);
+            surface.dataset.canonicalMinimapRight = minimapBounds.right.toFixed(2);
+            surface.dataset.canonicalMinimapTop = minimapBounds.top.toFixed(2);
+          } else {
+            delete surface.dataset.canonicalMinimapBottom;
+            delete surface.dataset.canonicalMinimapLeft;
+            delete surface.dataset.canonicalMinimapRight;
+            delete surface.dataset.canonicalMinimapTop;
+          }
         }
         labelCandidates
           .sort((left, right) => {
@@ -996,14 +1044,10 @@ export function CanonicalUniverseGraph({
               textWidth: context.measureText(candidate.entity.name).width
             });
             const { baselineY, bottom, drawableWidth, left, right, top } = placement;
-            const overlaps = occupiedLabels.some((bounds) =>
-              left < bounds.right + 6
-              && right + 6 > bounds.left
-              && top < bounds.bottom + 3
-              && bottom + 3 > bounds.top
-            );
-            if (overlaps && !candidate.isSelected) return;
-            occupiedLabels.push({ bottom, left, right, top });
+            const bounds = { bottom, left, right, top };
+            if (!canonical2DLabelBoundsAccepted(bounds, occupiedLabels)) return;
+            occupiedLabels.push(bounds);
+            renderedLabelBounds.push(bounds);
             if (candidate.isSelected && surface) {
               surface.dataset.canonicalSelectedLabelBottom = bottom.toFixed(2);
               surface.dataset.canonicalSelectedLabelLeft = left.toFixed(2);
@@ -1015,11 +1059,19 @@ export function CanonicalUniverseGraph({
             context.fillText(candidate.entity.name, left, baselineY, drawableWidth);
             context.globalAlpha = 1;
           });
-        if (settings.advanced_2d.minimap_visible && renderPoints.length > 1) {
-          const mapWidth = 116;
-          const mapHeight = 82;
-          const mapLeft = canvas.clientWidth - mapWidth - 12;
-          const mapTop = canvas.clientHeight - mapHeight - 12;
+        if (surface) {
+          surface.dataset.canonicalRenderedLabelBounds = JSON.stringify(renderedLabelBounds);
+          surface.dataset.canonicalMinimapLabelCollisionCount = String(
+            minimapBounds
+              ? renderedLabelBounds.filter((bounds) => canonical2DBoundsOverlap(bounds, minimapBounds)).length
+              : 0
+          );
+        }
+        if (minimapBounds) {
+          const mapWidth = minimapBounds.right - minimapBounds.left;
+          const mapHeight = minimapBounds.bottom - minimapBounds.top;
+          const mapLeft = minimapBounds.left;
+          const mapTop = minimapBounds.top;
           const xs = renderPoints.map((point) => point.x);
           const ys = renderPoints.map((point) => point.y);
           const minX = Math.min(...xs);

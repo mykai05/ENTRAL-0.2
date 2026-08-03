@@ -233,6 +233,122 @@ function rectanglesOverlap(left, right, inset = 0) {
     && left.bottom - inset > right.top + inset;
 }
 
+async function captureDestinationScreenshot(page, { destination, root, width }) {
+  const geometry = await root.evaluate((element) => {
+    const visible = (candidate) => {
+      if (!(candidate instanceof HTMLElement)) return false;
+      const style = getComputedStyle(candidate);
+      const box = candidate.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && box.width > 1 && box.height > 1;
+    };
+    const bounds = element.getBoundingClientRect();
+    const obscuringSurfaceCount = [
+      ...document.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"], .phase170-error, .phase180-error')
+    ].filter((candidate) => candidate !== element && visible(candidate)).length;
+    return {
+      obscuringSurfaceCount,
+      root: {
+        bottom: bounds.bottom,
+        height: bounds.height,
+        left: bounds.left,
+        right: bounds.right,
+        top: bounds.top,
+        width: bounds.width
+      },
+      viewport: { height: window.innerHeight, width: window.innerWidth }
+    };
+  });
+  if (
+    geometry.viewport.width !== width
+    || geometry.root.width <= 1 || geometry.root.height <= 1
+    || geometry.root.right <= 0 || geometry.root.left >= geometry.viewport.width
+    || geometry.root.bottom <= 0 || geometry.root.top >= geometry.viewport.height
+    || geometry.obscuringSurfaceCount !== 0
+  ) {
+    throw new Error(`${width}px ${destination} screenshot root was not visibly unobscured: ${JSON.stringify(geometry)}`);
+  }
+  const screenshotName = `${destination.toLowerCase()}-${width}px.png`;
+  const screenshotPath = resolve(screenshotDirectory, screenshotName);
+  await mkdir(dirname(screenshotPath), { recursive: true });
+  await page.screenshot({ animations: "disabled", fullPage: false, path: screenshotPath });
+  return {
+    destination,
+    obscuring_surface_count: geometry.obscuringSurfaceCount,
+    root_bounds: geometry.root,
+    screenshot_file: `screenshots/${screenshotName}`,
+    screenshot_sha256: createHash("sha256").update(await readFile(screenshotPath)).digest("hex"),
+    viewport_height: geometry.viewport.height,
+    viewport_width: width
+  };
+}
+
+async function selectDesktopSideBySide(workspace) {
+  const panels = workspace.locator('.phase180-graph-panels[data-layout="side-by-side"]');
+  if (!await panels.count()) {
+    await workspace.getByLabel("Graph arrangement", { exact: true }).selectOption("side-by-side");
+  }
+  await workspace.locator('.phase180-graph-panels[data-layout="side-by-side"]').waitFor({ state: "attached" });
+}
+
+async function measureDesktopSideBySide(workspace, width) {
+  const geometry = await workspace.locator(".phase180-graph-panels").evaluate((container) => {
+    const box = (element) => {
+      if (!(element instanceof HTMLElement)) return null;
+      const bounds = element.getBoundingClientRect();
+      return {
+        bottom: bounds.bottom,
+        height: bounds.height,
+        left: bounds.left,
+        right: bounds.right,
+        top: bounds.top,
+        width: bounds.width
+      };
+    };
+    return {
+      layout: container.getAttribute("data-layout"),
+      panels: box(container),
+      threeD: box(container.querySelector('[data-panel="3d"] .phase180-graph-3d-stage')),
+      threeDPanel: box(container.querySelector('[data-panel="3d"]')),
+      twoD: box(container.querySelector('[data-panel="2d"] .phase180-graph-stage')),
+      twoDPanel: box(container.querySelector('[data-panel="2d"]')),
+      viewport: { height: window.innerHeight, width: window.innerWidth }
+    };
+  });
+  const contained = (inner, outer) => inner.left >= outer.left - 2
+    && inner.right <= outer.right + 2
+    && inner.top >= outer.top - 2
+    && inner.bottom <= outer.bottom + 2;
+  const visibleInViewport = (box) => box.right > 0 && box.left < geometry.viewport.width
+    && box.bottom > 0 && box.top < geometry.viewport.height;
+  const rectangles = [geometry.panels, geometry.twoDPanel, geometry.threeDPanel, geometry.twoD, geometry.threeD];
+  const panelGap = geometry.twoDPanel && geometry.threeDPanel
+    ? geometry.threeDPanel.left - geometry.twoDPanel.right
+    : Number.POSITIVE_INFINITY;
+  const stageVerticalOverlap = geometry.twoD && geometry.threeD
+    ? Math.min(geometry.twoD.bottom, geometry.threeD.bottom) - Math.max(geometry.twoD.top, geometry.threeD.top)
+    : Number.NEGATIVE_INFINITY;
+  if (
+    geometry.layout !== "side-by-side"
+    || rectangles.some((box) => !box || box.width <= 1 || box.height <= 1)
+    || geometry.viewport.width !== width
+    || Math.abs(geometry.twoDPanel.top - geometry.threeDPanel.top) > 4
+    || geometry.twoDPanel.right > geometry.threeDPanel.left + 2
+    || panelGap > geometry.panels.width * 0.08
+    || geometry.twoDPanel.width < geometry.panels.width * 0.35
+    || geometry.threeDPanel.width < geometry.panels.width * 0.35
+    || stageVerticalOverlap < Math.min(geometry.twoD.height, geometry.threeD.height) * 0.5
+    || !contained(geometry.twoDPanel, geometry.panels)
+    || !contained(geometry.threeDPanel, geometry.panels)
+    || !contained(geometry.twoD, geometry.twoDPanel)
+    || !contained(geometry.threeD, geometry.threeDPanel)
+    || !visibleInViewport(geometry.twoD)
+    || !visibleInViewport(geometry.threeD)
+  ) {
+    throw new Error(`${width}px Desktop Universe panels were not measurably side by side: ${JSON.stringify(geometry)}`);
+  }
+  return geometry;
+}
+
 async function captureGraphPresentation(page, workspace, { dimension, orientation, width }) {
   const scopeGeometry = await page.evaluate(() => {
     const rect = (element) => {
@@ -359,6 +475,23 @@ async function captureGraphPresentation(page, workspace, { dimension, orientatio
       const value = Number(raw);
       return Number.isFinite(value) ? value : null;
     };
+    let renderedLabelBounds = [];
+    if (activeDimension === "2d") {
+      try {
+        const parsed = JSON.parse(renderer?.getAttribute("data-canonical-rendered-label-bounds") ?? "[]");
+        renderedLabelBounds = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        renderedLabelBounds = [];
+      }
+    }
+    const minimapVisible = activeDimension === "2d"
+      && renderer?.getAttribute("data-canonical-minimap-visible") === "true";
+    const minimapBounds = minimapVisible ? {
+      bottom: requiredNumericAttribute(renderer, "data-canonical-minimap-bottom"),
+      left: requiredNumericAttribute(renderer, "data-canonical-minimap-left"),
+      right: requiredNumericAttribute(renderer, "data-canonical-minimap-right"),
+      top: requiredNumericAttribute(renderer, "data-canonical-minimap-top")
+    } : null;
     const threeDimensionalSurface = activeDimension === "3d"
       ? renderer?.querySelector('[data-graph-canonical-marker-policy="selection-only"]')
       : null;
@@ -398,6 +531,10 @@ async function captureGraphPresentation(page, workspace, { dimension, orientatio
           ? keyboardTooltip.getBoundingClientRect().width <= 1 && keyboardTooltip.getBoundingClientRect().height <= 1
           : false,
         labelViewportRight: requiredNumericAttribute(renderer, "data-canonical-label-viewport-right"),
+        minimapBounds,
+        minimapLabelCollisionCount: requiredNumericAttribute(renderer, "data-canonical-minimap-label-collision-count"),
+        minimapVisible,
+        renderedLabelBounds,
         selectedLabel
       } : {
         compositing: threeDimensionalCanvas?.getAttribute("data-canonical-compositing") ?? null,
@@ -479,6 +616,37 @@ async function captureGraphPresentation(page, workspace, { dimension, orientatio
       || label.bottom > geometry.stage.height
     ) {
       throw new Error(`${width}px ${orientation} 2D label or tooltip presentation escaped its viewport contract: ${JSON.stringify(geometry.presentation)}`);
+    }
+    if (
+      !Number.isFinite(geometry.presentation.minimapLabelCollisionCount)
+      || geometry.presentation.minimapLabelCollisionCount !== 0
+      || geometry.presentation.minimapVisible !== true
+      || !geometry.presentation.minimapBounds
+      || !Object.values(geometry.presentation.minimapBounds).every(Number.isFinite)
+      || geometry.presentation.minimapBounds.left < 0
+      || geometry.presentation.minimapBounds.top < 0
+      || geometry.presentation.minimapBounds.right > geometry.stage.width
+      || geometry.presentation.minimapBounds.bottom > geometry.stage.height
+      || geometry.presentation.minimapBounds.right <= geometry.presentation.minimapBounds.left
+      || geometry.presentation.minimapBounds.bottom <= geometry.presentation.minimapBounds.top
+      || !Array.isArray(geometry.presentation.renderedLabelBounds)
+      || geometry.presentation.renderedLabelBounds.length < 1
+      || !geometry.presentation.renderedLabelBounds.some((bounds) =>
+        bounds && Object.values(bounds).every(Number.isFinite)
+        && Math.abs(bounds.left - label.left) <= 1
+        && Math.abs(bounds.right - label.right) <= 1
+        && Math.abs(bounds.top - label.top) <= 1
+        && Math.abs(bounds.bottom - label.bottom) <= 1
+      )
+      || (
+        !geometry.presentation.minimapBounds
+        || geometry.presentation.renderedLabelBounds.some((bounds) =>
+          !bounds || !Object.values(bounds).every(Number.isFinite)
+          || rectanglesOverlap(bounds, geometry.presentation.minimapBounds)
+        )
+      )
+    ) {
+      throw new Error(`${width}px ${orientation} 2D minimap intersected a rendered canonical label: ${JSON.stringify(geometry.presentation)}`);
     }
   } else if (
     !geometry.focus.selectedEntityId
@@ -567,8 +735,22 @@ async function captureGraphPresentation(page, workspace, { dimension, orientatio
     collision_free: true,
     dimension: dimension.toUpperCase(),
     focus_bound_to_selected_entity: true,
+    minimap_label_collision_count: dimension === "2d"
+      ? geometry.presentation.minimapLabelCollisionCount
+      : null,
+    minimap_bounds: dimension === "2d" ? geometry.presentation.minimapBounds : null,
+    minimap_visible: dimension === "2d" ? geometry.presentation.minimapVisible : null,
     orientation,
     protected_focal_region_clear: true,
+    rendered_label_bounds: dimension === "2d" ? geometry.presentation.renderedLabelBounds : null,
+    rendered_label_bounds_sha256: dimension === "2d"
+      ? sha256(geometry.presentation.renderedLabelBounds)
+      : null,
+    rendered_label_count: dimension === "2d"
+      ? geometry.presentation.renderedLabelBounds.length
+      : null,
+    stage_height: geometry.stage.height,
+    stage_width: geometry.stage.width,
     screenshot_file: `screenshots/${screenshotName}`,
     screenshot_sha256: createHash("sha256").update(await readFile(screenshotPath)).digest("hex"),
     viewport_width: width
@@ -819,6 +1001,7 @@ try {
     }]);
     const page = await context.newPage();
     try {
+      const destinationVisualEvidence = [];
       await page.goto(`${origin}/member/dashboard`, { waitUntil: "domcontentloaded" });
       const navigation = page.getByRole("navigation", { name: /primary destinations/i });
       await expectVisible(navigation, `${width}px primary navigation`);
@@ -839,6 +1022,11 @@ try {
       }
       const commandScope = await canonicalScopeSnapshot(page);
       await assertNoCanonicalSyncError(page, `${width}px Command`);
+      destinationVisualEvidence.push(await captureDestinationScreenshot(page, {
+        destination: "COMMAND",
+        root: command,
+        width
+      }));
 
       await navigation.getByRole("link", { name: "Businesses" }).click();
       await page.waitForURL(/\/member\/dashboard\?[^#]*destination=businesses/);
@@ -874,6 +1062,14 @@ try {
         );
       }
       await assertNoCanonicalSyncError(page, `${width}px Businesses`);
+      destinationVisualEvidence.push(await captureDestinationScreenshot(page, {
+        destination: "BUSINESSES",
+        root: businesses,
+        width
+      }));
+      if (destinationVisualEvidence[0].screenshot_sha256 === destinationVisualEvidence[1].screenshot_sha256) {
+        throw new Error(`${width}px Command and Businesses screenshots were not visibly distinct.`);
+      }
 
       await navigation.getByRole("link", { name: "Universe" }).click();
       await page.waitForURL(/\/member\/graph/);
@@ -891,6 +1087,8 @@ try {
       if (!parityKey || Number(eventSequence) !== projection.projection_version) {
         throw new Error(`${width}px Universe did not bind canonical projection parity and version.`);
       }
+      let desktopLayoutEvidence = null;
+      if (!mobile) await selectDesktopSideBySide(workspace);
 
       // Acceptance must exercise both mobile renderers without assuming which
       // synchronized dimension a member's current URL preference selects.
@@ -982,6 +1180,7 @@ try {
         if (
           await workspace.getAttribute("data-mobile-presentation") !== "desktop-dual"
           || await workspace.locator(".phase180-graph-panel").count() !== 2
+          || !desktopLayoutEvidence
         ) {
           throw new Error("Desktop Universe did not preserve the side-by-side 2D and 3D presentation.");
         }
@@ -996,6 +1195,7 @@ try {
           orientation: "landscape",
           width
         }));
+        desktopLayoutEvidence = await measureDesktopSideBySide(workspace, width);
       }
 
       await navigation.getByRole("link", { name: "Infrastructure" }).click();
@@ -1024,7 +1224,9 @@ try {
         business_count: portfolio.businesses.length,
         businesses_state: portfolio.businesses.length ? "REAL_RECORDS" : "EMPTY_CANONICAL",
         command_canonical_data_verified: true,
-        desktop_side_by_side: !mobile,
+        desktop_layout_evidence: desktopLayoutEvidence,
+        desktop_side_by_side: !mobile && Boolean(desktopLayoutEvidence),
+        destination_visual_evidence: destinationVisualEvidence,
         destination_sync_errors: {
           BUSINESSES: 0,
           COMMAND: 0,
@@ -1072,6 +1274,10 @@ const receipt = {
   deployed_commit_sha: deployedCommitSha,
   deployment_readback_exact_sha_verified: true,
   deployment_readback_receipt_sha256: deploymentReadbackReceiptSha256,
+  destination_visual_evidence_verified: observed.every((viewport) =>
+    Array.isArray(viewport.destination_visual_evidence)
+      && viewport.destination_visual_evidence.length === 2
+      && viewport.destination_visual_evidence.every((entry) => /^[a-f0-9]{64}$/.test(entry.screenshot_sha256))),
   destinations: ["COMMAND", "BUSINESSES", "UNIVERSE_2D", "UNIVERSE_3D", "INFRASTRUCTURE", "TUTORIAL"],
   environment: "PRODUCTION",
   graph_preference_actor_bound: true,
