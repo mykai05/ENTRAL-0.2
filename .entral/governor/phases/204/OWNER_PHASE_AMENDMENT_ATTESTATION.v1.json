@@ -1,0 +1,61 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "decision_id": "OWNER-P204-REVENUE-KERNEL-20260803",
+  "phase": 204,
+  "owner_attested": true,
+  "decision": "REPLACE_UNACTIVATED_GENERIC_PHASE_204_WITH_REVENUE_ACTIVATION_AND_EVIDENCE_KERNEL",
+  "certified_prerequisite": {
+    "phase": 203,
+    "main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+    "governor_continuation_sha": "d12fe17b90e95e45c5ad0fe4bc65152bd9862893"
+  },
+  "ordered_task_packets": [
+    "P204-INTERNAL-COMMERCE-ACTIVATION-001",
+    "P204-SOVEREIGN-HIGH-TICKET-PROSPECTING-MVP-001",
+    "P204-REVENUE-EVIDENCE-EVALUATION-001"
+  ],
+  "commerce_authority": {
+    "internal_business_code": "SP-COMMERCE-001",
+    "working_name": "Contractor Operations Products",
+    "provider_priority": ["ETSY", "GUMROAD_BLOCKER_FALLBACK"],
+    "products": [
+      {"name":"Lead Response and Estimate Follow-Up Kit","initial_test_price_usd":29},
+      {"name":"Scope and Change-Order Control Pack","initial_test_price_usd":49},
+      {"name":"Billing and Collections Accelerator","initial_test_price_usd":49},
+      {"name":"Weekly Owner Command Dashboard","initial_test_price_usd":39},
+      {"name":"Complete Contractor Control Bundle","initial_test_price_usd":119}
+    ],
+    "maximum_initial_setup_spend_usd": 150,
+    "paid_advertising_budget_usd": 0,
+    "first_external_publication_requires_owner_approval": true,
+    "software_capabilities_not_sellable_by_internal_use": true
+  },
+  "prospecting_authority": {
+    "initial_market": "SPECIALTY_CONTRACTORS_AND_FIELD_SERVICE_BUSINESSES",
+    "maximum_initial_prospect_count": 25,
+    "external_prospects_separate_from_canonical_heart": true,
+    "first_outreach_batch_requires_owner_approval": true,
+    "public_pricing_not_authorized": true,
+    "request_an_audit_path": true
+  },
+  "execution_constraints": {
+    "implementation_model": "CODEX_5_6_SOL_XHIGH",
+    "native_codex_xhigh_subagents_allowed_when_materially_useful": true,
+    "single_writer_per_mutable_scope": true,
+    "lead_only_integration_release_and_certification": true,
+    "new_security_scan": false,
+    "tutorial_expansion": false,
+    "full_opportunity_radar_graph": false,
+    "phase_205_activation": false
+  },
+  "owner_action_boundaries": [
+    "PROVIDER_IDENTITY",
+    "BANKING_OR_PAYMENT",
+    "AGREEMENT_ACCEPTANCE",
+    "CREDENTIAL_AUTHORIZATION",
+    "MFA",
+    "FIRST_EXTERNAL_PUBLICATION"
+  ],
+  "recorded_at": "2026-08-03T18:05:00.000Z"
+}
