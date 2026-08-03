@@ -112,6 +112,9 @@ export const INSTALLED_CAPABILITY_STATES = [
 ] as const;
 export type InstalledCapabilityState = (typeof INSTALLED_CAPABILITY_STATES)[number];
 
+export const CAPABILITY_RELEASE_VERSIONS = ["phase-203", "phase-204"] as const;
+export type CapabilityReleaseVersion = (typeof CAPABILITY_RELEASE_VERSIONS)[number];
+
 export const PUBLICATION_DECISION_REASONS = [
   "SELLABLE_VERIFIED",
   "MALFORMED_TRUTH",
@@ -435,6 +438,15 @@ function assertRecordVersion(value: unknown, field: string): asserts value is nu
   if (value < 1) throw new ContractError("INVALID_RECORD_VERSION", `${field} must be at least 1`);
 }
 
+function assertCapabilityReleaseVersion(value: unknown): asserts value is CapabilityReleaseVersion {
+  if (typeof value !== "string" || !(CAPABILITY_RELEASE_VERSIONS as readonly string[]).includes(value)) {
+    throw new ContractError(
+      "INVALID_RELEASE_VERSION",
+      `release_version must be one of ${CAPABILITY_RELEASE_VERSIONS.join(", ")}`
+    );
+  }
+}
+
 function assertEvidenceReceipt(receipt: CapabilityEvidenceReceipt, index: number): void {
   const field = `verification_receipts[${index}]`;
   assertRecord(receipt, field);
@@ -516,9 +528,7 @@ export function assertCapabilityTransitionAuditRecord(record: CapabilityTransiti
   if (record.idempotency_key.length < 12 || !SHA256_RE.test(record.request_sha256)) {
     throw new ContractError("INVALID_TRANSITION_AUDIT_BINDING", "transition audit binding is malformed");
   }
-  if (record.release_version !== "phase-203") {
-    throw new ContractError("INVALID_RELEASE_VERSION", "release_version must be phase-203");
-  }
+  assertCapabilityReleaseVersion(record.release_version);
   assertCapabilityTruthRecord(record.response_snapshot);
   if (
     record.response_snapshot.capability_id !== record.capability_id
@@ -556,9 +566,7 @@ export function assertInstalledCapabilityTransitionAuditRecord(record: Installed
   assertUuid(record.correlation_id, "correlation_id");
   assertNonEmptyString(record.idempotency_key, "idempotency_key", 255);
   if (record.idempotency_key.length < 12) throw new ContractError("INVALID_IDEMPOTENCY_KEY", "idempotency key is too short");
-  if (record.release_version !== "phase-203") {
-    throw new ContractError("INVALID_RELEASE_VERSION", "release_version must be phase-203");
-  }
+  assertCapabilityReleaseVersion(record.release_version);
   assertIsoDate(record.recorded_at, "recorded_at");
 }
 
@@ -896,9 +904,7 @@ export function assertCapabilityLifecycleTransitionRequest(request: CapabilityLi
   if (request.idempotency_key.length < 12) {
     throw new ContractError("INVALID_IDEMPOTENCY_KEY", "idempotency_key must be at least 12 characters");
   }
-  if (request.release_version !== "phase-203") {
-    throw new ContractError("INVALID_RELEASE_VERSION", "release_version must be phase-203");
-  }
+  assertCapabilityReleaseVersion(request.release_version);
   assertIsoDate(request.requested_at, "requested_at");
   if (request.from_state === request.to_state) {
     throw new ContractError("NO_OP_CAPABILITY_TRANSITION", "a lifecycle transition must change state");
