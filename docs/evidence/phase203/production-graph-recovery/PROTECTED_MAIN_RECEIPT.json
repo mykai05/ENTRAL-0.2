@@ -1,0 +1,44 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-GRAPH-RECOVERY-PROTECTED-MAIN-BDCEB245",
+  "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "repository": "mykai05/ENTRAL-0.2",
+  "accepted_git_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+  "accepted_git_tree_sha": "78925f45b09d540b3cacaaa690275c1c99699e23",
+  "prerequisite_continuation_sha": "b8261c0f30f3b636b7dc9ab3384fc9af57dcb56d",
+  "integration_chain": [
+    {"pull_request": 49, "purpose": "bounded production graph recovery"},
+    {"pull_request": 50, "purpose": "production acceptance correction"},
+    {"pull_request": 51, "purpose": "forward-compatible Phase 199 gate correction"},
+    {"pull_request": 52, "purpose": "final exact-main acceptance corrections", "merge_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542"}
+  ],
+  "protected_main_checks": {
+    "workflow": "CI/CD",
+    "run_id": 30782512745,
+    "run_url": "https://github.com/mykai05/ENTRAL-0.2/actions/runs/30782512745",
+    "head_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+    "attempt": 2,
+    "status": "completed",
+    "conclusion": "success",
+    "complete_required_suite": true
+  },
+  "reconciliation": {
+    "origin_main_before": "a218eb54f52073dbc61cb989737811335968992d",
+    "reconciled_candidate_sha": "e51bd1bf",
+    "protected_main_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+    "status": "RECONCILED"
+  },
+  "source_archive": {
+    "construction": "git archive of exact protected-main source",
+    "tracked_files": 858,
+    "tree_sha": "78925f45b09d540b3cacaaa690275c1c99699e23",
+    "railway_api_config": "/railway.json",
+    "railway_worker_config": "/railway.worker.json"
+  },
+  "release_tag": null,
+  "release_manifest": null,
+  "preflight_not_phase_certification": true,
+  "status": "PASSED",
+  "receipt_sha256": "d8d36922ba9687cd144d4d99ceec1307266c003298d77a3b5189b2276d527f8b"
+}

@@ -1,0 +1,36 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-GRAPH-RECOVERY-AUTH-ENDPOINTS-001",
+  "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "environment": "PRODUCTION",
+  "accepted_git_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+  "account_scope": "MIGRATED_PRE_PHASE_202_FOUNDER_MEMBER",
+  "endpoints": [
+    {"name": "portfolio/summary", "http_status": 200, "business_count": 0, "event_sequence": 399, "status": "PASSED"},
+    {"name": "hierarchy", "http_status": 200, "entity_count": 132, "root_count": 1, "event_sequence": 399, "status": "PASSED"},
+    {"name": "entral/conversation", "http_status": 200, "status": "PASSED"},
+    {"name": "graph/projection", "http_status": 200, "node_count": 132, "edge_count": 131, "projection_version": 399, "status": "PASSED"},
+    {"name": "graph/preferences", "http_status": 200, "preference_version": 5, "owner_matches_portfolio_and_hierarchy_scope": true, "organization_bound": true, "status": "PASSED"},
+    {"name": "events", "http_status": 200, "event_count": 200, "status": "PASSED"},
+    {"name": "business full record", "http_status": 404, "status": "NOT_APPLICABLE_ZERO_CANONICAL_BUSINESSES"},
+    {"name": "entity full record", "http_status": 200, "canonical_root_visible": true, "status": "PASSED"}
+  ],
+  "projection_alignment": {
+    "hierarchy_event_sequence": 399,
+    "graph_projection_version": 399,
+    "aligned": true
+  },
+  "canonical_graph": {
+    "node_count": 132,
+    "edge_count": 131,
+    "root_count": 1,
+    "node_set_sha256": "0617be5cee403f15afdcbb31af403cc98f8c475d2a0a223948d02162b7185dc0",
+    "edge_set_sha256": "2814fb9dc3783738ef484a55b1b8990e0b5c8267b063c201add5dceaa2356eb1"
+  },
+  "production_member_journey_receipt_sha256": "e928e74f847b6232be49bd9bda8913f3de881ede257863bee34839dd074ae2a6",
+  "session_revoked_after_readback": true,
+  "revoked_token_http_status": 401,
+  "status": "PASSED",
+  "receipt_sha256": "5d82412aa23652c65a3fc676f60d5c37c1372e4b85ff26eb5b1dedfc87afd67e"
+}

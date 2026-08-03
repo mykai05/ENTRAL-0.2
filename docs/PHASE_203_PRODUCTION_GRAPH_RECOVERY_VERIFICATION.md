@@ -13,7 +13,7 @@ Phase 202 remains historically certified at `c689176234bca8a43f6bb5665f6a8a63d8d
 - `buildGraphProjection` correctly rejected a hierarchy with zero visible roots. Its exactly-one-root invariant remains unchanged.
 - Hierarchy event sequence 399 remained available and graph preferences were owned by the correct user/organization at version 5. Projection-version alignment could not be constructed until root visibility was repaired.
 
-The exact root cause is the Phase 202 tenant predicate: it exposed only mapped businesses and their ancestors. A legitimate migrated organization with a shared canonical taxonomy and no businesses therefore lost its root. The forward migration retains the original legacy authority predicate and tenant assignment, and adds only read access to the unique shared ENTRAL → Marshal → General taxonomy. Business-scoped Commanders and Soldiers, every mutation, and malformed multiple-root state remain fail closed.
+The exact root cause is the Phase 202 tenant predicate: it exposed only mapped businesses and their ancestors. A legitimate migrated organization with a shared canonical taxonomy and no businesses therefore lost its root. The forward migration retains the original legacy authority predicate and tenant assignment, and adds only read access to the unique shared ENTRAL -> Marshal -> General taxonomy. Business-scoped Commanders and Soldiers, every mutation, and malformed multiple-root state remain fail closed.
 
 Two adjacent migrated-member failures were bounded and repaired without weakening RLS:
 
@@ -36,3 +36,15 @@ Starting with Phase 203, `ReleaseManifest` certification requires an authenticat
 - deep restore Phase 198 at `5c2f9d58c25dec82d4c3102f3b48a76797801594`.
 
 Historical tags and prior Governor events remain unchanged. Final incident release deployment and authenticated production acceptance are recorded only after the exact protected-main repair SHA is live.
+
+## Final incident release
+
+- Protected main: `bdceb245ab7d94530f31e4293536497adcad4542` (tree `78925f45b09d540b3cacaaa690275c1c99699e23`).
+- Protected-main CI: run `30782512745`, attempt 2, passed the complete required suite.
+- Vercel frontend: `dpl_BMP1J3Pkz9LB1NBw2sb5f5LNCKmX` at the exact main SHA.
+- Railway API: `6887706f-1f13-4b3f-8ae9-f812ac7c4321`; Railway worker: `011b8ff5-9814-4ba7-861e-9b298a80cb32`. Both were built from the verified 858-file exact-main source archive.
+- Production migration `20260803000000_phase_203_graph_recovery`: 45 applied, zero failed, zero rolled back, zero pending; database roles were applied and independently audited.
+- Authenticated migrated-founder acceptance passed every canonical workspace endpoint and the real member journey at 360, 390, 412, 430, and 1440 CSS pixels. It rendered 132 canonical nodes, 131 canonical edges, exactly one root, aligned hierarchy/projection version 399, and zero canonical-sync errors. The session was revoked and read back as HTTP 401.
+- Immediate rollback remains Phase 200 at `22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516`; deep restore remains Phase 198 at `5c2f9d58c25dec82d4c3102f3b48a76797801594`.
+
+This preflight is an incident release, not the normal Phase 203 capability release. It intentionally creates no `phase-203` tag, Phase 203 ReleaseManifest, or Phase 203 certification. The normal Capability Truth Registry TaskPacket begins only after the Governor records this incident as resolved.

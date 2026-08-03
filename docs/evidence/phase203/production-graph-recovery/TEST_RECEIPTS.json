@@ -1,0 +1,35 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-GRAPH-RECOVERY-TESTS-001",
+  "task_packet_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+  "accepted_git_commit_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+  "tests": [
+    {"command": "targeted graph projection and tenant-context tests", "status": "PASSED"},
+    {"command": "migrated-account PostgreSQL integration test", "status": "PASSED"},
+    {"command": "complete Phase 202 suite", "status": "PASSED"},
+    {"command": "Phase 200 graph regression suite", "status": "PASSED"},
+    {"command": "contracts verification", "status": "PASSED"},
+    {"command": "Prisma generation", "status": "PASSED"},
+    {"command": "lint", "status": "PASSED"},
+    {"command": "complete affected backend tests", "status": "PASSED"},
+    {"command": "complete affected frontend tests", "status": "PASSED"},
+    {"command": "production build", "status": "PASSED"},
+    {"command": "release readiness", "status": "PASSED"},
+    {"command": "authenticated production browser journey at 360, 390, 412, 430, and 1440 CSS pixels", "status": "PASSED"},
+    {"command": "exact-SHA frontend, API, and worker readback", "status": "PASSED"},
+    {"command": "Governor verification", "status": "PASSED"},
+    {"command": "git diff --check", "status": "PASSED"},
+    {"command": "protected-main CI run 30782512745 attempt 2 complete suite", "status": "PASSED"}
+  ],
+  "protected_main_ci": {
+    "run_id": 30782512745,
+    "attempt": 2,
+    "head_sha": "bdceb245ab7d94530f31e4293536497adcad4542",
+    "conclusion": "success"
+  },
+  "security_scan": "NOT_RUN_OWNER_PROHIBITED",
+  "unresolved_failures": [],
+  "status": "PASSED",
+  "receipt_sha256": "6b29d11c6d48094bcb8d2568e3f8240ef640c74b44a0e88e08413e98c50f7f07"
+}
