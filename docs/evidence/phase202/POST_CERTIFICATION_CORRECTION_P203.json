@@ -1,0 +1,101 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "correction_id": "P202-POST-CERTIFICATION-CORRECTION-P203-001",
+  "historical_release": {
+    "phase": 202,
+    "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "release_tag": "phase-202",
+    "history_policy": "SUPERSEDE_STALE_FIELDS_WITHOUT_REWRITING_TAG_OR_PRIOR_EVENT"
+  },
+  "corrected_deployments": [
+    {
+      "provider": "VERCEL",
+      "role": "FRONTEND",
+      "deployment_id": "dpl_HRwLpSwJaN3mU8Ye2VhEpu3Ho7MW",
+      "deployed_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      "status": "READY",
+      "supersedes": "docs/evidence/phase202/PRODUCTION_DEPLOYMENT_READBACK.json#deployments[0].deployment_id",
+      "correction_reason": "The prior value 5718266943 was not the Phase 202 Vercel deployment ID; dpl_7CEgfksQ1nZ6NJPnRWq8NbcUNjqx is the Phase 200 deployment."
+    },
+    {
+      "provider": "RAILWAY",
+      "role": "API",
+      "deployment_id": "0cc752c9-1599-49e8-b0d2-c7eb15f0c900",
+      "deployed_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      "status": "READY",
+      "independent_readback": "Railway SUCCESS/RUNNING deployment and retained Phase 202 exact-source release binding."
+    },
+    {
+      "provider": "RAILWAY",
+      "role": "WORKER",
+      "deployment_id": "e3c342e6-efcd-430e-a49d-195e51670b54",
+      "deployed_commit_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+      "status": "READY",
+      "independent_readback": "Railway SUCCESS/RUNNING deployment and retained Phase 202 exact-source release binding."
+    }
+  ],
+  "corrected_rollback_hierarchy": {
+    "immediate": {
+      "phase": 200,
+      "release_tag": "phase-200",
+      "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+      "frontend_deployment_id": "dpl_7CEgfksQ1nZ6NJPnRWq8NbcUNjqx",
+      "api_deployment_id": "905e88d5-6e40-4905-af15-67ac94507feb",
+      "worker_deployment_id": "979c2604-e704-4eb4-8959-2b5893de6d9f"
+    },
+    "deep_restore_fallback": {
+      "phase": 198,
+      "release_tag": "phase-198",
+      "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "restore_receipt_sha256": "f82085ae21f7f7f337be2d8f39d6f6450fc8a80032da91202dfccb03e5ab73dc"
+    },
+    "supersedes": "Phase 202 evidence that named Phase 198 as the immediate rollback"
+  },
+  "post_certification_incident": {
+    "incident_id": "P203-PRODUCTION-GRAPH-RECOVERY-001",
+    "source_release_phase": 202,
+    "discovered_after_certification": true,
+    "reported_request_id": "4d3a5983-6d94-45b1-9578-c1729ecb9711",
+    "reported_request_id_log_match": false,
+    "matched_request_id": "4d5a5983-6d94-45b1-9578-c1729ecb9711",
+    "event": "graph.projection.failed",
+    "bounded_error_code": "INVALID_GRAPH_ROOT",
+    "postgresql_sqlstate": null,
+    "failing_operation": "buildGraphProjection after successful getHierarchySnapshot",
+    "root_cause": "Phase 202 intersected legacy entity authority with business-boundary lineage. The migrated production organization had one valid shared canonical ENTRAL hierarchy and zero canonical businesses or BusinessBoundary rows, so its exact tenant session saw zero entities and zero roots.",
+    "adjacent_failures": [
+      {
+        "operation": "Tutorial progress read",
+        "bounded_error": "RLS_DENIED",
+        "postgresql_sqlstate": "42501",
+        "root_cause": "MemberTutorialProgress and MemberTutorialMutationReceipt were omitted from the Phase 202 human access classifier while their exact subject policies required that classifier."
+      },
+      {
+        "operation": "Interaction analytics audit write",
+        "bounded_error": "RLS_DENIED",
+        "postgresql_sqlstate": "42501",
+        "root_cause": "The route wrote AuditLog outside the authenticated tenant transaction, and the Phase 202 member audit exception admitted only auth-session evidence rather than the four bounded Phase 200 interaction actions."
+      }
+    ]
+  },
+  "pre_repair_authenticated_endpoint_readback": [
+    { "endpoint": "portfolio/summary", "http_status": 200, "result": "PASSED", "business_count": 0 },
+    { "endpoint": "hierarchy", "http_status": 200, "result": "FAILED_CANONICAL_VISIBILITY", "entity_count": 0, "root_count": 0, "event_sequence": 399 },
+    { "endpoint": "entral/conversation", "http_status": 200, "result": "PASSED", "message_count": 0 },
+    { "endpoint": "graph/projection", "http_status": 500, "result": "INVALID_GRAPH_ROOT" },
+    { "endpoint": "graph/preferences", "http_status": 200, "result": "PASSED", "preference_version": 5 },
+    { "endpoint": "events", "http_status": 200, "result": "PASSED" },
+    { "endpoint": "business full record", "http_status": null, "result": "NO_CANONICAL_BUSINESS_EXISTS" },
+    { "endpoint": "entity full record for canonical root", "http_status": 404, "result": "FAILED_CANONICAL_VISIBILITY" }
+  ],
+  "source_references": [
+    "mykai05/ENTRAL-0.2@c689176234bca8a43f6bb5665f6a8a63d8d653dd:prisma/migrations/20260802090000_phase_202_identity_tenancy_authority/migration.sql",
+    "mykai05/ENTRAL-0.2@c689176234bca8a43f6bb5665f6a8a63d8d653dd:backend/src/services/canonicalControlPlane.ts",
+    "mykai05/ENTRAL-0.2@c689176234bca8a43f6bb5665f6a8a63d8d653dd:packages/contracts/src/graph.ts",
+    "mykai05/ENTRAL-0.2@c689176234bca8a43f6bb5665f6a8a63d8d653dd:backend/src/routes/interactionLayer.ts"
+  ],
+  "sensitive_data_policy": "No credentials, tokens, direct customer identifiers, payload contents, or unrestricted stack traces are retained.",
+  "recorded_at": "2026-08-02T23:58:00.000Z",
+  "receipt_sha256": "d33ebf75a8ab53497a7b938cd6492a470e5c335f73b4939261619a7a7602d730"
+}

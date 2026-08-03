@@ -85,6 +85,16 @@ const requiredChecks = [
   },
   {
     file: "package.json",
+    label: "Package exposes authenticated production member journey",
+    text: "\"test:e2e:production-member\""
+  },
+  {
+    file: "e2e/production-member-journey.mjs",
+    label: "Production member journey verifies actual canonical nodes and edges",
+    text: "Production projection did not contain actual canonical edges."
+  },
+  {
+    file: "package.json",
     label: "Package exposes release readiness check",
     text: "\"release:check\""
   }

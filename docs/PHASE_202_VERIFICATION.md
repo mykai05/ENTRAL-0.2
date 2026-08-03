@@ -91,3 +91,6 @@ Responsive production Chrome acceptance passed at 360, 390, 412, and 430 CSS pix
 The immediate rollback remains certified Phase 198 at `5c2f9d58c25dec82d4c3102f3b48a76797801594`, with Vercel deployment `dpl_2mp6yMxeeFpSUTsRW9UbUnB6ai8u`, Railway API deployment `43f98e05-af77-44f2-826c-5976fc738e4b`, and Railway worker deployment `b477d5c8-2a55-4e74-84b8-168e5f938fd8`. Phase 202 is additive; rollback retains the schema and does not authorize destructive customer-data deletion.
 
 Canonical release evidence is under `docs/evidence/phase202/`, `.entral/governor/release-control/phase-202/`, and `.entral/governor/releases/phase-202.json`.
+# Post-certification correction
+
+Phase 202 remains historically certified at `c689176234bca8a43f6bb5665f6a8a63d8d653dd`, but its original release evidence is superseded in bounded fields by `docs/evidence/phase202/POST_CERTIFICATION_CORRECTION_P203.json`. The append-only correction records the actual Phase 202 Vercel deployment, independently read Railway deployment IDs, immediate Phase 200 rollback, deep Phase 198 restore, and the production graph incident discovered after certification. Historical tags and prior Governor events were not rewritten.

@@ -10,7 +10,7 @@ import {
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { requireAuth, setPrivateNoStoreHeaders } from "../auth.js";
-import { prisma, resolveVerifiedMemberTeamAccess } from "../db.js";
+import { prisma, resolveVerifiedMemberTeamAccess, withTenantSession } from "../db.js";
 import { recordAuditLog } from "../services/audit.js";
 import { canonicalControlPlaneRepository } from "../services/canonicalControlPlane.js";
 import {
@@ -175,20 +175,28 @@ export async function interactionLayerRoutes(app: FastifyInstance) {
     if (!await memberRole(request, organizationId)) return unavailableOrganization(reply);
     try {
       const event = parseInteractionAnalyticsEventRequest(request.body);
-      await recordAuditLog({
-        action: `interaction.${event.event_type.toLocaleLowerCase()}`,
-        actorUserId: currentUser.sub,
-        metadata: {
-          contractVersion: INTERACTION_CONTRACT_VERSION,
-          controlId: event.control_id,
-          occurredAt: event.occurred_at,
-          organizationId,
-          reasonCode: event.reason_code,
-          route: event.route
+      await withTenantSession(prisma, {
+        actionReason: "Record tenant-bound member interaction analytics evidence.",
+        authSubject: currentUser.sub,
+        requestId: request.id,
+        tenantId: currentUser.tenantId!
+      }, (transaction) => recordAuditLog(
+        {
+          action: `interaction.${event.event_type.toLocaleLowerCase()}`,
+          actorUserId: currentUser.sub,
+          metadata: {
+            contractVersion: INTERACTION_CONTRACT_VERSION,
+            controlId: event.control_id,
+            occurredAt: event.occurred_at,
+            organizationId,
+            reasonCode: event.reason_code,
+            route: event.route
+          },
+          targetId: event.event_id,
+          targetType: "INTERACTION_ANALYTICS"
         },
-        targetId: event.event_id,
-        targetType: "INTERACTION_ANALYTICS"
-      });
+        transaction
+      ));
       request.log.info({
         event: "interaction.analytics.accepted",
         eventId: event.event_id,

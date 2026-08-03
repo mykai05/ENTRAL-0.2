@@ -701,6 +701,112 @@ export function validateReleaseManifest(value) {
     assertEnum(value.release_controller.health_status, ["PASSED"], "release_manifest.release_controller.health_status");
     assertEnum(value.release_controller.failure_proof_status, ["PASSED"], "release_manifest.release_controller.failure_proof_status");
   }
+  if (value.phase >= 203) {
+    const journey = value.authenticated_member_journey;
+    assertRecord(journey, "release_manifest.authenticated_member_journey");
+    assertEnum(journey.status, ["PASSED"], "release_manifest.authenticated_member_journey.status");
+    assertId(journey.receipt_id, "release_manifest.authenticated_member_journey.receipt_id");
+    assertSha256(journey.receipt_sha256, "release_manifest.authenticated_member_journey.receipt_sha256");
+    assertEnum(journey.environment, ["PRODUCTION"], "release_manifest.authenticated_member_journey.environment");
+    assertEnum(journey.session_scope, ["MIGRATED_MEMBER"], "release_manifest.authenticated_member_journey.session_scope");
+    assertSha40(journey.deployed_commit_sha, "release_manifest.authenticated_member_journey.deployed_commit_sha");
+    if (journey.deployed_commit_sha !== value.main_sha) {
+      fail("MEMBER_JOURNEY_SHA_MISMATCH", "The authenticated member journey must verify the exact release main SHA");
+    }
+    for (const field of [
+      "canonical_node_set_sha256",
+      "canonical_edge_set_sha256",
+      "membership_provenance_sha256",
+      "migrated_state_receipt_sha256",
+      "session_subject_sha256",
+      "tenant_scope_sha256",
+      "organization_scope_sha256"
+    ]) assertSha256(journey[field], `release_manifest.authenticated_member_journey.${field}`);
+    assertIso(journey.observed_at, "release_manifest.authenticated_member_journey.observed_at");
+    if (journey.route_interception !== false) {
+      fail("INTERCEPTED_PRODUCTION_JOURNEY", "The authenticated production member journey cannot use route interception");
+    }
+    const requiredDestinations = [
+      "COMMAND",
+      "BUSINESSES",
+      "UNIVERSE_2D",
+      "UNIVERSE_3D",
+      "INFRASTRUCTURE",
+      "TUTORIAL"
+    ];
+    assertStringArray(journey.destinations, "release_manifest.authenticated_member_journey.destinations", {
+      minimum: requiredDestinations.length,
+      maximum: requiredDestinations.length,
+      unique: true
+    });
+    if (requiredDestinations.some((destination) => !journey.destinations.includes(destination))) {
+      fail("INCOMPLETE_MEMBER_JOURNEY", "Every canonical member destination must pass in production");
+    }
+    assertArray(journey.viewport_widths, "release_manifest.authenticated_member_journey.viewport_widths", {
+      minimum: 5,
+      unique: true
+    });
+    journey.viewport_widths.forEach((width, index) => assertInteger(
+      width,
+      `release_manifest.authenticated_member_journey.viewport_widths[${index}]`,
+      320,
+      10_000
+    ));
+    for (const requiredWidth of [360, 390, 412, 430]) {
+      if (!journey.viewport_widths.includes(requiredWidth)) {
+        fail("INCOMPLETE_MEMBER_VIEWPORTS", `Authenticated member journey is missing the ${requiredWidth}px viewport`);
+      }
+    }
+    if (!journey.viewport_widths.some((width) => width >= 1024)) {
+      fail("MISSING_DESKTOP_MEMBER_JOURNEY", "Authenticated member journey requires a desktop viewport");
+    }
+    assertInteger(journey.canonical_node_count, "release_manifest.authenticated_member_journey.canonical_node_count", 2);
+    assertInteger(journey.canonical_edge_count, "release_manifest.authenticated_member_journey.canonical_edge_count", 1);
+    assertInteger(journey.canonical_sync_errors, "release_manifest.authenticated_member_journey.canonical_sync_errors", 0, 0);
+    assertArray(journey.viewport_observations, "release_manifest.authenticated_member_journey.viewport_observations", {
+      minimum: journey.viewport_widths.length,
+      maximum: journey.viewport_widths.length
+    });
+    const observedWidths = new Set();
+    journey.viewport_observations.forEach((observation, index) => {
+      const field = `release_manifest.authenticated_member_journey.viewport_observations[${index}]`;
+      assertRecord(observation, field);
+      assertInteger(observation.viewport_width, `${field}.viewport_width`, 320, 10_000);
+      if (observedWidths.has(observation.viewport_width) || !journey.viewport_widths.includes(observation.viewport_width)) {
+        fail("INVALID_MEMBER_VIEWPORT_OBSERVATION", "Authenticated member viewport observations must be unique and match the declared widths");
+      }
+      observedWidths.add(observation.viewport_width);
+      for (const booleanField of [
+        "desktop_side_by_side",
+        "mobile_single_renderer",
+        "renderer_parity_verified",
+        "renderer_state_preserved",
+        "two_d_loaded",
+        "three_d_loaded"
+      ]) assertBoolean(observation[booleanField], `${field}.${booleanField}`);
+      assertInteger(observation.entity_count, `${field}.entity_count`, 2);
+      assertInteger(observation.edge_count, `${field}.edge_count`, 1);
+      assertInteger(observation.event_sequence, `${field}.event_sequence`, 0);
+      assertInteger(observation.sync_errors, `${field}.sync_errors`, 0, 0);
+      assertSha256(observation.entity_set_sha256, `${field}.entity_set_sha256`);
+      assertSha256(observation.edge_set_sha256, `${field}.edge_set_sha256`);
+      const mobile = observation.viewport_width < 1024;
+      if (
+        observation.two_d_loaded !== true || observation.three_d_loaded !== true
+        || observation.renderer_parity_verified !== true || observation.renderer_state_preserved !== true
+        || observation.mobile_single_renderer !== mobile
+        || observation.desktop_side_by_side !== !mobile
+      ) {
+        fail("FAILED_MEMBER_RENDERER_OBSERVATION", "Every viewport must load real 2D and 3D renderers with exact parity and the expected responsive presentation");
+      }
+    });
+    if (observedWidths.size !== journey.viewport_widths.length) {
+      fail("INCOMPLETE_MEMBER_VIEWPORT_OBSERVATIONS", "Every declared viewport requires a production execution observation");
+    }
+    if (journey.renderer_state_preserved !== true || journey.canonical_sync_errors !== 0) {
+      fail("FAILED_CANONICAL_MEMBER_JOURNEY", "Renderer state must be preserved and canonical sync errors must be zero");
+    }
+  }
   assertIso(value.recorded_at, "release_manifest.recorded_at");
   return value;
 }
