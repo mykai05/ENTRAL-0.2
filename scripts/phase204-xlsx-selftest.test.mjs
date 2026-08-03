@@ -121,10 +121,10 @@ test("Phase 204 XLSX binds the table, formulas, validation, styles, and protecti
   assert.match(sheet, /<sheetProtection [^>]+insertRows="0"[^>]+selectUnlockedCells="0"\/>/u);
   assert.match(sheet, /<dataValidation type="list" [^>]+sqref="C2:C1048576"/u);
   assert.match(sheet, /<c r="D2" s="7" t="n"><v>1250<\/v><\/c>/u);
-  assert.match(sheet, /<c r="F2" s="15"><f>IF\(\[@\[Follow_Up_Count\]\]=0,&quot;&quot;,1\)<\/f><\/c>/u);
+  assert.match(sheet, /<c r="F2" s="15"><f>IF\(Table_Lead_Tracker\[\[#This Row\],\[Follow_Up_Count\]\]=0,&quot;&quot;,1\)<\/f><\/c>/u);
   assert.match(table, /ref="A1:F2"/u);
   assert.match(table, /<autoFilter ref="A1:F2"\/>/u);
-  assert.match(table, /<calculatedColumnFormula>IF\(\[@\[Follow_Up_Count\]\]=0,&quot;&quot;,1\)<\/calculatedColumnFormula>/u);
+  assert.match(table, /<calculatedColumnFormula>IF\(Table_Lead_Tracker\[\[#This Row\],\[Follow_Up_Count\]\]=0,&quot;&quot;,1\)<\/calculatedColumnFormula>/u);
   assert.match(styles, /applyProtection="1"[^>]*><protection locked="0"\/>/u);
   assert.match(styles, /applyProtection="1"[^>]*><protection locked="1"\/>/u);
   assert.match(core, new RegExp(PHASE204_XLSX_FIXED_TIMESTAMP.replaceAll(".", "\\."), "u"));
@@ -145,4 +145,5 @@ test("Phase 204 XLSX stores values as values and rejects unsafe or ambiguous def
   assert.throws(() => generatePhase204Xlsx({ ...definition, columns: [{ title: "Bad", type: "formula", formula: "SUM(A1:A2)" }] }), /must begin with =/u);
   assert.throws(() => generatePhase204Xlsx({ ...definition, columns: [{ title: "Bad", type: "text", allowedValues: ["A"], formula: "=1" }] }), /cannot combine formula and allowedValues/u);
   assert.throws(() => generatePhase204Xlsx({ ...definition, columns: [{ title: "Bad", type: "text", allowedValues: [] }] }), /must not be empty when provided/u);
+  assert.throws(() => generatePhase204Xlsx({ ...definition, starterRow: {}, columns: [{ title: "Bad", type: "formula", formula: "=LEN([@[Missing]])" }] }), /unknown table column/u);
 });

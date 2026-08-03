@@ -265,6 +265,18 @@ function styleFor(type, locked) {
   return STYLE[`${locked ? "formula" : "input"}${suffix}`];
 }
 
+function persistedFormula(definition, formula) {
+  const headers = new Set(definition.columns.map((column) => column.title));
+  const qualify = (column) => {
+    invariant(headers.has(column), `Formula references unknown table column ${JSON.stringify(column)}`);
+    return `${definition.tableName}[[#This Row],[${column}]]`;
+  };
+  let expression = formula.expression.replace(/\[@\[([^\]]+)\]\]/gu, (_match, column) => qualify(column));
+  expression = expression.replace(/\[@([^\][\r\n]+)\]/gu, (_match, column) => qualify(column));
+  invariant(!expression.includes("[@"), "Formula contains an unsupported structured table reference");
+  return expression;
+}
+
 function excelSerial(value, dateTime, label) {
   let milliseconds;
   if (value instanceof Date) {
@@ -313,7 +325,7 @@ function trackerWorksheetXml(definition) {
   const starter = definition.columns.map((column, index) => {
     const reference = `${columnLetters(index + 1)}2`;
     if (column.formula) {
-      return `<c r="${reference}" s="${styleFor(column.styleType, true)}"><f>${escapeXml(column.formula.expression)}</f></c>`;
+      return `<c r="${reference}" s="${styleFor(column.styleType, true)}"><f>${escapeXml(persistedFormula(definition, column.formula))}</f></c>`;
     }
     const value = definition.starterRow[column.key] ?? definition.starterRow[column.title] ?? column.starterValue;
     return inputCellXml(reference, column.styleType, value, styleFor(column.styleType, false), `starter value for ${column.title}`);
@@ -375,7 +387,7 @@ function tableXml(definition) {
   const lastColumn = columnLetters(definition.columns.length);
   const tableColumns = definition.columns.map((column, index) => {
     const formula = column.formula
-      ? `<calculatedColumnFormula>${escapeXml(column.formula.expression)}</calculatedColumnFormula>`
+      ? `<calculatedColumnFormula>${escapeXml(persistedFormula(definition, column.formula))}</calculatedColumnFormula>`
       : "";
     return `<tableColumn id="${index + 1}" name="${escapeXml(column.title)}">${formula}</tableColumn>`;
   }).join("");
@@ -466,8 +478,7 @@ function workbookXml(definition, includesLists) {
   )).join("")}</definedNames>`;
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <fileVersion appName="xl"/>
-  <workbookPr date1904="0"/>
+  <fileVersion appName="xl" lastEdited="7" lowestEdited="7" rupBuild="30228"/>
   <bookViews><workbookView activeTab="1" firstSheet="0"/></bookViews>
   <sheets>${sheets.join("")}</sheets>
   ${definedNames}
