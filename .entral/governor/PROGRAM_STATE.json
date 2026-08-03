@@ -1440,10 +1440,10 @@
   "result_fingerprints": [
     "77dd997ced08ebf5d9168cf56648a383ddb8a3bbd626028d9029a57d871c9468"
   ],
-  "version": 193,
-  "updated_at": "2026-08-03T17:48:12.069Z",
+  "version": 194,
+  "updated_at": "2026-08-03T19:03:26.166Z",
   "task_deadline_at": "2026-08-03T20:39:06.117Z",
   "pending_release_manifest": null,
-  "event_count": 193,
-  "event_head_hash": "a97fb7f4e3e19860ee3cfdda40297b1ac9701c254b821a24e8c65a5039d3a7f9"
+  "event_count": 194,
+  "event_head_hash": "fa90c83e10e61116e96ce72126bb325bfabaeef0b8efb81e98f5a184a718f895"
 }
