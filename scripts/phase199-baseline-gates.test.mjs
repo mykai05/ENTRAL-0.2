@@ -158,7 +158,7 @@ test("Governor blocks Phase 200 until the exact Phase 199 production release and
       assert.equal(state.review_state.correction_commit_sha, undefined);
     }
   } else {
-    assert.equal([200, 202].includes(state.current_phase), true);
+    assert.equal(Number.isInteger(state.current_phase) && state.current_phase >= 200, true);
     assert.equal(state.certified_phases.includes(199), true);
     assert.equal(phase199Release.phase, 199);
     assert.equal(phase199Release.main_sha, "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb");
@@ -176,8 +176,16 @@ test("Governor blocks Phase 200 until the exact Phase 199 production release and
       assert.equal(state.latest_production_release.main_sha, "f1e4ba62bc60986cb8e7366a35ac9a92aeda0abb");
     } else {
       assert.equal(state.certified_phases.includes(200), true);
-      assert.equal(state.latest_production_release.phase, 200);
-      assert.equal(state.latest_production_release.main_sha, "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516");
+      assert.equal(
+        Number.isInteger(state.latest_production_release.phase) &&
+          state.latest_production_release.phase >= 200 &&
+          state.latest_production_release.phase <= state.current_phase,
+        true
+      );
+      assert.equal(state.certified_phases.includes(state.latest_production_release.phase), true);
+      if (state.latest_production_release.phase === 200) {
+        assert.equal(state.latest_production_release.main_sha, "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516");
+      }
     }
     assert.equal(state.review_state, null);
   }

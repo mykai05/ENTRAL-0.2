@@ -295,6 +295,7 @@
       "frontend/tests/Phase200*.test.*",
       "frontend/tests/*Phase203*Graph*Recovery*.test.*",
       "e2e/**",
+      "scripts/phase199-baseline-gates.test.mjs",
       "scripts/phase202-*.mjs",
       "scripts/phase203-production-graph-recovery*.mjs",
       "scripts/release-readiness.mjs",
@@ -306,18 +307,18 @@
       "package.json"
     ],
     "acquired_at": "2026-08-02T23:32:29.485Z",
-    "heartbeat_at": "2026-08-03T00:44:10.878Z",
-    "expires_at": "2026-08-03T01:14:10.878Z"
+    "heartbeat_at": "2026-08-03T00:47:19.155Z",
+    "expires_at": "2026-08-03T01:17:19.155Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 135,
-  "updated_at": "2026-08-03T00:44:10.878Z",
+  "version": 136,
+  "updated_at": "2026-08-03T00:47:19.155Z",
   "task_deadline_at": "2026-08-03T15:32:15.211Z",
   "pending_release_manifest": null,
-  "event_count": 135,
-  "event_head_hash": "0737a84ea8bcf546969890f59c399844d337d78acf440f4b901ec92995524fbf"
+  "event_count": 136,
+  "event_head_hash": "4b2de40384b42dab592e9e2b9a966b0a3e611590f1779e1ab8afcac774bcdfea"
 }

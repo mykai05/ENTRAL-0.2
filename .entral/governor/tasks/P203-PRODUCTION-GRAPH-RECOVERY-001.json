@@ -48,6 +48,7 @@
     "frontend/tests/Phase200*.test.*",
     "frontend/tests/*Phase203*Graph*Recovery*.test.*",
     "e2e/**",
+    "scripts/phase199-baseline-gates.test.mjs",
     "scripts/phase202-*.mjs",
     "scripts/phase203-production-graph-recovery*.mjs",
     "scripts/release-readiness.mjs",
