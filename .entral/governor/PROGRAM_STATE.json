@@ -310,6 +310,7 @@
       "frontend/components/Phase200InteractionNavigation.tsx",
       "frontend/components/CanonicalUniverseGraph.tsx",
       "frontend/components/CanonicalUniverse3DGraph.tsx",
+      "frontend/components/NeuronsCommandCenter.tsx",
       "frontend/components/CanonicalGraphSemanticsOverlay.tsx",
       "frontend/components/CanonicalGraphWorkspace.tsx",
       "frontend/app/phase180.css",
@@ -319,6 +320,9 @@
       "frontend/tests/MemberCommandCenterClient.test.tsx",
       "frontend/tests/Phase170ResponsiveContract.test.ts",
       "frontend/tests/Phase195MemberShellRegression.test.ts",
+      "frontend/tests/Phase195Canonical3DRenderer.test.ts",
+      "frontend/tests/Phase195GraphSemanticsVisual.test.tsx",
+      "frontend/tests/CommandCenterGraphIntegrity.test.ts",
       "e2e/entral.e2e.mjs",
       "e2e/production-member-journey.mjs",
       "scripts/phase199-baseline-gates.test.mjs",
@@ -329,18 +333,18 @@
       "package.json"
     ],
     "acquired_at": "2026-08-03T10:39:20.666Z",
-    "heartbeat_at": "2026-08-03T11:46:48.857Z",
-    "expires_at": "2026-08-03T15:46:48.857Z"
+    "heartbeat_at": "2026-08-03T13:06:32.898Z",
+    "expires_at": "2026-08-03T13:36:32.898Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 173,
-  "updated_at": "2026-08-03T11:46:48.857Z",
+  "version": 175,
+  "updated_at": "2026-08-03T13:06:32.898Z",
   "task_deadline_at": "2026-08-03T20:39:06.117Z",
   "pending_release_manifest": null,
-  "event_count": 173,
-  "event_head_hash": "4cbbff1e7d3addf0829633c5f779de5bf606b600bf68dd7a2308c8e68d0217b5"
+  "event_count": 175,
+  "event_head_hash": "1f7565f1145a028b3ce300866be153cd1ae345685439b9755be3909d165a6771"
 }

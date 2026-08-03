@@ -317,15 +317,54 @@ async function captureGraphPresentation(page, workspace, { dimension, orientatio
     const anchorX = anchorXValue === null ? null : Number(anchorXValue);
     const anchorY = anchorYValue === null ? null : Number(anchorYValue);
     if (activeDimension === "2d" && Number.isFinite(anchorX) && Number.isFinite(anchorY)) {
+      const left = Math.max(stageBox.left, stageBox.left + anchorX - (protectedWidth / 2));
+      const right = Math.min(stageBox.right, stageBox.left + anchorX + (protectedWidth / 2));
+      const top = Math.max(stageBox.top, stageBox.top + anchorY - (protectedHeight / 2));
+      const bottom = Math.min(stageBox.bottom, stageBox.top + anchorY + (protectedHeight / 2));
       protectedFocalRegion = {
-        bottom: stageBox.top + anchorY + (protectedHeight / 2),
-        height: protectedHeight,
-        left: stageBox.left + anchorX - (protectedWidth / 2),
-        right: stageBox.left + anchorX + (protectedWidth / 2),
-        top: stageBox.top + anchorY - (protectedHeight / 2),
-        width: protectedWidth
+        bottom,
+        height: bottom - top,
+        left,
+        right,
+        top,
+        width: right - left
       };
     }
+    const toolbarElement = document.querySelector('.phase200-mobile-graph-toolbar[aria-label="Compact mobile Universe controls"]');
+    const toolbarRect = visibleRect(toolbarElement);
+    const toolbarMetrics = toolbarElement instanceof HTMLElement && toolbarRect ? {
+      ...toolbarRect,
+      buttonsContained: [...toolbarElement.querySelectorAll("button")].every((button) => {
+        const box = button.getBoundingClientRect();
+        return box.left >= toolbarRect.left - 1
+          && box.right <= toolbarRect.right + 1
+          && box.left >= -1
+          && box.right <= window.innerWidth + 1;
+      }),
+      clientWidth: toolbarElement.clientWidth,
+      scrollWidth: toolbarElement.scrollWidth
+    } : null;
+    const selectedLabel = activeDimension === "2d" ? {
+      bottom: Number(renderer?.getAttribute("data-canonical-selected-label-bottom")),
+      left: Number(renderer?.getAttribute("data-canonical-selected-label-left")),
+      right: Number(renderer?.getAttribute("data-canonical-selected-label-right")),
+      top: Number(renderer?.getAttribute("data-canonical-selected-label-top"))
+    } : null;
+    const threeDimensionalCanvas = activeDimension === "3d"
+      ? renderer?.querySelector("canvas.command-center-canvas")
+      : null;
+    const requiredNumericAttribute = (element, attributeName) => {
+      const raw = element?.getAttribute(attributeName);
+      if (raw === null || raw === undefined || raw.trim() === "") return null;
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : null;
+    };
+    const threeDimensionalSurface = activeDimension === "3d"
+      ? renderer?.querySelector('[data-graph-canonical-marker-policy="selection-only"]')
+      : null;
+    const keyboardTooltip = activeDimension === "2d"
+      ? renderer?.querySelector(".phase195-graph-tooltip.keyboard")
+      : null;
     return {
       assistantLauncher: visibleRect(document.querySelector(".phase180-entral-emblem")),
       inspector: visibleRect(document.querySelector(activeDimension === "2d"
@@ -348,10 +387,29 @@ async function captureGraphPresentation(page, workspace, { dimension, orientatio
         selectedEntityId
       },
       protectedFocalRegion,
+      presentation: activeDimension === "2d" ? {
+        keyboardTooltipPresent: Boolean(keyboardTooltip),
+        keyboardTooltipAssociated: Boolean(
+          keyboardTooltip
+          && keyboardTooltip.getAttribute("role") === "tooltip"
+          && renderer?.querySelector("canvas")?.getAttribute("aria-describedby")?.includes(keyboardTooltip.id)
+        ),
+        keyboardTooltipClipped: keyboardTooltip instanceof HTMLElement
+          ? keyboardTooltip.getBoundingClientRect().width <= 1 && keyboardTooltip.getBoundingClientRect().height <= 1
+          : false,
+        labelViewportRight: requiredNumericAttribute(renderer, "data-canonical-label-viewport-right"),
+        selectedLabel
+      } : {
+        compositing: threeDimensionalCanvas?.getAttribute("data-canonical-compositing") ?? null,
+        labelPlacement: threeDimensionalSurface?.getAttribute("data-graph-label-placement") ?? null,
+        liveLabelCount: requiredNumericAttribute(threeDimensionalCanvas, "data-canonical-live-label-count"),
+        markerCount: requiredNumericAttribute(threeDimensionalCanvas, "data-canonical-marker-count"),
+        markerPolicy: threeDimensionalSurface?.getAttribute("data-graph-canonical-marker-policy") ?? null,
+        markerScale: threeDimensionalSurface?.getAttribute("data-graph-canonical-marker-scale") ?? null,
+        pointCompositing: threeDimensionalSurface?.getAttribute("data-graph-point-compositing") ?? null
+      },
       stage: stageBox,
-      toolbar: mobileViewport
-        ? visibleRect(document.querySelector('.phase200-mobile-graph-toolbar[aria-label="Compact mobile Universe controls"]'))
-        : null
+      toolbar: mobileViewport ? toolbarMetrics : null
     };
   }, { activeDimension: dimension, actual3DTarget: actual3DCameraTargetEntityId, mobileViewport: width < 1024, viewportOrientation: orientation });
   if (geometry.error) throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} geometry failed: ${geometry.error}`);
@@ -400,6 +458,28 @@ async function captureGraphPresentation(page, workspace, { dimension, orientatio
         throw new Error(`${width}px ${orientation} 2D ${overlay} covered the selected entity camera focus anchor.`);
       }
     }
+    if (width < 1024 && (
+      rectanglesOverlap(geometry.inspector, geometry.stage, 0)
+      || geometry.inspector.top < geometry.stage.bottom - 2
+    )) {
+      throw new Error(`${width}px ${orientation} 2D inspector remained over the canonical node field: ${JSON.stringify(geometry)}`);
+    }
+    const label = geometry.presentation.selectedLabel;
+    if (
+      geometry.presentation.keyboardTooltipPresent && !geometry.presentation.keyboardTooltipAssociated
+      || geometry.presentation.keyboardTooltipPresent && !geometry.presentation.keyboardTooltipClipped
+      || !label
+      || !Object.values(label).every(Number.isFinite)
+      || label.left < 8
+      || label.right > geometry.stage.width - 8
+      || !Number.isFinite(geometry.presentation.labelViewportRight)
+      || label.right > geometry.presentation.labelViewportRight
+      || width >= 1024 && label.right > geometry.inspector.left - geometry.stage.left - 8
+      || label.top < 0
+      || label.bottom > geometry.stage.height
+    ) {
+      throw new Error(`${width}px ${orientation} 2D label or tooltip presentation escaped its viewport contract: ${JSON.stringify(geometry.presentation)}`);
+    }
   } else if (
     !geometry.focus.selectedEntityId
     || geometry.focus.cameraTargetEntityId !== geometry.focus.selectedEntityId
@@ -408,6 +488,24 @@ async function captureGraphPresentation(page, workspace, { dimension, orientatio
     || geometry.focus.cameraTargetSignal < 1
   ) {
     throw new Error(`${width}px ${orientation} 3D selected entity was not the active camera target: ${JSON.stringify(geometry.focus)}`);
+  } else if (
+    geometry.presentation.compositing !== "depth-alpha"
+    || geometry.presentation.markerPolicy !== "selection-only"
+    || geometry.presentation.markerScale !== "compact"
+    || geometry.presentation.pointCompositing !== "bounded-lighting-bloom"
+    || geometry.presentation.labelPlacement !== "viewport-contained"
+    || !Number.isFinite(geometry.presentation.markerCount)
+    || geometry.presentation.markerCount > 1
+    || !Number.isFinite(geometry.presentation.liveLabelCount)
+    || geometry.presentation.liveLabelCount > (width < 1024 ? 24 : 200)
+  ) {
+    throw new Error(`${width}px ${orientation} 3D presentation policy was not bounded: ${JSON.stringify(geometry.presentation)}`);
+  }
+  if (width < 1024 && (
+    geometry.toolbar.scrollWidth > geometry.toolbar.clientWidth + 1
+    || !geometry.toolbar.buttonsContained
+  )) {
+    throw new Error(`${width}px ${orientation} ${dimension.toUpperCase()} compact toolbar overflowed its viewport: ${JSON.stringify(geometry.toolbar)}`);
   }
   const collisionPairs = [
     ["inspector", "toolbar"],

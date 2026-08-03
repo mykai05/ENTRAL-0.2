@@ -1477,6 +1477,21 @@ body:has(.phase180-embedded-3d) {
   top: 0.7rem;
 }
 
+.phase195-graph-workspace .phase180-graph:has(.phase180-graph-drawer[data-canonical-detail-surface="2d"]) .phase195-graph-tooltip.keyboard {
+  border: 0;
+  box-shadow: none;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: 0;
+  max-height: 1px;
+  max-width: 1px;
+  overflow: hidden;
+  padding: 0;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .phase195-graph-tooltip strong {
   color: var(--ink);
 }
@@ -3320,9 +3335,10 @@ body:has(.phase180-embedded-3d) {
     background: rgba(7, 14, 26, 0.94);
     border: 1px solid var(--phase180-border);
     border-radius: 11px;
-    display: flex;
+    display: grid;
     gap: 0.3rem;
-    overflow-x: auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow-x: visible;
     padding: 0.32rem;
     position: sticky;
     top: 0.35rem;
@@ -3330,17 +3346,21 @@ body:has(.phase180-embedded-3d) {
   }
 
   .phase200-mobile-graph-toolbar > div {
-    display: flex;
+    display: grid;
     gap: 0.2rem;
+    grid-column: span 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .phase200-mobile-graph-toolbar button {
     align-items: center;
     display: inline-flex;
-    flex: 0 0 auto;
     gap: 0.25rem;
+    justify-content: center;
     min-height: 42px;
-    padding-inline: 0.55rem;
+    min-width: 0;
+    padding-inline: 0.25rem;
+    width: 100%;
   }
 
   .phase195-graph-workspace .phase180-graph-panel {
@@ -3632,12 +3652,29 @@ body:has(.phase180-embedded-3d) {
     z-index: 120;
   }
 
-  .phase195-graph-workspace .phase180-graph-drawer,
   .phase195-graph-workspace .phase180-embedded-3d .phase110-node-drawer:not([data-collapsed="true"]) {
     bottom: 0.45rem;
     max-height: min(24dvh, 16rem);
     position: absolute;
     top: auto;
+  }
+
+  .phase195-graph-workspace .phase180-graph-drawer[data-canonical-detail-surface="2d"] {
+    bottom: auto;
+    grid-row: auto;
+    inset: auto;
+    margin-top: 0.65rem;
+    max-height: min(38dvh, 20rem);
+    max-width: none;
+    overflow: auto;
+    position: relative;
+    right: auto;
+    top: auto;
+    width: 100%;
+  }
+
+  .phase195-graph-workspace .phase180-graph:has(.phase180-graph-drawer[data-canonical-detail-surface="2d"]) {
+    height: auto;
   }
 
   .phase195-graph-workspace .phase180-embedded-3d .phase110-node-drawer[data-collapsed="true"] {
@@ -3691,9 +3728,9 @@ body:has(.phase180-embedded-3d) {
   .phase195-graph-workspace .phase200-mobile-graph-toolbar {
     inset: auto;
     margin-right: auto;
-    max-width: calc(50vw - 1.5rem);
+    max-width: none;
     position: relative;
-    width: min(24rem, calc(50vw - 1.5rem));
+    width: 100%;
   }
 
   .phase195-graph-workspace .phase200-graph-legend {
@@ -3702,13 +3739,22 @@ body:has(.phase180-embedded-3d) {
     width: min(24rem, calc(50vw - 1.5rem));
   }
 
-  .phase195-graph-workspace .phase180-graph-drawer,
   .phase195-graph-workspace .phase180-embedded-3d .phase110-node-drawer:not([data-collapsed="true"]) {
     bottom: 0.35rem;
     max-height: calc(100dvh - 1rem);
     max-width: calc(50vw - 1.5rem);
     position: absolute;
     top: auto;
+  }
+
+  .phase195-graph-workspace .phase180-graph-drawer[data-canonical-detail-surface="2d"] {
+    bottom: auto;
+    max-height: min(55dvh, 20rem);
+    max-width: none;
+    position: relative;
+    right: auto;
+    top: auto;
+    width: 100%;
   }
 
   .phase180-shell:has(.phase180-graph-drawer) .phase180-assistant-widget,
@@ -3718,7 +3764,15 @@ body:has(.phase180-embedded-3d) {
     width: min(20rem, calc(50vw - 2.5rem));
   }
 
-  .phase180-shell:has(.phase180-graph-drawer) .phase180-entral-emblem,
+  .phase180-shell:has(.phase180-graph-drawer[data-canonical-detail-surface="2d"]) .phase180-entral-emblem {
+    bottom: auto;
+    left: auto;
+    margin: 0.75rem max(0.5rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) auto;
+    position: relative;
+    right: auto;
+    top: auto;
+  }
+
   .phase180-shell:has(.phase110-node-drawer:not([data-collapsed="true"])) .phase180-entral-emblem {
     bottom: max(0.5rem, env(safe-area-inset-bottom));
     left: max(0.5rem, env(safe-area-inset-left));

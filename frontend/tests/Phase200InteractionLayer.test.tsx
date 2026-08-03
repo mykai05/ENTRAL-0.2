@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Phase200BusinessHealthPanel } from "../components/Phase200BusinessHealthPanel";
 import { Phase200InteractionNavigation } from "../components/Phase200InteractionNavigation";
+import { canonical2DLabelPlacement } from "../components/CanonicalUniverseGraph";
 import { phase200GraphLabelBudget } from "../lib/graph-view-state";
 
 const interactionMocks = vi.hoisted(() => ({
@@ -55,6 +56,21 @@ beforeEach(() => {
 });
 
 describe("Phase 200 interaction UI", () => {
+  it("places 2D labels within narrow canvases and flips labels away from the right edge", () => {
+    const placement = canonical2DLabelPlacement({
+      anchorX: 350,
+      anchorY: 296,
+      canvasHeight: 300,
+      canvasWidth: 360,
+      nodeRadius: 8,
+      textWidth: 110
+    });
+    expect(placement.left).toBeLessThan(350);
+    expect(placement.left).toBeGreaterThanOrEqual(8);
+    expect(placement.right).toBeLessThanOrEqual(352);
+    expect(placement.bottom).toBeLessThanOrEqual(296);
+  });
+
   it("renders exactly the five stable role-aware primary destinations", () => {
     render(<Phase200InteractionNavigation current="universe" role="OWNER" />);
     expect(screen.getByRole("navigation", { name: "Owner primary destinations" })).toHaveAttribute("data-member-role", "OWNER");
