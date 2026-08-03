@@ -3516,7 +3516,7 @@ const tests = [
           const expectedOfflineFailure = /net::ERR_INTERNET_DISCONNECTED/i.test(text);
           if (message.type() === "error" && !expectedOfflineFailure) runtimeErrors.push(`console: ${text}`);
         });
-        await expectVisible(page.getByRole("heading", { name: "E2E Operator's Dashboard" }), "Phase 180 canonical Dashboard");
+        await expectVisible(page.getByRole("heading", { name: "Command overview" }), "Phase 180 canonical Command destination");
         const destinationNav = page.getByRole("navigation", { name: "Owner primary destinations" });
         if (await destinationNav.getByRole("link").count() !== 5) {
           throw new Error("Phase 200 member shell does not expose exactly five primary destinations.");
