@@ -5,6 +5,7 @@ import { Ban, PauseCircle, Plus, RefreshCw, ShieldCheck } from "lucide-react";
 import { ApiError, apiFetch } from "../lib/api";
 import { policyFormSchema } from "../lib/validation";
 import { Button } from "./Button";
+import { CapabilityTruthAdmin } from "./CapabilityTruthAdmin";
 import { ModeStatusStrip } from "./ModeStatus";
 import { SkeletonList } from "./Skeleton";
 
@@ -328,6 +329,8 @@ export function AdminDashboard() {
       ) : null}
       {isLoading ? <SkeletonList count={4} label="Loading governance controls" /> : null}
       <ModeStatusStrip ariaLabel="Governance mode status" className="admin-mode-strip" compact items={adminModeItems} />
+
+      <CapabilityTruthAdmin headers={adminHeaders} />
 
       <div className="admin-metrics" aria-label="System health">
         <article className="metric-card">

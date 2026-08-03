@@ -1,9 +1,9 @@
 "use client";
 
-import type { TutorialProgress } from "@entral/contracts";
+import type { PublicProductClaim, TutorialProgress } from "@entral/contracts";
 import React, { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Bot, CheckCircle2, ChevronLeft, ChevronRight, Command, Compass, GraduationCap, Layers3, MonitorUp, Play, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { BookOpen, Bot, CheckCircle2, ChevronLeft, ChevronRight, Command, Compass, GraduationCap, MonitorUp, Play, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { Button } from "./Button";
 import { useDialogFocus } from "../lib/dialog-focus";
 import {
@@ -13,24 +13,16 @@ import {
   saveTutorialProgress
 } from "../lib/interaction-layer";
 import { memberSignInPath } from "../lib/member";
+import { loadMemberProductTruth } from "../lib/capability-truth";
 
 type AcademyMode = "beginner" | "advanced";
 
-type AcademyModule = {
-  description: string;
-  id: string;
-  title: string;
-};
-
 type AcademyStep = {
-  description: string;
-  guidedTask: string;
+  capabilityKey: string;
   id: string;
   mode: AcademyMode | "both";
-  moduleId: string;
   route: string;
   target?: string;
-  title: string;
 };
 
 type AcademyState = {
@@ -65,81 +57,45 @@ const academyAuthEvent = "entral:user-authenticated";
 const academyOrganizationEvent = "entral:organization-context";
 const academySignOutEvent = "entral:user-signed-out";
 
-const modules: AcademyModule[] = [
+const academySteps: AcademyStep[] = [
   {
-    description: "Understand the current operational picture before taking action.",
-    id: "command-guide",
-    title: "Command"
+    capabilityKey: "capability.tutorial.step.command-overview",
+    id: "command-overview",
+    mode: "both",
+    route: "/dashboard",
+    target: "portfolio-dashboard"
   },
   {
-    description: "Review only the businesses visible to the signed-in identity.",
-    id: "business-guide",
-    title: "Businesses"
+    capabilityKey: "capability.tutorial.step.businesses-overview",
+    id: "businesses-overview",
+    mode: "both",
+    route: "/dashboard?destination=businesses",
+    target: "portfolio-dashboard"
   },
   {
-    description: "Navigate the synchronized 2D and 3D views of one canonical hierarchy.",
-    id: "hierarchy-guide",
-    title: "Universe"
+    capabilityKey: "capability.tutorial.step.universe-navigation",
+    id: "universe-navigation",
+    mode: "both",
+    route: "/graph",
+    target: "command-graph"
   },
   {
-    description: "Inspect authorized records and use ENTRAL help without simulated controls.",
-    id: "operations-guide",
-    title: "Records and help"
+    capabilityKey: "capability.tutorial.step.infrastructure-records",
+    id: "infrastructure-records",
+    mode: "both",
+    route: "/infrastructure",
+    target: "infrastructure-hierarchy"
+  },
+  {
+    capabilityKey: "capability.tutorial.step.entral-assistant",
+    id: "entral-assistant",
+    mode: "both",
+    route: "/dashboard?section=entral",
+    target: "entral-workspace"
   }
 ];
 
-const academySteps: AcademyStep[] = [
-  {
-    description: "Command is the default post-login surface. Executive and operational views keep the same facts, evidence, freshness, assumptions, confidence, and next action.",
-    guidedTask: "Review the business-health explanation and open its evidence source before choosing an action.",
-    id: "command-overview",
-    mode: "both",
-    moduleId: "command-guide",
-    route: "/dashboard",
-    target: "portfolio-dashboard",
-    title: "Start from Command"
-  },
-  {
-    description: "Businesses lists only canonical records inherited from the signed-in identity and database grants. Empty states never create samples.",
-    guidedTask: "Open Businesses and select a real visible business, or read the honest empty state when none is available.",
-    id: "businesses-overview",
-    mode: "both",
-    moduleId: "business-guide",
-    route: "/dashboard?destination=businesses",
-    target: "portfolio-dashboard",
-    title: "Review canonical businesses"
-  },
-  {
-    description: "Universe uses one server-built projection. Mobile switches between synchronized 2D and 3D; desktop keeps both side by side.",
-    guidedTask: "Select an entity, switch renderers, and confirm its lineage, focus, and RLS-visible record remain synchronized.",
-    id: "universe-navigation",
-    mode: "both",
-    moduleId: "hierarchy-guide",
-    route: "/graph",
-    target: "command-graph",
-    title: "Navigate Universe"
-  },
-  {
-    description: "Infrastructure exposes the full authorized records behind the compact Universe inspector and keeps unsupported actions hidden.",
-    guidedTask: "Open a visible record and verify its source, state, health, hierarchy, and version.",
-    id: "infrastructure-records",
-    mode: "both",
-    moduleId: "operations-guide",
-    route: "/infrastructure",
-    target: "infrastructure-hierarchy",
-    title: "Inspect source records"
-  },
-  {
-    description: "The ENTRAL assistant shares the current RLS scope, selection, and canonical event sequence. It does not expose a future runtime or invent provider results.",
-    guidedTask: "Open the assistant and ask about the selected canonical context; inspect its evidence references before acting.",
-    id: "entral-assistant",
-    mode: "both",
-    moduleId: "operations-guide",
-    route: "/dashboard?section=entral",
-    target: "entral-workspace",
-    title: "Use contextual ENTRAL help"
-  }
-];
+const academyStepCapabilityKeys = new Set(academySteps.map((step) => step.capabilityKey));
 
 function academyUserKey(detail: unknown) {
   if (!detail || typeof detail !== "object") return null;
@@ -264,6 +220,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [academyState, setAcademyState] = useState<AcademyState>(signedOutAcademyState);
   const [academySyncStatus, setAcademySyncStatus] = useState<"idle" | "loading" | "synced" | "error">("idle");
   const [academySyncMessage, setAcademySyncMessage] = useState("Sign in to sync Tutorial progress.");
+  const [tutorialClaims, setTutorialClaims] = useState<readonly PublicProductClaim[]>([]);
+  const [tutorialTruthStatus, setTutorialTruthStatus] = useState<"idle" | "loading" | "ready" | "empty" | "unavailable">("idle");
+  const [tutorialTruthMessage, setTutorialTruthMessage] = useState("Sign in to verify published Tutorial lessons.");
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<"tour" | "library">("tour");
   const [stepIndex, setStepIndex] = useState(0);
@@ -280,13 +239,24 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const tutorialRevisionRef = useRef(0);
   const tutorialCurrentAnchorRef = useRef<TutorialProgress["current_anchor_id"]>("command-overview");
   const tutorialLoadGenerationRef = useRef(0);
+  const tutorialTruthGenerationRef = useRef(0);
+  const tutorialTruthExpiryTimerRef = useRef<number | null>(null);
   const tutorialPersistenceRequestedRef = useRef(false);
   const tutorialPersistenceActiveRef = useRef(false);
   const spotlightStepIdRef = useRef<string | null>(spotlightStepId);
-  const visibleSteps = useMemo(() => visibleStepsFor(academyState.mode), [academyState.mode]);
+  const tutorialClaimByCapabilityKey = useMemo(
+    () => new Map(tutorialClaims.map((claim) => [claim.capability_key, claim])),
+    [tutorialClaims]
+  );
+  const visibleSteps = useMemo(
+    () => visibleStepsFor(academyState.mode).filter((step) => tutorialClaimByCapabilityKey.has(step.capabilityKey)),
+    [academyState.mode, tutorialClaimByCapabilityKey]
+  );
   const safeStepIndex = Math.min(stepIndex, Math.max(visibleSteps.length - 1, 0));
   const currentStep = visibleSteps[safeStepIndex] ?? visibleSteps[0];
   const spotlightStep = spotlightStepId ? academySteps.find((step) => step.id === spotlightStepId) ?? null : null;
+  const spotlightStepClaim = spotlightStep ? tutorialClaimByCapabilityKey.get(spotlightStep.capabilityKey) ?? null : null;
+  const currentStepClaim = currentStep ? tutorialClaimByCapabilityKey.get(currentStep.capabilityKey) ?? null : null;
   const completedSet = useMemo(() => new Set(academyState.completedSteps), [academyState.completedSteps]);
   const completedVisibleCount = visibleSteps.filter((step) => completedSet.has(step.id)).length;
 
@@ -306,6 +276,17 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     spotlightStepIdRef.current = spotlightStepId;
   }, [spotlightStepId]);
 
+  useEffect(() => {
+    if (visibleSteps.length === 0) {
+      setStepIndex(0);
+      return;
+    }
+    const resumedIndex = tutorialCurrentAnchorRef.current
+      ? visibleSteps.findIndex((step) => step.id === tutorialCurrentAnchorRef.current)
+      : -1;
+    setStepIndex((current) => resumedIndex >= 0 ? resumedIndex : Math.min(current, visibleSteps.length - 1));
+  }, [visibleSteps]);
+
   async function loadServerProgress(organizationId: string, generation: number) {
     setAcademySyncStatus("loading");
     setAcademySyncMessage("Loading server Tutorial progress...");
@@ -317,10 +298,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       const nextState = academyStateFromProgress(progress);
       setAcademyState(nextState);
       academyStateRef.current = nextState;
-      const resumedStepIndex = progress.current_anchor_id
-        ? visibleStepsFor(progress.mode).findIndex((step) => step.id === progress.current_anchor_id)
-        : -1;
-      if (resumedStepIndex >= 0) setStepIndex(resumedStepIndex);
       setAcademySyncStatus("synced");
       setAcademySyncMessage(`Server progress synced · revision ${progress.revision}`);
     } catch {
@@ -336,14 +313,56 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function loadPublishedTutorial(organizationId: string, generation: number) {
+    try {
+      const projection = await loadMemberProductTruth(organizationId, "TUTORIAL");
+      if (generation !== tutorialTruthGenerationRef.current || organizationId !== organizationIdRef.current) return;
+      const publishedStepClaims = projection.claims.filter((claim) => academyStepCapabilityKeys.has(claim.capability_key));
+      if (new Set(publishedStepClaims.map((claim) => claim.capability_key)).size !== publishedStepClaims.length) {
+        throw new Error("Tutorial Product Truth contains ambiguous step claims.");
+      }
+      setTutorialClaims(publishedStepClaims);
+      if (publishedStepClaims.length === 0) {
+        setTutorialTruthStatus("empty");
+        setTutorialTruthMessage("No receipt-backed Tutorial lessons are currently published for this workspace.");
+      } else {
+        setTutorialTruthStatus("ready");
+        setTutorialTruthMessage(`Published Tutorial verified · registry revision ${projection.registry_revision}`);
+      }
+
+      if (tutorialTruthExpiryTimerRef.current !== null) {
+        window.clearTimeout(tutorialTruthExpiryTimerRef.current);
+      }
+      const expiresIn = Math.max(0, Date.parse(projection.expires_at) - Date.now());
+      tutorialTruthExpiryTimerRef.current = window.setTimeout(() => {
+        if (generation !== tutorialTruthGenerationRef.current || organizationId !== organizationIdRef.current) return;
+        setTutorialClaims([]);
+        setTutorialTruthStatus("unavailable");
+        setTutorialTruthMessage("Tutorial publication verification expired. Reopen Tutorial after a fresh Product Truth readback.");
+        setSpotlightStepId(null);
+        setHighlightRect(null);
+      }, Math.min(expiresIn + 1, 2_147_483_647));
+    } catch {
+      if (generation !== tutorialTruthGenerationRef.current || organizationId !== organizationIdRef.current) return;
+      setTutorialClaims([]);
+      setTutorialTruthStatus("unavailable");
+      setTutorialTruthMessage("Tutorial publication is unavailable. No local or cached lessons are being shown.");
+    }
+  }
+
   async function flushAcademyPersistence() {
     if (tutorialPersistenceActiveRef.current) return;
     tutorialPersistenceActiveRef.current = true;
+    let persistenceOrganizationId: string | null = null;
+    let persistenceGeneration = tutorialLoadGenerationRef.current;
     try {
       while (tutorialPersistenceRequestedRef.current) {
         tutorialPersistenceRequestedRef.current = false;
         const organizationId = organizationIdRef.current;
         if (!organizationId || tutorialRevisionRef.current < 1) continue;
+        const generation = tutorialLoadGenerationRef.current;
+        persistenceOrganizationId = organizationId;
+        persistenceGeneration = generation;
         const snapshot = academyStateRef.current;
         const progress = await saveTutorialProgress(organizationId, {
           contract_version: "1.0.0",
@@ -355,6 +374,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
           mode: snapshot.mode,
           schema_version: 1
         });
+        if (organizationId !== organizationIdRef.current || generation !== tutorialLoadGenerationRef.current) continue;
         tutorialRevisionRef.current = progress.revision;
         if (!tutorialPersistenceRequestedRef.current) {
           const confirmed = academyStateFromProgress(progress);
@@ -365,6 +385,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         setAcademySyncMessage(`Server progress synced · revision ${progress.revision}`);
       }
     } catch {
+      if (
+        persistenceOrganizationId !== organizationIdRef.current
+        || persistenceGeneration !== tutorialLoadGenerationRef.current
+      ) return;
       const organizationId = organizationIdRef.current;
       setAcademySyncStatus("error");
       setAcademySyncMessage("Tutorial progress changed or could not be saved. Reloading the server record.");
@@ -404,7 +428,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   function openAt(stepId?: string, nextView: "tour" | "library" = "tour") {
     if (!requireSignedInForAcademy()) return;
-    const nextSteps = visibleStepsFor(academyState.mode);
+    const nextSteps = visibleSteps;
     const requestedAnchor = stepId ?? (nextView === "tour" ? tutorialCurrentAnchorRef.current : null);
     const index = requestedAnchor ? nextSteps.findIndex((step) => step.id === requestedAnchor) : safeStepIndex;
     tutorialCurrentAnchorRef.current = (nextSteps[index >= 0 ? index : 0]?.id ?? null) as TutorialProgress["current_anchor_id"];
@@ -429,6 +453,25 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       const userKey = academyUserKey(detail);
 
       if (!userKey) return;
+      if (signedInUserKeyRef.current !== null && signedInUserKeyRef.current !== userKey) {
+        organizationIdRef.current = null;
+        tutorialRevisionRef.current = 0;
+        tutorialCurrentAnchorRef.current = null;
+        tutorialLoadGenerationRef.current += 1;
+        tutorialTruthGenerationRef.current += 1;
+        tutorialPersistenceRequestedRef.current = false;
+        if (tutorialTruthExpiryTimerRef.current !== null) {
+          window.clearTimeout(tutorialTruthExpiryTimerRef.current);
+          tutorialTruthExpiryTimerRef.current = null;
+        }
+        setAcademyState(signedOutAcademyState);
+        academyStateRef.current = signedOutAcademyState;
+        setTutorialClaims([]);
+        setTutorialTruthStatus("idle");
+        setTutorialTruthMessage("Select a workspace to verify published Tutorial lessons.");
+        setSpotlightStepId(null);
+        setHighlightRect(null);
+      }
       signedInUserKeyRef.current = userKey;
       setSignedInUserKey(userKey);
     }
@@ -441,8 +484,24 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       signedInUserKeyRef.current = userKey;
       organizationIdRef.current = organizationId;
       setSignedInUserKey(userKey);
+      tutorialRevisionRef.current = 0;
+      tutorialCurrentAnchorRef.current = null;
+      tutorialPersistenceRequestedRef.current = false;
+      setAcademyState(signedOutAcademyState);
+      academyStateRef.current = signedOutAcademyState;
+      if (tutorialTruthExpiryTimerRef.current !== null) {
+        window.clearTimeout(tutorialTruthExpiryTimerRef.current);
+        tutorialTruthExpiryTimerRef.current = null;
+      }
+      setTutorialClaims([]);
+      setTutorialTruthStatus("loading");
+      setTutorialTruthMessage("Checking receipt-backed Tutorial publication...");
+      setSpotlightStepId(null);
+      setHighlightRect(null);
       const generation = ++tutorialLoadGenerationRef.current;
+      const truthGeneration = ++tutorialTruthGenerationRef.current;
       void loadServerProgress(organizationId, generation);
+      void loadPublishedTutorial(organizationId, truthGeneration);
     }
 
     function handleSignedOut() {
@@ -452,9 +511,17 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       tutorialRevisionRef.current = 0;
       tutorialCurrentAnchorRef.current = "command-overview";
       tutorialLoadGenerationRef.current += 1;
+      tutorialTruthGenerationRef.current += 1;
+      if (tutorialTruthExpiryTimerRef.current !== null) {
+        window.clearTimeout(tutorialTruthExpiryTimerRef.current);
+        tutorialTruthExpiryTimerRef.current = null;
+      }
       setSignedInUserKey(null);
       setAcademyState(signedOutAcademyState);
       academyStateRef.current = signedOutAcademyState;
+      setTutorialClaims([]);
+      setTutorialTruthStatus("idle");
+      setTutorialTruthMessage("Sign in to verify published Tutorial lessons.");
       setAcademySyncStatus("idle");
       setAcademySyncMessage("Sign in to sync Tutorial progress.");
       setIsOpen(false);
@@ -479,6 +546,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(academyAuthEvent, handleAuthenticated);
       window.removeEventListener(academyOrganizationEvent, handleOrganizationContext);
       window.removeEventListener(academySignOutEvent, handleSignedOut);
+      if (tutorialTruthExpiryTimerRef.current !== null) {
+        window.clearTimeout(tutorialTruthExpiryTimerRef.current);
+      }
     };
   }, []);
 
@@ -511,7 +581,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("entral:open-tutorial", openFromShortcut);
       window.removeEventListener("entral:open-academy", openLibrary);
     };
-  }, [academyState.mode, pathname, signedInUserKey]);
+  }, [academyState.mode, pathname, signedInUserKey, visibleSteps]);
 
   useEffect(() => {
     const target = spotlightStep?.target;
@@ -639,6 +709,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   async function resetAcademyProgress() {
     const organizationId = organizationIdRef.current;
     if (!organizationId || tutorialRevisionRef.current < 1) return;
+    const generation = tutorialLoadGenerationRef.current;
     setAcademySyncStatus("loading");
     setAcademySyncMessage("Resetting server Tutorial progress...");
     try {
@@ -648,6 +719,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         idempotency_key: `phase200:tutorial:reset:${crypto.randomUUID()}`,
         schema_version: 1
       });
+      if (organizationId !== organizationIdRef.current || generation !== tutorialLoadGenerationRef.current) return;
       tutorialRevisionRef.current = progress.revision;
       const resetState = academyStateFromProgress(progress);
       tutorialCurrentAnchorRef.current = progress.current_anchor_id;
@@ -657,6 +729,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setAcademySyncStatus("synced");
       setAcademySyncMessage(`Tutorial reset on the server · revision ${progress.revision}`);
     } catch {
+      if (organizationId !== organizationIdRef.current || generation !== tutorialLoadGenerationRef.current) return;
       setAcademySyncStatus("error");
       setAcademySyncMessage("Tutorial reset was not applied. Reload the server progress and try again.");
       void recordInteractionAnalytics({
@@ -671,7 +744,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   function finishTour() {
     dismissedInCurrentSessionRef.current = true;
-    tutorialCurrentAnchorRef.current = "command-overview";
+    tutorialCurrentAnchorRef.current = (visibleSteps[0]?.id ?? null) as TutorialProgress["current_anchor_id"];
     updateAcademyState((current) => ({
       ...current,
       completedSteps: Array.from(new Set([...current.completedSteps, ...visibleSteps.map((step) => step.id)])),
@@ -701,13 +774,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }
 
   function setMode(mode: AcademyMode) {
-    tutorialCurrentAnchorRef.current = "command-overview";
+    const nextSteps = visibleStepsFor(mode).filter((step) => tutorialClaimByCapabilityKey.has(step.capabilityKey));
+    tutorialCurrentAnchorRef.current = (nextSteps[0]?.id ?? null) as TutorialProgress["current_anchor_id"];
     updateAcademyState((current) => ({ ...current, mode }));
     setStepIndex(0);
   }
 
   function startWalkthrough(step = currentStep) {
-    if (!step) return;
+    if (!step || !tutorialClaimByCapabilityKey.has(step.capabilityKey)) return;
 
     tutorialCurrentAnchorRef.current = step.id as TutorialProgress["current_anchor_id"];
 
@@ -758,18 +832,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       total: visibleSteps.length
     },
     setMode
-  }), [academyState.mode, completedVisibleCount, pathname, signedInUserKey, visibleSteps.length]);
-
-  const moduleProgress = modules.map((module) => {
-    const moduleSteps = visibleSteps.filter((step) => step.moduleId === module.id);
-    const completed = moduleSteps.filter((step) => completedSet.has(step.id)).length;
-    return { completed, module, steps: moduleSteps, total: moduleSteps.length };
-  }).filter((item) => item.total > 0);
+  }), [academyState.mode, completedVisibleCount, pathname, signedInUserKey, visibleSteps]);
 
   return (
     <OnboardingContext.Provider value={value}>
       {children}
-      {spotlightStep ? (
+      {spotlightStep && spotlightStepClaim ? (
         <div className={`academy-spotlight-layer academy-backdrop--${academyPlacement}`} role="presentation">
           {highlightRect ? (
             <div
@@ -784,17 +852,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             />
           ) : null}
 
-          <section className={`academy-spotlight-card academy-spotlight-card--${academyPlacement}`} role="dialog" aria-label={`${spotlightStep.title} walkthrough`} aria-modal="false">
+          <section className={`academy-spotlight-card academy-spotlight-card--${academyPlacement}`} role="dialog" aria-label={`${spotlightStepClaim.display_name} walkthrough`} aria-modal="false">
             <p className="eyebrow">Live walkthrough</p>
-            <h2>{spotlightStep.title}</h2>
-            <p>{spotlightStep.description}</p>
-            <div className="academy-guided-task">
-              <Layers3 aria-hidden="true" size={18} />
-              <span>
-                <strong>What to notice</strong>
-                {spotlightStep.guidedTask}
-              </span>
-            </div>
+            <h2>{spotlightStepClaim.display_name}</h2>
+            <p>{spotlightStepClaim.approved_language}</p>
             {spotlightMissingTarget ? (
               <p className="academy-spotlight-note" role="status">
                 I opened the right area, but the exact control is currently hidden. Open the related panel or return to the Academy when ready.
@@ -825,8 +886,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
               </div>
               <div>
                 <p className="eyebrow">ENTRAL Academy</p>
-                <h2>{view === "library" ? "Tutorial library" : currentStep?.title ?? "Tutorial"}</h2>
-                <p>{view === "library" ? "Jump into any section, replay lessons, and track what you have completed." : currentStep?.description}</p>
+                <h2>{view === "library" ? "Tutorial library" : currentStepClaim?.display_name ?? "Tutorial"}</h2>
+                <p>{view === "library" ? "Only receipt-backed, currently SELLABLE lessons are published here." : currentStepClaim?.approved_language}</p>
               </div>
             </header>
 
@@ -836,6 +897,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
               role={academySyncStatus === "error" ? "alert" : "status"}
             >
               <MonitorUp aria-hidden="true" size={15} /> {academySyncMessage}
+            </p>
+
+            <p
+              className="academy-sync-status"
+              data-state={tutorialTruthStatus === "unavailable" || tutorialTruthStatus === "idle" ? "error" : tutorialTruthStatus}
+              role="status"
+            >
+              <ShieldCheck aria-hidden="true" size={15} /> {tutorialTruthMessage}
             </p>
 
             <div className="academy-mode-switch" role="group" aria-label="Academy mode">
@@ -854,65 +923,70 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             </div>
 
             <div className="academy-content">
-              {view === "library" ? (
+              {tutorialTruthStatus !== "ready" ? (
+                <section
+                  className="academy-step-card"
+                  role={tutorialTruthStatus === "unavailable" || tutorialTruthStatus === "idle" ? "alert" : "status"}
+                >
+                  <h3>
+                    {tutorialTruthStatus === "loading"
+                      ? "Verifying published Tutorial lessons"
+                      : tutorialTruthStatus === "empty"
+                        ? "No published Tutorial lessons"
+                        : "Tutorial publication unavailable"}
+                  </h3>
+                  <p>{tutorialTruthMessage}</p>
+                  <Button type="button" variant="secondary" onClick={closeAcademy}>
+                    Enter Command Center
+                  </Button>
+                </section>
+              ) : view === "library" ? (
                 <div className="academy-library">
-                  {moduleProgress.map(({ completed, module, steps: moduleSteps, total }) => (
-                    <article key={module.id}>
-                      <header>
-                        <BookOpen aria-hidden="true" size={18} />
-                        <div>
-                          <strong>{module.title}</strong>
-                          <small>{completed}/{total} complete</small>
-                        </div>
-                      </header>
-                      <p>{module.description}</p>
+                  <article>
+                    <header>
+                      <BookOpen aria-hidden="true" size={18} />
                       <div>
-                        {moduleSteps.map((step) => (
-                          <button key={step.id} type="button" onClick={() => {
-                            setStepIndex(visibleSteps.findIndex((candidate) => candidate.id === step.id));
-                            setView("tour");
-                          }}>
-                            {completedSet.has(step.id) ? <CheckCircle2 aria-hidden="true" size={15} /> : <Play aria-hidden="true" size={15} />}
-                            {step.title}
-                          </button>
-                        ))}
+                        <strong>Published lessons</strong>
+                        <small>{completedVisibleCount}/{visibleSteps.length} complete</small>
                       </div>
-                    </article>
-                  ))}
+                    </header>
+                    <div>
+                      {visibleSteps.map((step) => (
+                        <button key={step.id} type="button" onClick={() => {
+                          setStepIndex(visibleSteps.findIndex((candidate) => candidate.id === step.id));
+                          setView("tour");
+                        }}>
+                          {completedSet.has(step.id) ? <CheckCircle2 aria-hidden="true" size={15} /> : <Play aria-hidden="true" size={15} />}
+                          {tutorialClaimByCapabilityKey.get(step.capabilityKey)?.display_name}
+                        </button>
+                      ))}
+                    </div>
+                  </article>
                 </div>
               ) : (
                 <div className="academy-step-grid">
                   <aside className="academy-section-nav" aria-label="Academy jump navigation">
-                    {moduleProgress.map(({ completed, module, steps: moduleSteps, total }) => (
-                      <div key={module.id}>
-                        <strong>{module.title}</strong>
-                        <small>{completed}/{total}</small>
-                        {moduleSteps.map((step) => (
-                          <button
-                            className={currentStep?.id === step.id ? "active" : ""}
-                            key={step.id}
-                            type="button"
-                            onClick={() => setStepIndex(visibleSteps.findIndex((candidate) => candidate.id === step.id))}
-                          >
-                            {completedSet.has(step.id) ? <CheckCircle2 aria-hidden="true" size={14} /> : <span aria-hidden="true" />}
-                            {step.title}
-                          </button>
-                        ))}
-                      </div>
-                    ))}
+                    <div>
+                      <strong>Published lessons</strong>
+                      <small>{completedVisibleCount}/{visibleSteps.length}</small>
+                      {visibleSteps.map((step) => (
+                        <button
+                          className={currentStep?.id === step.id ? "active" : ""}
+                          key={step.id}
+                          type="button"
+                          onClick={() => setStepIndex(visibleSteps.findIndex((candidate) => candidate.id === step.id))}
+                        >
+                          {completedSet.has(step.id) ? <CheckCircle2 aria-hidden="true" size={14} /> : <span aria-hidden="true" />}
+                          {tutorialClaimByCapabilityKey.get(step.capabilityKey)?.display_name}
+                        </button>
+                      ))}
+                    </div>
                   </aside>
 
                   <article className="academy-step-card">
                     <p className="eyebrow">Lesson {safeStepIndex + 1} of {visibleSteps.length}</p>
-                    <h3>{currentStep?.title}</h3>
-                    <p>{currentStep?.description}</p>
-                    <div className="academy-guided-task">
-                      <Layers3 aria-hidden="true" size={18} />
-                      <span>
-                        <strong>Guided task</strong>
-                        {currentStep?.guidedTask}
-                      </span>
-                    </div>
+                    <h3>{currentStepClaim?.display_name}</h3>
+                    <p>{currentStepClaim?.approved_language}</p>
                     <div className="tour-progress" aria-hidden="true">
                       {visibleSteps.map((step) => (
                         <span className={completedSet.has(step.id) || step.id === currentStep?.id ? "active" : ""} key={step.id} />
@@ -923,7 +997,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
               )}
             </div>
 
-            {view === "tour" ? (
+            {view === "tour" && tutorialTruthStatus === "ready" && currentStepClaim ? (
                 <div className="academy-actions">
                   <Button className="academy-enter-button" type="button" variant="secondary" onClick={closeAcademy}>
                     Enter Command Center
