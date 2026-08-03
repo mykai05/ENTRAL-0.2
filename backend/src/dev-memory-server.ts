@@ -8397,6 +8397,44 @@ app.get("/api/v1/member/organizations/:organizationId/hierarchy", { preHandler: 
   phase180MemorySnapshot().hierarchy
 );
 
+app.get("/api/v1/member/organizations/:organizationId/product-truth", { preHandler: requireAuth }, async (request, reply) => {
+  const user = currentUserOrThrow(request);
+  const { organizationId } = request.params as { organizationId: string };
+  if (!teamsForUser(user.id).some((team) => team.id === organizationId)) {
+    return reply.code(404).send({ error: "Not Found", message: "Organization not found." });
+  }
+  const surface = (request.query as { surface?: string }).surface;
+  const allowedSurfaces = [
+    "WEBSITE",
+    "TUTORIAL",
+    "PRICING",
+    "CHECKOUT",
+    "PROPOSAL",
+    "ONBOARDING",
+    "INTEGRATION_LIST",
+    "MEMBER_APPLICATION",
+    "SALES"
+  ];
+  if (!surface || !allowedSurfaces.includes(surface)) {
+    return reply.code(400).send({ error: "Bad Request", message: "A canonical Product Truth surface is required." });
+  }
+  const generatedAt = new Date();
+  const expiresAt = new Date(generatedAt.getTime() + 30_000);
+  return {
+    contract_version: "1.0.0",
+    schema_version: 1,
+    projection_id: crypto.randomUUID(),
+    environment: "PRODUCTION",
+    surface,
+    registry_revision: 1,
+    generated_at: generatedAt.toISOString(),
+    expires_at: expiresAt.toISOString(),
+    // The local-only memory runtime never invents product claims. An empty
+    // projection exercises fail-closed consumers without becoming authority.
+    claims: []
+  };
+});
+
 app.get("/api/v1/member/organizations/:organizationId/events", { preHandler: requireAuth }, async (request) => {
   const afterSequence = Number((request.query as { afterSequence?: string }).afterSequence ?? 0);
   return { events: [], next_sequence: Math.max(9, afterSequence) };
