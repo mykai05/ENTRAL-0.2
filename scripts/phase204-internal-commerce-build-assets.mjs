@@ -233,9 +233,9 @@ function documentHtml(title, sections) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${xmlEscape(title)}</title><style>
-@page { size: Letter; margin: 0.58in 0.62in 0.62in; }
+@page { size: Letter; margin: 0.48in 0.58in 0.52in; }
 :root { color-scheme: light; --ink:#14212b; --muted:#5b6670; --accent:#b5452d; --soft:#f3eee8; --line:#d8d4cf; }
-* { box-sizing:border-box; } body { margin:0; color:var(--ink); font:10.3pt/1.46 Arial, Helvetica, sans-serif; }
+* { box-sizing:border-box; } body { margin:0; color:var(--ink); font:9.8pt/1.38 Arial, Helvetica, sans-serif; }
 .cover { min-height:8.45in; display:flex; flex-direction:column; justify-content:center; padding:0.45in; border:2px solid var(--ink); background:linear-gradient(145deg,#fff 0%,var(--soft) 100%); page-break-after:always; }
 .eyebrow { color:var(--accent); font-size:10pt; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }
 .cover h1 { margin:.18in 0 .12in; font-size:31pt; line-height:1.05; letter-spacing:-.025em; }
@@ -243,9 +243,8 @@ function documentHtml(title, sections) {
 .brand { margin-top:.45in; font-size:12pt; font-weight:700; } .meta { color:var(--muted); font-size:9pt; }
 .section { page-break-before:always; } h1,h2,h3,h4 { color:var(--ink); line-height:1.15; page-break-after:avoid; }
 h1 { font-size:22pt; margin:0 0 .18in; border-bottom:2px solid var(--accent); padding-bottom:.08in; }
-h2 { font-size:16pt; margin:.28in 0 .1in; } h3 { font-size:12.5pt; margin:.2in 0 .07in; }
-p { margin:.06in 0 .12in; orphans:3; widows:3; } ul,ol { margin:.05in 0 .14in .24in; padding:0; } li { margin:.035in 0; break-inside:avoid; }
-li:nth-last-child(3), li:nth-last-child(2) { break-after:avoid; page-break-after:avoid; }
+h2 { font-size:16pt; margin:.2in 0 .08in; } h3 { font-size:12.5pt; margin:.15in 0 .06in; }
+p { margin:.04in 0 .09in; orphans:3; widows:3; } ul,ol { margin:.04in 0 .1in .24in; padding:0; } li { margin:.025in 0; break-inside:avoid; }
 table { width:100%; border-collapse:collapse; margin:.12in 0 .2in; font-size:8.7pt; page-break-inside:auto; }
 thead { display:table-header-group; } tr { page-break-inside:avoid; } th,td { border:1px solid var(--line); padding:.06in; text-align:left; vertical-align:top; }
 th { background:var(--soft); } code { font:8.8pt Consolas, monospace; background:var(--soft); padding:.01in .035in; }
