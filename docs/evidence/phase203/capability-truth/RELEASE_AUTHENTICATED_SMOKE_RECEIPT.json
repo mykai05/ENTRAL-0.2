@@ -1,0 +1,33 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-AUTH-SMOKE-438E1B05",
+  "phase": 203,
+  "environment": "PRODUCTION",
+  "main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+  "account_scope": "EXISTING_MIGRATED_FOUNDER_MEMBER",
+  "destinations": [
+    "COMMAND",
+    "BUSINESSES",
+    "UNIVERSE_2D",
+    "UNIVERSE_3D",
+    "INFRASTRUCTURE",
+    "TUTORIAL"
+  ],
+  "canonical_node_count": 132,
+  "canonical_edge_count": 131,
+  "canonical_sync_errors": 0,
+  "canonical_endpoint_readback_count": 8,
+  "viewport_widths": [360, 390, 412, 430, 1440, 1920],
+  "member_journey_receipt_sha256": "c45e397810d2ceecb0a7fdd9cc88b129ee3524785507190aee6d78a15a5bb3d2",
+  "release_session_sha256": "f12bc21f7e9a444d5b83c911c951282d3d2a9ff6ef9646798fb491096270dcf2",
+  "temporary_session_revoked": true,
+  "logout_http_status": 200,
+  "revoked_access_http_status": 401,
+  "refresh_credential_count": 1,
+  "unrevoked_refresh_credentials_after_cleanup": 0,
+  "active_release_sessions_after_cleanup": 0,
+  "status": "PASSED",
+  "observed_at": "2026-08-03T17:32:10.419Z",
+  "receipt_sha256": "423172d82b996066fc54426f757e372dd2b7e8a0b5a27678feb24cfc47fd8907"
+}

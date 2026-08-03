@@ -1,0 +1,1629 @@
+{
+  "business_count": 0,
+  "businesses_state": "EMPTY_CANONICAL",
+  "canonical_edge_count": 131,
+  "canonical_edge_set_sha256": "2814fb9dc3783738ef484a55b1b8990e0b5c8267b063c201add5dceaa2356eb1",
+  "canonical_endpoint_readback": [
+    {
+      "business_count": 0,
+      "endpoint": "PORTFOLIO_SUMMARY",
+      "event_sequence": 401,
+      "http_status": 200,
+      "result": "PASSED"
+    },
+    {
+      "endpoint": "HIERARCHY",
+      "entity_count": 132,
+      "event_sequence": 401,
+      "http_status": 200,
+      "result": "PASSED",
+      "root_count": 1
+    },
+    {
+      "endpoint": "ENTRAL_CONVERSATION",
+      "event_sequence": 401,
+      "http_status": 200,
+      "message_count": 0,
+      "result": "PASSED"
+    },
+    {
+      "edge_count": 131,
+      "endpoint": "GRAPH_PROJECTION",
+      "entity_count": 132,
+      "http_status": 200,
+      "projection_version": 401,
+      "result": "PASSED"
+    },
+    {
+      "actor_bound": true,
+      "endpoint": "GRAPH_PREFERENCES",
+      "http_status": 200,
+      "organization_bound": true,
+      "preference_version": 6,
+      "result": "PASSED"
+    },
+    {
+      "endpoint": "EVENTS",
+      "event_count": 200,
+      "http_status": 200,
+      "result": "PASSED"
+    },
+    {
+      "endpoint": "BUSINESS_FULL_RECORD",
+      "http_status": 404,
+      "result": "NOT_APPLICABLE_NO_CANONICAL_BUSINESS"
+    },
+    {
+      "canonical_root_visible": true,
+      "endpoint": "ENTITY_FULL_RECORD",
+      "http_status": 200,
+      "result": "PASSED"
+    }
+  ],
+  "canonical_node_count": 132,
+  "canonical_node_set_sha256": "0617be5cee403f15afdcbb31af403cc98f8c475d2a0a223948d02162b7185dc0",
+  "canonical_sync_errors": 0,
+  "command_canonical_data_verified": true,
+  "contract_version": "1.0.0",
+  "deployed_commit_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+  "deployment_readback_exact_sha_verified": true,
+  "deployment_readback_receipt_sha256": "2344cd409325195cfd2f2d3e6b95ec1990bc0959561156c75dba6a54905056fe",
+  "destination_visual_evidence_verified": true,
+  "destinations": [
+    "COMMAND",
+    "BUSINESSES",
+    "UNIVERSE_2D",
+    "UNIVERSE_3D",
+    "INFRASTRUCTURE",
+    "TUTORIAL"
+  ],
+  "environment": "PRODUCTION",
+  "graph_preference_actor_bound": true,
+  "graph_preference_organization_bound": true,
+  "membership_provenance_sha256": "6bced6d3181a664f65a8a1f4000f07e3b5189bf921cb76967dd5600abc45d404",
+  "migrated_account_provenance_sha256": "07b30847c787d6b2b10c1fc5ae7c7c59bcbe4ee85c75af0bb1567639cb037e8a",
+  "migrated_membership_joined_at": "2026-07-18T10:39:16.362Z",
+  "migrated_organization_scope_sha256": "0365e262f0d48cbdaea1cbd2b0b8dc8573fbd59478d5b532f3d3dd71ca9b877c",
+  "migrated_phase_202_cutover_at": "2026-08-02T19:04:46.197Z",
+  "migrated_source_checked_at": "2026-08-02T22:45:45.000Z",
+  "migrated_source_main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+  "migrated_source_phase": 202,
+  "migrated_state_receipt_id": "P202-PROD-READBACK-C6891762",
+  "migrated_state_receipt_sha256": "67b31f7094d2b5ee1dfc5d4cdaab1646791b2a27e2ee4d3725cda649b0c3e55c",
+  "migrated_subject_sha256": "8ca0691af0667fbe14520e94aec89cde84002b79d6329a7bd0ac470562e70a72",
+  "migrated_team_scope_sha256": "28a50d52a7af184618a35736846da9acbdee598121a9e969bf64074d5dbd6ae1",
+  "migrated_tenant_scope_sha256": "bce70acc12401f2ded3936c3bab14132028689a72db8636468dd8f8ab7278a74",
+  "observed_at": "2026-08-03T17:32:10.419Z",
+  "organization_scope_sha256": "0365e262f0d48cbdaea1cbd2b0b8dc8573fbd59478d5b532f3d3dd71ca9b877c",
+  "pre_phase_202_provenance_verified": true,
+  "projection_organization_bound": true,
+  "receipt_id": "P203-PRODUCTION-MEMBER-JOURNEY-001",
+  "renderer_state_preserved": true,
+  "screenshot_collision_evidence_verified": true,
+  "route_interception": false,
+  "schema_version": 1,
+  "session_scope": "MIGRATED_MEMBER",
+  "session_subject_sha256": "8ca0691af0667fbe14520e94aec89cde84002b79d6329a7bd0ac470562e70a72",
+  "status": "PASSED",
+  "team_scope_sha256": "28a50d52a7af184618a35736846da9acbdee598121a9e969bf64074d5dbd6ae1",
+  "tenant_scope_sha256": "bce70acc12401f2ded3936c3bab14132028689a72db8636468dd8f8ab7278a74",
+  "viewport_observations": [
+    {
+      "business_count": 0,
+      "businesses_state": "EMPTY_CANONICAL",
+      "command_canonical_data_verified": true,
+      "desktop_layout_evidence": null,
+      "desktop_side_by_side": false,
+      "destination_visual_evidence": [
+        {
+          "destination": "COMMAND",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 1107.6875,
+            "height": 1371.859375,
+            "left": 11.515625,
+            "right": 348.484375,
+            "top": -264.171875,
+            "width": 336.96875
+          },
+          "screenshot_file": "screenshots/command-360px.png",
+          "screenshot_sha256": "c14a3aa76bb9609f769e494bba7d61d598c87b2d7835efc0ce45bcd071ebfa60",
+          "viewport_height": 844,
+          "viewport_scroll_y": 1282,
+          "viewport_width": 360
+        },
+        {
+          "destination": "BUSINESSES",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 843.890625,
+            "height": 1554.46875,
+            "left": 11.515625,
+            "right": 348.484375,
+            "top": -710.578125,
+            "width": 336.96875
+          },
+          "screenshot_file": "screenshots/businesses-360px.png",
+          "screenshot_sha256": "dfcf362486c76ba73976889af1bcd92538e9481958c34f9e575f0b0d763c4163",
+          "viewport_height": 844,
+          "viewport_scroll_y": 937,
+          "viewport_width": 360
+        }
+      ],
+      "destination_sync_errors": {
+        "BUSINESSES": 0,
+        "COMMAND": 0,
+        "INFRASTRUCTURE": 0,
+        "TUTORIAL": 0,
+        "UNIVERSE_2D": 0,
+        "UNIVERSE_3D": 0
+      },
+      "edge_count": 8,
+      "edge_set_sha256": "64a41e6ad3a893f2e9b59fe7aa4ae49c7dbabd27bcf83e81d9db9901b3401eb3",
+      "entity_count": 9,
+      "entity_set_sha256": "fdd354976ecdf5c48f8525c933554d2eb768f262c1685b2d1e97a723775702a4",
+      "event_sequence": 401,
+      "graph_presentation_evidence": [
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 590,
+            "left": 183,
+            "right": 299,
+            "top": 508
+          },
+          "minimap_visible": true,
+          "orientation": "portrait",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 309,
+              "left": 171.096875,
+              "right": 210.907421875,
+              "top": 295
+            },
+            {
+              "bottom": 232.63246763185285,
+              "left": 62.01655580564713,
+              "right": 222.06440736814713,
+              "top": 218.63246763185285
+            },
+            {
+              "bottom": 417,
+              "left": 164.896875,
+              "right": 269.37001953125,
+              "top": 403
+            },
+            {
+              "bottom": 309,
+              "left": 56.896875,
+              "right": 142.15224609375,
+              "top": 295
+            },
+            {
+              "bottom": 385.3675323681471,
+              "left": 88.52934263185287,
+              "right": 268.05815122560284,
+              "top": 371.3675323681471
+            }
+          ],
+          "rendered_label_bounds_sha256": "57eecd2aada676e4ead3b4a4b2741856503e83c19d1e9773e394101207317be5",
+          "rendered_label_count": 5,
+          "stage_height": 604,
+          "stage_width": 312.59375,
+          "screenshot_file": "screenshots/universe-360px-portrait-2d.png",
+          "screenshot_sha256": "e858c2db22c640a3ed43fc6087b30f75931bb9d40740b0c0e20df3bf7acb55fb",
+          "viewport_width": 360
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "portrait",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 604,
+          "stage_width": 312.59375,
+          "screenshot_file": "screenshots/universe-360px-portrait-3d.png",
+          "screenshot_sha256": "669eb20fa0e511a1dfa3bc37b5068e8a7e0bb218de3db679e42f74a27273c4e2",
+          "viewport_width": 360
+        },
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 286,
+            "left": 577,
+            "right": 693,
+            "top": 204
+          },
+          "minimap_visible": true,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 157,
+              "left": 368.471875,
+              "right": 408.282421875,
+              "top": 143
+            },
+            {
+              "bottom": 64.01545827396897,
+              "left": 455.256416726031,
+              "right": 615.3042682885309,
+              "top": 50.015458273968974
+            },
+            {
+              "bottom": 64.015458273969,
+              "left": 269.287333273969,
+              "right": 414.038309836469,
+              "top": 50.015458273969
+            },
+            {
+              "bottom": 288.5,
+              "left": 362.271875,
+              "right": 466.74501953125,
+              "top": 274.5
+            },
+            {
+              "bottom": 157,
+              "left": 493.771875,
+              "right": 650.027734375,
+              "top": 143
+            },
+            {
+              "bottom": 157.00000000000003,
+              "left": 230.771875,
+              "right": 316.02724609375,
+              "top": 143.00000000000003
+            },
+            {
+              "bottom": 249.984541726031,
+              "left": 269.287333273969,
+              "right": 448.816141867719,
+              "top": 235.984541726031
+            },
+            {
+              "bottom": 249.984541726031,
+              "left": 455.25641672603103,
+              "right": 568.232002663531,
+              "top": 235.984541726031
+            },
+            {
+              "bottom": 25.5,
+              "left": 362.271875,
+              "right": 517.42666015625,
+              "top": 11.5
+            }
+          ],
+          "rendered_label_bounds_sha256": "54d3e30b81d92fc02b75c1beccc8624c286e7a7cb59b3ab4bd7a383f73539d7e",
+          "rendered_label_count": 9,
+          "stage_height": 300,
+          "stage_width": 707.34375,
+          "screenshot_file": "screenshots/universe-360px-landscape-2d.png",
+          "screenshot_sha256": "c005ec774f2100b73230b163c09d6bb68cdd8f36da592cf6cfc0c482afb011a6",
+          "viewport_width": 360
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 300,
+          "stage_width": 707.34375,
+          "screenshot_file": "screenshots/universe-360px-landscape-3d.png",
+          "screenshot_sha256": "6156ee6ab99a7cb9ee1568a628134aa97d06b49854e845bad24715d83b43a656",
+          "viewport_width": 360
+        }
+      ],
+      "mobile_single_renderer": true,
+      "renderer_parity_verified": true,
+      "rendered_subset_authorized": true,
+      "renderer_state_preserved": true,
+      "selected_entity_authorized": true,
+      "sync_errors": 0,
+      "three_d_loaded": true,
+      "two_d_loaded": true,
+      "viewport_width": 360
+    },
+    {
+      "business_count": 0,
+      "businesses_state": "EMPTY_CANONICAL",
+      "command_canonical_data_verified": true,
+      "desktop_layout_evidence": null,
+      "desktop_side_by_side": false,
+      "destination_visual_evidence": [
+        {
+          "destination": "COMMAND",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 1098.453125,
+            "height": 1353.625,
+            "left": 11.515625,
+            "right": 378.484375,
+            "top": -255.171875,
+            "width": 366.96875
+          },
+          "screenshot_file": "screenshots/command-390px.png",
+          "screenshot_sha256": "ae84de613d94bba8cd59ed5bf800c7ca2d1d66d41d969e05d7976ff368e43251",
+          "viewport_height": 844,
+          "viewport_scroll_y": 1273,
+          "viewport_width": 390
+        },
+        {
+          "destination": "BUSINESSES",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 843.890625,
+            "height": 1554.46875,
+            "left": 11.515625,
+            "right": 378.484375,
+            "top": -710.578125,
+            "width": 366.96875
+          },
+          "screenshot_file": "screenshots/businesses-390px.png",
+          "screenshot_sha256": "074189874f1a46ca78874bb2bda846b857dd1134b4586a21f5a7b2e411f9ecd0",
+          "viewport_height": 844,
+          "viewport_scroll_y": 937,
+          "viewport_width": 390
+        }
+      ],
+      "destination_sync_errors": {
+        "BUSINESSES": 0,
+        "COMMAND": 0,
+        "INFRASTRUCTURE": 0,
+        "TUTORIAL": 0,
+        "UNIVERSE_2D": 0,
+        "UNIVERSE_3D": 0
+      },
+      "edge_count": 8,
+      "edge_set_sha256": "64a41e6ad3a893f2e9b59fe7aa4ae49c7dbabd27bcf83e81d9db9901b3401eb3",
+      "entity_count": 9,
+      "entity_set_sha256": "fdd354976ecdf5c48f8525c933554d2eb768f262c1685b2d1e97a723775702a4",
+      "event_sequence": 401,
+      "graph_presentation_evidence": [
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 590,
+            "left": 213,
+            "right": 329,
+            "top": 508
+          },
+          "minimap_visible": true,
+          "orientation": "portrait",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 309,
+              "left": 186.096875,
+              "right": 225.907421875,
+              "top": 295
+            },
+            {
+              "bottom": 232.63246763185285,
+              "left": 77.01655580564713,
+              "right": 237.06440736814713,
+              "top": 218.63246763185285
+            },
+            {
+              "bottom": 417,
+              "left": 179.896875,
+              "right": 284.37001953125,
+              "top": 403
+            },
+            {
+              "bottom": 309,
+              "left": 71.896875,
+              "right": 157.15224609375,
+              "top": 295
+            },
+            {
+              "bottom": 385.3675323681471,
+              "left": 103.52934263185287,
+              "right": 283.05815122560284,
+              "top": 371.3675323681471
+            },
+            {
+              "bottom": 201,
+              "left": 177.84521484375,
+              "right": 333,
+              "top": 187
+            }
+          ],
+          "rendered_label_bounds_sha256": "90a896aedcf115151d2d19ac7a388e04387207065d67458e9f1484cfceb102d6",
+          "rendered_label_count": 6,
+          "stage_height": 604,
+          "stage_width": 342.59375,
+          "screenshot_file": "screenshots/universe-390px-portrait-2d.png",
+          "screenshot_sha256": "e32bac8782989c3cc9eea5ebd13f3df4983b8b6f639342c702a37f6f525cbeb7",
+          "viewport_width": 390
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "portrait",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 604,
+          "stage_width": 342.59375,
+          "screenshot_file": "screenshots/universe-390px-portrait-3d.png",
+          "screenshot_sha256": "3bf928e362b89205f409f105886e9bb345158ff10295943d309e18e087c4db0c",
+          "viewport_width": 390
+        },
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 286,
+            "left": 577,
+            "right": 693,
+            "top": 204
+          },
+          "minimap_visible": true,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 157,
+              "left": 368.471875,
+              "right": 408.282421875,
+              "top": 143
+            },
+            {
+              "bottom": 53.40885655617076,
+              "left": 465.8630184438292,
+              "right": 625.9108700063292,
+              "top": 39.40885655617076
+            },
+            {
+              "bottom": 53.40885655617079,
+              "left": 258.68073155617077,
+              "right": 403.43170811867077,
+              "top": 39.40885655617079
+            },
+            {
+              "bottom": 294,
+              "left": 362.271875,
+              "right": 466.74501953125,
+              "top": 280
+            },
+            {
+              "bottom": 157,
+              "left": 508.771875,
+              "right": 665.027734375,
+              "top": 143
+            },
+            {
+              "bottom": 157.00000000000003,
+              "left": 215.771875,
+              "right": 301.02724609375,
+              "top": 143.00000000000003
+            },
+            {
+              "bottom": 260.5911434438292,
+              "left": 258.6807315561708,
+              "right": 438.2095401499208,
+              "top": 246.5911434438292
+            },
+            {
+              "bottom": 18,
+              "left": 362.271875,
+              "right": 517.42666015625,
+              "top": 4
+            }
+          ],
+          "rendered_label_bounds_sha256": "01e75829e19288699f434724c62379d8cd6c20131494ec25bf2447479ae6fd81",
+          "rendered_label_count": 8,
+          "stage_height": 300,
+          "stage_width": 707.34375,
+          "screenshot_file": "screenshots/universe-390px-landscape-2d.png",
+          "screenshot_sha256": "45cea09581f257b6239eaefaada4f75fde95673d02b3e5db78d9349b15d14426",
+          "viewport_width": 390
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 300,
+          "stage_width": 707.34375,
+          "screenshot_file": "screenshots/universe-390px-landscape-3d.png",
+          "screenshot_sha256": "fe39e2f83eca8f920d8fb54161e60859e7dfe4301d26387cf277eeb4c36db9a9",
+          "viewport_width": 390
+        }
+      ],
+      "mobile_single_renderer": true,
+      "renderer_parity_verified": true,
+      "rendered_subset_authorized": true,
+      "renderer_state_preserved": true,
+      "selected_entity_authorized": true,
+      "sync_errors": 0,
+      "three_d_loaded": true,
+      "two_d_loaded": true,
+      "viewport_width": 390
+    },
+    {
+      "business_count": 0,
+      "businesses_state": "EMPTY_CANONICAL",
+      "command_canonical_data_verified": true,
+      "desktop_layout_evidence": null,
+      "desktop_side_by_side": false,
+      "destination_visual_evidence": [
+        {
+          "destination": "COMMAND",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 1317.40625,
+            "height": 1317.625,
+            "left": 11.515625,
+            "right": 400.484375,
+            "top": -0.21875,
+            "width": 388.96875
+          },
+          "screenshot_file": "screenshots/command-412px.png",
+          "screenshot_sha256": "7c90ffe730f2f779580627b06e6b561bacb96832fc7880b76b71a4455ea55232",
+          "viewport_height": 844,
+          "viewport_scroll_y": 437,
+          "viewport_width": 412
+        },
+        {
+          "destination": "BUSINESSES",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 843.5,
+            "height": 1510.078125,
+            "left": 11.515625,
+            "right": 400.484375,
+            "top": -666.578125,
+            "width": 388.96875
+          },
+          "screenshot_file": "screenshots/businesses-412px.png",
+          "screenshot_sha256": "b6f2e0881f31d2e824d5301038e73ef5cccad55efcc76d42861552a698d5aa6a",
+          "viewport_height": 844,
+          "viewport_scroll_y": 893,
+          "viewport_width": 412
+        }
+      ],
+      "destination_sync_errors": {
+        "BUSINESSES": 0,
+        "COMMAND": 0,
+        "INFRASTRUCTURE": 0,
+        "TUTORIAL": 0,
+        "UNIVERSE_2D": 0,
+        "UNIVERSE_3D": 0
+      },
+      "edge_count": 8,
+      "edge_set_sha256": "64a41e6ad3a893f2e9b59fe7aa4ae49c7dbabd27bcf83e81d9db9901b3401eb3",
+      "entity_count": 9,
+      "entity_set_sha256": "fdd354976ecdf5c48f8525c933554d2eb768f262c1685b2d1e97a723775702a4",
+      "event_sequence": 401,
+      "graph_presentation_evidence": [
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 590,
+            "left": 235,
+            "right": 351,
+            "top": 508
+          },
+          "minimap_visible": true,
+          "orientation": "portrait",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 309,
+              "left": 197.096875,
+              "right": 236.907421875,
+              "top": 295
+            },
+            {
+              "bottom": 232.63246763185285,
+              "left": 88.01655580564713,
+              "right": 248.06440736814713,
+              "top": 218.63246763185285
+            },
+            {
+              "bottom": 417,
+              "left": 190.896875,
+              "right": 295.37001953125,
+              "top": 403
+            },
+            {
+              "bottom": 309,
+              "left": 82.896875,
+              "right": 168.15224609375,
+              "top": 295
+            },
+            {
+              "bottom": 385.3675323681471,
+              "left": 114.52934263185287,
+              "right": 294.05815122560284,
+              "top": 371.3675323681471
+            },
+            {
+              "bottom": 201,
+              "left": 190.89687499999997,
+              "right": 346.05166015624997,
+              "top": 187
+            }
+          ],
+          "rendered_label_bounds_sha256": "aa7fc1f8b48025f38b88bd7e03edd3432d45002b064b33a5164614f9d143726e",
+          "rendered_label_count": 6,
+          "stage_height": 604,
+          "stage_width": 364.59375,
+          "screenshot_file": "screenshots/universe-412px-portrait-2d.png",
+          "screenshot_sha256": "d65950c5c0c178c35de9acbad398979a793d696693b14cc5f511634f3019bd39",
+          "viewport_width": 412
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "portrait",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 604,
+          "stage_width": 364.59375,
+          "screenshot_file": "screenshots/universe-412px-portrait-3d.png",
+          "screenshot_sha256": "3dd029bfb2e208fd5771dee3317797f7a3638dbe09e012ab83c3c4b9e42fc2ca",
+          "viewport_width": 412
+        },
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 286,
+            "left": 577,
+            "right": 693,
+            "top": 204
+          },
+          "minimap_visible": true,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 157,
+              "left": 368.471875,
+              "right": 408.282421875,
+              "top": 143
+            },
+            {
+              "bottom": 45.63068196311873,
+              "left": 473.6411930368812,
+              "right": 633.6890445993812,
+              "top": 31.630681963118732
+            },
+            {
+              "bottom": 45.63068196311876,
+              "left": 250.9025569631187,
+              "right": 395.65353352561874,
+              "top": 31.63068196311876
+            },
+            {
+              "bottom": 294,
+              "left": 362.271875,
+              "right": 466.74501953125,
+              "top": 280
+            },
+            {
+              "bottom": 157,
+              "left": 519.771875,
+              "right": 676.027734375,
+              "top": 143
+            },
+            {
+              "bottom": 157.00000000000003,
+              "left": 204.771875,
+              "right": 290.02724609375,
+              "top": 143.00000000000003
+            },
+            {
+              "bottom": 268.3693180368813,
+              "left": 250.90255696311877,
+              "right": 430.43136555686874,
+              "top": 254.36931803688128
+            },
+            {
+              "bottom": 18,
+              "left": 362.27187499999997,
+              "right": 517.4266601562499,
+              "top": 4
+            }
+          ],
+          "rendered_label_bounds_sha256": "f83934f58b456126aaf2cb24b0a0912a9c029fba32971b67812233b5871e9e60",
+          "rendered_label_count": 8,
+          "stage_height": 300,
+          "stage_width": 707.34375,
+          "screenshot_file": "screenshots/universe-412px-landscape-2d.png",
+          "screenshot_sha256": "870e2642a436647f2d34df53039b42707d0566647fce6013c1d55331ec943273",
+          "viewport_width": 412
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 300,
+          "stage_width": 707.34375,
+          "screenshot_file": "screenshots/universe-412px-landscape-3d.png",
+          "screenshot_sha256": "f315171dc87353fe369ffc3a810573f26124721125f68df3487060906bb80e8b",
+          "viewport_width": 412
+        }
+      ],
+      "mobile_single_renderer": true,
+      "renderer_parity_verified": true,
+      "rendered_subset_authorized": true,
+      "renderer_state_preserved": true,
+      "selected_entity_authorized": true,
+      "sync_errors": 0,
+      "three_d_loaded": true,
+      "two_d_loaded": true,
+      "viewport_width": 412
+    },
+    {
+      "business_count": 0,
+      "businesses_state": "EMPTY_CANONICAL",
+      "command_canonical_data_verified": true,
+      "desktop_layout_evidence": null,
+      "desktop_side_by_side": false,
+      "destination_visual_evidence": [
+        {
+          "destination": "COMMAND",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 1317.40625,
+            "height": 1317.625,
+            "left": 11.515625,
+            "right": 418.484375,
+            "top": -0.21875,
+            "width": 406.96875
+          },
+          "screenshot_file": "screenshots/command-430px.png",
+          "screenshot_sha256": "d110a86b73bfb3a65a79fa4e2d52a956e923840ec30b179020a3a0cfd8c9573e",
+          "viewport_height": 844,
+          "viewport_scroll_y": 437,
+          "viewport_width": 430
+        },
+        {
+          "destination": "BUSINESSES",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 843.828125,
+            "height": 1490.40625,
+            "left": 11.515625,
+            "right": 418.484375,
+            "top": -646.578125,
+            "width": 406.96875
+          },
+          "screenshot_file": "screenshots/businesses-430px.png",
+          "screenshot_sha256": "94ac876a92f35d6bdc415460afe143df56f5789a3171775c5382e8c4159f20d5",
+          "viewport_height": 844,
+          "viewport_scroll_y": 873,
+          "viewport_width": 430
+        }
+      ],
+      "destination_sync_errors": {
+        "BUSINESSES": 0,
+        "COMMAND": 0,
+        "INFRASTRUCTURE": 0,
+        "TUTORIAL": 0,
+        "UNIVERSE_2D": 0,
+        "UNIVERSE_3D": 0
+      },
+      "edge_count": 8,
+      "edge_set_sha256": "64a41e6ad3a893f2e9b59fe7aa4ae49c7dbabd27bcf83e81d9db9901b3401eb3",
+      "entity_count": 9,
+      "entity_set_sha256": "fdd354976ecdf5c48f8525c933554d2eb768f262c1685b2d1e97a723775702a4",
+      "event_sequence": 401,
+      "graph_presentation_evidence": [
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 590,
+            "left": 253,
+            "right": 369,
+            "top": 508
+          },
+          "minimap_visible": true,
+          "orientation": "portrait",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 309,
+              "left": 206.096875,
+              "right": 245.907421875,
+              "top": 295
+            },
+            {
+              "bottom": 232.63246763185285,
+              "left": 97.0165558056471,
+              "right": 257.0644073681471,
+              "top": 218.63246763185285
+            },
+            {
+              "bottom": 417,
+              "left": 199.896875,
+              "right": 304.37001953125,
+              "top": 403
+            },
+            {
+              "bottom": 309,
+              "left": 91.896875,
+              "right": 177.15224609375,
+              "top": 295
+            },
+            {
+              "bottom": 385.3675323681471,
+              "left": 123.52934263185287,
+              "right": 303.05815122560284,
+              "top": 371.3675323681471
+            },
+            {
+              "bottom": 201,
+              "left": 199.89687499999997,
+              "right": 355.05166015624997,
+              "top": 187
+            }
+          ],
+          "rendered_label_bounds_sha256": "53edb871b4f0e852560d0449409eabd5f9949c4fdb1a7ca0555c0fcd088e0e78",
+          "rendered_label_count": 6,
+          "stage_height": 604,
+          "stage_width": 382.59375,
+          "screenshot_file": "screenshots/universe-430px-portrait-2d.png",
+          "screenshot_sha256": "1affaef7e28e85056b2c05ab4b5cd8bc2099e27b2d985ae112ae89b62f2c3361",
+          "viewport_width": 430
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "portrait",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 604,
+          "stage_width": 382.59375,
+          "screenshot_file": "screenshots/universe-430px-portrait-3d.png",
+          "screenshot_sha256": "9d68c6853d3b24d8698bfa5014133e52a874bc881297ab34c8ea5f44e39b9c0c",
+          "viewport_width": 430
+        },
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 286,
+            "left": 577,
+            "right": 693,
+            "top": 204
+          },
+          "minimap_visible": true,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 157,
+              "left": 368.471875,
+              "right": 408.282421875,
+              "top": 143
+            },
+            {
+              "bottom": 39.26672093243981,
+              "left": 480.00515406756017,
+              "right": 640.0530056300602,
+              "top": 25.26672093243981
+            },
+            {
+              "bottom": 39.26672093243984,
+              "left": 244.5385959324398,
+              "right": 389.28957249493976,
+              "top": 25.26672093243984
+            },
+            {
+              "bottom": 294,
+              "left": 362.271875,
+              "right": 466.74501953125,
+              "top": 280
+            },
+            {
+              "bottom": 157,
+              "left": 528.771875,
+              "right": 685.027734375,
+              "top": 143
+            },
+            {
+              "bottom": 157.00000000000003,
+              "left": 195.771875,
+              "right": 281.02724609375,
+              "top": 143.00000000000003
+            },
+            {
+              "bottom": 274.73327906756015,
+              "left": 244.53859593243985,
+              "right": 424.0674045261899,
+              "top": 260.73327906756015
+            },
+            {
+              "bottom": 18,
+              "left": 362.27187499999997,
+              "right": 517.4266601562499,
+              "top": 4
+            }
+          ],
+          "rendered_label_bounds_sha256": "68aee00a94694645971ef9dd1052c2abf047fc387e33fed35acd488d62475afa",
+          "rendered_label_count": 8,
+          "stage_height": 300,
+          "stage_width": 707.34375,
+          "screenshot_file": "screenshots/universe-430px-landscape-2d.png",
+          "screenshot_sha256": "c4ee87235fefad8630cbd3483bec3ed0df62486e6c1c835ae9f73f8176fd0f13",
+          "viewport_width": 430
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 300,
+          "stage_width": 707.34375,
+          "screenshot_file": "screenshots/universe-430px-landscape-3d.png",
+          "screenshot_sha256": "30612dc229133aa626b278cc3d8c1ea803671d7938c7b427f1d8cec9cc367ab8",
+          "viewport_width": 430
+        }
+      ],
+      "mobile_single_renderer": true,
+      "renderer_parity_verified": true,
+      "rendered_subset_authorized": true,
+      "renderer_state_preserved": true,
+      "selected_entity_authorized": true,
+      "sync_errors": 0,
+      "three_d_loaded": true,
+      "two_d_loaded": true,
+      "viewport_width": 430
+    },
+    {
+      "business_count": 0,
+      "businesses_state": "EMPTY_CANONICAL",
+      "command_canonical_data_verified": true,
+      "desktop_layout_evidence": {
+        "layout": "side-by-side",
+        "panels": {
+          "bottom": 920.796875,
+          "height": 787.921875,
+          "left": 32,
+          "right": 1408,
+          "top": 132.875,
+          "width": 1376
+        },
+        "threeD": {
+          "bottom": 903.796875,
+          "height": 580,
+          "left": 745,
+          "right": 1391,
+          "top": 323.796875,
+          "width": 646
+        },
+        "threeDPanel": {
+          "bottom": 920.796875,
+          "height": 787.921875,
+          "left": 728,
+          "right": 1408,
+          "top": 132.875,
+          "width": 680
+        },
+        "twoD": {
+          "bottom": 903.796875,
+          "height": 580,
+          "left": 49,
+          "right": 695,
+          "top": 323.796875,
+          "width": 646
+        },
+        "twoDPanel": {
+          "bottom": 920.796875,
+          "height": 787.921875,
+          "left": 32,
+          "right": 712,
+          "top": 132.875,
+          "width": 680
+        },
+        "viewport": {
+          "height": 1000,
+          "width": 1440
+        }
+      },
+      "desktop_side_by_side": true,
+      "destination_visual_evidence": [
+        {
+          "destination": "COMMAND",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 999.59375,
+            "height": 589.640625,
+            "left": 32,
+            "right": 1408,
+            "top": 409.953125,
+            "width": 1376
+          },
+          "screenshot_file": "screenshots/command-1440px.png",
+          "screenshot_sha256": "8ca2d3a1a54bcfc9ca083435c996af6c2be485ee53d48a7138ee6d77a1ecf4b1",
+          "viewport_height": 1000,
+          "viewport_scroll_y": 99,
+          "viewport_width": 1440
+        },
+        {
+          "destination": "BUSINESSES",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 861.75,
+            "height": 700.46875,
+            "left": 32,
+            "right": 1408,
+            "top": 161.28125,
+            "width": 1376
+          },
+          "screenshot_file": "screenshots/businesses-1440px.png",
+          "screenshot_sha256": "55ac876b05daacd8e6d74d91ea83a7b5c7dead50bee18072b299d4a80a3ddf70",
+          "viewport_height": 1000,
+          "viewport_scroll_y": 0,
+          "viewport_width": 1440
+        }
+      ],
+      "destination_sync_errors": {
+        "BUSINESSES": 0,
+        "COMMAND": 0,
+        "INFRASTRUCTURE": 0,
+        "TUTORIAL": 0,
+        "UNIVERSE_2D": 0,
+        "UNIVERSE_3D": 0
+      },
+      "edge_count": 131,
+      "edge_set_sha256": "2814fb9dc3783738ef484a55b1b8990e0b5c8267b063c201add5dceaa2356eb1",
+      "entity_count": 132,
+      "entity_set_sha256": "0617be5cee403f15afdcbb31af403cc98f8c475d2a0a223948d02162b7185dc0",
+      "event_sequence": 401,
+      "graph_presentation_evidence": [
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 566,
+            "left": 516,
+            "right": 632,
+            "top": 484
+          },
+          "minimap_visible": true,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 173.04676158346584,
+              "left": 180.87519921589617,
+              "right": 220.68574609089617,
+              "top": 159.04676158346584
+            },
+            {
+              "bottom": 122.46600071369677,
+              "left": 46.00810852316519,
+              "right": 206.0559600856652,
+              "top": 108.46600071369677
+            },
+            {
+              "bottom": 244.5787596006436,
+              "left": 174.67519921589616,
+              "right": 279.14834374714616,
+              "top": 230.5787596006436
+            },
+            {
+              "bottom": 223.6275224532349,
+              "left": 124.0944383461271,
+              "right": 303.6232469398771,
+              "top": 209.6275224532349
+            },
+            {
+              "bottom": 101.5147635662881,
+              "left": 166.84521484375,
+              "right": 322,
+              "top": 87.5147635662881
+            },
+            {
+              "bottom": 62.04403789043171,
+              "left": 57.671546666961035,
+              "right": 186.45963260446104,
+              "top": 48.04403789043171
+            },
+            {
+              "bottom": 83.25883425877923,
+              "left": 108.13038690131842,
+              "right": 227.72316033881842,
+              "top": 69.25883425877923
+            },
+            {
+              "bottom": 37.792430034153654,
+              "left": 71.11762321612306,
+              "right": 195.58734977862306,
+              "top": 23.792430034153654
+            },
+            {
+              "bottom": 59.47891383466704,
+              "left": 194.27070220480013,
+              "right": 320.90497954855016,
+              "top": 45.47891383466704
+            },
+            {
+              "bottom": 159.22852637740587,
+              "left": 60.2606190459174,
+              "right": 125.2078846709174,
+              "top": 145.22852637740587
+            },
+            {
+              "bottom": 308.69909944483106,
+              "left": 55.32891860126324,
+              "right": 194.22003188251324,
+              "top": 294.69909944483106
+            },
+            {
+              "bottom": 281.85416102274996,
+              "left": 20.695406410070007,
+              "right": 193.45663687882,
+              "top": 267.85416102274996
+            },
+            {
+              "bottom": 151.97977621436638,
+              "left": 207.70997576837,
+              "right": 268.77931170587,
+              "top": 137.97977621436638
+            },
+            {
+              "bottom": 195.46045710750542,
+              "left": 233.50299652336582,
+              "right": 294.7603207421158,
+              "top": 181.46045710750542
+            },
+            {
+              "bottom": 205.46844599841467,
+              "left": 64.0837250446023,
+              "right": 202.84593207585232,
+              "top": 191.46844599841467
+            },
+            {
+              "bottom": 186.84399452870656,
+              "left": 34.2745041012604,
+              "right": 168.8418869137604,
+              "top": 172.84399452870656
+            },
+            {
+              "bottom": 262.83468890815243,
+              "left": 102.42723809297384,
+              "right": 251.45897637422382,
+              "top": 248.83468890815243
+            }
+          ],
+          "rendered_label_bounds_sha256": "dfb0f01143b3248fe06ec8bb88ac71104494190055856f1a9d4e29ea8e4faf22",
+          "rendered_label_count": 17,
+          "stage_height": 580,
+          "stage_width": 646,
+          "screenshot_file": "screenshots/universe-1440px-landscape-2d.png",
+          "screenshot_sha256": "7d0dcc22200859b451068e96b0392a7c5d53d651eb3b2b13fb388d9ec074eba0",
+          "viewport_width": 1440
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 580,
+          "stage_width": 646,
+          "screenshot_file": "screenshots/universe-1440px-landscape-3d.png",
+          "screenshot_sha256": "b1c9eaf152def60997c905c280f61d9769a109637084a7ea06bd48ce6aacf072",
+          "viewport_width": 1440
+        }
+      ],
+      "mobile_single_renderer": false,
+      "renderer_parity_verified": true,
+      "rendered_subset_authorized": true,
+      "renderer_state_preserved": true,
+      "selected_entity_authorized": true,
+      "sync_errors": 0,
+      "three_d_loaded": true,
+      "two_d_loaded": true,
+      "viewport_width": 1440
+    },
+    {
+      "business_count": 0,
+      "businesses_state": "EMPTY_CANONICAL",
+      "command_canonical_data_verified": true,
+      "desktop_layout_evidence": {
+        "layout": "side-by-side",
+        "panels": {
+          "bottom": 920.90625,
+          "height": 746,
+          "left": 92,
+          "right": 1828,
+          "top": 174.90625,
+          "width": 1736
+        },
+        "threeD": {
+          "bottom": 903.90625,
+          "height": 580,
+          "left": 985,
+          "right": 1811,
+          "top": 323.90625,
+          "width": 826
+        },
+        "threeDPanel": {
+          "bottom": 920.90625,
+          "height": 746,
+          "left": 968,
+          "right": 1828,
+          "top": 174.90625,
+          "width": 860
+        },
+        "twoD": {
+          "bottom": 903.90625,
+          "height": 580,
+          "left": 109,
+          "right": 935,
+          "top": 323.90625,
+          "width": 826
+        },
+        "twoDPanel": {
+          "bottom": 920.90625,
+          "height": 746,
+          "left": 92,
+          "right": 952,
+          "top": 174.90625,
+          "width": 860
+        },
+        "viewport": {
+          "height": 1000,
+          "width": 1920
+        }
+      },
+      "desktop_side_by_side": true,
+      "destination_visual_evidence": [
+        {
+          "destination": "COMMAND",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 1097.625,
+            "height": 589.640625,
+            "left": 92,
+            "right": 1828,
+            "top": 507.984375,
+            "width": 1736
+          },
+          "screenshot_file": "screenshots/command-1920px.png",
+          "screenshot_sha256": "b097ede3951c81456a7905f24a0e60b033bee49cd6a5cc8f523fb1b55157f588",
+          "viewport_height": 1000,
+          "viewport_scroll_y": 0,
+          "viewport_width": 1920
+        },
+        {
+          "destination": "BUSINESSES",
+          "obscuring_surface_count": 0,
+          "root_bounds": {
+            "bottom": 772.390625,
+            "height": 612.078125,
+            "left": 92,
+            "right": 1828,
+            "top": 160.3125,
+            "width": 1736
+          },
+          "screenshot_file": "screenshots/businesses-1920px.png",
+          "screenshot_sha256": "3787c9aed553f74faeb3c4366a3547d27e3dacd2a08ccfef4bde193031275828",
+          "viewport_height": 1000,
+          "viewport_scroll_y": 0,
+          "viewport_width": 1920
+        }
+      ],
+      "destination_sync_errors": {
+        "BUSINESSES": 0,
+        "COMMAND": 0,
+        "INFRASTRUCTURE": 0,
+        "TUTORIAL": 0,
+        "UNIVERSE_2D": 0,
+        "UNIVERSE_3D": 0
+      },
+      "edge_count": 131,
+      "edge_set_sha256": "2814fb9dc3783738ef484a55b1b8990e0b5c8267b063c201add5dceaa2356eb1",
+      "entity_count": 132,
+      "entity_set_sha256": "0617be5cee403f15afdcbb31af403cc98f8c475d2a0a223948d02162b7185dc0",
+      "event_sequence": 401,
+      "graph_presentation_evidence": [
+        {
+          "collision_free": true,
+          "dimension": "2D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": 0,
+          "minimap_bounds": {
+            "bottom": 566,
+            "left": 696,
+            "right": 812,
+            "top": 484
+          },
+          "minimap_visible": true,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": [
+            {
+              "bottom": 232.56649430840358,
+              "left": 240.4069322183488,
+              "right": 280.2174790933488,
+              "top": 218.56649430840358
+            },
+            {
+              "bottom": 160.64136980919295,
+              "left": 126.88420515505936,
+              "right": 286.93205671755936,
+              "top": 146.64136980919295
+            },
+            {
+              "bottom": 334.2839808505606,
+              "left": 234.20693221834878,
+              "right": 338.6800767495988,
+              "top": 320.2839808505606
+            },
+            {
+              "bottom": 232.56649430840358,
+              "left": 132.48944567619176,
+              "right": 217.74481676994176,
+              "top": 218.56649430840358
+            },
+            {
+              "bottom": 304.4916188076142,
+              "left": 162.2818077191382,
+              "right": 341.8106163128882,
+              "top": 290.4916188076142
+            },
+            {
+              "bottom": 130.84900776624656,
+              "left": 234.20693221834875,
+              "right": 389.36171737459875,
+              "top": 116.84900776624656
+            },
+            {
+              "bottom": 74.72219572362809,
+              "left": 278.266357001379,
+              "right": 407.054442938879,
+              "top": 60.72219572362809
+            },
+            {
+              "bottom": 182.4568193146194,
+              "left": 268.64201801208435,
+              "right": 409.25725238708435,
+              "top": 168.4568193146194
+            },
+            {
+              "bottom": 108.86185264767029,
+              "left": 257.6124153225477,
+              "right": 372.9351692287977,
+              "top": 94.86185264767029
+            },
+            {
+              "bottom": 40.23675334643835,
+              "left": 291.24584135187183,
+              "right": 415.71556791437183,
+              "top": 26.23675334643835
+            },
+            {
+              "bottom": 212.91715984872258,
+              "left": 71.51102211848536,
+              "right": 136.45828774348536,
+              "top": 198.91715984872258
+            },
+            {
+              "bottom": 123.49603677387131,
+              "left": 111.89711739901776,
+              "right": 210.02162911776776,
+              "top": 109.49603677387131
+            },
+            {
+              "bottom": 190.540838852214,
+              "left": 38.0488054503849,
+              "right": 168.1850359191349,
+              "top": 176.540838852214
+            },
+            {
+              "bottom": 71.505479206729,
+              "left": 114.60962527518595,
+              "right": 235.88355105643595,
+              "top": 57.50547920672901
+            },
+            {
+              "bottom": 99.37488026725356,
+              "left": 84.19306498350852,
+              "right": 191.05634623350852,
+              "top": 85.37488026725356
+            },
+            {
+              "bottom": 425.46219460062866,
+              "left": 289.30153469818373,
+              "right": 428.19264797943373,
+              "top": 411.46219460062866
+            },
+            {
+              "bottom": 387.28907294369765,
+              "left": 96.25476736247981,
+              "right": 269.0159978312298,
+              "top": 373.28907294369765
+            },
+            {
+              "bottom": 202.60953993603164,
+              "left": 315.05443709105975,
+              "right": 376.12377302855975,
+              "top": 188.60953993603164
+            },
+            {
+              "bottom": 264.43845141882866,
+              "left": 351.81107513440054,
+              "right": 413.06839935315054,
+              "top": 250.43845141882866
+            },
+            {
+              "bottom": 235.6553421683862,
+              "left": 316.5405627259843,
+              "right": 378.8559924134843,
+              "top": 221.6553421683862
+            },
+            {
+              "bottom": 278.66966966441237,
+              "left": 76.9474246201614,
+              "right": 215.7096316514114,
+              "top": 264.66966966441237
+            },
+            {
+              "bottom": 330.49388595226435,
+              "left": 59.12297413118177,
+              "right": 219.05803272493176,
+              "top": 316.49388595226435
+            },
+            {
+              "bottom": 252.18596385110402,
+              "left": 34.55913526455817,
+              "right": 169.12651807705817,
+              "top": 238.18596385110402
+            },
+            {
+              "bottom": 364.23706371783953,
+              "left": 82.85625476682941,
+              "right": 222.5422899230794,
+              "top": 350.23706371783953
+            },
+            {
+              "bottom": 357.85898115770703,
+              "left": 244.22774939214764,
+              "right": 371.67843298589764,
+              "top": 343.85898115770703
+            },
+            {
+              "bottom": 284.6344036270258,
+              "left": 260.45101518681605,
+              "right": 408.74154253056605,
+              "top": 270.6344036270258
+            }
+          ],
+          "rendered_label_bounds_sha256": "38c894f7811aa06eebc548eb957164db624012e768ad58ecf979c93b3ef940e3",
+          "rendered_label_count": 26,
+          "stage_height": 580,
+          "stage_width": 826,
+          "screenshot_file": "screenshots/universe-1920px-landscape-2d.png",
+          "screenshot_sha256": "b6c118fa8433b99ee17c534840e1a709dd810275ce418e37dd3e149cc8cea5fd",
+          "viewport_width": 1920
+        },
+        {
+          "collision_free": true,
+          "dimension": "3D",
+          "focus_bound_to_selected_entity": true,
+          "minimap_label_collision_count": null,
+          "minimap_bounds": null,
+          "minimap_visible": null,
+          "orientation": "landscape",
+          "protected_focal_region_clear": true,
+          "rendered_label_bounds": null,
+          "rendered_label_bounds_sha256": null,
+          "rendered_label_count": null,
+          "stage_height": 580,
+          "stage_width": 826,
+          "screenshot_file": "screenshots/universe-1920px-landscape-3d.png",
+          "screenshot_sha256": "346e254600ea4681d51fddefb01860a9554a4f966fe2c44b55f39a31fd6f0dac",
+          "viewport_width": 1920
+        }
+      ],
+      "mobile_single_renderer": false,
+      "renderer_parity_verified": true,
+      "rendered_subset_authorized": true,
+      "renderer_state_preserved": true,
+      "selected_entity_authorized": true,
+      "sync_errors": 0,
+      "three_d_loaded": true,
+      "two_d_loaded": true,
+      "viewport_width": 1920
+    }
+  ],
+  "viewport_widths": [
+    360,
+    390,
+    412,
+    430,
+    1440,
+    1920
+  ],
+  "receipt_sha256": "c45e397810d2ceecb0a7fdd9cc88b129ee3524785507190aee6d78a15a5bb3d2"
+}

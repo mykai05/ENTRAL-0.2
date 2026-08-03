@@ -1,0 +1,151 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "plan_id": "P203-RELEASE-PLAN-001",
+  "phase": 203,
+  "repositories": [
+    {
+      "role": "PRODUCT",
+      "repository": "mykai05/ENTRAL-0.2",
+      "local_path": "C:/Users/malac/Documents/ENTRAL 2-phase-200",
+      "origin_url": "https://github.com/mykai05/ENTRAL-0.2.git",
+      "default_branch": "main",
+      "latest_verified_main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+      "branch_prefix": "codex/",
+      "compatibility_contract_version": "release-control-v1"
+    },
+    {
+      "role": "CONTROL_WEBSITE",
+      "repository": "SovereignProtocol/sovereign-protocol-agent",
+      "local_path": "C:/Users/malac/Documents/Sovereign Protocol",
+      "origin_url": "https://github.com/SovereignProtocol/sovereign-protocol-agent.git",
+      "default_branch": "main",
+      "latest_verified_main_sha": "569cd32af4f263634d9aa625d18f77840002d831",
+      "branch_prefix": "codex/",
+      "compatibility_contract_version": "release-control-v1"
+    }
+  ],
+  "phase_prerequisite": {
+    "phase": 202,
+    "status": "CERTIFIED_PRODUCTION_RELEASE_WITH_P203_PREFLIGHT_INCIDENT_RESOLUTION",
+    "main_sha": "c689176234bca8a43f6bb5665f6a8a63d8d653dd",
+    "release_tag": "phase-202"
+  },
+  "task": {
+    "task_packet_id": "P203-MEMBER-UI-TRUTH-CORRECTION-001",
+    "commit_sha": "10c9fff0eb14adffca058edc1af8fb0cf46aaf8b",
+    "changed_files": [
+      ".entral/governor/events/EVENTS.jsonl",
+      ".entral/governor/lib/contracts.mjs",
+      ".entral/governor/PROGRAM_STATE.json",
+      ".entral/governor/results/P203-CAPABILITY-TRUTH-REGISTRY-001-3bb48d19.json",
+      ".entral/governor/tasks/P203-MEMBER-UI-TRUTH-CORRECTION-001.json",
+      ".entral/governor/tests/governor.test.mjs",
+      ".entral/governor/tests/release-controller.test.mjs",
+      "e2e/entral.e2e.mjs",
+      "e2e/production-member-journey.mjs",
+      "frontend/app/phase180.css",
+      "frontend/components/CanonicalGraphWorkspace.tsx",
+      "frontend/components/CanonicalMemberShell.tsx",
+      "frontend/components/CanonicalPortfolioDashboard.tsx",
+      "frontend/components/CanonicalUniverse3DGraph.tsx",
+      "frontend/components/CanonicalUniverseGraph.tsx",
+      "frontend/components/NeuronsCommandCenter.tsx",
+      "frontend/components/Phase200InteractionNavigation.tsx",
+      "frontend/tests/CanonicalPortfolio.test.tsx",
+      "frontend/tests/CommandCenterGraphIntegrity.test.ts",
+      "frontend/tests/MemberCommandCenterClient.test.tsx",
+      "frontend/tests/Phase170ResponsiveContract.test.ts",
+      "frontend/tests/Phase195Canonical3DRenderer.test.ts",
+      "frontend/tests/Phase195MemberShellRegression.test.ts",
+      "frontend/tests/Phase200InteractionLayer.test.tsx",
+      "scripts/phase199-baseline-gates.test.mjs",
+      "scripts/phase200-interaction-gates.test.mjs",
+      "scripts/phase203-production-graph-recovery-gates.test.mjs"
+    ],
+    "mandatory_phase_suites": [
+      "pnpm contracts:verify",
+      "pnpm prisma:generate",
+      "pnpm test:phase203",
+      "pnpm test:phase203:graph-recovery",
+      "pnpm test:phase202",
+      "pnpm test:phase200",
+      "pnpm --filter @entral/backend test",
+      "pnpm --filter @entral/frontend test",
+      "pnpm lint",
+      "pnpm test",
+      "pnpm test:e2e",
+      "pnpm build",
+      "pnpm release:check",
+      "pnpm test:e2e:production-member",
+      "pnpm governor verify",
+      "git diff --check"
+    ]
+  },
+  "candidate_binding": {
+    "status": "ACCEPTED_EXACT_SHA_PROTECTED_MAIN_CI",
+    "accepted_commit_sha": "10c9fff0eb14adffca058edc1af8fb0cf46aaf8b",
+    "protected_main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+    "release_tag": "phase-203",
+    "protected_main_ci_run_id": 30834996449,
+    "protected_main_ci_job_id": 91757890720,
+    "runtime_tree_unchanged_from_core_checkpoint": true,
+    "capability_truth_core_checkpoint": "mykai05/ENTRAL-0.2@4b0b656d87bc7689368d2b6e734c719b1fec4d40:docs/evidence/phase203/capability-truth/CAPABILITY_TRUTH_CORE_CHECKPOINT.json"
+  },
+  "risk_profile": {
+    "data_migration": "ADDITIVE",
+    "customer_data_risk": "BOUNDED",
+    "rollback_complexity": "MULTI_SERVICE",
+    "public_contract_change": true,
+    "provider_configuration_change": true,
+    "identity_or_tenancy_change": false,
+    "billing_or_economic_change": false
+  },
+  "changed_surfaces": ["CUSTOMER", "FRONTEND", "API", "WORKER"],
+  "migrations": [
+    {
+      "order": 0,
+      "name": "20260803000000_phase_203_graph_recovery",
+      "kind": "ADDITIVE",
+      "fingerprint_sha256": "faa9a235325d09c7f184381bdab570cbc95ea98d65c708514415f5645330c23e",
+      "compatibility": "EXPAND_CONTRACT",
+      "recovery_strategy": "FORWARD_REPAIR"
+    },
+    {
+      "order": 1,
+      "name": "20260803010000_phase_203_capability_truth_registry",
+      "kind": "ADDITIVE",
+      "fingerprint_sha256": "adb2db73baadfffcecbe5a76c830151a2b39f27203cedeeb93b5af2b72a1ce3c",
+      "compatibility": "EXPAND_CONTRACT",
+      "recovery_strategy": "FORWARD_REPAIR"
+    }
+  ],
+  "security_scan": {
+    "status": "NOT_RUN_OWNER_PROHIBITED",
+    "reason": "The owner explicitly prohibited a new Phase 203 security scan. No new security scan is a Phase 203 release gate."
+  },
+  "health_thresholds": {
+    "minimum_availability": 0.99,
+    "maximum_error_rate": 0.01,
+    "maximum_p95_ms": 2000,
+    "maximum_failed_jobs": 0,
+    "maximum_dead_letter_jobs": 0
+  },
+  "rollback_point": {
+    "status": "VERIFIED",
+    "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "release_tag": "phase-200",
+    "integrity_status": "CERTAIN",
+    "receipt_sha256": "531a09b5791f85fa9fbc16334e35b706d52da8d29e7530c5ed4aac9314f89b95",
+    "deployments": [
+      {"role":"FRONTEND","provider":"VERCEL","deployment_id":"dpl_7CEgfksQ1nZ6NJPnRWq8NbcUNjqx"},
+      {"role":"API","provider":"RAILWAY","deployment_id":"905e88d5-6e40-4905-af15-67ac94507feb"},
+      {"role":"WORKER","provider":"RAILWAY","deployment_id":"979c2604-e704-4eb4-8959-2b5893de6d9f"}
+    ],
+    "deep_restore_fallback": {
+      "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+      "release_tag": "phase-198"
+    }
+  },
+  "created_at": "2026-08-03T17:40:00.000Z"
+}

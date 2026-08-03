@@ -1,0 +1,62 @@
+{
+  "accepted_git_commit_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+  "contract_version": "1.0.0",
+  "deployments": [
+    {
+      "deployed_commit_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+      "deployment_id": "dpl_65xstFttgWYZadD8vpx1BbwvN9Dr",
+      "deployment_role": "FRONTEND",
+      "live_url": "https://entral-0-2-frontend.vercel.app",
+      "provider": "VERCEL",
+      "provider_source_binding": "github:mykai05/ENTRAL-0.2@438e1b0546532efa48cd156e08af12168f4283d1;exact-source-archive:6f10e1ce7759920cbf9487543d97329012d5ada7c39b3afa65e55f0b976caa00",
+      "status": "READY"
+    },
+    {
+      "deployed_commit_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+      "deployment_id": "f7ee0e60-9fa6-4048-bad1-22b3d111e038",
+      "deployment_role": "API",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "provider": "RAILWAY",
+      "provider_source_binding": "exact-source-archive:6f10e1ce7759920cbf9487543d97329012d5ada7c39b3afa65e55f0b976caa00",
+      "status": "READY"
+    },
+    {
+      "deployed_commit_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+      "deployment_id": "f41994af-8d3d-4970-8241-a71c16608b8a",
+      "deployment_role": "WORKER",
+      "live_url": "https://entral-backend-production.up.railway.app/health",
+      "provider": "RAILWAY",
+      "provider_source_binding": "exact-source-archive:6f10e1ce7759920cbf9487543d97329012d5ada7c39b3afa65e55f0b976caa00",
+      "status": "READY"
+    }
+  ],
+  "exact_source_archive_sha256": "6f10e1ce7759920cbf9487543d97329012d5ada7c39b3afa65e55f0b976caa00",
+  "exact_source_file_count": 895,
+  "exact_source_tree_sha": "3d1d86478bcbeec67e350963c28f9aeec91bcd9c",
+  "health": {
+    "api": "PASSED",
+    "api_request_id": "df4d8c96-1e44-481c-93bc-e5273cda6ebb",
+    "frontend_http_status": 200,
+    "worker_evidence_source": "DURABLE_HEARTBEAT",
+    "worker_observed_at": "2026-08-03T17:27:20.701Z",
+    "worker_queue_dead_letter": 0,
+    "worker_queue_failed": 0,
+    "worker_queue_pending": 0,
+    "worker_status": "READY"
+  },
+  "observed_at": "2026-08-03T17:27:45.000Z",
+  "protected_main_ci_job_id": 91757890720,
+  "protected_main_ci_run_id": 30834996449,
+  "receipt_id": "P203-RELEASE-DEPLOYMENT-READBACK-438E1B05",
+  "schema_version": 1,
+  "status": "PASSED",
+  "superseded_deployment_attempts": [
+    {
+      "deployment_id": "e24ce8bc-a073-4081-9414-60c90a297981",
+      "deployment_role": "API",
+      "outcome": "INCOMPLETE_TRANSPORT_REPLACED_BEFORE_ACTIVATION",
+      "provider": "RAILWAY"
+    }
+  ],
+  "receipt_sha256": "2344cd409325195cfd2f2d3e6b95ec1990bc0959561156c75dba6a54905056fe"
+}

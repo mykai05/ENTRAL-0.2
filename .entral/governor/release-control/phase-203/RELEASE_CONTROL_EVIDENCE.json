@@ -1,0 +1,127 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "evidence_id": "P203-PRODUCTION-EVIDENCE-001",
+  "phase": 203,
+  "plan_sha256": "25f631716ceddfad3d969fe89e8c360eb5adeb1febd4aabeede6b0123bd86b68",
+  "stage": "PRODUCTION",
+  "repositories": [
+    {"role":"PRODUCT","origin_main_sha":"438e1b0546532efa48cd156e08af12168f4283d1","observed_contract_version":"release-control-v1","compatible":true},
+    {"role":"CONTROL_WEBSITE","origin_main_sha":"569cd32af4f263634d9aa625d18f77840002d831","observed_contract_version":"release-control-v1","compatible":true}
+  ],
+  "task": {
+    "commit_sha": "10c9fff0eb14adffca058edc1af8fb0cf46aaf8b",
+    "coherent_commit": true,
+    "worktree_clean": true
+  },
+  "targeted_tests": [
+    {"name":"pnpm test:phase196","status":"PASSED"},
+    {"name":"pnpm test:phase197","status":"PASSED"},
+    {"name":"pnpm --filter @entral/frontend test","status":"PASSED"},
+    {"name":"pnpm test:e2e","status":"PASSED"}
+  ],
+  "mandatory_suites": [
+    {"name":"pnpm contracts:verify","status":"PASSED"},
+    {"name":"pnpm prisma:generate","status":"PASSED"},
+    {"name":"pnpm test:phase203","status":"PASSED"},
+    {"name":"pnpm test:phase203:graph-recovery","status":"PASSED"},
+    {"name":"pnpm test:phase202","status":"PASSED"},
+    {"name":"pnpm test:phase200","status":"PASSED"},
+    {"name":"pnpm --filter @entral/backend test","status":"PASSED"},
+    {"name":"pnpm --filter @entral/frontend test","status":"PASSED"},
+    {"name":"pnpm lint","status":"PASSED"},
+    {"name":"pnpm test","status":"PASSED"},
+    {"name":"pnpm test:e2e","status":"PASSED"},
+    {"name":"pnpm build","status":"PASSED"},
+    {"name":"pnpm release:check","status":"PASSED"},
+    {"name":"pnpm test:e2e:production-member","status":"PASSED"},
+    {"name":"pnpm governor verify","status":"PASSED"},
+    {"name":"git diff --check","status":"PASSED"}
+  ],
+  "status_checks": [
+    {"name":"exact-head-push-ci-30833992153","status":"PASSED"},
+    {"name":"pull-request-58-ci-30833996710","status":"PASSED"},
+    {"name":"protected-main-ci-30834996449","status":"PASSED"},
+    {"name":"phase-203-tag-exact-main","status":"PASSED"},
+    {"name":"vercel-frontend-exact-main-dpl-65xstFtt","status":"PASSED"},
+    {"name":"railway-api-exact-main-f7ee0e60","status":"PASSED"},
+    {"name":"railway-worker-exact-main-f41994af","status":"PASSED"}
+  ],
+  "reconciliation": {
+    "origin_main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+    "reconciled_commit_sha": "10c9fff0eb14adffca058edc1af8fb0cf46aaf8b",
+    "affected_checks_rerun": true,
+    "status": "RECONCILED"
+  },
+  "staging": {
+    "status": "PASSED",
+    "evidence": "Pull request 58 preview and exact-head verification passed before protected-main merge; exact protected-main CI passed after merge."
+  },
+  "migration_verification": {
+    "status": "PASSED",
+    "ordered": true,
+    "fingerprints_match": true,
+    "compatibility_verified": true,
+    "backup_status": "VERIFIED",
+    "backup_checkpoint": "Certified Phase 200 three-service rollback point with Phase 198 deep restore; both Phase 203 migrations are additive and production apply plus a separate fresh audit passed.",
+    "entries": [
+      {"order":0,"name":"20260803000000_phase_203_graph_recovery","fingerprint_sha256":"faa9a235325d09c7f184381bdab570cbc95ea98d65c708514415f5645330c23e","status":"VERIFIED"},
+      {"order":1,"name":"20260803010000_phase_203_capability_truth_registry","fingerprint_sha256":"adb2db73baadfffcecbe5a76c830151a2b39f27203cedeeb93b5af2b72a1ce3c","status":"VERIFIED"}
+    ],
+    "receipt_sha256": "aa4182268e6c1e5bae63f26de1f598d9c0b8944c94bbc4062f1e0a93c670cc0a"
+  },
+  "deployments": [
+    {"role":"FRONTEND","provider":"VERCEL","deployment_id":"dpl_65xstFttgWYZadD8vpx1BbwvN9Dr","live_url":"https://entral-0-2-frontend.vercel.app","deployed_commit_sha":"438e1b0546532efa48cd156e08af12168f4283d1","status":"READY"},
+    {"role":"API","provider":"RAILWAY","deployment_id":"f7ee0e60-9fa6-4048-bad1-22b3d111e038","live_url":"https://entral-backend-production.up.railway.app/health","deployed_commit_sha":"438e1b0546532efa48cd156e08af12168f4283d1","status":"READY"},
+    {"role":"WORKER","provider":"RAILWAY","deployment_id":"f41994af-8d3d-4970-8241-a71c16608b8a","live_url":"https://entral-backend-production.up.railway.app/health","deployed_commit_sha":"438e1b0546532efa48cd156e08af12168f4283d1","status":"READY"}
+  ],
+  "authenticated_smokes": [
+    {"surface":"CUSTOMER","live_url":"https://entral-0-2-frontend.vercel.app/member","authenticated":true,"status":"PASSED","receipt_sha256":"423172d82b996066fc54426f757e372dd2b7e8a0b5a27678feb24cfc47fd8907"},
+    {"surface":"FRONTEND","live_url":"https://entral-0-2-frontend.vercel.app/member","authenticated":true,"status":"PASSED","receipt_sha256":"c45e397810d2ceecb0a7fdd9cc88b129ee3524785507190aee6d78a15a5bb3d2"},
+    {"surface":"API","live_url":"https://entral-backend-production.up.railway.app/member/api/v1/portfolio/summary","authenticated":true,"status":"PASSED","receipt_sha256":"423172d82b996066fc54426f757e372dd2b7e8a0b5a27678feb24cfc47fd8907"},
+    {"surface":"WORKER","live_url":"https://entral-backend-production.up.railway.app/health","authenticated":true,"status":"PASSED","receipt_sha256":"5998e6aaf35c7c692155b847c1277f313742847b7ef23b4e068bb9caff85f2bd"}
+  ],
+  "state_reconciliation": {
+    "status": "PASSED",
+    "side_effects_reconciled": true,
+    "main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+    "receipt_sha256": "5998e6aaf35c7c692155b847c1277f313742847b7ef23b4e068bb9caff85f2bd",
+    "blockers": []
+  },
+  "health": {
+    "availability": 1,
+    "error_rate": 0,
+    "p95_ms": 228.663,
+    "failed_jobs": 0,
+    "dead_letter_jobs": 0,
+    "worker_ready": true,
+    "receipt_sha256": "2344cd409325195cfd2f2d3e6b95ec1990bc0959561156c75dba6a54905056fe",
+    "p95_sample_count": 10,
+    "p95_observed_at": "2026-08-03T17:38:45.454Z"
+  },
+  "rollback_rehearsal": {"status":"NOT_REQUIRED"},
+  "failure_proof": {
+    "status": "PASSED",
+    "outcome": "REJECTED",
+    "phase_advanced": false,
+    "evidence": "Railway API deployment e24ce8bc-a073-4081-9414-60c90a297981 did not become ready after a transient upload transport failure. It was never accepted or activated; the bounded API retry f7ee0e60-9fa6-4048-bad1-22b3d111e038 passed exact-SHA readback before release recording."
+  },
+  "rollback_point": {
+    "status": "VERIFIED",
+    "receipt_sha256": "531a09b5791f85fa9fbc16334e35b706d52da8d29e7530c5ed4aac9314f89b95"
+  },
+  "release_acceptance": {
+    "protected_main_receipt_sha256": "4457fe1ae57fbbff2c92784ec2c0d0f04e9b6052723fdcf7c2a9efae189e0fea",
+    "test_receipt_sha256": "783ada384c6ed9ed4e02e76789851235928ed299566e176c4e655615aa54c715",
+    "feature_acceptance_sha256": "9f0544d7893188e9d8e54a16ba2535f785f4703f1a69a7298216e2d277fdb0ec",
+    "deployment_readback_sha256": "2344cd409325195cfd2f2d3e6b95ec1990bc0959561156c75dba6a54905056fe",
+    "migration_receipt_sha256": "aa4182268e6c1e5bae63f26de1f598d9c0b8944c94bbc4062f1e0a93c670cc0a",
+    "authenticated_smoke_sha256": "423172d82b996066fc54426f757e372dd2b7e8a0b5a27678feb24cfc47fd8907",
+    "production_member_journey_sha256": "c45e397810d2ceecb0a7fdd9cc88b129ee3524785507190aee6d78a15a5bb3d2",
+    "production_state_readback_sha256": "5998e6aaf35c7c692155b847c1277f313742847b7ef23b4e068bb9caff85f2bd",
+    "rollback_readiness_sha256": "531a09b5791f85fa9fbc16334e35b706d52da8d29e7530c5ed4aac9314f89b95",
+    "independent_visual_qa": "PASSED_ZERO_DISCREPANCIES",
+    "security_scan": "NOT_RUN_OWNER_PROHIBITED"
+  },
+  "produced_at": "2026-08-03T17:41:00.000Z"
+}

@@ -1,0 +1,39 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-PROTECTED-MAIN-438E1B05",
+  "phase": 203,
+  "repository": "mykai05/ENTRAL-0.2",
+  "pull_request": 58,
+  "implementation_commit_sha": "10c9fff0eb14adffca058edc1af8fb0cf46aaf8b",
+  "merge_commit_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+  "origin_main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+  "reconciled": true,
+  "required_ci": {
+    "run_id": 30834996449,
+    "job_id": 91757890720,
+    "head_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+    "status": "PASSED"
+  },
+  "pull_request_ci_runs": [
+    {
+      "run_id": 30833992153,
+      "job_id": 91754567818,
+      "head_sha": "10c9fff0eb14adffca058edc1af8fb0cf46aaf8b",
+      "event": "PUSH",
+      "status": "PASSED"
+    },
+    {
+      "run_id": 30833996710,
+      "job_id": 91754582216,
+      "head_sha": "10c9fff0eb14adffca058edc1af8fb0cf46aaf8b",
+      "event": "PULL_REQUEST",
+      "status": "PASSED"
+    }
+  ],
+  "release_tag": "phase-203",
+  "release_tag_main_sha": "438e1b0546532efa48cd156e08af12168f4283d1",
+  "status": "PASSED",
+  "observed_at": "2026-08-03T17:33:00.000Z",
+  "receipt_sha256": "4457fe1ae57fbbff2c92784ec2c0d0f04e9b6052723fdcf7c2a9efae189e0fea"
+}

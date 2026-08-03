@@ -1,0 +1,41 @@
+{
+  "contract_version": "1.0.0",
+  "schema_version": 1,
+  "receipt_id": "P203-ROLLBACK-PHASE200-001",
+  "phase": 203,
+  "status": "RESTORE_VERIFIED",
+  "immediate_rollback": {
+    "phase": 200,
+    "release_tag": "phase-200",
+    "main_sha": "22ced00b5c0f2b0f79f2cc1302bf2f534ddf7516",
+    "tag_sha_verified": true,
+    "deployments": [
+      {
+        "role": "FRONTEND",
+        "provider": "VERCEL",
+        "deployment_id": "dpl_7CEgfksQ1nZ6NJPnRWq8NbcUNjqx"
+      },
+      {
+        "role": "API",
+        "provider": "RAILWAY",
+        "deployment_id": "905e88d5-6e40-4905-af15-67ac94507feb",
+        "service_id": "2bdeff1a-74fc-4484-8316-6f10d974aaae"
+      },
+      {
+        "role": "WORKER",
+        "provider": "RAILWAY",
+        "deployment_id": "979c2604-e704-4eb4-8959-2b5893de6d9f",
+        "service_id": "e531972e-5c0a-4885-9f19-f44f6bc6a366"
+      }
+    ]
+  },
+  "deep_restore": {
+    "phase": 198,
+    "release_tag": "phase-198",
+    "main_sha": "5c2f9d58c25dec82d4c3102f3b48a76797801594",
+    "tag_sha_verified": true
+  },
+  "strategy": "Restore the certified Phase 200 three-service deployment set immediately; retain Phase 198 only as a deep-restore fallback. Phase 203 migrations are additive and may remain while application services roll back.",
+  "observed_at": "2026-08-03T17:33:00.000Z",
+  "receipt_sha256": "531a09b5791f85fa9fbc16334e35b706d52da8d29e7530c5ed4aac9314f89b95"
+}
