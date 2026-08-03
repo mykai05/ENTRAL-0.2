@@ -321,6 +321,7 @@
       "frontend/tests/Phase195MemberShellRegression.test.ts",
       "e2e/entral.e2e.mjs",
       "e2e/production-member-journey.mjs",
+      "scripts/phase199-baseline-gates.test.mjs",
       "scripts/phase200-interaction-gates.test.mjs",
       "scripts/phase203-capability-truth-gates.test.mjs",
       "docs/PHASE_203_CAPABILITY_TRUTH*.md",
@@ -328,18 +329,18 @@
       "package.json"
     ],
     "acquired_at": "2026-08-03T10:39:20.666Z",
-    "heartbeat_at": "2026-08-03T10:39:20.666Z",
-    "expires_at": "2026-08-03T14:39:20.666Z"
+    "heartbeat_at": "2026-08-03T11:46:48.857Z",
+    "expires_at": "2026-08-03T15:46:48.857Z"
   },
   "latest_checkpoint": null,
   "review_state": null,
   "conditional_review_triggers": [],
   "task_attempts": 0,
   "result_fingerprints": [],
-  "version": 172,
-  "updated_at": "2026-08-03T10:39:20.666Z",
+  "version": 173,
+  "updated_at": "2026-08-03T11:46:48.857Z",
   "task_deadline_at": "2026-08-03T20:39:06.117Z",
   "pending_release_manifest": null,
-  "event_count": 172,
-  "event_head_hash": "045f67dd643c677c8409e2cdc5f571e01151cfbeffdff5be7c494aa63d4bc115"
+  "event_count": 173,
+  "event_head_hash": "4cbbff1e7d3addf0829633c5f779de5bf606b600bf68dd7a2308c8e68d0217b5"
 }
